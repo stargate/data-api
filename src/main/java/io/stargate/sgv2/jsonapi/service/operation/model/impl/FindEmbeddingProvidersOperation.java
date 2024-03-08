@@ -25,35 +25,35 @@ public record FindEmbeddingProvidersOperation(
         .item(
             () -> {
               Map<String, EmbeddingProviderResponse> embeddingProviders = new HashMap<>();
-              if (propertyBasedEmbeddingProviderConfig.vertexai().enabled()) {
+              if (propertyBasedEmbeddingProviderConfig.providers().get("vertexai").enabled()) {
                 embeddingProviders.put(
                     "vertexai",
                     EmbeddingProviderResponse.provider(
-                        (propertyBasedEmbeddingProviderConfig.vertexai())));
+                        (propertyBasedEmbeddingProviderConfig.providers().get("vertexai"))));
               }
-              if (propertyBasedEmbeddingProviderConfig.huggingface().enabled()) {
+              if (propertyBasedEmbeddingProviderConfig.providers().get("huggingface").enabled()) {
                 embeddingProviders.put(
                     "huggingface",
                     EmbeddingProviderResponse.provider(
-                        (propertyBasedEmbeddingProviderConfig.huggingface())));
+                        (propertyBasedEmbeddingProviderConfig.providers().get("huggingface"))));
               }
-              if (propertyBasedEmbeddingProviderConfig.openai().enabled()) {
+              if (propertyBasedEmbeddingProviderConfig.providers().get("openai").enabled()) {
                 embeddingProviders.put(
                     "openai",
                     EmbeddingProviderResponse.provider(
-                        (propertyBasedEmbeddingProviderConfig.openai())));
+                        (propertyBasedEmbeddingProviderConfig.providers().get("openai"))));
               }
-              if (propertyBasedEmbeddingProviderConfig.cohere().enabled()) {
+              if (propertyBasedEmbeddingProviderConfig.providers().get("cohere").enabled()) {
                 embeddingProviders.put(
                     "cohere",
                     EmbeddingProviderResponse.provider(
-                        (propertyBasedEmbeddingProviderConfig.cohere())));
+                        (propertyBasedEmbeddingProviderConfig.providers().get("cohere"))));
               }
-              if (propertyBasedEmbeddingProviderConfig.nvidia().enabled()) {
+              if (propertyBasedEmbeddingProviderConfig.providers().get("nvidia").enabled()) {
                 embeddingProviders.put(
                     "nvidia",
                     EmbeddingProviderResponse.provider(
-                        (propertyBasedEmbeddingProviderConfig.nvidia())));
+                        (propertyBasedEmbeddingProviderConfig.providers().get("nvidia"))));
               }
               return new Result(embeddingProviders);
             });

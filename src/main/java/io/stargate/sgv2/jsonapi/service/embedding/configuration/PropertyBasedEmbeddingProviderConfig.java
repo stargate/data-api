@@ -10,23 +10,11 @@ import java.util.Map;
 import java.util.Optional;
 import org.eclipse.microprofile.config.spi.Converter;
 
-@ConfigMapping(prefix = "jsonapi.embedding.provider")
+@ConfigMapping(prefix = "jsonapi.embedding")
 public interface PropertyBasedEmbeddingProviderConfig {
 
   @Nullable
-  EmbeddingProviderConfig openai();
-
-  @Nullable
-  EmbeddingProviderConfig huggingface();
-
-  @Nullable
-  EmbeddingProviderConfig vertexai();
-
-  @Nullable
-  EmbeddingProviderConfig cohere();
-
-  @Nullable
-  EmbeddingProviderConfig nvidia();
+  Map<String, EmbeddingProviderConfig> providers();
 
   @Nullable
   CustomConfig custom();

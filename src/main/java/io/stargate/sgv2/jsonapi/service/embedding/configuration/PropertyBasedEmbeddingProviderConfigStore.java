@@ -19,39 +19,48 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
       Optional<String> tenant, String serviceName) {
     switch (serviceName) {
       case "openai":
-        if (config.openai().enabled()) {
+        if (config.providers().get("openai").enabled()) {
           return ServiceConfig.provider(
-              serviceName, serviceName, config.openai().apiKey(), config.openai().url().toString());
+              serviceName,
+              serviceName,
+              config.providers().get("openai").apiKey(),
+              config.providers().get("openai").url().toString());
         }
         throw ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.toApiException(serviceName);
       case "huggingface":
-        if (config.huggingface().enabled()) {
+        if (config.providers().get("huggingface").enabled()) {
           return ServiceConfig.provider(
               serviceName,
               serviceName,
-              config.huggingface().apiKey(),
-              config.huggingface().url().toString());
+              config.providers().get("huggingface").apiKey(),
+              config.providers().get("huggingface").url().toString());
         }
         throw ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.toApiException(serviceName);
       case "vertexai":
-        if (config.vertexai().enabled()) {
+        if (config.providers().get("vertexai").enabled()) {
           return ServiceConfig.provider(
               serviceName,
               serviceName,
-              config.vertexai().apiKey(),
-              config.vertexai().url().toString());
+              config.providers().get("vertexai").apiKey(),
+              config.providers().get("vertexai").url().toString());
         }
         throw ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.toApiException(serviceName);
       case "cohere":
-        if (config.cohere().enabled()) {
+        if (config.providers().get("cohere").enabled()) {
           return ServiceConfig.provider(
-              serviceName, serviceName, config.cohere().apiKey(), config.cohere().url().toString());
+              serviceName,
+              serviceName,
+              config.providers().get("cohere").apiKey(),
+              config.providers().get("cohere").url().toString());
         }
         throw ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.toApiException(serviceName);
       case "nvidia":
-        if (config.nvidia().enabled()) {
+        if (config.providers().get("nvidia").enabled()) {
           return ServiceConfig.provider(
-              serviceName, serviceName, config.nvidia().apiKey(), config.nvidia().url().toString());
+              serviceName,
+              serviceName,
+              config.providers().get("nvidia").apiKey(),
+              config.providers().get("nvidia").url().toString());
         }
         throw ErrorCode.VECTORIZE_SERVICE_TYPE_NOT_ENABLED.toApiException(serviceName);
       case "custom":
