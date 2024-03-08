@@ -1570,4 +1570,61 @@ public class FilterClauseDeserializerTest {
               });
     }
   }
+
+  @Nested
+  class DeserializeWithJsonExtensions {
+    @Test
+    public void mustHandleUUIDAsId() throws Exception {
+      final String UUID = "16725312-0000-0000-0000-000000000000";
+      String json = """
+            {"_id": {"$uuid": "%s"}}
+          """.formatted(UUID);
+      final ComparisonExpression expectedResult =
+              new ComparisonExpression(
+                      "_id",
+                      List.of(
+                              new ValueComparisonOperation(
+                                      ValueComparisonOperator.EQ,
+                                      new JsonLiteral(UUID, JsonType.DOCUMENT_ID))),
+                      null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+              .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+              .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustFailOnBadUUIDAsId() throws Exception {
+      String json = """
+         {"_id": {"$uuid": "abc"}}
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+              .isInstanceOf(JsonApiException.class)
+              .satisfies(
+                      t -> {
+                        assertThat(t.getMessage()).isEqualTo("Invalid JSON Extension value for $uuid");
+                      });
+    }
+
+    @Test
+    public void mustFailOnUnknownOperatorAsId() throws Exception {
+      String json = """
+         {"_id": {"$GUID": "abc"}}
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+              .isInstanceOf(JsonApiException.class)
+              .satisfies(
+                      t -> {
+                        assertThat(t.getMessage()).isEqualTo("Unsupported filter operator: $GUID");
+                      });
+    }
+  }
 }

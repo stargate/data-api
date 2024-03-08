@@ -776,6 +776,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("errors[0].errorCode", is("COLLECTION_NOT_EXIST"));
     }
 
+
     @Test
     public void findWithInvalidCollectionName() {
       given()
