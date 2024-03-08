@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.api.common.config.DataStoreConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
@@ -105,7 +106,9 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         optionsNode.putPOJO(
             TableCommentConstants.COLLECTION_VECTOR_KEY, command.options().vector());
       }
-      optionsNode.putPOJO(TableCommentConstants.DEFAULT_ID_TYPE_KEY, command.options().idType());
+      Log.error("wocao !!" + command.options().idConfig());
+      optionsNode.putPOJO(TableCommentConstants.DEFAULT_ID_TYPE_KEY, command.options().idConfig());
+
       collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, command.name());
       collectionNode.put(
           TableCommentConstants.SCHEMA_VERSION_KEY, TableCommentConstants.SCHEMA_VERSION_VALUE);

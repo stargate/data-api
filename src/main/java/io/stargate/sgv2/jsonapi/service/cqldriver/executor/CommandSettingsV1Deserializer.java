@@ -28,13 +28,16 @@ public class CommandSettingsV1Deserializer implements CommandSettingsDeserialize
     if (!indexing.isMissingNode()) {
       indexingConfig = CollectionSettings.IndexingConfig.fromJson(indexing);
     }
-    // construct collectionSettings idType, default as uuid
-    CollectionSettings.IdType idType = CollectionSettings.IdType.UUID;
-    JsonNode idTypeValue = collectionOptionsNode.path(TableCommentConstants.DEFAULT_ID_TYPE_KEY);
-    if (!idTypeValue.isMissingNode()) {
-      idType = CollectionSettings.IdType.fromString(idTypeValue.asText());
+    // construct collectionSettings idConfig, default idType as uuid
+    CollectionSettings.IdConfig idConfig = CollectionSettings.IdConfig.defaultUuidIdConfig();
+    JsonNode idConfigNode = collectionOptionsNode.path(TableCommentConstants.DEFAULT_ID_TYPE_KEY);
+    // should always have idConfigNode in table comment since schema v1
+    if (!idConfigNode.isMissingNode() && idConfigNode.has("type")) {
+      idConfig =
+          new CollectionSettings.IdConfig(
+              CollectionSettings.IdType.fromString(idConfigNode.get("type").asText()));
     }
 
-    return new CollectionSettings(collectionName, idType, vectorConfig, indexingConfig);
+    return new CollectionSettings(collectionName, idConfig, vectorConfig, indexingConfig);
   }
 }

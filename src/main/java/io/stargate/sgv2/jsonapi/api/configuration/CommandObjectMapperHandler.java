@@ -22,7 +22,15 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       throws IOException {
     if (deserializer.handledType().toString().endsWith("CreateCollectionCommand$Options")) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "No option \"%s\" found as createCollectionCommand option (known options: \"indexing\", \"vector\")",
+          "No option \"%s\" found as createCollectionCommand option (known options: \"default_id\", \"indexing\", \"vector\")",
+          propertyName);
+    }
+    if (deserializer
+        .handledType()
+        .toString()
+        .endsWith("CreateCollectionCommand$Options$IdConfig")) {
+      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "No option \"%s\" found as createCollectionCommand default_id option (known options: \"type\")",
           propertyName);
     }
     // false means if not matched by above handle logic, object mapper will

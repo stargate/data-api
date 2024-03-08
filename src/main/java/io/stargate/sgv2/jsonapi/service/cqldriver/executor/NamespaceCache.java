@@ -77,7 +77,7 @@ public class NamespaceCache {
                         .item(
                             new CollectionSettings(
                                 collectionName,
-                                CollectionSettings.IdType.UUID,
+                                CollectionSettings.IdConfig.defaultUuidIdConfig(),
                                 CollectionSettings.VectorConfig.notEnabledVectorConfig(),
                                 null));
                   }

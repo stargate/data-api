@@ -26,7 +26,10 @@ public class CommandSettingsV0Deserializer implements CommandSettingsDeserialize
       indexingConfig = CollectionSettings.IndexingConfig.fromJson(indexing);
     }
     return new CollectionSettings(
-        collectionName, CollectionSettings.IdType.UUID, vectorConfig, indexingConfig);
+        collectionName,
+        CollectionSettings.IdConfig.defaultUuidIdConfig(),
+        vectorConfig,
+        indexingConfig);
   }
 
   @Override

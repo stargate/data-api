@@ -36,16 +36,14 @@ public record CreateCollectionCommand(
     implements NamespaceCommand {
   public record Options(
       @Nullable
-          @Pattern(
-              regexp = "(objectId|uuid|uuidv6|uuidv7)",
-              message = "Id type can only be 'objectId', 'uuid' , 'uuidv6' or 'uuidv7'")
+          @Valid
+          @JsonInclude(JsonInclude.Include.NON_NULL)
           @Schema(
-              description = "Id type for collection, default to uuid",
-              defaultValue = "uuid",
-              type = SchemaType.STRING,
-              implementation = String.class)
-          @JsonProperty("default_id_type")
-          String idType,
+              description = "Vector search configuration for the collection",
+              type = SchemaType.OBJECT,
+              implementation = VectorSearchConfig.class)
+          @JsonProperty("default_id")
+          IdConfig idConfig,
       @Valid
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Schema(
@@ -62,6 +60,19 @@ public record CreateCollectionCommand(
               type = SchemaType.OBJECT,
               implementation = IndexingConfig.class)
           IndexingConfig indexing) {
+
+    public record IdConfig(
+        @Nullable
+            @Pattern(
+                regexp = "(objectId|uuid|uuidv6|uuidv7)",
+                message = "Id type can only be 'objectId', 'uuid' , 'uuidv6' or 'uuidv7'")
+            @Schema(
+                description = "Id type for collection, default to uuid",
+                defaultValue = "uuid",
+                type = SchemaType.STRING,
+                implementation = String.class)
+            @JsonProperty("type")
+            String idType) {}
 
     public record VectorSearchConfig(
         @Positive(message = "dimension should be greater than `0`")
@@ -233,8 +244,8 @@ public record CreateCollectionCommand(
       }
     }
 
-    public Options(String idType, VectorSearchConfig vector, IndexingConfig indexing) {
-      this.idType = idType == null ? "uuid" : idType;
+    public Options(IdConfig idConfig, VectorSearchConfig vector, IndexingConfig indexing) {
+      this.idConfig = idConfig == null ? new IdConfig("uuid") : idConfig;
       this.vector = vector;
       this.indexing = indexing;
     }

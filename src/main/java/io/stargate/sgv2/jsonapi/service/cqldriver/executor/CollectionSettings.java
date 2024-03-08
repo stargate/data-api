@@ -33,15 +33,22 @@ import java.util.stream.Collectors;
  */
 public record CollectionSettings(
     String collectionName,
-    IdType idType,
+    IdConfig idConfig,
     VectorConfig vectorConfig,
     IndexingConfig indexingConfig) {
 
   private static final CollectionSettings EMPTY =
-      new CollectionSettings("", IdType.UUID, VectorConfig.notEnabledVectorConfig(), null);
+      new CollectionSettings(
+          "", IdConfig.defaultUuidIdConfig(), VectorConfig.notEnabledVectorConfig(), null);
 
   public static CollectionSettings empty() {
     return EMPTY;
+  }
+
+  public record IdConfig(IdType idType) {
+    public static IdConfig defaultUuidIdConfig() {
+      return new IdConfig(IdType.UUID);
+    }
   }
 
   public DocumentProjector indexingProjector() {
@@ -302,10 +309,16 @@ public record CollectionSettings(
     if (comment == null || comment.isBlank()) {
       if (vectorEnabled) {
         return new CollectionSettings(
-            collectionName, IdType.UUID, new VectorConfig(true, vectorSize, function, null), null);
+            collectionName,
+            IdConfig.defaultUuidIdConfig(),
+            new VectorConfig(true, vectorSize, function, null),
+            null);
       } else {
         return new CollectionSettings(
-            collectionName, IdType.UUID, VectorConfig.notEnabledVectorConfig(), null);
+            collectionName,
+            IdConfig.defaultUuidIdConfig(),
+            VectorConfig.notEnabledVectorConfig(),
+            null);
       }
     } else {
       JsonNode commentConfigNode;
@@ -391,10 +404,11 @@ public record CollectionSettings(
               Lists.newArrayList(collectionSetting.indexingConfig().allowed()),
               Lists.newArrayList(collectionSetting.indexingConfig().denied()));
     }
-    // construct the CreateCollectionCommand.options.idType
-    String idType = collectionSetting.idType.toString();
+    // construct the CreateCollectionCommand.options.idConfig
+    CreateCollectionCommand.Options.IdConfig idConfig =
+        new CreateCollectionCommand.Options.IdConfig(collectionSetting.idConfig.idType.toString());
 
-    options = new CreateCollectionCommand.Options(idType, vectorSearchConfig, indexingConfig);
+    options = new CreateCollectionCommand.Options(idConfig, vectorSearchConfig, indexingConfig);
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
     return new CreateCollectionCommand(collectionSetting.collectionName(), options);
