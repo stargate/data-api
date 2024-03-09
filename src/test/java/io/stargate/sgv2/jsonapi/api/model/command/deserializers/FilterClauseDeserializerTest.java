@@ -1629,5 +1629,21 @@ public class FilterClauseDeserializerTest {
                 assertThat(t.getMessage()).isEqualTo("Unsupported filter operator: $GUID");
               });
     }
+
+    @Test
+    public void mustFailOnBadUUIDAsField() throws Exception {
+      String json = """
+         {"field": {"$uuid": "abc"}}
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+              .isInstanceOf(JsonApiException.class)
+              .satisfies(
+                      t -> {
+                        assertThat(t.getMessage()).isEqualTo("Invalid JSON Extension value for $uuid");
+                      });
+    }
+
   }
 }
