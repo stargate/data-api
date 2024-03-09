@@ -262,21 +262,28 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       FilterOperator operator =
           FilterOperator.FilterOperatorUtils.findComparisonOperator(updateKey);
 
-      // If assumed filter not found, may be JSON Extension value like "$date" or "$uuid":
+      // If assumed filter not found, may be JSON Extension value like "$date" or "$uuid";
+      // or may be full Object to match
       if (operator == null) {
-        if (updateKey.startsWith("$") && JsonUtil.findJsonExtensionType(updateKey) == null) {
+        JsonExtensionType etype = JsonUtil.findJsonExtensionType(updateKey);
+        if ((etype == null) && updateKey.startsWith("$")) {
           throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(updateKey);
         }
         if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
-          throw new JsonApiException(
-              ErrorCode.INVALID_FILTER_EXPRESSION,
-              String.format(
-                  "%s: filter clause path ('%s') contains character(s) not allowed",
-                  ErrorCode.INVALID_FILTER_EXPRESSION.getMessage(), entry.getKey()));
+          throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+              "filter clause path ('%s') contains character(s) not allowed", entry.getKey());
         }
-        comparisonExpressionList.add(
-            ComparisonExpression.eq(
-                entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
+        // JSON Extension type needs to be explicitly handled:
+        if (etype != null) {
+          comparisonExpressionList.add(
+              ComparisonExpression.eq(
+                  entry.getKey(), JsonUtil.extractExtendedValue(etype, updateField)));
+        } else {
+          // Otherwise we have a full JSON Object to match:
+          comparisonExpressionList.add(
+              ComparisonExpression.eq(
+                  entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
+        }
         return comparisonExpressionList;
       }
 
@@ -379,13 +386,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
             } else if (etype != null) {
               // This will convert to Java value if valid value; we'll just convert back to String
               // since all non-Date JSON extension values are indexed as Strings
-              Object evalue = JsonUtil.tryExtractExtendedValue(etype, node);
-              if (evalue != null) {
-                return evalue.toString();
-              }
-              throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
-                  "JSON Extension value of type '%s' has invalid contents (%s)",
-                  etype.encodedName(), node.iterator().next());
+              Object evalue = JsonUtil.extractExtendedValue(etype, node);
+              return evalue.toString();
             } else {
               // handle an invalid filter use case:
               // { "address": { "street": { "$xx": xxx } } }

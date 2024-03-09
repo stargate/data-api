@@ -1611,7 +1611,9 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("Invalid JSON Extension value for $uuid");
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Bad JSON Extension value: '$uuid' value has invalid contents (\"abc\")");
               });
     }
 
@@ -1638,12 +1640,13 @@ public class FilterClauseDeserializerTest {
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
       assertThat(throwable)
-              .isInstanceOf(JsonApiException.class)
-              .satisfies(
-                      t -> {
-                        assertThat(t.getMessage()).isEqualTo("Invalid JSON Extension value for $uuid");
-                      });
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Bad JSON Extension value: '$uuid' value has invalid contents (\"abc\")");
+              });
     }
-
   }
 }

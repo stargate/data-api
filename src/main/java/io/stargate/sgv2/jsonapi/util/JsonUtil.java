@@ -158,29 +158,58 @@ public class JsonUtil {
     return JsonExtensionType.fromEncodedName(encodedType);
   }
 
-  public static Object tryExtractExtendedValue(JsonExtensionType type, JsonNode valueWrapper) {
+  public static Object extractExtendedValue(JsonExtensionType etype, JsonNode valueWrapper) {
+    Object value = tryExtractExtendedValue(etype, valueWrapper);
+    if (value == null) {
+      throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+          "'%s' value has invalid contents (%s)",
+          etype.encodedName(), valueWrapper.iterator().next());
+    }
+    return value;
+  }
+
+  public static Object extractExtendedValue(
+      JsonExtensionType etype, Map.Entry<String, JsonNode> valueEntry) {
+    Object value = tryExtractExtendedValue(etype, valueEntry);
+    if (value == null) {
+      throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+          "'%s' value has invalid contents (%s)", etype.encodedName(), valueEntry.getValue());
+    }
+    return value;
+  }
+
+  public static Object tryExtractExtendedValue(JsonExtensionType etype, JsonNode valueWrapper) {
     // Caller should have verified that we have a single-field Object; but double check
     if (valueWrapper.isObject() && valueWrapper.size() == 1) {
-      JsonNode value = valueWrapper.iterator().next();
-      switch (type) {
-        case EJSON_DATE:
-          if (value.isIntegralNumber() && value.canConvertToLong()) {
-            return new Date(value.longValue());
-          }
-          break;
-        case OBJECT_ID:
-          try {
-            return new ObjectId(value.asText());
-          } catch (IllegalArgumentException e) {
-            return null;
-          }
-        case UUID:
-          try {
-            return java.util.UUID.fromString(value.asText());
-          } catch (IllegalArgumentException e) {
-            return null;
-          }
-      }
+      return tryExtractExtendedFromUnwrapped(etype, valueWrapper.iterator().next());
+    }
+    return null;
+  }
+
+  public static Object tryExtractExtendedValue(
+      JsonExtensionType etype, Map.Entry<String, JsonNode> valueEntry) {
+    return tryExtractExtendedFromUnwrapped(etype, valueEntry.getValue());
+  }
+
+  private static Object tryExtractExtendedFromUnwrapped(JsonExtensionType etype, JsonNode value) {
+    switch (etype) {
+      case EJSON_DATE:
+        if (value.isIntegralNumber() && value.canConvertToLong()) {
+          return new Date(value.longValue());
+        }
+        break;
+      case OBJECT_ID:
+        try {
+          return new ObjectId(value.asText());
+        } catch (IllegalArgumentException e) {
+        }
+        break;
+      case UUID:
+        try {
+          return java.util.UUID.fromString(value.asText());
+        } catch (IllegalArgumentException e) {
+        }
+        break;
     }
     return null;
   }
