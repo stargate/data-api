@@ -756,6 +756,199 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
   @Nested
   @Order(2)
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class FindOneWithJSONExtensions {
+    private final String OBJECTID_ID1 = "5f3e3b2e4f6e6b6e6f6e6f6e";
+    private final String OBJECTID_LEAF = "5f3e3b2e4f6e6b6e6f6eaaaa";
+    private final String OBJECTID_X = "5f3e3b2e4f6e6b6e6f6effff";
+
+    private final String UUID_ID1 = "CB34673E-B7CF-4429-AB73-D6306FF427EE";
+    private final String UUID_LEAF = "C576C182-4266-423E-A621-32951D160EC8";
+
+    private final String UUID_X = "BB3F3A87-98B7-4B85-B1D1-706A9FBC6807";
+
+    private final String DOC1 =
+        """
+                    {
+                      "_id": {"$objectId": "%s"},
+                      "value": 1,
+                      "stuff": {
+                           "id": "id1"
+                      }
+                    }
+                    """
+            .formatted(OBJECTID_ID1);
+
+    private final String DOC2 =
+        """
+                    {
+                      "_id": {"$uuid": "%s"},
+                      "value": 2,
+                      "stuff": {
+                           "id": "id2"
+                      }
+                    }
+                    """
+            .formatted(UUID_ID1);
+    private final String DOC3 =
+        """
+                    {
+                      "_id": "id3",
+                      "value": 3,
+                      "stuff": {
+                           "id": {"$objectId": "%s"}
+                      }
+                    }
+                    """
+            .formatted(OBJECTID_LEAF);
+    private final String DOC4 =
+        """
+                    {
+                      "_id": "id4",
+                      "value": 4,
+                      "stuff": {
+                           "id": {"$uuid": "%s"}
+                      }
+                    }
+                    """
+            .formatted(UUID_LEAF);
+
+    @Test
+    @Order(1)
+    public void setUp() {
+      insertDoc(DOC1);
+      insertDoc(DOC2);
+      insertDoc(DOC3);
+      insertDoc(DOC4);
+    }
+
+    @Test
+    @Order(2)
+    public void inConditionForObjectIdId() {
+      final String request =
+          """
+            {
+              "findOne": {
+                "filter" : {"_id" : {"$in": [
+                  {"$objectId": "%s"},
+                  {"$uuid": "%s"}
+                ]}}
+              }
+            }
+            """
+              .formatted(OBJECTID_ID1, UUID_X);
+
+      // We should only match one of ids so ordering won't matter
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(request)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", is(not(nullValue())))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.document", jsonEquals(DOC1));
+    }
+
+    @Test
+    @Order(3)
+    public void inConditionForUUIDId() {
+      final String request =
+          """
+            {
+              "findOne": {
+                "filter" : {"_id" : {"$in": [
+                  {"$objectId": "%s"},
+                  {"$uuid": "%s"}
+                ]}}
+              }
+            }
+            """
+              .formatted(OBJECTID_X, UUID_ID1);
+
+      // We should only match one of ids so ordering won't matter
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(request)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", is(not(nullValue())))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.document", jsonEquals(DOC2));
+    }
+
+    @Test
+    @Order(4)
+    public void inConditionForObjectIdField() {
+      final String request =
+          """
+            {
+              "findOne": {
+                "filter" : {"stuff.id" : {"$in": [
+                  {"$objectId": "%s"},
+                  {"$objectId": "%s"}
+                ]}}
+              }
+            }
+            """
+              .formatted(OBJECTID_ID1, OBJECTID_LEAF);
+
+      // We should only match one of ids so ordering won't matter
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(request)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", is(not(nullValue())))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.document", jsonEquals(DOC3));
+    }
+
+    @Test
+    @Order(5)
+    public void inConditionForUUIDField() {
+      final String request =
+          """
+            {
+              "findOne": {
+                "filter" : {"stuff.id" : {"$in": [
+                  {"$uuid": "%s"},
+                  {"$uuid": "%s"}
+                ]}}
+              }
+            }
+            """
+              .formatted(UUID_LEAF, UUID_X);
+
+      // We should only match one of ids so ordering won't matter
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(request)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", is(not(nullValue())))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.document", jsonEquals(DOC4));
+    }
+  }
+
+  @Nested
+  @Order(3)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FindOneFail {
     @Test
     public void failForMissingCollection() {
