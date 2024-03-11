@@ -544,7 +544,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
 
-      // Search by UUID, full $uuid notation
+      // Find by UUID, full $uuid notation
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -556,7 +556,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data.documents[0]", jsonEquals(doc))
           .body("errors", is(nullValue()));
 
-      // Search by UUID, short-cut (unwrapped)
+      // Find by UUID, short-cut (unwrapped)
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -591,7 +591,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("status.insertedIds[0]", is(OBJECTID_KEY))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
-      // Search by ObjectId, full $objectId notation
+      // Find by ObjectId, full $objectId notation
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -604,7 +604,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .statusCode(200)
           .body("data.documents[0]", jsonEquals(doc))
           .body("errors", is(nullValue()));
-      // Search by ObjectId, shortcut notation
+      // Find by ObjectId, shortcut notation
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
