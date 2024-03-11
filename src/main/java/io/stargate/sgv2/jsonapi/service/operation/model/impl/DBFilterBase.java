@@ -699,7 +699,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       return true;
     }
   }
-
   /**
    * Return JsonNode for a filter conditions value, used to set in new document created for upsert.
    *

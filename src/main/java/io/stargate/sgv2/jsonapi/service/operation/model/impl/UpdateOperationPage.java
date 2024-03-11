@@ -19,7 +19,7 @@ public record UpdateOperationPage(
     int modifiedCount,
     List<ReadAndUpdateOperation.UpdatedDocument> updatedDocuments,
     boolean returnDocs,
-    boolean moreDataFlag)
+    String pagingState)
     implements Supplier<CommandResult> {
 
   private static final String ERROR = "Failed to update documents with _id %s: %s";
@@ -61,7 +61,10 @@ public record UpdateOperationPage(
     updateStatus.put(CommandStatus.MATCHED_COUNT, matchedCount());
     updateStatus.put(CommandStatus.MODIFIED_COUNT, modifiedCount());
 
-    if (moreDataFlag) updateStatus.put(CommandStatus.MORE_DATA, moreDataFlag);
+    if (pagingState != null) {
+      updateStatus.put(CommandStatus.MORE_DATA, true);
+      updateStatus.put(CommandStatus.PAGE_STATE, pagingState);
+    }
 
     // note that we always target a single document to be returned
     // thus fixed to the SingleResponseData
