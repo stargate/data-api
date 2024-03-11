@@ -5,6 +5,8 @@ import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -221,7 +223,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(20))
           .body("status.modifiedCount", is(20))
           .body("status.moreData", is(true))
-          .body("status.nextPageState", notNullValue())
+          .body("status.nextPageState", not(isEmptyOrNullString()))
           .body("errors", is(nullValue()));
 
       json =
@@ -267,7 +269,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(20))
           .body("status.modifiedCount", is(20))
           .body("status.moreData", is(true))
-          .body("status.nextPageState", notNullValue())
+          .body("status.nextPageState", not(isEmptyOrNullString()))
           .body("errors", is(nullValue()));
 
       json =
@@ -319,7 +321,6 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               .body()
               .path("status.nextPageState");
 
-      System.out.println("nextPageState : " + nextPageState);
       json =
           """
               {
