@@ -254,7 +254,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   private List<ComparisonExpression> createComparisonExpressionList(
       Map.Entry<String, JsonNode> entry) {
     final List<ComparisonExpression> comparisonExpressionList = new ArrayList<>();
-    // Check if the value is EJson date and add filter expression for date filter
     final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
     while (fields.hasNext()) {
       Map.Entry<String, JsonNode> updateField = fields.next();
@@ -276,8 +275,8 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         // JSON Extension type needs to be explicitly handled:
         Object value;
         if (etype != null) {
-          if (entry.getKey().equals(DOC_ID) && false) {
-            value = DocumentId.fromJson(updateField.getValue());
+          if (entry.getKey().equals(DOC_ID)) {
+            value = DocumentId.fromJson(entry.getValue());
           } else {
             value = JsonUtil.extractExtendedValue(etype, updateField);
           }

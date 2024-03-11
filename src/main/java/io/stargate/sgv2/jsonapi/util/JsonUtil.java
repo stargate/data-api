@@ -177,9 +177,9 @@ public class JsonUtil {
 
   public static Object extractExtendedValueUnwrapped(
       JsonExtensionType etype, JsonNode unwrappedValue) {
-    Object value = tryExtractExtendedValue(etype, unwrappedValue);
+    Object value = tryExtractExtendedFromUnwrapped(etype, unwrappedValue);
     if (value == null) {
-      tryExtractExtendedFromUnwrapped(etype, unwrappedValue);
+      failOnInvalidExtendedValue(etype, unwrappedValue);
     }
     return value;
   }
@@ -235,6 +235,7 @@ public class JsonUtil {
             "'%s' value has to be 36-character UUID String, instead got (%s)",
             etype.encodedName(), value);
     }
+    throw new IllegalStateException("Unrecognized JsonExtensionType: " + etype);
   }
 
   /**
