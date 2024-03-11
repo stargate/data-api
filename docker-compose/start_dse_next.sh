@@ -39,9 +39,9 @@ while getopts "lqnr:t:j:" opt; do
       ;;
     \?)
       echo "Valid options:"
-      echo "  -l - use DATA API Docker image from local build (see project README for build instructions)"
-      echo "  -j <tag> - use DATA API Docker image tagged with specified DATA API version (will pull images from Docker Hub if needed)"
-      echo "  -n <tag> - use DATA API native image instead of default Java-based image"
+      echo "  -l - use Data API Docker image from local build (see project README for build instructions)"
+      echo "  -j <tag> - use Data API Docker image tagged with specified Data API version (will pull images from Docker Hub if needed)"
+      echo "  -n <tag> - use Data API native image instead of default Java-based image"
       echo "  -t <tag> - use Stargate coordinator Docker image tagged with specified  version (will pull images from Docker Hub if needed)"
       echo "  -q - enable request logging for APIs in 'io.quarkus.http.access-log' (default: disabled)"
       echo "  -r - specify root log level for APIs (defaults to INFO); usually DEBUG, WARN or ERROR"
@@ -57,6 +57,6 @@ export SGTAG
 export DATAAPITAG
 export DATAAPIIMAGE
 
-echo "Running with DSE $DSETAG, Stargate $SGTAG, DATA API $DATAAPIIMAGE:$DATAAPITAG"
+echo "Running with DSE $DSETAG, Stargate $SGTAG, Data API $DATAAPIIMAGE:$DATAAPITAG"
 
 docker compose up -d --wait

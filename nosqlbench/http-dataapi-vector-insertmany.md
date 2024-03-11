@@ -1,8 +1,8 @@
-# DATA API Vector InsertMany
+# Data API Vector InsertMany
 
 ## Description
 
-The DATA API insertMany(ordered false) performance test workload
+The Data API insertMany(ordered false) performance test workload
 
 In contrast to other workflows, this one is not split into ramp-up and main phases. Instead, there is only the write phase.
 
@@ -28,7 +28,7 @@ Vector size is 1536 in the nosqlbench file. (openAI embedding vector standard si
 nb5 -v http-dataapi-vector-crud docscount=1000 threads=20 dataapi_host=Your-AstraDB-Host auth_token=Your-AstraDB-Token dataapi_port=443 protocol=https path_prefix=/api/json keyspace=Your-Keyspace
 ```
 
-### Against Local DATA API
+### Against Local Data API
 
 ```
 nb5 -v http-dataapi-vector-crud dataapi_host=localhost docscount=1000 threads=20

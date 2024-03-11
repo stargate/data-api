@@ -1,7 +1,7 @@
 min_version: "5.17.0"
 
 description: |
-  This workload emulates vector insertmany operations for Stargate DATA API.
+  This workload emulates vector insertmany operations for Stargate Data API.
   It requires a data set file (default vector-dataset.txt), where contains vectors of size 1536
   1536 is a standard vector size that openAI embedding generates, using this size for benchmark
 

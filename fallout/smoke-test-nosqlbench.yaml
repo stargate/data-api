@@ -3,7 +3,7 @@ min_version: "5.17.3"
 # nb5 -v run driver=http yaml=smoke-test-nosqlbench connections=25 rate=250
 
 description: >2
-  This workload is designed for a smoke test of Stargate DATA API.
+  This workload is designed for a smoke test of Stargate Data API.
 
 scenarios:
   default:

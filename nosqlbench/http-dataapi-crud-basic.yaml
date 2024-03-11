@@ -4,9 +4,9 @@ min_version: "5.17.3"
 # nb5 -v http-dataapi-crud-basic dataapi_host=localhost docscount=20000 threads=20
 
 description: >2
-  This workload emulates CRUD operations for the Stargate DATA API.
+  This workload emulates CRUD operations for the Stargate Data API.
   It generates a simple JSON document to be used for writes and updates.
-  Note that dataapi_port should reflect the port where the DATA API is exposed (defaults to 8181).
+  Note that dataapi_port should reflect the port where the Data API is exposed (defaults to 8181).
 
 scenarios:
   default:

@@ -1,6 +1,6 @@
-# DATA API Query Specification
+# Data API Query Specification
 
-The target users for the DATA API are Javascript developers who interact with the service through a driver or Object Document Mapper (ODM)
+The target users for the Data API are Javascript developers who interact with the service through a driver or Object Document Mapper (ODM)
 library such as [Mongoose](https://github.com/Automattic/mongoose). 
 
 - [Preamble](#preamble)
@@ -17,9 +17,9 @@ library such as [Mongoose](https://github.com/Automattic/mongoose).
 
 ## Preamble
 
-The nature of a DATA API lends itself to complex, structured queries that may express compound or multiple operations in a single request. Such as selecting one or more documents and projecting a selection of fields from each, or selecting one or more documents and updating them server side. We consider that most requests are generated via the ODM (for example via [`mquery`](https://github.com/aheckmann/mquery) which makes it easy for the developer to create complex queries at code time, or at run time in response to the actions taken by a user (such as which fields were updated, or which fields the user wants to see). The implementation of the DATA API should therefor be optimized for expressing complex and compound machine generated queries, rather than developers making direct queries via the wire protocol API.
+The nature of a Data API lends itself to complex, structured queries that may express compound or multiple operations in a single request. Such as selecting one or more documents and projecting a selection of fields from each, or selecting one or more documents and updating them server side. We consider that most requests are generated via the ODM (for example via [`mquery`](https://github.com/aheckmann/mquery) which makes it easy for the developer to create complex queries at code time, or at run time in response to the actions taken by a user (such as which fields were updated, or which fields the user wants to see). The implementation of the Data API should therefor be optimized for expressing complex and compound machine generated queries, rather than developers making direct queries via the wire protocol API.
 
-The API should be implemented using HTTP 1 or 2 using JSON as the accepted and returned content type, however adherence to a design pattern such REST is not recommended. This is because of the above expected use through an ODM, and due to the complexity that can be expressed in the DATA API. The specification includes compound operations, such as find and update, to be implemented in the server which do not have a clear mapping to the REST verbs.
+The API should be implemented using HTTP 1 or 2 using JSON as the accepted and returned content type, however adherence to a design pattern such REST is not recommended. This is because of the above expected use through an ODM, and due to the complexity that can be expressed in the Data API. The specification includes compound operations, such as find and update, to be implemented in the server which do not have a clear mapping to the REST verbs.
 
 Additionally consideration should be given to implementing that API such that the body of a request can be machine generated and includes all possible information needed to process the request. With the exception of any out of band information such as authentication and possibly the collection name. This approach makes it easier to integrate the DATA API service with other data services though the use of templates or code to generate a request.
 

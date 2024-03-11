@@ -1,8 +1,8 @@
-# DATA API Vector CRUD
+# Data API Vector CRUD
 
 ## Description
 
-The DATA API CRUD Dataset workflow targets Stargate's DATA API using JSON documents from an external dataset.
+The Data API CRUD Dataset workflow targets Stargate's Data API using JSON documents from an external dataset.
 The [dataset](#dataset) is mandatory and should contain a vector per row that should be used as the input for write, read and update operations.
 This workflow is perfect for testing Stargate performance using your own JSON dataset or any other realistic dataset.
 

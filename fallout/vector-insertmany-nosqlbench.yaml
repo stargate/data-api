@@ -3,11 +3,11 @@ min_version: "5.17.3"
 # Example command line
 # Against AstraDB
 # nb5 -v http-dataapi-vector-insertmany docscount=1000 threads=20 dataapi_host=Your-AstraDB-Host auth_token=Your-AstraDB-Token dataapi_port=443 protocol=https path_prefix=/api/json namespace=Your-Keyspace
-# Against local DATA API
+# Against local Data API
 # nb5 -v http-dataapi-vector-insertmany dataapi_host=localhost docscount=1000 threads=20
 
 description: >2
-  This workload emulates vector insertmany operations for Stargate DATA API.
+  This workload emulates vector insertmany operations for Stargate Data API.
   It requires a data set file (default vector-dataset.txt), where contains vectors of size 1536
   1536 is a standard vector size that openAI embedding generates, using this size for benchmark
 
