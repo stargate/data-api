@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Refactored as seperate class that represent a collection property.*
+ * Refactored as separate class that represent a collection property.
  *
  * @param collectionName
  * @param vectorConfig
