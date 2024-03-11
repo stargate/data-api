@@ -11,8 +11,8 @@ import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
  *
  * <p>Note, all collection created in this schema version 0, should have UUID as idType
  */
-public class CommandSettingsV0Deserializer implements CommandSettingsDeserializer {
-  public CollectionSettings deserialize(
+public class CommandSettingsV0Reader implements CommandSettingsReader {
+  public CollectionSettings readCollectionSettings(
       JsonNode commentConfigNode,
       String collectionName,
       boolean vectorEnabled,
@@ -32,8 +32,12 @@ public class CommandSettingsV0Deserializer implements CommandSettingsDeserialize
         indexingConfig);
   }
 
+  /**
+   * schema v0 is obsolete(supported though for backwards compatibility, hard to implement
+   * readCollectionSettings method based on interface method signature
+   */
   @Override
-  public CollectionSettings deserialize(
+  public CollectionSettings readCollectionSettings(
       JsonNode jsonNode, String collectionName, ObjectMapper objectMapper) {
     return null;
   }

@@ -93,24 +93,30 @@ class CreateCollectionCommandResolverTest {
     public void happyPathVectorizeSearch() throws Exception {
       String json =
           """
-          {
-            "createCollection": {
-              "name" : "my_collection",
-              "options": {
-                "vector": {
-                  "dimension": 4,
-                  "metric": "cosine"
-                },
-                "vectorize": {
-                  "service" : "openai",
-                  "options" : {
-                    "modelName": "text-embedding-ada-002"
-                  }
-                }
-              }
-            }
-          }
-          """;
+                    {
+                        "createCollection": {
+                            "name": "my_collection",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 4,
+                                    "service": {
+                                        "provider": "openai",
+                                        "model_name": "text-embedding-ada-002",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ]
+                                        },
+                                        "parameters": {
+                                            "project_id": "test project"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                  """;
 
       CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
       Operation result = resolver.resolveCommand(commandContext, command);
@@ -126,7 +132,8 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
                 assertThat(op.comment())
                     .isEqualTo(
-                        "{\"vectorize\":{\"service\":\"openai\",\"options\":{\"modelName\":\"text-embedding-ada-002\"}}}");
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":1,\"options\":{\"vector\":{\"dimension\":4,\"metric\":\"cosine\",\"service\":{\"provider\":\"openai\",\"model_name\":\"text-embedding-ada-002\",\"authentication\":{\"type\":[\"HEADER\"]},\"parameters\":{\"project_id\":\"test project\"}}},\"default_id\":{\"type\":\"\"}}}}",
+                        TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }
 

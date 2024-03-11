@@ -340,16 +340,17 @@ public record CollectionSettings(
         }
         switch (collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY).asInt()) {
           case 1:
-            return new CommandSettingsV1Deserializer()
-                .deserialize(collectionNode, collectionName, objectMapper);
+            return new CommandSettingsV1Reader()
+                .readCollectionSettings(collectionNode, collectionName, objectMapper);
           default:
             throw ErrorCode.INVALID_SCHEMA_VERSION.toApiException();
         }
       } else {
         // backward compatibility for old indexing table comment
         // sample comment : {"indexing":{"deny":["address"]}}}
-        return new CommandSettingsV0Deserializer()
-            .deserialize(commentConfigNode, collectionName, vectorEnabled, vectorSize, function);
+        return new CommandSettingsV0Reader()
+            .readCollectionSettings(
+                commentConfigNode, collectionName, vectorEnabled, vectorSize, function);
       }
     }
   }
