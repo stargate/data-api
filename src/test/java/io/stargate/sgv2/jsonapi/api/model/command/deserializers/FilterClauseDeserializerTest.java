@@ -268,7 +268,7 @@ public class FilterClauseDeserializerTest {
               t -> {
                 assertThat(t.getMessage())
                     .isEqualTo(
-                        "Invalid filter expression: $date value has to be sent as epoch time");
+                        "Bad JSON Extension value: '$date' value has to be an epoch timestamp, instead got (\"2023-01-01\")");
               });
     }
 
@@ -285,7 +285,7 @@ public class FilterClauseDeserializerTest {
               t -> {
                 assertThat(t.getMessage())
                     .isEqualTo(
-                        "Invalid filter expression: $date value has to be sent as epoch time");
+                        "Bad JSON Extension value: '$date' value has to be an epoch timestamp, instead got (\"2023-01-01\")");
               });
     }
 
@@ -1636,7 +1636,24 @@ public class FilterClauseDeserializerTest {
               t -> {
                 assertThat(t.getMessage())
                     .isEqualTo(
-                        "Bad JSON Extension value: '$uuid' value has invalid contents (\"abc\")");
+                        "Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (\"abc\")");
+              });
+    }
+
+    @Test
+    public void mustFailOnBadObjectIdAsId() throws Exception {
+      String json = """
+         {"_id": {"$objectId": "xyz"}}
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Bad JSON Extension value: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"xyz\")");
               });
     }
 
@@ -1668,7 +1685,7 @@ public class FilterClauseDeserializerTest {
               t -> {
                 assertThat(t.getMessage())
                     .isEqualTo(
-                        "Bad JSON Extension value: '$uuid' value has invalid contents (\"abc\")");
+                        "Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (\"abc\")");
               });
     }
   }

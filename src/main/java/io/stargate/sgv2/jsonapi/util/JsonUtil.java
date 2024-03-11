@@ -172,8 +172,21 @@ public class JsonUtil {
       JsonExtensionType etype, Map.Entry<String, JsonNode> valueEntry) {
     Object value = tryExtractExtendedValue(etype, valueEntry);
     if (value == null) {
-      throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
-          "'%s' value has invalid contents (%s)", etype.encodedName(), valueEntry.getValue());
+      // for legacy $date use, need bit different message
+      switch (etype) {
+        case EJSON_DATE:
+          throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+              "'%s' value has to be an epoch timestamp, instead got (%s)",
+              etype.encodedName(), valueEntry.getValue());
+        case OBJECT_ID:
+          throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+              "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)",
+              etype.encodedName(), valueEntry.getValue());
+        case UUID:
+          throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+              "'%s' value has to be 36-character UUID String, instead got (%s)",
+              etype.encodedName(), valueEntry.getValue());
+      }
     }
     return value;
   }
