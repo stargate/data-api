@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -813,6 +814,48 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("errors[0].errorCode", is("UNSUPPORTED_FILTER_OPERATION"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].message", is("Unsupported filter operator: $guid"));
+    }
+
+    @Test
+    public void failForInvalidUUIDAsId() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{ \"findOne\": { \"filter\" : {\"_id\": {\"$uuid\": \"not-an-uuid\"}}}}")
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (\"not-an-uuid\")"));
+    }
+
+    @Test
+    public void failForInvalidObjectIdAsId() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{ \"findOne\": { \"filter\" : {\"_id\": {\"$objectId\": \"bogus\"}}}}")
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Bad JSON Extension value: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"bogus\")"));
     }
   }
 
