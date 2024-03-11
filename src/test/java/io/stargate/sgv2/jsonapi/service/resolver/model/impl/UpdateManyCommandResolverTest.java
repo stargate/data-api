@@ -89,8 +89,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
-                          assertThat(find.limit())
-                              .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
+                          assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(
@@ -148,8 +147,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
-                          assertThat(find.limit())
-                              .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
+                          assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
@@ -206,8 +204,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
-                          assertThat(find.limit())
-                              .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
+                          assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(
@@ -275,7 +272,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.commandContext())
                               .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
                           assertThat(find.pageSize()).isEqualTo(20);
-                          assertThat(find.limit()).isEqualTo(21);
+                          assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(
@@ -335,8 +332,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
-                          assertThat(find.limit())
-                              .isEqualTo(operationsConfig.maxDocumentUpdateCount() + 1);
+                          assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
