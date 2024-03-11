@@ -55,100 +55,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
   @Override
   public Operation resolveCommand(CommandContext ctx, CreateCollectionCommand command) {
-
-    if (command.options() != null) {
-      boolean vector = false;
-      boolean indexing = false;
-      Integer vectorDimension = null;
-      String function = null;
-      CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig service = null;
-
-      // handling indexing options
-      if (command.options().indexing() != null) {
-        // validation of configuration
-        command.options().indexing().validate();
-        indexing = true;
-        // No need to process if both are null or empty
-      }
-
-      // handling vector option
-      if (command.options().vector() != null) {
-        function = command.options().vector().metric();
-        vectorDimension = command.options().vector().dimension();
-        service = command.options().vector().vectorizeConfig();
-
-        if (service != null) {
-          // Validate the user input service config. If no error, the method will return the
-          // dimension in config file
-          vectorDimension = validateService(service, vectorDimension);
-        } else {
-          // if the service is not provided, the vector dimension cannot be null
-          if (vectorDimension == null) {
-            throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                "The dimensions can not be null if service is not provided");
-          }
-        }
-        // TODO: what if the config model vector dimension is larger than 4096?
-        if (vectorDimension > documentLimitsConfig.maxVectorEmbeddingLength()) {
-          throw new JsonApiException(
-              ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE,
-              String.format(
-                  "%s: %d (max %d)",
-                  ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE.getMessage(),
-                  vectorDimension,
-                  documentLimitsConfig.maxVectorEmbeddingLength()));
-        }
-        vector = true;
-      }
-
-      String comment = null;
-      if (indexing || vector) {
-        final ObjectNode collectionNode = objectMapper.createObjectNode();
-        ObjectNode optionsNode =
-            objectMapper.createObjectNode(); // Create a new ObjectNode for collection options
-        if (indexing) {
-          optionsNode.putPOJO(
-              TableCommentConstants.COLLECTION_INDEXING_KEY, command.options().indexing());
-        }
-        if (vector) {
-          CreateCollectionCommand.Options.VectorSearchConfig newVector =
-              new CreateCollectionCommand.Options.VectorSearchConfig(
-                  vectorDimension,
-                  command.options().vector().metric(),
-                  command.options().vector().vectorizeConfig());
-          optionsNode.putPOJO(TableCommentConstants.COLLECTION_VECTOR_KEY, newVector);
-        }
-        collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, command.name());
-        collectionNode.put(
-            TableCommentConstants.SCHEMA_VERSION_KEY, TableCommentConstants.SCHEMA_VERSION_VALUE);
-        collectionNode.putPOJO(TableCommentConstants.OPTIONS_KEY, optionsNode);
-        final ObjectNode tableCommentNode = objectMapper.createObjectNode();
-        tableCommentNode.putPOJO(TableCommentConstants.TOP_LEVEL_KEY, collectionNode);
-        comment = tableCommentNode.toString();
-      }
-
-      if (command.options().vector() != null) {
-        return CreateCollectionOperation.withVectorSearch(
-            ctx,
-            dbLimitsConfig,
-            objectMapper,
-            cqlSessionCache,
-            command.name(),
-            vectorDimension,
-            function,
-            comment,
-            operationsConfig.databaseConfig().ddlDelayMillis());
-      } else {
-        return CreateCollectionOperation.withoutVectorSearch(
-            ctx,
-            dbLimitsConfig,
-            objectMapper,
-            cqlSessionCache,
-            command.name(),
-            comment,
-            operationsConfig.databaseConfig().ddlDelayMillis());
-      }
-    } else {
+    if (command.options() == null) {
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
           dbLimitsConfig,
@@ -158,6 +65,120 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           null,
           operationsConfig.databaseConfig().ddlDelayMillis());
     }
+
+    boolean hasIndexing = command.options().indexing() != null;
+    boolean hasVectorSearch = command.options().vector() != null;
+    CreateCollectionCommand.Options.VectorSearchConfig vector = command.options().vector();
+
+    // handling indexing options
+    if (hasIndexing) {
+      // validation of configuration
+      command.options().indexing().validate();
+      // No need to process if both are null or empty
+    }
+
+    // handling vector option
+    if (hasVectorSearch) {
+      vector = validateVectorOptions(vector);
+    }
+
+    String comment =
+        generateComment(
+            hasIndexing, hasVectorSearch, command.name(), command.options().indexing(), vector);
+
+    if (hasVectorSearch) {
+      return CreateCollectionOperation.withVectorSearch(
+          ctx,
+          dbLimitsConfig,
+          objectMapper,
+          cqlSessionCache,
+          command.name(),
+          vector.dimension(),
+          vector.metric(),
+          comment,
+          operationsConfig.databaseConfig().ddlDelayMillis());
+    } else {
+      return CreateCollectionOperation.withoutVectorSearch(
+          ctx,
+          dbLimitsConfig,
+          objectMapper,
+          cqlSessionCache,
+          command.name(),
+          comment,
+          operationsConfig.databaseConfig().ddlDelayMillis());
+    }
+  }
+
+  /**
+   * Generate a JSON string comment that will be stored in the database.
+   *
+   * @param hasIndexing indicating if indexing options are enabled.
+   * @param hasVectorSearch indicating if vector search options are enabled.
+   * @param commandName command name
+   * @param indexing the indexing option config
+   * @param vector the vector option config
+   * @return the comment string
+   */
+  private String generateComment(
+      boolean hasIndexing,
+      boolean hasVectorSearch,
+      String commandName,
+      CreateCollectionCommand.Options.IndexingConfig indexing,
+      CreateCollectionCommand.Options.VectorSearchConfig vector) {
+    if (!hasIndexing && !hasVectorSearch) {
+      return null;
+    }
+    final ObjectNode collectionNode = objectMapper.createObjectNode();
+    ObjectNode optionsNode = objectMapper.createObjectNode(); // For storing collection options.
+
+    if (hasIndexing) {
+      optionsNode.putPOJO(TableCommentConstants.COLLECTION_INDEXING_KEY, indexing);
+    }
+    if (hasVectorSearch) {
+      optionsNode.putPOJO(TableCommentConstants.COLLECTION_VECTOR_KEY, vector);
+    }
+
+    collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, commandName);
+    collectionNode.put(
+        TableCommentConstants.SCHEMA_VERSION_KEY, TableCommentConstants.SCHEMA_VERSION_VALUE);
+    collectionNode.putPOJO(TableCommentConstants.OPTIONS_KEY, optionsNode);
+    final ObjectNode tableCommentNode = objectMapper.createObjectNode();
+    tableCommentNode.putPOJO(TableCommentConstants.TOP_LEVEL_KEY, collectionNode);
+
+    return tableCommentNode.toString();
+  }
+
+  private CreateCollectionCommand.Options.VectorSearchConfig validateVectorOptions(
+      CreateCollectionCommand.Options.VectorSearchConfig vector) {
+    String function = vector.metric();
+    Integer vectorDimension = vector.dimension();
+    CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig service =
+        vector.vectorizeConfig();
+
+    if (service != null) {
+      // Validate service configuration and auto populate vector dimension.
+      vectorDimension = validateService(service, vectorDimension);
+      vector =
+          new CreateCollectionCommand.Options.VectorSearchConfig(
+              vectorDimension, vector.metric(), vector.vectorizeConfig());
+    } else {
+      // Ensure vector dimension is provided when service configuration is absent.
+      if (vectorDimension == null) {
+        throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+            "The dimensions can not be null if service is not provided");
+      }
+    }
+    // TODO: what if the config model vector dimension is larger than 4096?
+    if (vectorDimension > documentLimitsConfig.maxVectorEmbeddingLength()) {
+      throw new JsonApiException(
+          ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE,
+          String.format(
+              "%s: %d (max %d)",
+              ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE.getMessage(),
+              vectorDimension,
+              documentLimitsConfig.maxVectorEmbeddingLength()));
+    }
+    return vector;
   }
 
   /**
