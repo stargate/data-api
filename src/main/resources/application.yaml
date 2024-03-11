@@ -89,8 +89,9 @@ quarkus:
 
     port: 8181
 
-  log:
-    min-level: trace
+    log:
+      min-level: trace
+
 
   # built-in micrometer properties
   micrometer:
