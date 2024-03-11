@@ -104,14 +104,9 @@ public class JsonUtil {
           return new Date(value.longValue());
         }
         // Otherwise we have an error case
-        throw new JsonApiException(
-            ErrorCode.SHRED_BAD_EJSON_VALUE,
-            String.format(
-                "%s: Date (%s) needs to have NUMBER value, has %s (path '%s')",
-                ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage(),
-                EJSON_VALUE_KEY_DATE,
-                value.getNodeType(),
-                path));
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "Date (%s) needs to have NUMBER value, has %s (path '%s')",
+            EJSON_VALUE_KEY_DATE, value.getNodeType(), path);
       }
     }
     return null;
@@ -159,31 +154,88 @@ public class JsonUtil {
     return null;
   }
 
-  public static Object tryExtractExtendedValue(JsonExtensionType type, JsonNode valueWrapper) {
+  public static JsonExtensionType findJsonExtensionType(String encodedType) {
+    return JsonExtensionType.fromEncodedName(encodedType);
+  }
+
+  public static Object extractExtendedValue(JsonExtensionType etype, JsonNode valueWrapper) {
+    Object value = tryExtractExtendedValue(etype, valueWrapper);
+    if (value == null) {
+      failOnInvalidExtendedValue(etype, valueWrapper.iterator().next());
+    }
+    return value;
+  }
+
+  public static Object extractExtendedValue(
+      JsonExtensionType etype, Map.Entry<String, JsonNode> valueEntry) {
+    Object value = tryExtractExtendedValue(etype, valueEntry);
+    if (value == null) {
+      failOnInvalidExtendedValue(etype, valueEntry.getValue());
+    }
+    return value;
+  }
+
+  public static Object extractExtendedValueUnwrapped(
+      JsonExtensionType etype, JsonNode unwrappedValue) {
+    Object value = tryExtractExtendedFromUnwrapped(etype, unwrappedValue);
+    if (value == null) {
+      failOnInvalidExtendedValue(etype, unwrappedValue);
+    }
+    return value;
+  }
+
+  public static Object tryExtractExtendedValue(JsonExtensionType etype, JsonNode valueWrapper) {
     // Caller should have verified that we have a single-field Object; but double check
     if (valueWrapper.isObject() && valueWrapper.size() == 1) {
-      JsonNode value = valueWrapper.iterator().next();
-      switch (type) {
-        case EJSON_DATE:
-          if (value.isIntegralNumber() && value.canConvertToLong()) {
-            return new Date(value.longValue());
-          }
-          break;
-        case OBJECT_ID:
-          try {
-            return new ObjectId(value.asText());
-          } catch (IllegalArgumentException e) {
-            return null;
-          }
-        case UUID:
-          try {
-            return java.util.UUID.fromString(value.asText());
-          } catch (IllegalArgumentException e) {
-            return null;
-          }
-      }
+      return tryExtractExtendedFromUnwrapped(etype, valueWrapper.iterator().next());
     }
     return null;
+  }
+
+  public static Object tryExtractExtendedValue(
+      JsonExtensionType etype, Map.Entry<String, JsonNode> valueEntry) {
+    return tryExtractExtendedFromUnwrapped(etype, valueEntry.getValue());
+  }
+
+  private static Object tryExtractExtendedFromUnwrapped(JsonExtensionType etype, JsonNode value) {
+    switch (etype) {
+      case EJSON_DATE:
+        if (value.isIntegralNumber() && value.canConvertToLong()) {
+          return new Date(value.longValue());
+        }
+        break;
+      case OBJECT_ID:
+        try {
+          return new ObjectId(value.asText());
+        } catch (IllegalArgumentException e) {
+        }
+        break;
+      case UUID:
+        try {
+          return java.util.UUID.fromString(value.asText());
+        } catch (IllegalArgumentException e) {
+        }
+        break;
+    }
+    return null;
+  }
+
+  private static void failOnInvalidExtendedValue(JsonExtensionType etype, JsonNode value) {
+    switch (etype) {
+      case EJSON_DATE:
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "'%s' value has to be an epoch timestamp, instead got (%s)",
+            etype.encodedName(), value);
+      case OBJECT_ID:
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)",
+            etype.encodedName(), value);
+      case UUID:
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "'%s' value has to be 36-character UUID String, instead got (%s)",
+            etype.encodedName(), value);
+    }
+    throw new IllegalStateException("Unrecognized JsonExtensionType: " + etype);
   }
 
   /**

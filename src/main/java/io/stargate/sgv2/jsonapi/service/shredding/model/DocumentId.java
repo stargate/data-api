@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -174,12 +173,12 @@ public interface DocumentId {
   }
 
   static DocumentId fromExtensionType(JsonExtensionType extType, JsonNode valueNode) {
-    if (valueNode.isTextual()) {
-      return new ExtensionTypeId(extType, valueNode.textValue());
+    try {
+      Object rawId = JsonUtil.extractExtendedValueUnwrapped(extType, valueNode);
+      return new ExtensionTypeId(extType, String.valueOf(rawId));
+    } catch (JsonApiException e) {
+      throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(e.getMessage());
     }
-    throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
-        "Extension type '%s' must have JSON String as value: instead got %s",
-        extType.encodedName(), valueNode.getNodeType());
   }
 
   /*
@@ -349,9 +348,8 @@ public interface DocumentId {
 
     @Override
     public JsonNode asJson(JsonNodeFactory nodeFactory) {
-      ObjectNode node = nodeFactory.objectNode();
-      node.put(type().encodedName(), valueAsString);
-      return node;
+      // Although stored as JSON Object in doc_json, used as plain String otherwise
+      return nodeFactory.textNode(valueAsString);
     }
 
     @Override
@@ -361,7 +359,7 @@ public interface DocumentId {
 
     @Override
     public String toString() {
-      return String.format("{'%s': '%s'}", type().encodedName(), valueAsString());
+      return valueAsString();
     }
   }
 }

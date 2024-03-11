@@ -204,10 +204,9 @@ public class ShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
-          .hasMessage(
-              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": invalid value (\"not-an-oid\") for extended JSON type '$objectId' (path '_id')")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
+          .hasMessageContaining(
+              "'$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"not-an-oid\")");
     }
 
     @Test
@@ -223,10 +222,9 @@ public class ShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
-          .hasMessage(
-              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": invalid value (\"not-a-uuid\") for extended JSON type '$uuid' (path '_id')");
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
+          .hasMessageContaining(
+              "'$uuid' value has to be 36-character UUID String, instead got (\"not-a-uuid\")");
 
       // second: JSON Object also not valid UUID representation
       t =
@@ -236,9 +234,8 @@ public class ShredderWithExtendedTypesTest {
       assertThat(t)
           .isNotNull()
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
-          .hasMessage(
-              ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage()
-                  + ": Extension type '$uuid' must have JSON String as value: instead got OBJECT");
+          .hasMessageContaining(
+              "'$uuid' value has to be 36-character UUID String, instead got ({})");
     }
 
     @Test

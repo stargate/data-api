@@ -543,6 +543,20 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("status.insertedIds[0]", is(UUID_KEY))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
+
+      // Find by UUID, full $uuid notation
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{\"find\": { \"filter\" : {\"_id\" : {\"$uuid\":\"%s\"}}}}".formatted(UUID_KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+
+      // Find by UUID, short-cut (unwrapped)
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -577,6 +591,20 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("status.insertedIds[0]", is(OBJECTID_KEY))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
+      // Find by ObjectId, full $objectId notation
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              "{\"find\": { \"filter\" : {\"_id\": {\"$objectId\":\"%s\"}}}}"
+                  .formatted(OBJECTID_KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+      // Find by ObjectId, shortcut notation
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -619,7 +647,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(KEY))
+          .body("{\"find\": { \"filter\" : {\"_id\" : {\"$uuid\": \"%s\"}}}}".formatted(KEY))
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
@@ -692,8 +720,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
           .body(
               "errors[0].message",
-              startsWith(
-                  "Bad type for '_id' property: Extension type '$uuid' must have JSON String as value"));
+              containsString(
+                  "Bad type for '_id' property: Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (42)"));
     }
 
     @Test
@@ -716,11 +744,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_EJSON_VALUE"))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
           .body(
               "errors[0].message",
-              startsWith(
-                  "Bad JSON Extension value: invalid value (\"not-quite-objectid\") for extended JSON type '$objectId'"));
+              containsString(
+                  "Bad JSON Extension value: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"not-quite-objectid\")"));
     }
 
     @Test
