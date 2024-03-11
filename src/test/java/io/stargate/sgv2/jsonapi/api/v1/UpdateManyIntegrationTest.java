@@ -290,6 +290,81 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
     }
 
     @Test
+    public void updatePagination() {
+      insert(25);
+      String json =
+          """
+              {
+                "updateMany": {
+                  "filter" : {"active_user" : true},
+                  "update" : {"$set" : {"new_data": "new_data_value"}}
+                }
+              }
+              """;
+      String nextPageState =
+          given()
+              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .contentType(ContentType.JSON)
+              .body(json)
+              .when()
+              .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+              .then()
+              .statusCode(200)
+              .body("status.matchedCount", is(20))
+              .body("status.modifiedCount", is(20))
+              .body("status.moreData", is(true))
+              .body("status.nextPageState", notNullValue())
+              .body("errors", is(nullValue()))
+              .extract()
+              .body()
+              .path("status.nextPageState");
+
+      System.out.println("nextPageState : " + nextPageState);
+      json =
+          """
+              {
+                "updateMany": {
+                  "filter" : {"active_user" : true},
+                  "update" : {"$set" : {"new_data": "new_data_value"}},
+                  "options" : {"pageState": "%s"}}
+                }
+              }
+              """
+              .formatted(nextPageState);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(5))
+          .body("status.modifiedCount", is(5))
+          .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
+          .body("errors", is(nullValue()));
+      json =
+          """
+              {
+                "countDocuments": {
+                  "filter" : {"new_data": "new_data_value"}
+                }
+              }
+              """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.count", is(25))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
     public void upsert() {
       insert(5);
       String json =
