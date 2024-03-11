@@ -4,7 +4,7 @@ min_version: "5.17.3"
 # nb5 -v http-dataapi-search-filter-sort dataapi_host=localhost docscount=20000 threads=20
 
 description: >2
-  This workload emulates search, filter and sort operations for the Stargate DATA API.
+  This workload emulates search, filter and sort operations for the Stargate Data API.
   It generates a simple JSON document to be used for writes and updates.
   During the main phase it performs various search filters and times their execution.
   Note that dataapi_port should reflect the port where the JSON API is exposed (defaults to 8181).
