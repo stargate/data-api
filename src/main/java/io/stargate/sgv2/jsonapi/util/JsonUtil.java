@@ -179,7 +179,7 @@ public class JsonUtil {
       JsonExtensionType etype, JsonNode unwrappedValue) {
     Object value = tryExtractExtendedValue(etype, unwrappedValue);
     if (value == null) {
-      failOnInvalidExtendedValue(etype, unwrappedValue);
+      tryExtractExtendedFromUnwrapped(etype, unwrappedValue);
     }
     return value;
   }

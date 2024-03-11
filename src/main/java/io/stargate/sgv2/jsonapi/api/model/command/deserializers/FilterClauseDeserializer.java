@@ -274,16 +274,18 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               "filter clause path ('%s') contains character(s) not allowed", entry.getKey());
         }
         // JSON Extension type needs to be explicitly handled:
+        Object value;
         if (etype != null) {
-          comparisonExpressionList.add(
-              ComparisonExpression.eq(
-                  entry.getKey(), JsonUtil.extractExtendedValue(etype, updateField)));
+          if (entry.getKey().equals(DOC_ID) && false) {
+            value = DocumentId.fromJson(updateField.getValue());
+          } else {
+            value = JsonUtil.extractExtendedValue(etype, updateField);
+          }
         } else {
           // Otherwise we have a full JSON Object to match:
-          comparisonExpressionList.add(
-              ComparisonExpression.eq(
-                  entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
+          value = jsonNodeValue(entry.getKey(), entry.getValue());
         }
+        comparisonExpressionList.add(ComparisonExpression.eq(entry.getKey(), value));
         return comparisonExpressionList;
       }
 

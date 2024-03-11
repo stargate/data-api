@@ -204,10 +204,10 @@ public class ShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
           .hasMessage(
               ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
-                  + ": invalid value (\"not-an-oid\") for extended JSON type '$objectId' (path '_id')")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
+                  + ": invalid value (\"not-an-oid\") for extended JSON type '$objectId' (path '_id')");
     }
 
     @Test
@@ -235,10 +235,10 @@ public class ShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
           .hasMessage(
-              ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage()
-                  + ": Extension type '$uuid' must have JSON String as value: instead got OBJECT");
+              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
+                  + ": invalid value ({}) for extended JSON type '$uuid' (path '_id')");
     }
 
     @Test
