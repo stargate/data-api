@@ -161,9 +161,7 @@ public class JsonUtil {
   public static Object extractExtendedValue(JsonExtensionType etype, JsonNode valueWrapper) {
     Object value = tryExtractExtendedValue(etype, valueWrapper);
     if (value == null) {
-      throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
-          "'%s' value has invalid contents (%s)",
-          etype.encodedName(), valueWrapper.iterator().next());
+      failOnInvalidExtendedValue(etype, valueWrapper.iterator().next());
     }
     return value;
   }
@@ -172,21 +170,16 @@ public class JsonUtil {
       JsonExtensionType etype, Map.Entry<String, JsonNode> valueEntry) {
     Object value = tryExtractExtendedValue(etype, valueEntry);
     if (value == null) {
-      // for legacy $date use, need bit different message
-      switch (etype) {
-        case EJSON_DATE:
-          throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
-              "'%s' value has to be an epoch timestamp, instead got (%s)",
-              etype.encodedName(), valueEntry.getValue());
-        case OBJECT_ID:
-          throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
-              "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)",
-              etype.encodedName(), valueEntry.getValue());
-        case UUID:
-          throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
-              "'%s' value has to be 36-character UUID String, instead got (%s)",
-              etype.encodedName(), valueEntry.getValue());
-      }
+      failOnInvalidExtendedValue(etype, valueEntry.getValue());
+    }
+    return value;
+  }
+
+  public static Object extractExtendedValueUnwrapped(
+      JsonExtensionType etype, JsonNode unwrappedValue) {
+    Object value = tryExtractExtendedValue(etype, unwrappedValue);
+    if (value == null) {
+      failOnInvalidExtendedValue(etype, unwrappedValue);
     }
     return value;
   }
@@ -225,6 +218,23 @@ public class JsonUtil {
         break;
     }
     return null;
+  }
+
+  private static void failOnInvalidExtendedValue(JsonExtensionType etype, JsonNode value) {
+    switch (etype) {
+      case EJSON_DATE:
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "'%s' value has to be an epoch timestamp, instead got (%s)",
+            etype.encodedName(), value);
+      case OBJECT_ID:
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)",
+            etype.encodedName(), value);
+      case UUID:
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "'%s' value has to be 36-character UUID String, instead got (%s)",
+            etype.encodedName(), value);
+    }
   }
 
   /**

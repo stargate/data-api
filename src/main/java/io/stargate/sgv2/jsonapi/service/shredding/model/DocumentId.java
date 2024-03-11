@@ -174,12 +174,12 @@ public interface DocumentId {
   }
 
   static DocumentId fromExtensionType(JsonExtensionType extType, JsonNode valueNode) {
-    if (valueNode.isTextual()) {
-      return new ExtensionTypeId(extType, valueNode.textValue());
+    try {
+      Object rawId = JsonUtil.extractExtendedValueUnwrapped(extType, valueNode);
+      return new ExtensionTypeId(extType, String.valueOf(rawId));
+    } catch (JsonApiException e) {
+      throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(e.getMessage());
     }
-    throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
-        "Extension type '%s' must have JSON String as value: instead got %s",
-        extType.encodedName(), valueNode.getNodeType());
   }
 
   /*
