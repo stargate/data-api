@@ -5,8 +5,8 @@ instance: m5.2xlarge
 token: token
 workload_duration: 25m
 keyspace: fallout
-workload_file: https://raw.githubusercontent.com/stargate/jsonapi/main/fallout/vector-test-nosqlbench.yaml
-dataset: https://raw.githubusercontent.com/stargate/jsonapi/main/fallout/vector-dataset.txt
+workload_file: https://raw.githubusercontent.com/stargate/dataapi/main/fallout/vector-test-nosqlbench.yaml
+dataset: https://raw.githubusercontent.com/stargate/dataapi/main/fallout/vector-dataset.txt
 client_count: 1
 write_cycles: 600
 read_cycles: 600
@@ -22,8 +22,8 @@ threads: 20
 #  token: Just put token variable name here, set up token as AstraDB token in the fallout profile
 #  workload_duration: workload duration time
 #  keyspace: Your existing AstraDB keyspace
-#  workload_file: workload_file is in JSON API repo
-#  dataset: dataset file is in JSON API repo, if you want to change vector size(default 1536), need to change the dataset.txt and workload file.
+#  workload_file: workload_file is in Data API repo
+#  dataset: dataset file is in Data API repo, if you want to change vector size(default 1536), need to change the dataset.txt and workload file.
 #  client_count: 1
 #  write_cycles: 600
 #  read_cycles: 600
@@ -70,7 +70,7 @@ workload:
             - tags=block:schema-collection
             - namespace={{keyspace}}
             - protocol=https
-            - jsonapi_port=443
+            - dataapi_port=443
             - path_prefix=/api/json
             - threads=1
             - errors=stop
@@ -87,7 +87,7 @@ workload:
             - dataset={{dataset}}
             - namespace={{keyspace}}
             - protocol=https
-            - jsonapi_port=443
+            - dataapi_port=443
             - path_prefix=/api/json
             - docscount={{write_cycles}}
             - threads={{threads}}
@@ -106,7 +106,7 @@ workload:
             - dataset={{dataset}}
             - namespace={{keyspace}}
             - protocol=https
-            - jsonapi_port=443
+            - dataapi_port=443
             - path_prefix=/api/json
             - docscount={{read_cycles}}
             - threads={{threads}}
@@ -124,7 +124,7 @@ workload:
             - dataset={{dataset}}
             - namespace={{keyspace}}
             - protocol=https
-            - jsonapi_port=443
+            - dataapi_port=443
             - path_prefix=/api/json
             - docscount={{update_cycles}}
             - threads={{threads}}
@@ -142,7 +142,7 @@ workload:
             - dataset={{dataset}}
             - namespace={{keyspace}}
             - protocol=https
-            - jsonapi_port=443
+            - dataapi_port=443
             - path_prefix=/api/json
             - docscount={{delete_cycles}}
             - threads={{threads}}

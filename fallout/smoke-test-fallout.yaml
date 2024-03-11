@@ -13,7 +13,7 @@ client_nb_version: 5.17.3-release
 test_branch: main
 
 # keyspace setup
-keyspace: jsonapi_smoke_test
+keyspace: dataapi_smoke_test
 
 # 100K documents and 25 groups, so that sort and count target ~4K docs
 # adapt if needed, but keep in mind that sort supports max 10K docs per operation
@@ -80,11 +80,11 @@ workload:
           service_type: stargate
           args:
             - driver=http
-            - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/smoke-test-nosqlbench.yaml
+            - workload=https://raw.githubusercontent.com/stargate/dataapi/{{test_branch}}/fallout/smoke-test-nosqlbench.yaml
             - tags=block:schema-collection
             - namespace={{keyspace}}
             - protocol=https
-            - jsonapi_port=443
+            - dataapi_port=443
             - path_prefix=/api/json
             - errors=stop
 
@@ -99,13 +99,13 @@ workload:
           cycles: {{docs_count}}
           args:
             - driver=http
-            - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/smoke-test-nosqlbench.yaml
+            - workload=https://raw.githubusercontent.com/stargate/dataapi/{{test_branch}}/fallout/smoke-test-nosqlbench.yaml
             - tags=block:write
             - threads=30
             - errors=stop
             - namespace={{keyspace}}
             - protocol=https
-            - jsonapi_port=443
+            - dataapi_port=443
             - path_prefix=/api/json
             - connections=30
             - docscount={{docs_count}}
@@ -120,13 +120,13 @@ workload:
           cycles: {{op_cycles}}
           args:
             - driver=http
-            - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/smoke-test-nosqlbench.yaml
+            - workload=https://raw.githubusercontent.com/stargate/dataapi/{{test_branch}}/fallout/smoke-test-nosqlbench.yaml
             - tags=block:main,name:.*{{op}}
             - threads={{threads}}
             - errors=histogram
             - namespace={{keyspace}}
             - protocol=https
-            - jsonapi_port=443
+            - dataapi_port=443
             - path_prefix=/api/json
             - connections={{op_connections}}
             - docscount={{docs_count}}
