@@ -12,11 +12,11 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -1578,7 +1578,6 @@ public class FilterClauseDeserializerTest {
 
   @Nested
   class DeserializeWithJsonExtensions {
-    @Disabled
     @Test
     public void mustHandleUUIDAsId() throws Exception {
       final String UUID = "16725312-0000-0000-0000-000000000000";
@@ -1590,16 +1589,20 @@ public class FilterClauseDeserializerTest {
               "_id",
               List.of(
                   new ValueComparisonOperation(
-                      ValueComparisonOperator.EQ, new JsonLiteral(UUID, JsonType.DOCUMENT_ID))),
+                      ValueComparisonOperator.EQ,
+                      new JsonLiteral(
+                          DocumentId.fromExtensionType(
+                              JsonExtensionType.UUID, objectMapper.getNodeFactory().textNode(UUID)),
+                          JsonType.DOCUMENT_ID))),
               null);
       FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
       assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
       assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
       assertThat(
               filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
           .isEqualTo(expectedResult.getFilterOperations());
-      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
-          .isEqualTo(expectedResult.getPath());
     }
 
     @Test
