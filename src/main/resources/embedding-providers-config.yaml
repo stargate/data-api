@@ -17,6 +17,9 @@ jsonapi:
           - name: text-embedding-3-large
             properties:
               vector-dimension: 3072
+          - name: text-embedding-ada-002
+            properties:
+              vector-dimension: 1536
 
       # Hugging face embedding service configuration
       huggingface:
