@@ -720,8 +720,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
           .body(
               "errors[0].message",
-              startsWith(
-                  "Bad type for '_id' property: Extension type '$uuid' must have JSON String as value"));
+              containsString(
+                  "Bad type for '_id' property: Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (42)"));
     }
 
     @Test
@@ -744,11 +744,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SHRED_BAD_EJSON_VALUE"))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
           .body(
               "errors[0].message",
-              startsWith(
-                  "Bad JSON Extension value: invalid value (\"not-quite-objectid\") for extended JSON type '$objectId'"));
+              containsString(
+                  "Bad JSON Extension value: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"not-quite-objectid\")"));
     }
 
     @Test
