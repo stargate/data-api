@@ -17,7 +17,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -55,46 +54,26 @@ public record ReadAndUpdateOperation(
 
   @Override
   public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
-    final AtomicBoolean moreDataFlag = new AtomicBoolean(false);
+    final AtomicReference pageStateReference = new AtomicReference();
     final AtomicInteger matchedCount = new AtomicInteger(0);
     final AtomicInteger modifiedCount = new AtomicInteger(0);
-    return Multi.createBy()
-        .repeating()
-        .uni(
-            () -> new AtomicReference<String>(null),
-            stateRef -> {
-              Uni<ReadOperation.FindResponse> docsToUpdate =
-                  findOperation().getDocuments(queryExecutor, stateRef.get(), null);
-              return docsToUpdate
-                  .onItem()
-                  .invoke(findResponse -> stateRef.set(findResponse.pageState()));
-            })
-        // Read document while pageState exists, limit for read is set at updateLimit +1
-        .whilst(findResponse -> findResponse.pageState() != null)
-        // Transform to get only the updateLimit records, if more set `moreData` to true
+    Uni<ReadOperation.FindResponse> docsToUpdate =
+        findOperation().getDocuments(queryExecutor, findOperation().pageState(), null);
+    return docsToUpdate
         .onItem()
         .transformToMulti(
             findResponse -> {
+              pageStateReference.set(findResponse.pageState());
               final List<ReadDocument> docs = findResponse.docs();
               if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
                 return Multi.createFrom().item(findOperation().getNewDocument());
               } else {
-                // Below conditionality is because we read up to updateLimit +1 record.
-                if (matchedCount.get() + docs.size() <= updateLimit) {
-                  matchedCount.addAndGet(docs.size());
-                  return Multi.createFrom().items(docs.stream());
-                } else {
-                  int needed = updateLimit - matchedCount.get();
-                  matchedCount.addAndGet(needed);
-                  moreDataFlag.set(true);
-                  return Multi.createFrom().items(findResponse.docs().subList(0, needed).stream());
-                }
+                matchedCount.addAndGet(docs.size());
+                return Multi.createFrom().items(docs.stream());
               }
             })
-        .concatenate()
-        // Update the read documents
         .onItem()
-        .transformToUniAndMerge(
+        .transformToUniAndConcatenate(
             readDocument ->
                 processUpdate(readDocument, queryExecutor, modifiedCount)
                     .onFailure(LWTException.class)
@@ -144,7 +123,7 @@ public record ReadAndUpdateOperation(
                   modifiedCount.get(),
                   updates,
                   returnDocumentInResponse(),
-                  moreDataFlag.get());
+                  (String) pageStateReference.get());
             });
   }
 
