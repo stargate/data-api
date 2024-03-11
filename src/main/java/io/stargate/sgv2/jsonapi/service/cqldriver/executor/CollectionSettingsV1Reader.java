@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
  * {"collection":{"name":"newVectorize","schema_version":1,"options":{"indexing":{"deny":["heh"]},"vector":{"dimension":1024,"metric":"cosine","service":{"provider":"nvidia","model_name":"query","authentication":{"type":["HEADER"]},"parameters":{"project_id":"test
  * project"}}}}}}
  */
-public class CommandSettingsV1Reader implements CommandSettingsReader {
+public class CollectionSettingsV1Reader implements CollectionSettingsReader {
 
   @Override
   public CollectionSettings readCollectionSettings(

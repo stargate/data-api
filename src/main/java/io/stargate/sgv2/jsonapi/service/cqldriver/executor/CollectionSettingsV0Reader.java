@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
  *
  * <p>Note, all collection created in this schema version 0, should have UUID as idType
  */
-public class CommandSettingsV0Reader implements CommandSettingsReader {
+public class CollectionSettingsV0Reader implements CollectionSettingsReader {
   public CollectionSettings readCollectionSettings(
       JsonNode commentConfigNode,
       String collectionName,
