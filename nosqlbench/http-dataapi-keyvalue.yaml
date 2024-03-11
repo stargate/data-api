@@ -1,7 +1,7 @@
 min_version: "5.17.3"
 
 # Example command line (when Stargate is running on localhost):
-# nb5 -v http-jsonapi-keyvalue jsonapi_host=localhost docscount=20000 threads=20
+# nb5 -v http-dataapi-keyvalue dataapi_host=localhost docscount=20000 threads=20
 
 description: >2
   This workload emulates a key-value data model and access patterns.
@@ -9,7 +9,7 @@ description: >2
   - Schema creation with the Docs API, we don't use cql because the Docs API is opinionated about schema.
   - There is no instrumentation with the http driver.
   - There is no async mode with the http driver.
-  Note that jsonapi_port should reflect the port where the Docs API is exposed (defaults to 8181).
+  Note that dataapi_port should reflect the port where the Docs API is exposed (defaults to 8181).
 
 scenarios:
   default:
@@ -20,10 +20,10 @@ scenarios:
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
   # Examples
-  #   single host: jsonapi_host=host1
-  #   multiple hosts: jsonapi_host=host1,host2,host3
-  #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
-  weighted_hosts: WeightedStrings('<<jsonapi_host:jsonapi>>')
+  #   single host: dataapi_host=host1
+  #   multiple hosts: dataapi_host=host1,host2,host3
+  #   multiple weighted hosts: dataapi_host=host1:3,host2:7
+  weighted_hosts: WeightedStrings('<<dataapi_host:dataapi>>')
 
   # spread into different spaces to use multiple connections
   space: HashRange(1,<<connections:20>>); ToString();
@@ -44,7 +44,7 @@ blocks:
     ops:
       create-namespace:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -53,13 +53,13 @@ blocks:
         body: >2
           {
             "createNamespace": {
-              "name": "<<namespace:jsonapi_keyvalue>>"
+              "name": "<<namespace:dataapi_keyvalue>>"
             }
           }
 
       delete-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_keyvalue>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -74,7 +74,7 @@ blocks:
 
       create-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_keyvalue>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -92,7 +92,7 @@ blocks:
       rampup-insert:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -115,7 +115,7 @@ blocks:
       main-select:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -133,7 +133,7 @@ blocks:
       main-write:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_keyvalue>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_keyvalue>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
