@@ -53,14 +53,14 @@ public record CreateCollectionCommand(
           IndexingConfig indexing) {
 
     public record VectorSearchConfig(
-        @Positive(message = "dimension should be greater than `0`")
+        @Nullable
+            @Positive(message = "dimension should be greater than `0`")
             @Schema(
                 description = "Dimension of the vector field",
                 type = SchemaType.INTEGER,
                 implementation = Integer.class)
             @JsonProperty("dimension")
             @JsonAlias("size") // old name
-            @NotNull
             Integer dimension,
         @Nullable
             @Pattern(
@@ -107,7 +107,7 @@ public record CreateCollectionCommand(
               @JsonProperty("model_name")
               String modelName,
           @Valid
-              @Nullable
+              @NotNull
               @Schema(
                   description = "Authentication config for chosen embedding service",
                   type = SchemaType.OBJECT,
@@ -124,7 +124,7 @@ public record CreateCollectionCommand(
               @JsonInclude(JsonInclude.Include.NON_NULL)
               Map<String, Object> vectorizeServiceParameter) {
         public record VectorizeServiceAuthentication(
-            @Nullable
+            @NotNull
                 @JsonInclude(JsonInclude.Include.NON_NULL)
                 @Schema(
                     description =
