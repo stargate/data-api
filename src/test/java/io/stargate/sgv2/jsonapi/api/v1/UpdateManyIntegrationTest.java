@@ -346,12 +346,12 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("errors", is(nullValue()));
       json =
           """
-              {
-                "countDocuments": {
-                  "filter" : {"new_data": "new_data_value"}
-                }
-              }
-              """;
+        {
+          "find": {
+            "filter" : {"active_user": true}
+          }
+        }
+        """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -360,8 +360,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.count", is(25))
-          .body("errors", is(nullValue()));
+          .body("data.documents.new_data", everyItem(is("new_data_value")));
     }
 
     @Test
