@@ -29,8 +29,8 @@ public class CommandSettingsV1Deserializer implements CommandSettingsDeserialize
       indexingConfig = CollectionSettings.IndexingConfig.fromJson(indexing);
     }
     // construct collectionSettings idConfig, default idType as uuid
-    CollectionSettings.IdConfig idConfig = CollectionSettings.IdConfig.defaultUuidIdConfig();
-    JsonNode idConfigNode = collectionOptionsNode.path(TableCommentConstants.DEFAULT_ID_TYPE_KEY);
+    CollectionSettings.IdConfig idConfig = CollectionSettings.IdConfig.defaultIdConfig();
+    JsonNode idConfigNode = collectionOptionsNode.path(TableCommentConstants.DEFAULT_ID_KEY);
     // should always have idConfigNode in table comment since schema v1
     if (!idConfigNode.isMissingNode() && idConfigNode.has("type")) {
       idConfig =

@@ -27,7 +27,7 @@ public class CommandSettingsV0Deserializer implements CommandSettingsDeserialize
     }
     return new CollectionSettings(
         collectionName,
-        CollectionSettings.IdConfig.defaultUuidIdConfig(),
+        CollectionSettings.IdConfig.defaultIdConfig(),
         vectorConfig,
         indexingConfig);
   }

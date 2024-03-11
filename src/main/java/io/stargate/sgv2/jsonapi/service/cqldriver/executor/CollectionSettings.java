@@ -39,15 +39,15 @@ public record CollectionSettings(
 
   private static final CollectionSettings EMPTY =
       new CollectionSettings(
-          "", IdConfig.defaultUuidIdConfig(), VectorConfig.notEnabledVectorConfig(), null);
+          "", IdConfig.defaultIdConfig(), VectorConfig.notEnabledVectorConfig(), null);
 
   public static CollectionSettings empty() {
     return EMPTY;
   }
 
   public record IdConfig(IdType idType) {
-    public static IdConfig defaultUuidIdConfig() {
-      return new IdConfig(IdType.UUID);
+    public static IdConfig defaultIdConfig() {
+      return new IdConfig(IdType.UNDEFINED);
     }
   }
 
@@ -197,7 +197,7 @@ public record CollectionSettings(
     }
   }
 
-  /** Collection Id Type enum, default to UUID */
+  /** Collection Id Type enum, UNDEFINED represents unwrapped id */
   public enum IdType {
     OBJECT_ID,
     UUID,
@@ -212,6 +212,7 @@ public record CollectionSettings(
         case "uuid" -> UUID;
         case "uuidv6" -> UUID_V6;
         case "uuidv7" -> UUID_V7;
+        case "" -> UNDEFINED;
         default -> throw ErrorCode.INVALID_ID_TYPE.toApiException(idType);
       };
     }
@@ -219,9 +220,10 @@ public record CollectionSettings(
     public String toString() {
       return switch (this) {
         case OBJECT_ID -> "objectId";
-        case UUID, UNDEFINED -> "uuid";
+        case UUID -> "uuid";
         case UUID_V6 -> "uuidv6";
         case UUID_V7 -> "uuidv7";
+        case UNDEFINED -> "";
       };
     }
   }
@@ -310,13 +312,13 @@ public record CollectionSettings(
       if (vectorEnabled) {
         return new CollectionSettings(
             collectionName,
-            IdConfig.defaultUuidIdConfig(),
+            IdConfig.defaultIdConfig(),
             new VectorConfig(true, vectorSize, function, null),
             null);
       } else {
         return new CollectionSettings(
             collectionName,
-            IdConfig.defaultUuidIdConfig(),
+            IdConfig.defaultIdConfig(),
             VectorConfig.notEnabledVectorConfig(),
             null);
       }

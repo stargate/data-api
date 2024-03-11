@@ -73,11 +73,9 @@ public class FindOperationTest extends OperationTestBase {
             COLLECTION_NAME,
             new CollectionSettings(
                 COLLECTION_NAME,
-                true,
-                -1,
-                CollectionSettings.SimilarityFunction.COSINE,
-                null,
-                null,
+                CollectionSettings.IdConfig.defaultIdConfig(),
+                new CollectionSettings.VectorConfig(
+                    true, -1, CollectionSettings.SimilarityFunction.COSINE, null),
                 null),
             null,
             "testCommand",

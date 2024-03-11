@@ -245,7 +245,8 @@ public record CreateCollectionCommand(
     }
 
     public Options(IdConfig idConfig, VectorSearchConfig vector, IndexingConfig indexing) {
-      this.idConfig = idConfig == null ? new IdConfig("uuid") : idConfig;
+      // idConfig could be null, will resolve idType to empty string in table comment
+      this.idConfig = idConfig;
       this.vector = vector;
       this.indexing = indexing;
     }

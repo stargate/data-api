@@ -10,6 +10,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -161,7 +162,10 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorSearch()).isEqualTo(true);
                 assertThat(op.vectorSize()).isEqualTo(4);
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
-                assertThat(op.comment()).isEqualTo("{\"indexing\":{\"deny\":[\"comment\"]}}");
+                assertThat(op.comment())
+                    .isEqualTo(
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"indexing\":{\"deny\":[\"comment\"]},\"vector\":{\"dimension\":4,\"metric\":\"cosine\"},\"default_id\":{\"type\":\"\"}}}}",
+                        TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }
 
