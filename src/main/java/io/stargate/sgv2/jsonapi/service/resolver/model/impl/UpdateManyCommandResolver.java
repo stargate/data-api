@@ -72,8 +72,8 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         commandContext,
         logicalExpression,
         DocumentProjector.identityProjector(),
-        null,
-        operationsConfig.maxDocumentUpdateCount() + 1,
+        null != command.options() ? command.options().pageState() : null,
+        Integer.MAX_VALUE,
         operationsConfig.defaultPageSize(),
         ReadType.DOCUMENT,
         objectMapper);
