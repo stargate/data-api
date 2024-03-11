@@ -36,8 +36,8 @@ public enum CommandStatus {
   @JsonProperty("ok")
   OK,
 
-  /** Page state value that can be used in client side for pagination */
-  @JsonProperty("pageState")
+  /** Next page state value that can be used in client side for pagination */
+  @JsonProperty("nextPageState")
   PAGE_STATE,
   /**
    * The element has the document id of newly inserted document part of update, when upserted option

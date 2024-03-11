@@ -68,6 +68,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
 
       // assert state after update, first changed document
@@ -149,6 +150,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
     }
 
@@ -175,6 +177,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(5))
           .body("status.modifiedCount", is(5))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
 
       // assert all updated
@@ -217,7 +220,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .statusCode(200)
           .body("status.matchedCount", is(20))
           .body("status.modifiedCount", is(20))
-          .body("status.moreData", nullValue())
+          .body("status.moreData", is(true))
+          .body("status.nextPageState", notNullValue())
           .body("errors", is(nullValue()));
 
       json =
@@ -263,6 +267,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(20))
           .body("status.modifiedCount", is(20))
           .body("status.moreData", is(true))
+          .body("status.nextPageState", notNullValue())
           .body("errors", is(nullValue()));
 
       json =
@@ -309,6 +314,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
 
       // assert upsert
@@ -366,6 +372,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
 
       // assert upsert
@@ -419,6 +426,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(0))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
 
       String expected =
@@ -520,6 +528,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
 
       // assert state after update
