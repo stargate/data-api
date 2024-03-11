@@ -108,7 +108,12 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
       String expected1 =
           """
                   {
-                    "name": "%s"
+                    "name": "%s",
+                    "options": {
+                        "default_id":{
+                          "type" : ""
+                      }
+                    }
                   }
                     """
               .formatted("collection1");
@@ -117,6 +122,9 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               {
                   "name": "%s",
                   "options": {
+                      "default_id":{
+                          "type" : ""
+                      },
                     "vector": {
                       "dimension": 5,
                       "metric": "cosine"
@@ -319,6 +327,9 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                     "createCollection": {
                       "name": "%s",
                       "options": {
+                        "default_id" : {
+                          "type" : "objectId"
+                        },
                         "indexing": {
                           "deny" : ["comment"]
                         }
@@ -338,19 +349,21 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .statusCode(200)
           .body("status.ok", is(1));
 
-      String expected1 = """
-      {"name":"TableName"}
+      String expected1 =
+          """
+      {"name":"TableName","options":{"default_id" : {"type" : ""}}}
       """;
-      String expected2 = """
-              {"name":"collection1"}
+      String expected2 =
+          """
+              {"name":"collection1", "options":{"default_id" : {"type" : ""}}}
               """;
       String expected3 =
           """
-      {"name":"collection2", "options": {"vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
+      {"name":"collection2", "options": {"default_id" : {"type" : ""}, "vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
       """;
       String expected4 =
           """
-              {"name":"collection4", "options":{"indexing":{"deny":["comment"]}}}
+              {"name":"collection4","options":{"default_id" : {"type" : "objectId"}, "indexing":{"deny":["comment"]}}}
               """;
       json =
           """
