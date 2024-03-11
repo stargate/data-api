@@ -116,7 +116,7 @@ public record CreateCollectionOperation(
 
     // if table doesn't exist, continue to create collection
     if (table == null) {
-      return executeCollectionCreation(queryExecutor, true);
+      return executeCollectionCreation(queryExecutor, false);
     }
     // if table exists, compare existedCollectionSettings and newCollectionSettings
     CollectionSettings existedCollectionSettings =
@@ -133,7 +133,7 @@ public record CreateCollectionOperation(
     // (1) trying to create with same options -> ok, proceed
     // (2) trying to create with different options -> error out
     if (existedCollectionSettings.equals(newCollectionSettings)) {
-      return executeCollectionCreation(queryExecutor, false);
+      return executeCollectionCreation(queryExecutor, true);
     }
     return Uni.createFrom()
         .failure(
