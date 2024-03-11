@@ -17,7 +17,6 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOpe
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.math.BigDecimal;
 
 @ApplicationScoped
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
@@ -252,7 +251,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             || expectedParamType
                     == PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterType
                         .NUMBER
-                && !(userParamValue instanceof BigDecimal)
+                && !(userParamValue instanceof Number)
             || expectedParamType
                     == PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterType
                         .BOOLEAN
