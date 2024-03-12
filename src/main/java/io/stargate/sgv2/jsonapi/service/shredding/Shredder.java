@@ -411,6 +411,10 @@ public class Shredder {
     }
 
     private void validateStringValue(String referringPropertyName, String value) {
+      if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(referringPropertyName)) {
+        // `$vectorize` field are not checked for length
+        return;
+      }
       OptionalInt encodedLength =
           JsonUtil.lengthInBytesIfAbove(value, limits.maxStringLengthInBytes());
       if (encodedLength.isPresent()) {
