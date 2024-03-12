@@ -111,9 +111,10 @@ jobs:
       - name: Build and push (Docker Hub)
         if: ${{ !inputs.skipPublish }}
         run: |
-          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 ${{ matrix.profile }}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.name=data-api ${{ matrix.profile }}
           docker push stargateio/data-api:${{needs.resolve-tag.outputs.release-tag}}
-          docker push stargateio/jsonapi:${{needs.resolve-tag.outputs.release-tag}}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.name=jsonapi ${{ matrix.profile }}
+          docker push stargateio/jsonapi:${{needs.resolve-tag.outputs.release-tag}} 
 
      
 
