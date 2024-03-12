@@ -1,12 +1,12 @@
 min_version: "5.17.3"
 
 # Example command line (when Stargate is running on localhost):
-# nb5 -v http-jsonapi-crud-dataset jsonapi_host=localhost docscount=20000 threads=20 dataset=sample-dataset.txt
+# nb5 -v http-dataapi-crud-dataset dataapi_host=localhost docscount=20000 threads=20 dataset=sample-dataset.txt
 
 description: >2
   This workload emulates CRUD operations for the Stargate Documents API.
   It requires a data set file (default sample-dataset.txt), where each line is a single JSON document to be used for writes and updates.
-  Note that jsonapi_port should reflect the port where the Docs API is exposed (defaults to 8181).
+  Note that dataapi_port should reflect the port where the Docs API is exposed (defaults to 8181).
 
 scenarios:
   default:
@@ -17,10 +17,10 @@ scenarios:
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
   # Examples
-  #   single host: jsonapi_host=host1
-  #   multiple hosts: jsonapi_host=host1,host2,host3
-  #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
-  weighted_hosts: WeightedStrings('<<jsonapi_host:<<stargate_host:localhost>>>>')
+  #   single host: dataapi_host=host1
+  #   multiple hosts: dataapi_host=host1,host2,host3
+  #   multiple weighted hosts: dataapi_host=host1:3,host2:7
+  weighted_hosts: WeightedStrings('<<dataapi_host:<<stargate_host:localhost>>>>')
 
   # spread into different spaces to use multiple connections
   space: HashRange(1,<<connections:20>>); ToString();
@@ -51,7 +51,7 @@ blocks:
     ops:
       create-namespace:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -60,13 +60,13 @@ blocks:
         body: >2
           {
             "createNamespace": {
-              "name": "<<namespace:jsonapi_crud_dataset>>"
+              "name": "<<namespace:dataapi_crud_dataset>>"
             }
           }
 
       delete-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_crud_dataset>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -81,7 +81,7 @@ blocks:
 
       create-collection:
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_crud_dataset>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -99,7 +99,7 @@ blocks:
       write-document:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_crud_dataset>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -122,7 +122,7 @@ blocks:
       find-one-id:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_crud_dataset>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -141,7 +141,7 @@ blocks:
       find-one-by-city:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_crud_dataset>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -160,7 +160,7 @@ blocks:
       find-multi-by-exists:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_crud_dataset>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -179,7 +179,7 @@ blocks:
       find-multi-by-married-name-exists-with-projection:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_crud_dataset>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -202,7 +202,7 @@ blocks:
       find-multi-find-by-group-sort-by-name:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_crud_dataset>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -225,7 +225,7 @@ blocks:
       update-document:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_crud_dataset>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -252,7 +252,7 @@ blocks:
       delete-document:
         space: "{space}"
         method: POST
-        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_crud_dataset>>/<<collection:docs_collection>>
         Accept: "application/json"
         X-Cassandra-Request-Id: "{request_id}"
         Token: "{token}"
@@ -271,7 +271,7 @@ blocks:
         find-one-id-and-replace-upsert:
           space: "{space}"
           method: POST
-          uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:jsonapi_crud_dataset>>/<<collection:docs_collection>>
+          uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_crud_dataset>>/<<collection:docs_collection>>
           Accept: "application/json"
           X-Cassandra-Request-Id: "{request_id}"
           Token: "{token}"

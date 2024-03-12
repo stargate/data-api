@@ -1,8 +1,8 @@
-# JSON API search, filter and sort
+# DATA API search, filter and sort
 
 ## Description
 
-The JSON API search, filter and sort workflow targets Stargate's JSON API using generated JSON documents.
+The DATA API search, filter and sort workflow targets Stargate's DATA API using generated JSON documents.
 The operations in this workflow uses find commands with different filter clause, sort clause and projection clause.
 The documents used are sharing the same structure and are approximately half a kilobyte in size each:
 
@@ -47,7 +47,7 @@ The example JSON looks like:
 
 ### schema
 
-Creates namespace and collections for the JSON API testing
+Creates namespace and collections for the DATA API testing
 
 ### rampup
 

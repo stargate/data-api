@@ -117,6 +117,9 @@ public enum ErrorCode {
 
   UNSUPPORTED_UPDATE_FOR_VECTOR("Cannot use operator with '$vector' property"),
   UNSUPPORTED_UPDATE_FOR_VECTORIZE("Cannot use operator with '$vectorize' property"),
+
+  VECTOR_SEARCH_NOT_AVAILABLE("Vector search functionality is not available in the backend"),
+
   VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),
 
   VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection "),

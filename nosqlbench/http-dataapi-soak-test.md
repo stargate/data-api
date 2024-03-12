@@ -2,7 +2,7 @@
 
 ## Description
 
-This soak test workload for jsonapi.
+This soak test workload for dataapi.
 
 The example JSON looks like:
 
