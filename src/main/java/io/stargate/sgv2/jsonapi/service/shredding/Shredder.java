@@ -196,7 +196,7 @@ public class Shredder {
     if (pathAsString.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
       traverseVector(path, value, callback);
     } else if (pathAsString.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-      // Do nothing, vectorize property will just sit in doc json
+      traverseVectorize(path, value, callback);
     } else {
       if (value.isObject()) {
         ObjectNode ob = (ObjectNode) value;
@@ -233,6 +233,13 @@ public class Shredder {
       throw new JsonApiException(ErrorCode.SHRED_BAD_VECTOR_SIZE);
     }
     callback.shredVector(path, arr);
+  }
+
+  private void traverseVectorize(JsonPath path, JsonNode value, ShredListener callback) {
+    if (value.isNull()) {
+      return;
+    }
+    callback.shredVectorize(path);
   }
 
   private void validateDocumentSize(DocumentLimitsConfig limits, String docJson) {
@@ -404,6 +411,10 @@ public class Shredder {
     }
 
     private void validateStringValue(String referringPropertyName, String value) {
+      if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(referringPropertyName)) {
+        // `$vectorize` field are not checked for length
+        return;
+      }
       OptionalInt encodedLength =
           JsonUtil.lengthInBytesIfAbove(value, limits.maxStringLengthInBytes());
       if (encodedLength.isPresent()) {

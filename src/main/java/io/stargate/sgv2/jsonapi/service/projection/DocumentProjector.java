@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -86,14 +86,21 @@ public class DocumentProjector {
       if (!allowed.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
         allowed.add(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
       }
+      if (!allowed.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+        allowed.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+      }
       return new DocumentProjector(ProjectionLayer.buildLayersOverlapOk(allowed), true, false);
     }
     if (denied != null && !denied.isEmpty()) {
       // (special) Case 4:
       if (denied.size() == 1 && denied.contains("*")) {
-        // Basically inclusion projector with nothing to include
+        // Basically inclusion projector with nothing to include but handle for $vector and
+        // $vectorize
+        Set<String> overrideFields = new HashSet<>();
+        overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+        overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
         return new DocumentProjector(
-            ProjectionLayer.buildLayersOverlapOk(Collections.emptySet()), true, false);
+            ProjectionLayer.buildLayersOverlapOk(overrideFields), true, false);
       }
       // Case 2: exclusion-based projection
       return new DocumentProjector(ProjectionLayer.buildLayersOverlapOk(denied), false, false);
