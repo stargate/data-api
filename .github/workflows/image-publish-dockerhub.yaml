@@ -48,7 +48,7 @@ jobs:
 
       - name: Build data-api image push (Docker Hub)
         run: |
-          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true  -Dquarkus.container-image.tag=v1.0.2 -Dquarkus.container-image.name=data-api ${{ matrix.profile }}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true  -Dquarkus.container-image.tag=v1.0.2 -Dquarkus.container-image.name=jsonapi ${{ matrix.profile }}
 #          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true -Dquarkus.container-image.tag=v1.0.2 ${{ matrix.profile }}
 
 #          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.tag=v1.0.2 -Dquarkus.container-image.name=jsonapi ${{ matrix.profile }}
