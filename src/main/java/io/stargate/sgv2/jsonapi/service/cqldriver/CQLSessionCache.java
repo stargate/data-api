@@ -10,7 +10,6 @@ import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.FileWriterSession;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.InetSocketAddress;
@@ -220,10 +219,10 @@ public class CQLSessionCache {
    * Put CQLSession in cache.
    *
    * @param sessionCacheKey
-   * @param fileWriterSession
+   * @param cqlSession
    */
-  public void putSession(SessionCacheKey sessionCacheKey, FileWriterSession fileWriterSession) {
-    sessionCache.put(sessionCacheKey, fileWriterSession);
+  public void putSession(SessionCacheKey sessionCacheKey, CqlSession cqlSession) {
+    sessionCache.put(sessionCacheKey, cqlSession);
   }
 
   /** Key for CQLSession cache. */

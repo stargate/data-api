@@ -58,7 +58,8 @@ public class FileWriterSession implements CqlSession {
   private final CQLSSTableWriter cqlsSSTableWriter;
   private final int fileWriterBufferSizeInMB;
   private final FileWriterParams fileWriterParams;
-  private static final String EMPTY_CASSANDRA_DATA_DIRECTORY = "/var/tmp/sstables_test/cassandra";
+  private static final String EMPTY_CASSANDRA_DATA_DIRECTORY =
+      "/var/tmp/sstables_test/cassandra"; // TODO-SL use temp directory
 
   public FileWriterSession(
       CQLSessionCache cqlSessionCache,
