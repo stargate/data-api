@@ -190,6 +190,116 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
   }
 
   @Nested
+  class ProjectionWithJSONExtensions {
+    private static final String UUID1 = "123e4567-e89b-12d3-a456-426614174000";
+    private static final String OBJECTID1 = "5f3b3e3b3e3b3e3b3e3b3e3b";
+    private static final String EXT_DOC1 =
+        """
+                      {
+                        "_id": "ext1",
+                        "username": "user1",
+                        "uid": { "$uuid": "%s" },
+                        "oid": { "$objectId": "%s" },
+                        "enabled": true
+                      }
+                      """
+            .formatted(UUID1, OBJECTID1);
+
+    @Test
+    public void byIdDefaultProjection() {
+      insertDoc(EXT_DOC1);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"_id" : "ext1"}
+                        }
+                      }
+                      """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.document", jsonEquals(EXT_DOC1));
+    }
+
+    @Test
+    public void byIdIncludeExtValues() {
+      insertDoc(EXT_DOC1);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+              {
+                "findOne": {
+                  "filter" : {"_id" : "ext1"},
+                  "projection": { "uid": 1, "oid": 1 }
+                }
+              }
+              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body(
+              "data.document",
+              jsonEquals(
+                  """
+                                        {
+                                          "_id": "ext1",
+                                          "uid": { "$uuid": "%s" },
+                                          "oid": { "$objectId": "%s" }
+                                        }
+                                        """
+                      .formatted(UUID1, OBJECTID1)));
+    }
+
+    @Test
+    public void byIdExcludeExtValues() {
+      insertDoc(EXT_DOC1);
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+              {
+                "findOne": {
+                  "filter" : {"_id" : "ext1"},
+                  "projection": { "uid": 0, "oid": 0 }
+                }
+              }
+              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body(
+              "data.document",
+              jsonEquals(
+                  """
+                        "_id": "ext1",
+                        "username": "user1",
+                        "enabled": true
+                                        """));
+    }
+
+    @AfterEach
+    public void cleanUpData() {
+      deleteAllDocuments();
+    }
+  }
+
+  @Nested
   class ProjectionWithSimpleSlice {
     @Test
     public void byIdRootSliceHead() {
