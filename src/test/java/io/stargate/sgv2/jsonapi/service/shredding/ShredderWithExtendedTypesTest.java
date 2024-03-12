@@ -12,6 +12,8 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
@@ -43,7 +45,7 @@ public class ShredderWithExtendedTypesTest {
   @InjectMock protected DataApiRequestInfo bogusRequestInfo;
 
   @Nested
-  class OkCasesId {
+  class OkCasesExplicitId {
     @Test
     public void shredSimpleWithUUIDKeyAndValue() throws Exception {
       final String idUUID = defaultTestUUID().toString();
@@ -187,6 +189,49 @@ public class ShredderWithExtendedTypesTest {
           .isEqualTo(Map.of(JsonPath.from("age"), BigDecimal.valueOf(39)));
       assertThat(doc.queryTextValues())
           .isEqualTo(Map.of(JsonPath.from("_id"), generatedId, JsonPath.from("name"), "Chuck"));
+    }
+  }
+
+  @Nested
+  class OkCasesGeneratedId {
+    @Test
+    public void shredSimpleWithoutIdGenObjectId() throws Exception {
+      final String inputJson = "{\"value\": 42}";
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc =
+          shredder.shred(
+              inputDoc,
+              null,
+              DocumentProjector.identityProjector(),
+              "test",
+              CollectionSettings.empty().withIdType(CollectionSettings.IdType.OBJECT_ID));
+
+      DocumentId docId = doc.id();
+      assertThat(docId).isInstanceOf(DocumentId.ExtensionTypeId.class);
+
+      // should be auto-generated ObjectId: verify by constructing from String representation:
+      ObjectId typedId = new ObjectId(((DocumentId.ExtensionTypeId) docId).valueAsString());
+      assertThat(typedId).isNotNull();
+      List<JsonPath> expPaths = Arrays.asList(JsonPath.from("_id"), JsonPath.from("value"));
+
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+      assertThat(doc.arraySize()).isEmpty();
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("value N42");
+
+      // Also, the document should be the same, including _id added:
+      ObjectNode jsonFromShredded = (ObjectNode) objectMapper.readTree(doc.docJson());
+      JsonNode idNode = jsonFromShredded.get("_id");
+
+      assertThat(idNode).isNotNull().isInstanceOf(ObjectNode.class).hasSize(1);
+      assertThat(objectMapper.createObjectNode().put("$objectId", typedId.toString()))
+          .isEqualTo(idNode);
+
+      // Then atomic value containers
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryNumberValues())
+          .isEqualTo(Map.of(JsonPath.from("value"), BigDecimal.valueOf(42)));
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("_id"), typedId.toString()));
     }
   }
 
