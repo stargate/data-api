@@ -9,7 +9,6 @@ jsonapi:
         api-key: YOUR_API_KEY
         supported-authentication:
           - "HEADER"
-          - "SHARED_SECRETS"
         models:
           - name: text-embedding-3-small
             properties:

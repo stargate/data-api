@@ -176,7 +176,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       // Ensure vector dimension is provided when service configuration is absent.
       if (vectorDimension == null) {
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "The dimensions can not be null if service is not provided");
+            "The 'dimension' can not be null if 'service' is not provided");
       }
     }
     // TODO: what if the config model vector dimension is larger than 4096?
@@ -217,7 +217,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         getAndValidateProviderConfig(userConfig);
 
     // Check secret name for shared secret authentication, if applicable
-    validateSecretNameForSharedSecret(userConfig);
+    validateAuthentication(userConfig, providerConfig);
 
     // Validate user-provided parameters against internal expectations
     validateUserParameters(userConfig, providerConfig);
@@ -232,17 +232,30 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         embeddingProviderConfig.providers().get(userConfig.provider());
     if (providerConfig == null || !providerConfig.enabled()) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "Service provider '%s' is not supported.", userConfig.provider());
+          "Service provider '%s' is not supported", userConfig.provider());
     }
     return providerConfig;
   }
 
-  private void validateSecretNameForSharedSecret(
-      CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig) {
+  // TODO: validate the 'secret_name' in the future
+  private void validateAuthentication(
+      CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
+      PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig providerConfig) {
+    // Check if user authentication type is support
+    userConfig.vectorizeServiceAuthentication().type().stream()
+        .filter(type -> !providerConfig.supportedAuthentication().contains(type))
+        .findFirst()
+        .ifPresent(
+            type -> {
+              throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+                  "Authentication type '%s' is not supported", type);
+            });
+    // Check if 'secret_name' is provided if authentication type is 'SHARED_SECRET'
     if (userConfig.vectorizeServiceAuthentication().type().contains("SHARED_SECRET")
-        && userConfig.vectorizeServiceAuthentication().secretName() == null) {
+        && (userConfig.vectorizeServiceAuthentication().secretName() == null
+            || userConfig.vectorizeServiceAuthentication().secretName().isEmpty())) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'secret_name' must be provided for 'SHARED_SECRET' authentication type.");
+          "'secret_name' must be provided for 'SHARED_SECRET' authentication type");
     }
   }
 
