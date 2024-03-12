@@ -43,12 +43,12 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                                 "dimension": 5,
                                 "service": {
                                     "provider": "custom",
-                                    "model_name": "text-embedding-ada-002",
+                                    "modelName": "text-embedding-ada-002",
                                     "authentication": {
                                         "type": [
                                             "SHARED_SECRET"
                                         ],
-                                        "secret_name": "name_given_by_user"
+                                        "secretName": "name_given_by_user"
                                     },
                                     "parameters": {
                                         "project_id": "test project"

@@ -582,12 +582,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                   "dimension": 768,
                                   "service": {
                                       "provider": "vertexai",
-                                      "model_name": "textembedding-gecko@003",
+                                      "modelName": "textembedding-gecko@003",
                                       "authentication": {
                                           "type": [
                                               "HEADER","SHARED_SECRET"
                                           ],
-                                          "secret_name": "test"
+                                          "secretName": "test"
                                       },
                                       "parameters": {
                                           "PROJECT_ID": "test"
@@ -636,12 +636,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                       "metric": "cosine",
                                       "service": {
                                           "provider": "vertexai",
-                                          "model_name": "textembedding-gecko@003",
+                                          "modelName": "textembedding-gecko@003",
                                           "authentication": {
                                               "type": [
                                                   "HEADER","SHARED_SECRET"
                                               ],
-                                              "secret_name": "test"
+                                              "secretName": "test"
                                           },
                                           "parameters": {
                                               "PROJECT_ID": "test"
@@ -663,12 +663,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                       "dimension": 768,
                                       "service": {
                                           "provider": "vertexai",
-                                          "model_name": "textembedding-gecko@003",
+                                          "modelName": "textembedding-gecko@003",
                                           "authentication": {
                                               "type": [
                                                   "HEADER","SHARED_SECRET"
                                               ],
-                                              "secret_name": "test"
+                                              "secretName": "test"
                                           },
                                           "parameters": {
                                               "PROJECT_ID": "test"
@@ -778,12 +778,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                   "dimension": 768,
                                   "service": {
                                       "provider": "test",
-                                      "model_name": "textembedding-gecko@003",
+                                      "modelName": "textembedding-gecko@003",
                                       "authentication": {
                                           "type": [
                                               "HEADER","SHARED_SECRET"
                                           ],
-                                          "secret_name": "test"
+                                          "secretName": "test"
                                       },
                                       "parameters": {
                                           "PROJECT_ID": "test"
@@ -825,12 +825,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                     "dimension": 768,
                                     "service": {
                                         "provider": "openai",
-                                        "model_name": "text-embedding-3-small",
+                                        "modelName": "text-embedding-3-small",
                                         "authentication": {
                                             "type": [
                                                 "HEADER","SHARED_SECRET"
                                             ],
-                                            "secret_name": "test"
+                                            "secretName": "test"
                                         },
                                         "parameters": {
                                             "PROJECT_ID": "test"
@@ -857,7 +857,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
     @Test
     public void failCreateCollectionWithEmbeddingServiceNoSecretName() {
-      // create a collection with "SHARED_SECRET" authentication type but no 'secret_name'
+      // create a collection with "SHARED_SECRET" authentication type but no 'secretName'
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -872,7 +872,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                     "dimension": 768,
                                     "service": {
                                         "provider": "vertexai",
-                                        "model_name": "text-embedding-3-small",
+                                        "modelName": "text-embedding-3-small",
                                         "authentication": {
                                             "type": [
                                                 "HEADER","SHARED_SECRET"
@@ -896,7 +896,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: 'secret_name' must be provided for 'SHARED_SECRET' authentication type"))
+                  "The provided options are invalid: 'secretName' must be provided for 'SHARED_SECRET' authentication type"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -918,12 +918,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                     "dimension": 768,
                                     "service": {
                                         "provider": "vertexai",
-                                        "model_name": "text-embedding-3-small",
+                                        "modelName": "text-embedding-3-small",
                                         "authentication": {
                                             "type": [
                                                 "HEADER","SHARED_SECRET"
                                             ],
-                                            "secret_name": "test"
+                                            "secretName": "test"
                                         }
                                     }
                                 }
@@ -958,12 +958,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                     "dimension": 768,
                                     "service": {
                                         "provider": "vertexai",
-                                        "model_name": "textembedding-gecko@003",
+                                        "modelName": "textembedding-gecko@003",
                                         "authentication": {
                                             "type": [
                                                 "HEADER","SHARED_SECRET"
                                             ],
-                                            "secret_name": "test"
+                                            "secretName": "test"
                                         },
                                         "parameters": {
                                             "test": "test"
@@ -1005,12 +1005,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                     "dimension": 768,
                                     "service": {
                                         "provider": "vertexai",
-                                        "model_name": "textembedding-gecko@003",
+                                        "modelName": "textembedding-gecko@003",
                                         "authentication": {
                                             "type": [
                                                 "HEADER","SHARED_SECRET"
                                             ],
-                                            "secret_name": "test"
+                                            "secretName": "test"
                                         },
                                         "parameters": {
                                             "PROJECT_ID": 123
@@ -1052,12 +1052,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                     "dimension": 768,
                                     "service": {
                                         "provider": "vertexai",
-                                        "model_name": "testModel",
+                                        "modelName": "testModel",
                                         "authentication": {
                                             "type": [
                                                 "HEADER","SHARED_SECRET"
                                             ],
-                                            "secret_name": "test"
+                                            "secretName": "test"
                                         },
                                         "parameters": {
                                             "PROJECT_ID": "123"
@@ -1099,12 +1099,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                     "dimension": 123,
                                     "service": {
                                         "provider": "vertexai",
-                                        "model_name": "textembedding-gecko@003",
+                                        "modelName": "textembedding-gecko@003",
                                         "authentication": {
                                             "type": [
                                                 "HEADER","SHARED_SECRET"
                                             ],
-                                            "secret_name": "test"
+                                            "secretName": "test"
                                         },
                                         "parameters": {
                                             "PROJECT_ID": "123"

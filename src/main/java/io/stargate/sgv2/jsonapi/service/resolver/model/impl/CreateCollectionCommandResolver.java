@@ -237,7 +237,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     return providerConfig;
   }
 
-  // TODO: validate the 'secret_name' in the future
+  // TODO: validate the 'secretName' in the future
   private void validateAuthentication(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig providerConfig) {
@@ -250,12 +250,12 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
               throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
                   "Authentication type '%s' is not supported", type);
             });
-    // Check if 'secret_name' is provided if authentication type is 'SHARED_SECRET'
+    // Check if 'secretName' is provided if authentication type is 'SHARED_SECRET'
     if (userConfig.vectorizeServiceAuthentication().type().contains("SHARED_SECRET")
         && (userConfig.vectorizeServiceAuthentication().secretName() == null
             || userConfig.vectorizeServiceAuthentication().secretName().isEmpty())) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'secret_name' must be provided for 'SHARED_SECRET' authentication type");
+          "'secretName' must be provided for 'SHARED_SECRET' authentication type");
     }
   }
 

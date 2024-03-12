@@ -102,7 +102,7 @@ class CreateCollectionCommandResolverTest {
                             "dimension": 1536,
                             "service": {
                                 "provider": "openai",
-                                "model_name": "text-embedding-ada-002",
+                                "modelName": "text-embedding-ada-002",
                                 "authentication": {
                                     "type": [
                                         "HEADER"
@@ -132,7 +132,7 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
                 assertThat(op.comment())
                     .isEqualTo(
-                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"vector\":{\"dimension\":1536,\"metric\":\"cosine\",\"service\":{\"provider\":\"openai\",\"model_name\":\"text-embedding-ada-002\",\"authentication\":{\"type\":[\"HEADER\"]},\"parameters\":{\"project_id\":\"test project\"}}}}}}",
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"vector\":{\"dimension\":1536,\"metric\":\"cosine\",\"service\":{\"provider\":\"openai\",\"modelName\":\"text-embedding-ada-002\",\"authentication\":{\"type\":[\"HEADER\"]},\"parameters\":{\"project_id\":\"test project\"}}}}}}",
                         TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }
