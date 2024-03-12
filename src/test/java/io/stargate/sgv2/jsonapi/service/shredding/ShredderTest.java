@@ -474,7 +474,8 @@ public class ShredderTest {
                    "y" :12
                 },
                 "nullable" : null,
-                "$vector" : [ 0.11, 0.22, 0.33, 0.44 ]
+                "$vector" : [ 0.11, 0.22, 0.33, 0.44 ],
+                "$vectorize" : "sample data"
               }
               """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
@@ -489,7 +490,8 @@ public class ShredderTest {
               JsonPath.from("metadata.x"),
               JsonPath.from("metadata.y"),
               JsonPath.from("nullable"),
-              JsonPath.from("$vector"));
+              JsonPath.from("$vector"),
+              JsonPath.from("$vectorize"));
 
       // First verify paths
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
@@ -533,6 +535,7 @@ public class ShredderTest {
                        "x": 28
                     },
                     "nullable" : null,
+                    "$vectorize" : "sample data",
                     "$vector" : [ 0.5, 0.25 ]
                   }
                   """;
@@ -541,8 +544,9 @@ public class ShredderTest {
           DocumentProjector.createForIndexing(null, new HashSet<>(Arrays.asList("*")));
       WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector, "testCommand");
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
-      List<JsonPath> expPaths = Arrays.asList();
 
+      List<JsonPath> expPaths =
+          Arrays.asList(JsonPath.from("$vector"), JsonPath.from("$vectorize"));
       // First verify paths
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
 
@@ -561,7 +565,8 @@ public class ShredderTest {
       assertThat(doc.queryNumberValues()).isEmpty();
       assertThat(doc.queryTextValues()).isEmpty();
       assertThat(doc.queryNullValues()).isEmpty();
-      assertThat(doc.queryVectorValues()).isNullOrEmpty();
+      float[] vector = {0.5f, 0.25f};
+      assertThat(doc.queryVectorValues()).containsOnly(vector);
     }
 
     @Test

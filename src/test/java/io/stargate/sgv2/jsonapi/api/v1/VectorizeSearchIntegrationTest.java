@@ -27,6 +27,8 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
 
   private static final String collectionName = "my_collection_vectorize";
 
+  private static final String collectionNameDenyAll = "my_collection_vectorize_deny";
+
   @Nested
   @Order(1)
   class CreateCollection {
@@ -59,6 +61,46 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                     }
                 }
                 """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      json =
+          """
+                    {
+                        "createCollection": {
+                            "name": "my_collection_vectorize_deny",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 5,
+                                    "service": {
+                                        "provider": "custom",
+                                        "model_name": "text-embedding-ada-002",
+                                        "authentication": {
+                                            "type": [
+                                                "SHARED_SECRET"
+                                            ],
+                                            "secret_name": "name_given_by_user"
+                                        },
+                                        "parameters": {
+                                            "project_id": "test project"
+                                        }
+                                    }
+                                },
+                                "indexing": {
+                                    "deny": ["*"]
+                                }
+                            }
+                        }
+                    }
+                    """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -101,6 +143,23 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body(json)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is("1"))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      given()
+          .headers(
+              Map.of(
+                  HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+                  getAuthToken(),
+                  HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+                  CustomITEmbeddingProvider.TEST_API_KEY))
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionNameDenyAll)
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is("1"))
@@ -474,6 +533,68 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body("errors[0].message", startsWith("$vectorize search clause needs to be text value"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    @Order(6)
+    public void vectorizeFilterDenyAll() {
+      String json =
+          """
+            {
+              "find": {
+                "filter" : {"$vectorize" : {"$exists" : true}}
+              }
+            }
+            """;
+
+      given()
+          .headers(
+              Map.of(
+                  HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+                  getAuthToken(),
+                  HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+                  CustomITEmbeddingProvider.TEST_API_KEY))
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionNameDenyAll)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]._id", is("1"))
+          .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[0].$vectorize", is(notNullValue()))
+          .body("data.documents[0].$vector", contains(0.1f, 0.15f, 0.3f, 0.12f, 0.05f));
+    }
+
+    @Test
+    @Order(7)
+    public void vectorizeSortDenyAll() {
+      String json =
+          """
+            {
+              "find": {
+                "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"}
+              }
+            }
+            """;
+
+      given()
+          .headers(
+              Map.of(
+                  HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+                  getAuthToken(),
+                  HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+                  CustomITEmbeddingProvider.TEST_API_KEY))
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionNameDenyAll)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]._id", is("1"))
+          .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[0].$vectorize", is(notNullValue()))
+          .body("data.documents[0].$vector", contains(0.1f, 0.15f, 0.3f, 0.12f, 0.05f));
     }
   }
 
