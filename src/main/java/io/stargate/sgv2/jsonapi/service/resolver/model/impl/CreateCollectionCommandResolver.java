@@ -269,18 +269,28 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         .parameters()
         .forEach(
             expectedParamConfig -> {
-              Object userParamValue =
-                  userConfig.vectorizeServiceParameter().get(expectedParamConfig.name());
-              // if the user doesn't provide the parameters in config
-              if (userParamValue == null) {
-                // if the parameter is required, throw error
-                if (expectedParamConfig.required()) {
+              // if the parameter is required
+              if (expectedParamConfig.required()) {
+                // if the user doesn't provide, throw error
+                if (userConfig.vectorizeServiceParameter() == null
+                    || userConfig.vectorizeServiceParameter().get(expectedParamConfig.name())
+                        == null) {
                   throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                      "Please provide required parameter '%s'.", expectedParamConfig.name());
+                      "Please provide required parameter '%s'", expectedParamConfig.name());
                 }
-              } else {
-                // if the user provides the parameters in config, validate the parameter type
-                validateParameterType(expectedParamConfig, userParamValue);
+                // else validate the type
+                validateParameterType(
+                    expectedParamConfig,
+                    userConfig.vectorizeServiceParameter().get(expectedParamConfig.name()));
+              } else { // if the parameter is not required
+                // if user provides it, validate the type
+                if (userConfig.vectorizeServiceParameter() != null
+                    || userConfig.vectorizeServiceParameter().get(expectedParamConfig.name())
+                        != null) {
+                  validateParameterType(
+                      expectedParamConfig,
+                      userConfig.vectorizeServiceParameter().get(expectedParamConfig.name()));
+                }
               }
             });
   }
@@ -308,7 +318,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
     if (typeMismatch) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "The provided parameter (%s) type is incorrect. Expected: '%s'",
+          "The provided parameter '%s' type is incorrect. Expected: '%s'",
           expectedParamConfig.name(), expectedParamType);
     }
   }
