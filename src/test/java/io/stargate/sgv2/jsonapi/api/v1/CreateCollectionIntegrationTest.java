@@ -940,7 +940,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Please provide required parameter 'PROJECT_ID'"))
+                  "The provided options are invalid: Required parameter 'PROJECT_ID' for the provider 'vertexai' missing"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
@@ -983,7 +983,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Please provide required parameter 'PROJECT_ID'"))
+                  "The provided options are invalid: Required parameter 'PROJECT_ID' for the provider 'vertexai' missing"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }

@@ -107,7 +107,7 @@ public record CreateCollectionCommand(
               @JsonProperty("modelName")
               String modelName,
           @Valid
-              @NotNull
+              @Nullable
               @Schema(
                   description = "Authentication config for chosen embedding service",
                   type = SchemaType.OBJECT,
@@ -124,7 +124,7 @@ public record CreateCollectionCommand(
               @JsonInclude(JsonInclude.Include.NON_NULL)
               Map<String, Object> vectorizeServiceParameter) {
         public record VectorizeServiceAuthentication(
-            @NotNull
+            @Nullable
                 @JsonInclude(JsonInclude.Include.NON_NULL)
                 @Schema(
                     description =

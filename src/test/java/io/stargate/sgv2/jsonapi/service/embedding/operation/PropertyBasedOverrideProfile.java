@@ -13,7 +13,6 @@ public class PropertyBasedOverrideProfile implements QuarkusTestProfile {
   @Override
   public Map<String, String> getConfigOverrides() {
     return ImmutableMap.<String, String>builder()
-        //        .put("jsonapi.embedding.config.store", "property")
         .put("jsonapi.embedding.providers.openai.enabled", "true")
         .put("jsonapi.embedding.providers.openai.api-key", "openai-api-key")
         .put("jsonapi.embedding.providers.openai.url", "https://api.openai.com/v1/")

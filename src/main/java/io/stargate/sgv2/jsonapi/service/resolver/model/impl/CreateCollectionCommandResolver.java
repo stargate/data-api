@@ -18,6 +18,8 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOpe
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
@@ -178,16 +180,15 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "The 'dimension' can not be null if 'service' is not provided");
       }
-    }
-    // TODO: what if the config model vector dimension is larger than 4096?
-    if (vectorDimension > documentLimitsConfig.maxVectorEmbeddingLength()) {
-      throw new JsonApiException(
-          ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE,
-          String.format(
-              "%s: %d (max %d)",
-              ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE.getMessage(),
-              vectorDimension,
-              documentLimitsConfig.maxVectorEmbeddingLength()));
+      if (vectorDimension > documentLimitsConfig.maxVectorEmbeddingLength()) {
+        throw new JsonApiException(
+            ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE,
+            String.format(
+                "%s: %d (max %d)",
+                ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE.getMessage(),
+                vectorDimension,
+                documentLimitsConfig.maxVectorEmbeddingLength()));
+      }
     }
     return vector;
   }
@@ -237,10 +238,14 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     return providerConfig;
   }
 
-  // TODO: validate the 'secretName' in the future
+  // TODO: 1. remove the first if statement when fully support validateAuthentication
+  //  2. validate the 'secretName' in the future
   private void validateAuthentication(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig providerConfig) {
+    if (userConfig.vectorizeServiceAuthentication() == null) {
+      return;
+    }
     // Check if user authentication type is support
     userConfig.vectorizeServiceAuthentication().type().stream()
         .filter(type -> !providerConfig.supportedAuthentication().contains(type))
@@ -259,40 +264,66 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     }
   }
 
-  // TODO: what if user provide some useless parameters (i.e. not in config), just ignore?
   private void validateUserParameters(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig providerConfig) {
-    if (providerConfig.parameters() == null) return;
+    // 1. Error if the user provided unconfigured parameters
+    if (providerConfig.parameters() == null || providerConfig.parameters().isEmpty()) {
+      // If providerConfig.parameters() is null or empty but the user still provides parameters,
+      // it's an error
+      if (userConfig.vectorizeServiceParameter() != null
+          && !userConfig.vectorizeServiceParameter().isEmpty()) {
+        throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+            "Parameters provided but the provider '%s' expects none.", userConfig.provider());
+      }
+      // Exit early if no parameters are configured
+      return;
+    }
+    Set<String> expectedParamNames =
+        providerConfig.parameters().stream()
+            .map(PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig::name)
+            .collect(Collectors.toSet());
 
+    Map<String, Object> userParameters =
+        (userConfig.vectorizeServiceParameter() != null)
+            ? userConfig.vectorizeServiceParameter()
+            : Collections.emptyMap();
+    // Check for unconfigured parameters provided by the user
+    userParameters
+        .keySet()
+        .forEach(
+            userParamName -> {
+              if (!expectedParamNames.contains(userParamName)) {
+                throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+                    "Unexpected parameter '%s' for the provider '%s' provided.",
+                    userParamName, userConfig.provider());
+              }
+            });
+
+    // 2. Error if the user doesn't provide required parameters
+    // Check for missing required parameters and collect them for type validation
+    List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig>
+        parametersToValidate = new ArrayList<>();
     providerConfig
         .parameters()
         .forEach(
             expectedParamConfig -> {
-              // if the parameter is required
-              if (expectedParamConfig.required()) {
-                // if the user doesn't provide, throw error
-                if (userConfig.vectorizeServiceParameter() == null
-                    || userConfig.vectorizeServiceParameter().get(expectedParamConfig.name())
-                        == null) {
-                  throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                      "Please provide required parameter '%s'", expectedParamConfig.name());
-                }
-                // else validate the type
-                validateParameterType(
-                    expectedParamConfig,
-                    userConfig.vectorizeServiceParameter().get(expectedParamConfig.name()));
-              } else { // if the parameter is not required
-                // if user provides it, validate the type
-                if (userConfig.vectorizeServiceParameter() != null
-                    || userConfig.vectorizeServiceParameter().get(expectedParamConfig.name())
-                        != null) {
-                  validateParameterType(
-                      expectedParamConfig,
-                      userConfig.vectorizeServiceParameter().get(expectedParamConfig.name()));
-                }
+              if (expectedParamConfig.required()
+                  && !userParameters.containsKey(expectedParamConfig.name())) {
+                throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+                    "Required parameter '%s' for the provider '%s' missing",
+                    expectedParamConfig.name(), userConfig.provider());
+              }
+              if (userParameters.containsKey(expectedParamConfig.name())) {
+                parametersToValidate.add(expectedParamConfig);
               }
             });
+
+    // 3. Validate parameter types if no errors occurred in previous steps
+    parametersToValidate.forEach(
+        expectedParamConfig ->
+            validateParameterType(
+                expectedParamConfig, userParameters.get(expectedParamConfig.name())));
   }
 
   private void validateParameterType(

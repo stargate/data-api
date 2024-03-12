@@ -27,7 +27,6 @@ jsonapi:
         api-key: YOUR_API_KEY
         supported-authentication:
           - "HEADER"
-          - "SHARED_SECRET"
         models:
           - name: sentence-transformers/all-MiniLM-L6-v2
             properties:
@@ -40,7 +39,6 @@ jsonapi:
         api-key: YOUR_API_KEY
         supported-authentication:
           - "HEADER"
-          - "SHARED_SECRET"
         parameters:
           - name: PROJECT_ID
             type: STRING
@@ -68,7 +66,6 @@ jsonapi:
         api-key: YOUR_API_KEY
         supported-authentication:
           - "HEADER"
-          - "SHARED_SECRET"
         models:
           - name: embed-english-v3.0
             properties:
@@ -84,9 +81,12 @@ jsonapi:
         api-key: YOUR_API_KEY
         supported-authentication:
           - "HEADER"
-          - "SHARED_SECRET"
         models:
           - name: NVIDIA Retrieval QA Embedding Model-1.0
+            properties:
+              vector-dimension: 1024
+              max-tokens: 512
+          - name: NV-Embed-QA
             properties:
               vector-dimension: 1024
               max-tokens: 512
