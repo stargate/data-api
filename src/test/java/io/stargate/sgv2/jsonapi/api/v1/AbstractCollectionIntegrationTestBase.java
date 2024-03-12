@@ -69,9 +69,11 @@ public abstract class AbstractCollectionIntegrationTestBase
 
   /** Utility to delete all documents from the test collection. */
   protected void deleteAllDocuments() {
-    String json = """
+    String json =
+        """
         {
           "deleteMany": {
+            "filter" : {"this_is_not_a_valid_column": {"$exists" : false}}
           }
         }
         """;
