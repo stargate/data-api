@@ -150,7 +150,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
   private CreateCollectionCommand.Options.VectorSearchConfig validateVectorOptions(
       CreateCollectionCommand.Options.VectorSearchConfig vector) {
-    String function = vector.metric();
     Integer vectorDimension = vector.dimension();
     CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig service =
         vector.vectorizeConfig();
@@ -197,6 +196,10 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private Integer validateService(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       Integer userVectorDimension) {
+    // Only for internal tests
+    if (userConfig.provider().equals("custom")) {
+      return userVectorDimension;
+    }
     // Check if the service provider exists and is enabled
     PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig providerConfig =
         getAndValidateProviderConfig(userConfig);
