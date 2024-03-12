@@ -159,8 +159,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       CreateCollectionCommand.Options.VectorSearchConfig vector) {
     if (!dataStoreConfig.vectorSearchEnabled()) {
       throw new JsonApiException(
-              ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE,
-              ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE.getMessage());
+          ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE,
+          ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE.getMessage());
     }
     Integer vectorDimension = vector.dimension();
     CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig service =
