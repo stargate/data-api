@@ -287,9 +287,11 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
               "data.document",
               jsonEquals(
                   """
+                      {
                         "_id": "ext1",
                         "username": "user1",
                         "enabled": true
+                      }
                                         """));
     }
 
