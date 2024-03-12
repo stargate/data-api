@@ -37,7 +37,7 @@ quarkus:
 
   # general app properties
   application:
-    name: Stargate JSON API
+    name: Stargate DATA API
 
   # banner for the startup
   banner:
@@ -64,8 +64,9 @@ quarkus:
 
     port: 8181
 
-  log:
-    min-level: trace
+    log:
+      min-level: trace
+
 
   # built-in micrometer properties
   micrometer:
