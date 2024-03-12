@@ -293,6 +293,18 @@ public record WritableShreddedDocument(
       queryVectorValues = arrayVals;
     }
 
+    /**
+     * Index vectorize field for $exists support
+     *
+     * @param path
+     * @param vector
+     */
+    @Override
+    public void shredVectorize(JsonPath path) {
+      // vector data is added only to queryVectorValues and exists keys index
+      addKey(path);
+    }
+
     /*
     /**********************************************************************
     /* Internal methods for actual information accumulation
