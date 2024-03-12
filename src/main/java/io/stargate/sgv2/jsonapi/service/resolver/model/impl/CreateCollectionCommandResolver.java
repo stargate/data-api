@@ -335,7 +335,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             .orElseThrow(
                 () ->
                     ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                        "Model name '%s' for provider '%s' is not supported.",
+                        "Model name '%s' for provider '%s' is not supported",
                         userConfig.modelName(), userConfig.provider()));
 
     Integer configVectorDimension = Integer.parseInt(model.properties().get("vector-dimension"));
@@ -343,7 +343,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       return configVectorDimension; // Use config dimension if user didn't provide one
     } else if (!configVectorDimension.equals(userVectorDimension)) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "The provided dimension value '%s' doesn't match the model supports dimension value '%s'.",
+          "The provided dimension value '%s' doesn't match the model supports dimension value '%s'",
           userVectorDimension, configVectorDimension);
     }
     return configVectorDimension;
