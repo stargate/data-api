@@ -358,7 +358,8 @@ public class ShredderTest {
                                "y" :12
                             },
                             "nullable" : null,
-                            "$vector" : [ 0.11, 0.22, 0.33, 0.44 ]
+                            "$vector" : [ 0.11, 0.22, 0.33, 0.44 ],
+                            "$vectorize" : "some data"
                           }
                           """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
@@ -371,6 +372,7 @@ public class ShredderTest {
           Arrays.asList(
               // NOTE: "$vector" is implicitly added to non-empty "allow" List
               JsonPath.from("$vector"),
+              JsonPath.from("$vectorize"),
               JsonPath.from("name"),
               JsonPath.from("metadata"),
               JsonPath.from("metadata.x"),
