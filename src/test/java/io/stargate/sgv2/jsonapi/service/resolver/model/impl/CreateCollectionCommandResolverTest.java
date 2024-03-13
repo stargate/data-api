@@ -102,7 +102,7 @@ class CreateCollectionCommandResolverTest {
                                     "dimension": 4,
                                     "service": {
                                         "provider": "openai",
-                                        "model_name": "text-embedding-ada-002",
+                                        "modelName": "text-embedding-ada-002",
                                         "authentication": {
                                             "type": [
                                                 "HEADER"
@@ -132,7 +132,7 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
                 assertThat(op.comment())
                     .isEqualTo(
-                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":1,\"options\":{\"vector\":{\"dimension\":4,\"metric\":\"cosine\",\"service\":{\"provider\":\"openai\",\"model_name\":\"text-embedding-ada-002\",\"authentication\":{\"type\":[\"HEADER\"]},\"parameters\":{\"project_id\":\"test project\"}}},\"default_id\":{\"type\":\"\"}}}}",
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":1,\"options\":{\"vector\":{\"dimension\":4,\"metric\":\"cosine\",\"service\":{\"provider\":\"openai\",\"modelName\":\"text-embedding-ada-002\",\"authentication\":{\"type\":[\"HEADER\"]},\"parameters\":{\"project_id\":\"test project\"}}},\"defaultId\":{\"type\":\"\"}}}}",
                         TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }
@@ -171,7 +171,7 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
                 assertThat(op.comment())
                     .isEqualTo(
-                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"indexing\":{\"deny\":[\"comment\"]},\"vector\":{\"dimension\":4,\"metric\":\"cosine\"},\"default_id\":{\"type\":\"\"}}}}",
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"indexing\":{\"deny\":[\"comment\"]},\"vector\":{\"dimension\":4,\"metric\":\"cosine\"},\"defaultId\":{\"type\":\"\"}}}}",
                         TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }
