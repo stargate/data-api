@@ -99,17 +99,17 @@ class CreateCollectionCommandResolverTest {
                     "options": {
                         "vector": {
                             "metric": "cosine",
-                            "dimension": 4,
+                            "dimension": 768,
                             "service": {
-                                "provider": "openai",
-                                "model_name": "text-embedding-ada-002",
+                                "provider": "vertexai",
+                                "modelName": "textembedding-gecko@003",
                                 "authentication": {
                                     "type": [
                                         "HEADER"
                                     ]
                                 },
                                 "parameters": {
-                                    "project_id": "test project"
+                                    "PROJECT_ID": "test project"
                                 }
                             }
                         }
@@ -128,11 +128,11 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.name()).isEqualTo("my_collection");
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.vectorSearch()).isEqualTo(true);
-                assertThat(op.vectorSize()).isEqualTo(4);
+                assertThat(op.vectorSize()).isEqualTo(768);
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
                 assertThat(op.comment())
                     .isEqualTo(
-                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"vector\":{\"dimension\":4,\"metric\":\"cosine\",\"service\":{\"provider\":\"openai\",\"model_name\":\"text-embedding-ada-002\",\"authentication\":{\"type\":[\"HEADER\"]},\"parameters\":{\"project_id\":\"test project\"}}}}}}",
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"vector\":{\"dimension\":768,\"metric\":\"cosine\",\"service\":{\"provider\":\"vertexai\",\"modelName\":\"textembedding-gecko@003\",\"authentication\":{\"type\":[\"HEADER\"]},\"parameters\":{\"PROJECT_ID\":\"test project\"}}}}}}",
                         TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }

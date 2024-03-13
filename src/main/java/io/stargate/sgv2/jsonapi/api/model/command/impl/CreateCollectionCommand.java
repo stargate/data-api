@@ -53,14 +53,14 @@ public record CreateCollectionCommand(
           IndexingConfig indexing) {
 
     public record VectorSearchConfig(
-        @Positive(message = "dimension should be greater than `0`")
+        @Nullable
+            @Positive(message = "dimension should be greater than `0`")
             @Schema(
                 description = "Dimension of the vector field",
                 type = SchemaType.INTEGER,
                 implementation = Integer.class)
             @JsonProperty("dimension")
             @JsonAlias("size") // old name
-            @NotNull
             Integer dimension,
         @Nullable
             @Pattern(
@@ -104,7 +104,7 @@ public record CreateCollectionCommand(
                   description = "Registered Embedding service model",
                   type = SchemaType.STRING,
                   implementation = String.class)
-              @JsonProperty("model_name")
+              @JsonProperty("modelName")
               String modelName,
           @Valid
               @Nullable
@@ -146,7 +146,7 @@ public record CreateCollectionCommand(
                         "Secret name. when stored_secrets authentication is used must be provided with the name of a pre-registered secret",
                     type = SchemaType.STRING,
                     implementation = String.class)
-                @JsonProperty("secret_name")
+                @JsonProperty("secretName")
                 String secretName) {}
       }
     }
