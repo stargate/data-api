@@ -6,12 +6,15 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.uuid.impl.UUIDUtil;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
@@ -43,7 +46,7 @@ public class ShredderWithExtendedTypesTest {
   @InjectMock protected DataApiRequestInfo bogusRequestInfo;
 
   @Nested
-  class OkCasesId {
+  class OkCasesExplicitId {
     @Test
     public void shredSimpleWithUUIDKeyAndValue() throws Exception {
       final String idUUID = defaultTestUUID().toString();
@@ -187,6 +190,144 @@ public class ShredderWithExtendedTypesTest {
           .isEqualTo(Map.of(JsonPath.from("age"), BigDecimal.valueOf(39)));
       assertThat(doc.queryTextValues())
           .isEqualTo(Map.of(JsonPath.from("_id"), generatedId, JsonPath.from("name"), "Chuck"));
+    }
+  }
+
+  @Nested
+  class OkCasesGeneratedId {
+    @Test
+    public void shredSimpleWithoutIdGenLegacyUUID() throws Exception {
+      final String inputJson = "{\"value\": 42}";
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc =
+          shredder.shred(
+              inputDoc,
+              null,
+              DocumentProjector.identityProjector(),
+              "test",
+              CollectionSettings.empty().withIdType(CollectionSettings.IdType.UNDEFINED));
+
+      DocumentId docId = doc.id();
+      // Legacy UUID generated as "plain" String id
+      assertThat(docId).isInstanceOf(DocumentId.StringId.class);
+
+      // should be auto-generated ObjectId: verify by constructing from String representation:
+      UUID typedId = UUIDUtil.uuid(((DocumentId.StringId) docId).key());
+      assertThat(typedId).isNotNull();
+      List<JsonPath> expPaths = Arrays.asList(JsonPath.from("_id"), JsonPath.from("value"));
+
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+      assertThat(doc.arraySize()).isEmpty();
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("value N42");
+
+      // Also, the document should be the same, including _id added:
+      ObjectNode jsonFromShredded = (ObjectNode) objectMapper.readTree(doc.docJson());
+      JsonNode idNode = jsonFromShredded.get("_id");
+
+      assertThat(idNode.asText()).isEqualTo(typedId.toString());
+
+      // Then atomic value containers
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryNumberValues())
+          .isEqualTo(Map.of(JsonPath.from("value"), BigDecimal.valueOf(42)));
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("_id"), typedId.toString()));
+    }
+
+    @Test
+    public void shredSimpleWithoutIdGenObjectId() throws Exception {
+      final String inputJson = "{\"value\": 42}";
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc =
+          shredder.shred(
+              inputDoc,
+              null,
+              DocumentProjector.identityProjector(),
+              "test",
+              CollectionSettings.empty().withIdType(CollectionSettings.IdType.OBJECT_ID));
+
+      DocumentId docId = doc.id();
+      assertThat(docId).isInstanceOf(DocumentId.ExtensionTypeId.class);
+
+      // should be auto-generated ObjectId: verify by constructing from String representation:
+      ObjectId typedId = new ObjectId(((DocumentId.ExtensionTypeId) docId).valueAsString());
+      assertThat(typedId).isNotNull();
+      List<JsonPath> expPaths = Arrays.asList(JsonPath.from("_id"), JsonPath.from("value"));
+
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+      assertThat(doc.arraySize()).isEmpty();
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("value N42");
+
+      // Also, the document should be the same, including _id added:
+      ObjectNode jsonFromShredded = (ObjectNode) objectMapper.readTree(doc.docJson());
+      JsonNode idNode = jsonFromShredded.get("_id");
+
+      assertThat(idNode).isNotNull().isInstanceOf(ObjectNode.class).hasSize(1);
+      assertThat(objectMapper.createObjectNode().put("$objectId", typedId.toString()))
+          .isEqualTo(idNode);
+
+      // Then atomic value containers
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryNumberValues())
+          .isEqualTo(Map.of(JsonPath.from("value"), BigDecimal.valueOf(42)));
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("_id"), typedId.toString()));
+    }
+
+    @Test
+    public void shredSimpleWithoutIdGenUUIDv4() throws Exception {
+      _testShredUUIDAutoGeneration(CollectionSettings.IdType.UUID, 4);
+    }
+
+    @Test
+    public void shredSimpleWithoutIdGenUUIDv6() throws Exception {
+      _testShredUUIDAutoGeneration(CollectionSettings.IdType.UUID_V6, 6);
+    }
+
+    @Test
+    public void shredSimpleWithoutIdGenUUIDv7() throws Exception {
+      _testShredUUIDAutoGeneration(CollectionSettings.IdType.UUID_V7, 7);
+    }
+
+    private void _testShredUUIDAutoGeneration(CollectionSettings.IdType idType, int uuidVersion)
+        throws Exception {
+      final String inputJson = "{\"value\": 42}";
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc =
+          shredder.shred(
+              inputDoc,
+              null,
+              DocumentProjector.identityProjector(),
+              "test",
+              CollectionSettings.empty().withIdType(idType));
+
+      DocumentId docId = doc.id();
+      assertThat(docId).isInstanceOf(DocumentId.ExtensionTypeId.class);
+
+      // should be auto-generated UUID of version 4: verify by constructing from String
+      // representation
+      UUID typedId = UUIDUtil.uuid(((DocumentId.ExtensionTypeId) docId).valueAsString());
+      assertThat(typedId.version()).isEqualTo(uuidVersion);
+      List<JsonPath> expPaths = Arrays.asList(JsonPath.from("_id"), JsonPath.from("value"));
+
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+      assertThat(doc.arraySize()).isEmpty();
+      assertThat(doc.arrayContains()).containsExactlyInAnyOrder("value N42");
+
+      // Also, the document should be the same, including _id added:
+      ObjectNode jsonFromShredded = (ObjectNode) objectMapper.readTree(doc.docJson());
+      JsonNode idNode = jsonFromShredded.get("_id");
+
+      assertThat(idNode).isNotNull().isInstanceOf(ObjectNode.class).hasSize(1);
+      assertThat(objectMapper.createObjectNode().put("$uuid", typedId.toString()))
+          .isEqualTo(idNode);
+
+      // Then atomic value containers
+      assertThat(doc.queryBoolValues()).isEmpty();
+      assertThat(doc.queryNullValues()).isEmpty();
+      assertThat(doc.queryNumberValues())
+          .isEqualTo(Map.of(JsonPath.from("value"), BigDecimal.valueOf(42)));
+      assertThat(doc.queryTextValues()).isEqualTo(Map.of(JsonPath.from("_id"), typedId.toString()));
     }
   }
 

@@ -3,7 +3,10 @@ package io.stargate.sgv2.jsonapi.service.shredding;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.uuid.Generators;
+import com.fasterxml.uuid.NoArgGenerator;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
@@ -24,6 +27,7 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.bson.types.ObjectId;
 
 /**
  * Shred an incoming JSON document into the data we need to store in the DB, and then de-shred.
@@ -37,6 +41,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @ApplicationScoped
 public class Shredder {
+  private static final NoArgGenerator UUID_V4_GENERATOR = Generators.randomBasedGenerator();
+  private static final NoArgGenerator UUID_V6_GENERATOR = Generators.timeBasedReorderedGenerator();
+  private static final NoArgGenerator UUID_V7_GENERATOR = Generators.timeBasedEpochGenerator();
+
   private final ObjectMapper objectMapper;
 
   private final DocumentLimitsConfig documentLimits;
@@ -89,7 +97,7 @@ public class Shredder {
           "document to shred must be a JSON Object, instead got %s", doc.getNodeType());
     }
 
-    final ObjectNode docWithId = normalizeDocumentId((ObjectNode) doc);
+    final ObjectNode docWithId = normalizeDocumentId(collectionSettings, (ObjectNode) doc);
     final DocumentId docId = DocumentId.fromJson(docWithId.get(DocumentConstants.Fields.DOC_ID));
     final String docJson;
 
@@ -143,16 +151,17 @@ public class Shredder {
    * is the very first property in the document (reordering as needed). Note that a new document is
    * created and returned; input document is never modified.
    *
+   * @param collectionSettings Collection settings to use for document id generation
    * @param doc Document to use as the base
    * @return Document that has _id as its first property
    */
-  private ObjectNode normalizeDocumentId(ObjectNode doc) {
+  private ObjectNode normalizeDocumentId(CollectionSettings collectionSettings, ObjectNode doc) {
     // First: see if we have Object Id present or not
     JsonNode idNode = doc.get(DocumentConstants.Fields.DOC_ID);
 
     // If not, generate one
     if (idNode == null) {
-      idNode = generateDocumentId();
+      idNode = generateDocumentId(collectionSettings);
     }
     // Either way we need to construct actual document with _id as the first property;
     // unfortunately there is no way to reorder properties in-place.
@@ -163,10 +172,30 @@ public class Shredder {
     return docWithIdAsFirstProperty;
   }
 
-  private JsonNode generateDocumentId() {
-    // Currently we generate UUID-as-String; alternatively could use and create
-    // ObjectId-compatible values for better interoperability
-    return objectMapper.getNodeFactory().textNode(UUID.randomUUID().toString());
+  private JsonNode generateDocumentId(CollectionSettings collectionSettings) {
+    CollectionSettings.IdType idType = collectionSettings.idConfig().idType();
+    if (idType == null) {
+      idType = CollectionSettings.IdType.UNDEFINED;
+    }
+    final JsonNodeFactory jnf = objectMapper.getNodeFactory();
+    switch (idType) {
+      case OBJECT_ID:
+        return wrapExtensionType(jnf, JsonExtensionType.OBJECT_ID, new ObjectId());
+      case UUID:
+        return wrapExtensionType(jnf, JsonExtensionType.UUID, UUID_V4_GENERATOR.generate());
+      case UUID_V6:
+        return wrapExtensionType(jnf, JsonExtensionType.UUID, UUID_V6_GENERATOR.generate());
+      case UUID_V7:
+        return wrapExtensionType(jnf, JsonExtensionType.UUID, UUID_V7_GENERATOR.generate());
+      case UNDEFINED:
+    }
+    // Default for "undefined"/"unspecified" is legacy unwrapped UUIDv4 (random)
+    return jnf.textNode(UUID_V4_GENERATOR.generate().toString());
+  }
+
+  private static JsonNode wrapExtensionType(
+      JsonNodeFactory jnf, JsonExtensionType etype, Object value) {
+    return jnf.objectNode().put(etype.encodedName(), value.toString());
   }
 
   /**

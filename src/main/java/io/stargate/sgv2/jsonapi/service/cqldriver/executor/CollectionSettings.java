@@ -45,6 +45,11 @@ public record CollectionSettings(
     return EMPTY;
   }
 
+  public CollectionSettings withIdType(IdType idType) {
+    return new CollectionSettings(
+        collectionName, new IdConfig(idType), vectorConfig, indexingConfig);
+  }
+
   public record IdConfig(IdType idType) {
     public static IdConfig defaultIdConfig() {
       return new IdConfig(IdType.UNDEFINED);
