@@ -110,7 +110,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                   {
                     "name": "%s",
                     "options": {
-                        "default_id":{
+                        "defaultId":{
                           "type" : ""
                       }
                     }
@@ -122,7 +122,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               {
                   "name": "%s",
                   "options": {
-                      "default_id":{
+                      "defaultId":{
                           "type" : ""
                       },
                     "vector": {
@@ -327,7 +327,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                     "createCollection": {
                       "name": "%s",
                       "options": {
-                        "default_id" : {
+                        "defaultId" : {
                           "type" : "objectId"
                         },
                         "indexing": {
@@ -351,19 +351,19 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
 
       String expected1 =
           """
-      {"name":"TableName","options":{"default_id" : {"type" : ""}}}
+      {"name":"TableName","options":{"defaultId" : {"type" : ""}}}
       """;
       String expected2 =
           """
-              {"name":"collection1", "options":{"default_id" : {"type" : ""}}}
+              {"name":"collection1", "options":{"defaultId" : {"type" : ""}}}
               """;
       String expected3 =
           """
-      {"name":"collection2", "options": {"default_id" : {"type" : ""}, "vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
+      {"name":"collection2", "options": {"defaultId" : {"type" : ""}, "vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
       """;
       String expected4 =
           """
-              {"name":"collection4","options":{"default_id" : {"type" : "objectId"}, "indexing":{"deny":["comment"]}}}
+              {"name":"collection4","options":{"defaultId" : {"type" : "objectId"}, "indexing":{"deny":["comment"]}}}
               """;
       json =
           """

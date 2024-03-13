@@ -57,95 +57,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
   @Override
   public Operation resolveCommand(CommandContext ctx, CreateCollectionCommand command) {
-
-    if (command.options() != null) {
-      boolean vector = false;
-      boolean indexing = false;
-      int vectorSize = 0;
-      String function = null;
-
-      // handling indexing options
-      if (command.options().indexing() != null) {
-        // validation of configuration
-        command.options().indexing().validate();
-        indexing = true;
-        // No need to process if both are null or empty
-      }
-
-      // handling vector
-      if (command.options().vector() != null) {
-        if (!dataStoreConfig.vectorSearchEnabled()) {
-          throw new JsonApiException(
-              ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE,
-              ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE.getMessage());
-        }
-        function = command.options().vector().metric();
-        vectorSize = command.options().vector().dimension();
-        if (vectorSize > documentLimitsConfig.maxVectorEmbeddingLength()) {
-          throw new JsonApiException(
-              ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE,
-              String.format(
-                  "%s: %d (max %d)",
-                  ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE.getMessage(),
-                  vectorSize,
-                  documentLimitsConfig.maxVectorEmbeddingLength()));
-        }
-        vector = true;
-      }
-
-      // construct the table comment json string
-      final ObjectNode collectionNode = objectMapper.createObjectNode();
-      ObjectNode optionsNode =
-          objectMapper.createObjectNode(); // Create a new ObjectNode for collection options
-      if (indexing) {
-        optionsNode.putPOJO(
-            TableCommentConstants.COLLECTION_INDEXING_KEY, command.options().indexing());
-      }
-      if (vector) {
-        optionsNode.putPOJO(
-            TableCommentConstants.COLLECTION_VECTOR_KEY, command.options().vector());
-      }
-      // if default_id is not specified during createCollection, resolve type to empty string
-      if (command.options().idConfig() != null) {
-        optionsNode.putPOJO(TableCommentConstants.DEFAULT_ID_KEY, command.options().idConfig());
-      } else {
-        optionsNode.putPOJO(
-            TableCommentConstants.DEFAULT_ID_KEY,
-            objectMapper.createObjectNode().putPOJO("type", ""));
-      }
-
-      collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, command.name());
-      collectionNode.put(
-          TableCommentConstants.SCHEMA_VERSION_KEY, TableCommentConstants.SCHEMA_VERSION_VALUE);
-      collectionNode.putPOJO(TableCommentConstants.OPTIONS_KEY, optionsNode);
-      final ObjectNode tableCommentNode = objectMapper.createObjectNode();
-      tableCommentNode.putPOJO(TableCommentConstants.TOP_LEVEL_KEY, collectionNode);
-      String comment = tableCommentNode.toString();
-
-      if (command.options().vector() != null) {
-        return CreateCollectionOperation.withVectorSearch(
-            ctx,
-            dbLimitsConfig,
-            objectMapper,
-            cqlSessionCache,
-            command.name(),
-            vectorSize,
-            function,
-            comment,
-            operationsConfig.databaseConfig().ddlDelayMillis(),
-            operationsConfig.tooManyIndexesRollbackEnabled());
-      } else {
-        return CreateCollectionOperation.withoutVectorSearch(
-            ctx,
-            dbLimitsConfig,
-            objectMapper,
-            cqlSessionCache,
-            command.name(),
-            comment,
-            operationsConfig.databaseConfig().ddlDelayMillis(),
-            operationsConfig.tooManyIndexesRollbackEnabled());
-      }
-    } else {
+    if (command.options() == null) {
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
           dbLimitsConfig,
@@ -156,5 +68,111 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled());
     }
+
+    boolean hasIndexing = command.options().indexing() != null;
+    boolean hasVectorSearch = command.options().vector() != null;
+    CreateCollectionCommand.Options.VectorSearchConfig vector = command.options().vector();
+
+    // handling indexing options
+    if (hasIndexing) {
+      // validation of configuration
+      command.options().indexing().validate();
+      // No need to process if both are null or empty
+    }
+
+    // handling vector option
+    if (hasVectorSearch) {
+      vector = validateVectorOptions(vector);
+    }
+
+    String comment = generateComment(hasIndexing, hasVectorSearch, vector, command);
+
+    if (hasVectorSearch) {
+      return CreateCollectionOperation.withVectorSearch(
+          ctx,
+          dbLimitsConfig,
+          objectMapper,
+          cqlSessionCache,
+          command.name(),
+          vector.dimension(),
+          vector.metric(),
+          comment,
+          operationsConfig.databaseConfig().ddlDelayMillis(),
+          operationsConfig.tooManyIndexesRollbackEnabled());
+    } else {
+      return CreateCollectionOperation.withoutVectorSearch(
+          ctx,
+          dbLimitsConfig,
+          objectMapper,
+          cqlSessionCache,
+          command.name(),
+          comment,
+          operationsConfig.databaseConfig().ddlDelayMillis(),
+          operationsConfig.tooManyIndexesRollbackEnabled());
+    }
+  }
+
+  /**
+   * Generate a JSON string comment that will be stored in the database.
+   *
+   * @param hasIndexing indicating if indexing options are enabled.
+   * @param hasVectorSearch indicating if vector search options are enabled.
+   * @param validatedVector vector config after validation
+   * @param command createCollectionCommand
+   * @return the comment string
+   */
+  private String generateComment(
+      boolean hasIndexing,
+      boolean hasVectorSearch,
+      CreateCollectionCommand.Options.VectorSearchConfig validatedVector,
+      CreateCollectionCommand command) {
+    final ObjectNode collectionNode = objectMapper.createObjectNode();
+    ObjectNode optionsNode = objectMapper.createObjectNode(); // For storing collection options.
+
+    if (hasIndexing) {
+      optionsNode.putPOJO(
+          TableCommentConstants.COLLECTION_INDEXING_KEY, command.options().indexing());
+    }
+    if (hasVectorSearch) {
+      optionsNode.putPOJO(TableCommentConstants.COLLECTION_VECTOR_KEY, validatedVector);
+    }
+    // if default_id is not specified during createCollection, resolve type to empty string
+    if (command.options().idConfig() != null) {
+      optionsNode.putPOJO(TableCommentConstants.DEFAULT_ID_KEY, command.options().idConfig());
+    } else {
+      optionsNode.putPOJO(
+          TableCommentConstants.DEFAULT_ID_KEY,
+          objectMapper.createObjectNode().putPOJO("type", ""));
+    }
+
+    collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, command.name());
+    collectionNode.put(
+        TableCommentConstants.SCHEMA_VERSION_KEY, TableCommentConstants.SCHEMA_VERSION_VALUE);
+    collectionNode.putPOJO(TableCommentConstants.OPTIONS_KEY, optionsNode);
+    final ObjectNode tableCommentNode = objectMapper.createObjectNode();
+    tableCommentNode.putPOJO(TableCommentConstants.TOP_LEVEL_KEY, collectionNode);
+
+    return tableCommentNode.toString();
+  }
+
+  private CreateCollectionCommand.Options.VectorSearchConfig validateVectorOptions(
+      CreateCollectionCommand.Options.VectorSearchConfig vector) {
+    if (!dataStoreConfig.vectorSearchEnabled()) {
+      throw new JsonApiException(
+          ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE,
+          ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE.getMessage());
+    }
+    int vectorSize = vector.dimension();
+    if (vectorSize > documentLimitsConfig.maxVectorEmbeddingLength()) {
+      throw new JsonApiException(
+          ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE,
+          String.format(
+              "%s: %d (max %d)",
+              ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE.getMessage(),
+              vectorSize,
+              documentLimitsConfig.maxVectorEmbeddingLength()));
+    }
+    // TODO vectorize config validation
+    return vector;
   }
 }

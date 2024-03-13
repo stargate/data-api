@@ -15,7 +15,7 @@ public interface TableCommentConstants {
   /** Schema version key */
   String SCHEMA_VERSION_KEY = "schema_version";
   /** Default id type key */
-  String DEFAULT_ID_KEY = "default_id";
+  String DEFAULT_ID_KEY = "defaultId";
   /** Schema version value */
   int SCHEMA_VERSION_VALUE = 1;
 }

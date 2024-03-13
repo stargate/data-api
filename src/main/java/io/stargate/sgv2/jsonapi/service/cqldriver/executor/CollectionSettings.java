@@ -141,9 +141,9 @@ public record CollectionSettings(
       // construct vectorizeConfig
       JsonNode vectorizeServiceNode = jsonNode.get("service");
       if (vectorizeServiceNode != null) {
-        // provider, model_name, must exist
+        // provider, modelName, must exist
         String provider = vectorizeServiceNode.get("provider").asText();
-        String modelName = vectorizeServiceNode.get("model_name").asText();
+        String modelName = vectorizeServiceNode.get("modelName").asText();
         // construct VectorizeConfig.VectorizeServiceAuthentication, can be null
         JsonNode vectorizeServiceAuthenticationNode = vectorizeServiceNode.get("authentication");
         VectorizeConfig.VectorizeServiceAuthentication vectorizeServiceAuthentication = null;
@@ -157,8 +157,8 @@ public record CollectionSettings(
           // pre-registered secret.
 
           String authenticationSecretName =
-              vectorizeServiceAuthenticationNode.has("secret_name")
-                  ? vectorizeServiceAuthenticationNode.get("secret_name").asText()
+              vectorizeServiceAuthenticationNode.has("secretName")
+                  ? vectorizeServiceAuthenticationNode.get("secretName").asText()
                   : null;
           vectorizeServiceAuthentication =
               new VectorizeConfig.VectorizeServiceAuthentication(
