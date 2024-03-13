@@ -274,7 +274,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       if (userConfig.vectorizeServiceParameter() != null
           && !userConfig.vectorizeServiceParameter().isEmpty()) {
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "Parameters provided but the provider '%s' expects none.", userConfig.provider());
+            "Parameters provided but the provider '%s' expects none", userConfig.provider());
       }
       // Exit early if no parameters are configured
       return;
@@ -295,7 +295,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             userParamName -> {
               if (!expectedParamNames.contains(userParamName)) {
                 throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                    "Unexpected parameter '%s' for the provider '%s' provided.",
+                    "Unexpected parameter '%s' for the provider '%s' provided",
                     userParamName, userConfig.provider());
               }
             });

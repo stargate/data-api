@@ -13,11 +13,7 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
@@ -585,7 +581,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                       "modelName": "textembedding-gecko@003",
                                       "authentication": {
                                           "type": [
-                                              "HEADER","SHARED_SECRET"
+                                              "HEADER"
                                           ],
                                           "secretName": "test"
                                       },
@@ -639,7 +635,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                           "modelName": "textembedding-gecko@003",
                                           "authentication": {
                                               "type": [
-                                                  "HEADER","SHARED_SECRET"
+                                                  "HEADER"
                                               ],
                                               "secretName": "test"
                                           },
@@ -666,7 +662,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                           "modelName": "textembedding-gecko@003",
                                           "authentication": {
                                               "type": [
-                                                  "HEADER","SHARED_SECRET"
+                                                  "HEADER"
                                               ],
                                               "secretName": "test"
                                           },
@@ -855,6 +851,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
+    // TODO: Enable it when support SHARED_SECRET
+    @Disabled
     @Test
     public void failCreateCollectionWithEmbeddingServiceNoSecretName() {
       // create a collection with "SHARED_SECRET" authentication type but no 'secretName'
@@ -921,7 +919,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                         "modelName": "text-embedding-3-small",
                                         "authentication": {
                                             "type": [
-                                                "HEADER","SHARED_SECRET"
+                                                "HEADER"
                                             ],
                                             "secretName": "test"
                                         }
@@ -943,7 +941,11 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                   "The provided options are invalid: Required parameter 'PROJECT_ID' for the provider 'vertexai' missing"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
 
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceWithUnconfiguredParameters() {
+      // create a collection with unconfigured parameters
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -961,7 +963,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                         "modelName": "textembedding-gecko@003",
                                         "authentication": {
                                             "type": [
-                                                "HEADER","SHARED_SECRET"
+                                                "HEADER"
                                             ],
                                             "secretName": "test"
                                         },
@@ -983,7 +985,49 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Required parameter 'PROJECT_ID' for the provider 'vertexai' missing"))
+                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'vertexai' provided"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "openai",
+                                        "modelName": "text-embedding-3-small",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ]
+                                        },
+                                        "parameters": {
+                                            "test": "test"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Parameters provided but the provider 'openai' expects none"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -1008,7 +1052,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                         "modelName": "textembedding-gecko@003",
                                         "authentication": {
                                             "type": [
-                                                "HEADER","SHARED_SECRET"
+                                                "HEADER"
                                             ],
                                             "secretName": "test"
                                         },
@@ -1055,7 +1099,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                         "modelName": "testModel",
                                         "authentication": {
                                             "type": [
-                                                "HEADER","SHARED_SECRET"
+                                                "HEADER"
                                             ],
                                             "secretName": "test"
                                         },
@@ -1102,7 +1146,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                         "modelName": "textembedding-gecko@003",
                                         "authentication": {
                                             "type": [
-                                                "HEADER","SHARED_SECRET"
+                                                "HEADER"
                                             ],
                                             "secretName": "test"
                                         },
