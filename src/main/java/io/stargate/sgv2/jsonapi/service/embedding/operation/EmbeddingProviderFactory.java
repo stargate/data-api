@@ -3,9 +3,11 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 
@@ -15,7 +17,17 @@ public class EmbeddingProviderFactory {
   private static Logger logger = org.slf4j.LoggerFactory.getLogger(EmbeddingProviderFactory.class);
   @Inject Instance<EmbeddingProviderConfigStore> embeddingProviderConfigStore;
 
-  record CacheKey(Optional<String> tenant, String namespace, String modelName) {}
+  private interface ProviderConstructor {
+    EmbeddingProvider create(String baseUrl, String apiKey, String modelName);
+  }
+
+  private static final Map<String, ProviderConstructor> providersMap =
+      Map.ofEntries(
+          Map.entry(ProviderConstants.OPENAI, OpenAiEmbeddingClient::new),
+          Map.entry(ProviderConstants.HUGGINGFACE, HuggingFaceEmbeddingClient::new),
+          Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingClient::new),
+          Map.entry(ProviderConstants.COHERE, CohereEmbeddingClient::new),
+          Map.entry(ProviderConstants.NVIDIA, NVidiaEmbeddingClient::new));
 
   public EmbeddingProvider getConfiguration(
       Optional<String> tenant, String serviceName, String modelName) {
@@ -26,51 +38,31 @@ public class EmbeddingProviderFactory {
       Optional<String> tenant, String serviceName, String modelName) {
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
         embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
-    if (configuration == null) {
-      throw new JsonApiException(
-          ErrorCode.VECTORIZE_SERVICE_NOT_REGISTERED,
-          ErrorCode.VECTORIZE_SERVICE_NOT_REGISTERED.getMessage() + serviceName);
-    }
-    EmbeddingProvider service;
-    switch (configuration.serviceProvider()) {
-      case "openai":
-        return new OpenAiEmbeddingClient(
-            configuration.baseUrl(), configuration.apiKey(), modelName);
-      case "huggingface":
-        return new HuggingFaceEmbeddingClient(
-            configuration.baseUrl(), configuration.apiKey(), modelName);
-      case "vertexai":
-        return new VertexAIEmbeddingClient(
-            configuration.baseUrl(), configuration.apiKey(), modelName);
-      case "cohere":
-        return new CohereEmbeddingClient(
-            configuration.baseUrl(), configuration.apiKey(), modelName);
-      case "nvidia":
-        return new NVidiaEmbeddingClient(
-            configuration.baseUrl(), configuration.apiKey(), modelName);
-      case "custom":
-        try {
-          Optional<Class<?>> clazz = configuration.clazz();
-          if (clazz.isPresent()) {
-            final EmbeddingProvider customEmbeddingProvider =
-                (EmbeddingProvider) clazz.get().getConstructor().newInstance();
-            return customEmbeddingProvider;
-          } else {
-            throw new JsonApiException(
-                ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
-                ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage()
-                    + "custom class undefined");
-          }
-        } catch (Exception e) {
-          e.printStackTrace();
+
+    if (configuration.serviceProvider().equals(ProviderConstants.CUSTOM)) {
+      try {
+        Optional<Class<?>> clazz = configuration.clazz();
+        if (clazz.isPresent()) {
+          final EmbeddingProvider customEmbeddingProvider =
+              (EmbeddingProvider) clazz.get().getConstructor().newInstance();
+          return customEmbeddingProvider;
+        } else {
           throw new JsonApiException(
               ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
-              ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage()
-                  + "custom class provided does not resolved to EmbeddingProvider "
-                  + configuration.clazz().get().getCanonicalName());
+              ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage() + "custom class undefined");
         }
-      default:
-        throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(serviceName);
+      } catch (Exception e) {
+        e.printStackTrace();
+        throw new JsonApiException(
+            ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
+            ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage()
+                + "custom class provided does not resolved to EmbeddingProvider "
+                + configuration.clazz().get().getCanonicalName());
+      }
     }
+
+    return providersMap
+        .get(configuration.serviceProvider())
+        .create(configuration.baseUrl(), configuration.apiKey(), modelName);
   }
 }
