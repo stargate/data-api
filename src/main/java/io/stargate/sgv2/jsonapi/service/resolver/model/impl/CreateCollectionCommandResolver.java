@@ -166,9 +166,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     }
 
     if (vector.vectorizeConfig() != null && !operationsConfig.vectorizeEnabled()) {
-      throw new JsonApiException(
-          ErrorCode.VECTORIZE_FEATURE_NOT_AVAILABLE,
-          ErrorCode.VECTORIZE_FEATURE_NOT_AVAILABLE.getMessage());
+      throw ErrorCode.VECTORIZE_FEATURE_NOT_AVAILABLE.toApiException();
     }
 
     Integer vectorDimension = vector.dimension();
