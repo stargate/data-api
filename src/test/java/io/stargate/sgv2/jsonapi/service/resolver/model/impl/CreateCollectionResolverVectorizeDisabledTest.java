@@ -28,7 +28,7 @@ public class CreateCollectionResolverVectorizeDisabledTest {
     @Mock CommandContext commandContext;
 
     @Test
-    public void vectorSearchDisabled() throws Exception {
+    public void vectorizeSearchDisabled() throws Exception {
       String json =
           """
                 {
