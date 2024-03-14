@@ -251,4 +251,9 @@ public interface OperationsConfig {
       ConsistencyLevel vectorSearch();
     }
   }
+  /** @return Flag to enable server side vectorization. */
+  @Max(500)
+  @Positive
+  @WithDefault("false")
+  boolean vectorizeEnabled();
 }
