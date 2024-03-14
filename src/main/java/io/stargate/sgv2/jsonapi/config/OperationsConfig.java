@@ -252,8 +252,6 @@ public interface OperationsConfig {
     }
   }
   /** @return Flag to enable server side vectorization. */
-  @Max(500)
-  @Positive
   @WithDefault("false")
   boolean vectorizeEnabled();
 }
