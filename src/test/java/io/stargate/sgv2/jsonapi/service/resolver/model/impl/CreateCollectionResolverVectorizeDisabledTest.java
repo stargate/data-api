@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -17,7 +16,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@TestProfile(NoGlobalResourcesTestProfile.Impl.class)
+@TestProfile(DisableVectorizeProfile.class)
 public class CreateCollectionResolverVectorizeDisabledTest {
   @Inject ObjectMapper objectMapper;
   @Inject CreateCollectionCommandResolver resolver;
@@ -37,18 +36,10 @@ public class CreateCollectionResolverVectorizeDisabledTest {
                         "options": {
                             "vector": {
                                 "metric": "cosine",
-                                "dimension": 768,
+                                "dimension": 1024,
                                 "service": {
-                                    "provider": "vertexai",
-                                    "modelName": "textembedding-gecko@003",
-                                    "authentication": {
-                                        "type": [
-                                            "HEADER"
-                                        ]
-                                    },
-                                    "parameters": {
-                                        "PROJECT_ID": "test project"
-                                    }
+                                    "provider": "nvidia",
+                                    "modelName": "NV-Embed-QA"
                                 }
                             }
                         }
