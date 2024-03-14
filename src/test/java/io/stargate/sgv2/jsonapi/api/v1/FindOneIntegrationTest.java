@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.startsWith;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -753,6 +754,52 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
 
   @Nested
   @Order(2)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class FindOneFail {
+    @Test
+    public void findWithMissingCollection() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{ \"findOne\": { \"filter\" : {\"_id\": \"doc1\"}}}")
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, "no_such_collection")
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body(
+              "errors[0].message",
+              is("Collection does not exist, collection name: no_such_collection"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COLLECTION_NOT_EXIST"));
+    }
+
+    @Test
+    public void findWithInvalidCollectionName() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body("{ \"findOne\": { \"filter\" : {\"_id\": \"doc1\"}}}")
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, "table,rate=100")
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Request invalid: field 'collection' value \"table,rate=100\" not valid. Problem:"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"));
+    }
+  }
+
+  @Nested
+  @Order(99)
   class Metrics {
     @Test
     public void checkMetrics() {

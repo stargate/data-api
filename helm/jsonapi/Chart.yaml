@@ -1,6 +1,6 @@
 apiVersion: v2
 name: jsonapi
-description: A Helm chart to deploy stargate JSON API 
+description: A Helm chart to deploy stargate JSON API
 
 # A chart can be either an 'application' or a 'library' chart.
 #

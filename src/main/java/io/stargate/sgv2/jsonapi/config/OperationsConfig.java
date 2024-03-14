@@ -37,6 +37,12 @@ public interface OperationsConfig {
   /** Defines the default max size of filter fields. */
   int DEFAULT_MAX_FILTER_SIZE = 64;
 
+  /**
+   * Defines the default maximum documents to insert setting for {@code InsertMany} command;
+   * defaults to 20
+   */
+  public static final int DEFAULT_MAX_DOCUMENT_INSERT_COUNT = 20;
+
   /** @return Defines the default document page size, defaults to <code>20</code>. */
   @Max(500)
   @Positive
@@ -84,7 +90,7 @@ public interface OperationsConfig {
    */
   @Max(100)
   @Positive
-  @WithDefault("20")
+  @WithDefault("" + DEFAULT_MAX_DOCUMENT_INSERT_COUNT)
   int maxDocumentInsertCount();
 
   /**
@@ -116,6 +122,10 @@ public interface OperationsConfig {
    */
   @WithDefault("1000")
   int maxCountLimit();
+
+  /** @return Boolean flag to enable astra index guardrail too many indexes rollback */
+  @WithDefault("true")
+  boolean tooManyIndexesRollbackEnabled();
 
   /**
    * @return Defines the default page size for count operation, having separate from

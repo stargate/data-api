@@ -2,7 +2,7 @@
 
 ## Description
 
-The Documents API CRUD Dataset workflow targets Stargate's Documents API using JSON documents from an external dataset.
+The DATA API CRUD Dataset workflow targets Stargate's DATA API using JSON documents from an external dataset.
 The [dataset](#dataset) is mandatory and should contain a JSON document per row that should be used as the input for write and update operations.
 This workflow is perfect for testing Stargate performance using your own JSON dataset or any other realistic dataset.
 
@@ -13,7 +13,7 @@ Instead, there is only the main phase with 4 different load types (write, read, 
 
 ### default
 
-The default scenario for http-jsonapi-crud-dataset.yaml runs each type of the main phase sequentially: write, read, update and delete.
+The default scenario for http-dataapi-crud-dataset.yaml runs each type of the main phase sequentially: write, read, update and delete.
 This means that setting cycles for each of the phases should be done using the: `write-cycles`, `read-cycles`, `update-cycles` and `delete-cycles`.
 The default value for all 4 cycles variables is the amount of documents to process (see [Workload Parameters](#workload-parameters)).
 

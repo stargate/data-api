@@ -9,6 +9,12 @@ public enum ErrorCode {
   NO_COMMAND_MATCHED("Unable to find the provided command"),
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
 
+  /**
+   * Error code used for {@code ConstraintViolationException} failures mapped to {@code
+   * JsonApiException}
+   */
+  COMMAND_FIELD_INVALID("Request invalid"),
+
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
   COLLECTION_NOT_EXIST("Collection does not exist, collection name: "),
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
@@ -23,7 +29,7 @@ public enum ErrorCode {
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 
   FILTER_MULTIPLE_ID_FILTER(
-      "Should only have one _id filter, document id cannot be restricted by more than one relation if it includes an Equal"),
+      "Cannot have more than one _id equals filter clause: use $in operator instead"),
 
   FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
 
