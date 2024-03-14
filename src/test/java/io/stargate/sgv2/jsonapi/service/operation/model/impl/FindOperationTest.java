@@ -2467,6 +2467,132 @@ public class FindOperationTest extends OperationTestBase {
     }
   }
 
+  @Test
+  public void findAllSortByUUIDv6() throws Exception {
+    // same for uuidv7
+    String collectionReadCql =
+        "SELECT key, tx_id, doc_json, query_text_values['uuidv6'], query_dbl_values['uuidv6'], query_bool_values['uuidv6'], query_null_values['uuidv6'], query_timestamp_values['uuidv6'] FROM \"%s\".\"%s\" LIMIT %s"
+            .formatted(KEYSPACE_NAME, COLLECTION_NAME, 20);
+
+    // These are UUIDv6 ids generated at 30 second intervals.
+    String doc1 =
+        """
+                      {
+                        "_id": "doc1",
+                        "uuidv6": "1e712685-714f-6720-a23a-c90103f70be6"
+                      }
+                      """;
+    String doc2 =
+        """
+                      {
+                        "_id": "doc2",
+                        "uuidv6": "1e712686-8f82-60c0-ac07-7d6641ed230d"
+                      }
+                      """;
+    String doc3 =
+        """
+                      {
+                        "_id": "doc3",
+                        "uuidv6": "1e712687-ada3-68f0-93f8-c1ebf8e6fc8c"
+                      }
+                      """;
+
+    SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+    ColumnDefinitions columnDefs =
+        buildColumnDefs(
+            TestColumn.keyColumn(),
+            TestColumn.ofUuid("tx_id"),
+            TestColumn.ofVarchar("doc_json"),
+            TestColumn.ofVarchar("query_text_values['uuidv6']"),
+            TestColumn.ofDecimal("query_dbl_values['uuidv6']"),
+            TestColumn.ofBoolean("query_bool_values['uuidv6']"),
+            TestColumn.ofVarchar("query_null_values['uuidv6']"),
+            TestColumn.ofDate("query_timestamp_values['uuidv6']"));
+    List<Row> rows =
+        Arrays.asList(
+            resultRow(
+                columnDefs,
+                1,
+                byteBufferForKey("doc1"),
+                UUID.randomUUID(),
+                doc1,
+                "1e712685-714f-6720-a23a-c90103f70be6",
+                null,
+                null,
+                null,
+                null),
+            resultRow(
+                columnDefs,
+                2,
+                byteBufferForKey("doc2"),
+                UUID.randomUUID(),
+                doc2,
+                "1e712686-8f82-60c0-ac07-7d6641ed230d",
+                null,
+                null,
+                null,
+                null),
+            resultRow(
+                columnDefs,
+                3,
+                byteBufferForKey("doc3"),
+                UUID.randomUUID(),
+                doc3,
+                "1e712687-ada3-68f0-93f8-c1ebf8e6fc8c",
+                null,
+                null,
+                null,
+                null));
+
+    AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
+    final AtomicInteger callCount = new AtomicInteger();
+    QueryExecutor queryExecutor = mock(QueryExecutor.class);
+    when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+        .then(
+            invocation -> {
+              callCount.incrementAndGet();
+              return Uni.createFrom().item(results);
+            });
+
+    LogicalExpression implicitAnd = LogicalExpression.and();
+    FindOperation operation =
+        FindOperation.sorted(
+            COMMAND_CONTEXT,
+            implicitAnd,
+            DocumentProjector.identityProjector(),
+            null,
+            5,
+            20,
+            ReadType.SORTED_DOCUMENT,
+            objectMapper,
+            List.of(new FindOperation.OrderBy("uuidv6", true)),
+            0,
+            20);
+
+    Supplier<CommandResult> execute =
+        operation
+            .execute(queryExecutor)
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .awaitItem()
+            .getItem();
+
+    // assert query execution
+    assertThat(callCount.get()).isEqualTo(1);
+
+    // then result
+    CommandResult result = execute.get();
+    assertThat(result.data().getResponseDocuments())
+        .hasSize(3)
+        .isEqualTo(
+            List.of(
+                objectMapper.readTree(doc1),
+                objectMapper.readTree(doc2),
+                objectMapper.readTree(doc3)));
+    assertThat(result.status()).isNullOrEmpty();
+    assertThat(result.errors()).isNullOrEmpty();
+  }
+
   @Nested
   class GetVectorDocuments {
     @Test
