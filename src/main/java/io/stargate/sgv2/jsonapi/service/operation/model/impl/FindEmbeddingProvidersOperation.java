@@ -91,7 +91,8 @@ public record FindEmbeddingProvidersOperation(
       ArrayList<ModelConfigResponse> modelsRemoveProperties = new ArrayList<>();
       for (PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ModelConfig model :
           embeddingProviderConfig.models()) {
-        ModelConfigResponse returnModel = new ModelConfigResponse(model.name(), model.parameters());
+        ModelConfigResponse returnModel =
+            new ModelConfigResponse(model.name(), model.vectorDimension(), model.parameters());
         modelsRemoveProperties.add(returnModel);
       }
       return new EmbeddingProviderResponse(
@@ -108,10 +109,12 @@ public record FindEmbeddingProvidersOperation(
    * timeout etc.).
    *
    * @param name Identifier name of the model.
+   * @param vectorDimension vector dimension of the model.
    * @param parameters Parameters for customizing the model.
    */
   private record ModelConfigResponse(
       String name,
+      Integer vectorDimension,
       List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig>
           parameters) {}
 }
