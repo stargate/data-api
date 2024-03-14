@@ -369,7 +369,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
                         "Model name '%s' for provider '%s' is not supported",
                         userConfig.modelName(), userConfig.provider()));
 
-    Integer configVectorDimension = Integer.parseInt(model.properties().get("vector-dimension"));
+    Integer configVectorDimension = model.vectorDimension();
     if (userVectorDimension == null) {
       return configVectorDimension; // Use config dimension if user didn't provide one
     } else if (!configVectorDimension.equals(userVectorDimension)) {
