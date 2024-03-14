@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.PropertyBasedEmbeddingProviderConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -210,7 +211,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       Integer userVectorDimension) {
     // Only for internal tests
-    if (userConfig.provider().equals("custom")) {
+    if (userConfig.provider().equals(ProviderConstants.CUSTOM)) {
       return userVectorDimension;
     }
     // Check if the service provider exists and is enabled

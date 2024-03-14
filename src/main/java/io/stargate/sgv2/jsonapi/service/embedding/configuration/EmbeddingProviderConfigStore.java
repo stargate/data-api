@@ -16,7 +16,8 @@ public interface EmbeddingProviderConfigStore {
     }
 
     public static ServiceConfig custom(Optional<Class<?>> clazz) {
-      return new ServiceConfig("custom", "custom", null, null, clazz);
+      return new ServiceConfig(
+          ProviderConstants.CUSTOM, ProviderConstants.CUSTOM, null, null, clazz);
     }
   }
 
