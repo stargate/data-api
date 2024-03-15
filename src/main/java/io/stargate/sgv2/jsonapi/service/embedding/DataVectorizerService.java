@@ -10,9 +10,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProvider;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
+import java.util.Optional;
 
 /** Service to vectorize the data to embedding vector. */
 @ApplicationScoped
@@ -20,11 +23,16 @@ public class DataVectorizerService {
 
   private final ObjectMapper objectMapper;
   private final DataApiRequestInfo dataApiRequestInfo;
+  private final MeteredEmbeddingProvider meteredEmbeddingProvider;
 
   @Inject
-  public DataVectorizerService(ObjectMapper objectMapper, DataApiRequestInfo dataApiRequestInfo) {
+  public DataVectorizerService(
+      ObjectMapper objectMapper,
+      DataApiRequestInfo dataApiRequestInfo,
+      MeteredEmbeddingProvider meteredEmbeddingProvider) {
     this.objectMapper = objectMapper;
     this.dataApiRequestInfo = dataApiRequestInfo;
+    this.meteredEmbeddingProvider = meteredEmbeddingProvider;
   }
 
   /**
@@ -35,9 +43,16 @@ public class DataVectorizerService {
    * @return
    */
   public Uni<Command> vectorize(CommandContext commandContext, Command command) {
+    EmbeddingProvider embeddingProvider =
+        Optional.ofNullable(commandContext.embeddingProvider())
+            .map(
+                provider ->
+                    meteredEmbeddingProvider.setEmbeddingClient(
+                        provider, command.getClass().getSimpleName()))
+            .orElse(null);
     final DataVectorizer dataVectorizer =
         new DataVectorizer(
-            commandContext.embeddingProvider(),
+            embeddingProvider,
             objectMapper.getNodeFactory(),
             dataApiRequestInfo.getEmbeddingApiKey(),
             commandContext.collection());
