@@ -15,7 +15,7 @@ SGTAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.coordinator.
 
 # Default to latest released version
 DATAAPITAG="v1"
-DATAAPIIMAGE="stargateio/jsonapi"
+DATAAPIIMAGE="stargateio/data-api"
 
 while getopts "lqnr:t:j:" opt; do
   case $opt in
@@ -26,7 +26,7 @@ while getopts "lqnr:t:j:" opt; do
       DATAAPITAG=$OPTARG
       ;;
     n)
-      DATAAPIIMAGE="stargateio/jsonapi-native"
+      DATAAPIIMAGE="stargateio/data-api-native"
       ;;
     q)
       REQUESTLOG=true

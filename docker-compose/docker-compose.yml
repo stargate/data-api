@@ -57,11 +57,11 @@ services:
       timeout: 10s
       retries: 10
 
-  jsonapi:
-    image: ${JSONIMAGE}:${JSONTAG}
-    depends_on:
-      coordinator:
-        condition: service_healthy
+  data-api:
+    image: ${DATAAPIIMAGE}:${DATAAPITAG}
+#    depends_on:
+#      coordinator:
+#        condition: service_healthy
     networks:
       - stargate
     ports:
@@ -70,6 +70,7 @@ services:
     environment:
       - JAVA_MAX_MEM_RATIO=75
       - JAVA_INITIAL_MEM_RATIO=50
+      - STARGATE_DATA_STORE_IGNORE_BRIDGE=true
       - GC_CONTAINER_OPTIONS=-XX:+UseG1GC
       - STARGATE_JSONAPI_OPERATIONS_DATABASE_CONFIG_CASSANDRA_END_POINTS=coordinator
       - QUARKUS_HTTP_ACCESS_LOG_ENABLED=${REQUESTLOG}
