@@ -448,7 +448,7 @@ public interface ReadOperation extends Operation {
       for (Row row : rs.currentPage()) {
         long rangeStart = Long.parseLong(row.getString("range_start"));
         long rangeEnd = Long.parseLong(row.getString("range_end"));
-        if (rangeStart > rangeEnd) {
+        if (rangeStart >= rangeEnd) {
           totalRangeSize += (MAX_TOKEN - rangeStart) + (rangeEnd - MIN_TOKEN);
         } else {
           totalRangeSize += rangeEnd - rangeStart;
