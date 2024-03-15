@@ -442,8 +442,8 @@ public interface ReadOperation extends Operation {
     } else {
 
       // calculate the total range size and total partitions count for each range
-      long totalPartitionsCount = 0;
-      long totalRangeSize = 0;
+      double totalPartitionsCount = 0;
+      double totalRangeSize = 0;
 
       for (Row row : rs.currentPage()) {
         long rangeStart = Long.parseLong(row.getString("range_start"));
