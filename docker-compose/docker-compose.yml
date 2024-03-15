@@ -59,9 +59,9 @@ services:
 
   data-api:
     image: ${DATAAPIIMAGE}:${DATAAPITAG}
-#    depends_on:
-#      coordinator:
-#        condition: service_healthy
+    depends_on:
+      coordinator:
+        condition: service_healthy
     networks:
       - stargate
     ports:
