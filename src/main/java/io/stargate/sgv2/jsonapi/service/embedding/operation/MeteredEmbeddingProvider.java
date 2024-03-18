@@ -1,9 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
-import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.*;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -48,12 +45,26 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
+    // timer metrics for vectorize call
     Timer.Sample sample = Timer.start(meterRegistry);
     Uni<List<float[]>> result =
         embeddingClient.vectorize(texts, apiKeyOverride, embeddingRequestType);
     Tags tags = getCustomTags();
     sample.stop(meterRegistry.timer(jsonApiMetricsConfig.vectorizeTimerMetrics(), tags));
+
+    // String bytes metrics for vectorize
+    DistributionSummary ds =
+        DistributionSummary.builder(jsonApiMetricsConfig.vectorizeStringBytesMetrics())
+            .tags(getCustomTags())
+            .register(meterRegistry);
+    ds.record(getBytes(texts));
     return result;
+  }
+
+  private int getBytes(List<String> texts) {
+    return texts.stream()
+        .mapToInt(String::length) // 1 byte per character
+        .sum();
   }
 
   private Tags getCustomTags() {

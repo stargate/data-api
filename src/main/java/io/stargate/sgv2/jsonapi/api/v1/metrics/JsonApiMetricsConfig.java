@@ -75,6 +75,10 @@ public interface JsonApiMetricsConfig {
   String vectorizeTimerMetrics();
 
   @NotBlank
+  @WithDefault("vectorize.string.bytes")
+  String vectorizeStringBytesMetrics();
+
+  @NotBlank
   @WithDefault("embedding.provider")
   String embeddingProvider();
 
