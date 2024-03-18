@@ -50,21 +50,16 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
     Uni<List<float[]>> result =
         embeddingClient.vectorize(texts, apiKeyOverride, embeddingRequestType);
     Tags tags = getCustomTags();
-    sample.stop(meterRegistry.timer(jsonApiMetricsConfig.vectorizeTimerMetrics(), tags));
+    sample.stop(
+        meterRegistry.timer(jsonApiMetricsConfig.vectorizeExternalCallDurationMetrics(), tags));
 
     // String bytes metrics for vectorize
     DistributionSummary ds =
-        DistributionSummary.builder(jsonApiMetricsConfig.vectorizeStringBytesMetrics())
+        DistributionSummary.builder(jsonApiMetricsConfig.vectorizeInputBytesMetrics())
             .tags(getCustomTags())
             .register(meterRegistry);
-    ds.record(getBytes(texts));
+    texts.stream().mapToInt(String::length).forEach(ds::record);
     return result;
-  }
-
-  private int getBytes(List<String> texts) {
-    return texts.stream()
-        .mapToInt(String::length) // 1 byte per character
-        .sum();
   }
 
   private Tags getCustomTags() {

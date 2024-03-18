@@ -71,12 +71,12 @@ public interface JsonApiMetricsConfig {
   String metricsName();
 
   @NotBlank
-  @WithDefault("vectorize.time")
-  String vectorizeTimerMetrics();
+  @WithDefault("vectorize.external.call.duration")
+  String vectorizeExternalCallDurationMetrics();
 
   @NotBlank
-  @WithDefault("vectorize.string.bytes")
-  String vectorizeStringBytesMetrics();
+  @WithDefault("vectorize.input.bytes")
+  String vectorizeInputBytesMetrics();
 
   @NotBlank
   @WithDefault("embedding.provider")

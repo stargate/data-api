@@ -292,8 +292,9 @@ public class MeteredCommandProcessor {
             || id.getName().startsWith(jsonApiMetricsConfig.jsonBytesRead())
             || id.getName().startsWith(jsonApiMetricsConfig.jsonDocsWritten())
             || id.getName().startsWith(jsonApiMetricsConfig.jsonDocsRead())
-            || id.getName().startsWith(jsonApiMetricsConfig.vectorizeTimerMetrics())
-            || id.getName().startsWith(jsonApiMetricsConfig.vectorizeStringBytesMetrics())) {
+            || id.getName()
+                .startsWith(jsonApiMetricsConfig.vectorizeExternalCallDurationMetrics())) {
+
           return DistributionStatisticConfig.builder()
               .percentiles(0.5, 0.90, 0.95, 0.99) // median and 95th percentile, not aggregable
               .percentilesHistogram(true) // histogram buckets (e.g. prometheus histogram_quantile)
