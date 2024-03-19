@@ -62,6 +62,9 @@ public interface PropertyBasedEmbeddingProviderConfig {
       String name();
 
       @JsonProperty
+      Integer vectorDimension();
+
+      @JsonProperty
       List<ParameterConfig> parameters();
 
       @JsonProperty
