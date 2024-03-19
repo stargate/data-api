@@ -38,7 +38,9 @@ public class FindEmbeddingProvidersIntegrationTest extends AbstractNamespaceInte
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.embeddingProviders", notNullValue());
+          .body("status.embeddingProviders", notNullValue())
+          .body("status.embeddingProviders.nvidia.url", notNullValue())
+          .body("status.embeddingProviders.nvidia.models[0].vectorDimension", equalTo(1024));
     }
   }
 

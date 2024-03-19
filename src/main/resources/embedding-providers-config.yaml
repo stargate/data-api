@@ -12,14 +12,11 @@ stargate:
             - "HEADER"
           models:
             - name: text-embedding-3-small
-              properties:
-                vector-dimension: 1536
+              vector-dimension: 1536
             - name: text-embedding-3-large
-              properties:
-                vector-dimension: 3072
+              vector-dimension: 3072
             - name: text-embedding-ada-002
-              properties:
-                vector-dimension: 1536
+              vector-dimension: 1536
 
         # Hugging face embedding service configuration
         huggingface:
@@ -30,8 +27,7 @@ stargate:
             - "HEADER"
           models:
             - name: sentence-transformers/all-MiniLM-L6-v2
-              properties:
-                vector-dimension: 384
+              vector-dimension: 384
 
         # Vertex AI embedding service configuration
         vertexai:
@@ -50,6 +46,7 @@ stargate:
             timeout-ms: 1000
           models:
             - name: textembedding-gecko@003
+              vector-dimension: 768
               parameters:
                 - name: "autoTruncate"
                   type: BOOLEAN
@@ -57,7 +54,7 @@ stargate:
                   default-value: true
               properties:
                 max-tokens: 3072
-                vector-dimension: 768
+
 
 
         # Cohere embedding service configuration
@@ -69,11 +66,9 @@ stargate:
             - "HEADER"
           models:
             - name: embed-english-v3.0
-              properties:
-                vector-dimension: 1024
+              vector-dimension: 1024
             - name: embed-english-v2.0
-              properties:
-                vector-dimension: 4096
+              vector-dimension: 4096
 
         # NVidia embedding service configuration
         nvidia:
@@ -84,10 +79,10 @@ stargate:
             - "HEADER"
           models:
             - name: NVIDIA Retrieval QA Embedding Model-1.0
+              vector-dimension: 1024
               properties:
-                vector-dimension: 1024
                 max-tokens: 512
             - name: NV-Embed-QA
+              vector-dimension: 1024
               properties:
-                vector-dimension: 1024
                 max-tokens: 512
