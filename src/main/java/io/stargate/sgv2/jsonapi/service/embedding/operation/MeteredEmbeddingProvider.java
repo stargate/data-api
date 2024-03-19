@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * A {@link RequestScoped} provider for embedding operations that includes metrics tracking.
- * It wraps around another {@code EmbeddingProvider} to add monitoring of operation times,
- * input sizes, and other relevant metrics using a {@link MeterRegistry}. This provider
- * is designed to operate within the context of a request, collecting and reporting metrics
- * specific to embedding operations.
+ * A {@link RequestScoped} provider for embedding operations that includes metrics tracking. It
+ * wraps around another {@code EmbeddingProvider} to add monitoring of operation times, input sizes,
+ * and other relevant metrics using a {@link MeterRegistry}. This provider is designed to operate
+ * within the context of a request, collecting and reporting metrics specific to embedding
+ * operations.
  */
 @RequestScoped
 public class MeteredEmbeddingProvider implements EmbeddingProvider {
@@ -44,7 +44,7 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
    * Sets the underlying embedding client and the command name for metrics tagging.
    *
    * @param embeddingClient The embedding provider client to be used for vectorization.
-   * @param commandName     The name of the command, for metrics tagging purposes.
+   * @param commandName The name of the command, for metrics tagging purposes.
    * @return The current instance of {@link MeteredEmbeddingProvider}, allowing for method chaining.
    */
   public MeteredEmbeddingProvider setEmbeddingClient(
