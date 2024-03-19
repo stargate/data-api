@@ -417,7 +417,6 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       assertThat(jsonDocsWrittenCountMetrics).hasSize(1);
       jsonDocsWrittenCountMetrics.forEach(
           line -> {
-            System.out.println(line);
             String[] parts = line.split(" ");
             String numericPart =
                 parts[parts.length - 1]; // Get the last part which should be the number
