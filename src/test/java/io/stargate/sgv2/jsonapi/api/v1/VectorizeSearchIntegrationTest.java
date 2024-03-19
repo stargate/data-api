@@ -153,18 +153,18 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
 
       // verify the metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-      List<String> vectorizeExternalCallDurationMetrics =
+      List<String> vectorizeCallDurationMetrics =
           metrics
               .lines()
               .filter(
                   line ->
-                      line.startsWith("vectorize_external_call_duration_seconds")
-                          && !line.startsWith("vectorize_external_call_duration_seconds_bucket")
+                      line.startsWith("vectorize_call_duration_seconds")
+                          && !line.startsWith("vectorize_call_duration_seconds_bucket")
                           && !line.contains("quantile")
                           && line.contains("command=\"InsertOneCommand\""))
               .toList();
 
-      assertThat(vectorizeExternalCallDurationMetrics)
+      assertThat(vectorizeCallDurationMetrics)
           .satisfies(
               lines -> {
                 assertThat(lines.size()).isEqualTo(3);
@@ -390,18 +390,18 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
 
       // verify the metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-      List<String> vectorizeExternalCallDurationMetrics =
+      List<String> vectorizeCallDurationMetrics =
           metrics
               .lines()
               .filter(
                   line ->
-                      line.startsWith("vectorize_external_call_duration_seconds")
-                          && !line.startsWith("vectorize_external_call_duration_seconds_bucket")
+                      line.startsWith("vectorize_call_duration_seconds")
+                          && !line.startsWith("vectorize_call_duration_seconds_bucket")
                           && !line.contains("quantile")
                           && line.contains("command=\"InsertManyCommand\""))
               .toList();
 
-      assertThat(vectorizeExternalCallDurationMetrics)
+      assertThat(vectorizeCallDurationMetrics)
           .satisfies(
               lines -> {
                 lines.forEach(
@@ -1078,18 +1078,18 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
 
       // verify the metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-      List<String> vectorizeExternalCallDurationMetrics =
+      List<String> vectorizeCallDurationMetrics =
           metrics
               .lines()
               .filter(
                   line ->
-                      line.startsWith("vectorize_external_call_duration_seconds")
-                          && !line.startsWith("vectorize_external_call_duration_seconds_bucket")
+                      line.startsWith("vectorize_call_duration_seconds")
+                          && !line.startsWith("vectorize_call_duration_seconds_bucket")
                           && !line.contains("quantile")
                           && line.contains("command=\"FindOneAndReplaceCommand\""))
               .toList();
 
-      assertThat(vectorizeExternalCallDurationMetrics)
+      assertThat(vectorizeCallDurationMetrics)
           .satisfies(
               lines -> {
                 assertThat(lines.size()).isEqualTo(3);

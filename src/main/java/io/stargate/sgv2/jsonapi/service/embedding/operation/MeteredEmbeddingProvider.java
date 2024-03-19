@@ -5,12 +5,19 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Optional;
 
-@ApplicationScoped
+/**
+ * A {@link RequestScoped} provider for embedding operations that includes metrics tracking.
+ * It wraps around another {@code EmbeddingProvider} to add monitoring of operation times,
+ * input sizes, and other relevant metrics using a {@link MeterRegistry}. This provider
+ * is designed to operate within the context of a request, collecting and reporting metrics
+ * specific to embedding operations.
+ */
+@RequestScoped
 public class MeteredEmbeddingProvider implements EmbeddingProvider {
   MeterRegistry meterRegistry;
   JsonApiMetricsConfig jsonApiMetricsConfig;
@@ -33,6 +40,13 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
     tenantConfig = metricsConfig.tenantRequestCounter();
   }
 
+  /**
+   * Sets the underlying embedding client and the command name for metrics tagging.
+   *
+   * @param embeddingClient The embedding provider client to be used for vectorization.
+   * @param commandName     The name of the command, for metrics tagging purposes.
+   * @return The current instance of {@link MeteredEmbeddingProvider}, allowing for method chaining.
+   */
   public MeteredEmbeddingProvider setEmbeddingClient(
       EmbeddingProvider embeddingClient, String commandName) {
     this.embeddingClient = embeddingClient;
@@ -50,8 +64,7 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
     Uni<List<float[]>> result =
         embeddingClient.vectorize(texts, apiKeyOverride, embeddingRequestType);
     Tags tags = getCustomTags();
-    sample.stop(
-        meterRegistry.timer(jsonApiMetricsConfig.vectorizeExternalCallDurationMetrics(), tags));
+    sample.stop(meterRegistry.timer(jsonApiMetricsConfig.vectorizeCallDurationMetrics(), tags));
 
     // String bytes metrics for vectorize
     DistributionSummary ds =
