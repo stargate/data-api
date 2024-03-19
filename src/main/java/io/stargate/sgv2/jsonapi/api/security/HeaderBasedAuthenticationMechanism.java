@@ -21,7 +21,6 @@ import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.AUTHENTICA
 import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.DEPRECATED_AUTHENTICATION_TOKEN_HEADER_NAME;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.quarkus.logging.Log;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;

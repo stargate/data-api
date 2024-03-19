@@ -18,7 +18,6 @@
 package io.stargate.sgv2.jsonapi.api.security.configuration;
 
 import io.quarkus.arc.lookup.LookupIfProperty;
-import io.quarkus.logging.Log;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.stargate.sgv2.jsonapi.api.security.HeaderAuthenticationRequest;

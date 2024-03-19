@@ -17,7 +17,6 @@
 
 package io.stargate.sgv2.jsonapi.api.security;
 
-import io.quarkus.logging.Log;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.SecurityIdentity;

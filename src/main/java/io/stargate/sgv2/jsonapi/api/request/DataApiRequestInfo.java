@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
 import io.vertx.ext.web.RoutingContext;
