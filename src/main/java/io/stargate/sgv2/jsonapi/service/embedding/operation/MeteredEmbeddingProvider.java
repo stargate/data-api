@@ -5,55 +5,48 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import jakarta.enterprise.context.RequestScoped;
-import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * A {@link RequestScoped} provider for embedding operations that includes metrics tracking. It
- * wraps around another {@code EmbeddingProvider} to add monitoring of operation times, input sizes,
- * and other relevant metrics using a {@link MeterRegistry}. This provider is designed to operate
- * within the context of a request, collecting and reporting metrics specific to embedding
- * operations.
+ * Provides a metered version of an {@link EmbeddingProvider}, adding metrics collection to the
+ * embedding process. This class is designed to wrap around an existing {@link EmbeddingProvider} to
+ * collect and report various metrics, such as the duration of vectorization calls and the size of
+ * input texts.
  */
-@RequestScoped
 public class MeteredEmbeddingProvider implements EmbeddingProvider {
-  MeterRegistry meterRegistry;
-  JsonApiMetricsConfig jsonApiMetricsConfig;
-  DataApiRequestInfo dataApiRequestInfo;
+  private final MeterRegistry meterRegistry;
+  private final JsonApiMetricsConfig jsonApiMetricsConfig;
+  private final DataApiRequestInfo dataApiRequestInfo;
   private static final String UNKNOWN_VALUE = "unknown";
   private final MetricsConfig.TenantRequestCounterConfig tenantConfig;
-  EmbeddingProvider embeddingClient;
+  private final EmbeddingProvider embeddingProvider;
+  private final String commandName;
 
-  String commandName;
-
-  @Inject
   public MeteredEmbeddingProvider(
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       DataApiRequestInfo dataApiRequestInfo,
-      MetricsConfig metricsConfig) {
+      MetricsConfig metricsConfig,
+      EmbeddingProvider embeddingProvider,
+      String commandName) {
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
     this.dataApiRequestInfo = dataApiRequestInfo;
     tenantConfig = metricsConfig.tenantRequestCounter();
+    this.embeddingProvider = embeddingProvider;
+    this.commandName = commandName;
   }
 
   /**
-   * Sets the underlying embedding client and the command name for metrics tagging.
+   * Vectorizes a list of texts, adding metrics collection for the duration of the vectorization
+   * call and the size of the input texts.
    *
-   * @param embeddingClient The embedding provider client to be used for vectorization.
-   * @param commandName The name of the command, for metrics tagging purposes.
-   * @return The current instance of {@link MeteredEmbeddingProvider}, allowing for method chaining.
+   * @param texts the list of texts to vectorize.
+   * @param apiKeyOverride optional API key to override any default authentication mechanism.
+   * @param embeddingRequestType the type of embedding request, influencing how texts are processed.
+   * @return a {@link Uni} that will provide the list of vectorized texts, as arrays of floats.
    */
-  public MeteredEmbeddingProvider setEmbeddingClient(
-      EmbeddingProvider embeddingClient, String commandName) {
-    this.embeddingClient = embeddingClient;
-    this.commandName = commandName;
-    return this;
-  }
-
   @Override
   public Uni<List<float[]>> vectorize(
       List<String> texts,
@@ -62,7 +55,7 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
     // timer metrics for vectorize call
     Timer.Sample sample = Timer.start(meterRegistry);
     Uni<List<float[]>> result =
-        embeddingClient.vectorize(texts, apiKeyOverride, embeddingRequestType);
+        embeddingProvider.vectorize(texts, apiKeyOverride, embeddingRequestType);
     Tags tags = getCustomTags();
     sample.stop(meterRegistry.timer(jsonApiMetricsConfig.vectorizeCallDurationMetrics(), tags));
 
@@ -75,13 +68,19 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
     return result;
   }
 
+  /**
+   * Generates custom tags for metrics based on the command name, tenant ID, and the name of the
+   * embedding provider.
+   *
+   * @return a collection of {@link Tag} instances for use with metrics.
+   */
   private Tags getCustomTags() {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
     Tag tenantTag =
         Tag.of(tenantConfig.tenantTag(), dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     Tag embeddingProviderTag =
         Tag.of(
-            jsonApiMetricsConfig.embeddingProvider(), embeddingClient.getClass().getSimpleName());
+            jsonApiMetricsConfig.embeddingProvider(), embeddingProvider.getClass().getSimpleName());
     return Tags.of(commandTag, tenantTag, embeddingProviderTag);
   }
 }

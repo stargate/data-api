@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.embedding;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
@@ -10,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProvider;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,16 +26,22 @@ public class DataVectorizerService {
 
   private final ObjectMapper objectMapper;
   private final DataApiRequestInfo dataApiRequestInfo;
-  private final MeteredEmbeddingProvider meteredEmbeddingProvider;
+  private final MeterRegistry meterRegistry;
+  private final JsonApiMetricsConfig jsonApiMetricsConfig;
+  private final MetricsConfig metricsConfig;
 
   @Inject
   public DataVectorizerService(
       ObjectMapper objectMapper,
       DataApiRequestInfo dataApiRequestInfo,
-      MeteredEmbeddingProvider meteredEmbeddingProvider) {
+      MeterRegistry meterRegistry,
+      JsonApiMetricsConfig jsonApiMetricsConfig,
+      MetricsConfig metricsConfig) {
     this.objectMapper = objectMapper;
     this.dataApiRequestInfo = dataApiRequestInfo;
-    this.meteredEmbeddingProvider = meteredEmbeddingProvider;
+    this.meterRegistry = meterRegistry;
+    this.jsonApiMetricsConfig = jsonApiMetricsConfig;
+    this.metricsConfig = metricsConfig;
   }
 
   /**
@@ -47,8 +56,13 @@ public class DataVectorizerService {
         Optional.ofNullable(commandContext.embeddingProvider())
             .map(
                 provider ->
-                    meteredEmbeddingProvider.setEmbeddingClient(
-                        provider, command.getClass().getSimpleName()))
+                    new MeteredEmbeddingProvider(
+                        meterRegistry,
+                        jsonApiMetricsConfig,
+                        dataApiRequestInfo,
+                        metricsConfig,
+                        provider,
+                        command.getClass().getSimpleName()))
             .orElse(null);
     final DataVectorizer dataVectorizer =
         new DataVectorizer(
