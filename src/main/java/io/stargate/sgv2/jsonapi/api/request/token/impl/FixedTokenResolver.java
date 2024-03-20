@@ -23,7 +23,7 @@ import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
 import java.util.Optional;
 
-/** The {@link CassandraTokenResolver} that uses a fixed token supplied by the configuration. */
+/** The {@link DataApiTokenResolver} that uses a fixed token supplied by the configuration. */
 public class FixedTokenResolver implements DataApiTokenResolver {
 
   private final AuthConfig.TokenResolverConfig.FixedTokenResolverConfig config;

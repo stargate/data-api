@@ -23,7 +23,7 @@ import jakarta.ws.rs.core.SecurityContext;
 import java.security.Principal;
 import java.util.Optional;
 
-/** {@link CassandraTokenResolver} that reads the token from the {@link Principal#getName()}. */
+/** {@link DataApiTokenResolver} that reads the token from the {@link Principal#getName()}. */
 public class PrincipalTokenResolver implements DataApiTokenResolver {
 
   /** {@inheritDoc} */

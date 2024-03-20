@@ -26,7 +26,7 @@ import io.smallrye.mutiny.Uni;
 
 /**
  * Identity provider that works with the {@link
- * io.stargate.sgv2.api.common.security.HeaderAuthenticationRequest}.
+ * io.stargate.sgv2.jsonapi.api.security.HeaderAuthenticationRequest}.
  *
  * <p>Note that this provider creates an identity with a {@link java.security.Principal} containing
  * the value of the authentication header.

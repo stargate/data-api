@@ -64,11 +64,12 @@ public interface AuthConfig {
      *
      * <ol>
      *   <li><code>header</code> - reads Cassandra token from the HTTP request header (see {@link
-     *       HeaderTokenResolver}}
+     *       io.stargate.sgv2.jsonapi.api.request.token.impl.HeaderTokenResolver}}
      *   <li><code>principal</code> - reads Cassandra token from the security {@link
-     *       java.security.Principal} name (see {@link PrincipalTokenResolver}}
+     *       java.security.Principal} name (see {@link
+     *       io.stargate.sgv2.jsonapi.api.request.token.impl.PrincipalTokenResolver}}
      *   <li><code>fixed</code> - fixed token supplied by the configuration (see {@link
-     *       FixedTokenResolver}}
+     *       io.stargate.sgv2.jsonapi.api.request.token.impl.FixedTokenResolver}}
      *   <li><code>custom</code> - allows configuring custom token resolver
      * </ol>
      *
@@ -81,7 +82,7 @@ public interface AuthConfig {
 
     /** @return Specific settings for the <code>header</code> token resolver type. */
     @Valid
-    AuthConfig.TokenResolverConfig.HeaderTokenResolverConfig header();
+    HeaderTokenResolverConfig header();
 
     interface HeaderTokenResolverConfig {
 
@@ -90,13 +91,13 @@ public interface AuthConfig {
        *     HttpConstants#AUTHENTICATION_TOKEN_HEADER_NAME}.
        */
       @NotBlank
-      @WithDefault(HttpConstants.DEPRECATED_AUTHENTICATION_TOKEN_HEADER_NAME)
+      @WithDefault(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME)
       String headerName();
     }
 
     /** @return Specific settings for the <code>fixed</code> token resolver type. */
     @Valid
-    AuthConfig.TokenResolverConfig.FixedTokenResolverConfig fixed();
+    FixedTokenResolverConfig fixed();
 
     interface FixedTokenResolverConfig {
 

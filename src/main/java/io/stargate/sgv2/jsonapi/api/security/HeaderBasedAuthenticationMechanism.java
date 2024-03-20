@@ -34,8 +34,6 @@ import jakarta.enterprise.inject.Instance;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of the {@link HttpAuthenticationMechanism} that authenticates on a header. If a
@@ -45,19 +43,16 @@ import org.slf4j.LoggerFactory;
  */
 public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMechanism {
 
-  private static final Logger LOG =
-      LoggerFactory.getLogger(HeaderBasedAuthenticationMechanism.class);
-
   /** The name of the header to be used for the authentication. */
   private final String headerName;
 
   /** Customize the challenge. */
-  private final Instance<io.stargate.sgv2.jsonapi.api.security.challenge.ChallengeSender>
+  private final Instance<io.stargate.sgv2.api.common.security.challenge.ChallengeSender>
       customChallengeSender;
 
   public HeaderBasedAuthenticationMechanism(
       String headerName,
-      Instance<io.stargate.sgv2.jsonapi.api.security.challenge.ChallengeSender>
+      Instance<io.stargate.sgv2.api.common.security.challenge.ChallengeSender>
           customChallengeSender) {
     this.headerName = headerName;
     this.customChallengeSender = customChallengeSender;
@@ -83,8 +78,7 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
       HttpSecurityUtils.setRoutingContextAttribute(request, context);
       return identityProviderManager.authenticate(request);
     }
-
-    // No suitable header has been found in this request,
+    // No suitable header has been found in this requests
     return Uni.createFrom().optional(Optional.empty());
   }
 

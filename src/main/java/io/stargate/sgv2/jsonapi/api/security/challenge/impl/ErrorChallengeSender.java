@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.api.common.security.challenge.ChallengeSender;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.security.challenge.ChallengeSender;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 /** Responds with {@link CommandResult} containing an error on send challenge. */
 @ApplicationScoped
+// TODO: create Data API ChallengerSender when remove quarkus-common dependency
 public class ErrorChallengeSender implements ChallengeSender {
 
   private static final Logger LOG = LoggerFactory.getLogger(ErrorChallengeSender.class);

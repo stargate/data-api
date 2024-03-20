@@ -23,7 +23,7 @@ import io.vertx.ext.web.RoutingContext;
 import jakarta.ws.rs.core.SecurityContext;
 import java.util.Optional;
 
-/** The {@link CassandraTokenResolver} that resolves a token from the HTTP header. */
+/** The {@link DataApiTokenResolver} that resolves a token from the HTTP header. */
 public class HeaderTokenResolver implements DataApiTokenResolver {
 
   /** The name of the header to extract the token from. */
