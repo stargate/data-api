@@ -6,11 +6,10 @@ import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 
 /**
  * schema_version 1 sample:
- * {"collection":{"name":"newVectorize","schema_version":1,"options":{"indexing":{"deny":["heh"]},"vector":{"dimension":1024,"metric":"cosine","service":{"provider":"nvidia","modelName":"query","authentication":{"type":["HEADER"]},"parameters":{"project_id":"test
+ * {"collection":{"name":"newVectorize","schema_version":1,"options":{"indexing":{"deny":["heh"]},"defaultId":{"type":"objectId"}},"vector":{"dimension":1024,"metric":"cosine","service":{"provider":"nvidia","modelName":"query","authentication":{"type":["HEADER"]},"parameters":{"project_id":"test
  * project"}}}}}}
  */
 public class CollectionSettingsV1Reader implements CollectionSettingsReader {
-
   @Override
   public CollectionSettings readCollectionSettings(
       JsonNode collectionNode, String collectionName, ObjectMapper objectMapper) {
