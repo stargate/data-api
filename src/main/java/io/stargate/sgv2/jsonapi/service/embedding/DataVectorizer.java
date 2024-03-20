@@ -120,7 +120,7 @@ public class DataVectorizer {
                     int position = vectorizeMap.get(vectorPosition);
                     JsonNode document = documents.get(position);
                     float[] vector = vectorData.get(vectorPosition);
-                    // check if all vectors have the expected length
+                    // check if all vectors have the expected size
                     if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
                       throw EMBEDDING_PROVIDER_ERROR.toApiException(
                           "Embedding provider '%s' cannot return correct vector length. Expect: '%s'. Actual: '%s'",
@@ -168,8 +168,17 @@ public class DataVectorizer {
             .onItem()
             .transform(
                 vectorData -> {
+                  float[] vector = vectorData.get(0);
+                  // check if vector have the expected size
+                  if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
+                    throw EMBEDDING_PROVIDER_ERROR.toApiException(
+                        "Embedding provider '%s' cannot return correct vector length. Expect: '%s'. Actual: '%s'",
+                        collectionSettings.vectorConfig().vectorizeConfig().provider(),
+                        collectionSettings.vectorConfig().vectorSize(),
+                        vector.length);
+                  }
                   sortExpressions.clear();
-                  sortExpressions.add(SortExpression.vsearch(vectorData.get(0)));
+                  sortExpressions.add(SortExpression.vsearch(vector));
                   return true;
                 });
       }
@@ -237,8 +246,17 @@ public class DataVectorizer {
             .onItem()
             .transform(
                 vectorData -> {
-                  final ArrayNode arrayNode = nodeFactory.arrayNode(vectorData.get(0).length);
-                  for (float listValue : vectorData.get(0)) {
+                  float[] vector = vectorData.get(0);
+                  // check if vector have the expected size
+                  if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
+                    throw EMBEDDING_PROVIDER_ERROR.toApiException(
+                        "Embedding provider '%s' cannot return correct vector length. Expect: '%s'. Actual: '%s'",
+                        collectionSettings.vectorConfig().vectorizeConfig().provider(),
+                        collectionSettings.vectorConfig().vectorSize(),
+                        vector.length);
+                  }
+                  final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
+                  for (float listValue : vector) {
                     arrayNode.add(nodeFactory.numberNode(listValue));
                   }
                   node.put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, arrayNode);
