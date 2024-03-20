@@ -52,9 +52,10 @@ public class ComparisonExpression {
     if (operator == ElementComparisonOperator.EXISTS) {
       return new JsonLiteral<Boolean>(!((Boolean) operand.value()), operand.type());
     } else if (operator == ArrayComparisonOperator.SIZE) {
-      // for negating 0, will set BigDecimal -1.5 as flag
       if (((BigDecimal) operand.value()).equals(BigDecimal.ZERO)) {
-        return new JsonLiteral<BigDecimal>(JsonLiteral.NEGATE_ZERO, operand.type());
+        // This is the special case, e.g. {"$not":{"ages":{"$size":0}}}
+        // A boolean value here means this is to negate size 0
+        return new JsonLiteral<Boolean>(true, operand.type());
       }
       return new JsonLiteral<BigDecimal>(((BigDecimal) operand.value()).negate(), operand.type());
     } else {
