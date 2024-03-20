@@ -26,6 +26,8 @@ public enum ErrorCode {
   DOCUMENT_REPLACE_DIFFERENT_DOCID(
       "The replace document and document resolved using filter have different _id"),
 
+  EMBEDDING_PROVIDER_ERROR("Embedding provider error"),
+
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 
   FILTER_MULTIPLE_ID_FILTER(

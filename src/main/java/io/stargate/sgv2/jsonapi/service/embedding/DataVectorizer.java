@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_ERROR;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -12,6 +14,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,7 +31,7 @@ public class DataVectorizer {
   private final EmbeddingProvider embeddingProvider;
   private final JsonNodeFactory nodeFactory;
   private final Optional<String> embeddingApiKey;
-  private final String collectionName;
+  private final CollectionSettings collectionSettings;
 
   /**
    * Constructor
@@ -37,17 +40,17 @@ public class DataVectorizer {
    *     table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
    * @param embeddingApiKey - Optional override embedding api key came in request header
-   * @param collectionName - Collection name for which the vectorize is called
+   * @param collectionSettings - The collection setting for vectorize call
    */
   public DataVectorizer(
       EmbeddingProvider embeddingProvider,
       JsonNodeFactory nodeFactory,
       Optional<String> embeddingApiKey,
-      String collectionName) {
+      CollectionSettings collectionSettings) {
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
     this.embeddingApiKey = embeddingApiKey;
-    this.collectionName = collectionName;
+    this.collectionSettings = collectionSettings;
   }
 
   /**
@@ -93,7 +96,8 @@ public class DataVectorizer {
 
       if (!vectorizeTexts.isEmpty()) {
         if (embeddingProvider == null) {
-          throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(collectionName);
+          throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
+              collectionSettings.collectionName());
         }
         Uni<List<float[]>> vectors =
             embeddingProvider.vectorize(
@@ -102,12 +106,28 @@ public class DataVectorizer {
             .onItem()
             .transform(
                 vectorData -> {
+                  // check if we get back the same number of vectors that we asked for
+                  if (vectorData.size() != vectorizeTexts.size()) {
+                    EMBEDDING_PROVIDER_ERROR.toApiException(
+                        "Embedding provider '%s' cannot return the correct number of vectors. Expect: '%s'. Actual: '%s'",
+                        collectionSettings.vectorConfig().vectorizeConfig().provider(),
+                        vectorizeTexts.size(),
+                        vectorData.size());
+                  }
                   for (int vectorPosition = 0;
                       vectorPosition < vectorData.size();
                       vectorPosition++) {
                     int position = vectorizeMap.get(vectorPosition);
                     JsonNode document = documents.get(position);
                     float[] vector = vectorData.get(vectorPosition);
+                    // check if all vectors have the expected length
+                    if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
+                      EMBEDDING_PROVIDER_ERROR.toApiException(
+                          "Embedding provider '%s' cannot return correct vector length. Expect: '%s'. Actual: '%s'",
+                          collectionSettings.vectorConfig().vectorizeConfig().provider(),
+                          collectionSettings.vectorConfig().vectorSize(),
+                          vector.length);
+                    }
                     final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
                     for (float listValue : vector) {
                       arrayNode.add(nodeFactory.numberNode(listValue));
@@ -138,7 +158,8 @@ public class DataVectorizer {
         SortExpression expression = sortExpressions.get(0);
         String text = expression.vectorize();
         if (embeddingProvider == null) {
-          throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(collectionName);
+          throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
+              collectionSettings.collectionName());
         }
         Uni<List<float[]>> vectors =
             embeddingProvider.vectorize(
@@ -206,7 +227,8 @@ public class DataVectorizer {
       } else if (jsonNode.isTextual()) {
         final String text = jsonNode.asText();
         if (embeddingProvider == null) {
-          throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(collectionName);
+          throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
+              collectionSettings.collectionName());
         }
         final Uni<List<float[]>> vectors =
             embeddingProvider.vectorize(
