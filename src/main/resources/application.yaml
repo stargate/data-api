@@ -68,6 +68,9 @@ quarkus:
   banner:
     path: banner/banner.txt
 
+  log:
+    min-level: trace
+
   # HTTP settings
   http:
 
@@ -88,10 +91,6 @@ quarkus:
       max-body-size: 20M
 
     port: 8181
-
-    log:
-      level: trace
-
 
   # built-in micrometer properties
   micrometer:
