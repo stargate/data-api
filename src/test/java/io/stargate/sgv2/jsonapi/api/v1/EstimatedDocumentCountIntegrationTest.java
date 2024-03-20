@@ -20,8 +20,7 @@ import org.slf4j.LoggerFactory;
         io.stargate.sgv2.jsonapi.api.v1.EstimatedDocumentCountIntegrationTest
             .EstimatedDocumentCountTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-// @Disabled("Disabled for CI, requires a test configuration where system.size_estimates is
-// enabled")
+@Disabled("Disabled for CI, requires a test configuration where system.size_estimates is enabled")
 public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   private static final Logger LOG =
