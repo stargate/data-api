@@ -930,6 +930,37 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
+    public void withSizeOperatorNotZero() {
+      String json =
+          """
+                  {
+                      "find": {
+                          "filter": {
+                              "$not": {
+                                  "tags": {
+                                      "$size": 0
+                                  }
+                              }
+                          }
+                      }
+                  }
+                      """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          // should have all the documents
+          .body("data.documents", hasSize(6));
+    }
+
+    @Test
     public void withEqOperatorArray() {
       String json =
           """

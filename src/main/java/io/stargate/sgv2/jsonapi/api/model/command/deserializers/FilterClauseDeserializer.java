@@ -230,6 +230,11 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                   ErrorCode.INVALID_FILTER_EXPRESSION,
                   "$size operator must have integer value >= 0");
             }
+            // Check if the value is an integer by comparing its scale.
+            if (i.stripTrailingZeros().scale() > 0) {
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION, "$size operator must have an integer value");
+            }
           } else {
             throw new JsonApiException(
                 ErrorCode.INVALID_FILTER_EXPRESSION, "$size operator must have integer");

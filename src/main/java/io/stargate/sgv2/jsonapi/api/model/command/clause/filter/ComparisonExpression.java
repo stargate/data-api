@@ -37,10 +37,10 @@ public class ComparisonExpression {
   public void flip() {
     List<FilterOperation<?>> filterOperations = new ArrayList<>(this.filterOperations.size());
     for (FilterOperation<?> filterOperation : this.filterOperations) {
-      final FilterOperator flipedOperator = filterOperation.operator().flip();
+      final FilterOperator flippedOperator = filterOperation.operator().flip();
       JsonLiteral<?> operand =
           getFlippedOperandValue(filterOperation.operator(), filterOperation.operand());
-      filterOperations.add(new ValueComparisonOperation<>(flipedOperator, operand));
+      filterOperations.add(new ValueComparisonOperation<>(flippedOperator, operand));
     }
     this.filterOperations = filterOperations;
   }
@@ -52,6 +52,10 @@ public class ComparisonExpression {
     if (operator == ElementComparisonOperator.EXISTS) {
       return new JsonLiteral<Boolean>(!((Boolean) operand.value()), operand.type());
     } else if (operator == ArrayComparisonOperator.SIZE) {
+      // for negating 0, will set BigDecimal -1.5 as flag
+      if (((BigDecimal) operand.value()).equals(BigDecimal.ZERO)) {
+        return new JsonLiteral<BigDecimal>(JsonLiteral.NEGATE_ZERO, operand.type());
+      }
       return new JsonLiteral<BigDecimal>(((BigDecimal) operand.value()).negate(), operand.type());
     } else {
       return operand;

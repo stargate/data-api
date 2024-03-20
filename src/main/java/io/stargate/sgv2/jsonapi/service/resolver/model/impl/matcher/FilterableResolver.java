@@ -317,6 +317,10 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
           operator = DBFilterBase.MapFilterBase.Operator.MAP_EQUALS;
         } else {
           operator = DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS;
+          // special case for negating 0, reset size as 0 from -1.5, array_size[?] != 0
+          if (bigDecimal.equals(JsonLiteral.NEGATE_ZERO)) {
+            size = 0;
+          }
         }
         filters.add(
             new DBFilterBase.SizeFilter(captureExpression.path(), operator, Math.abs(size)));
