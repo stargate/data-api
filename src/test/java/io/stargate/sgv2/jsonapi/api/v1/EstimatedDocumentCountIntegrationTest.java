@@ -15,10 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(
-    value =
-        io.stargate.sgv2.jsonapi.api.v1.EstimatedDocumentCountIntegrationTest
-            .EstimatedDocumentCountTestResource.class)
+@QuarkusTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 @Disabled("Disabled for CI, requires a test configuration where system.size_estimates is enabled")
 public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionIntegrationTestBase {
@@ -27,16 +24,6 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
       LoggerFactory.getLogger(EstimatedDocumentCountIntegrationTest.class);
 
   public static final int MAX_ITERATIONS = 100;
-
-  // Need to set max count limit to -1, and count page size to -1 to avoid pagination
-  public static class EstimatedDocumentCountTestResource extends DseTestResource {
-    public EstimatedDocumentCountTestResource() {}
-
-    @Override
-    public int getMaxCountLimit() {
-      return -1;
-    }
-  }
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
