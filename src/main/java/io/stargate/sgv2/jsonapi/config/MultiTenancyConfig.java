@@ -57,11 +57,11 @@ public interface MultiTenancyConfig {
 
     /** @return Specific settings for the <code>fixed</code> tenant resolver type. */
     @Valid
-    MultiTenancyConfig.TenantResolverConfig.FixedTenantResolverConfig fixed();
+    FixedTenantResolverConfig fixed();
 
     /** @return Specific settings for the <code>subdomain</code> tenant resolver type. */
     @Valid
-    MultiTenancyConfig.TenantResolverConfig.SubdomainTenantResolverConfig subdomain();
+    SubdomainTenantResolverConfig subdomain();
 
     interface FixedTenantResolverConfig {
 
