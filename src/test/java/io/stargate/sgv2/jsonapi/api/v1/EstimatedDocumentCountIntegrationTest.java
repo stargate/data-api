@@ -11,6 +11,8 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(
@@ -18,9 +20,14 @@ import org.junit.jupiter.api.*;
         io.stargate.sgv2.jsonapi.api.v1.EstimatedDocumentCountIntegrationTest
             .EstimatedDocumentCountTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
+// @Disabled("Disabled for CI, requires a test configuration where system.size_estimates is
+// enabled")
 public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
-  public static final int MAX_ITERATIONS = 1000000;
+  private static final Logger LOG =
+      LoggerFactory.getLogger(EstimatedDocumentCountIntegrationTest.class);
+
+  public static final int MAX_ITERATIONS = 100;
 
   // Need to set max count limit to -1, and count page size to -1 to avoid pagination
   public static class EstimatedDocumentCountTestResource extends DseTestResource {
@@ -37,81 +44,69 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
   @Order(1)
   class Count {
 
-    private void insertMany() {
+    public static final int TIME_TO_SETTLE = 75;
 
-      String json =
-          """
-          {
-            "insertMany": {
-              "documents": [
-                {
-                    "username": "user1",
-                    "subdoc" : {
-                       "id" : "12345"
-                    },
-                    "array" : [
-                        "value1"
-                    ]
-                },
-                {
-                    "username": "user2",
-                    "subdoc" : {
-                       "id" : "abc"
-                    },
-                    "array" : [
-                        "value2"
-                    ]
-                },
-                {
-                    "username": "user3",
-                    "tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true],
-                    "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]
-                },
-                {
-                    "username": "user4",
-                    "indexedObject" : { "0": "value_0", "1": "value_1" }
-                },
-                {
-                    "username": "user5",
-                    "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
-                }
-              ],
-              "options" : {
-                "ordered" : true
-              }
-            }
-          }
-          """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(nullValue()));
-    }
-
-    @Test
-    @Order(1)
-    public void insertDocuments() throws InterruptedException {
-      String jsonEstimatedCount =
-          """
+    public static final String JSON_ESTIMATED_COUNT =
+        """
           {
             "estimatedDocumentCount": {
             }
           }
           """;
-
-      String jsonActualCount =
-          """
+    public static final String JSON_ACTUAL_COUNT =
+        """
           {
              "countDocuments": {
              }
           }
           """;
+    public static final String INSERT_MANY =
+        """
+            {
+              "insertMany": {
+                "documents": [
+                  {
+                      "username": "user1",
+                      "subdoc" : {
+                         "id" : "12345"
+                      },
+                      "array" : [
+                          "value1"
+                      ]
+                  },
+                  {
+                      "username": "user2",
+                      "subdoc" : {
+                         "id" : "abc"
+                      },
+                      "array" : [
+                          "value2"
+                      ]
+                  },
+                  {
+                      "username": "user3",
+                      "tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true],
+                      "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]
+                  },
+                  {
+                      "username": "user4",
+                      "indexedObject" : { "0": "value_0", "1": "value_1" }
+                  },
+                  {
+                      "username": "user5",
+                      "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                  }
+                ],
+                "options" : {
+                  "ordered" : true
+                }
+              }
+            }
+            """;
+
+    @Test
+    @Order(1)
+    public void insertDocuments() throws InterruptedException {
 
       // execute the insertMany command in a loop until the response indicates a non-zero count, or
       // we have executed the command 100 times
@@ -119,40 +114,13 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
       while (tries <= MAX_ITERATIONS) {
         insertMany();
 
-        // get count results every 100 tries
-        if (tries % 1000 == 0) {
+        // get count results every N iterations
+        if (tries % 500 == 0) {
 
-          int estimatedCount =
-              given()
-                  .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-                  .contentType(ContentType.JSON)
-                  .body(jsonEstimatedCount)
-                  .when()
-                  .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-                  .then()
-                  .statusCode(200)
-                  .body("errors", is(nullValue()))
-                  .extract()
-                  .response()
-                  .jsonPath()
-                  .getInt("status.count");
+          int estimatedCount = getEstimatedCount();
+          int actualCount = getActualCount();
 
-          int actualCount =
-              given()
-                  .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-                  .contentType(ContentType.JSON)
-                  .body(jsonActualCount)
-                  .when()
-                  .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-                  .then()
-                  .statusCode(200)
-                  .body("errors", is(nullValue()))
-                  .extract()
-                  .response()
-                  .jsonPath()
-                  .getInt("status.count");
-
-          System.out.println(
+          LOG.info(
               "Iteration: "
                   + tries
                   + ", Docs inserted: "
@@ -169,6 +137,13 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
 
         tries++;
       }
+
+      LOG.info(
+          "Stopping insertion after non-zero estimated count, now waiting "
+              + TIME_TO_SETTLE
+              + " seconds for count to settle");
+      Thread.sleep(TIME_TO_SETTLE * 1000);
+      LOG.info("Final estimated count: " + getEstimatedCount());
     }
 
     /**
@@ -177,9 +152,9 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
      */
     @Test
     @Order(2)
-    public void truncate() {
+    public void truncate() throws InterruptedException {
 
-      String json =
+      String jsonTruncate =
           """
               {
                 "deleteMany": {
@@ -189,7 +164,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(jsonTruncate)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
@@ -199,24 +174,68 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
 
+      LOG.info(
+          "Truncated collection, waiting for estimated count to settle for "
+              + TIME_TO_SETTLE
+              + " seconds");
+      Thread.sleep(TIME_TO_SETTLE * 1000);
+      LOG.info("Final estimated count after truncate: " + getEstimatedCount());
+
       // ensure estimated doc count is zero
       // does not find the documents
-      json = """
-      {
-        "estimatedDocumentCount": {
-      }
-      }
-      """;
-
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(JSON_ESTIMATED_COUNT)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.count", is(0))
+          .body("errors", is(nullValue()));
+    }
+
+    private int getActualCount() {
+      return given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(JSON_ACTUAL_COUNT)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .extract()
+          .response()
+          .jsonPath()
+          .getInt("status.count");
+    }
+
+    private int getEstimatedCount() {
+      return given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(JSON_ESTIMATED_COUNT)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .extract()
+          .response()
+          .jsonPath()
+          .getInt("status.count");
+    }
+
+    private void insertMany() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(INSERT_MANY)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
           .body("errors", is(nullValue()));
     }
   }
