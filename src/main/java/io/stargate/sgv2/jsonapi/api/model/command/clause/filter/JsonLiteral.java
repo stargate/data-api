@@ -8,8 +8,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
  * @param <T> Data type of the object
  */
 public record JsonLiteral<T>(T value, JsonType type) {
-  // Overridden to help figure out (unit) test failures (wrt type of 'value'):
-  // not used by production code
+  // Overridden to help figure out unit test failures (wrt type of 'value')
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();

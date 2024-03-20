@@ -67,7 +67,7 @@ public record CreateCollectionCommand(
                 regexp = "(objectId|uuid|uuidv6|uuidv7)",
                 message = "Id type can only be 'objectId', 'uuid' , 'uuidv6' or 'uuidv7'")
             @Schema(
-                description = "Id type for collection, default to uuid",
+                description = "Id type for collection, default to 'uuid'",
                 defaultValue = "uuid",
                 type = SchemaType.STRING,
                 implementation = String.class)

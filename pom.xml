@@ -108,13 +108,13 @@
     </dependency>
     <!-- Dependencies for _id auto-generation -->
     <dependency>
-      <!-- for UUIDs of various versions not supported by JDK -->
+      <!-- for generating UUIDs of versions not supported by JDK -->
       <groupId>com.fasterxml.uuid</groupId>
       <artifactId>java-uuid-generator</artifactId>
       <version>5.0.0</version>
     </dependency>
     <dependency>
-      <!-- for ObjectId handling: only need BSON lib not full client -->
+      <!-- for ObjectId handling -->
       <groupId>org.mongodb</groupId>
       <artifactId>bson</artifactId>
       <version>5.0.0</version>

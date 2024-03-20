@@ -40,7 +40,7 @@ public interface FilterOperator {
       return operatorMap.get(operator);
     }
 
-    @Deprecated // since 1.0.2 use "findComparisonOperator" instead
+    @Deprecated // since 1.0.3 use "findComparisonOperator()" instead
     public static FilterOperator getComparisonOperator(String operator) {
       final FilterOperator filterOperator = findComparisonOperator(operator);
       if (filterOperator == null) {
