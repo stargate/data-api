@@ -9,6 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import jakarta.inject.Inject;
@@ -1493,8 +1494,7 @@ public class FilterClauseDeserializerTest {
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo(
-                        "Should only have one _id filter, document id cannot be restricted by more than one relation if it includes an Equal");
+                    .isEqualTo(ErrorCode.FILTER_MULTIPLE_ID_FILTER.getMessage());
               });
     }
 

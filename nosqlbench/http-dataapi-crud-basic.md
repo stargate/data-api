@@ -1,8 +1,8 @@
-# JSON API CRUD Basic
+# Data API CRUD Basic
 
 ## Description
 
-The JSON API CRUD Basic workflow targets Stargate's JSON API using generated JSON documents.
+The Data API CRUD Basic workflow targets Stargate's Data API using generated JSON documents.
 The documents used are sharing the same structure and are approximately half a kilobyte in size each:
 
 * each document has 13 leaf values, with a maximum depth of 3
@@ -49,7 +49,7 @@ Instead, there is only the main phase with 4 different load types (write, read, 
 
 ### default
 
-The default scenario for http-jsonapi-crud-basic.yaml runs each type of the main phase sequentially: write, read, update and delete.
+The default scenario for http-dataapi-crud-basic.yaml runs each type of the main phase sequentially: write, read, update and delete.
 This means that setting cycles for each of the phases should be done using the: `write-cycles`, `read-cycles`, `update-cycles` and `delete-cycles`.
 The default value for all 4 cycles variables is the amount of documents to process (see [Workload Parameters](#workload-parameters)).
 

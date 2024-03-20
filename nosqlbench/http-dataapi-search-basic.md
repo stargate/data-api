@@ -1,8 +1,8 @@
-# JSON API Search Basic
+# Data API Search Basic
 
 ## Description
 
-The JSON API Search Basic workflow targets Stargate's JSON API using generated JSON documents. Specifically, it looks to benchmark basic search cases, using the filters that are supported by the underlying data store.
+The Data API Search Basic workflow targets Stargate's Data API using generated JSON documents. Specifically, it looks to benchmark basic search cases, using the filters that are supported by the underlying data store.
 By default, the documents used are sharing the same structure and are approximately half a kilobyte in size each:
 
 * Each document has 15 leaf values, with a maximum depth of 3

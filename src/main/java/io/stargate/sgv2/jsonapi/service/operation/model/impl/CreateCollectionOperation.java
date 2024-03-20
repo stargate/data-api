@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -40,7 +41,8 @@ public record CreateCollectionOperation(
     int vectorSize,
     String vectorFunction,
     String comment,
-    int ddlDelayMillis)
+    int ddlDelayMillis,
+    boolean tooManyIndexesRollbackEnabled)
     implements Operation {
   private static final Logger logger = LoggerFactory.getLogger(CreateCollectionOperation.class);
 
@@ -56,7 +58,8 @@ public record CreateCollectionOperation(
       int vectorSize,
       String vectorFunction,
       String comment,
-      int ddlDelayMillis) {
+      int ddlDelayMillis,
+      boolean tooManyIndexesRollbackEnabled) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -67,7 +70,8 @@ public record CreateCollectionOperation(
         vectorSize,
         vectorFunction,
         comment,
-        ddlDelayMillis);
+        ddlDelayMillis,
+        tooManyIndexesRollbackEnabled);
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -77,7 +81,8 @@ public record CreateCollectionOperation(
       CQLSessionCache cqlSessionCache,
       String name,
       String comment,
-      int ddlDelayMillis) {
+      int ddlDelayMillis,
+      boolean tooManyIndexesRollbackEnabled) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -88,19 +93,21 @@ public record CreateCollectionOperation(
         0,
         null,
         comment,
-        ddlDelayMillis);
+        ddlDelayMillis,
+        tooManyIndexesRollbackEnabled);
   }
 
   public static CreateCollectionOperation forCQL(
       boolean vectorSearch, String vectorFunction, int vectorSize, String comment) {
     return new CreateCollectionOperation(
-        null, null, null, null, null, vectorSearch, vectorSize, vectorFunction, comment, 0);
+        null, null, null, null, null, vectorSearch, vectorSize, vectorFunction, comment, 0, false);
   }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     logger.info("Executing CreateCollectionOperation for {}", name);
+    // validate Data API collection limit guardrail and get tableMetadata
     Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces =
         cqlSessionCache.getSession(dataApiRequestInfo).getMetadata().getKeyspaces();
     KeyspaceMetadata currKeyspace =
@@ -115,16 +122,14 @@ public record CreateCollectionOperation(
     }
     TableMetadata table = findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
 
-    // table doesn't exist, continue
+    // if table doesn't exist, continue to create collection
     if (table == null) {
-      return executeCollectionCreation(dataApiRequestInfo, queryExecutor);
+      return executeCollectionCreation(dataApiRequestInfo, queryExecutor, false);
     }
-    // if table exist:
-    // get collection settings from the existing collection
-    CollectionSettings collectionSettings =
+    // if table exists, compare existedCollectionSettings and newCollectionSettings
+    CollectionSettings existedCollectionSettings =
         CollectionSettings.getCollectionSettings(table, objectMapper);
-    // get collection settings from user input
-    CollectionSettings collectionSettings_cur =
+    CollectionSettings newCollectionSettings =
         CollectionSettings.getCollectionSettings(
             name,
             vectorSearch,
@@ -135,8 +140,8 @@ public record CreateCollectionOperation(
     // if table exists we have to choices:
     // (1) trying to create with same options -> ok, proceed
     // (2) trying to create with different options -> error out
-    if (collectionSettings.equals(collectionSettings_cur)) {
-      return executeCollectionCreation(dataApiRequestInfo, queryExecutor);
+    if (existedCollectionSettings.equals(newCollectionSettings)) {
+      return executeCollectionCreation(dataApiRequestInfo, queryExecutor, true);
     }
     return Uni.createFrom()
         .failure(
@@ -145,8 +150,17 @@ public record CreateCollectionOperation(
                 name));
   }
 
+  /**
+   * execute collection creation and indexes creation
+   *
+   * @param queryExecutor
+   * @param collectionExisted
+   * @return
+   */
   private Uni<Supplier<CommandResult>> executeCollectionCreation(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+      DataApiRequestInfo dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      boolean collectionExisted) {
     final Uni<AsyncResultSet> execute =
         queryExecutor.executeCreateSchemaChange(
             dataApiRequestInfo, getCreateTable(commandContext.namespace(), name));
@@ -195,6 +209,53 @@ public record CreateCollectionOperation(
               } else {
                 return new SchemaChangeResult(true);
               }
+            })
+        .onFailure(
+            error ->
+                // InvalidQueryException(DB index limit violation)
+                error instanceof InvalidQueryException
+                    && error
+                        .getMessage()
+                        .matches(
+                            ".*Cannot have more than \\d+ indexes, failed to create index on table.*"))
+        .recoverWithUni(
+            error -> {
+              // if index creation violates DB index limit and collection not existed before,
+              // and rollback is enabled, then drop the collection
+              if (!collectionExisted && tooManyIndexesRollbackEnabled) {
+                return cleanUpCollectionFailedWithTooManyIndex(dataApiRequestInfo, queryExecutor);
+              }
+              // if index creation violates DB index limit and collection existed before,
+              // will not drop the collection
+              return Uni.createFrom()
+                  .item(
+                      () ->
+                          ErrorCode.TOO_MANY_INDEXES.toApiException(
+                              "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
+                              name, dbLimitsConfig.indexesNeededPerCollection()));
+            });
+  }
+
+  public Uni<JsonApiException> cleanUpCollectionFailedWithTooManyIndex(
+      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+    DeleteCollectionOperation deleteCollectionOperation =
+        new DeleteCollectionOperation(commandContext, name);
+    return deleteCollectionOperation
+        .execute(dataApiRequestInfo, queryExecutor)
+        .onItem()
+        .transform(
+            res ->
+                ErrorCode.TOO_MANY_INDEXES.toApiException(
+                    "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
+                    name, dbLimitsConfig.indexesNeededPerCollection()))
+        .onFailure()
+        .recoverWithItem(
+            e -> {
+              // This is unlikely to happen for delete collection though
+              // Also return with TOO_MANY_INDEXES exception
+              return ErrorCode.TOO_MANY_INDEXES.toApiException(
+                  "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
+                  name, dbLimitsConfig.indexesNeededPerCollection());
             });
   }
 

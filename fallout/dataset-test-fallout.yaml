@@ -13,14 +13,14 @@ client_nb_version: 5.17.3-release
 test_branch: main
 
 # keyspace setup
-keyspace: jsonapi_dataset_test
+keyspace: dataapi_dataset_test
 
 # 100K documents and 25 groups, so that sort and count target ~4K docs
 # adapt if needed, but keep in mind that sort supports max 10K docs per operation
 docs_count: 100000
 
 # dataset to use, have to use main branch as fallout doesn't do recursive arg replacement
-dataset: https://raw.githubusercontent.com/stargate/jsonapi/main/fallout/sample-dataset.txt
+dataset: https://raw.githubusercontent.com/stargate/dataapi/main/fallout/sample-dataset.txt
 
 # Field name used for sorting in the tests
 sort_key: data.size
@@ -88,11 +88,11 @@ workload:
           service_type: stargate
           args:
             - driver=http
-            - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/dataset-test-nosqlbench.yaml
+            - workload=https://raw.githubusercontent.com/stargate/dataapi/{{test_branch}}/fallout/dataset-test-nosqlbench.yaml
             - tags=block:schema-collection
             - namespace={{keyspace}}
             - protocol=https
-            - jsonapi_port=443
+            - dataapi_port=443
             - path_prefix=/api/json
             - errors=stop
 
@@ -107,13 +107,13 @@ workload:
           cycles: {{docs_count}}
           args:
             - driver=http
-            - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/dataset-test-nosqlbench.yaml
+            - workload=https://raw.githubusercontent.com/stargate/dataapi/{{test_branch}}/fallout/dataset-test-nosqlbench.yaml
             - tags=block:write
             - threads=30
             - errors=warn
             - namespace={{keyspace}}
             - protocol=https
-            - jsonapi_port=443
+            - dataapi_port=443
             - path_prefix=/api/json
             - connections=30
             - docscount={{docs_count}}
@@ -130,13 +130,13 @@ workload:
           cycles: {{op_cycles}}
           args:
             - driver=http
-            - workload=https://raw.githubusercontent.com/stargate/jsonapi/{{test_branch}}/fallout/dataset-test-nosqlbench.yaml
+            - workload=https://raw.githubusercontent.com/stargate/dataapi/{{test_branch}}/fallout/dataset-test-nosqlbench.yaml
             - tags=block:main,name:.*{{op}}
             - threads={{threads}}
             - errors=histogram
             - namespace={{keyspace}}
             - protocol=https
-            - jsonapi_port=443
+            - dataapi_port=443
             - path_prefix=/api/json
             - connections={{op_connections}}
             - docscount={{docs_count}}
