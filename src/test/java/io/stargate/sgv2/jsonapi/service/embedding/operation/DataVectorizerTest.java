@@ -8,8 +8,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
@@ -30,10 +30,8 @@ import org.junit.jupiter.api.Test;
 @TestProfile(PropertyBasedOverrideProfile.class)
 public class DataVectorizerTest {
   @Inject ObjectMapper objectMapper;
-
-  CommandContext commandContext = CommandContext.empty();
-  private EmbeddingProvider testService = new TestEmbeddingProvider();
-  private CollectionSettings collectionSettings =
+  private final EmbeddingProvider testService = new TestEmbeddingProvider();
+  private final CollectionSettings collectionSettings =
       TestEmbeddingProvider.commandContextWithVectorize.collectionSettings();
 
   @Nested
@@ -137,6 +135,87 @@ public class DataVectorizerTest {
             .withFailMessage(
                 "$vectorize` and `$vector` can't be used together, issue in document at position 1")
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @Test
+    public void testWithUnmatchedVectorsNumber() {
+      TestEmbeddingProvider testProvider =
+          new TestEmbeddingProvider() {
+            @Override
+            public Uni<List<float[]>> vectorize(
+                List<String> texts,
+                Optional<String> apiKey,
+                EmbeddingRequestType embeddingRequestType) {
+              List<float[]> customResponse = new ArrayList<>();
+              texts.forEach(t -> customResponse.add(new float[] {0.5f, 0.5f, 0.5f}));
+              // add additional vector
+              customResponse.add(new float[] {0.5f, 0.5f, 0.5f});
+              return Uni.createFrom().item(customResponse);
+            }
+          };
+      List<JsonNode> documents = new ArrayList<>();
+      for (int i = 0; i < 2; i++) {
+        documents.add(objectMapper.createObjectNode().put("$vectorize", "test data"));
+      }
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testProvider, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      try {
+        Throwable failure =
+            dataVectorizer
+                .vectorize(documents)
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .awaitFailure()
+                .getFailure();
+        assertThat(failure)
+            .isInstanceOf(JsonApiException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_ERROR)
+            .hasFieldOrPropertyWithValue(
+                "message",
+                "Embedding provider error: Embedding provider 'custom' cannot return the correct number of vectors. Expect: '2'. Actual: '3'");
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    @Test
+    public void testWithUnmatchedVectorSize() {
+      // new collection settings with different expected vector size
+      CollectionSettings collectionSettings =
+          new CollectionSettings(
+              "collections",
+              new CollectionSettings.VectorConfig(
+                  true,
+                  4,
+                  CollectionSettings.SimilarityFunction.COSINE,
+                  new CollectionSettings.VectorConfig.VectorizeConfig(
+                      "custom", "custom", null, null)),
+              null);
+      List<JsonNode> documents = new ArrayList<>();
+      for (int i = 0; i < 2; i++) {
+        documents.add(objectMapper.createObjectNode().put("$vectorize", "test data"));
+      }
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      try {
+        Throwable failure =
+            dataVectorizer
+                .vectorize(documents)
+                .subscribe()
+                .withSubscriber(UniAssertSubscriber.create())
+                .awaitFailure()
+                .getFailure();
+        assertThat(failure)
+            .isInstanceOf(JsonApiException.class)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_ERROR)
+            .hasFieldOrPropertyWithValue(
+                "message",
+                "Embedding provider error: Embedding provider 'custom' cannot return correct vector length. Expect: '4'. Actual: '3'");
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

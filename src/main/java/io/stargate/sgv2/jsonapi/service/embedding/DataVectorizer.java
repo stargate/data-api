@@ -108,7 +108,7 @@ public class DataVectorizer {
                 vectorData -> {
                   // check if we get back the same number of vectors that we asked for
                   if (vectorData.size() != vectorizeTexts.size()) {
-                    EMBEDDING_PROVIDER_ERROR.toApiException(
+                    throw EMBEDDING_PROVIDER_ERROR.toApiException(
                         "Embedding provider '%s' cannot return the correct number of vectors. Expect: '%s'. Actual: '%s'",
                         collectionSettings.vectorConfig().vectorizeConfig().provider(),
                         vectorizeTexts.size(),
@@ -122,7 +122,7 @@ public class DataVectorizer {
                     float[] vector = vectorData.get(vectorPosition);
                     // check if all vectors have the expected length
                     if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
-                      EMBEDDING_PROVIDER_ERROR.toApiException(
+                      throw EMBEDDING_PROVIDER_ERROR.toApiException(
                           "Embedding provider '%s' cannot return correct vector length. Expect: '%s'. Actual: '%s'",
                           collectionSettings.vectorConfig().vectorizeConfig().provider(),
                           collectionSettings.vectorConfig().vectorSize(),
