@@ -1,22 +1,54 @@
 # Changelog
 
-## [v1.0.3](https://github.com/stargate/jsonapi/tree/v1.0.3) (2024-03-20)
+## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
 
-[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.2...v1.0.3)
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.3...HEAD)
 
 **Closed issues:**
 
-- Add `EstimatedDocumentCount` command [\#793](https://github.com/stargate/data-api/issues/793)
-- Renaming to Data API [\#860](https://github.com/stargate/data-api/issues/860)
-- Support auto-generation/explicit use of ObjectId, UUID (v4, v6, v7) as document ids (_id) [\#922](https://github.com/stargate/data-api/issues/922)
 - Filter $not with $size as 0 not working correctly [\#981](https://github.com/stargate/data-api/issues/981)
+- Support auto-generation/explicit use of ObjectId, UUID \(v4, v6, v7\) as document ids \(\_id\) [\#922](https://github.com/stargate/data-api/issues/922)
+- Add `EstimatedDocumentCount` command [\#793](https://github.com/stargate/data-api/issues/793)
 
 **Merged pull requests:**
 
-- Implement EstimatedDocumentCount operation [\#866](https://github.com/stargate/data-api/pull/866)
-- ObjectId, UUID typed support (auto-generation, explicit usage) [\#928](https://github.com/stargate/data-api/pull/928)
-- Update Jackson to 2.16.2 (from 2.16.1) [\#980](https://github.com/stargate/data-api/pull/980)
-- Fixes \#981: fix $not with $size 0 [\#982](https://github.com/stargate/data-api/pull/982)
+- Fix 1.0.3 link in CHANGELOG.md [\#989](https://github.com/stargate/data-api/pull/989) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release \(1.0.4-SNAPSHOT\) [\#985](https://github.com/stargate/data-api/pull/985) ([github-actions[bot]](https://github.com/apps/github-actions))
+
+## [v1.0.3](https://github.com/stargate/data-api/tree/v1.0.3) (2024-03-21)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.2...v1.0.3)
+
+**Fixed bugs:**
+
+- Error out when `skip` is used with empty sort `sort={}` in the `find` command [\#917](https://github.com/stargate/data-api/issues/917)
+
+**Closed issues:**
+
+- ObjectId: do not include `defaultId` entry in `findCollections` if user provided no `type` setting [\#983](https://github.com/stargate/data-api/issues/983)
+- Add feature flag for vectorize [\#962](https://github.com/stargate/data-api/issues/962)
+- ObjectId, createCollection: change "default\_id" to "defaultId" \(wrong case\) [\#961](https://github.com/stargate/data-api/issues/961)
+- Support projection of ObjectId / uuid valued properties [\#956](https://github.com/stargate/data-api/issues/956)
+- Improve multiple \_id filter error message [\#950](https://github.com/stargate/data-api/issues/950)
+- Support `sort` on ObjectId/UUID properties [\#926](https://github.com/stargate/data-api/issues/926)
+- Support find\(\) filtering on ObjectId/UUID-valued properties [\#925](https://github.com/stargate/data-api/issues/925)
+- Collection gets created when specified a wrong vector metric [\#907](https://github.com/stargate/data-api/issues/907)
+- Add nocqlbench test for vectorize [\#891](https://github.com/stargate/data-api/issues/891)
+- Check logs for HTTP 500 error in Dev [\#881](https://github.com/stargate/data-api/issues/881)
+- Renaming to Data API [\#860](https://github.com/stargate/data-api/issues/860)
+- Request: full docker example [\#753](https://github.com/stargate/data-api/issues/753)
+- Remove dependency for Stargate bridge - quarkus commons [\#673](https://github.com/stargate/data-api/issues/673)
+- Update helm chart [\#666](https://github.com/stargate/data-api/issues/666)
+
+**Merged pull requests:**
+
+- Fixes \#981: fix $not with $size 0 [\#982](https://github.com/stargate/data-api/pull/982) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Update Jackson to 2.16.2 \(from 2.16.1\) [\#980](https://github.com/stargate/data-api/pull/980) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- fix docker-compose [\#971](https://github.com/stargate/data-api/pull/971) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- push both data-api and jsonapi images to docker-hub [\#954](https://github.com/stargate/data-api/pull/954) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Bumping version for next jsonapi release [\#953](https://github.com/stargate/data-api/pull/953) ([github-actions[bot]](https://github.com/apps/github-actions))
+- ObjectId, UUID typed support \(auto-generation, explicit usage\) [\#928](https://github.com/stargate/data-api/pull/928) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Implement EstimatedDocumentCount operation [\#866](https://github.com/stargate/data-api/pull/866) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
 
 ## [v1.0.2](https://github.com/stargate/jsonapi/tree/v1.0.2) (2024-03-11)
 
