@@ -435,12 +435,82 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
+    public void mustHandleIntegerWithTrailingZeroSize() throws Exception {
+      String json = """
+          {"sizePath" : {"$size": 0.0}}
+        """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "sizePath",
+              List.of(
+                  new ValueComparisonOperation(
+                      ArrayComparisonOperator.SIZE,
+                      new JsonLiteral(new BigDecimal(0), JsonType.NUMBER))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+
+      String json1 = """
+          {"sizePath" : {"$size": 5.0}}
+        """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "sizePath",
+              List.of(
+                  new ValueComparisonOperation(
+                      ArrayComparisonOperator.SIZE,
+                      new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
+              null);
+      FilterClause filterClause1 = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause1.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause1.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause1.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause1.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
     public void mustHandleSizeNonNumber() throws Exception {
       String json = """
           {"sizePath" : {"$size": "2"}}
         """;
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
       assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage()).isEqualTo("$size operator must have integer");
+              });
+    }
+
+    // Notice, 0.0, -0.0, 5.0, etc are still considered as Integer
+    @Test
+    public void mustHandleSizeNonInteger() throws Exception {
+      String json = """
+          {"sizePath" : {"$size": "1.1"}}
+        """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage()).isEqualTo("$size operator must have integer");
+              });
+
+      String json1 = """
+          {"sizePath" : {"$size": "5.4"}}
+        """;
+      Throwable throwable1 =
+          catchThrowable(() -> objectMapper.readValue(json1, FilterClause.class));
+      assertThat(throwable1)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
