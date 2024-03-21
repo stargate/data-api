@@ -1,13 +1,3 @@
-# Changelog
-
-## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
-
-[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.2...HEAD)
-
-**Closed issues:**
-
-- Renaming to Data API [\#860](https://github.com/stargate/jsonapi/issues/860)
-
 ## [v1.0.2](https://github.com/stargate/jsonapi/tree/v1.0.2) (2024-03-11)
 
 [Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.1...v1.0.2)
