@@ -25,6 +25,10 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
         serviceName,
         serviceName,
         config.providers().get(serviceName).apiKey(),
-        config.providers().get(serviceName).url().toString());
+        config.providers().get(serviceName).url().toString(),
+        RequestProperties.of(
+            config.providers().get(serviceName).properties().maxRetries(),
+            config.providers().get(serviceName).properties().retryDelayMillis(),
+            config.providers().get(serviceName).properties().requestTimeoutMillis()));
   }
 }
