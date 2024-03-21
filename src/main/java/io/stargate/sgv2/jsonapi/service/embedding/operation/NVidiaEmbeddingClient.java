@@ -1,10 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.quarkus.logging.Log;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingProviderHeaderValidation;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -50,7 +51,7 @@ public class NVidiaEmbeddingClient implements EmbeddingProvider {
   }
 
   @RegisterRestClient
-  @RegisterProvider(EmbeddingProviderHeaderValidation.class)
+  @RegisterProvider(EmbeddingProviderResponseValidation.class)
   public interface NVidiaEmbeddingProvider {
     @POST
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
@@ -105,6 +106,8 @@ public class NVidiaEmbeddingClient implements EmbeddingProvider {
         .onItem()
         .transform(
             resp -> {
+              Log.error("here" + resp);
+              System.out.println("here" + resp);
               Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
               return Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
             });

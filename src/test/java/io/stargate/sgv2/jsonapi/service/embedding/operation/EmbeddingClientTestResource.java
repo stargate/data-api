@@ -23,6 +23,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/json")
+                    .withBody("{\"object\": \"list\"}")
                     .withStatus(429)
                     .withStatusMessage("Too Many Requests")));
 
@@ -32,6 +33,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/json")
+                    .withBody("{\"object\": \"list\"}")
                     .withStatus(400)
                     .withStatusMessage("Bad Request")));
 
@@ -41,6 +43,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/json")
+                    .withBody("{\"object\": \"list\"}")
                     .withStatus(503)
                     .withStatusMessage("Service Unavailable")));
 
@@ -50,6 +53,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/json")
+                    .withBody("{\"object\": \"list\"}")
                     .withStatus(408)
                     .withStatusMessage("Request Timeout")));
 
@@ -59,6 +63,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/json")
+                    .withBody("{\"object\": \"list\"}")
                     .withStatus(301)
                     .withStatusMessage("Moved Permanently")));
 
@@ -94,7 +99,35 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))
             .withRequestBody(matchingJsonPath("$.input", containing("application/xml")))
-            .willReturn(aResponse().withHeader("Content-Type", "application/xml").withBody("{}")));
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/xml")
+                    .withBody("{\"object\": \"list\"}")));
+
+    wireMockServer.stubFor(
+        post(urlEqualTo("/v1/embeddings"))
+            .withRequestBody(matchingJsonPath("$.input", containing("invalid json body")))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(
+                        """
+                            <bookstore>
+                              <book>
+                                <title>The Great Gatsby</title>
+                                <author>F. Scott Fitzgerald</author>
+                                <year>1925</year>
+                                <price>10.99</price>
+                              </book>
+                              <book>
+                                <title>To Kill a Mockingbird</title>
+                                <author>Harper Lee</author>
+                                <year>1960</year>
+                                <price>12.99</price>
+                              </book>
+                            </bookstore>
+                                  """)));
+
     return Map.of(
         "stargate.jsonapi.embedding.providers.nvidia.url",
         wireMockServer.baseUrl() + "/v1/embeddings");

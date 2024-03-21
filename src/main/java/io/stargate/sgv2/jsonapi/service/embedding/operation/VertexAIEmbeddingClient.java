@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingProviderHeaderValidation;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -46,7 +46,7 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
   }
 
   @RegisterRestClient
-  @RegisterProvider(EmbeddingProviderHeaderValidation.class)
+  @RegisterProvider(EmbeddingProviderResponseValidation.class)
   public interface VertexAIEmbeddingProvider {
     @POST
     @Path("/{modelId}:predict")
