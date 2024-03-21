@@ -127,6 +127,15 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
                               </book>
                             </bookstore>
                                   """)));
+    wireMockServer.stubFor(
+        post(urlEqualTo("/v1/embeddings"))
+            .withRequestBody(matchingJsonPath("$.input", containing("no json body")))
+            .willReturn(aResponse().withHeader("Content-Type", "application/json")));
+
+    wireMockServer.stubFor(
+        post(urlEqualTo("/v1/embeddings"))
+            .withRequestBody(matchingJsonPath("$.input", containing("empty json body")))
+            .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody("{}")));
 
     return Map.of(
         "stargate.jsonapi.embedding.providers.nvidia.url",

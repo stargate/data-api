@@ -175,5 +175,55 @@ public class EmbeddingProviderErrorMessageTest {
               "message",
               "The configured Embedding Provider for this collection return an invalid response: Invalid JSON response from the embedding provider");
     }
+
+    @Test
+    public void testNoJsonResponse() {
+      Throwable exception =
+          new NVidiaEmbeddingClient(
+                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+                  config.providers().get("nvidia").url(),
+                  "test",
+                  "test")
+              .vectorize(
+                  List.of("no json body"),
+                  Optional.empty(),
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitFailure()
+              .getFailure();
+      assertThat(exception.getCause())
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
+          .hasFieldOrPropertyWithValue(
+              "message",
+              "The configured Embedding Provider for this collection return an invalid response: No JSON body from the embedding provider");
+    }
+
+    //    @Test
+    //    public void testEmptyJsonResponse() {
+    //      Throwable exception =
+    //          new NVidiaEmbeddingClient(
+    //                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+    //                  config.providers().get("nvidia").url(),
+    //                  "test",
+    //                  "test")
+    //              .vectorize(
+    //                  List.of("empty json body"),
+    //                  Optional.empty(),
+    //                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+    //              .subscribe()
+    //              .withSubscriber(UniAssertSubscriber.create())
+    //              .awaitFailure()
+    //              .getFailure();
+    //      assertThat(exception.getCause())
+    //          .isInstanceOf(JsonApiException.class)
+    //          .hasFieldOrPropertyWithValue("errorCode",
+    // ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
+    //          .hasFieldOrPropertyWithValue(
+    //              "message",
+    //              "The configured Embedding Provider for this collection return an invalid
+    // response: Invalid JSON response from the embedding provider");
+    //    }
   }
 }
