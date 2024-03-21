@@ -42,8 +42,8 @@ stargate:
               required: true
           properties:
             max-retries: 3
-            retry-delay-ms: 100
-            timeout-ms: 1000
+            request-timeout-millis: 1000
+            retry-delay-millis: 100
           models:
             - name: textembedding-gecko@003
               vector-dimension: 768

@@ -18,7 +18,11 @@ public class EmbeddingProviderFactory {
   @Inject Instance<EmbeddingProviderConfigStore> embeddingProviderConfigStore;
 
   private interface ProviderConstructor {
-    EmbeddingProvider create(String baseUrl, String apiKey, String modelName);
+    EmbeddingProvider create(
+        EmbeddingProviderConfigStore.RequestProperties requestProperties,
+        String baseUrl,
+        String apiKey,
+        String modelName);
   }
 
   private static final Map<String, ProviderConstructor> providersMap =
@@ -63,6 +67,10 @@ public class EmbeddingProviderFactory {
 
     return providersMap
         .get(configuration.serviceProvider())
-        .create(configuration.baseUrl(), configuration.apiKey(), modelName);
+        .create(
+            configuration.requestConfiguration(),
+            configuration.baseUrl(),
+            configuration.apiKey(),
+            modelName);
   }
 }

@@ -26,6 +26,19 @@ public enum ErrorCode {
   DOCUMENT_REPLACE_DIFFERENT_DOCID(
       "The replace document and document resolved using filter have different _id"),
 
+  /** Embedding provider service error codes. */
+  EMBEDDING_PROVIDER_SERVER_ERROR(
+      "The configured Embedding Provider for this collection encountered an error processing the request"),
+  EMBEDDING_PROVIDER_RATE_LIMITED(
+      "The configured Embedding Provider for this collection is rate limiting your requests"),
+
+  EMBEDDING_PROVIDER_TIMEOUT("The configured Embedding Provider timedout."),
+  EMBEDDING_PROVIDER_UNAVAILBLE(
+      "The configured Embedding Provider for this collection could not be contacted."),
+
+  EMBEDDING_PROVIDER_INVALID_REQUEST(
+      "The configured Embedding Provider for this collection refused to process the request, response was"),
+
   EMBEDDING_PROVIDER_ERROR("Embedding provider error"),
 
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
