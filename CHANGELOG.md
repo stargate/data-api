@@ -4,10 +4,16 @@
 
 **Closed issues:**
 
-- Change `createCollection\(\)` to allow defining type of auto-generated ids \(ObjectId, UUID v4/v6/v7\) [\#935](https://github.com/stargate/jsonapi/issues/935)
-- Support find\(\) with ObjectId / UUID - valued document ids \(\_id\) [\#924](https://github.com/stargate/jsonapi/issues/924)
-- Allow inserting Documents with ObjectId, UUID \(v1/v4\) valued properties [\#923](https://github.com/stargate/jsonapi/issues/923)
-- Select Java library for ObjectId generation, decoding [\#921](https://github.com/stargate/jsonapi/issues/921)
+- Add `EstimatedDocumentCount` command [\#793](https://github.com/stargate/data-api/issues/793)
+- Support auto-generation/explicit use of ObjectId, UUID (v4, v6, v7) as document ids (_id) [\#922](https://github.com/stargate/data-api/issues/922)
+- Filter $not with $size as 0 not working correctly [\#981](https://github.com/stargate/data-api/issues/981)
+
+**Merged pull requests:**
+
+- Implement EstimatedDocumentCount operation [\#866](https://github.com/stargate/data-api/pull/866)
+- ObjectId, UUID typed support (auto-generation, explicit usage) [\#928](https://github.com/stargate/data-api/pull/928)
+- Update Jackson to 2.16.2 (from 2.16.1) [\#980](https://github.com/stargate/data-api/pull/980)
+- Fixes \#981: fix $not with $size 0 [\#982](https://github.com/stargate/data-api/pull/982)
 
 ## [v1.0.2](https://github.com/stargate/jsonapi/tree/v1.0.2) (2024-03-11)
 
