@@ -37,10 +37,10 @@ public class ComparisonExpression {
   public void flip() {
     List<FilterOperation<?>> filterOperations = new ArrayList<>(this.filterOperations.size());
     for (FilterOperation<?> filterOperation : this.filterOperations) {
-      final FilterOperator flipedOperator = filterOperation.operator().flip();
+      final FilterOperator flippedOperator = filterOperation.operator().flip();
       JsonLiteral<?> operand =
           getFlippedOperandValue(filterOperation.operator(), filterOperation.operand());
-      filterOperations.add(new ValueComparisonOperation<>(flipedOperator, operand));
+      filterOperations.add(new ValueComparisonOperation<>(flippedOperator, operand));
     }
     this.filterOperations = filterOperations;
   }
@@ -52,6 +52,11 @@ public class ComparisonExpression {
     if (operator == ElementComparisonOperator.EXISTS) {
       return new JsonLiteral<Boolean>(!((Boolean) operand.value()), operand.type());
     } else if (operator == ArrayComparisonOperator.SIZE) {
+      if (((BigDecimal) operand.value()).equals(BigDecimal.ZERO)) {
+        // This is the special case, e.g. {"$not":{"ages":{"$size":0}}}
+        // A boolean value here means this is to negate size 0
+        return new JsonLiteral<Boolean>(true, operand.type());
+      }
       return new JsonLiteral<BigDecimal>(((BigDecimal) operand.value()).negate(), operand.type());
     } else {
       return operand;
