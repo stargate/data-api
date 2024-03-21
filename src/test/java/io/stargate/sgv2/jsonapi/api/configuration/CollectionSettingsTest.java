@@ -22,7 +22,11 @@ public class CollectionSettingsTest {
     CollectionSettings.IndexingConfig indexingConfig =
         new CollectionSettings.IndexingConfig(new HashSet<String>(Arrays.asList("abc")), null);
     CollectionSettings settings =
-        new CollectionSettings("collectionName", false, -1, null, null, null, indexingConfig);
+        new CollectionSettings(
+            "collectionName",
+            CollectionSettings.IdConfig.defaultIdConfig(),
+            CollectionSettings.VectorConfig.notEnabledVectorConfig(),
+            indexingConfig);
     DocumentProjector indexingProj = settings.indexingProjector();
     assertThat(indexingProj)
         .isNotNull()

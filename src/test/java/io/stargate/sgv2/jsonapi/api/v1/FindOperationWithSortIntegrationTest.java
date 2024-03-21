@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.uuid.Generators;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
@@ -36,7 +37,8 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FindOperationWithSort {
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final List<Object> testDatas = getDocuments(25);
+    // should be static, since UUID should not be generated multiple times across all test methods
+    private static final List<Object> testDatas = getDocuments(25);
 
     @Test
     @Order(1)
@@ -476,6 +478,51 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
 
+    // sort by uuid v6, same for v7
+    @Test
+    public void sortByUUID() throws Exception {
+      List<Object> datas =
+          testDatas.stream()
+              .filter(obj -> (obj instanceof TestData o))
+              .collect(Collectors.toList());
+      sortByUUID(datas, true);
+      // Create a sublist of the first 20 elements
+      List<Object> first20Datas = new ArrayList<>(datas.subList(0, Math.min(20, datas.size())));
+
+      String json =
+          """
+              {
+                "find": {
+                  "filter":{
+                     "uuid" : {"$exists" : true}
+                   },
+                   "sort" : {"uuid" : 1}
+                }
+              }
+              """;
+
+      JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
+      final ArrayNode arrayNode = nodeFactory.arrayNode(first20Datas.size());
+      for (int i = 0; i < first20Datas.size(); i++)
+        arrayNode.add(
+            objectMapper.readTree(
+                objectMapper
+                    .writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(first20Datas.get(i))));
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(Math.min(20, first20Datas.size())))
+          .body("data.documents", jsonEquals(arrayNode.toString()));
+    }
+
     private void sortByUserNameUserId(
         List<Object> testDatas, boolean ascUserName, boolean ascUserId) {
       testDatas.sort(
@@ -510,6 +557,23 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
             public int compare(Object o1, Object o2) {
               JsonNode o1j = getUserNameAsJsonNode(o1);
               JsonNode o2j = getUserNameAsJsonNode(o2);
+              int compareVal = compareNode(o1j, o2j, asc);
+              if (compareVal != 0) {
+                return compareVal;
+              } else {
+                return compareNode(getIDJsonNode(o1), getIDJsonNode(o2), true);
+              }
+            }
+          });
+    }
+
+    private void sortByUUID(List<Object> testDatas, boolean asc) {
+      testDatas.sort(
+          new Comparator<Object>() {
+            @Override
+            public int compare(Object o1, Object o2) {
+              JsonNode o1j = getUUIDAsJsonNode(o1);
+              JsonNode o2j = getUUIDAsJsonNode(o2);
               int compareVal = compareNode(o1j, o2j, asc);
               if (compareVal != 0) {
                 return compareVal;
@@ -587,6 +651,14 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       return objectMapper.getNodeFactory().missingNode();
     }
 
+    private JsonNode getUUIDAsJsonNode(Object data) {
+      if (data instanceof TestData td) {
+        if (td.uuid() == null) return objectMapper.getNodeFactory().nullNode();
+        return objectMapper.getNodeFactory().textNode(td.uuid.$uuid());
+      }
+      return objectMapper.getNodeFactory().missingNode();
+    }
+
     private JsonNode getIDJsonNode(Object data) {
       if (data instanceof TestData td) {
         return objectMapper.getNodeFactory().textNode(td._id());
@@ -631,12 +703,14 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       return objectMapper.getNodeFactory().missingNode();
     }
 
-    private List<Object> getDocuments(int countOfDocuments) {
+    private static List<Object> getDocuments(int countOfDocuments) {
       List<Object> data = new ArrayList<>(countOfDocuments);
       for (int docId = 1; docId <= countOfDocuments - 3; docId++) {
         data.add(
             new TestData(
                 "doc" + docId,
+                // generate uuid v6
+                new UuidValue(Generators.timeBasedReorderedGenerator().generate().toString()),
                 "user" + docId,
                 docId,
                 docId % 2 == 0,
@@ -645,6 +719,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       data.add(
           new TestData(
               "doc" + (countOfDocuments - 2),
+              new UuidValue(Generators.timeBasedReorderedGenerator().generate().toString()),
               null,
               (countOfDocuments - 2),
               (countOfDocuments - 2) % 2 == 0,
@@ -674,11 +749,18 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
     }
 
     record TestData(
-        String _id, String username, int userId, boolean activeUser, DateValue dateValue) {}
+        String _id,
+        UuidValue uuid,
+        String username,
+        int userId,
+        boolean activeUser,
+        DateValue dateValue) {}
 
     record TestDataMissingBoolean(String _id, String username, int userId) {}
 
     record TestDataUserIdAsText(String _id, String username, String userId) {}
+
+    record UuidValue(String $uuid) {}
 
     record DateValue(long $date) {}
   }

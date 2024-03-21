@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
@@ -134,7 +135,9 @@ public class ShredderDocLimitsTest {
       final ObjectNode doc = docWithNProps("no_index", docLimits.maxObjectProperties() + 100);
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(null, Collections.singleton("no_index"));
-      assertThat(shredder.shred(doc, null, indexProjector, "testCommand")).isNotNull();
+      assertThat(
+              shredder.shred(doc, null, indexProjector, "testCommand", CollectionSettings.empty()))
+          .isNotNull();
     }
 
     @Test
@@ -212,7 +215,9 @@ public class ShredderDocLimitsTest {
       final ObjectNode doc = docWithNArrayElems("no_index", docLimits.maxArrayLength() + 100);
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(null, Collections.singleton("no_index"));
-      assertThat(shredder.shred(doc, null, indexProjector, "testCommand")).isNotNull();
+      assertThat(
+              shredder.shred(doc, null, indexProjector, "testCommand", CollectionSettings.empty()))
+          .isNotNull();
     }
 
     @Test

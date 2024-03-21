@@ -111,7 +111,7 @@ public class JsonUtilTest {
           .isNotNull()
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
           .hasMessage(
-              "Bad EJSON value: Date ($date) needs to have NUMBER value, has STRING (path '/')");
+              "Bad JSON Extension value: Date ($date) needs to have NUMBER value, has STRING (path '/')");
     }
   }
 }

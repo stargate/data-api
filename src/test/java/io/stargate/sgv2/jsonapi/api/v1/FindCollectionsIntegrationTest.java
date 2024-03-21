@@ -108,7 +108,9 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
       String expected1 =
           """
                   {
-                    "name": "%s"
+                    "name": "%s",
+                    "options": {
+                    }
                   }
                     """
               .formatted("collection1");
@@ -319,6 +321,9 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                     "createCollection": {
                       "name": "%s",
                       "options": {
+                        "defaultId" : {
+                          "type" : "objectId"
+                        },
                         "indexing": {
                           "deny" : ["comment"]
                         }
@@ -339,10 +344,10 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body("status.ok", is(1));
 
       String expected1 = """
-      {"name":"TableName"}
+      {"name":"TableName","options":{}}
       """;
       String expected2 = """
-              {"name":"collection1"}
+              {"name":"collection1", "options":{}}
               """;
       String expected3 =
           """
@@ -350,7 +355,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
       """;
       String expected4 =
           """
-              {"name":"collection4", "options":{"indexing":{"deny":["comment"]}}}
+              {"name":"collection4","options":{"defaultId" : {"type" : "objectId"}, "indexing":{"deny":["comment"]}}}
               """;
       json =
           """

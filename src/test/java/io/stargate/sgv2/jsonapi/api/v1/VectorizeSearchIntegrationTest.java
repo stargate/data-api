@@ -32,24 +32,31 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
     public void happyPathVectorSearch() {
       String json =
           """
-                {
-                  "createCollection": {
-                    "name" : "my_collection_vectorize",
-                    "options": {
-                      "vector": {
-                        "dimension": 5,
-                        "metric": "cosine"
-                      },
-                      "vectorize": {
-                        "service" : "custom",
-                        "options" : {
-                          "modelName": "text-embedding-ada-002"
+                    {
+                        "createCollection": {
+                            "name": "my_collection_vectorize",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 5,
+                                    "service": {
+                                        "provider": "custom",
+                                        "modelName": "text-embedding-ada-002",
+                                        "authentication": {
+                                            "type": [
+                                                "SHARED_SECRET"
+                                            ],
+                                            "secretName": "name_given_by_user"
+                                        },
+                                        "parameters": {
+                                            "project_id": "test project"
+                                        }
+                                    }
+                                }
+                            }
                         }
-                      }
                     }
-                  }
-                }
-                """;
+                    """;
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)

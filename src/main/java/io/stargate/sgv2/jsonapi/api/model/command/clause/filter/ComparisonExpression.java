@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotEmpty;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.bson.types.ObjectId;
 
 /**
  * This object represents conditions based for a json path (node) that need to be tested Spec says
@@ -134,6 +135,9 @@ public class ComparisonExpression {
     }
     if (value instanceof Map) {
       return new JsonLiteral<>((Map<String, Object>) value, JsonType.SUB_DOC);
+    }
+    if (value instanceof UUID || value instanceof ObjectId) {
+      return new JsonLiteral<>(value.toString(), JsonType.STRING);
     }
     throw new JsonApiException(
         ErrorCode.FILTER_UNRESOLVABLE,

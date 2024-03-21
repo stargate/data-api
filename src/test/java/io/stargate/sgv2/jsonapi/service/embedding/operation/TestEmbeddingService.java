@@ -12,12 +12,10 @@ public class TestEmbeddingService implements EmbeddingService {
           "namespace",
           "collection",
           new CollectionSettings(
-              "collection",
-              true,
-              3,
-              CollectionSettings.SimilarityFunction.COSINE,
-              null,
-              null,
+              "collections",
+              CollectionSettings.IdConfig.defaultIdConfig(),
+              new CollectionSettings.VectorConfig(
+                  true, 3, CollectionSettings.SimilarityFunction.COSINE, null),
               null),
           new TestEmbeddingService(),
           "testCommand",
