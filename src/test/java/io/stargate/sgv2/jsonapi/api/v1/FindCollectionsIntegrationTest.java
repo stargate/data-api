@@ -110,9 +110,6 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                   {
                     "name": "%s",
                     "options": {
-                        "defaultId":{
-                          "type" : ""
-                      }
                     }
                   }
                     """
@@ -122,9 +119,6 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               {
                   "name": "%s",
                   "options": {
-                      "defaultId":{
-                          "type" : ""
-                      },
                     "vector": {
                       "dimension": 5,
                       "metric": "cosine"
@@ -349,17 +343,15 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .statusCode(200)
           .body("status.ok", is(1));
 
-      String expected1 =
-          """
-      {"name":"TableName","options":{"defaultId" : {"type" : ""}}}
+      String expected1 = """
+      {"name":"TableName","options":{}}
       """;
-      String expected2 =
-          """
-              {"name":"collection1", "options":{"defaultId" : {"type" : ""}}}
+      String expected2 = """
+              {"name":"collection1", "options":{}}
               """;
       String expected3 =
           """
-      {"name":"collection2", "options": {"defaultId" : {"type" : ""}, "vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
+      {"name":"collection2", "options": {"vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
       """;
       String expected4 =
           """

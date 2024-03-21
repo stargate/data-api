@@ -362,7 +362,6 @@ public record CollectionSettings(
 
   public static CreateCollectionCommand collectionSettingToCreateCollectionCommand(
       CollectionSettings collectionSetting) {
-    CreateCollectionCommand.Options options = null;
     CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig = null;
     CreateCollectionCommand.Options.IndexingConfig indexingConfig = null;
     // construct the CreateCollectionCommand.options.vectorSearchConfig
@@ -412,13 +411,17 @@ public record CollectionSettings(
               Lists.newArrayList(collectionSetting.indexingConfig().allowed()),
               Lists.newArrayList(collectionSetting.indexingConfig().denied()));
     }
-    // construct the CreateCollectionCommand.options.idConfig
+    // construct the CreateCollectionCommand.options.idConfig -- but only if non-default IdType
+    final IdType idType = collectionSetting.idConfig().idType();
     CreateCollectionCommand.Options.IdConfig idConfig =
-        new CreateCollectionCommand.Options.IdConfig(collectionSetting.idConfig.idType.toString());
+        (idType == null || idType == IdType.UNDEFINED)
+            ? null
+            : new CreateCollectionCommand.Options.IdConfig(idType.toString());
 
-    options = new CreateCollectionCommand.Options(idConfig, vectorSearchConfig, indexingConfig);
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
-    return new CreateCollectionCommand(collectionSetting.collectionName(), options);
+    return new CreateCollectionCommand(
+        collectionSetting.collectionName(),
+        new CreateCollectionCommand.Options(idConfig, vectorSearchConfig, indexingConfig));
   }
 }
