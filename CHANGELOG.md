@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.3...HEAD)
+
+**Closed issues:**
+
+- Filter $not with $size as 0 not working correctly [\#981](https://github.com/stargate/data-api/issues/981)
+- Support auto-generation/explicit use of ObjectId, UUID \(v4, v6, v7\) as document ids \(\_id\) [\#922](https://github.com/stargate/data-api/issues/922)
+- Add `EstimatedDocumentCount` command [\#793](https://github.com/stargate/data-api/issues/793)
+
+**Merged pull requests:**
+
+- Fix 1.0.3 link in CHANGELOG.md [\#989](https://github.com/stargate/data-api/pull/989) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release \(1.0.4-SNAPSHOT\) [\#985](https://github.com/stargate/data-api/pull/985) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.3](https://github.com/stargate/jsonapi/tree/v1.0.3) (2024-03-20)
 
 [Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.2...v1.0.3)
