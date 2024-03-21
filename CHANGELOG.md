@@ -1,6 +1,6 @@
 # Changelog
 
-## [v1.0.3](https://github.com/stargate/jsonapi/tree/v1.0.2) (2024-03-20)
+## [v1.0.3](https://github.com/stargate/jsonapi/tree/v1.0.3) (2024-03-20)
 
 [Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.2...v1.0.3)
 
