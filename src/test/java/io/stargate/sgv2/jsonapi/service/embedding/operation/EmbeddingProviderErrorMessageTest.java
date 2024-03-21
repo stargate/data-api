@@ -106,7 +106,7 @@ public class EmbeddingProviderErrorMessageTest {
       assertThat(exception.getCause())
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
-          .hasFieldOrPropertyWithValue("message", "The configured Embedding Provider timedout.");
+          .hasFieldOrPropertyWithValue("message", "The configured Embedding Provider timed out.");
     }
   }
 }
