@@ -20,27 +20,47 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))
             .withRequestBody(matchingJsonPath("$.input", containing("429")))
-            .willReturn(aResponse().withStatus(429).withStatusMessage("Too Many Requests")));
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(429)
+                    .withStatusMessage("Too Many Requests")));
 
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))
             .withRequestBody(matchingJsonPath("$.input", containing("400")))
-            .willReturn(aResponse().withStatus(400).withStatusMessage("Bad Request")));
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(400)
+                    .withStatusMessage("Bad Request")));
 
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))
             .withRequestBody(matchingJsonPath("$.input", containing("503")))
-            .willReturn(aResponse().withStatus(503).withStatusMessage("Service Unavailable")));
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(503)
+                    .withStatusMessage("Service Unavailable")));
 
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))
             .withRequestBody(matchingJsonPath("$.input", containing("408")))
-            .willReturn(aResponse().withStatus(408).withStatusMessage("Request Timeout")));
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(408)
+                    .withStatusMessage("Request Timeout")));
 
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))
             .withRequestBody(matchingJsonPath("$.input", containing("301")))
-            .willReturn(aResponse().withStatus(301).withStatusMessage("Moved Permanently")));
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withStatus(301)
+                    .withStatusMessage("Moved Permanently")));
 
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))
