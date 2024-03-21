@@ -39,7 +39,8 @@ public enum ErrorCode {
   EMBEDDING_PROVIDER_INVALID_REQUEST(
       "The configured Embedding Provider for this collection refused to process the request, response was"),
 
-  EMBEDDING_PROVIDER_ERROR("Embedding provider error"),
+  EMBEDDING_PROVIDER_INVALID_RESPONSE(
+      "The configured Embedding Provider for this collection return an invalid response"),
 
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 

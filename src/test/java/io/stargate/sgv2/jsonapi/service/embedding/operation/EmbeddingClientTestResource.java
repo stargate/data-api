@@ -42,6 +42,39 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .withRequestBody(matchingJsonPath("$.input", containing("301")))
             .willReturn(aResponse().withStatus(301).withStatusMessage("Moved Permanently")));
 
+    wireMockServer.stubFor(
+        post(urlEqualTo("/v1/embeddings"))
+            .withRequestBody(matchingJsonPath("$.input", containing("application/json")))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(
+                        """
+                           {
+                             "object": "list",
+                             "data": [
+                               {
+                                 "index": 0,
+                                 "embedding": [
+                                   -0.0175628662109375,
+                                   -0.035247802734375,
+                                   0.044586181640625
+                                 ],
+                                 "object": "embedding"
+                               }
+                             ],
+                             "model": "NV-Embed-QA",
+                             "usage": {
+                               "prompt_tokens": 0,
+                               "total_tokens": 0
+                             }
+                           }
+                                 """)));
+
+    wireMockServer.stubFor(
+        post(urlEqualTo("/v1/embeddings"))
+            .withRequestBody(matchingJsonPath("$.input", containing("application/xml")))
+            .willReturn(aResponse().withHeader("Content-Type", "application/xml").withBody("{}")));
     return Map.of(
         "stargate.jsonapi.embedding.providers.nvidia.url",
         wireMockServer.baseUrl() + "/v1/embeddings");

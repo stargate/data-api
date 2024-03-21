@@ -173,7 +173,7 @@ public class DataVectorizerTest {
                 .getFailure();
         assertThat(failure)
             .isInstanceOf(JsonApiException.class)
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_ERROR)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
             .hasFieldOrPropertyWithValue(
                 "message",
                 "Embedding provider error: Embedding provider 'custom' cannot return the correct number of vectors. Expect: '2'. Actual: '3'");
@@ -212,7 +212,7 @@ public class DataVectorizerTest {
                 .getFailure();
         assertThat(failure)
             .isInstanceOf(JsonApiException.class)
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_ERROR)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
             .hasFieldOrPropertyWithValue(
                 "message",
                 "Embedding provider error: Embedding provider 'custom' cannot return correct vector length. Expect: '4'. Actual: '3'");

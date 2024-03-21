@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_ERROR;
+import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -108,7 +108,7 @@ public class DataVectorizer {
                 vectorData -> {
                   // check if we get back the same number of vectors that we asked for
                   if (vectorData.size() != vectorizeTexts.size()) {
-                    throw EMBEDDING_PROVIDER_ERROR.toApiException(
+                    throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
                         "Embedding provider '%s' cannot return the correct number of vectors. Expect: '%s'. Actual: '%s'",
                         collectionSettings.vectorConfig().vectorizeConfig().provider(),
                         vectorizeTexts.size(),
@@ -122,7 +122,7 @@ public class DataVectorizer {
                     float[] vector = vectorData.get(vectorPosition);
                     // check if all vectors have the expected size
                     if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
-                      throw EMBEDDING_PROVIDER_ERROR.toApiException(
+                      throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
                           "Embedding provider '%s' cannot return correct vector length. Expect: '%s'. Actual: '%s'",
                           collectionSettings.vectorConfig().vectorizeConfig().provider(),
                           collectionSettings.vectorConfig().vectorSize(),
@@ -171,7 +171,7 @@ public class DataVectorizer {
                   float[] vector = vectorData.get(0);
                   // check if vector have the expected size
                   if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
-                    throw EMBEDDING_PROVIDER_ERROR.toApiException(
+                    throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
                         "Embedding provider '%s' cannot return correct vector length. Expect: '%s'. Actual: '%s'",
                         collectionSettings.vectorConfig().vectorizeConfig().provider(),
                         collectionSettings.vectorConfig().vectorSize(),
@@ -249,7 +249,7 @@ public class DataVectorizer {
                   float[] vector = vectorData.get(0);
                   // check if vector have the expected size
                   if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
-                    throw EMBEDDING_PROVIDER_ERROR.toApiException(
+                    throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
                         "Embedding provider '%s' cannot return correct vector length. Expect: '%s'. Actual: '%s'",
                         collectionSettings.vectorConfig().vectorizeConfig().provider(),
                         collectionSettings.vectorConfig().vectorSize(),

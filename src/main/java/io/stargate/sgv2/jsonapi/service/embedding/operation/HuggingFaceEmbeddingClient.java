@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingProviderHeaderValidation;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
@@ -45,6 +47,7 @@ public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
   }
 
   @RegisterRestClient
+  @RegisterProvider(EmbeddingProviderHeaderValidation.class)
   public interface HuggingFaceEmbeddingProvider {
     @POST
     @Path("/{modelId}")
