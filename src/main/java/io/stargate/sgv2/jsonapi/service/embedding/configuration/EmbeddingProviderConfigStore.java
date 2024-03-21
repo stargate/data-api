@@ -9,7 +9,8 @@ public interface EmbeddingProviderConfigStore {
       String serviceProvider,
       String apiKey,
       String baseUrl,
-      Optional<Class<?>> clazz,
+      // `implementationClass` is the custom class that implements the EmbeddingProvider interface
+      Optional<Class<?>> implementationClass,
       RequestProperties requestConfiguration) {
 
     public static ServiceConfig provider(
@@ -22,9 +23,14 @@ public interface EmbeddingProviderConfigStore {
           serviceName, serviceProvider, apiKey, baseUrl, null, requestConfiguration);
     }
 
-    public static ServiceConfig custom(Optional<Class<?>> clazz) {
+    public static ServiceConfig custom(Optional<Class<?>> implementationClass) {
       return new ServiceConfig(
-          ProviderConstants.CUSTOM, ProviderConstants.CUSTOM, null, null, clazz, null);
+          ProviderConstants.CUSTOM,
+          ProviderConstants.CUSTOM,
+          null,
+          null,
+          implementationClass,
+          null);
     }
   }
 

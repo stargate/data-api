@@ -32,7 +32,7 @@ public enum ErrorCode {
   EMBEDDING_PROVIDER_RATE_LIMITED(
       "The configured Embedding Provider for this collection is rate limiting your requests"),
 
-  EMBEDDING_PROVIDER_TIMEOUT("The configured Embedding Provider timedout."),
+  EMBEDDING_PROVIDER_TIMEOUT("The configured Embedding Provider timed out."),
   EMBEDDING_PROVIDER_UNAVAILBLE(
       "The configured Embedding Provider for this collection could not be contacted."),
 
