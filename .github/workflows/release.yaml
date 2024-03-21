@@ -113,7 +113,7 @@ jobs:
         run: |
           ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true  -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}} -Dquarkus.container-image.name=data-api ${{ matrix.profile }}
 
-      - name: Build jsonapi image and push (Docker Hub)
+      - name: Build data-api image and push (Docker Hub)
         if: ${{ !inputs.skipPublish }}
         run: |
           ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true  -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}} -Dquarkus.container-image.name=jsonapi ${{ matrix.profile }}
@@ -277,8 +277,8 @@ jobs:
           GITHUB_TOKEN:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Bumping version for the next jsonapi release"
-          title: "Bumping version for next jsonapi release"
+          commit-message: "Bumping version for the next data-api release"
+          title: "Bumping version for next data-api release"
           branch-suffix: "short-commit-hash"
           base: "main"
 
