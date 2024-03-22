@@ -24,6 +24,7 @@ public class CollectionSettingsTest {
     CollectionSettings settings =
         new CollectionSettings(
             "collectionName",
+            CollectionSettings.IdConfig.defaultIdConfig(),
             CollectionSettings.VectorConfig.notEnabledVectorConfig(),
             indexingConfig);
     DocumentProjector indexingProj = settings.indexingProjector();

@@ -67,6 +67,7 @@ public class NamespaceCache {
                                     .concat(collectionName)));
                   }
 
+                  // TODO This if block can be deleted? grpc code
                   // ignoring the error and return false. This will be handled while trying to
                   //  execute the query
                   if ((error instanceof StatusRuntimeException sre
@@ -76,6 +77,7 @@ public class NamespaceCache {
                         .item(
                             new CollectionSettings(
                                 collectionName,
+                                CollectionSettings.IdConfig.defaultIdConfig(),
                                 CollectionSettings.VectorConfig.notEnabledVectorConfig(),
                                 null));
                   }

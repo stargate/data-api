@@ -168,19 +168,33 @@ public record WritableShreddedDocument(
 
     @Override
     public boolean shredObject(JsonPath path, ObjectNode obj) {
-      // Either Sub-doc or EJSON-encoded Date/timestamp value:
+      // Either Sub-doc or EJSON-encoded Date/timestamp or other extension value:
       if (JsonUtil.looksLikeEJsonValue(obj)) {
-        Date dtValue = JsonUtil.extractEJsonDate(obj, path);
-        if (dtValue != null) {
-          shredTimestamp(path, dtValue);
-          return false; // we are done
+        JsonExtensionType type = JsonUtil.findJsonExtensionType(obj);
+        if (type != null) {
+          switch (type) {
+            case EJSON_DATE:
+              Date dtValue = JsonUtil.extractEJsonDate(obj, path);
+              if (dtValue != null) {
+                shredTimestamp(path, dtValue);
+                return false; // we are done
+              }
+              break;
+            default:
+              Object extValue = JsonUtil.tryExtractExtendedValue(type, obj);
+              if (extValue != null) {
+                shredExtendedType(path, type, extValue);
+                return false;
+              }
+              break;
+          }
+          throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+              "invalid value (%s) for extended JSON type '%s' (path '%s')",
+              obj.iterator().next(), obj.fieldNames().next(), path);
         }
         // Otherwise it's either unsupported of malformed EJSON-encoded value; fail
-        throw new JsonApiException(
-            ErrorCode.SHRED_BAD_EJSON_VALUE,
-            String.format(
-                "%s: unrecognized type '%s' (path '%s')",
-                ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage(), obj.fieldNames().next(), path));
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "unrecognized extended JSON type '%s' (path '%s')", obj.fieldNames().next(), path);
       }
 
       addKey(path);
@@ -291,6 +305,10 @@ public record WritableShreddedDocument(
         arrayVals[i] = element.floatValue();
       }
       queryVectorValues = arrayVals;
+    }
+
+    public void shredExtendedType(JsonPath path, JsonExtensionType type, Object extensionValue) {
+      shredText(path, String.valueOf(extensionValue));
     }
 
     /**

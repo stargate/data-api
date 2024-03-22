@@ -189,6 +189,15 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
+                  name = "estimatedDocumentCount",
+                  summary = "`estimatedDocumentCount` command",
+                  value =
+                      """
+                                    {
+                                      "estimatedDocumentCount": {}
+                                    }
+                                  """),
+              @ExampleObject(
                   name = "updateOne",
                   summary = "`updateOne` command",
                   value =

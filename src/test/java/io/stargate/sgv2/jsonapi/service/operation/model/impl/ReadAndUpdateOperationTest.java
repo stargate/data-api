@@ -113,6 +113,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
             COLLECTION_NAME,
             new CollectionSettings(
                 COLLECTION_NAME,
+                CollectionSettings.IdConfig.defaultIdConfig(),
                 new CollectionSettings.VectorConfig(
                     true, -1, CollectionSettings.SimilarityFunction.COSINE, null),
                 null),

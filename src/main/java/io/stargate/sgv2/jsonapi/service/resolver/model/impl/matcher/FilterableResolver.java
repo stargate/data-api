@@ -308,18 +308,25 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       }
 
       if (captureExpression.marker() == SIZE_GROUP) {
-        BigDecimal bigDecimal = (BigDecimal) filterOperation.operand().value();
-        // Flipping size operator will multiply the value by -1
-        // Negative means check array_size[?] != ?
-        int size = bigDecimal.intValue();
-        DBFilterBase.MapFilterBase.Operator operator;
-        if (size >= 0) {
-          operator = DBFilterBase.MapFilterBase.Operator.MAP_EQUALS;
+        if (filterOperation.operand().value() instanceof Boolean) {
+          // This is the special case, e.g. {"$not":{"ages":{"$size":0}}}
+          filters.add(
+              new DBFilterBase.SizeFilter(
+                  captureExpression.path(), DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS, 0));
         } else {
-          operator = DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS;
+          BigDecimal bigDecimal = (BigDecimal) filterOperation.operand().value();
+          // Flipping size operator will multiply the value by -1
+          // Negative means check array_size[?] != ?
+          int size = bigDecimal.intValue();
+          DBFilterBase.MapFilterBase.Operator operator;
+          if (size >= 0) {
+            operator = DBFilterBase.MapFilterBase.Operator.MAP_EQUALS;
+          } else {
+            operator = DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS;
+          }
+          filters.add(
+              new DBFilterBase.SizeFilter(captureExpression.path(), operator, Math.abs(size)));
         }
-        filters.add(
-            new DBFilterBase.SizeFilter(captureExpression.path(), operator, Math.abs(size)));
       }
 
       if (captureExpression.marker() == ARRAY_EQUALS) {

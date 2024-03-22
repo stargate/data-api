@@ -15,6 +15,7 @@ public class TestEmbeddingProvider implements EmbeddingProvider {
           "collection",
           new CollectionSettings(
               "collections",
+              CollectionSettings.IdConfig.defaultIdConfig(),
               new CollectionSettings.VectorConfig(
                   true, 3, CollectionSettings.SimilarityFunction.COSINE, null),
               null),

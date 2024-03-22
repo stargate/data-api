@@ -33,7 +33,11 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   public Operation resolveCommand(CommandContext ctx, InsertOneCommand command) {
     WritableShreddedDocument shreddedDocument =
         shredder.shred(
-            command.document(), null, ctx.indexingProjector(), command.getClass().getSimpleName());
+            command.document(),
+            null,
+            ctx.indexingProjector(),
+            command.getClass().getSimpleName(),
+            ctx.collectionSettings());
     return new InsertOperation(ctx, shreddedDocument);
   }
 }

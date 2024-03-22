@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -231,6 +232,11 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                   ErrorCode.INVALID_FILTER_EXPRESSION,
                   "$size operator must have integer value >= 0");
             }
+            // Check if the value is an integer by comparing its scale.
+            if (i.stripTrailingZeros().scale() > 0) {
+              throw new JsonApiException(
+                  ErrorCode.INVALID_FILTER_EXPRESSION, "$size operator must have an integer value");
+            }
           } else {
             throw new JsonApiException(
                 ErrorCode.INVALID_FILTER_EXPRESSION, "$size operator must have integer");
@@ -254,33 +260,40 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   private List<ComparisonExpression> createComparisonExpressionList(
       Map.Entry<String, JsonNode> entry) {
     final List<ComparisonExpression> comparisonExpressionList = new ArrayList<>();
-    // Check if the value is EJson date and add filter expression for date filter
     final Iterator<Map.Entry<String, JsonNode>> fields = entry.getValue().fields();
     while (fields.hasNext()) {
       Map.Entry<String, JsonNode> updateField = fields.next();
-      FilterOperator operator = null;
-      try {
-        operator = FilterOperator.FilterOperatorUtils.getComparisonOperator(updateField.getKey());
-      } catch (JsonApiException exception) {
-        // If getComparisonOperator returns an exception, check for subdocument equality condition,
-        // this will happen when shortcut is used "filter" : { "size" : { "w": 21, "h": 14} }
-        if (updateField.getKey().startsWith("$")
-            && entry.getValue().get(JsonUtil.EJSON_VALUE_KEY_DATE) == null) {
-          throw exception;
-        } else {
-          if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
-            throw new JsonApiException(
-                ErrorCode.INVALID_FILTER_EXPRESSION,
-                String.format(
-                    "%s: filter clause path ('%s') contains character(s) not allowed",
-                    ErrorCode.INVALID_FILTER_EXPRESSION.getMessage(), entry.getKey()));
-          }
-          comparisonExpressionList.add(
-              ComparisonExpression.eq(
-                  entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
-          return comparisonExpressionList;
+      final String updateKey = updateField.getKey();
+      FilterOperator operator =
+          FilterOperator.FilterOperatorUtils.findComparisonOperator(updateKey);
+
+      // If assumed filter not found, may be JSON Extension value like "$date" or "$uuid";
+      // or may be full Object to match
+      if (operator == null) {
+        JsonExtensionType etype = JsonUtil.findJsonExtensionType(updateKey);
+        if ((etype == null) && updateKey.startsWith("$")) {
+          throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(updateKey);
         }
+        if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
+          throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+              "filter clause path ('%s') contains character(s) not allowed", entry.getKey());
+        }
+        // JSON Extension type needs to be explicitly handled:
+        Object value;
+        if (etype != null) {
+          if (entry.getKey().equals(DOC_ID)) {
+            value = DocumentId.fromJson(entry.getValue());
+          } else {
+            value = JsonUtil.extractExtendedValue(etype, updateField);
+          }
+        } else {
+          // Otherwise we have a full JSON Object to match:
+          value = jsonNodeValue(entry.getKey(), entry.getValue());
+        }
+        comparisonExpressionList.add(ComparisonExpression.eq(entry.getKey(), value));
+        return comparisonExpressionList;
       }
+
       // if the key does not match pattern or the entry is not ($vector and $exist operator)
       // combination, throw error
       if (!(DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()
@@ -371,21 +384,25 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         }
       case OBJECT:
         {
-          if (JsonUtil.looksLikeEJsonValue(node)) {
-            JsonNode value = node.get(JsonUtil.EJSON_VALUE_KEY_DATE);
-            if (value != null) {
+          if (JsonUtil.looksLikeEJsonValue(node)) { // means it's a single-entry Map, key
+            JsonExtensionType etype = JsonUtil.findJsonExtensionType(node);
+            if (etype == JsonExtensionType.EJSON_DATE) {
+              JsonNode value = node.iterator().next();
               if (value.isIntegralNumber() && value.canConvertToLong()) {
                 return new Date(value.longValue());
-              } else {
-                throw new JsonApiException(
-                    ErrorCode.INVALID_FILTER_EXPRESSION, "Date value has to be sent as epoch time");
               }
+              throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+                  "$date value has to be sent as epoch time");
+            } else if (etype != null) {
+              // This will convert to Java value if valid value; we'll just convert back to String
+              // since all non-Date JSON extension values are indexed as Strings
+              Object evalue = JsonUtil.extractExtendedValue(etype, node);
+              return evalue.toString();
             } else {
               // handle an invalid filter use case:
               // { "address": { "street": { "$xx": xxx } } }
-              throw new JsonApiException(
-                  ErrorCode.INVALID_FILTER_EXPRESSION,
-                  String.format("Invalid use of %s operator", node.fields().next().getKey()));
+              throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+                  "Invalid use of %s operator", node.fieldNames().next());
             }
           } else {
             ObjectNode objectNode = (ObjectNode) node;

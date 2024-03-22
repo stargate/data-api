@@ -108,14 +108,15 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
-      - name: Build and push (Docker Hub)
+      - name: Build data-api image and push (Docker Hub)
         if: ${{ !inputs.skipPublish }}
         run: |
-          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 ${{ matrix.profile }}
-          docker push stargateio/data-api:${{needs.resolve-tag.outputs.release-tag}}
-          docker push stargateio/jsonapi:${{needs.resolve-tag.outputs.release-tag}}
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true  -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}} -Dquarkus.container-image.name=data-api ${{ matrix.profile }}
 
-     
+      - name: Build data-api image and push (Docker Hub)
+        if: ${{ !inputs.skipPublish }}
+        run: |
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true  -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}} -Dquarkus.container-image.name=jsonapi ${{ matrix.profile }}
 
   # publishes the docker image to ecr
   publish-image-ecr:
@@ -276,8 +277,8 @@ jobs:
           GITHUB_TOKEN:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Bumping version for the next jsonapi release"
-          title: "Bumping version for next jsonapi release"
+          commit-message: "Bumping version for the next data-api release"
+          title: "Bumping version for next data-api release"
           branch-suffix: "short-commit-hash"
           base: "main"
 

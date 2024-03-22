@@ -3,14 +3,20 @@ package io.stargate.sgv2.jsonapi.service.shredding;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.uuid.Generators;
+import com.fasterxml.uuid.NoArgGenerator;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -21,6 +27,7 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.bson.types.ObjectId;
 
 /**
  * Shred an incoming JSON document into the data we need to store in the DB, and then de-shred.
@@ -34,6 +41,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @ApplicationScoped
 public class Shredder {
+  private static final NoArgGenerator UUID_V4_GENERATOR = Generators.randomBasedGenerator();
+  private static final NoArgGenerator UUID_V6_GENERATOR = Generators.timeBasedReorderedGenerator();
+  private static final NoArgGenerator UUID_V7_GENERATOR = Generators.timeBasedEpochGenerator();
+
   private final ObjectMapper objectMapper;
 
   private final DocumentLimitsConfig documentLimits;
@@ -61,11 +72,24 @@ public class Shredder {
   }
 
   public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
-    return shred(doc, txId, DocumentProjector.identityProjector(), "testCommand");
+    return shred(
+        doc,
+        txId,
+        DocumentProjector.identityProjector(),
+        "testCommand",
+        CollectionSettings.empty());
+  }
+
+  public WritableShreddedDocument shred(CommandContext ctx, JsonNode doc, UUID txId) {
+    return shred(doc, txId, ctx.indexingProjector(), ctx.commandName(), ctx.collectionSettings());
   }
 
   public WritableShreddedDocument shred(
-      JsonNode doc, UUID txId, DocumentProjector indexProjector, String commandName) {
+      JsonNode doc,
+      UUID txId,
+      DocumentProjector indexProjector,
+      String commandName,
+      CollectionSettings collectionSettings) {
     // Although we could otherwise allow non-Object documents, requirement
     // to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
@@ -73,7 +97,7 @@ public class Shredder {
           "document to shred must be a JSON Object, instead got %s", doc.getNodeType());
     }
 
-    final ObjectNode docWithId = normalizeDocumentId((ObjectNode) doc);
+    final ObjectNode docWithId = normalizeDocumentId(collectionSettings, (ObjectNode) doc);
     final DocumentId docId = DocumentId.fromJson(docWithId.get(DocumentConstants.Fields.DOC_ID));
     final String docJson;
 
@@ -127,16 +151,17 @@ public class Shredder {
    * is the very first property in the document (reordering as needed). Note that a new document is
    * created and returned; input document is never modified.
    *
+   * @param collectionSettings Collection settings to use for document id generation
    * @param doc Document to use as the base
    * @return Document that has _id as its first property
    */
-  private ObjectNode normalizeDocumentId(ObjectNode doc) {
+  private ObjectNode normalizeDocumentId(CollectionSettings collectionSettings, ObjectNode doc) {
     // First: see if we have Object Id present or not
     JsonNode idNode = doc.get(DocumentConstants.Fields.DOC_ID);
 
     // If not, generate one
     if (idNode == null) {
-      idNode = generateDocumentId();
+      idNode = generateDocumentId(collectionSettings);
     }
     // Either way we need to construct actual document with _id as the first property;
     // unfortunately there is no way to reorder properties in-place.
@@ -147,10 +172,30 @@ public class Shredder {
     return docWithIdAsFirstProperty;
   }
 
-  private JsonNode generateDocumentId() {
-    // Currently we generate UUID-as-String; alternatively could use and create
-    // ObjectId-compatible values for better interoperability
-    return objectMapper.getNodeFactory().textNode(UUID.randomUUID().toString());
+  private JsonNode generateDocumentId(CollectionSettings collectionSettings) {
+    CollectionSettings.IdType idType = collectionSettings.idConfig().idType();
+    if (idType == null) {
+      idType = CollectionSettings.IdType.UNDEFINED;
+    }
+    final JsonNodeFactory jnf = objectMapper.getNodeFactory();
+    switch (idType) {
+      case OBJECT_ID:
+        return wrapExtensionType(jnf, JsonExtensionType.OBJECT_ID, new ObjectId());
+      case UUID:
+        return wrapExtensionType(jnf, JsonExtensionType.UUID, UUID_V4_GENERATOR.generate());
+      case UUID_V6:
+        return wrapExtensionType(jnf, JsonExtensionType.UUID, UUID_V6_GENERATOR.generate());
+      case UUID_V7:
+        return wrapExtensionType(jnf, JsonExtensionType.UUID, UUID_V7_GENERATOR.generate());
+      case UNDEFINED:
+    }
+    // Default for "undefined"/"unspecified" is legacy unwrapped UUIDv4 (random)
+    return jnf.textNode(UUID_V4_GENERATOR.generate().toString());
+  }
+
+  private static JsonNode wrapExtensionType(
+      JsonNodeFactory jnf, JsonExtensionType etype, Object value) {
+    return jnf.objectNode().put(etype.encodedName(), value.toString());
   }
 
   /**
@@ -294,12 +339,34 @@ public class Shredder {
       ++depth;
       validateDocDepth(limits, depth);
 
-      final int propCount = objectValue.size();
+      // First, special case: Extension JSON types
+      if (objectValue.size() == 1) {
+        String key = objectValue.fieldNames().next();
+        JsonExtensionType extType = JsonExtensionType.fromEncodedName(key);
+        if (extType != null) {
+          // These are only superficially validated here, more detailed validation
+          // during actual shredding
+          JsonNode value = objectValue.iterator().next();
+          if (value.isTextual() || value.isIntegralNumber()) {
+            return;
+          }
+          throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+              "type '%s' has invalid JSON value of type %s",
+              extType.encodedName(), value.getNodeType());
+        }
+      }
 
       var it = objectValue.fields();
       while (it.hasNext()) {
         var entry = it.next();
         final String key = entry.getKey();
+
+        // Doc id validation done elsewhere, skip here to avoid failure for
+        // new Extension JSON types (Object-wrapped UUIDs, ObjectIds)
+        if (depth == 1 && key.equals(DocumentConstants.Fields.DOC_ID)) {
+          continue;
+        }
+
         validateObjectKey(key, entry.getValue(), depth, parentPathLength);
         // Path through property consists of segments separated by comma:
         final int propPathLength = parentPathLength + 1 + key.length();
@@ -313,14 +380,11 @@ public class Shredder {
         throw ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.toApiException("empty names not allowed");
       }
       if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
-        // Special names are accepted in some cases: for now only one such case for
-        // Date values -- if more needed, will refactor. But for now inline:
-        if (JsonUtil.EJSON_VALUE_KEY_DATE.equals(key) && value.isValueNode()) {
-          ; // Fine, looks like legit Date value
-        } else if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) && depth == 1) {
-          ; // Fine, looks like legit vector property
-        } else if (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD) && depth == 1) {
-          ; // Fine, looks like legit vectorize property
+        // Special names are accepted in some cases:
+        if ((depth == 1)
+            && (key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
+                || key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD))) {
+          ;
         } else {
           throw ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
               "property name ('%s') contains character(s) not allowed", key);

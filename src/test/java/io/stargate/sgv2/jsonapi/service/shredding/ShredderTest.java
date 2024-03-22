@@ -13,6 +13,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -263,9 +264,10 @@ public class ShredderTest {
 
       assertThat(t)
           .isNotNull()
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
           .hasMessage(
-              "Bad EJSON value: Date ($date) needs to have NUMBER value, has BOOLEAN (path 'date')")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE);
+              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
+                  + ": type '$date' has invalid JSON value of type BOOLEAN");
     }
 
     @Test
@@ -366,7 +368,8 @@ public class ShredderTest {
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(
               new HashSet<>(Arrays.asList("name", "metadata")), null);
-      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector, "testCommand");
+      WritableShreddedDocument doc =
+          shredder.shred(inputDoc, null, indexProjector, "testCommand", CollectionSettings.empty());
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -494,7 +497,8 @@ public class ShredderTest {
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(
               new HashSet<>(Arrays.asList("name", "metadata")), null);
-      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector, "testCommand");
+      WritableShreddedDocument doc =
+          shredder.shred(inputDoc, null, indexProjector, "testCommand", CollectionSettings.empty());
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -550,7 +554,8 @@ public class ShredderTest {
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(null, new HashSet<>(Arrays.asList("name", "values")));
-      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector, "testCommand");
+      WritableShreddedDocument doc =
+          shredder.shred(inputDoc, null, indexProjector, "testCommand", CollectionSettings.empty());
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
@@ -611,7 +616,8 @@ public class ShredderTest {
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(null, new HashSet<>(Arrays.asList("*")));
-      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector, "testCommand");
+      WritableShreddedDocument doc =
+          shredder.shred(inputDoc, null, indexProjector, "testCommand", CollectionSettings.empty());
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
 
       List<JsonPath> expPaths =
@@ -653,7 +659,8 @@ public class ShredderTest {
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(null, new HashSet<>(Arrays.asList("blob")));
-      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector, "testCommand");
+      WritableShreddedDocument doc =
+          shredder.shred(inputDoc, null, indexProjector, "testCommand", CollectionSettings.empty());
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(1)));
       List<JsonPath> expPaths = Arrays.asList(JsonPath.from("_id"), JsonPath.from("name"));
       assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
@@ -689,7 +696,11 @@ public class ShredderTest {
                       """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
       shredder.shred(
-          inputDoc, null, DocumentProjector.identityProjector(), "jsonBytesWriteCommand");
+          inputDoc,
+          null,
+          DocumentProjector.identityProjector(),
+          "jsonBytesWriteCommand",
+          CollectionSettings.empty());
 
       // verify metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();

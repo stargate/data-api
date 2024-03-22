@@ -32,13 +32,28 @@ import java.util.stream.Collectors;
  * @param indexingConfig
  */
 public record CollectionSettings(
-    String collectionName, VectorConfig vectorConfig, IndexingConfig indexingConfig) {
+    String collectionName,
+    IdConfig idConfig,
+    VectorConfig vectorConfig,
+    IndexingConfig indexingConfig) {
 
   private static final CollectionSettings EMPTY =
-      new CollectionSettings("", VectorConfig.notEnabledVectorConfig(), null);
+      new CollectionSettings(
+          "", IdConfig.defaultIdConfig(), VectorConfig.notEnabledVectorConfig(), null);
 
   public static CollectionSettings empty() {
     return EMPTY;
+  }
+
+  public CollectionSettings withIdType(IdType idType) {
+    return new CollectionSettings(
+        collectionName, new IdConfig(idType), vectorConfig, indexingConfig);
+  }
+
+  public record IdConfig(IdType idType) {
+    public static IdConfig defaultIdConfig() {
+      return new IdConfig(IdType.UNDEFINED);
+    }
   }
 
   public DocumentProjector indexingProjector() {
@@ -187,6 +202,37 @@ public record CollectionSettings(
     }
   }
 
+  /** Collection Id Type enum, UNDEFINED represents unwrapped id */
+  public enum IdType {
+    OBJECT_ID,
+    UUID,
+    UUID_V6,
+    UUID_V7,
+    UNDEFINED;
+
+    public static IdType fromString(String idType) {
+      if (idType == null) return UNDEFINED;
+      return switch (idType) {
+        case "objectId" -> OBJECT_ID;
+        case "uuid" -> UUID;
+        case "uuidv6" -> UUID_V6;
+        case "uuidv7" -> UUID_V7;
+        case "" -> UNDEFINED;
+        default -> throw ErrorCode.INVALID_ID_TYPE.toApiException(idType);
+      };
+    }
+
+    public String toString() {
+      return switch (this) {
+        case OBJECT_ID -> "objectId";
+        case UUID -> "uuid";
+        case UUID_V6 -> "uuidv6";
+        case UUID_V7 -> "uuidv7";
+        case UNDEFINED -> "";
+      };
+    }
+  }
+
   public enum AuthenticationType {
     NONE,
     HEADER,
@@ -270,9 +316,16 @@ public record CollectionSettings(
     if (comment == null || comment.isBlank()) {
       if (vectorEnabled) {
         return new CollectionSettings(
-            collectionName, new VectorConfig(true, vectorSize, function, null), null);
+            collectionName,
+            IdConfig.defaultIdConfig(),
+            new VectorConfig(true, vectorSize, function, null),
+            null);
       } else {
-        return new CollectionSettings(collectionName, VectorConfig.notEnabledVectorConfig(), null);
+        return new CollectionSettings(
+            collectionName,
+            IdConfig.defaultIdConfig(),
+            VectorConfig.notEnabledVectorConfig(),
+            null);
       }
     } else {
       JsonNode commentConfigNode;
@@ -292,16 +345,17 @@ public record CollectionSettings(
         }
         switch (collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY).asInt()) {
           case 1:
-            return new CommandSettingsV1Deserializer()
-                .deserialize(collectionNode, collectionName, objectMapper);
+            return new CollectionSettingsV1Reader()
+                .readCollectionSettings(collectionNode, collectionName, objectMapper);
           default:
             throw ErrorCode.INVALID_SCHEMA_VERSION.toApiException();
         }
       } else {
         // backward compatibility for old indexing table comment
         // sample comment : {"indexing":{"deny":["address"]}}}
-        return new CommandSettingsV0Deserializer()
-            .deserialize(commentConfigNode, collectionName, vectorEnabled, vectorSize, function);
+        return new CollectionSettingsV0Reader()
+            .readCollectionSettings(
+                commentConfigNode, collectionName, vectorEnabled, vectorSize, function);
       }
     }
   }
@@ -358,8 +412,15 @@ public record CollectionSettings(
               Lists.newArrayList(collectionSetting.indexingConfig().allowed()),
               Lists.newArrayList(collectionSetting.indexingConfig().denied()));
     }
+    // construct the CreateCollectionCommand.options.idConfig -- but only if non-default IdType
+    final IdType idType = collectionSetting.idConfig().idType();
+    CreateCollectionCommand.Options.IdConfig idConfig =
+        (idType == null || idType == IdType.UNDEFINED)
+            ? null
+            : new CreateCollectionCommand.Options.IdConfig(idType.toString());
+
     if (vectorSearchConfig != null || indexingConfig != null) {
-      options = new CreateCollectionCommand.Options(vectorSearchConfig, indexingConfig);
+      options = new CreateCollectionCommand.Options(idConfig, vectorSearchConfig, indexingConfig);
     }
 
     // CreateCollectionCommand object is created for convenience to generate json
