@@ -37,7 +37,7 @@ public class EmbeddingProviderErrorMessageTest {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
               .getFailure();
-      assertThat(exception.getCause())
+      assertThat(exception)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_RATE_LIMITED)
           .hasFieldOrPropertyWithValue(
@@ -59,7 +59,7 @@ public class EmbeddingProviderErrorMessageTest {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
               .getFailure();
-      assertThat(exception.getCause())
+      assertThat(exception)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_REQUEST)
           .hasFieldOrPropertyWithValue(
@@ -81,7 +81,7 @@ public class EmbeddingProviderErrorMessageTest {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
               .getFailure();
-      assertThat(exception.getCause())
+      assertThat(exception)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_SERVER_ERROR)
           .hasFieldOrPropertyWithValue(
@@ -103,7 +103,7 @@ public class EmbeddingProviderErrorMessageTest {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
               .getFailure();
-      assertThat(exception.getCause())
+      assertThat(exception)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
           .hasFieldOrPropertyWithValue("message", "The configured Embedding Provider timedout.");
@@ -144,7 +144,7 @@ public class EmbeddingProviderErrorMessageTest {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
               .getFailure();
-      assertThat(exception.getCause())
+      assertThat(exception)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
           .hasFieldOrPropertyWithValue(
@@ -168,7 +168,7 @@ public class EmbeddingProviderErrorMessageTest {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
               .getFailure();
-      assertThat(exception.getCause())
+      assertThat(exception)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
           .hasFieldOrPropertyWithValue(
@@ -192,7 +192,7 @@ public class EmbeddingProviderErrorMessageTest {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
               .getFailure();
-      assertThat(exception.getCause())
+      assertThat(exception)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
           .hasFieldOrPropertyWithValue(
