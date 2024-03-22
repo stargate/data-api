@@ -26,6 +26,19 @@ public enum ErrorCode {
   DOCUMENT_REPLACE_DIFFERENT_DOCID(
       "The replace document and document resolved using filter have different _id"),
 
+  /** Embedding provider service error codes. */
+  EMBEDDING_PROVIDER_SERVER_ERROR(
+      "The configured Embedding Provider for this collection encountered an error processing the request"),
+  EMBEDDING_PROVIDER_RATE_LIMITED(
+      "The configured Embedding Provider for this collection is rate limiting your requests"),
+
+  EMBEDDING_PROVIDER_TIMEOUT("The configured Embedding Provider timed out."),
+  EMBEDDING_PROVIDER_UNAVAILBLE(
+      "The configured Embedding Provider for this collection could not be contacted."),
+
+  EMBEDDING_PROVIDER_INVALID_REQUEST(
+      "The configured Embedding Provider for this collection refused to process the request, response was"),
+
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 
   FILTER_MULTIPLE_ID_FILTER(
@@ -131,7 +144,6 @@ public enum ErrorCode {
   VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
 
-  VECTORIZE_SERVICE_TYPE_NOT_ENABLED("Vectorize service type not enabled "),
   VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupported "),
 
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),

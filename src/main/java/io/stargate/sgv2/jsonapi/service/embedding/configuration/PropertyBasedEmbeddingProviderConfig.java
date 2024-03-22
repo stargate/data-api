@@ -49,9 +49,8 @@ public interface PropertyBasedEmbeddingProviderConfig {
      *
      * @return A map of internal configuration properties, or empty map if none are defined.
      */
-    @Nullable
     @JsonProperty
-    Map<String, String> properties();
+    RequestProperties properties();
 
     @Nullable
     @JsonProperty
@@ -88,6 +87,34 @@ public interface PropertyBasedEmbeddingProviderConfig {
       @Nullable
       @JsonProperty
       Optional<String> help();
+    }
+
+    /** A set of http properties used for request to the embedding providers. */
+    interface RequestProperties {
+
+      /**
+       * The maximum number of retries to attempt before failing the request.
+       *
+       * @return The maximum number of retries to attempt before failing the request.
+       */
+      @WithDefault("3")
+      int maxRetries();
+
+      /**
+       * The back off time between retries in milliseconds.
+       *
+       * @return The delay between retries in milliseconds.
+       */
+      @WithDefault("100")
+      int retryDelayMillis();
+
+      /**
+       * The timeout for the request in milliseconds.
+       *
+       * @return The timeout for the request in milliseconds.
+       */
+      @WithDefault("10000")
+      int requestTimeoutMillis();
     }
 
     enum ParameterType {

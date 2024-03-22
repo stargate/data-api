@@ -18,7 +18,11 @@ public class EmbeddingProviderFactory {
   @Inject Instance<EmbeddingProviderConfigStore> embeddingProviderConfigStore;
 
   private interface ProviderConstructor {
-    EmbeddingProvider create(String baseUrl, String apiKey, String modelName);
+    EmbeddingProvider create(
+        EmbeddingProviderConfigStore.RequestProperties requestProperties,
+        String baseUrl,
+        String apiKey,
+        String modelName);
   }
 
   private static final Map<String, ProviderConstructor> providersMap =
@@ -41,7 +45,7 @@ public class EmbeddingProviderFactory {
 
     if (configuration.serviceProvider().equals(ProviderConstants.CUSTOM)) {
       try {
-        Optional<Class<?>> clazz = configuration.clazz();
+        Optional<Class<?>> clazz = configuration.implementationClass();
         if (clazz.isPresent()) {
           final EmbeddingProvider customEmbeddingProvider =
               (EmbeddingProvider) clazz.get().getConstructor().newInstance();
@@ -52,17 +56,20 @@ public class EmbeddingProviderFactory {
               ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage() + "custom class undefined");
         }
       } catch (Exception e) {
-        e.printStackTrace();
         throw new JsonApiException(
             ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
             ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage()
-                + "custom class provided does not resolved to EmbeddingProvider "
-                + configuration.clazz().get().getCanonicalName());
+                + "custom class provided does not resolve to EmbeddingProvider "
+                + configuration.implementationClass().get().getCanonicalName());
       }
     }
 
     return providersMap
         .get(configuration.serviceProvider())
-        .create(configuration.baseUrl(), configuration.apiKey(), modelName);
+        .create(
+            configuration.requestConfiguration(),
+            configuration.baseUrl(),
+            configuration.apiKey(),
+            modelName);
   }
 }
