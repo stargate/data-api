@@ -343,7 +343,8 @@ public interface DocumentId {
 
     @Override
     public Object value() {
-      return valueAsString();
+      // Important! Need to serialize as JSON Extension representation for use by Jackson
+      return JsonUtil.createJsonExtensionValueAsMap(type(), valueAsString());
     }
 
     @Override
