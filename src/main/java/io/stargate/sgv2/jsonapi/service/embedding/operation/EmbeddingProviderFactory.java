@@ -56,11 +56,10 @@ public class EmbeddingProviderFactory {
               ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage() + "custom class undefined");
         }
       } catch (Exception e) {
-        e.printStackTrace();
         throw new JsonApiException(
             ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
             ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage()
-                + "custom class provided does not resolved to EmbeddingProvider "
+                + "custom class provided does not resolve to EmbeddingProvider "
                 + configuration.implementationClass().get().getCanonicalName());
       }
     }
