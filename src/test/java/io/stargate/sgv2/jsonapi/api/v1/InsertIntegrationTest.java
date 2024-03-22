@@ -30,6 +30,7 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.types.ObjectId;
@@ -540,9 +541,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is(UUID_KEY))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("status.insertedIds[0]", is(Map.of("$uuid", UUID_KEY)))
+          .body("data", is(nullValue()));
 
       // Find by UUID, full $uuid notation
       given()
@@ -588,9 +589,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is(OBJECTID_KEY))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("status.insertedIds[0]", is(Map.of("$objectId", OBJECTID_KEY)))
+          .body("data", is(nullValue()));
       // Find by ObjectId, full $objectId notation
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
