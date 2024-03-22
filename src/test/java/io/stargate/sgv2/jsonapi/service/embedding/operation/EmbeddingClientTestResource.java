@@ -106,29 +106,6 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
 
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))
-            .withRequestBody(matchingJsonPath("$.input", containing("invalid json body")))
-            .willReturn(
-                aResponse()
-                    .withHeader("Content-Type", "application/json")
-                    .withBody(
-                        """
-                            <bookstore>
-                              <book>
-                                <title>The Great Gatsby</title>
-                                <author>F. Scott Fitzgerald</author>
-                                <year>1925</year>
-                                <price>10.99</price>
-                              </book>
-                              <book>
-                                <title>To Kill a Mockingbird</title>
-                                <author>Harper Lee</author>
-                                <year>1960</year>
-                                <price>12.99</price>
-                              </book>
-                            </bookstore>
-                                  """)));
-    wireMockServer.stubFor(
-        post(urlEqualTo("/v1/embeddings"))
             .withRequestBody(matchingJsonPath("$.input", containing("no json body")))
             .willReturn(aResponse().withHeader("Content-Type", "application/json")));
 

@@ -9,10 +9,6 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.MediaType;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * A client response filter/interceptor that validates the response from the embedding provider.
@@ -50,19 +46,6 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
     if (!responseContext.hasEntity()) {
       throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
           "No JSON body from the embedding provider");
-    }
-    ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-    byte[] responseData;
-    try {
-      InputStream originalStream = responseContext.getEntityStream();
-      originalStream.transferTo(buffer);
-      responseData = buffer.toByteArray();
-      // Reset the entity stream so that it can be read again later
-      responseContext.setEntityStream(new ByteArrayInputStream(responseData));
-      objectMapper.readTree(responseData);
-    } catch (IOException e) {
-      throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
-          "Invalid JSON response from the embedding provider");
     }
   }
 }
