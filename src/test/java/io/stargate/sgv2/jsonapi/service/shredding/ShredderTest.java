@@ -436,7 +436,8 @@ public class ShredderTest {
       DocumentProjector indexProjector =
           DocumentProjector.createForIndexing(
               new HashSet<>(Arrays.asList("name", "metadata")), null);
-      WritableShreddedDocument doc = shredder.shred(inputDoc, null, indexProjector, "testCommand");
+      WritableShreddedDocument doc =
+          shredder.shred(inputDoc, null, indexProjector, "testCommand", CollectionSettings.empty());
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
       List<JsonPath> expPaths =
           Arrays.asList(
