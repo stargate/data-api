@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation.error;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.core.Response;
 
 public class HttpResponseErrorMessageMapper {
