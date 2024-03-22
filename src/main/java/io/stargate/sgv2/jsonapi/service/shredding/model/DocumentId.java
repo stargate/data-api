@@ -43,7 +43,7 @@ public interface DocumentId {
 
   /**
    * Accessor used to get canonical String representation of the id to be stored in database. Does
-   * NOT contain type prefix or suffic.
+   * NOT contain type prefix or suffix.
    *
    * @return Canonical String representation of the id
    */
@@ -348,8 +348,9 @@ public interface DocumentId {
 
     @Override
     public JsonNode asJson(JsonNodeFactory nodeFactory) {
-      // Although stored as JSON Object in doc_json, used as plain String otherwise
-      return nodeFactory.textNode(valueAsString);
+      // Stored as JSON Object in doc_json, needs to be exposed as JSON Object
+      // here as well
+      return JsonUtil.createJsonExtensionValue(nodeFactory, type(), valueAsString());
     }
 
     @Override

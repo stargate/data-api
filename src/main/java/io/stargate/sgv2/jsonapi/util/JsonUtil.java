@@ -142,6 +142,11 @@ public class JsonUtil {
     return Map.of(EJSON_VALUE_KEY_DATE, timestamp);
   }
 
+  public static ObjectNode createJsonExtensionValue(
+      JsonNodeCreator f, JsonExtensionType type, String valueAsString) {
+    return f.objectNode().put(type.encodedName(), valueAsString);
+  }
+
   public static Date createDateFromDocumentId(DocumentId documentId) {
     return new Date((Long) ((Map) documentId.value()).get(EJSON_VALUE_KEY_DATE));
   }
