@@ -2,9 +2,7 @@ package io.stargate.sgv2.jsonapi.api.request;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import jakarta.inject.Inject;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
@@ -20,7 +18,8 @@ import jakarta.ws.rs.core.MediaType;
  * error message.
  */
 public class EmbeddingProviderResponseValidation implements ClientResponseFilter {
-  @Inject ObjectMapper objectMapper;
+
+  static final MediaType MEDIATYPE_TEXT_JSON = new MediaType("text", "json");
 
   /**
    * Filters the client response by validating the Content-Type and JSON body.
@@ -36,7 +35,7 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
     MediaType contentType = responseContext.getMediaType();
     if (contentType == null
         || !(MediaType.APPLICATION_JSON_TYPE.isCompatible(contentType)
-            || new MediaType("text", "json").isCompatible(contentType))) {
+            || MEDIATYPE_TEXT_JSON.isCompatible(contentType))) {
       throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
           "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found '%s'",
           contentType);

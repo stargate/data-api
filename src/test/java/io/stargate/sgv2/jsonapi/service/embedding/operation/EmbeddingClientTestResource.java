@@ -102,7 +102,7 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/xml")
-                    .withBody("{\"object\": \"list\"}")));
+                    .withBody("<object>list</object>")));
 
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))

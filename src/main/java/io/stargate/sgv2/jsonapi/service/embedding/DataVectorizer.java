@@ -109,7 +109,7 @@ public class DataVectorizer {
                   // check if we get back the same number of vectors that we asked for
                   if (vectorData.size() != vectorizeTexts.size()) {
                     throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
-                        "Embedding provider '%s' didn't return the expected number of embeddings. Expect: '%s'. Actual: '%s'",
+                        "Embedding provider '%s' didn't return the expected number of embeddings. Expect: '%d'. Actual: '%d'",
                         collectionSettings.vectorConfig().vectorizeConfig().provider(),
                         vectorizeTexts.size(),
                         vectorData.size());
@@ -123,7 +123,7 @@ public class DataVectorizer {
                     // check if all vectors have the expected size
                     if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
                       throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
-                          "Embedding provider '%s' did not return expected embedding length. Expect: '%s'. Actual: '%s'",
+                          "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
                           collectionSettings.vectorConfig().vectorizeConfig().provider(),
                           collectionSettings.vectorConfig().vectorSize(),
                           vector.length);
@@ -172,7 +172,7 @@ public class DataVectorizer {
                   // check if vector have the expected size
                   if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
                     throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
-                        "Embedding provider '%s' did not return expected embedding length. Expect: '%s'. Actual: '%s'",
+                        "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
                         collectionSettings.vectorConfig().vectorizeConfig().provider(),
                         collectionSettings.vectorConfig().vectorSize(),
                         vector.length);
@@ -250,7 +250,7 @@ public class DataVectorizer {
                   // check if vector have the expected size
                   if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
                     throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
-                        "Embedding provider '%s' did not return expected embedding length. Expect: '%s'. Actual: '%s'",
+                        "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
                         collectionSettings.vectorConfig().vectorizeConfig().provider(),
                         collectionSettings.vectorConfig().vectorSize(),
                         vector.length);
