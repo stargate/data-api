@@ -16,6 +16,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -155,6 +156,9 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
         .onItem()
         .transform(
             response -> {
+              if (response.getPredictions() == null) {
+                return Collections.emptyList();
+              }
               return response.getPredictions().stream()
                   .map(prediction -> prediction.getEmbeddings().getValues())
                   .collect(Collectors.toList());

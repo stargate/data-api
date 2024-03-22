@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
@@ -17,6 +15,7 @@ import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -107,17 +106,11 @@ public class NVidiaEmbeddingClient implements EmbeddingProvider {
         .onItem()
         .transform(
             resp -> {
-              validateEmbeddingResponse(resp);
+              if (resp.data() == null) {
+                return Collections.emptyList();
+              }
               Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
               return Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
             });
-  }
-
-  private void validateEmbeddingResponse(EmbeddingResponse response) {
-    // if there is no data return
-    if (response.data() == null || response.data().length == 0) {
-      throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
-          "No data return from the embedding provider");
-    }
   }
 }

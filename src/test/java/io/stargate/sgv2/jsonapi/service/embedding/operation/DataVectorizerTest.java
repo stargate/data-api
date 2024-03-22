@@ -176,7 +176,7 @@ public class DataVectorizerTest {
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
             .hasFieldOrPropertyWithValue(
                 "message",
-                "The configured Embedding Provider for this collection return an invalid response: Embedding provider 'custom' cannot return the correct number of vectors. Expect: '2'. Actual: '3'");
+                "The configured Embedding Provider for this collection return an invalid response: Embedding provider 'custom' didn't return the expected number of embeddings. Expect: '2'. Actual: '3'");
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -215,7 +215,7 @@ public class DataVectorizerTest {
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
             .hasFieldOrPropertyWithValue(
                 "message",
-                "The configured Embedding Provider for this collection return an invalid response: Embedding provider 'custom' cannot return correct vector length. Expect: '4'. Actual: '3'");
+                "The configured Embedding Provider for this collection return an invalid response: Embedding provider 'custom' did not return expected embedding length. Expect: '4'. Actual: '3'");
       } catch (Exception e) {
         throw new RuntimeException(e);
       }

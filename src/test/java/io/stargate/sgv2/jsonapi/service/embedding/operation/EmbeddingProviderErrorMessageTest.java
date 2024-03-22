@@ -202,7 +202,7 @@ public class EmbeddingProviderErrorMessageTest {
 
     @Test
     public void testEmptyJsonResponse() {
-      Throwable exception =
+      List<float[]> result =
           new NVidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
@@ -214,14 +214,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
-              .awaitFailure()
-              .getFailure();
-      assertThat(exception)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
-          .hasFieldOrPropertyWithValue(
-              "message",
-              "The configured Embedding Provider for this collection return an invalid response: No data return from the embedding provider");
+              .awaitItem()
+              .getItem();
+      assertThat(result).isEmpty();
     }
   }
 }

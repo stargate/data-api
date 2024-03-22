@@ -14,9 +14,25 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * A client response filter/interceptor that validates the response from the embedding provider.
+ *
+ * <p>This filter checks the Content-Type of the response to ensure it is compatible with
+ * 'application/json' or 'text/json'. It also verifies the presence of a JSON body in the response.
+ *
+ * <p>If the response fails the validation, a {@link JsonApiException} is thrown with an appropriate
+ * error message.
+ */
 public class EmbeddingProviderResponseValidation implements ClientResponseFilter {
   @Inject ObjectMapper objectMapper;
 
+  /**
+   * Filters the client response by validating the Content-Type and JSON body.
+   *
+   * @param requestContext the client request context
+   * @param responseContext the client response context
+   * @throws JsonApiException if the response fails the validation
+   */
   @Override
   public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext)
       throws JsonApiException {
@@ -30,7 +46,7 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
           contentType);
     }
 
-    // Validate if the response body is a valid JSON
+    // Throw error if there is no response body
     if (!responseContext.hasEntity()) {
       throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
           "No JSON body from the embedding provider");

@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -92,6 +93,9 @@ public class OpenAiEmbeddingClient implements EmbeddingProvider {
         .onItem()
         .transform(
             resp -> {
+              if (resp.data() == null) {
+                return Collections.emptyList();
+              }
               Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
               return Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
             });

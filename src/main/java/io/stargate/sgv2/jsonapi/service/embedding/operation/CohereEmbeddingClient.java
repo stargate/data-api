@@ -15,6 +15,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -114,6 +115,9 @@ public class CohereEmbeddingClient implements EmbeddingProvider {
         .onItem()
         .transform(
             resp -> {
+              if (resp.getEmbeddings() == null) {
+                return Collections.emptyList();
+              }
               return resp.getEmbeddings();
             });
   }
