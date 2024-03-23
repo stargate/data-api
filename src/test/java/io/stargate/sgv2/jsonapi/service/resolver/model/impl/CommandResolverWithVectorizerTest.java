@@ -525,7 +525,7 @@ public class CommandResolverWithVectorizerTest {
               TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
               objectMapper.getNodeFactory(),
               Optional.empty(),
-              TestEmbeddingProvider.commandContextWithVectorize.collection())
+              TestEmbeddingProvider.commandContextWithVectorize.collectionSettings())
           .vectorizeUpdateClause(updateClause)
           .subscribe()
           .withSubscriber(UniAssertSubscriber.create())

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -15,11 +16,13 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class VertexAIEmbeddingClient implements EmbeddingProvider {
@@ -44,6 +47,7 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
   }
 
   @RegisterRestClient
+  @RegisterProvider(EmbeddingProviderResponseValidation.class)
   public interface VertexAIEmbeddingProvider {
     @POST
     @Path("/{modelId}:predict")
@@ -152,6 +156,9 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
         .onItem()
         .transform(
             response -> {
+              if (response.getPredictions() == null) {
+                return Collections.emptyList();
+              }
               return response.getPredictions().stream()
                   .map(prediction -> prediction.getEmbeddings().getValues())
                   .collect(Collectors.toList());

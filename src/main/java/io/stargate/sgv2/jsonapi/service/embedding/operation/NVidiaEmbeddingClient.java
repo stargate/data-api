@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -14,10 +15,12 @@ import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 /**
@@ -48,6 +51,7 @@ public class NVidiaEmbeddingClient implements EmbeddingProvider {
   }
 
   @RegisterRestClient
+  @RegisterProvider(EmbeddingProviderResponseValidation.class)
   public interface NVidiaEmbeddingProvider {
     @POST
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
@@ -102,6 +106,9 @@ public class NVidiaEmbeddingClient implements EmbeddingProvider {
         .onItem()
         .transform(
             resp -> {
+              if (resp.data() == null) {
+                return Collections.emptyList();
+              }
               Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
               return Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
             });

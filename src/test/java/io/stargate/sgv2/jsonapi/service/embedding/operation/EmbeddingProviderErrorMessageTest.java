@@ -108,5 +108,91 @@ public class EmbeddingProviderErrorMessageTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
           .hasFieldOrPropertyWithValue("message", "The configured Embedding Provider timed out.");
     }
+
+    @Test
+    public void testCorrectHeaderAndBody() {
+      List<float[]> result =
+          new NVidiaEmbeddingClient(
+                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+                  config.providers().get("nvidia").url(),
+                  "test",
+                  "test")
+              .vectorize(
+                  List.of("application/json"),
+                  Optional.empty(),
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+      assertThat(result).isNotNull();
+    }
+
+    @Test
+    public void testIncorrectContentType() {
+      Throwable exception =
+          new NVidiaEmbeddingClient(
+                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+                  config.providers().get("nvidia").url(),
+                  "test",
+                  "test")
+              .vectorize(
+                  List.of("application/xml"),
+                  Optional.empty(),
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitFailure()
+              .getFailure();
+      assertThat(exception.getCause())
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
+          .hasFieldOrPropertyWithValue(
+              "message",
+              "The configured Embedding Provider for this collection return an invalid response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'");
+    }
+
+    @Test
+    public void testNoJsonResponse() {
+      Throwable exception =
+          new NVidiaEmbeddingClient(
+                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+                  config.providers().get("nvidia").url(),
+                  "test",
+                  "test")
+              .vectorize(
+                  List.of("no json body"),
+                  Optional.empty(),
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitFailure()
+              .getFailure();
+      assertThat(exception.getCause())
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
+          .hasFieldOrPropertyWithValue(
+              "message",
+              "The configured Embedding Provider for this collection return an invalid response: No JSON body from the embedding provider");
+    }
+
+    @Test
+    public void testEmptyJsonResponse() {
+      List<float[]> result =
+          new NVidiaEmbeddingClient(
+                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+                  config.providers().get("nvidia").url(),
+                  "test",
+                  "test")
+              .vectorize(
+                  List.of("empty json body"),
+                  Optional.empty(),
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+      assertThat(result).isEmpty();
+    }
   }
 }
