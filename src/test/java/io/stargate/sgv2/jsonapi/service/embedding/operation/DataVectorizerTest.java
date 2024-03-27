@@ -185,6 +185,7 @@ public class DataVectorizerTest {
       CollectionSettings collectionSettings =
           new CollectionSettings(
               "collections",
+              CollectionSettings.IdConfig.defaultIdConfig(),
               new CollectionSettings.VectorConfig(
                   true,
                   4,
