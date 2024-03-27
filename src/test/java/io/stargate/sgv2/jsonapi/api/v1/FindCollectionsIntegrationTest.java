@@ -108,7 +108,8 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
       String expected1 =
           """
                   {
-                    "name": "%s"
+                    "name": "%s",
+                    "options":{}
                   }
                     """
               .formatted("collection1");
