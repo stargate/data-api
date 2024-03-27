@@ -1,5 +1,22 @@
 # Changelog
 
+## [v1.0.4](https://github.com/stargate/data-api/tree/v1.0.4) (2024-03-27)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.3...v1.0.4)
+
+**Closed issues:**
+
+- Returned identifiers when working with different `defaultId` \(ObjectId\) are String [\#995](https://github.com/stargate/data-api/issues/995)
+- ChangeLog not generating during release workflow [\#990](https://github.com/stargate/data-api/issues/990)
+
+**Merged pull requests:**
+
+- Adjust CQL execution profile timeouts [\#999](https://github.com/stargate/data-api/pull/999) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Stop tagging CQL metrics by session id [\#998](https://github.com/stargate/data-api/pull/998) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Fix \#995: return full JSON Extension value for \_id, not Stringified [\#997](https://github.com/stargate/data-api/pull/997) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Changelog script fix after renaming the repo [\#991](https://github.com/stargate/data-api/pull/991) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix 1.0.3 link in CHANGELOG.md [\#989](https://github.com/stargate/data-api/pull/989) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
 ## [v1.0.3](https://github.com/stargate/jsonapi/tree/v1.0.3) (2024-03-20)
 
 [Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.2...v1.0.3)
