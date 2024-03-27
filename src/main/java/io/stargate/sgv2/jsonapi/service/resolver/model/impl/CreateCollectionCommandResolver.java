@@ -92,7 +92,12 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
     String comment =
         generateComment(
-            hasIndexing, hasVectorSearch, command.name(), command.options().indexing(), vector);
+            hasIndexing,
+            hasVectorSearch,
+            command.name(),
+            command.options().indexing(),
+            vector,
+            command.options().idConfig());
 
     if (hasVectorSearch) {
       return CreateCollectionOperation.withVectorSearch(
@@ -126,7 +131,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    * @param hasVectorSearch indicating if vector search options are enabled.
    * @param commandName command name
    * @param indexing the indexing option config
-   * @param vector the vector option config
+   * @param vector vector config after validation
    * @return the comment string
    */
   private String generateComment(
@@ -134,7 +139,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       boolean hasVectorSearch,
       String commandName,
       CreateCollectionCommand.Options.IndexingConfig indexing,
-      CreateCollectionCommand.Options.VectorSearchConfig vector) {
+      CreateCollectionCommand.Options.VectorSearchConfig vector,
+      CreateCollectionCommand.Options.IdConfig idConfig) {
     if (!hasIndexing && !hasVectorSearch) {
       return null;
     }
@@ -147,8 +153,17 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     if (hasVectorSearch) {
       optionsNode.putPOJO(TableCommentConstants.COLLECTION_VECTOR_KEY, vector);
     }
+    // if default_id is not specified during createCollection, resolve type to empty string
+    if (idConfig != null) {
+      optionsNode.putPOJO(TableCommentConstants.DEFAULT_ID_KEY, idConfig);
+    } else {
+      optionsNode.putPOJO(
+          TableCommentConstants.DEFAULT_ID_KEY,
+          objectMapper.createObjectNode().putPOJO("type", ""));
+    }
 
     collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, commandName);
+
     collectionNode.put(
         TableCommentConstants.SCHEMA_VERSION_KEY, TableCommentConstants.SCHEMA_VERSION_VALUE);
     collectionNode.putPOJO(TableCommentConstants.OPTIONS_KEY, optionsNode);

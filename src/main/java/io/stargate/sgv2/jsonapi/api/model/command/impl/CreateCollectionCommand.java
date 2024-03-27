@@ -35,7 +35,17 @@ public record CreateCollectionCommand(
         Options options)
     implements NamespaceCommand {
   public record Options(
+      @Nullable
+          @Valid
+          @JsonInclude(JsonInclude.Include.NON_NULL)
+          @Schema(
+              description = "Id configuration for the collection",
+              type = SchemaType.OBJECT,
+              implementation = VectorSearchConfig.class)
+          @JsonProperty("defaultId")
+          IdConfig idConfig,
       @Valid
+          @Nullable
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Schema(
               description = "Vector search configuration for the collection",
@@ -51,6 +61,19 @@ public record CreateCollectionCommand(
               type = SchemaType.OBJECT,
               implementation = IndexingConfig.class)
           IndexingConfig indexing) {
+
+    public record IdConfig(
+        @Nullable
+            @Pattern(
+                regexp = "(objectId|uuid|uuidv6|uuidv7)",
+                message = "Id type can only be 'objectId', 'uuid' , 'uuidv6' or 'uuidv7'")
+            @Schema(
+                description = "Id type for collection, default to 'uuid'",
+                defaultValue = "uuid",
+                type = SchemaType.STRING,
+                implementation = String.class)
+            @JsonProperty("type")
+            String idType) {}
 
     public record VectorSearchConfig(
         @Nullable
@@ -220,6 +243,13 @@ public record CreateCollectionCommand(
         }
         return null;
       }
+    }
+
+    public Options(IdConfig idConfig, VectorSearchConfig vector, IndexingConfig indexing) {
+      // idConfig could be null, will resolve idType to empty string in table comment
+      this.idConfig = idConfig;
+      this.vector = vector;
+      this.indexing = indexing;
     }
   }
 }

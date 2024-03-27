@@ -81,7 +81,7 @@ public enum ErrorCode {
 
   SHRED_DOC_KEY_NAME_VIOLATION("Document key name constraints violated"),
 
-  SHRED_BAD_EJSON_VALUE("Bad EJSON value"),
+  SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
 
   SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
 
@@ -165,7 +165,8 @@ public enum ErrorCode {
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
   INVALID_SCHEMA_VERSION(
-      "Collection has invalid schema version. Recommend re-creating the collection");
+      "Collection has invalid schema version. Recommend re-creating the collection"),
+  INVALID_ID_TYPE("Invalid Id type");
 
   private final String message;
 

@@ -3,7 +3,11 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -104,7 +108,8 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
       String expected1 =
           """
                   {
-                    "name": "%s"
+                    "name": "%s",
+                    "options":{}
                   }
                     """
               .formatted("collection1");
@@ -315,6 +320,9 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                     "createCollection": {
                       "name": "%s",
                       "options": {
+                        "defaultId" : {
+                          "type" : "objectId"
+                        },
                         "indexing": {
                           "deny" : ["comment"]
                         }
@@ -345,19 +353,30 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                   }
                   """;
       String expected1 = """
-      {"name":"TableName"}
+      {"name":"TableName","options":{}}
       """;
       String expected2 = """
-              {"name":"collection1"}
+              {"name":"collection1", "options":{}}
               """;
       String expected3 =
           """
-          {"name":"collection2", "options": {"vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
-          """;
+      {"name":"collection2", "options": {"vector": {"dimension":5, "metric":"cosine"}, "indexing":{"deny":["comment"]}}}
+      """;
       String expected4 =
           """
-                  {"name":"collection4", "options":{"indexing":{"deny":["comment"]}}}
+              {"name":"collection4","options":{"defaultId" : {"type" : "objectId"}, "indexing":{"deny":["comment"]}}}
+              """;
+      json =
+          """
+                  {
+                    "findCollections": {
+                      "options": {
+                        "explain" : true
+                      }
+                    }
+                  }
                   """;
+
       given()
           .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
@@ -366,7 +385,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
-          .body("status.collections", hasSize(greaterThanOrEqualTo(1)))
+          .body("status.collections", hasSize(4))
           .body(
               "status.collections",
               containsInAnyOrder(

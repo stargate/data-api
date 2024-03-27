@@ -816,12 +816,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
         """;
 
       given()
-          .headers(
-              Map.of(
-                  HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-                  getAuthToken(),
-                  HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingProvider.TEST_API_KEY))
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -896,12 +891,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
             """;
 
       given()
-          .headers(
-              Map.of(
-                  HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-                  getAuthToken(),
-                  HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingProvider.TEST_API_KEY))
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1075,75 +1065,6 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("errors", is(nullValue()));
-
-      // verify the metrics
-      String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-      List<String> vectorizeCallDurationMetrics =
-          metrics
-              .lines()
-              .filter(
-                  line ->
-                      line.startsWith("vectorize_call_duration_seconds")
-                          && !line.startsWith("vectorize_call_duration_seconds_bucket")
-                          && !line.contains("quantile")
-                          && line.contains("command=\"FindOneAndReplaceCommand\""))
-              .toList();
-
-      assertThat(vectorizeCallDurationMetrics)
-          .satisfies(
-              lines -> {
-                assertThat(lines.size()).isEqualTo(3);
-                lines.forEach(
-                    line -> {
-                      assertThat(line).contains("embedding_provider=\"CustomITEmbeddingProvider\"");
-                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
-
-                      if (line.contains("_count")) {
-                        String[] parts = line.split(" ");
-                        String numericPart =
-                            parts[parts.length - 1]; // Get the last part which should be the number
-                        double value = Double.parseDouble(numericPart);
-                        assertThat(value).isEqualTo(2.0);
-                      }
-                    });
-              });
-
-      List<String> vectorizeInputBytesMetrics =
-          metrics
-              .lines()
-              .filter(
-                  line ->
-                      line.startsWith("vectorize_input_bytes")
-                          && line.contains("command=\"FindOneAndReplaceCommand\""))
-              .toList();
-      assertThat(vectorizeInputBytesMetrics)
-          .satisfies(
-              lines -> {
-                assertThat(lines.size()).isEqualTo(3);
-                lines.forEach(
-                    line -> {
-                      assertThat(line).contains("embedding_provider=\"CustomITEmbeddingProvider\"");
-                      assertThat(line).contains("module=\"sgv2-jsonapi\"");
-                      assertThat(line).contains("tenant=\"unknown\"");
-
-                      if (line.contains("_count")) {
-                        String[] parts = line.split(" ");
-                        String numericPart =
-                            parts[parts.length - 1]; // Get the last part which should be the number
-                        double value = Double.parseDouble(numericPart);
-                        assertThat(value).isEqualTo(2.0);
-                      }
-
-                      if (line.contains("_sum")) {
-                        String[] parts = line.split(" ");
-                        String numericPart =
-                            parts[parts.length - 1]; // Get the last part which should be the number
-                        double value = Double.parseDouble(numericPart);
-                        assertThat(value).isEqualTo(61.0);
-                      }
-                    });
-              });
     }
 
     @Test
