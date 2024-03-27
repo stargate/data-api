@@ -71,17 +71,20 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           command.name(),
           generateComment(false, false, command.name(), null, null, null),
           operationsConfig.databaseConfig().ddlDelayMillis(),
-          operationsConfig.tooManyIndexesRollbackEnabled());
+          operationsConfig.tooManyIndexesRollbackEnabled(),
+          false); // Since the options is null
     }
 
     boolean hasIndexing = command.options().indexing() != null;
     boolean hasVectorSearch = command.options().vector() != null;
     CreateCollectionCommand.Options.VectorSearchConfig vector = command.options().vector();
 
+    boolean denyAll = false;
     // handling indexing options
     if (hasIndexing) {
       // validation of configuration
       command.options().indexing().validate();
+      denyAll = command.options().indexing().denyAll();
       // No need to process if both are null or empty
     }
 
@@ -110,7 +113,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           vector.metric(),
           comment,
           operationsConfig.databaseConfig().ddlDelayMillis(),
-          operationsConfig.tooManyIndexesRollbackEnabled());
+          operationsConfig.tooManyIndexesRollbackEnabled(),
+          denyAll);
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
@@ -120,7 +124,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           command.name(),
           comment,
           operationsConfig.databaseConfig().ddlDelayMillis(),
-          operationsConfig.tooManyIndexesRollbackEnabled());
+          operationsConfig.tooManyIndexesRollbackEnabled(),
+          denyAll);
     }
   }
 

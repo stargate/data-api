@@ -228,6 +228,15 @@ public record CreateCollectionCommand(
         }
       }
 
+      /**
+       * Return `true if the indexing config for deny is set as "*"
+       *
+       * @return `true if the indexing config for deny is set as "*", `false` otherwise
+       */
+      public boolean denyAll() {
+        return deny() != null && deny().contains("*");
+      }
+
       public String findInvalidPath(List<String> paths) {
         // Special case: single "*" is accepted
         if (paths.size() == 1 && "*".equals(paths.get(0))) {
