@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -14,10 +15,12 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
@@ -45,6 +48,7 @@ public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
   }
 
   @RegisterRestClient
+  @RegisterProvider(EmbeddingProviderResponseValidation.class)
   public interface HuggingFaceEmbeddingProvider {
     @POST
     @Path("/{modelId}")
@@ -83,6 +87,14 @@ public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
             })
         .retry()
         .withBackOff(Duration.ofMillis(requestProperties.retryDelayInMillis()))
-        .atMost(requestProperties.maxRetries());
+        .atMost(requestProperties.maxRetries())
+        .onItem()
+        .transform(
+            resp -> {
+              if (resp == null) {
+                return Collections.emptyList();
+              }
+              return resp;
+            });
   }
 }
