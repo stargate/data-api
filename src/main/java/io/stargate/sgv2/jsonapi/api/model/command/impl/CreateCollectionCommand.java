@@ -45,6 +45,7 @@ public record CreateCollectionCommand(
           @JsonProperty("defaultId")
           IdConfig idConfig,
       @Valid
+          @Nullable
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Schema(
               description = "Vector search configuration for the collection",

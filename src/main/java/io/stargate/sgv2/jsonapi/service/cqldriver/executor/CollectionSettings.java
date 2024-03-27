@@ -419,9 +419,7 @@ public record CollectionSettings(
             ? null
             : new CreateCollectionCommand.Options.IdConfig(idType.toString());
 
-    if (vectorSearchConfig != null || indexingConfig != null) {
-      options = new CreateCollectionCommand.Options(idConfig, vectorSearchConfig, indexingConfig);
-    }
+    options = new CreateCollectionCommand.Options(idConfig, vectorSearchConfig, indexingConfig);
 
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
