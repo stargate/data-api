@@ -663,7 +663,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith("$vectorize search needs to be text value"))
+          .body("errors[0].message", startsWith("$vectorize search clause needs to be text value"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -756,7 +756,11 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .header(
+              HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+              getAuthToken(),
+              HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+              CustomITEmbeddingProvider.TEST_API_KEY)
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -781,7 +785,11 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .header(
+              HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+              getAuthToken(),
+              HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+              CustomITEmbeddingProvider.TEST_API_KEY)
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -846,7 +854,11 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .header(
+              HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+              getAuthToken(),
+              HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+              CustomITEmbeddingProvider.TEST_API_KEY)
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -905,7 +917,11 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .header(
+              HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+              getAuthToken(),
+              HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+              CustomITEmbeddingProvider.TEST_API_KEY)
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -941,7 +957,11 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .header(
+              HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+              getAuthToken(),
+              HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+              CustomITEmbeddingProvider.TEST_API_KEY)
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -969,7 +989,11 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
         }
         """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .header(
+              HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+              getAuthToken(),
+              HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+              CustomITEmbeddingProvider.TEST_API_KEY)
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1016,7 +1040,11 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .header(
+              HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+              getAuthToken(),
+              HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+              CustomITEmbeddingProvider.TEST_API_KEY)
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1048,7 +1076,11 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .header(
+              HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+              getAuthToken(),
+              HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+              CustomITEmbeddingProvider.TEST_API_KEY)
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1077,7 +1109,11 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                 """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .header(
+              HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+              getAuthToken(),
+              HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+              CustomITEmbeddingProvider.TEST_API_KEY)
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1106,7 +1142,11 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .header(
+              HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+              getAuthToken(),
+              HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+              CustomITEmbeddingProvider.TEST_API_KEY)
           .contentType(ContentType.JSON)
           .body(json)
           .when()
