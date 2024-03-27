@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Refactored as separate class that represent a collection property.
+ * Refactored as seperate class that represent a collection property.*
  *
  * @param collectionName
  * @param vectorConfig
@@ -120,16 +120,6 @@ public record CollectionSettings(
       return new VectorConfig(false, -1, null, null);
     }
 
-    public record VectorizeConfig(
-        String provider,
-        String modelName,
-        VectorizeServiceAuthentication vectorizeServiceAuthentication,
-        Map<String, Object> vectorizeServiceParameter) {
-
-      public record VectorizeServiceAuthentication(
-          Set<AuthenticationType> type, String secretName) {}
-    }
-
     // convert a vector jsonNode from table comment to vectorConfig
     public static VectorConfig fromJson(JsonNode jsonNode, ObjectMapper objectMapper) {
       // dimension, similarityFunction, must exist
@@ -176,6 +166,16 @@ public record CollectionSettings(
       }
 
       return new VectorConfig(true, dimension, similarityFunction, vectorizeConfig);
+    }
+
+    public record VectorizeConfig(
+        String provider,
+        String modelName,
+        VectorizeServiceAuthentication vectorizeServiceAuthentication,
+        Map<String, Object> vectorizeServiceParameter) {
+
+      public record VectorizeServiceAuthentication(
+          Set<AuthenticationType> type, String secretName) {}
     }
   }
 
@@ -362,9 +362,10 @@ public record CollectionSettings(
 
   public static CreateCollectionCommand collectionSettingToCreateCollectionCommand(
       CollectionSettings collectionSetting) {
+    CreateCollectionCommand.Options options = null;
     CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig = null;
     CreateCollectionCommand.Options.IndexingConfig indexingConfig = null;
-    // construct the CreateCollectionCommand.options.vectorSearchConfig
+    // populate the vectorSearchConfig
     if (collectionSetting.vectorConfig.vectorEnabled) {
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig vectorizeConfig = null;
       if (collectionSetting.vectorConfig.vectorizeConfig != null) {
@@ -404,7 +405,7 @@ public record CollectionSettings(
               collectionSetting.vectorConfig.similarityFunction.name().toLowerCase(),
               vectorizeConfig);
     }
-    // construct the CreateCollectionCommand.options.indexingConfig
+    // populate the indexingConfig
     if (collectionSetting.indexingConfig() != null) {
       indexingConfig =
           new CreateCollectionCommand.Options.IndexingConfig(
@@ -418,10 +419,10 @@ public record CollectionSettings(
             ? null
             : new CreateCollectionCommand.Options.IdConfig(idType.toString());
 
+    options = new CreateCollectionCommand.Options(idConfig, vectorSearchConfig, indexingConfig);
+
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
-    return new CreateCollectionCommand(
-        collectionSetting.collectionName(),
-        new CreateCollectionCommand.Options(idConfig, vectorSearchConfig, indexingConfig));
+    return new CreateCollectionCommand(collectionSetting.collectionName(), options);
   }
 }

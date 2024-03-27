@@ -109,8 +109,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           """
                   {
                     "name": "%s",
-                    "options": {
-                    }
+                    "options":{}
                   }
                     """
               .formatted("collection1");
@@ -343,6 +342,16 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .statusCode(200)
           .body("status.ok", is(1));
 
+      json =
+          """
+                  {
+                    "findCollections": {
+                      "options": {
+                        "explain" : true
+                      }
+                    }
+                  }
+                  """;
       String expected1 = """
       {"name":"TableName","options":{}}
       """;

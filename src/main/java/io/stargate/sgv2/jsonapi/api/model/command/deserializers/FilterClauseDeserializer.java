@@ -105,11 +105,12 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
           innerLogicalExpression = LogicalExpression.or();
           break;
         case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD:
+        case DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD:
           throw new JsonApiException(
               ErrorCode.INVALID_FILTER_EXPRESSION,
               String.format(
                   "Cannot filter on '%s' field using operator '$eq': only '$exists' is supported",
-                  DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD));
+                  entry.getKey()));
         default:
           throw new JsonApiException(
               ErrorCode.INVALID_FILTER_EXPRESSION,
@@ -296,7 +297,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       // if the key does not match pattern or the entry is not ($vector and $exist operator)
       // combination, throw error
       if (!(DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()
-          || (entry.getKey().equals("$vector") && updateField.getKey().equals("$exists")))) {
+          || (entry.getKey().equals(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)
+              && updateField.getKey().equals("$exists"))
+          || (entry.getKey().equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)
+              && updateField.getKey().equals("$exists")))) {
         throw new JsonApiException(
             ErrorCode.INVALID_FILTER_EXPRESSION,
             String.format(

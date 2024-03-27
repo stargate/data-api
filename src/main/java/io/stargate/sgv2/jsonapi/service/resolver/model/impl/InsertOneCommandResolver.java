@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.List;
 
 /** Resolves the {@link InsertOneCommand}. */
 @ApplicationScoped
@@ -32,9 +31,13 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
 
   @Override
   public Operation resolveCommand(CommandContext ctx, InsertOneCommand command) {
-    // Vectorize document
-    ctx.tryVectorize(objectMapper.getNodeFactory(), List.of(command.document()));
-    WritableShreddedDocument shreddedDocument = shredder.shred(ctx, command.document(), null);
+    WritableShreddedDocument shreddedDocument =
+        shredder.shred(
+            command.document(),
+            null,
+            ctx.indexingProjector(),
+            command.getClass().getSimpleName(),
+            ctx.collectionSettings());
     return new InsertOperation(ctx, shreddedDocument);
   }
 }

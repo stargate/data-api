@@ -21,7 +21,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateEmbeddingServiceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
@@ -369,36 +368,6 @@ class ObjectMapperConfigurationTest {
   }
 
   @Nested
-  class CreateEmbeddingService {
-    @Test
-    public void happyPath() throws Exception {
-      String json =
-          """
-                      {
-                        "createEmbeddingService": {
-                          "name": "openai",
-                          "apiProvider" : "openai",
-                          "apiKey" : "API-TOKEN",
-                          "baseUrl" : "https://api.openai.com/v1/"
-                        }
-                      }
-                      """;
-
-      Command result = objectMapper.readValue(json, Command.class);
-
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              CreateEmbeddingServiceCommand.class,
-              createEmbeddingServiceCommand -> {
-                assertThat(createEmbeddingServiceCommand.name()).isNotNull();
-                assertThat(createEmbeddingServiceCommand.apiKey()).isNotNull();
-                assertThat(createEmbeddingServiceCommand.apiProvider()).isNotNull();
-                assertThat(createEmbeddingServiceCommand.baseUrl()).isNotNull();
-              });
-    }
-  }
-
-  @Nested
   class CreateCollection {
     @Test
     public void happyPath() throws Exception {
@@ -489,36 +458,36 @@ class ObjectMapperConfigurationTest {
     public void happyPathVectorizeSearch() throws Exception {
       String json =
           """
-                            {
-                                "createCollection": {
-                                    "name": "some_name",
-                                    "options": {
-                                        "vector": {
-                                            "metric": "cosine",
-                                            "dimension": 1536,
-                                            "service": {
-                                                "provider": "openai",
-                                                "modelName": "text-embedding-ada-002",
-                                                "authentication": {
-                                                    "type": [
-                                                        "SHARED_SECRET"
-                                                    ],
-                                                    "secretName": "name_given_by_user"
-                                                },
-                                                "parameters": {
-                                                    "project_id": "test project"
-                                                }
-                                            }
+                    {
+                        "createCollection": {
+                            "name": "some_name",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 1536,
+                                    "service": {
+                                        "provider": "openai",
+                                        "modelName": "text-embedding-ada-002",
+                                        "authentication": {
+                                            "type": [
+                                                "SHARED_SECRET"
+                                            ],
+                                            "secretName": "name_given_by_user"
                                         },
-                                        "indexing": {
-                                            "deny": [
-                                                "address"
-                                            ]
+                                        "parameters": {
+                                            "project_id": "test project"
                                         }
                                     }
+                                },
+                                "indexing": {
+                                    "deny": [
+                                        "address"
+                                    ]
                                 }
                             }
-                                """;
+                        }
+                    }
+                        """;
 
       Command result = objectMapper.readValue(json, Command.class);
 

@@ -5,6 +5,7 @@ import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
+import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
@@ -662,11 +663,14 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               .then()
               .statusCode(200)
               .body("errors", is(nullValue()))
-              .body("status.insertedIds[0]", is(notNullValue()))
+              .body("status.insertedIds", hasSize(1))
+              .body("status.insertedIds[0]", any(Map.class))
               .body("data", is(nullValue()))
               .extract()
               .response();
-      Map<String, Object> insertedId = response.path("status.insertedIds[0]");
+      Object insertedIdRaw = response.path("status.insertedIds[0]");
+      assertThat(insertedIdRaw).isInstanceOf(Map.class);
+      Map<String, Object> insertedId = (Map<String, Object>) insertedIdRaw;
       assertThat(insertedId).hasSize(1);
       assertThat(insertedId).containsKey("$objectId");
       // Validate goodness by constructing an ObjectId from String:

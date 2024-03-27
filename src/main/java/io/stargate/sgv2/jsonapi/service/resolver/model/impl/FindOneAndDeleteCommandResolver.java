@@ -60,9 +60,6 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
       sortClause.validate(commandContext);
     }
 
-    // vectorize sort clause
-    commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);
-
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
     if (vector != null) {

@@ -39,12 +39,13 @@ public record CreateCollectionCommand(
           @Valid
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Schema(
-              description = "Vector search configuration for the collection",
+              description = "Id configuration for the collection",
               type = SchemaType.OBJECT,
               implementation = VectorSearchConfig.class)
           @JsonProperty("defaultId")
           IdConfig idConfig,
       @Valid
+          @Nullable
           @JsonInclude(JsonInclude.Include.NON_NULL)
           @Schema(
               description = "Vector search configuration for the collection",
@@ -75,14 +76,14 @@ public record CreateCollectionCommand(
             String idType) {}
 
     public record VectorSearchConfig(
-        @Positive(message = "dimension should be greater than `0`")
+        @Nullable
+            @Positive(message = "dimension should be greater than `0`")
             @Schema(
                 description = "Dimension of the vector field",
                 type = SchemaType.INTEGER,
                 implementation = Integer.class)
             @JsonProperty("dimension")
             @JsonAlias("size") // old name
-            @NotNull
             Integer dimension,
         @Nullable
             @Pattern(

@@ -33,31 +33,6 @@ stargate:
     global-tags:
       module: sgv2-jsonapi
 
-  # custom properties for enabling vectorize method
-  jsonapi:
-    embedding:
-      config:
-        # This can be `property` or `in-memory` to store Embedding service configuration
-        store: property
-      service:
-        # Open AI embedding service configuration
-        openai:
-          enabled: false
-          url: https://api.openai.com/v1/
-          api-key: YOUR_API_KEY
-
-        # Hugging face embedding service configuration
-        huggingface:
-          enabled: false
-          url: https://api-inference.huggingface.co
-          api-key: YOUR_API_KEY
-
-        # Vertex AI embedding service configuration
-        vertexai:
-          enabled: false
-          url: https://us-central1-aiplatform.googleapis.com
-          api-key: YOUR_API_KEY
-
 quarkus:
 
   # general app properties

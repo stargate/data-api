@@ -1,11 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-public class TestEmbeddingService implements EmbeddingService {
+public class TestEmbeddingProvider implements EmbeddingProvider {
 
   public static CommandContext commandContextWithVectorize =
       new CommandContext(
@@ -15,16 +17,21 @@ public class TestEmbeddingService implements EmbeddingService {
               "collections",
               CollectionSettings.IdConfig.defaultIdConfig(),
               new CollectionSettings.VectorConfig(
-                  true, 3, CollectionSettings.SimilarityFunction.COSINE, null),
+                  true,
+                  3,
+                  CollectionSettings.SimilarityFunction.COSINE,
+                  new CollectionSettings.VectorConfig.VectorizeConfig(
+                      "custom", "custom", null, null)),
               null),
-          new TestEmbeddingService(),
+          new TestEmbeddingProvider(),
           "testCommand",
           null);
 
   @Override
-  public List<float[]> vectorize(List<String> texts) {
+  public Uni<List<float[]>> vectorize(
+      List<String> texts, Optional<String> apiKey, EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
     texts.forEach(t -> response.add(new float[] {0.25f, 0.25f, 0.25f}));
-    return response;
+    return Uni.createFrom().item(response);
   }
 }

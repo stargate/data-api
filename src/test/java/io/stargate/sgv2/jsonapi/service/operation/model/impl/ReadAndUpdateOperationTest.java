@@ -318,7 +318,6 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               new DBFilterBase.IDFilter(
                   DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       CommandContext commandContext = createCommandContextWithCommandName("ReadNoWriteCommand");
 
       FindOperation findOperation =
@@ -419,7 +418,6 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       assertThat(jsonDocsWrittenCountMetrics).hasSize(1);
       jsonDocsWrittenCountMetrics.forEach(
           line -> {
-            System.out.println(line);
             String[] parts = line.split(" ");
             String numericPart =
                 parts[parts.length - 1]; // Get the last part which should be the number
@@ -615,7 +613,6 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               new DBFilterBase.TextFilter(
                   "filter_me", DBFilterBase.MapFilterBase.Operator.EQ, "happy"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
-
       CommandContext commandContext = createCommandContextWithCommandName("ReadAndWriteCommand");
 
       FindOperation findOperation =

@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -23,6 +23,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import jakarta.inject.Inject;
+import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -232,21 +233,23 @@ public class UpdateManyCommandResolverTest {
 
       UpdateManyCommand command = objectMapper.readValue(json, UpdateManyCommand.class);
       Operation operation =
-          resolver.resolveCommand(TestEmbeddingService.commandContextWithVectorize, command);
+          resolver.resolveCommand(TestEmbeddingProvider.commandContextWithVectorize, command);
 
       UpdateClause updateClause =
           DocumentUpdaterUtils.updateClause(
               UpdateOperator.SET, objectMapper.createObjectNode().put("$vectorize", "test data"));
       new DataVectorizer(
-              TestEmbeddingService.commandContextWithVectorize.embeddingService(),
-              objectMapper.getNodeFactory())
+              TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
+              objectMapper.getNodeFactory(),
+              Optional.empty(),
+              TestEmbeddingProvider.commandContextWithVectorize.collectionSettings())
           .vectorizeUpdateClause(updateClause);
       assertThat(operation)
           .isInstanceOfSatisfying(
               ReadAndUpdateOperation.class,
               op -> {
                 assertThat(op.commandContext())
-                    .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
+                    .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
                 assertThat(op.returnDocumentInResponse()).isFalse();
                 assertThat(op.returnUpdatedDocument()).isFalse();
                 assertThat(op.upsert()).isFalse();
@@ -270,7 +273,7 @@ public class UpdateManyCommandResolverTest {
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext())
-                              .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
+                              .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
                           assertThat(find.pageSize()).isEqualTo(20);
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
