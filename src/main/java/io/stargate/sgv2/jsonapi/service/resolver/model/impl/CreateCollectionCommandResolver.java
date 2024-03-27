@@ -69,7 +69,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           objectMapper,
           cqlSessionCache,
           command.name(),
-          null,
+          generateComment(false, false, command.name(), null, null, null),
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled());
     }
@@ -141,9 +141,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       CreateCollectionCommand.Options.IndexingConfig indexing,
       CreateCollectionCommand.Options.VectorSearchConfig vector,
       CreateCollectionCommand.Options.IdConfig idConfig) {
-    if (!hasIndexing && !hasVectorSearch) {
-      return null;
-    }
     final ObjectNode collectionNode = objectMapper.createObjectNode();
     ObjectNode optionsNode = objectMapper.createObjectNode(); // For storing collection options.
 
@@ -163,13 +160,11 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     }
 
     collectionNode.put(TableCommentConstants.COLLECTION_NAME_KEY, commandName);
-
     collectionNode.put(
         TableCommentConstants.SCHEMA_VERSION_KEY, TableCommentConstants.SCHEMA_VERSION_VALUE);
     collectionNode.putPOJO(TableCommentConstants.OPTIONS_KEY, optionsNode);
     final ObjectNode tableCommentNode = objectMapper.createObjectNode();
     tableCommentNode.putPOJO(TableCommentConstants.TOP_LEVEL_KEY, collectionNode);
-
     return tableCommentNode.toString();
   }
 
