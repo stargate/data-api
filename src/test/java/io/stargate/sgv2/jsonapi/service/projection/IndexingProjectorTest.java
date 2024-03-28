@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class DocumentProjectorForIndexingTest {
+public class IndexingProjectorTest {
   final ObjectMapper objectMapper = new ObjectMapper();
 
   @Nested

@@ -13,6 +13,9 @@ import java.util.Objects;
 /**
  * Helper class that implements functionality needed to support projections on documents fetched via
  * various {@code find} commands.
+ *
+ * <p>Note that this is not used for "No Index" handling: see {@link IndexingProjector} for that use
+ * case
  */
 public class DocumentProjector {
   /**
