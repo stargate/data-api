@@ -20,10 +20,10 @@ public class DocumentProjector {
    * exclusions" is conceptually what happens ("no inclusions" would drop all content)
    */
   private static final DocumentProjector IDENTITY_PROJECTOR =
-      new DocumentProjector(null, false, false, false);
+      new DocumentProjector(null, false, false);
 
   private static final DocumentProjector IDENTITY_PROJECTOR_WITH_SIMILARITY =
-      new DocumentProjector(null, false, true, false);
+      new DocumentProjector(null, false, true);
 
   private final ProjectionLayer rootLayer;
 
@@ -33,22 +33,11 @@ public class DocumentProjector {
   /** Whether to include the similarity score in the projection. */
   private final boolean includeSimilarityScore;
 
-  /** An override flag set when indexing option is deny all */
-  private final boolean indexingDenyAll;
-
   private DocumentProjector(
-      ProjectionLayer rootLayer,
-      boolean inclusion,
-      boolean includeSimilarityScore,
-      boolean indexingDenyAll) {
+      ProjectionLayer rootLayer, boolean inclusion, boolean includeSimilarityScore) {
     this.rootLayer = rootLayer;
     this.inclusion = inclusion;
     this.includeSimilarityScore = includeSimilarityScore;
-    this.indexingDenyAll = indexingDenyAll;
-  }
-
-  public boolean isIndexingDenyAll() {
-    return indexingDenyAll;
   }
 
   public static DocumentProjector createFromDefinition(JsonNode projectionDefinition) {
@@ -76,10 +65,6 @@ public class DocumentProjector {
 
   public static DocumentProjector identityProjector() {
     return IDENTITY_PROJECTOR;
-  }
-
-  public boolean isIdentityProjection() {
-    return rootLayer == null && !inclusion;
   }
 
   public static DocumentProjector identityProjectorWithSimilarity() {
@@ -194,15 +179,13 @@ public class DocumentProjector {
         return new DocumentProjector(
             ProjectionLayer.buildLayersNoOverlap(paths, slices, !Boolean.FALSE.equals(idInclusion)),
             true,
-            includeSimilarityScore,
-            false);
+            includeSimilarityScore);
       } else { // exclusion-based
         // doc-id excluded only if explicitly excluded
         return new DocumentProjector(
             ProjectionLayer.buildLayersNoOverlap(paths, slices, Boolean.FALSE.equals(idInclusion)),
             false,
-            includeSimilarityScore,
-            false);
+            includeSimilarityScore);
       }
     }
 

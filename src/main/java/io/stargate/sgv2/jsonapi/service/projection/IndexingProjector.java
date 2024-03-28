@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.projection;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -22,58 +21,24 @@ public class IndexingProjector {
    * exclusions" is conceptually what happens ("no inclusions" would drop all content)
    */
   private static final IndexingProjector IDENTITY_PROJECTOR =
-      new IndexingProjector(null, false, false, false);
-
-  private static final IndexingProjector IDENTITY_PROJECTOR_WITH_SIMILARITY =
-      new IndexingProjector(null, false, true, false);
+      new IndexingProjector(null, false, false);
 
   private final ProjectionLayer rootLayer;
 
   /** Whether this projector is inclusion- ({@code true}) or exclusion ({@code false}) based. */
   private final boolean inclusion;
 
-  /** Whether to include the similarity score in the projection. */
-  private final boolean includeSimilarityScore;
-
   /** An override flag set when indexing option is deny all */
   private final boolean indexingDenyAll;
 
-  private IndexingProjector(
-      ProjectionLayer rootLayer,
-      boolean inclusion,
-      boolean includeSimilarityScore,
-      boolean indexingDenyAll) {
+  private IndexingProjector(ProjectionLayer rootLayer, boolean inclusion, boolean indexingDenyAll) {
     this.rootLayer = rootLayer;
     this.inclusion = inclusion;
-    this.includeSimilarityScore = includeSimilarityScore;
     this.indexingDenyAll = indexingDenyAll;
   }
 
   public boolean isIndexingDenyAll() {
     return indexingDenyAll;
-  }
-
-  public static IndexingProjector createFromDefinition(JsonNode projectionDefinition) {
-    return createFromDefinition(projectionDefinition, false);
-  }
-
-  public static IndexingProjector createFromDefinition(
-      JsonNode projectionDefinition, boolean includeSimilarity) {
-    if (projectionDefinition == null) {
-      if (includeSimilarity) {
-        return identityProjectorWithSimilarity();
-      } else {
-        return identityProjector();
-      }
-    }
-    if (!projectionDefinition.isObject()) {
-      throw new JsonApiException(
-          ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
-          ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
-              + ": definition must be OBJECT, was "
-              + projectionDefinition.getNodeType());
-    }
-    return PathCollector.collectPaths(projectionDefinition, includeSimilarity).buildProjector();
   }
 
   public static IndexingProjector createForIndexing(Set<String> allowed, Set<String> denied) {
@@ -100,8 +65,7 @@ public class IndexingProjector {
       if (!allowed.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
         allowed.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
       }
-      return new IndexingProjector(
-          ProjectionLayer.buildLayersOverlapOk(allowed), true, false, false);
+      return new IndexingProjector(ProjectionLayer.buildLayersOverlapOk(allowed), true, false);
     }
     if (denied != null && !denied.isEmpty()) {
       // (special) Case 4:
@@ -112,11 +76,10 @@ public class IndexingProjector {
         overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
         overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
         return new IndexingProjector(
-            ProjectionLayer.buildLayersOverlapOk(overrideFields), true, false, true);
+            ProjectionLayer.buildLayersOverlapOk(overrideFields), true, true);
       }
       // Case 2: exclusion-based projection
-      return new IndexingProjector(
-          ProjectionLayer.buildLayersOverlapOk(denied), false, false, false);
+      return new IndexingProjector(ProjectionLayer.buildLayersOverlapOk(denied), false, false);
     }
     // Case 3: include-all (identity) projection
     return identityProjector();
@@ -130,38 +93,14 @@ public class IndexingProjector {
     return rootLayer == null && !inclusion;
   }
 
-  public static IndexingProjector identityProjectorWithSimilarity() {
-    return IDENTITY_PROJECTOR_WITH_SIMILARITY;
-  }
-
-  public boolean isInclusion() {
-    return inclusion;
-  }
-
-  public boolean doIncludeSimilarityScore() {
-    return includeSimilarityScore;
-  }
-
   public void applyProjection(JsonNode document) {
-    applyProjection(document, null);
-  }
-
-  public void applyProjection(JsonNode document, Float similarityScore) {
     if (rootLayer == null) { // null -> identity projection (no-op)
-      if (includeSimilarityScore && similarityScore != null) {
-        ((ObjectNode) document)
-            .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
-      }
       return;
     }
     if (inclusion) {
       rootLayer.applyInclusions(document);
     } else {
       rootLayer.applyExclusions(document);
-    }
-    if (includeSimilarityScore && similarityScore != null) {
-      ((ObjectNode) document)
-          .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
     }
   }
 
@@ -220,15 +159,10 @@ public class IndexingProjector {
 
     private Boolean idInclusion = null;
 
-    /** Whether similarity score is needed. */
-    private final boolean includeSimilarityScore;
+    private PathCollector() {}
 
-    private PathCollector(boolean includeSimilarityScore) {
-      this.includeSimilarityScore = includeSimilarityScore;
-    }
-
-    static PathCollector collectPaths(JsonNode def, boolean includeSimilarity) {
-      return new PathCollector(includeSimilarity).collectFromObject(def, null);
+    static PathCollector collectPaths(JsonNode def) {
+      return new PathCollector().collectFromObject(def, null);
     }
 
     public IndexingProjector buildProjector() {
@@ -242,14 +176,12 @@ public class IndexingProjector {
         return new IndexingProjector(
             ProjectionLayer.buildLayersNoOverlap(paths, slices, !Boolean.FALSE.equals(idInclusion)),
             true,
-            includeSimilarityScore,
             false);
       } else { // exclusion-based
         // doc-id excluded only if explicitly excluded
         return new IndexingProjector(
             ProjectionLayer.buildLayersNoOverlap(paths, slices, Boolean.FALSE.equals(idInclusion)),
             false,
-            includeSimilarityScore,
             false);
       }
     }
