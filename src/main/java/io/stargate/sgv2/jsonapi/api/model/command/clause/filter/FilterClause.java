@@ -42,7 +42,11 @@ public record FilterClause(LogicalExpression logicalExpression) {
   public void validateComparisonExpression(
       ComparisonExpression comparisonExpression, DocumentProjector indexingProjector) {
     String path = comparisonExpression.getPath();
-    boolean isPathIndexed = indexingProjector.isPathIncluded(path);
+    boolean isPathIndexed =
+        !indexingProjector.isIndexingDenyAll() && indexingProjector.isPathIncluded(path);
+
+    // special case path may be set to indexed for `$vector` and `$vectorize` fields even in case of
+    // deny all
 
     // If path is "_id" and it's denied, the operator can only be $eq or $in
     if (!isPathIndexed && path.equals(DocumentConstants.Fields.DOC_ID)) {
@@ -104,8 +108,7 @@ public record FilterClause(LogicalExpression logicalExpression) {
         validateList(indexingProjector, sublList, currentPath);
       } else if (element instanceof String) {
         // no need to build incremental path, validate current path
-        if (indexingProjector.isIndexingDenyAll()
-            || !indexingProjector.isPathIncluded(currentPath)) {
+        if (!indexingProjector.isPathIncluded(currentPath)) {
           throw ErrorCode.UNINDEXED_FILTER_PATH.toApiException(
               "filter path '%s' is not indexed", currentPath);
         }
