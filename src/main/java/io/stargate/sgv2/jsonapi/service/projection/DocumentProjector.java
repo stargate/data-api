@@ -102,38 +102,14 @@ public class DocumentProjector {
     }
   }
 
-  /**
-   * Method to call to check if given path (dotted path, that is, dot-separated segments) would be
-   * included by this Projection. That is, either
-   *
-   * <ul>
-   *   <li>This is inclusion projection, and path is covered by an inclusion path
-   *   <li>This is exclusion projection, and path is NOT covered by any exclusion path
-   * </ul>
-   *
-   * @param path Dotted path (possibly nested) to check
-   * @return {@code true} if path is included; {@code false} if not.
-   */
-  public boolean isPathIncluded(String path) {
-    // First: if we have no layers, we are identity projector and include everything
-    if (rootLayer == null) {
-      return true;
-    }
-    // Otherwise need to split path, evaluate; but note reversal wrt include/exclude
-    // projections
-    if (inclusion) {
-      return rootLayer.isPathIncluded(path);
-    } else {
-      return !rootLayer.isPathIncluded(path);
-    }
-  }
-
   // Mostly for deserialization tests
   @Override
   public boolean equals(Object o) {
     if (o instanceof DocumentProjector) {
       DocumentProjector other = (DocumentProjector) o;
-      return (this.inclusion == other.inclusion) && Objects.equals(this.rootLayer, other.rootLayer);
+      return (this.inclusion == other.inclusion)
+          && (this.includeSimilarityScore == other.includeSimilarityScore)
+          && Objects.equals(this.rootLayer, other.rootLayer);
     }
     return false;
   }
