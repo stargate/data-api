@@ -104,7 +104,8 @@ public record FilterClause(LogicalExpression logicalExpression) {
         validateList(indexingProjector, sublList, currentPath);
       } else if (element instanceof String) {
         // no need to build incremental path, validate current path
-        if (!indexingProjector.isPathIncluded(currentPath)) {
+        if (!indexingProjector.isIndexingDenyAll()
+            || !indexingProjector.isPathIncluded(currentPath)) {
           throw ErrorCode.UNINDEXED_FILTER_PATH.toApiException(
               "filter path '%s' is not indexed", currentPath);
         }

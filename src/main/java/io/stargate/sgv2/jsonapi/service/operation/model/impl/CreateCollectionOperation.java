@@ -42,7 +42,8 @@ public record CreateCollectionOperation(
     String comment,
     int ddlDelayMillis,
     boolean tooManyIndexesRollbackEnabled,
-    boolean denyAll)
+    // if true, deny all indexing option is set and no indexes will be created
+    boolean indexingDenyAll)
     implements Operation {
   private static final Logger logger = LoggerFactory.getLogger(CreateCollectionOperation.class);
 
@@ -60,7 +61,7 @@ public record CreateCollectionOperation(
       String comment,
       int ddlDelayMillis,
       boolean tooManyIndexesRollbackEnabled,
-      boolean denyAll) {
+      boolean indexingDenyAll) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -73,7 +74,7 @@ public record CreateCollectionOperation(
         comment,
         ddlDelayMillis,
         tooManyIndexesRollbackEnabled,
-        denyAll);
+        indexingDenyAll);
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -85,7 +86,7 @@ public record CreateCollectionOperation(
       String comment,
       int ddlDelayMillis,
       boolean tooManyIndexesRollbackEnabled,
-      boolean denyAll) {
+      boolean indexingDenyAll) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -98,7 +99,7 @@ public record CreateCollectionOperation(
         comment,
         ddlDelayMillis,
         tooManyIndexesRollbackEnabled,
-        denyAll);
+        indexingDenyAll);
   }
 
   @Override
@@ -343,7 +344,7 @@ public record CreateCollectionOperation(
 
   protected List<SimpleStatement> getIndexStatements(String keyspace, String table) {
     List<SimpleStatement> statements = new ArrayList<>(10);
-    if (!denyAll()) {
+    if (!indexingDenyAll()) {
       String existKeys =
           "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON \"%s\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'";
 

@@ -79,12 +79,12 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     boolean hasVectorSearch = command.options().vector() != null;
     CreateCollectionCommand.Options.VectorSearchConfig vector = command.options().vector();
 
-    boolean denyAll = false;
+    boolean indexingDenyAll = false;
     // handling indexing options
     if (hasIndexing) {
       // validation of configuration
       command.options().indexing().validate();
-      denyAll = command.options().indexing().denyAll();
+      indexingDenyAll = command.options().indexing().denyAll();
       // No need to process if both are null or empty
     }
 
@@ -114,7 +114,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           comment,
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
-          denyAll);
+          indexingDenyAll);
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
@@ -125,7 +125,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           comment,
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
-          denyAll);
+          indexingDenyAll);
     }
   }
 
