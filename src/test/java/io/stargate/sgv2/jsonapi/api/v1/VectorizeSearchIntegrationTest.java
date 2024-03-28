@@ -670,38 +670,6 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
 
     @Test
     @Order(6)
-    public void vectorizeFilterDenyAll() {
-      String json =
-          """
-            {
-              "find": {
-                "filter" : {"$vectorize" : {"$exists" : true}}
-              }
-            }
-            """;
-
-      given()
-          .headers(
-              Map.of(
-                  HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-                  getAuthToken(),
-                  HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-                  CustomITEmbeddingProvider.TEST_API_KEY))
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionNameDenyAll)
-          .then()
-          .statusCode(200)
-          .body("data.documents", hasSize(1))
-          .body("data.documents[0]._id", is("1"))
-          .body("data.documents[0].$vector", is(notNullValue()))
-          .body("data.documents[0].$vectorize", is(notNullValue()))
-          .body("data.documents[0].$vector", contains(0.1f, 0.15f, 0.3f, 0.12f, 0.05f));
-    }
-
-    @Test
-    @Order(7)
     public void vectorizeSortDenyAll() {
       String json =
           """

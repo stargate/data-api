@@ -42,7 +42,11 @@ public record FilterClause(LogicalExpression logicalExpression) {
   public void validateComparisonExpression(
       ComparisonExpression comparisonExpression, DocumentProjector indexingProjector) {
     String path = comparisonExpression.getPath();
-    boolean isPathIndexed = indexingProjector.isPathIncluded(path);
+    boolean isPathIndexed =
+        !indexingProjector.isIndexingDenyAll() && indexingProjector.isPathIncluded(path);
+
+    // special case path may be set to indexed for `$vector` and `$vectorize` fields even in case of
+    // deny all
 
     // If path is "_id" and it's denied, the operator can only be $eq or $in
     if (!isPathIndexed && path.equals(DocumentConstants.Fields.DOC_ID)) {

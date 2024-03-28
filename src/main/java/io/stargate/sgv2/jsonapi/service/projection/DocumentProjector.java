@@ -22,10 +22,10 @@ public class DocumentProjector {
    * exclusions" is conceptually what happens ("no inclusions" would drop all content)
    */
   private static final DocumentProjector IDENTITY_PROJECTOR =
-      new DocumentProjector(null, false, false);
+      new DocumentProjector(null, false, false, false);
 
   private static final DocumentProjector IDENTITY_PROJECTOR_WITH_SIMILARITY =
-      new DocumentProjector(null, false, true);
+      new DocumentProjector(null, false, true, false);
 
   private final ProjectionLayer rootLayer;
 
@@ -35,11 +35,22 @@ public class DocumentProjector {
   /** Whether to include the similarity score in the projection. */
   private final boolean includeSimilarityScore;
 
+  /** An override flag set when indexing option is deny all */
+  private final boolean indexingDenyAll;
+
   private DocumentProjector(
-      ProjectionLayer rootLayer, boolean inclusion, boolean includeSimilarityScore) {
+      ProjectionLayer rootLayer,
+      boolean inclusion,
+      boolean includeSimilarityScore,
+      boolean indexingDenyAll) {
     this.rootLayer = rootLayer;
     this.inclusion = inclusion;
     this.includeSimilarityScore = includeSimilarityScore;
+    this.indexingDenyAll = indexingDenyAll;
+  }
+
+  public boolean isIndexingDenyAll() {
+    return indexingDenyAll;
   }
 
   public static DocumentProjector createFromDefinition(JsonNode projectionDefinition) {
@@ -89,7 +100,8 @@ public class DocumentProjector {
       if (!allowed.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
         allowed.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
       }
-      return new DocumentProjector(ProjectionLayer.buildLayersOverlapOk(allowed), true, false);
+      return new DocumentProjector(
+          ProjectionLayer.buildLayersOverlapOk(allowed), true, false, false);
     }
     if (denied != null && !denied.isEmpty()) {
       // (special) Case 4:
@@ -100,10 +112,11 @@ public class DocumentProjector {
         overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
         overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
         return new DocumentProjector(
-            ProjectionLayer.buildLayersOverlapOk(overrideFields), true, false);
+            ProjectionLayer.buildLayersOverlapOk(overrideFields), true, false, true);
       }
       // Case 2: exclusion-based projection
-      return new DocumentProjector(ProjectionLayer.buildLayersOverlapOk(denied), false, false);
+      return new DocumentProjector(
+          ProjectionLayer.buildLayersOverlapOk(denied), false, false, false);
     }
     // Case 3: include-all (identity) projection
     return identityProjector();
@@ -229,13 +242,15 @@ public class DocumentProjector {
         return new DocumentProjector(
             ProjectionLayer.buildLayersNoOverlap(paths, slices, !Boolean.FALSE.equals(idInclusion)),
             true,
-            includeSimilarityScore);
+            includeSimilarityScore,
+            false);
       } else { // exclusion-based
         // doc-id excluded only if explicitly excluded
         return new DocumentProjector(
             ProjectionLayer.buildLayersNoOverlap(paths, slices, Boolean.FALSE.equals(idInclusion)),
             false,
-            includeSimilarityScore);
+            includeSimilarityScore,
+            false);
       }
     }
 
