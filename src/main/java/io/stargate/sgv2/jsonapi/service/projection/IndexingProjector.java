@@ -7,23 +7,25 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
- * Helper class that implements functionality needed to support projections on documents fetched via
- * various {@code find} commands.
+ * Alternative to {@link ProjectionLayer} that is used for indexing (projection) purposes, to
+ * support "deny"/"allow" rules for defining properties to index (or not)
  */
-public class DocumentProjector {
+public class IndexingProjector {
   /**
    * No-op projector that does not modify documents. Considered "exclusion" projector since "no
    * exclusions" is conceptually what happens ("no inclusions" would drop all content)
    */
-  private static final DocumentProjector IDENTITY_PROJECTOR =
-      new DocumentProjector(null, false, false, false);
+  private static final IndexingProjector IDENTITY_PROJECTOR =
+      new IndexingProjector(null, false, false, false);
 
-  private static final DocumentProjector IDENTITY_PROJECTOR_WITH_SIMILARITY =
-      new DocumentProjector(null, false, true, false);
+  private static final IndexingProjector IDENTITY_PROJECTOR_WITH_SIMILARITY =
+      new IndexingProjector(null, false, true, false);
 
   private final ProjectionLayer rootLayer;
 
@@ -36,7 +38,7 @@ public class DocumentProjector {
   /** An override flag set when indexing option is deny all */
   private final boolean indexingDenyAll;
 
-  private DocumentProjector(
+  private IndexingProjector(
       ProjectionLayer rootLayer,
       boolean inclusion,
       boolean includeSimilarityScore,
@@ -51,11 +53,11 @@ public class DocumentProjector {
     return indexingDenyAll;
   }
 
-  public static DocumentProjector createFromDefinition(JsonNode projectionDefinition) {
+  public static IndexingProjector createFromDefinition(JsonNode projectionDefinition) {
     return createFromDefinition(projectionDefinition, false);
   }
 
-  public static DocumentProjector createFromDefinition(
+  public static IndexingProjector createFromDefinition(
       JsonNode projectionDefinition, boolean includeSimilarity) {
     if (projectionDefinition == null) {
       if (includeSimilarity) {
@@ -74,7 +76,53 @@ public class DocumentProjector {
     return PathCollector.collectPaths(projectionDefinition, includeSimilarity).buildProjector();
   }
 
-  public static DocumentProjector identityProjector() {
+  public static IndexingProjector createForIndexing(Set<String> allowed, Set<String> denied) {
+    // Sets are expected to be validated to have one of 3 main cases:
+    // 1. Non-empty "allowed" (but empty/null "denied") -> build inclusion projection
+    // 2. Non-empty "denied" (but empty/null "allowed") -> build exclusion projection
+    // 3. Empty/null "allowed" and "denied" -> return identity projection
+    // as well as 2 special cases:
+    // 4. Empty "allowed" and single "*" entry for "denied" -> return exclude-all projection
+    // 5. Empty "deny" and single "*" entry for "allowed" -> return include-all ("identity")
+    // projection
+    // We need not (and should not) do further validation here.
+    // Note that (5) is effectively same as (3) and included for sake of uniformity
+    if (allowed != null && !allowed.isEmpty()) {
+      // (special) Case 5:
+      if (allowed.size() == 1 && allowed.contains("*")) {
+        return identityProjector();
+      }
+      // Case 1: inclusion-based projection
+      // Minor complication: "$vector" needs to be included automatically
+      if (!allowed.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+        allowed.add(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+      }
+      if (!allowed.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+        allowed.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+      }
+      return new IndexingProjector(
+          ProjectionLayer.buildLayersOverlapOk(allowed), true, false, false);
+    }
+    if (denied != null && !denied.isEmpty()) {
+      // (special) Case 4:
+      if (denied.size() == 1 && denied.contains("*")) {
+        // Basically inclusion projector with nothing to include but handle for $vector and
+        // $vectorize
+        Set<String> overrideFields = new HashSet<>();
+        overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+        overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+        return new IndexingProjector(
+            ProjectionLayer.buildLayersOverlapOk(overrideFields), true, false, true);
+      }
+      // Case 2: exclusion-based projection
+      return new IndexingProjector(
+          ProjectionLayer.buildLayersOverlapOk(denied), false, false, false);
+    }
+    // Case 3: include-all (identity) projection
+    return identityProjector();
+  }
+
+  public static IndexingProjector identityProjector() {
     return IDENTITY_PROJECTOR;
   }
 
@@ -82,7 +130,7 @@ public class DocumentProjector {
     return rootLayer == null && !inclusion;
   }
 
-  public static DocumentProjector identityProjectorWithSimilarity() {
+  public static IndexingProjector identityProjectorWithSimilarity() {
     return IDENTITY_PROJECTOR_WITH_SIMILARITY;
   }
 
@@ -146,8 +194,8 @@ public class DocumentProjector {
   // Mostly for deserialization tests
   @Override
   public boolean equals(Object o) {
-    if (o instanceof DocumentProjector) {
-      DocumentProjector other = (DocumentProjector) o;
+    if (o instanceof IndexingProjector) {
+      IndexingProjector other = (IndexingProjector) o;
       return (this.inclusion == other.inclusion) && Objects.equals(this.rootLayer, other.rootLayer);
     }
     return false;
@@ -183,7 +231,7 @@ public class DocumentProjector {
       return new PathCollector(includeSimilarity).collectFromObject(def, null);
     }
 
-    public DocumentProjector buildProjector() {
+    public IndexingProjector buildProjector() {
       if (isIdentityProjection()) {
         return identityProjector();
       }
@@ -191,14 +239,14 @@ public class DocumentProjector {
       // One more thing: do we need to add document id?
       if (inclusions > 0) { // inclusion-based projection
         // doc-id included unless explicitly excluded
-        return new DocumentProjector(
+        return new IndexingProjector(
             ProjectionLayer.buildLayersNoOverlap(paths, slices, !Boolean.FALSE.equals(idInclusion)),
             true,
             includeSimilarityScore,
             false);
       } else { // exclusion-based
         // doc-id excluded only if explicitly excluded
-        return new DocumentProjector(
+        return new IndexingProjector(
             ProjectionLayer.buildLayersNoOverlap(paths, slices, Boolean.FALSE.equals(idInclusion)),
             false,
             includeSimilarityScore,
