@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class DocumentProjectorForIndexingTest {
+public class IndexingProjectorTest {
   final ObjectMapper objectMapper = new ObjectMapper();
 
   @Nested
@@ -180,37 +180,37 @@ public class DocumentProjectorForIndexingTest {
   class PathInclusion {
     @Test
     public void testPathInclusion() {
-      DocumentProjector rootProj = createAllowProjection(Arrays.asList("a", "c"));
+      IndexingProjector rootProj = createAllowProjection(Arrays.asList("a", "c"));
       assertIsIncluded(rootProj, "a", "a.x", "a.b.c.d");
       assertIsIncluded(rootProj, "c", "c.a", "c.x.y.z");
       assertIsNotIncluded(rootProj, "b", "d", "b.a", "abc", "cef", "_id");
 
-      DocumentProjector nestedProj = createAllowProjection(Arrays.asList("a.b"));
+      IndexingProjector nestedProj = createAllowProjection(Arrays.asList("a.b"));
       assertIsIncluded(nestedProj, "a.b", "a.b.c", "a.b.longer.path.for.sure");
       assertIsNotIncluded(nestedProj, "a", "b", "c", "a.c", "a.x", "a.x.y.z", "_id");
 
       // Let's also check overlapping (redundant) case; most generic used (specific ignored)
       // same as just "c":
-      DocumentProjector overlapProj = createAllowProjection(Arrays.asList("c", "c.x"));
+      IndexingProjector overlapProj = createAllowProjection(Arrays.asList("c", "c.x"));
       assertIsIncluded(overlapProj, "c", "c.abc", "c.d.e.f");
       assertIsNotIncluded(overlapProj, "a", "b", "d", "a.c", "a.x.y.z", "_id");
     }
 
     @Test
     public void testPathExclusion() {
-      DocumentProjector rootProj = createDenyProjection(Arrays.asList("a", "c"));
+      IndexingProjector rootProj = createDenyProjection(Arrays.asList("a", "c"));
       assertIsNotIncluded(rootProj, "a", "a.x", "a.b.c.d");
       assertIsNotIncluded(rootProj, "c", "c.a", "c.x.y.z");
       assertIsIncluded(rootProj, "b", "d", "b.a", "abc", "cef", "_id");
 
-      DocumentProjector nestedProj = createDenyProjection(Arrays.asList("a.b", "a.noindex"));
+      IndexingProjector nestedProj = createDenyProjection(Arrays.asList("a.b", "a.noindex"));
       assertIsNotIncluded(
           nestedProj, "a.b", "a.b.c", "a.b.longer.path.for.sure", "a.noindex", "a.noindex.x");
       assertIsIncluded(nestedProj, "a", "b", "_id", "a.c", "a.x", "a.x.y.z");
 
       // Let's also check overlapping (redundant) case; most generic used (specific ignored)
       // same as just "c":
-      DocumentProjector overlapProj = createDenyProjection(Arrays.asList("c", "c.x"));
+      IndexingProjector overlapProj = createDenyProjection(Arrays.asList("c", "c.x"));
       assertIsNotIncluded(overlapProj, "c", "c.abc", "c.d.e.f");
       assertIsIncluded(overlapProj, "a", "b", "d", "a.c", "a.x.y.z", "_id");
     }
@@ -218,7 +218,7 @@ public class DocumentProjectorForIndexingTest {
 
   private void assertAllowProjection(
       Collection<String> allows, String inputDoc, String expectedDoc) {
-    DocumentProjector projector = createAllowProjection(allows);
+    IndexingProjector projector = createAllowProjection(allows);
     try {
       JsonNode input = objectMapper.readTree(inputDoc);
       projector.applyProjection(input);
@@ -230,7 +230,7 @@ public class DocumentProjectorForIndexingTest {
 
   private void assertDenyProjection(
       Collection<String> denies, String inputDoc, String expectedDoc) {
-    DocumentProjector projector = createDenyProjection(denies);
+    IndexingProjector projector = createDenyProjection(denies);
     try {
       JsonNode input = objectMapper.readTree(inputDoc);
       projector.applyProjection(input);
@@ -240,15 +240,15 @@ public class DocumentProjectorForIndexingTest {
     }
   }
 
-  private DocumentProjector createAllowProjection(Collection<String> allows) {
-    return DocumentProjector.createForIndexing(new LinkedHashSet<>(allows), null);
+  private IndexingProjector createAllowProjection(Collection<String> allows) {
+    return IndexingProjector.createForIndexing(new LinkedHashSet<>(allows), null);
   }
 
-  private DocumentProjector createDenyProjection(Collection<String> denies) {
-    return DocumentProjector.createForIndexing(null, new LinkedHashSet<>(denies));
+  private IndexingProjector createDenyProjection(Collection<String> denies) {
+    return IndexingProjector.createForIndexing(null, new LinkedHashSet<>(denies));
   }
 
-  private void assertIsIncluded(DocumentProjector proj, String... paths) {
+  private void assertIsIncluded(IndexingProjector proj, String... paths) {
     for (String path : paths) {
       assertThat(proj.isPathIncluded(path))
           .withFailMessage("Path '%s' should be included", path)
@@ -256,7 +256,7 @@ public class DocumentProjectorForIndexingTest {
     }
   }
 
-  private void assertIsNotIncluded(DocumentProjector proj, String... paths) {
+  private void assertIsNotIncluded(IndexingProjector proj, String... paths) {
     for (String path : paths) {
       assertThat(proj.isPathIncluded(path))
           .withFailMessage("Path '%s' should NOT be included", path)

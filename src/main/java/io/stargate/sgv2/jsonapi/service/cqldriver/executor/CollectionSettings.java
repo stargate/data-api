@@ -15,7 +15,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -56,25 +56,25 @@ public record CollectionSettings(
     }
   }
 
-  public DocumentProjector indexingProjector() {
+  public IndexingProjector indexingProjector() {
     // IndexingConfig null if no indexing definitions: default, index all:
     if (indexingConfig == null) {
-      return DocumentProjector.identityProjector();
+      return IndexingProjector.identityProjector();
     }
     // otherwise get lazily initialized indexing projector from config
     return indexingConfig.indexingProjector();
   }
 
   public record IndexingConfig(
-      Set<String> allowed, Set<String> denied, Supplier<DocumentProjector> indexedProject) {
+      Set<String> allowed, Set<String> denied, Supplier<IndexingProjector> indexedProject) {
     public IndexingConfig(Set<String> allowed, Set<String> denied) {
       this(
           allowed,
           denied,
-          Suppliers.memoize(() -> DocumentProjector.createForIndexing(allowed, denied)));
+          Suppliers.memoize(() -> IndexingProjector.createForIndexing(allowed, denied)));
     }
 
-    public DocumentProjector indexingProjector() {
+    public IndexingProjector indexingProjector() {
       return indexedProject.get();
     }
 

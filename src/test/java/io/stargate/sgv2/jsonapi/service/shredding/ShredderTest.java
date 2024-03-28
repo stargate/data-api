@@ -14,7 +14,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
@@ -365,8 +365,8 @@ public class ShredderTest {
                           }
                           """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      DocumentProjector indexProjector =
-          DocumentProjector.createForIndexing(
+      IndexingProjector indexProjector =
+          IndexingProjector.createForIndexing(
               new HashSet<>(Arrays.asList("name", "metadata")), null);
       WritableShreddedDocument doc =
           shredder.shred(inputDoc, null, indexProjector, "testCommand", CollectionSettings.empty());
@@ -433,8 +433,8 @@ public class ShredderTest {
                               """
               .formatted(str);
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      DocumentProjector indexProjector =
-          DocumentProjector.createForIndexing(
+      IndexingProjector indexProjector =
+          IndexingProjector.createForIndexing(
               new HashSet<>(Arrays.asList("name", "metadata")), null);
       WritableShreddedDocument doc =
           shredder.shred(inputDoc, null, indexProjector, "testCommand", CollectionSettings.empty());
@@ -495,8 +495,8 @@ public class ShredderTest {
                 }
                 """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      DocumentProjector indexProjector =
-          DocumentProjector.createForIndexing(
+      IndexingProjector indexProjector =
+          IndexingProjector.createForIndexing(
               new HashSet<>(Arrays.asList("name", "metadata")), null);
       WritableShreddedDocument doc =
           shredder.shred(inputDoc, null, indexProjector, "testCommand", CollectionSettings.empty());
@@ -553,8 +553,8 @@ public class ShredderTest {
               }
               """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      DocumentProjector indexProjector =
-          DocumentProjector.createForIndexing(null, new HashSet<>(Arrays.asList("name", "values")));
+      IndexingProjector indexProjector =
+          IndexingProjector.createForIndexing(null, new HashSet<>(Arrays.asList("name", "values")));
       WritableShreddedDocument doc =
           shredder.shred(inputDoc, null, indexProjector, "testCommand", CollectionSettings.empty());
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
@@ -615,8 +615,8 @@ public class ShredderTest {
                   }
                   """;
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      DocumentProjector indexProjector =
-          DocumentProjector.createForIndexing(null, new HashSet<>(Arrays.asList("*")));
+      IndexingProjector indexProjector =
+          IndexingProjector.createForIndexing(null, new HashSet<>(Arrays.asList("*")));
       WritableShreddedDocument doc =
           shredder.shred(inputDoc, null, indexProjector, "testCommand", CollectionSettings.empty());
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(123)));
@@ -658,8 +658,8 @@ public class ShredderTest {
               .formatted(hugeString);
 
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
-      DocumentProjector indexProjector =
-          DocumentProjector.createForIndexing(null, new HashSet<>(Arrays.asList("blob")));
+      IndexingProjector indexProjector =
+          IndexingProjector.createForIndexing(null, new HashSet<>(Arrays.asList("blob")));
       WritableShreddedDocument doc =
           shredder.shred(inputDoc, null, indexProjector, "testCommand", CollectionSettings.empty());
       assertThat(doc.id()).isEqualTo(DocumentId.fromNumber(BigDecimal.valueOf(1)));
@@ -699,7 +699,7 @@ public class ShredderTest {
       shredder.shred(
           inputDoc,
           null,
-          DocumentProjector.identityProjector(),
+          IndexingProjector.identityProjector(),
           "jsonBytesWriteCommand",
           CollectionSettings.empty());
 

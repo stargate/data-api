@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDese
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -21,7 +21,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
               """)
 public record FilterClause(LogicalExpression logicalExpression) {
   public void validate(CommandContext commandContext) {
-    DocumentProjector indexingProjector = commandContext.indexingProjector();
+    IndexingProjector indexingProjector = commandContext.indexingProjector();
     // If nothing specified, everything indexed
     if (indexingProjector.isIdentityProjection()) {
       return;
@@ -30,7 +30,7 @@ public record FilterClause(LogicalExpression logicalExpression) {
   }
 
   public void validateLogicalExpression(
-      LogicalExpression logicalExpression, DocumentProjector indexingProjector) {
+      LogicalExpression logicalExpression, IndexingProjector indexingProjector) {
     for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
       validateLogicalExpression(subLogicalExpression, indexingProjector);
     }
@@ -40,7 +40,7 @@ public record FilterClause(LogicalExpression logicalExpression) {
   }
 
   public void validateComparisonExpression(
-      ComparisonExpression comparisonExpression, DocumentProjector indexingProjector) {
+      ComparisonExpression comparisonExpression, IndexingProjector indexingProjector) {
     String path = comparisonExpression.getPath();
     boolean isPathIndexed =
         !indexingProjector.isIndexingDenyAll() && indexingProjector.isPathIncluded(path);
@@ -82,7 +82,7 @@ public record FilterClause(LogicalExpression logicalExpression) {
     }
   }
 
-  private void validateMap(DocumentProjector indexingProjector, Map<?, ?> map, String currentPath) {
+  private void validateMap(IndexingProjector indexingProjector, Map<?, ?> map, String currentPath) {
     for (Map.Entry<?, ?> entry : map.entrySet()) {
       String incrementalPath = currentPath + "." + entry.getKey();
       if (!indexingProjector.isPathIncluded(incrementalPath)) {
@@ -100,7 +100,7 @@ public record FilterClause(LogicalExpression logicalExpression) {
     }
   }
 
-  private void validateList(DocumentProjector indexingProjector, List<?> list, String currentPath) {
+  private void validateList(IndexingProjector indexingProjector, List<?> list, String currentPath) {
     for (Object element : list) {
       if (element instanceof Map<?, ?> map) {
         validateMap(indexingProjector, map, currentPath);
