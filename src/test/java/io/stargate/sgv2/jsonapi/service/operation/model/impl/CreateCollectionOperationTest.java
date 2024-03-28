@@ -26,7 +26,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -41,18 +40,12 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CreateCollectionOperationTest extends OperationTestBase {
 
-  private CommandContext COMMAND_CONTEXT;
+  private CommandContext COMMAND_CONTEXT =
+      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME, "CreateCollectionCommand", null);
 
   @Inject DatabaseLimitsConfig databaseLimitsConfig;
 
   @Inject ObjectMapper objectMapper;
-
-  @PostConstruct
-  public void init() {
-    COMMAND_CONTEXT =
-        new CommandContext(
-            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
-  }
 
   @Nested
   class Execute {
@@ -61,18 +54,18 @@ public class CreateCollectionOperationTest extends OperationTestBase {
         buildColumnDefs(OperationTestBase.TestColumn.ofBoolean("[applied]"));
 
     @Test
-    public void createCollection() {
-      List<Row> deleteRows =
+    public void createCollectionNoVector() {
+      List<Row> resultRows =
           Arrays.asList(new MockRow(RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
 
-      AsyncResultSet deleteResults = new MockAsyncResultSet(RESULT_COLUMNS, deleteRows, null);
+      AsyncResultSet results = new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
       final AtomicInteger schemaCounter = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
       when(queryExecutor.executeCreateSchemaChange(any()))
           .then(
               invocation -> {
                 schemaCounter.incrementAndGet();
-                return Uni.createFrom().item(deleteResults);
+                return Uni.createFrom().item(results);
               });
 
       CQLSessionCache sessionCache = mock(CQLSessionCache.class);
@@ -114,22 +107,23 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
+      // 1 create Table + 8 super shredder indexes
       assertThat(schemaCounter.get()).isEqualTo(9);
     }
 
     @Test
     public void createCollectionVector() {
-      List<Row> deleteRows =
+      List<Row> resultRows =
           Arrays.asList(new MockRow(RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
 
-      AsyncResultSet deleteResults = new MockAsyncResultSet(RESULT_COLUMNS, deleteRows, null);
+      AsyncResultSet results = new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
       final AtomicInteger schemaCounter = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
       when(queryExecutor.executeCreateSchemaChange(any()))
           .then(
               invocation -> {
                 schemaCounter.incrementAndGet();
-                return Uni.createFrom().item(deleteResults);
+                return Uni.createFrom().item(results);
               });
 
       CQLSessionCache sessionCache = mock(CQLSessionCache.class);
@@ -173,22 +167,23 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
+      // 1 create Table + 8 super shredder indexes + 1 vector index
       assertThat(schemaCounter.get()).isEqualTo(10);
     }
 
     @Test
-    public void denyAllCollection() {
-      List<Row> deleteRows =
+    public void denyAllCollectionNoVector() {
+      List<Row> resultRows =
           Arrays.asList(new MockRow(RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
 
-      AsyncResultSet deleteResults = new MockAsyncResultSet(RESULT_COLUMNS, deleteRows, null);
+      AsyncResultSet results = new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
       final AtomicInteger schemaCounter = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
       when(queryExecutor.executeCreateSchemaChange(any()))
           .then(
               invocation -> {
                 schemaCounter.incrementAndGet();
-                return Uni.createFrom().item(deleteResults);
+                return Uni.createFrom().item(results);
               });
 
       CQLSessionCache sessionCache = mock(CQLSessionCache.class);
@@ -230,22 +225,23 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
+      // 1 create Table
       assertThat(schemaCounter.get()).isEqualTo(1);
     }
 
     @Test
     public void denyAllCollectionVector() {
-      List<Row> deleteRows =
+      List<Row> resultRows =
           Arrays.asList(new MockRow(RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
 
-      AsyncResultSet deleteResults = new MockAsyncResultSet(RESULT_COLUMNS, deleteRows, null);
+      AsyncResultSet results = new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
       final AtomicInteger schemaCounter = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
       when(queryExecutor.executeCreateSchemaChange(any()))
           .then(
               invocation -> {
                 schemaCounter.incrementAndGet();
-                return Uni.createFrom().item(deleteResults);
+                return Uni.createFrom().item(results);
               });
 
       CQLSessionCache sessionCache = mock(CQLSessionCache.class);
@@ -289,6 +285,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
+      // 1 create Table + 1 vector index
       assertThat(schemaCounter.get()).isEqualTo(2);
     }
   }
