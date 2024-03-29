@@ -51,9 +51,9 @@ public class DocumentProjector {
       JsonNode projectionDefinition, boolean includeSimilarity) {
     if (projectionDefinition == null) {
       if (includeSimilarity) {
-        return identityProjectorWithSimilarity();
+        return defaultProjectorWithSimilarity();
       } else {
-        return identityProjector();
+        return defaultProjector();
       }
     }
     if (!projectionDefinition.isObject()) {
@@ -66,11 +66,11 @@ public class DocumentProjector {
     return PathCollector.collectPaths(projectionDefinition, includeSimilarity).buildProjector();
   }
 
-  public static DocumentProjector identityProjector() {
+  public static DocumentProjector defaultProjector() {
     return IDENTITY_PROJECTOR;
   }
 
-  public static DocumentProjector identityProjectorWithSimilarity() {
+  private static DocumentProjector defaultProjectorWithSimilarity() {
     return IDENTITY_PROJECTOR_WITH_SIMILARITY;
   }
 
@@ -149,7 +149,7 @@ public class DocumentProjector {
 
     public DocumentProjector buildProjector() {
       if (isIdentityProjection()) {
-        return identityProjector();
+        return defaultProjector();
       }
 
       // One more thing: do we need to add document id?

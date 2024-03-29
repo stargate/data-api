@@ -84,7 +84,7 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
       return FindOperation.vsearchSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.identityProjector(),
+          DocumentProjector.defaultProjector(),
           ReadType.DOCUMENT,
           objectMapper,
           vector);
@@ -96,7 +96,7 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
       return FindOperation.sortedSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.identityProjector(),
+          DocumentProjector.defaultProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
           ReadType.SORTED_DOCUMENT,
@@ -110,7 +110,7 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
       return FindOperation.unsortedSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.identityProjector(),
+          DocumentProjector.defaultProjector(),
           ReadType.DOCUMENT,
           objectMapper);
     }
