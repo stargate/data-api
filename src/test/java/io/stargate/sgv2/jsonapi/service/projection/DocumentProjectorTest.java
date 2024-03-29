@@ -640,6 +640,46 @@ public class DocumentProjectorTest {
     }
   }
 
+  // Special case of [data-api#1001]: include-all / exclude-all
+  @Nested
+  class ProjectorApplStarIncludeOrExclude {
+    @Test
+    public void includeAll() throws Exception {
+      final String docJson =
+          """
+                      {
+                        "_id": "docStarInclude",
+                        "value": 42,
+                        "$vector": [ 1.0, 0.5, -0.25 ]
+                      }
+                      """;
+      JsonNode doc = objectMapper.readTree(docJson);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": 1 }"));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
+    }
+
+    @Test
+    public void excludeAll() throws Exception {
+      final String docJson =
+          """
+                          {
+                            "_id": "docStarExclude",
+                            "value": 42,
+                            "$vector": [ 1.0, 0.5, -0.25 ]
+                          }
+                          """;
+      JsonNode doc = objectMapper.readTree(docJson);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": 0 }"));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree("{ }"));
+    }
+  }
+
   @Nested
   class ProjectorApplySimpleSlice {
     @Test
