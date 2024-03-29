@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.SortClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +42,7 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
   }
 
   public void validate(CommandContext commandContext) {
-    DocumentProjector indexingProjector = commandContext.indexingProjector();
+    IndexingProjector indexingProjector = commandContext.indexingProjector();
     // If nothing specified, everything indexed
     if (indexingProjector.isIdentityProjection()) {
       return;

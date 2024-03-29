@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
-import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 
 /**
  * Defines the context in which to execute the command.
@@ -58,7 +58,7 @@ public record CommandContext(
     return collectionSettings.vectorConfig().vectorEnabled();
   }
 
-  public DocumentProjector indexingProjector() {
+  public IndexingProjector indexingProjector() {
     return collectionSettings.indexingProjector();
   }
 }
