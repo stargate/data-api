@@ -123,7 +123,8 @@ public final class ThrowableToErrorMapper {
         } else if (throwable instanceof DriverException) {
           if (throwable instanceof ReadFailureException) {
             return ErrorCode.DATABASE_READ_FAILED
-                .toApiException("root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
+                .toApiException(
+                    "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
                 .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
           }
           return new CommandResult.Error(
