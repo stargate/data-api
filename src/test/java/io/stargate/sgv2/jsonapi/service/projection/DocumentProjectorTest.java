@@ -642,7 +642,7 @@ public class DocumentProjectorTest {
 
   // Special case of [data-api#1001]: include-all / exclude-all
   @Nested
-  class ProjectorApplStarIncludeOrExclude {
+  class ProjectorApplyStarIncludeOrExclude {
     @Test
     public void includeAll() throws Exception {
       final String docJson =
@@ -656,7 +656,8 @@ public class DocumentProjectorTest {
       JsonNode doc = objectMapper.readTree(docJson);
       DocumentProjector projection =
           DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": 1 }"));
-      assertThat(projection.isInclusion()).isTrue();
+      // technically considered "Exclusion" but one that excludes nothing
+      assertThat(projection.isInclusion()).isFalse();
       projection.applyProjection(doc);
       assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
     }
@@ -674,9 +675,33 @@ public class DocumentProjectorTest {
       JsonNode doc = objectMapper.readTree(docJson);
       DocumentProjector projection =
           DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": 0 }"));
+      // Technically inclusion, but one that includes absolutely nothing
       assertThat(projection.isInclusion()).isTrue();
       projection.applyProjection(doc);
       assertThat(doc).isEqualTo(objectMapper.readTree("{ }"));
+    }
+
+    @Test
+    public void failOnOddParameter() throws Exception {
+      JsonNode def = objectMapper.readTree("{\"*\": \"word\"}");
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: path ('*') value must be NUMBER or BOOLEAN, was STRING");
+    }
+
+    // Star-inclusion cannot be combined with other criteria
+    @Test
+    public void failOnStarWithOthers() throws Exception {
+      JsonNode def = objectMapper.readTree("{\"path\": 1, \"*\": 1}");
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: wildcard ('*') only allowed as the only root-level path");
     }
   }
 
