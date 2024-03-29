@@ -156,6 +156,7 @@ public enum ErrorCode {
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   INVALID_QUERY("Invalid query"),
+  DATABASE_READ_FAILED("Database read failed"),
   DRIVER_TIMEOUT("Driver timeout"),
   DRIVER_CLOSED_CONNECTION("Driver request connection is closed"),
   NO_NODE_AVAILABLE("No node was available to execute the query"),

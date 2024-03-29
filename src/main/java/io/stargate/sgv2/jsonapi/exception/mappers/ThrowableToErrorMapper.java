@@ -8,6 +8,7 @@ import com.datastax.oss.driver.api.core.auth.AuthenticationException;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
+import com.datastax.oss.driver.api.core.servererrors.ReadFailureException;
 import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import io.quarkus.security.UnauthorizedException;
@@ -120,6 +121,11 @@ public final class ThrowableToErrorMapper {
               .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
           // Unidentified Driver Exceptions, will not map into JsonApiException
         } else if (throwable instanceof DriverException) {
+          if (throwable instanceof ReadFailureException) {
+            return ErrorCode.DATABASE_READ_FAILED
+                .toApiException()
+                .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+          }
           return new CommandResult.Error(
               message, fieldsForMetricsTag, fields, Response.Status.INTERNAL_SERVER_ERROR);
         }
