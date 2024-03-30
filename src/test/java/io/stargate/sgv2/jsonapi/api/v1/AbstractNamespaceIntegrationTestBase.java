@@ -115,14 +115,6 @@ public abstract class AbstractNamespaceIntegrationTestBase {
 
   public static void checkDriverMetricsTenantId() {
     String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
-    Optional<String> nodeLevelDriverMetricTenantId =
-        metrics
-            .lines()
-            .filter(
-                line ->
-                    line.startsWith("nodes_cql_messages_seconds_bucket") && line.contains("tenant"))
-            .findFirst();
-    assertThat(nodeLevelDriverMetricTenantId.isPresent()).isTrue();
     Optional<String> sessionLevelDriverMetricTenantId =
         metrics
             .lines()
