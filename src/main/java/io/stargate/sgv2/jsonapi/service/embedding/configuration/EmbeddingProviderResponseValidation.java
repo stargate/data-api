@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.request;
+package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE;
 
