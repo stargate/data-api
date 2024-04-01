@@ -2810,7 +2810,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.vsearch(
               VECTOR_COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               2,
               2,
