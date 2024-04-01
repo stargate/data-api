@@ -640,6 +640,101 @@ public class DocumentProjectorTest {
     }
   }
 
+  // Special case of [data-api#1001]: include-all / exclude-all
+  @Nested
+  class ProjectorApplyStarIncludeOrExclude {
+    @Test
+    public void includeAll() throws Exception {
+      final String docJson =
+          """
+                      {
+                        "_id": "docStarInclude",
+                        "value": 42,
+                        "$vector": [ 1.0, 0.5, -0.25 ]
+                      }
+                      """;
+      JsonNode doc = objectMapper.readTree(docJson);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": 1 }"));
+      // technically considered "Exclusion" but one that excludes nothing
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
+
+      // Also: any other non-zero number value should be same as "1":
+      doc = objectMapper.readTree(docJson);
+      projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": 0.125 }"));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
+
+      // And finally, "true" too
+      doc = objectMapper.readTree(docJson);
+      projection = DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": true }"));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
+    }
+
+    @Test
+    public void excludeAll() throws Exception {
+      final String docJson =
+          """
+                          {
+                            "_id": "docStarExclude",
+                            "value": 42,
+                            "$vector": [ 1.0, 0.5, -0.25 ]
+                          }
+                          """;
+      JsonNode doc = objectMapper.readTree(docJson);
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": 0 }"));
+      // Technically inclusion, but one that includes absolutely nothing
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree("{ }"));
+
+      // Trailing zeroes should be same as "0":
+      doc = objectMapper.readTree(docJson);
+      projection = DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": 0.00 }"));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree("{ }"));
+
+      // And finally, "false" too
+      doc = objectMapper.readTree(docJson);
+      projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": false }"));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree("{ }"));
+    }
+
+    @Test
+    public void failOnOddParameter() throws Exception {
+      JsonNode def = objectMapper.readTree("{\"*\": \"word\"}");
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: path ('*') value must be NUMBER or BOOLEAN, was STRING");
+    }
+
+    // Star-inclusion cannot be combined with other criteria
+    @Test
+    public void failOnStarWithOthers() throws Exception {
+      JsonNode def = objectMapper.readTree("{\"path\": 1, \"*\": 1}");
+      Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
+      assertThat(t)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasMessage(
+              "Unsupported projection parameter: wildcard ('*') only allowed as the only root-level path");
+    }
+  }
+
   @Nested
   class ProjectorApplySimpleSlice {
     @Test

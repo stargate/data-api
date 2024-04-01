@@ -269,6 +269,63 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                       """));
     }
 
+    @Test
+    public void byIdIncludeAllProjection() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                "find": {
+                                  "filter" : {"_id" : "doc5"},
+                                  "projection": { "*": 1 }
+                                }
+                              }
+                              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                        {
+                            "_id": "doc5",
+                            "username": "user5",
+                            "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                        }
+                        """));
+    }
+
+    @Test
+    public void byIdExcludeAllProjection() {
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                "find": {
+                                  "filter" : {"_id" : "doc5"},
+                                  "projection": { "*": 0 }
+                                }
+                              }
+                              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]", jsonEquals("{}"));
+    }
+
     // https://github.com/stargate/jsonapi/issues/572 -- is passing empty Object for "sort" ok?
     @Test
     public void byIdEmptySort() {

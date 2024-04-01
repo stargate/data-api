@@ -131,7 +131,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               commandContext,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               20,
               20,
@@ -276,7 +276,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               2,
               2,
@@ -317,7 +317,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               2,
               2,
@@ -406,7 +406,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               2,
               2,
@@ -489,7 +489,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               1,
               2,
@@ -553,7 +553,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -607,7 +607,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               1,
               1,
@@ -671,7 +671,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -735,7 +735,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -799,7 +799,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -864,7 +864,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -929,7 +929,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -993,7 +993,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1058,7 +1058,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1119,7 +1119,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1181,7 +1181,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1252,7 +1252,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               explicitOr,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1323,7 +1323,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               explicitOr,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1387,7 +1387,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               1,
               1,
@@ -1459,7 +1459,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1527,7 +1527,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1594,7 +1594,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1661,7 +1661,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1719,7 +1719,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1882,7 +1882,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.sorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               5,
               20,
@@ -2081,7 +2081,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.sorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               5,
               20,
@@ -2261,7 +2261,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.sorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               5,
               20,
@@ -2435,7 +2435,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.sorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               5,
               20,
@@ -2564,7 +2564,7 @@ public class FindOperationTest extends OperationTestBase {
         FindOperation.sorted(
             COMMAND_CONTEXT,
             implicitAnd,
-            DocumentProjector.identityProjector(),
+            DocumentProjector.defaultProjector(),
             null,
             5,
             20,
@@ -2643,7 +2643,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.vsearch(
               VECTOR_COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               2,
               2,
@@ -2711,7 +2711,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.vsearchSingle(
               VECTOR_COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper,
               new float[] {0.25f, 0.25f, 0.25f, 0.25f});
@@ -2752,7 +2752,7 @@ public class FindOperationTest extends OperationTestBase {
             FindOperation.unsortedSingle(
                 COMMAND_CONTEXT,
                 implicitAnd1,
-                DocumentProjector.identityProjector(),
+                DocumentProjector.defaultProjector(),
                 ReadType.DOCUMENT,
                 objectMapper);
 
@@ -2769,7 +2769,7 @@ public class FindOperationTest extends OperationTestBase {
             FindOperation.unsortedSingle(
                 COMMAND_CONTEXT,
                 implicitAnd2,
-                DocumentProjector.identityProjector(),
+                DocumentProjector.defaultProjector(),
                 ReadType.DOCUMENT,
                 objectMapper);
 
@@ -2810,7 +2810,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.vsearch(
               VECTOR_COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               2,
               2,
