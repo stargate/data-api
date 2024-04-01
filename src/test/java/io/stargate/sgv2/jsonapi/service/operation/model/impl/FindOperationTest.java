@@ -9,11 +9,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.bpodgursky.jbool_expressions.Expression;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.data.CqlVector;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.servererrors.ReadFailureException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -25,6 +28,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
+import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -35,19 +39,20 @@ import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Response;
 import java.math.BigDecimal;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
@@ -2772,6 +2777,68 @@ public class FindOperationTest extends OperationTestBase {
             ExpressionBuilder.buildExpressions(operation2.logicalExpression(), null);
         assertThat(expressions1.toString()).isEqualTo(expressions2.toString());
       }
+    }
+  }
+
+  @Nested
+  class DriverException {
+    @Test
+    public void readFailureException() throws UnknownHostException {
+
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      Node coordinator = mock(Node.class);
+      ConsistencyLevel consistencyLevel = ConsistencyLevel.ONE;
+      int received = 1;
+      int blockFor = 0;
+      int numFailures = 1;
+      boolean dataPresent = false;
+      Map<InetAddress, Integer> reasonMap = new HashMap<>();
+      reasonMap.put(InetAddress.getByName("127.0.0.1"), 0x0000);
+      Mockito.when(queryExecutor.executeVectorSearch(any(), any(), anyInt()))
+          .thenThrow(
+              new ReadFailureException(
+                  coordinator,
+                  consistencyLevel,
+                  received,
+                  blockFor,
+                  numFailures,
+                  dataPresent,
+                  reasonMap));
+
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      FindOperation operation =
+          FindOperation.vsearch(
+              VECTOR_COMMAND_CONTEXT,
+              implicitAnd,
+              DocumentProjector.identityProjector(),
+              null,
+              2,
+              2,
+              ReadType.DOCUMENT,
+              objectMapper,
+              new float[] {0.25f, 0.25f, 0.25f, 0.25f});
+
+      // Throwable
+      Throwable failure =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitFailure()
+              .getFailure();
+      CommandResult.Error error =
+          ThrowableToErrorMapper.getMapperWithMessageFunction()
+              .apply(failure, failure.getMessage());
+      AssertionsForClassTypes.assertThat(error).isNotNull();
+      AssertionsForClassTypes.assertThat(error.message())
+          .isEqualTo(
+              "Cassandra failure during read query at consistency ONE (0 responses were required but only 1 replica responded, 1 failed)");
+      AssertionsForClassTypes.assertThat(error.fields().get("errorCode"))
+          .isEqualTo("DATABASE_READ_FAILED");
+      AssertionsForClassTypes.assertThat(error.fields().get("exceptionClass"))
+          .isEqualTo("JsonApiException");
+      AssertionsForClassTypes.assertThat(error.status())
+          .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
     }
   }
 
