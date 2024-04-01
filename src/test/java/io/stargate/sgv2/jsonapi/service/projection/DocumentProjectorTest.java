@@ -660,6 +660,21 @@ public class DocumentProjectorTest {
       assertThat(projection.isInclusion()).isFalse();
       projection.applyProjection(doc);
       assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
+
+      // Also: any other non-zero number value should be same as "1":
+      doc = objectMapper.readTree(docJson);
+      projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": 0.125 }"));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
+
+      // And finally, "true" too
+      doc = objectMapper.readTree(docJson);
+      projection = DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": true }"));
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
     }
 
     @Test
@@ -676,6 +691,21 @@ public class DocumentProjectorTest {
       DocumentProjector projection =
           DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": 0 }"));
       // Technically inclusion, but one that includes absolutely nothing
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree("{ }"));
+
+      // Trailing zeroes should be same as "0":
+      doc = objectMapper.readTree(docJson);
+      projection = DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": 0.00 }"));
+      assertThat(projection.isInclusion()).isTrue();
+      projection.applyProjection(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree("{ }"));
+
+      // And finally, "false" too
+      doc = objectMapper.readTree(docJson);
+      projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree("{ \"*\": false }"));
       assertThat(projection.isInclusion()).isTrue();
       projection.applyProjection(doc);
       assertThat(doc).isEqualTo(objectMapper.readTree("{ }"));
