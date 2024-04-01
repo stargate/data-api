@@ -1659,8 +1659,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
   }
 
-  private static void createVectorCollection(
-      String namespaceName, String collectionName, int vectorSize) {
+  private void createVectorCollection(String namespaceName, String collectionName, int vectorSize) {
     given()
         .headers(getHeaders())
         .contentType(ContentType.JSON)
