@@ -1,14 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -65,7 +63,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceInte
       for (int i = 1; i <= COLLECTIONS_TO_CREATE; ++i) {
         String json = createTemplate.formatted(i);
         given()
-            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+            .headers(getHeaders())
             .contentType(ContentType.JSON)
             .body(json)
             .when()
@@ -77,7 +75,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceInte
       // And then failure
       String json = createTemplate.formatted(99);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -99,7 +97,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceInte
       // But then verify that re-creating an existing one should still succeed
       // (if using same settings)
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createTemplate.formatted(1))
           .when()

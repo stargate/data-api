@@ -32,6 +32,7 @@
     <stargate.int-test.cluster.persistence>persistence-dse-next</stargate.int-test.cluster.persistence>
     <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
+    <stargate.int-test.cql.host>stargate</stargate.int-test.cql.host>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -219,6 +220,7 @@
                 <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
                 <maven.home>${maven.home}</maven.home>
+                <testing.containers.cql-host>${stargate.int-test.cql.host}</testing.containers.cql-host>
               </systemPropertyVariables>
               <includes>
                 <include>**/*IntegrationTest.*</include>
@@ -243,6 +245,17 @@
         <!-- Please update GitHub workflows that build docker images if changing image name -->
         <quarkus.container-image.name>jsonapi-native</quarkus.container-image.name>
         <quarkus.native.native-image-xmx>6G</quarkus.native.native-image-xmx>
+      </properties>
+    </profile>
+    <profile>
+      <id>dse-it</id>
+      <activation>
+        <property>
+          <name>dse-it</name>
+        </property>
+      </activation>
+      <properties>
+        <stargate.int-test.cql.host>dse</stargate.int-test.cql.host>
       </properties>
     </profile>
   </profiles>

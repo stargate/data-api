@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
+import static io.stargate.sgv2.common.IntegrationTestUtils.getCassandraPassword;
+import static io.stargate.sgv2.common.IntegrationTestUtils.getCassandraUsername;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -9,7 +11,9 @@ import static org.hamcrest.Matchers.nullValue;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -55,7 +59,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
 
     given()
         .port(getTestPort())
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(json)
         .when()
@@ -80,7 +84,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
 
     given()
         .port(getTestPort())
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(json)
         .when()
@@ -97,6 +101,29 @@ public abstract class AbstractNamespaceIntegrationTestBase {
     } catch (Exception e) {
       return Integer.parseInt(System.getProperty("quarkus.http.test-port"));
     }
+  }
+
+  protected Map<String, ?> getHeaders() {
+    if (useDseCql()) {
+      return Map.of(
+          HttpConstants.AUTHENTICATION_USER_NAME_HEADER,
+          getCassandraUsername(),
+          HttpConstants.AUTHENTICATION_PASSWORD_HEADER,
+          getCassandraPassword(),
+          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+          CustomITEmbeddingProvider.TEST_API_KEY);
+    } else {
+      return Map.of(
+          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+          getAuthToken(),
+          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+          CustomITEmbeddingProvider.TEST_API_KEY);
+    }
+  }
+
+  protected boolean useDseCql() {
+    String cqlHost = System.getProperty("testing.containers.cql-host", "stargate");
+    return "dse".equals(cqlHost);
   }
 
   public static void checkMetrics(String commandName) {

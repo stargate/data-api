@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -12,7 +11,6 @@ import static org.hamcrest.Matchers.is;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.ClassOrderer;
@@ -38,7 +36,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     public void happyPath() {
       // create first
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -57,7 +55,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
 
       // then find
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -96,7 +94,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               .formatted("collection2");
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -141,7 +139,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -158,7 +156,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     @Order(3)
     public void happyPathWithMixedCase() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -176,7 +174,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
 
       // then find
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -208,7 +206,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               .formatted(namespace);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -227,7 +225,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -248,7 +246,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               .formatted(namespace);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -275,7 +273,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -298,7 +296,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -333,7 +331,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               .formatted("collection4");
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -378,7 +376,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                   """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()

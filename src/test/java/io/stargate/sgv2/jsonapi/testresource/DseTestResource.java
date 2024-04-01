@@ -70,17 +70,28 @@ public class DseTestResource extends StargateTestResource {
         "stargate.jsonapi.embedding.custom.clazz",
         "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider");
     if (this.containerNetworkId.isPresent()) {
-      String host = System.getProperty("quarkus.grpc.clients.bridge.host");
+      String host =
+          useDseCql()
+              ? System.getProperty("stargate.int-test.cassandra.host")
+              : System.getProperty("quarkus.grpc.clients.bridge.host");
       propsBuilder.put("stargate.jsonapi.operations.database-config.cassandra-end-points", host);
     } else {
-      int port = Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP);
+      int port =
+          useDseCql()
+              ? Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP)
+              : Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP);
       propsBuilder.put(
           "stargate.jsonapi.operations.database-config.cassandra-port", String.valueOf(port));
     }
-    String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
-    if (defaultToken != null) {
-      propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);
+    if (!useDseCql()) {
+      String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
+      if (defaultToken != null) {
+        propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);
+      }
+    } else {
+      propsBuilder.put("stargate.auth.header-based.header-name", "X-Cassandra-Username");
     }
+    propsBuilder.put("stargate.data-store.ignore-bridge", "true");
     propsBuilder.put("stargate.debug.enabled", "true");
     return propsBuilder.build();
   }

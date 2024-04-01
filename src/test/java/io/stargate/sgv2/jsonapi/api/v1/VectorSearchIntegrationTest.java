@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
@@ -10,7 +9,6 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
@@ -53,7 +51,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -79,7 +77,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             }
             """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -99,7 +97,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       final int maxDimension = DocumentLimitsConfig.DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH;
       final int tooHighDimension = maxDimension + 10;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -150,7 +148,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                     }
                 """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -187,7 +185,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -217,7 +215,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -237,7 +235,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
       // Then verify it was inserted correctly
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -271,7 +269,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorSearchStr);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(findRequest)
           .when()
@@ -301,7 +299,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -330,7 +328,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -358,7 +356,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -391,7 +389,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -439,7 +437,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -470,7 +468,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -492,7 +490,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             """;
 
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(json)
         .when()
@@ -531,7 +529,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                     }
                     """;
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(json)
         .when()
@@ -570,7 +568,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -604,7 +602,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -634,7 +632,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -662,7 +660,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -691,7 +689,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -722,7 +720,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -752,7 +750,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -783,7 +781,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -820,7 +818,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -845,7 +843,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -870,7 +868,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -898,7 +896,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -927,7 +925,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -955,7 +953,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -998,7 +996,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1027,7 +1025,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1056,7 +1054,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1086,7 +1084,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1109,7 +1107,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
       // and verify we have null for it
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1143,7 +1141,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorStr);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1159,7 +1157,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
       // and verify it was set to value with expected size
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1201,7 +1199,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1229,7 +1227,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1249,7 +1247,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1276,7 +1274,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1307,7 +1305,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1330,7 +1328,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
       // and verify we have null for it
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1364,7 +1362,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorStr);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1380,7 +1378,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
       // and verify it was set to value with expected size
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1415,7 +1413,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1444,7 +1442,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1466,7 +1464,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1500,7 +1498,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorStrCount3);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(jsonVectorStrCount3)
           .when()
@@ -1528,7 +1526,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorStrCount7);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(jsonVectorStrCount7)
           .when()
@@ -1558,7 +1556,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorStrCount3);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(jsonVectorStrCount3)
           .when()
@@ -1584,7 +1582,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorStrCount7);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(jsonVectorStrCount7)
           .when()
@@ -1616,7 +1614,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1643,7 +1641,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1664,7 +1662,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
   private static void createVectorCollection(
       String namespaceName, String collectionName, int vectorSize) {
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
             """
@@ -1704,7 +1702,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     // First insert a document with a big vector
 
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
             """

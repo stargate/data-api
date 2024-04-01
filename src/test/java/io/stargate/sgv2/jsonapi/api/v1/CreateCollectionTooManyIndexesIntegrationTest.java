@@ -66,7 +66,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
       for (int i = 1; i <= COLLECTIONS_TO_CREATE; ++i) {
         String json = createTemplate.formatted(i);
         given()
-            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+            .headers(getHeaders())
             .contentType(ContentType.JSON)
             .body(json)
             .when()

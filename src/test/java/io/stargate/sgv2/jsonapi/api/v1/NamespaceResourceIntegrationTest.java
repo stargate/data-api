@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,13 +29,13 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .body(
               "errors[0].message",
               is(
-                  "Role unauthorized for operation: Missing token, expecting one in the Token header."));
+                  "Role unauthorized for operation: Missing authentication header, expecting one in the Token header."));
     }
 
     @Test
     public void malformedBody() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{wrong}")
           .when()
@@ -59,7 +57,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -84,7 +82,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -102,7 +100,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
     @Test
     public void emptyBody() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)

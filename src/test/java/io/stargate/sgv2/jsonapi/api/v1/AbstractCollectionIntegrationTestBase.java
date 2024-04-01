@@ -32,7 +32,7 @@ public abstract class AbstractCollectionIntegrationTestBase
   protected void createSimpleCollection(String collectionToCreate) {
     given()
         .port(getTestPort())
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
             """
@@ -52,7 +52,7 @@ public abstract class AbstractCollectionIntegrationTestBase
   protected void createComplexCollection(String collectionSetting) {
     given()
         .port(getTestPort())
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
             """
@@ -109,7 +109,7 @@ public abstract class AbstractCollectionIntegrationTestBase
             .formatted(docJson);
 
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(doc)
         .when()

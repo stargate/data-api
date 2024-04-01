@@ -39,7 +39,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
             }
             """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, "invalid token")
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -61,7 +61,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
                 }
                 """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, "invalid token")
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -163,7 +163,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
             }
             """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, "invalid token")
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -259,7 +259,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
             }
             """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, "invalid token")
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()

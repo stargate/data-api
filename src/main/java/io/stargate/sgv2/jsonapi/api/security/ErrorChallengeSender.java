@@ -34,7 +34,7 @@ public class ErrorChallengeSender implements ChallengeSender {
   public ErrorChallengeSender(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
     String message =
-        "Role unauthorized for operation: Missing token, expecting one in the %s header."
+        "Role unauthorized for operation: Missing authentication header, expecting one in the %s header."
             .formatted(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME);
     CommandResult.Error error =
         new CommandResult.Error(

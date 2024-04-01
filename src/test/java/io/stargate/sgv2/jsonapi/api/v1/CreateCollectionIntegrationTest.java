@@ -102,7 +102,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void duplicateNonVectorCollectionName() {
       // create a non vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createNonVectorCollectionJson)
           .when()
@@ -113,7 +113,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // recreate the same non vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createNonVectorCollectionJson)
           .when()
@@ -124,7 +124,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // create a vector collection with the same name
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createVectorCollection)
           .when()
@@ -145,7 +145,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void duplicateVectorCollectionName() {
       // create a vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createVectorCollection)
           .when()
@@ -155,7 +155,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("status.ok", is(1));
       // recreate the same vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createVectorCollection)
           .when()
@@ -165,7 +165,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("status.ok", is(1));
       // create a non vector collection with the same name
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createNonVectorCollectionJson)
           .when()
@@ -186,7 +186,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void duplicateVectorCollectionNameWithDiffSetting() {
       // create a vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createVectorCollection)
           .when()
@@ -196,7 +196,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("status.ok", is(1));
       // create another vector collection with the same name but different size setting
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createVectorCollectionWithOtherSizeSettings)
           .when()
@@ -212,7 +212,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("errors[0].exceptionClass", is("JsonApiException"));
       // create another vector collection with the same name but different function setting
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createVectorCollectionWithOtherFunctionSettings)
           .when()
@@ -252,7 +252,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // create vector collection with indexing allow option
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
@@ -263,7 +263,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // Also: should be idempotent so try creating again
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
@@ -297,7 +297,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
@@ -308,7 +308,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // Also: should be idempotent so try creating again
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
@@ -324,7 +324,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     @Test
     public void createCollectionWithIndexingStar() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -348,7 +348,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // create vector collection with indexing deny option
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -372,7 +372,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // And then check that we can't use both
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -405,7 +405,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failCreateCollectionWithIndexHavingDuplicates() {
       // create vector collection with error indexing option
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -437,7 +437,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failCreateCollectionWithIndexHavingAllowAndDeny() {
       // create vector collection with error indexing option
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -472,7 +472,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failWithInvalidNameInIndexingAllows() {
       // create a vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           // Brackets not allowed in field names
           .body(
@@ -506,7 +506,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failWithInvalidNameInIndexingDeny() {
       // create a vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               // Dollars not allowed in regular field names (can only start operators)
@@ -538,7 +538,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     @Test
     public void failWithInvalidOption() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -597,7 +597,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // create vector collection with vector service
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
@@ -608,7 +608,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // Also: should be idempotent so try creating again
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
@@ -677,7 +677,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                           """;
       // create vector collection with vector service and no dimension
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollectionWithoutDimension)
           .when()
@@ -701,7 +701,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // create vector collection with vector service and correct dimension
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollectionWithDimension)
           .when()
@@ -712,7 +712,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // Also: should be idempotent when try creating with no dimension
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollectionWithoutDimension)
           .when()
@@ -728,7 +728,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failCreateCollectionWithEmbeddingServiceNoDimension() {
       // create a collection with no dimension and service
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -761,7 +761,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failCreateCollectionWithEmbeddingServiceProviderNotSupport() {
       // create a collection with embedding service provider not support
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -808,7 +808,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failCreateCollectionWithEmbeddingServiceAuthenticationTypeUnsupported() {
       // create a collection with authentication type not support
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -857,7 +857,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failCreateCollectionWithEmbeddingServiceNoSecretName() {
       // create a collection with "SHARED_SECRET" authentication type but no 'secretName'
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -903,7 +903,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failCreateCollectionWithEmbeddingServiceNotProvideRequiredParameters() {
       // create a collection without providing required parameters
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -947,7 +947,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failCreateCollectionWithEmbeddingServiceWithUnconfiguredParameters() {
       // create a collection with unconfigured parameters
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -990,7 +990,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1036,7 +1036,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failCreateCollectionWithEmbeddingServiceWrongParameterType() {
       // create a collection with wrong parameter type
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1083,7 +1083,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failCreateCollectionWithEmbeddingServiceUnsupportedModel() {
       // create a collection with unsupported model name
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1130,7 +1130,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failCreateCollectionWithEmbeddingServiceUnmatchedVectorDimension() {
       // create a collection with unmatched vector dimension
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1176,7 +1176,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
   private void deleteCollection(String collectionName) {
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
             """

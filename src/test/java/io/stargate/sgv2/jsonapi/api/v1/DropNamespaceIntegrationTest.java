@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -9,7 +8,6 @@ import static org.hamcrest.Matchers.not;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.ClassOrderer;
@@ -40,7 +38,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
               .formatted(namespaceName);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -59,7 +57,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -94,7 +92,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
               .formatted(collection);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createNamespace)
           .when()
@@ -103,7 +101,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .statusCode(200)
           .body("status.ok", is(1));
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollection)
           .when()
@@ -123,7 +121,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
               .formatted(keyspace);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -142,7 +140,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -164,7 +162,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()

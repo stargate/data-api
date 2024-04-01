@@ -1,14 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,7 +41,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
             .formatted(DB_NAME);
 
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(json)
         .when()
@@ -69,7 +67,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
               .formatted(DB_NAME);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -92,7 +90,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
               .formatted(namespaceName);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -121,7 +119,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
               .formatted(DB_NAME);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -142,7 +140,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()

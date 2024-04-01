@@ -60,17 +60,20 @@ public abstract class StargateTestResource
       } else {
         propsBuilder = this.startWithoutContainerNetwork(reuse);
       }
+      if (!useDseCql()) {
+        Integer authPort = this.stargateContainer.getMappedPort(8081);
+        String token = this.getAuthToken(this.stargateContainer.getHost(), authPort);
+        LOG.info("Using auth token %s for integration tests.".formatted(token));
+        propsBuilder.put("stargate.int-test.auth-token", token);
+        String cqlPort = this.stargateContainer.getMappedPort(9042).toString();
+        propsBuilder.put("stargate.int-test.coordinator.cql-port", cqlPort);
+      }
 
-      Integer authPort = this.stargateContainer.getMappedPort(8081);
-      String token = this.getAuthToken(this.stargateContainer.getHost(), authPort);
-      LOG.info("Using auth token %s for integration tests.".formatted(token));
-      propsBuilder.put("stargate.int-test.auth-token", token);
       propsBuilder.put("stargate.int-test.cassandra.host", this.cassandraContainer.getHost());
       propsBuilder.put(
           "stargate.int-test.cassandra.cql-port",
           this.cassandraContainer.getMappedPort(9042).toString());
-      String cqlPort = this.stargateContainer.getMappedPort(9042).toString();
-      propsBuilder.put("stargate.int-test.coordinator.cql-port", cqlPort);
+
       propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
       // Many ITs create more Collections than default Max 5, use more than 50 indexes so:
       propsBuilder.put(
@@ -102,13 +105,18 @@ public abstract class StargateTestResource
     this.cassandraContainer = this.baseCassandraContainer(reuse);
     this.cassandraContainer.withNetwork(network);
     this.cassandraContainer.start();
-    this.stargateContainer = this.baseCoordinatorContainer(reuse);
-    this.stargateContainer.withNetwork(network).withEnv("SEED", "cassandra");
-    this.stargateContainer.start();
-    Integer bridgePort = this.stargateContainer.getMappedPort(8091);
-    ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
-    propsBuilder.put("quarkus.grpc.clients.bridge.port", String.valueOf(bridgePort));
-    return propsBuilder;
+    if (!useDseCql()) {
+      this.stargateContainer = this.baseCoordinatorContainer(reuse);
+      this.stargateContainer.withNetwork(network).withEnv("SEED", "cassandra");
+      this.stargateContainer.start();
+      Integer bridgePort = this.stargateContainer.getMappedPort(8091);
+      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
+      propsBuilder.put("quarkus.grpc.clients.bridge.port", String.valueOf(bridgePort));
+      return propsBuilder;
+    } else {
+      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
+      return propsBuilder;
+    }
   }
 
   private ImmutableMap.Builder<String, String> startWithContainerNetwork(
@@ -118,17 +126,22 @@ public abstract class StargateTestResource
     this.cassandraContainer.start();
     String cassandraHost =
         this.cassandraContainer.getCurrentContainerInfo().getConfig().getHostName();
-    this.stargateContainer = this.baseCoordinatorContainer(reuse);
-    this.stargateContainer
-        .withNetworkMode(networkId)
-        .withEnv("BIND_TO_LISTEN_ADDRESS", "true")
-        .withEnv("SEED", cassandraHost);
-    this.stargateContainer.start();
-    String stargateHost =
-        this.stargateContainer.getCurrentContainerInfo().getConfig().getHostName();
-    ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
-    propsBuilder.put("quarkus.grpc.clients.bridge.host", stargateHost);
-    return propsBuilder;
+    if (!useDseCql()) {
+      this.stargateContainer = this.baseCoordinatorContainer(reuse);
+      this.stargateContainer
+          .withNetworkMode(networkId)
+          .withEnv("BIND_TO_LISTEN_ADDRESS", "true")
+          .withEnv("SEED", cassandraHost);
+      this.stargateContainer.start();
+      String stargateHost =
+          this.stargateContainer.getCurrentContainerInfo().getConfig().getHostName();
+      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
+      propsBuilder.put("quarkus.grpc.clients.bridge.host", stargateHost);
+      return propsBuilder;
+    } else {
+      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
+      return propsBuilder;
+    }
   }
 
   public void stop() {
@@ -231,6 +244,13 @@ public abstract class StargateTestResource
     return "true".equals(dse);
   }
 
+  protected boolean useDseCql() {
+    System.out.println(
+        "testing.containers.cql-host: " + System.getProperty("testing.containers.cql-host"));
+    String cqlHost = System.getProperty("testing.containers.cql-host", Defaults.CQL_HOST);
+    return "dse".equals(cqlHost);
+  }
+
   private Duration getCassandraStartupTimeout() {
     long cassandraStartupTimeout = Long.getLong("testing.containers.cassandra-startup-timeout", 2L);
     return Duration.ofMinutes(cassandraStartupTimeout);
@@ -279,6 +299,8 @@ public abstract class StargateTestResource
     String CLUSTER_NAME = "int-test-cluster";
     String PERSISTENCE_MODULE = "persistence-cassandra-4.0";
     String CLUSTER_DSE = null;
+
+    String CQL_HOST = "stargate";
     long CASSANDRA_STARTUP_TIMEOUT = 2L;
     long COORDINATOR_STARTUP_TIMEOUT = 3L;
   }
