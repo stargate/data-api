@@ -7,10 +7,7 @@ import com.datastax.oss.driver.api.core.NoNodeAvailableException;
 import com.datastax.oss.driver.api.core.auth.AuthenticationException;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.metadata.Node;
-import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
-import com.datastax.oss.driver.api.core.servererrors.ReadFailureException;
-import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
-import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
+import com.datastax.oss.driver.api.core.servererrors.*;
 import io.quarkus.security.UnauthorizedException;
 import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -45,94 +42,138 @@ public final class ThrowableToErrorMapper {
         final Map<String, Object> fieldsForMetricsTag =
             Map.of("exceptionClass", throwable.getClass().getSimpleName());
 
-        // Authentication Failure -> ErrorCode.UNAUTHORIZED_REQUEST
-        if (throwable instanceof UnauthorizedException
-            || throwable
-                instanceof com.datastax.oss.driver.api.core.servererrors.UnauthorizedException) {
+        // UnauthorizedException from quarkus
+        if (throwable instanceof UnauthorizedException) {
           return ErrorCode.UNAUTHENTICATED_REQUEST
               .toApiException()
               .getCommandResultError(
                   ErrorCode.UNAUTHENTICATED_REQUEST.getMessage(), Response.Status.UNAUTHORIZED);
-          // Driver QueryValidationException -> ErrorCode.INVALID_QUERY
-        } else if (throwable instanceof QueryValidationException) {
-          if (message.contains("vector<float,")) {
-            message = "Mismatched vector dimension";
-          }
-          if (message.contains(
-                  "If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING")
-              || message.contains("ANN ordering by vector requires the column to be indexed")) {
-            return ErrorCode.NO_INDEX_ERROR
-                .toApiException()
-                .getCommandResultError(ErrorCode.NO_INDEX_ERROR.getMessage(), Response.Status.OK);
-          }
-          return ErrorCode.INVALID_QUERY
-              .toApiException()
-              .getCommandResultError(message, Response.Status.OK);
-          // Driver Timeout Exception -> ErrorCode.OPERATION_TIMEOUT
-        } else if (throwable instanceof DriverTimeoutException
-            || throwable instanceof WriteTimeoutException
-            || throwable instanceof ReadTimeoutException) {
-          return ErrorCode.DRIVER_TIMEOUT
-              .toApiException()
-              .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-          // Driver AllNodesFailedException a composite exception
-          // peeling the errors from it
-        } else if (throwable instanceof AllNodesFailedException) {
-          Map<Node, List<Throwable>> nodewiseErrors =
-              ((AllNodesFailedException) throwable).getAllErrors();
-          if (!nodewiseErrors.isEmpty()) {
-            List<Throwable> errors = nodewiseErrors.values().iterator().next();
-            if (errors != null && !errors.isEmpty()) {
-              Throwable error =
-                  errors.stream()
-                      .findAny()
-                      .filter(
-                          t ->
-                              t instanceof AuthenticationException
-                                  || t instanceof IllegalArgumentException
-                                  || t instanceof NoNodeAvailableException)
-                      .orElse(null);
-              // connect to oss cassandra throws AuthenticationException for invalid credentials
-              // connect to AstraDB throws IllegalArgumentException for invalid token/credentials
-              if (error instanceof AuthenticationException
-                  || (error instanceof IllegalArgumentException
-                      && (error.getMessage().contains("AUTHENTICATION ERROR")
-                          || error
-                              .getMessage()
-                              .contains(
-                                  "Provided username token and/or password are incorrect")))) {
-                return ErrorCode.UNAUTHENTICATED_REQUEST
-                    .toApiException()
-                    .getCommandResultError(
-                        ErrorCode.UNAUTHENTICATED_REQUEST.getMessage(),
-                        Response.Status.UNAUTHORIZED);
-                // Driver NoNodeAvailableException -> ErrorCode.NO_NODE_AVAILABLE
-              } else if (error instanceof NoNodeAvailableException) {
-                return ErrorCode.NO_NODE_AVAILABLE
-                    .toApiException()
-                    .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-              }
-            }
-          }
-          // Driver ClosedConnectionException -> ErrorCode.DRIVER_CLOSED_CONNECTION
-        } else if (throwable instanceof ClosedConnectionException) {
-          return ErrorCode.DRIVER_CLOSED_CONNECTION
-              .toApiException()
-              .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-          // Unidentified Driver Exceptions, will not map into JsonApiException
-        } else if (throwable instanceof DriverException) {
-          if (throwable instanceof ReadFailureException) {
-            return ErrorCode.DATABASE_READ_FAILED
-                .toApiException(
-                    "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
-                .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-          }
-          return new CommandResult.Error(
-              message, fieldsForMetricsTag, fields, Response.Status.INTERNAL_SERVER_ERROR);
         }
 
+        // handle all driver exceptions
+        if (throwable instanceof DriverException) {
+          return handleDriverException(
+              (DriverException) throwable, message, fields, fieldsForMetricsTag);
+        }
+
+        // handle all other exceptions
         return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
       };
+
+  private static CommandResult.Error handleDriverException(
+      DriverException throwable,
+      String message,
+      Map<String, Object> fields,
+      Map<String, Object> fieldsForMetricsTag) {
+    return switch (throwable) {
+      case AllNodesFailedException e -> handleAllNodesFailedException(
+          e, message, fields, fieldsForMetricsTag);
+      case ClosedConnectionException e -> ErrorCode.DRIVER_CLOSED_CONNECTION
+          .toApiException()
+          .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+      case CoordinatorException e -> handleCoordinatorException(e, message);
+      case DriverTimeoutException e -> ErrorCode.DRIVER_TIMEOUT
+          .toApiException()
+          .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+      default -> ErrorCode.DRIVER_FAILURE
+          .toApiException(
+              "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
+          .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+    };
+  }
+
+  private static CommandResult.Error handleCoordinatorException(
+      CoordinatorException throwable, String message) {
+      return switch (throwable) {
+          case QueryValidationException e -> handleQueryValidationException(e, message);
+          case QueryExecutionException e -> handleQueryExecutionException(e, message);
+          default -> ErrorCode.COORDINATOR_FAILURE.toApiException("root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage()).getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+      };
+  }
+
+  private static CommandResult.Error handleQueryExecutionException(
+      QueryExecutionException throwable, String message) {
+      return switch (throwable) {
+          case QueryConsistencyException e -> {
+              if (e instanceof WriteTimeoutException || e instanceof ReadTimeoutException) {
+                  yield ErrorCode.DRIVER_TIMEOUT.toApiException().getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+              } else if (e instanceof ReadFailureException) {
+                  yield ErrorCode.DATABASE_READ_FAILED.toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage()).getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+              } else {
+                  yield ErrorCode.QUERY_CONSISTENCY_FAILURE.toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage()).getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+              }
+          }
+          default -> ErrorCode.QUERY_EXECUTION_FAILURE.toApiException("root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage()).getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+      };
+  }
+
+  private static CommandResult.Error handleQueryValidationException(
+      QueryValidationException throwable, String message) {
+    if (throwable instanceof com.datastax.oss.driver.api.core.servererrors.UnauthorizedException) {
+      return ErrorCode.UNAUTHENTICATED_REQUEST
+          .toApiException()
+          .getCommandResultError(
+              ErrorCode.UNAUTHENTICATED_REQUEST.getMessage(), Response.Status.UNAUTHORIZED);
+    } else if (message.contains(
+            "If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING")
+        || message.contains("ANN ordering by vector requires the column to be indexed")) {
+      return ErrorCode.NO_INDEX_ERROR
+          .toApiException()
+          .getCommandResultError(ErrorCode.NO_INDEX_ERROR.getMessage(), Response.Status.OK);
+    }
+    String errorMessage = message.contains("vector<float,") ? "Mismatched vector dimension" : message;
+      return ErrorCode.INVALID_QUERY
+        .toApiException()
+        .getCommandResultError(errorMessage, Response.Status.OK);
+  }
+
+  /**
+   * Driver AllNodesFailedException a composite exception, peeling the errors from it
+   *
+   * @param throwable
+   * @param message
+   * @return
+   */
+  private static CommandResult.Error handleAllNodesFailedException(
+      AllNodesFailedException throwable,
+      String message,
+      Map<String, Object> fields,
+      Map<String, Object> fieldsForMetricsTag) {
+    Map<Node, List<Throwable>> nodewiseErrors = throwable.getAllErrors();
+    if (!nodewiseErrors.isEmpty()) {
+      List<Throwable> errors = nodewiseErrors.values().iterator().next();
+      if (errors != null && !errors.isEmpty()) {
+        Throwable error =
+            errors.stream()
+                .findAny()
+                .filter(
+                    t ->
+                        t instanceof AuthenticationException
+                            || t instanceof IllegalArgumentException
+                            || t instanceof NoNodeAvailableException)
+                .orElse(null);
+        // connect to oss cassandra throws AuthenticationException for invalid credentials
+        // connect to AstraDB throws IllegalArgumentException for invalid token/credentials
+        if (error instanceof AuthenticationException
+            || (error instanceof IllegalArgumentException
+                && (error.getMessage().contains("AUTHENTICATION ERROR")
+                    || error
+                        .getMessage()
+                        .contains("Provided username token and/or password are incorrect")))) {
+          return ErrorCode.UNAUTHENTICATED_REQUEST
+              .toApiException()
+              .getCommandResultError(
+                  ErrorCode.UNAUTHENTICATED_REQUEST.getMessage(), Response.Status.UNAUTHORIZED);
+          // Driver NoNodeAvailableException -> ErrorCode.NO_NODE_AVAILABLE
+        } else if (error instanceof NoNodeAvailableException) {
+          return ErrorCode.NO_NODE_AVAILABLE
+              .toApiException()
+              .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+        }
+      }
+    }
+    return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
+  }
 
   private static final Function<Throwable, CommandResult.Error> MAPPER =
       throwable -> {

@@ -165,7 +165,11 @@ public enum ErrorCode {
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
   INVALID_SCHEMA_VERSION(
       "Collection has invalid schema version. Recommend re-creating the collection"),
-  INVALID_ID_TYPE("Invalid Id type");
+  INVALID_ID_TYPE("Invalid Id type"),
+  QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
+  QUERY_EXECUTION_FAILURE("Database query execution failed"),
+  COORDINATOR_FAILURE("Coordinator failed"),
+  DRIVER_FAILURE("Driver failed");
 
   private final String message;
 
