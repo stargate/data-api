@@ -84,27 +84,39 @@ public final class ThrowableToErrorMapper {
 
   private static CommandResult.Error handleCoordinatorException(
       CoordinatorException throwable, String message) {
-      return switch (throwable) {
-          case QueryValidationException e -> handleQueryValidationException(e, message);
-          case QueryExecutionException e -> handleQueryExecutionException(e, message);
-          default -> ErrorCode.COORDINATOR_FAILURE.toApiException("root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage()).getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-      };
+    return switch (throwable) {
+      case QueryValidationException e -> handleQueryValidationException(e, message);
+      case QueryExecutionException e -> handleQueryExecutionException(e, message);
+      default -> ErrorCode.COORDINATOR_FAILURE
+          .toApiException(
+              "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
+          .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+    };
   }
 
   private static CommandResult.Error handleQueryExecutionException(
       QueryExecutionException throwable, String message) {
-      return switch (throwable) {
-          case QueryConsistencyException e -> {
-              if (e instanceof WriteTimeoutException || e instanceof ReadTimeoutException) {
-                  yield ErrorCode.DRIVER_TIMEOUT.toApiException().getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-              } else if (e instanceof ReadFailureException) {
-                  yield ErrorCode.DATABASE_READ_FAILED.toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage()).getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-              } else {
-                  yield ErrorCode.QUERY_CONSISTENCY_FAILURE.toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage()).getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-              }
-          }
-          default -> ErrorCode.QUERY_EXECUTION_FAILURE.toApiException("root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage()).getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-      };
+    return switch (throwable) {
+      case QueryConsistencyException e -> {
+        if (e instanceof WriteTimeoutException || e instanceof ReadTimeoutException) {
+          yield ErrorCode.DRIVER_TIMEOUT
+              .toApiException()
+              .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+        } else if (e instanceof ReadFailureException) {
+          yield ErrorCode.DATABASE_READ_FAILED
+              .toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage())
+              .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+        } else {
+          yield ErrorCode.QUERY_CONSISTENCY_FAILURE
+              .toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage())
+              .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+        }
+      }
+      default -> ErrorCode.QUERY_EXECUTION_FAILURE
+          .toApiException(
+              "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
+          .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+    };
   }
 
   private static CommandResult.Error handleQueryValidationException(
@@ -121,8 +133,9 @@ public final class ThrowableToErrorMapper {
           .toApiException()
           .getCommandResultError(ErrorCode.NO_INDEX_ERROR.getMessage(), Response.Status.OK);
     }
-    String errorMessage = message.contains("vector<float,") ? "Mismatched vector dimension" : message;
-      return ErrorCode.INVALID_QUERY
+    String errorMessage =
+        message.contains("vector<float,") ? "Mismatched vector dimension" : message;
+    return ErrorCode.INVALID_QUERY
         .toApiException()
         .getCommandResultError(errorMessage, Response.Status.OK);
   }
