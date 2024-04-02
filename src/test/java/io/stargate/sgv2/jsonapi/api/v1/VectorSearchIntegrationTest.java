@@ -601,7 +601,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -634,7 +634,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()

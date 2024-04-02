@@ -270,7 +270,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     @Test
     public void byIdIncludeAllProjection() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -303,7 +303,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     @Test
     public void byIdExcludeAllProjection() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
