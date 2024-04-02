@@ -121,6 +121,24 @@ public abstract class AbstractNamespaceIntegrationTestBase {
     }
   }
 
+  protected Map<String, ?> getInvalidHeaders() {
+    if (useDseCql()) {
+      return Map.of(
+          HttpConstants.AUTHENTICATION_USER_NAME_HEADER,
+          "invalid",
+          HttpConstants.AUTHENTICATION_PASSWORD_HEADER,
+          getCassandraPassword(),
+          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+          CustomITEmbeddingProvider.TEST_API_KEY);
+    } else {
+      return Map.of(
+          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+          "invalid",
+          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+          CustomITEmbeddingProvider.TEST_API_KEY);
+    }
+  }
+
   protected boolean useDseCql() {
     String cqlHost = System.getProperty("testing.containers.cql-host", "stargate");
     return "dse".equals(cqlHost);

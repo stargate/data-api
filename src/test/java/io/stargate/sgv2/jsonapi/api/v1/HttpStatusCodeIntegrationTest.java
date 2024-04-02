@@ -37,7 +37,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
             }
             """;
       given()
-          .headers(getHeaders())
+          .headers(getInvalidHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -59,7 +59,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
                 }
                 """;
       given()
-          .headers(getHeaders())
+          .headers(getInvalidHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -161,7 +161,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
             }
             """;
       given()
-          .headers(getHeaders())
+          .headers(getInvalidHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -257,7 +257,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
             }
             """;
       given()
-          .headers(getHeaders())
+          .headers(getInvalidHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()

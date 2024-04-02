@@ -171,16 +171,16 @@ public class CQLSessionCache {
   private SessionCacheKey getSessionCacheKey() {
     switch (operationsConfig.databaseConfig().type()) {
       case CASSANDRA -> {
-        if (dataApiRequestInfo.getCassandraToken().isPresent()) {
-          return new SessionCacheKey(
-              dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
-              new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
-        } else if (dataApiRequestInfo.getCassandraCredentials().isPresent()) {
+        if (dataApiRequestInfo.getCassandraCredentials().isPresent()) {
           return new SessionCacheKey(
               dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
               new UsernamePasswordCredentials(
                   dataApiRequestInfo.getCassandraCredentials().get().userName(),
                   dataApiRequestInfo.getCassandraCredentials().get().password()));
+        } else if (dataApiRequestInfo.getCassandraToken().isPresent()) {
+          return new SessionCacheKey(
+              dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
+              new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
         } else {
           throw new RuntimeException(
               "Missing/Invalid authentication credentials provided for type: "
