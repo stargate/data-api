@@ -163,7 +163,7 @@ public abstract class StargateTestResource
             .withEnv("CASSANDRA_CGROUP_MEMORY_LIMIT", "true")
             .withEnv(
                 "JVM_EXTRA_OPTS",
-                "-Dcassandra.authenticator=PasswordAuthenticator -Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8")
+                "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8")
             .withNetworkAliases(new String[] {"cassandra"})
             .withExposedPorts(new Integer[] {7000, 9042})
             .withLogConsumer(
@@ -173,15 +173,10 @@ public abstract class StargateTestResource
             .withStartupTimeout(this.getCassandraStartupTimeout())
             .withReuse(reuse);
     if (this.isDse()) {
-      container
-          .withEnv("CLUSTER_NAME", getClusterName())
-          .withEnv("DS_LICENSE", "accept")
-          .withEnv("AUTHENTICATOR", "PasswordAuthenticator")
-          .withEnv("CASSANDRA_AUTHENTICATOR", "PasswordAuthenticator");
+      container.withEnv("CLUSTER_NAME", getClusterName()).withEnv("DS_LICENSE", "accept");
+
     } else {
-      container
-          .withEnv("CASSANDRA_CLUSTER_NAME", getClusterName())
-          .withEnv("CASSANDRA_AUTHENTICATOR", "PasswordAuthenticator");
+      container.withEnv("CASSANDRA_CLUSTER_NAME", getClusterName());
     }
 
     return container;

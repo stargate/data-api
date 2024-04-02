@@ -93,6 +93,8 @@ public class DseTestResource extends StargateTestResource {
     }
     propsBuilder.put("stargate.data-store.ignore-bridge", "true");
     propsBuilder.put("stargate.debug.enabled", "true");
+    // Reduce the delay for ITs
+    propsBuilder.put("stargate.jsonapi.operations.database-config.ddl-delay-millis", "50");
     return propsBuilder.build();
   }
 }
