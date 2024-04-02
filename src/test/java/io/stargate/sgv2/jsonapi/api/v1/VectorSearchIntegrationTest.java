@@ -601,7 +601,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                           """;
 
       given()
-              .headers(getHeaders())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -634,7 +634,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               """;
 
       given()
-              .headers(getHeaders())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
