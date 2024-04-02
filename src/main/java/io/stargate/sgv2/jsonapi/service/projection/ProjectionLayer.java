@@ -51,16 +51,20 @@ class ProjectionLayer {
   }
 
   public static ProjectionLayer buildLayersForProjection(
-      Collection<String> dotPaths, List<SliceDef> slices, boolean addDocId) {
-    return buildLayers(dotPaths, slices, true, addDocId);
+      Collection<String> dotPaths, List<SliceDef> slices, boolean addDocId, boolean add$vector) {
+    return buildLayers(dotPaths, slices, true, addDocId, add$vector);
   }
 
   public static ProjectionLayer buildLayersForIndexing(Collection<String> dotPaths) {
-    return buildLayers(dotPaths, Collections.emptyList(), false, false);
+    return buildLayers(dotPaths, Collections.emptyList(), false, false, false);
   }
 
   private static ProjectionLayer buildLayers(
-      Collection<String> dotPaths, List<SliceDef> slices, boolean failOnOverlap, boolean addDocId) {
+      Collection<String> dotPaths,
+      List<SliceDef> slices,
+      boolean failOnOverlap,
+      boolean addDocId,
+      boolean add$vector) {
     // Root is always branch (not terminal):
     ProjectionLayer root = new ProjectionLayer("", false);
     for (String fullPath : dotPaths) {
@@ -82,6 +86,13 @@ class ProjectionLayer {
           DocumentConstants.Fields.DOC_ID,
           root,
           new String[] {DocumentConstants.Fields.DOC_ID});
+    }
+    if (add$vector) {
+      buildPath(
+          failOnOverlap,
+          DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+          root,
+          new String[] {DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD});
     }
     return root;
   }

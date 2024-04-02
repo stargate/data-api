@@ -179,6 +179,8 @@ public class DocumentProjector {
 
     private Boolean idInclusion = null;
 
+    private Boolean $vectorInclusion = null;
+
     /** Whether similarity score is needed. */
     private final boolean includeSimilarityScore;
 
@@ -197,17 +199,25 @@ public class DocumentProjector {
 
       // One more thing: do we need to add document id?
       if (inclusions > 0) { // inclusion-based projection
-        // doc-id included unless explicitly excluded
         return new DocumentProjector(
             ProjectionLayer.buildLayersForProjection(
-                paths, slices, !Boolean.FALSE.equals(idInclusion)),
+                paths,
+                slices,
+                // doc-id included unless explicitly excluded
+                !Boolean.FALSE.equals(idInclusion),
+                // $vector only included if explicitly included
+                Boolean.TRUE.equals($vectorInclusion)),
             true,
             includeSimilarityScore);
       } else { // exclusion-based
-        // doc-id excluded only if explicitly excluded
         return new DocumentProjector(
             ProjectionLayer.buildLayersForProjection(
-                paths, slices, Boolean.FALSE.equals(idInclusion)),
+                paths,
+                slices,
+                // doc-id excluded only if explicitly excluded
+                Boolean.FALSE.equals(idInclusion),
+                // $vector excluded unless explicitly included
+                !Boolean.TRUE.equals($vectorInclusion)),
             false,
             includeSimilarityScore);
       }
@@ -340,6 +350,8 @@ public class DocumentProjector {
     private void addExclusion(String path) {
       if (DocumentConstants.Fields.DOC_ID.equals(path)) {
         idInclusion = false;
+      } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
+        $vectorInclusion = false;
       } else {
         // Must not mix exclusions and inclusions
         if (inclusions > 0) {
@@ -358,6 +370,8 @@ public class DocumentProjector {
     private void addInclusion(String path) {
       if (DocumentConstants.Fields.DOC_ID.equals(path)) {
         idInclusion = true;
+      } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
+        $vectorInclusion = true;
       } else {
         // Must not mix exclusions and inclusions
         if (exclusions > 0) {
