@@ -588,6 +588,69 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
     @Test
     @Order(3)
+    public void happyPathWithIncludeAll() {
+      String json =
+          """
+                          {
+                            "find": {
+                              "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                              "projection" : {"*" : 1},
+                              "options" : {
+                                  "limit" : 5
+                              }
+                            }
+                          }
+                          """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents[0]._id", is("3"))
+          .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[1]._id", is("2"))
+          .body("data.documents[1].$vector", is(notNullValue()))
+          .body("data.documents[2]._id", is("1"))
+          .body("data.documents[2].$vector", is(notNullValue()));
+    }
+
+    @Test
+    @Order(4)
+    public void happyPathWithExcludeAll() {
+      String json =
+          """
+              {
+                "find": {
+                  "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                  "projection" : {"*" : 0},
+                  "options" : {
+                      "limit" : 2
+                  }
+                }
+              }
+              """;
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(2))
+          .body("data.documents[0]", jsonEquals("{}"))
+          .body("data.documents[1]", jsonEquals("{}"));
+    }
+
+    @Test
+    @Order(5)
     public void happyPathWithFilter() {
       String json =
           """
@@ -617,7 +680,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(3)
+    @Order(6)
     public void happyPathWithInFilter() {
       String json =
           """
@@ -675,7 +738,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(4)
+    @Order(7)
     public void happyPathWithEmptyVector() {
       String json =
           """
@@ -706,7 +769,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(5)
+    @Order(8)
     public void happyPathWithInvalidData() {
       String json =
           """
@@ -736,7 +799,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(6)
+    @Order(9)
     public void limitError() {
       String json =
           """
@@ -767,7 +830,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(7)
+    @Order(10)
     public void skipError() {
       String json =
           """

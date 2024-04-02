@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -22,11 +23,23 @@ public class DocumentProjector {
    * No-op projector that does not modify documents. Considered "exclusion" projector since "no
    * exclusions" is conceptually what happens ("no inclusions" would drop all content)
    */
-  private static final DocumentProjector IDENTITY_PROJECTOR =
+  private static final DocumentProjector DEFAULT_PROJECTOR =
       new DocumentProjector(null, false, false);
 
-  private static final DocumentProjector IDENTITY_PROJECTOR_WITH_SIMILARITY =
+  private static final DocumentProjector DEFAULT_PROJECTOR_WITH_SIMILARITY =
       new DocumentProjector(null, false, true);
+
+  private static final DocumentProjector INCLUDE_ALL_PROJECTOR =
+      new DocumentProjector(null, false, false);
+
+  private static final DocumentProjector INCLUDE_ALL_PROJECTOR_WITH_SIMILARITY =
+      new DocumentProjector(null, false, true);
+
+  private static final DocumentProjector EXCLUDE_ALL_PROJECTOR =
+      new DocumentProjector(null, true, false);
+
+  private static final DocumentProjector EXCLUDE_ALL_PROJECTOR_WITH_SIMILARITY =
+      new DocumentProjector(null, true, true);
 
   private final ProjectionLayer rootLayer;
 
@@ -43,18 +56,22 @@ public class DocumentProjector {
     this.includeSimilarityScore = includeSimilarityScore;
   }
 
+  public static DocumentProjector defaultProjector() {
+    return DEFAULT_PROJECTOR;
+  }
+
   public static DocumentProjector createFromDefinition(JsonNode projectionDefinition) {
     return createFromDefinition(projectionDefinition, false);
   }
 
   public static DocumentProjector createFromDefinition(
       JsonNode projectionDefinition, boolean includeSimilarity) {
-    if (projectionDefinition == null) {
+    // First special case: "simple" default projection
+    if (projectionDefinition == null || projectionDefinition.isEmpty()) {
       if (includeSimilarity) {
-        return identityProjectorWithSimilarity();
-      } else {
-        return identityProjector();
+        return DEFAULT_PROJECTOR_WITH_SIMILARITY;
       }
+      return DEFAULT_PROJECTOR;
     }
     if (!projectionDefinition.isObject()) {
       throw new JsonApiException(
@@ -63,15 +80,36 @@ public class DocumentProjector {
               + ": definition must be OBJECT, was "
               + projectionDefinition.getNodeType());
     }
+    // Special cases: "star-include/exclude"
+    if (projectionDefinition.size() == 1) {
+      Map.Entry<String, JsonNode> entry = projectionDefinition.fields().next();
+      if ("*".equals(entry.getKey())) {
+        boolean includeAll = extractIncludeOrExclude(entry.getKey(), entry.getValue());
+        if (includeAll) {
+          return includeSimilarity ? INCLUDE_ALL_PROJECTOR_WITH_SIMILARITY : INCLUDE_ALL_PROJECTOR;
+        }
+        return includeSimilarity ? EXCLUDE_ALL_PROJECTOR_WITH_SIMILARITY : EXCLUDE_ALL_PROJECTOR;
+      }
+    }
     return PathCollector.collectPaths(projectionDefinition, includeSimilarity).buildProjector();
   }
 
-  public static DocumentProjector identityProjector() {
-    return IDENTITY_PROJECTOR;
-  }
-
-  public static DocumentProjector identityProjectorWithSimilarity() {
-    return IDENTITY_PROJECTOR_WITH_SIMILARITY;
+  private static boolean extractIncludeOrExclude(String path, JsonNode value) {
+    if (value.isNumber()) {
+      // "0" means exclude (like false); any other number include
+      return !BigDecimal.ZERO.equals(value.decimalValue());
+    }
+    if (value.isBoolean()) {
+      return value.booleanValue();
+    }
+    // Unknown JSON node type; error
+    throw new JsonApiException(
+        ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
+        ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+            + ": path ('"
+            + path
+            + "') value must be NUMBER or BOOLEAN, was "
+            + value.getNodeType());
   }
 
   public boolean isInclusion() {
@@ -87,7 +125,12 @@ public class DocumentProjector {
   }
 
   public void applyProjection(JsonNode document, Float similarityScore) {
-    if (rootLayer == null) { // null -> identity projection (no-op)
+    // null -> either include-add or exclude-all; but logic may seem counter-intuitive
+    if (rootLayer == null) {
+      if (inclusion) { // exclude-all
+        ((ObjectNode) document).removeAll();
+      }
+      // In either case, we may need to add similarity score if present
       if (includeSimilarityScore && similarityScore != null) {
         ((ObjectNode) document)
             .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
@@ -148,8 +191,8 @@ public class DocumentProjector {
     }
 
     public DocumentProjector buildProjector() {
-      if (isIdentityProjection()) {
-        return identityProjector();
+      if (isDefaultProjection()) {
+        return defaultProjector();
       }
 
       // One more thing: do we need to add document id?
@@ -172,7 +215,7 @@ public class DocumentProjector {
      * Accessor to use for checking if collected paths indicate "empty" (no-operation) projection:
      * if so, caller can avoid actual construction or evaluation.
      */
-    boolean isIdentityProjection() {
+    boolean isDefaultProjection() {
       // Only the case if we have no non-doc-id inclusions/exclusions AND
       // doc-id is included (by default or explicitly)
       return paths.isEmpty() && slices.isEmpty() && !Boolean.FALSE.equals(idInclusion);
@@ -215,6 +258,13 @@ public class DocumentProjector {
           continue;
         }
 
+        // Special rule for "*": only allowed as single root-level entry;
+        if ("*".equals(path)) {
+          throw new JsonApiException(
+              ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
+              ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+                  + ": wildcard ('*') only allowed as the only root-level path");
+        }
         if (parentPath != null) {
           path = parentPath + "." + path;
         }

@@ -134,7 +134,7 @@ public class FindOneCommandResolverTest {
                 float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(1);
                 assertThat(find.limit()).isEqualTo(1);
                 assertThat(find.pageState()).isNull();
