@@ -33,6 +33,33 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
 
     @Test
     @Order(1)
+    /**
+     * The keyspace that exists when database is created, and check if there is no collection in
+     * this default keyspace.
+     */
+    public void checkNamespaceHasNoCollections() {
+      // then find
+      String json =
+          """
+              {
+                "findCollections": {
+                }
+              }
+              """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.collections", hasSize(0));
+    }
+
+    @Test
+    @Order(2)
     public void happyPath() {
       // create first
       given()
@@ -72,7 +99,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     }
 
     @Test
-    @Order(2)
+    @Order(3)
     public void happyPathWithExplain() {
       String json =
           """
@@ -153,7 +180,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     }
 
     @Test
-    @Order(3)
+    @Order(4)
     public void happyPathWithMixedCase() {
       given()
           .headers(getHeaders())
@@ -191,7 +218,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     public void emptyNamespace() {
       // create namespace first
       String namespace = "nam" + RandomStringUtils.randomNumeric(16);
@@ -254,33 +281,6 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
-    }
-
-    @Test
-    @Order(5)
-    /**
-     * The keyspace that exists when database is created, and check if there is no collection in
-     * this default keyspace.
-     */
-    public void checkNamespaceHasNoCollections() {
-      // then find
-      String json =
-          """
-          {
-            "findCollections": {
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(NamespaceResource.BASE_PATH, "data_endpoint_auth")
-          .then()
-          .statusCode(200)
-          .body("status.collections", hasSize(0));
     }
 
     @Test
