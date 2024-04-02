@@ -125,7 +125,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext())
                     .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
                 assertThat(find.pageState()).isNull();
@@ -617,7 +617,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext())
                     .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(1);
                 assertThat(find.limit()).isEqualTo(1);
                 assertThat(find.pageState()).isNull();

@@ -58,7 +58,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         false,
         upsert,
         shredder,
-        DocumentProjector.identityProjector(),
+        DocumentProjector.defaultProjector(),
         operationsConfig.maxDocumentUpdateCount(),
         operationsConfig.lwt().retries());
   }
@@ -68,7 +68,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
     return FindOperation.unsorted(
         commandContext,
         logicalExpression,
-        DocumentProjector.identityProjector(),
+        DocumentProjector.defaultProjector(),
         null != command.options() ? command.options().pageState() : null,
         Integer.MAX_VALUE,
         operationsConfig.defaultPageSize(),
