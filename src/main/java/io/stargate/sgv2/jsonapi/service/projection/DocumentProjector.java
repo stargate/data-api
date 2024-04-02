@@ -199,13 +199,15 @@ public class DocumentProjector {
       if (inclusions > 0) { // inclusion-based projection
         // doc-id included unless explicitly excluded
         return new DocumentProjector(
-            ProjectionLayer.buildLayersNoOverlap(paths, slices, !Boolean.FALSE.equals(idInclusion)),
+            ProjectionLayer.buildLayersForProjection(
+                paths, slices, !Boolean.FALSE.equals(idInclusion)),
             true,
             includeSimilarityScore);
       } else { // exclusion-based
         // doc-id excluded only if explicitly excluded
         return new DocumentProjector(
-            ProjectionLayer.buildLayersNoOverlap(paths, slices, Boolean.FALSE.equals(idInclusion)),
+            ProjectionLayer.buildLayersForProjection(
+                paths, slices, Boolean.FALSE.equals(idInclusion)),
             false,
             includeSimilarityScore);
       }

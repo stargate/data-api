@@ -50,17 +50,17 @@ class ProjectionLayer {
     nextLayers = null;
   }
 
-  public static ProjectionLayer buildLayersNoOverlap(
+  public static ProjectionLayer buildLayersForProjection(
       Collection<String> dotPaths, List<SliceDef> slices, boolean addDocId) {
-    return buildLayers(dotPaths, slices, addDocId, true);
+    return buildLayers(dotPaths, slices, true, addDocId);
   }
 
-  public static ProjectionLayer buildLayersOverlapOk(Collection<String> dotPaths) {
+  public static ProjectionLayer buildLayersForIndexing(Collection<String> dotPaths) {
     return buildLayers(dotPaths, Collections.emptyList(), false, false);
   }
 
   private static ProjectionLayer buildLayers(
-      Collection<String> dotPaths, List<SliceDef> slices, boolean addDocId, boolean failOnOverlap) {
+      Collection<String> dotPaths, List<SliceDef> slices, boolean failOnOverlap, boolean addDocId) {
     // Root is always branch (not terminal):
     ProjectionLayer root = new ProjectionLayer("", false);
     for (String fullPath : dotPaths) {
