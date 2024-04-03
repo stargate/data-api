@@ -55,6 +55,10 @@ public class DocumentProjector {
     return DefaultProjectorWrapper.defaultProjector();
   }
 
+  public static DocumentProjector includeAllProjector() {
+    return INCLUDE_ALL_PROJECTOR;
+  }
+
   DocumentProjector withIncludeSimilarity(boolean includeSimilarityScore) {
     if (this.includeSimilarityScore == includeSimilarityScore) {
       return this;

@@ -2643,7 +2643,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.vsearch(
               VECTOR_COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.defaultProjector(),
+              DocumentProjector.includeAllProjector(),
               null,
               2,
               2,
@@ -2711,7 +2711,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.vsearchSingle(
               VECTOR_COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.defaultProjector(),
+              DocumentProjector.includeAllProjector(),
               ReadType.DOCUMENT,
               objectMapper,
               new float[] {0.25f, 0.25f, 0.25f, 0.25f});
