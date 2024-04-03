@@ -155,21 +155,24 @@ public enum ErrorCode {
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
-  INVALID_QUERY("Invalid query"),
-  DATABASE_READ_FAILED("Database read failed"),
-  DRIVER_TIMEOUT("Driver timeout"),
-  DRIVER_CLOSED_CONNECTION("Driver request connection is closed"),
-  NO_NODE_AVAILABLE("No node was available to execute the query"),
-  NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
   INVALID_SCHEMA_VERSION(
       "Collection has invalid schema version. Recommend re-creating the collection"),
   INVALID_ID_TYPE("Invalid Id type"),
-  QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
-  QUERY_EXECUTION_FAILURE("Database query execution failed"),
-  COORDINATOR_FAILURE("Coordinator failed"),
-  DRIVER_FAILURE("Driver failed");
+
+  // Driver failure codes
+  /** Error codes related to driver exceptions. */
+  SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
+  SERVER_INVALID_QUERY("Invalid query"),
+  SERVER_NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
+  SERVER_READ_FAILED("Database read failed"),
+  SERVER_TIMEOUT("Driver timeout"),
+  SERVER_CLOSED_CONNECTION("Driver request connection is closed"),
+  SERVER_QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
+  SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
+  SERVER_COORDINATOR_FAILURE("Coordinator failed"),
+  SERVER_FAILURE("Driver failed");
 
   private final String message;
 

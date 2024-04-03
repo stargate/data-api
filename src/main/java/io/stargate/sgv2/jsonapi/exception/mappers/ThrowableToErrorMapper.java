@@ -69,17 +69,17 @@ public final class ThrowableToErrorMapper {
       return handleAllNodesFailedException(
           (AllNodesFailedException) throwable, message, fields, fieldsForMetricsTag);
     } else if (throwable instanceof ClosedConnectionException) {
-      return ErrorCode.DRIVER_CLOSED_CONNECTION
+      return ErrorCode.SERVER_CLOSED_CONNECTION
           .toApiException()
           .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
     } else if (throwable instanceof CoordinatorException) {
       return handleCoordinatorException((CoordinatorException) throwable, message);
     } else if (throwable instanceof DriverTimeoutException) {
-      return ErrorCode.DRIVER_TIMEOUT
+      return ErrorCode.SERVER_TIMEOUT
           .toApiException()
           .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
     } else {
-      return ErrorCode.DRIVER_FAILURE
+      return ErrorCode.SERVER_FAILURE
           .toApiException(
               "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
           .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
@@ -93,7 +93,7 @@ public final class ThrowableToErrorMapper {
     } else if (throwable instanceof QueryExecutionException) {
       return handleQueryExecutionException((QueryExecutionException) throwable, message);
     } else {
-      return ErrorCode.COORDINATOR_FAILURE
+      return ErrorCode.SERVER_COORDINATOR_FAILURE
           .toApiException(
               "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
           .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
@@ -105,20 +105,20 @@ public final class ThrowableToErrorMapper {
     if (throwable instanceof QueryConsistencyException) {
       QueryConsistencyException e = (QueryConsistencyException) throwable;
       if (e instanceof WriteTimeoutException || e instanceof ReadTimeoutException) {
-        return ErrorCode.DRIVER_TIMEOUT
+        return ErrorCode.SERVER_TIMEOUT
             .toApiException()
             .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
       } else if (e instanceof ReadFailureException) {
-        return ErrorCode.DATABASE_READ_FAILED
+        return ErrorCode.SERVER_READ_FAILED
             .toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage())
             .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
       } else {
-        return ErrorCode.QUERY_CONSISTENCY_FAILURE
+        return ErrorCode.SERVER_QUERY_CONSISTENCY_FAILURE
             .toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage())
             .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
       }
     } else {
-      return ErrorCode.QUERY_EXECUTION_FAILURE
+      return ErrorCode.SERVER_QUERY_EXECUTION_FAILURE
           .toApiException(
               "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
           .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
@@ -135,13 +135,13 @@ public final class ThrowableToErrorMapper {
     } else if (message.contains(
             "If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING")
         || message.contains("ANN ordering by vector requires the column to be indexed")) {
-      return ErrorCode.NO_INDEX_ERROR
+      return ErrorCode.SERVER_NO_INDEX_ERROR
           .toApiException()
-          .getCommandResultError(ErrorCode.NO_INDEX_ERROR.getMessage(), Response.Status.OK);
+          .getCommandResultError(ErrorCode.SERVER_NO_INDEX_ERROR.getMessage(), Response.Status.OK);
     }
     String errorMessage =
         message.contains("vector<float,") ? "Mismatched vector dimension" : message;
-    return ErrorCode.INVALID_QUERY
+    return ErrorCode.SERVER_INVALID_QUERY
         .toApiException()
         .getCommandResultError(errorMessage, Response.Status.OK);
   }
@@ -185,7 +185,7 @@ public final class ThrowableToErrorMapper {
                   ErrorCode.UNAUTHENTICATED_REQUEST.getMessage(), Response.Status.UNAUTHORIZED);
           // Driver NoNodeAvailableException -> ErrorCode.NO_NODE_AVAILABLE
         } else if (error instanceof NoNodeAvailableException) {
-          return ErrorCode.NO_NODE_AVAILABLE
+          return ErrorCode.SERVER_NO_NODE_AVAILABLE
               .toApiException()
               .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
         }
