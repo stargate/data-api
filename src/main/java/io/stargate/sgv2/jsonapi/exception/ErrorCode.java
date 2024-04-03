@@ -165,7 +165,8 @@ public enum ErrorCode {
   /** Error codes related to driver exceptions. */
   SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
   SERVER_INVALID_QUERY("Invalid query"),
-  SERVER_NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
+  SERVER_NO_INDEX_ERROR(
+      "Faulty collection (missing indexes). Recommend re-creating the collection"),
   SERVER_READ_FAILED("Database read failed"),
   SERVER_TIMEOUT("Driver timeout"),
   SERVER_CLOSED_CONNECTION("Driver request connection is closed"),
