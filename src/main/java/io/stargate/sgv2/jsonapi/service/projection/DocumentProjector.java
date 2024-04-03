@@ -7,25 +7,39 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * Helper class that implements functionality needed to support projections on documents fetched via
  * various {@code find} commands.
+ *
+ * <p>Note that this is not used for "No Index" handling: see {@link IndexingProjector} for that use
+ * case
  */
 public class DocumentProjector {
   /**
    * No-op projector that does not modify documents. Considered "exclusion" projector since "no
    * exclusions" is conceptually what happens ("no inclusions" would drop all content)
    */
-  private static final DocumentProjector IDENTITY_PROJECTOR =
+  private static final DocumentProjector DEFAULT_PROJECTOR =
       new DocumentProjector(null, false, false);
 
-  private static final DocumentProjector IDENTITY_PROJECTOR_WITH_SIMILARITY =
+  private static final DocumentProjector DEFAULT_PROJECTOR_WITH_SIMILARITY =
       new DocumentProjector(null, false, true);
+
+  private static final DocumentProjector INCLUDE_ALL_PROJECTOR =
+      new DocumentProjector(null, false, false);
+
+  private static final DocumentProjector INCLUDE_ALL_PROJECTOR_WITH_SIMILARITY =
+      new DocumentProjector(null, false, true);
+
+  private static final DocumentProjector EXCLUDE_ALL_PROJECTOR =
+      new DocumentProjector(null, true, false);
+
+  private static final DocumentProjector EXCLUDE_ALL_PROJECTOR_WITH_SIMILARITY =
+      new DocumentProjector(null, true, true);
 
   private final ProjectionLayer rootLayer;
 
@@ -42,18 +56,22 @@ public class DocumentProjector {
     this.includeSimilarityScore = includeSimilarityScore;
   }
 
+  public static DocumentProjector defaultProjector() {
+    return DEFAULT_PROJECTOR;
+  }
+
   public static DocumentProjector createFromDefinition(JsonNode projectionDefinition) {
     return createFromDefinition(projectionDefinition, false);
   }
 
   public static DocumentProjector createFromDefinition(
       JsonNode projectionDefinition, boolean includeSimilarity) {
-    if (projectionDefinition == null) {
+    // First special case: "simple" default projection
+    if (projectionDefinition == null || projectionDefinition.isEmpty()) {
       if (includeSimilarity) {
-        return identityProjectorWithSimilarity();
-      } else {
-        return identityProjector();
+        return DEFAULT_PROJECTOR_WITH_SIMILARITY;
       }
+      return DEFAULT_PROJECTOR;
     }
     if (!projectionDefinition.isObject()) {
       throw new JsonApiException(
@@ -62,63 +80,36 @@ public class DocumentProjector {
               + ": definition must be OBJECT, was "
               + projectionDefinition.getNodeType());
     }
+    // Special cases: "star-include/exclude"
+    if (projectionDefinition.size() == 1) {
+      Map.Entry<String, JsonNode> entry = projectionDefinition.fields().next();
+      if ("*".equals(entry.getKey())) {
+        boolean includeAll = extractIncludeOrExclude(entry.getKey(), entry.getValue());
+        if (includeAll) {
+          return includeSimilarity ? INCLUDE_ALL_PROJECTOR_WITH_SIMILARITY : INCLUDE_ALL_PROJECTOR;
+        }
+        return includeSimilarity ? EXCLUDE_ALL_PROJECTOR_WITH_SIMILARITY : EXCLUDE_ALL_PROJECTOR;
+      }
+    }
     return PathCollector.collectPaths(projectionDefinition, includeSimilarity).buildProjector();
   }
 
-  public static DocumentProjector createForIndexing(Set<String> allowed, Set<String> denied) {
-    // Sets are expected to be validated to have one of 3 main cases:
-    // 1. Non-empty "allowed" (but empty/null "denied") -> build inclusion projection
-    // 2. Non-empty "denied" (but empty/null "allowed") -> build exclusion projection
-    // 3. Empty/null "allowed" and "denied" -> return identity projection
-    // as well as 2 special cases:
-    // 4. Empty "allowed" and single "*" entry for "denied" -> return exclude-all projection
-    // 5. Empty "deny" and single "*" entry for "allowed" -> return include-all ("identity")
-    // projection
-    // We need not (and should not) do further validation here.
-    // Note that (5) is effectively same as (3) and included for sake of uniformity
-    if (allowed != null && !allowed.isEmpty()) {
-      // (special) Case 5:
-      if (allowed.size() == 1 && allowed.contains("*")) {
-        return identityProjector();
-      }
-      // Case 1: inclusion-based projection
-      // Minor complication: "$vector" needs to be included automatically
-      if (!allowed.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-        allowed.add(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
-      }
-      if (!allowed.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-        allowed.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
-      }
-      return new DocumentProjector(ProjectionLayer.buildLayersOverlapOk(allowed), true, false);
+  private static boolean extractIncludeOrExclude(String path, JsonNode value) {
+    if (value.isNumber()) {
+      // "0" means exclude (like false); any other number include
+      return !BigDecimal.ZERO.equals(value.decimalValue());
     }
-    if (denied != null && !denied.isEmpty()) {
-      // (special) Case 4:
-      if (denied.size() == 1 && denied.contains("*")) {
-        // Basically inclusion projector with nothing to include but handle for $vector and
-        // $vectorize
-        Set<String> overrideFields = new HashSet<>();
-        overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
-        overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
-        return new DocumentProjector(
-            ProjectionLayer.buildLayersOverlapOk(overrideFields), true, false);
-      }
-      // Case 2: exclusion-based projection
-      return new DocumentProjector(ProjectionLayer.buildLayersOverlapOk(denied), false, false);
+    if (value.isBoolean()) {
+      return value.booleanValue();
     }
-    // Case 3: include-all (identity) projection
-    return identityProjector();
-  }
-
-  public static DocumentProjector identityProjector() {
-    return IDENTITY_PROJECTOR;
-  }
-
-  public boolean isIdentityProjection() {
-    return rootLayer == null && !inclusion;
-  }
-
-  public static DocumentProjector identityProjectorWithSimilarity() {
-    return IDENTITY_PROJECTOR_WITH_SIMILARITY;
+    // Unknown JSON node type; error
+    throw new JsonApiException(
+        ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
+        ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+            + ": path ('"
+            + path
+            + "') value must be NUMBER or BOOLEAN, was "
+            + value.getNodeType());
   }
 
   public boolean isInclusion() {
@@ -134,7 +125,12 @@ public class DocumentProjector {
   }
 
   public void applyProjection(JsonNode document, Float similarityScore) {
-    if (rootLayer == null) { // null -> identity projection (no-op)
+    // null -> either include-add or exclude-all; but logic may seem counter-intuitive
+    if (rootLayer == null) {
+      if (inclusion) { // exclude-all
+        ((ObjectNode) document).removeAll();
+      }
+      // In either case, we may need to add similarity score if present
       if (includeSimilarityScore && similarityScore != null) {
         ((ObjectNode) document)
             .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
@@ -152,38 +148,14 @@ public class DocumentProjector {
     }
   }
 
-  /**
-   * Method to call to check if given path (dotted path, that is, dot-separated segments) would be
-   * included by this Projection. That is, either
-   *
-   * <ul>
-   *   <li>This is inclusion projection, and path is covered by an inclusion path
-   *   <li>This is exclusion projection, and path is NOT covered by any exclusion path
-   * </ul>
-   *
-   * @param path Dotted path (possibly nested) to check
-   * @return {@code true} if path is included; {@code false} if not.
-   */
-  public boolean isPathIncluded(String path) {
-    // First: if we have no layers, we are identity projector and include everything
-    if (rootLayer == null) {
-      return true;
-    }
-    // Otherwise need to split path, evaluate; but note reversal wrt include/exclude
-    // projections
-    if (inclusion) {
-      return rootLayer.isPathIncluded(path);
-    } else {
-      return !rootLayer.isPathIncluded(path);
-    }
-  }
-
   // Mostly for deserialization tests
   @Override
   public boolean equals(Object o) {
     if (o instanceof DocumentProjector) {
       DocumentProjector other = (DocumentProjector) o;
-      return (this.inclusion == other.inclusion) && Objects.equals(this.rootLayer, other.rootLayer);
+      return (this.inclusion == other.inclusion)
+          && (this.includeSimilarityScore == other.includeSimilarityScore)
+          && Objects.equals(this.rootLayer, other.rootLayer);
     }
     return false;
   }
@@ -219,8 +191,8 @@ public class DocumentProjector {
     }
 
     public DocumentProjector buildProjector() {
-      if (isIdentityProjection()) {
-        return identityProjector();
+      if (isDefaultProjection()) {
+        return defaultProjector();
       }
 
       // One more thing: do we need to add document id?
@@ -243,7 +215,7 @@ public class DocumentProjector {
      * Accessor to use for checking if collected paths indicate "empty" (no-operation) projection:
      * if so, caller can avoid actual construction or evaluation.
      */
-    boolean isIdentityProjection() {
+    boolean isDefaultProjection() {
       // Only the case if we have no non-doc-id inclusions/exclusions AND
       // doc-id is included (by default or explicitly)
       return paths.isEmpty() && slices.isEmpty() && !Boolean.FALSE.equals(idInclusion);
@@ -286,6 +258,13 @@ public class DocumentProjector {
           continue;
         }
 
+        // Special rule for "*": only allowed as single root-level entry;
+        if ("*".equals(path)) {
+          throw new JsonApiException(
+              ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
+              ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
+                  + ": wildcard ('*') only allowed as the only root-level path");
+        }
         if (parentPath != null) {
           path = parentPath + "." + path;
         }

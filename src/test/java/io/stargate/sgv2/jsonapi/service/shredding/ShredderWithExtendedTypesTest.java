@@ -14,7 +14,7 @@ import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
@@ -203,7 +203,7 @@ public class ShredderWithExtendedTypesTest {
           shredder.shred(
               inputDoc,
               null,
-              DocumentProjector.identityProjector(),
+              IndexingProjector.identityProjector(),
               "test",
               CollectionSettings.empty().withIdType(CollectionSettings.IdType.UNDEFINED));
 
@@ -242,7 +242,7 @@ public class ShredderWithExtendedTypesTest {
           shredder.shred(
               inputDoc,
               null,
-              DocumentProjector.identityProjector(),
+              IndexingProjector.identityProjector(),
               "test",
               CollectionSettings.empty().withIdType(CollectionSettings.IdType.OBJECT_ID));
 
@@ -297,7 +297,7 @@ public class ShredderWithExtendedTypesTest {
           shredder.shred(
               inputDoc,
               null,
-              DocumentProjector.identityProjector(),
+              IndexingProjector.identityProjector(),
               "test",
               CollectionSettings.empty().withIdType(idType));
 

@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
@@ -75,7 +75,7 @@ public class Shredder {
     return shred(
         doc,
         txId,
-        DocumentProjector.identityProjector(),
+        IndexingProjector.identityProjector(),
         "testCommand",
         CollectionSettings.empty());
   }
@@ -87,7 +87,7 @@ public class Shredder {
   public WritableShreddedDocument shred(
       JsonNode doc,
       UUID txId,
-      DocumentProjector indexProjector,
+      IndexingProjector indexProjector,
       String commandName,
       CollectionSettings collectionSettings) {
     // Although we could otherwise allow non-Object documents, requirement
