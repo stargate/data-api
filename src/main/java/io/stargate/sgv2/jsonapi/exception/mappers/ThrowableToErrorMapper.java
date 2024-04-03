@@ -135,13 +135,13 @@ public final class ThrowableToErrorMapper {
     } else if (message.contains(
             "If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING")
         || message.contains("ANN ordering by vector requires the column to be indexed")) {
-      return ErrorCode.SERVER_NO_INDEX_ERROR
+      return ErrorCode.NO_INDEX_ERROR
           .toApiException()
-          .getCommandResultError(ErrorCode.SERVER_NO_INDEX_ERROR.getMessage(), Response.Status.OK);
+          .getCommandResultError(ErrorCode.NO_INDEX_ERROR.getMessage(), Response.Status.OK);
     }
     String errorMessage =
         message.contains("vector<float,") ? "Mismatched vector dimension" : message;
-    return ErrorCode.SERVER_INVALID_QUERY
+    return ErrorCode.INVALID_QUERY
         .toApiException()
         .getCommandResultError(errorMessage, Response.Status.OK);
   }
