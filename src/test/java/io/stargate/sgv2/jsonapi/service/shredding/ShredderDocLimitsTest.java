@@ -57,7 +57,7 @@ public class ShredderDocLimitsTest {
     @Test
     public void catchTooBigDoc() {
       // Let's construct document above 16 meg limit (but otherwise legal), with
-      // (47x45) x 7.5k String values, divided in 48 sub documents of 45 properties
+      // (48x45) x 7.5k String values, divided in 48 sub documents of 45 properties
       final ObjectNode bigDoc = createBigDoc(48, 45);
 
       Exception e = catchException(() -> shredder.shred(bigDoc));
