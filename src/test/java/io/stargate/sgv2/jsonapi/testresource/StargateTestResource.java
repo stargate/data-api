@@ -249,8 +249,6 @@ public abstract class StargateTestResource
   }
 
   protected boolean useDseCql() {
-    System.out.println(
-        "testing.containers.cql-host: " + System.getProperty("testing.containers.cql-host"));
     String cqlHost = System.getProperty("testing.containers.cql-host", Defaults.CQL_HOST);
     return "dse".equals(cqlHost);
   }

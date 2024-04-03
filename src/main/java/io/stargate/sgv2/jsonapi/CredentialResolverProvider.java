@@ -8,7 +8,10 @@ import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.Produces;
 
-/** Simple CDI producer for the {@link CredentialResolver} to be used in the embedding service */
+/**
+ * Simple CDI producer for the {@link CredentialResolver} to be used to resolve cassandra
+ * username/password for authentication
+ */
 @Singleton
 public class CredentialResolverProvider {
   @Inject HttpConstants httpConstants;

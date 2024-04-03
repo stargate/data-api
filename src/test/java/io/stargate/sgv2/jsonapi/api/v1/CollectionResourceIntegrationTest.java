@@ -6,7 +6,9 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,6 +24,16 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
 
     @Test
     public void tokenMissing() {
+      final Map<String, ?> headers = getHeaders();
+      String message =
+          headers.containsKey(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME)
+              ? "Role unauthorized for operation: Missing authentication header, expecting %s header."
+                  .formatted(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME)
+              : "Role unauthorized for operation: Missing authentication header, expecting %s headers."
+                  .formatted(
+                      HttpConstants.AUTHENTICATION_USER_NAME_HEADER
+                          + " and "
+                          + HttpConstants.AUTHENTICATION_PASSWORD_HEADER);
       given()
           .contentType(ContentType.JSON)
           .body("{}")
@@ -29,10 +41,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(401)
-          .body(
-              "errors[0].message",
-              is(
-                  "Role unauthorized for operation: Missing authentication header, expecting one in the Token header."));
+          .body("errors[0].message", is(message));
     }
 
     @Test
