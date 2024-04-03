@@ -65,58 +65,64 @@ public final class ThrowableToErrorMapper {
       String message,
       Map<String, Object> fields,
       Map<String, Object> fieldsForMetricsTag) {
-    return switch (throwable) {
-      case AllNodesFailedException e -> handleAllNodesFailedException(
-          e, message, fields, fieldsForMetricsTag);
-      case ClosedConnectionException e -> ErrorCode.DRIVER_CLOSED_CONNECTION
+    if (throwable instanceof AllNodesFailedException) {
+      return handleAllNodesFailedException(
+          (AllNodesFailedException) throwable, message, fields, fieldsForMetricsTag);
+    } else if (throwable instanceof ClosedConnectionException) {
+      return ErrorCode.DRIVER_CLOSED_CONNECTION
           .toApiException()
           .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-      case CoordinatorException e -> handleCoordinatorException(e, message);
-      case DriverTimeoutException e -> ErrorCode.DRIVER_TIMEOUT
+    } else if (throwable instanceof CoordinatorException) {
+      return handleCoordinatorException((CoordinatorException) throwable, message);
+    } else if (throwable instanceof DriverTimeoutException) {
+      return ErrorCode.DRIVER_TIMEOUT
           .toApiException()
           .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-      default -> ErrorCode.DRIVER_FAILURE
+    } else {
+      return ErrorCode.DRIVER_FAILURE
           .toApiException(
               "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
           .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-    };
+    }
   }
 
   private static CommandResult.Error handleCoordinatorException(
       CoordinatorException throwable, String message) {
-    return switch (throwable) {
-      case QueryValidationException e -> handleQueryValidationException(e, message);
-      case QueryExecutionException e -> handleQueryExecutionException(e, message);
-      default -> ErrorCode.COORDINATOR_FAILURE
+    if (throwable instanceof QueryValidationException) {
+      return handleQueryValidationException((QueryValidationException) throwable, message);
+    } else if (throwable instanceof QueryExecutionException) {
+      return handleQueryExecutionException((QueryExecutionException) throwable, message);
+    } else {
+      return ErrorCode.COORDINATOR_FAILURE
           .toApiException(
               "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
           .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-    };
+    }
   }
 
   private static CommandResult.Error handleQueryExecutionException(
       QueryExecutionException throwable, String message) {
-    return switch (throwable) {
-      case QueryConsistencyException e -> {
-        if (e instanceof WriteTimeoutException || e instanceof ReadTimeoutException) {
-          yield ErrorCode.DRIVER_TIMEOUT
-              .toApiException()
-              .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-        } else if (e instanceof ReadFailureException) {
-          yield ErrorCode.DATABASE_READ_FAILED
-              .toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage())
-              .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-        } else {
-          yield ErrorCode.QUERY_CONSISTENCY_FAILURE
-              .toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage())
-              .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-        }
+    if (throwable instanceof QueryConsistencyException) {
+      QueryConsistencyException e = (QueryConsistencyException) throwable;
+      if (e instanceof WriteTimeoutException || e instanceof ReadTimeoutException) {
+        return ErrorCode.DRIVER_TIMEOUT
+            .toApiException()
+            .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+      } else if (e instanceof ReadFailureException) {
+        return ErrorCode.DATABASE_READ_FAILED
+            .toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage())
+            .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+      } else {
+        return ErrorCode.QUERY_CONSISTENCY_FAILURE
+            .toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage())
+            .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
       }
-      default -> ErrorCode.QUERY_EXECUTION_FAILURE
+    } else {
+      return ErrorCode.QUERY_EXECUTION_FAILURE
           .toApiException(
               "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
           .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
-    };
+    }
   }
 
   private static CommandResult.Error handleQueryValidationException(
