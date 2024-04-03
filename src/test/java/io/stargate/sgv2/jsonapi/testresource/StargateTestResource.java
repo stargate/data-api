@@ -25,6 +25,7 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
+import org.testcontainers.utility.MountableFile;
 
 public abstract class StargateTestResource
     implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
@@ -157,7 +158,10 @@ public abstract class StargateTestResource
   private GenericContainer<?> baseCassandraContainer(boolean reuse) {
     String image = this.getCassandraImage();
     GenericContainer<?> container =
-        (new GenericContainer(image))
+        new GenericContainer<>(image)
+            .withCopyFileToContainer(
+                MountableFile.forClasspathResource("cassandra.yaml"),
+                "/etc/cassandra/cassandra.yaml")
             .withEnv("HEAP_NEWSIZE", "512M")
             .withEnv("MAX_HEAP_SIZE", "2048M")
             .withEnv("CASSANDRA_CGROUP_MEMORY_LIMIT", "true")
@@ -174,7 +178,6 @@ public abstract class StargateTestResource
             .withReuse(reuse);
     if (this.isDse()) {
       container.withEnv("CLUSTER_NAME", getClusterName()).withEnv("DS_LICENSE", "accept");
-
     } else {
       container.withEnv("CASSANDRA_CLUSTER_NAME", getClusterName());
     }
