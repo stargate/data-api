@@ -60,9 +60,9 @@ quarkus:
 
     limits:
       # Let's limit low-level maximum HTTP request size to 20 megs: stricter
-      # limit (16 meg per document) is applied at the JSON API level.
+      # limit (16 meg per document) is applied at the Data API level.
       # Low-level limits may result in EPIPE/413 errors
-      # whereas at higher level we can use regular JSON API error responses
+      # whereas at higher level we can use regular Data API error responses
       max-body-size: 20M
 
     port: 8181
