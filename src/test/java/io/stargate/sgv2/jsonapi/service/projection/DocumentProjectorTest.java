@@ -265,25 +265,58 @@ public class DocumentProjectorTest {
   }
 
   @Nested
-  class ProjectorApplyInclusions {
+  class ProjectorApplyDefaultProjection {
     // [json-api#634]: empty Object same as "include all"
     @Test
-    public void testIncludeWithEmptyProject() throws Exception {
-      final JsonNode doc =
-          objectMapper.readTree(
-              """
-                              {
-                                 "_id" : 1,
-                                 "value1": 42
-                              }
-                              """);
+    public void defaultProjectionRegularFieldsOnly() throws Exception {
+      final String docJson =
+          """
+                          {
+                             "_id" : 1,
+                             "value1": 42
+                          }
+                          """;
       DocumentProjector projection =
           DocumentProjector.createFromDefinition(objectMapper.readTree("{ }"));
+      final JsonNode doc = objectMapper.readTree(docJson);
       // Technically considered "Exclusion" but one that excludes nothing
       assertThat(projection.isInclusion()).isFalse();
       projection.applyProjection(doc);
-      assertThat(doc).isEqualTo(doc);
+      assertThat(doc).isEqualTo(objectMapper.readTree(docJson));
     }
+
+    @Test
+    public void defaultProjectionMixAll() throws Exception {
+      final String docJson =
+          """
+                                      {
+                                         "_id" : 1,
+                                         "value1": 42,
+                                         "$vector": [0.0, 1.0],
+                                         "value2": -3
+                                      }
+                                      """;
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(objectMapper.readTree("{ }"));
+      final JsonNode doc = objectMapper.readTree(docJson);
+
+      assertThat(projection.isInclusion()).isFalse();
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                      {
+                         "_id" : 1,
+                         "value1": 42,
+                         "value2": -3
+                      }
+                      """));
+    }
+  }
+
+  @Nested
+  class ProjectorApplyInclusions {
 
     @Test
     public void testSimpleIncludeWithId() throws Exception {

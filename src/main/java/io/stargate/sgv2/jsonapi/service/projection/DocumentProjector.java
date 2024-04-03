@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.projection;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -23,12 +24,6 @@ public class DocumentProjector {
    * No-op projector that does not modify documents. Considered "exclusion" projector since "no
    * exclusions" is conceptually what happens ("no inclusions" would drop all content)
    */
-  private static final DocumentProjector DEFAULT_PROJECTOR =
-      new DocumentProjector(null, false, false);
-
-  private static final DocumentProjector DEFAULT_PROJECTOR_WITH_SIMILARITY =
-      new DocumentProjector(null, false, true);
-
   private static final DocumentProjector INCLUDE_ALL_PROJECTOR =
       new DocumentProjector(null, false, false);
 
@@ -57,7 +52,14 @@ public class DocumentProjector {
   }
 
   public static DocumentProjector defaultProjector() {
-    return DEFAULT_PROJECTOR;
+    return DefaultProjectorWrapper.defaultProjector();
+  }
+
+  DocumentProjector withIncludeSimilarity(boolean includeSimilarityScore) {
+    if (this.includeSimilarityScore == includeSimilarityScore) {
+      return this;
+    }
+    return new DocumentProjector(rootLayer, inclusion, includeSimilarityScore);
   }
 
   public static DocumentProjector createFromDefinition(JsonNode projectionDefinition) {
@@ -69,9 +71,9 @@ public class DocumentProjector {
     // First special case: "simple" default projection
     if (projectionDefinition == null || projectionDefinition.isEmpty()) {
       if (includeSimilarity) {
-        return DEFAULT_PROJECTOR_WITH_SIMILARITY;
+        return DefaultProjectorWrapper.defaultProjectorWithSimilarity();
       }
-      return DEFAULT_PROJECTOR;
+      return DefaultProjectorWrapper.defaultProjector();
     }
     if (!projectionDefinition.isObject()) {
       throw new JsonApiException(
@@ -166,6 +168,34 @@ public class DocumentProjector {
   }
 
   /**
+   * Due to the way projection is handled, we need to handle construction of default instance via
+   * separate class (to avoid cyclic dependency)
+   */
+  static class DefaultProjectorWrapper {
+    /**
+     * Default projector that drops $vector but otherwise leaves document as-is. Constructed from
+     * empty definition (no inclusions/exclusions).
+     */
+    private static final DocumentProjector DEFAULT_PROJECTOR;
+
+    static {
+      ObjectNode emptyDef = new ObjectNode(JsonNodeFactory.instance);
+      DEFAULT_PROJECTOR = PathCollector.collectPaths(emptyDef, false).buildProjector();
+    }
+
+    private static final DocumentProjector DEFAULT_PROJECTOR_WITH_SIMILARITY =
+        DEFAULT_PROJECTOR.withIncludeSimilarity(true);
+
+    public static DocumentProjector defaultProjector() {
+      return DEFAULT_PROJECTOR;
+    }
+
+    public static DocumentProjector defaultProjectorWithSimilarity() {
+      return DEFAULT_PROJECTOR_WITH_SIMILARITY;
+    }
+  }
+
+  /**
    * Helper object used to traverse and collection inclusion/exclusion path definitions and verify
    * that there are only one or the other (except for doc id). Does not build data structures for
    * actual matching.
@@ -193,10 +223,6 @@ public class DocumentProjector {
     }
 
     public DocumentProjector buildProjector() {
-      if (isDefaultProjection()) {
-        return defaultProjector();
-      }
-
       // One more thing: do we need to add document id?
       if (inclusions > 0) { // inclusion-based projection
         return new DocumentProjector(
@@ -221,19 +247,6 @@ public class DocumentProjector {
             false,
             includeSimilarityScore);
       }
-    }
-
-    /**
-     * Accessor to use for checking if collected paths indicate "empty" (no-operation) projection:
-     * if so, caller can avoid actual construction or evaluation.
-     */
-    boolean isDefaultProjection() {
-      // Only the case if we have no non-doc-id inclusions/exclusions AND
-      // neither doc-id nor $vector has explicit overrides
-      return paths.isEmpty()
-          && slices.isEmpty()
-          && (idInclusion == null)
-          && ($vectorInclusion == null);
     }
 
     PathCollector collectFromObject(JsonNode ob, String parentPath) {
