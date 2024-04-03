@@ -52,20 +52,23 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
-    // timer metrics for vectorize call
-    Timer.Sample sample = Timer.start(meterRegistry);
-    Uni<List<float[]>> result =
-        embeddingProvider.vectorize(texts, apiKeyOverride, embeddingRequestType);
-    Tags tags = getCustomTags();
-    sample.stop(meterRegistry.timer(jsonApiMetricsConfig.vectorizeCallDurationMetrics(), tags));
-
     // String bytes metrics for vectorize
     DistributionSummary ds =
         DistributionSummary.builder(jsonApiMetricsConfig.vectorizeInputBytesMetrics())
             .tags(getCustomTags())
             .register(meterRegistry);
     texts.stream().mapToInt(String::length).forEach(ds::record);
-    return result;
+
+    // timer metrics for vectorize call
+    Timer.Sample sample = Timer.start(meterRegistry);
+    Tags tags = getCustomTags();
+    return embeddingProvider
+        .vectorize(texts, apiKeyOverride, embeddingRequestType)
+        .invoke(
+            () ->
+                sample.stop(
+                    meterRegistry.timer(
+                        jsonApiMetricsConfig.vectorizeCallDurationMetrics(), tags)));
   }
 
   /**
