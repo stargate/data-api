@@ -10,20 +10,23 @@ import jakarta.ws.rs.core.SecurityContext;
 import java.util.Optional;
 
 /**
- * This class is used to get the request info like tenantId and cassandraToken. This is a
- * replacement to DataApiRequestInfo so bridge connection is removed.
+ * This class is used to get the request info like tenantId, cassandraToken and embeddingApiKey.
+ * This is a replacement to StargateRequestInfo so bridge connection is removed.
  */
 @RequestScoped
 public class DataApiRequestInfo {
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
+  private final Optional<String> embeddingApiKey;
 
   @Inject
   public DataApiRequestInfo(
       RoutingContext routingContext,
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
-      Instance<DataApiTokenResolver> tokenResolver) {
+      Instance<DataApiTokenResolver> tokenResolver,
+      Instance<EmbeddingApiKeyResolver> apiKeyResolver) {
+    this.embeddingApiKey = apiKeyResolver.get().resolveApiKey(routingContext);
     this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
   }
@@ -34,5 +37,9 @@ public class DataApiRequestInfo {
 
   public Optional<String> getCassandraToken() {
     return this.cassandraToken;
+  }
+
+  public Optional<String> getEmbeddingApiKey() {
+    return this.embeddingApiKey;
   }
 }

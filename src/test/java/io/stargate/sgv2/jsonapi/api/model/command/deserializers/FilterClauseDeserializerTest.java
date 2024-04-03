@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.*;
@@ -266,7 +267,9 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("Date value has to be sent as epoch time");
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Bad JSON Extension value: '$date' value has to be an epoch timestamp, instead got (\"2023-01-01\")");
               });
     }
 
@@ -281,7 +284,9 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("Date value has to be sent as epoch time");
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Bad JSON Extension value: '$date' value has to be an epoch timestamp, instead got (\"2023-01-01\")");
               });
     }
 
@@ -430,12 +435,82 @@ public class FilterClauseDeserializerTest {
     }
 
     @Test
+    public void mustHandleIntegerWithTrailingZeroSize() throws Exception {
+      String json = """
+          {"sizePath" : {"$size": 0.0}}
+        """;
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "sizePath",
+              List.of(
+                  new ValueComparisonOperation(
+                      ArrayComparisonOperator.SIZE,
+                      new JsonLiteral(new BigDecimal(0), JsonType.NUMBER))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+
+      String json1 = """
+          {"sizePath" : {"$size": 5.0}}
+        """;
+      final ComparisonExpression expectedResult1 =
+          new ComparisonExpression(
+              "sizePath",
+              List.of(
+                  new ValueComparisonOperation(
+                      ArrayComparisonOperator.SIZE,
+                      new JsonLiteral(new BigDecimal(5), JsonType.NUMBER))),
+              null);
+      FilterClause filterClause1 = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause1.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause1.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause1.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause1.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
     public void mustHandleSizeNonNumber() throws Exception {
       String json = """
           {"sizePath" : {"$size": "2"}}
         """;
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
       assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage()).isEqualTo("$size operator must have integer");
+              });
+    }
+
+    // Notice, 0.0, -0.0, 5.0, etc are still considered as Integer
+    @Test
+    public void mustHandleSizeNonInteger() throws Exception {
+      String json = """
+          {"sizePath" : {"$size": "1.1"}}
+        """;
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage()).isEqualTo("$size operator must have integer");
+              });
+
+      String json1 = """
+          {"sizePath" : {"$size": "5.4"}}
+        """;
+      Throwable throwable1 =
+          catchThrowable(() -> objectMapper.readValue(json1, FilterClause.class));
+      assertThat(throwable1)
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
@@ -1549,7 +1624,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("Unsupported filter operator $vector");
+                assertThat(t.getMessage()).isEqualTo("Unsupported filter operator: $vector");
               });
     }
 
@@ -1567,6 +1642,177 @@ public class FilterClauseDeserializerTest {
                 assertThat(t.getMessage())
                     .isEqualTo(
                         "Invalid filter expression: filter clause path ('$exists') contains character(s) not allowed");
+              });
+    }
+  }
+
+  @Nested
+  class DeserializeWithJsonExtensions {
+    @Test
+    public void mustHandleObjectIdAsId() throws Exception {
+      final String OBJECT_ID = "5f3e3d1e1e6e6f1e6e6e6f1e";
+      String json = """
+            {"_id": {"$objectId": "%s"}}
+          """.formatted(OBJECT_ID);
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "_id",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ,
+                      new JsonLiteral(
+                          DocumentId.fromExtensionType(
+                              JsonExtensionType.OBJECT_ID,
+                              objectMapper.getNodeFactory().textNode(OBJECT_ID)),
+                          JsonType.DOCUMENT_ID))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+    }
+
+    @Test
+    public void mustHandleObjectIdAsRegularField() throws Exception {
+      final String OBJECT_ID = "5f3e3d1e1e6e6f1e6e6e6f1e";
+      String json =
+          """
+            {"nested.path": {"$objectId": "%s"}}
+          """.formatted(OBJECT_ID);
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "nested.path",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral(OBJECT_ID, JsonType.STRING))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustHandleUUIDAsId() throws Exception {
+      final String UUID = "16725312-0000-0000-0000-000000000000";
+      String json = """
+            {"_id": {"$uuid": "%s"}}
+          """.formatted(UUID);
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "_id",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ,
+                      new JsonLiteral(
+                          DocumentId.fromExtensionType(
+                              JsonExtensionType.UUID, objectMapper.getNodeFactory().textNode(UUID)),
+                          JsonType.DOCUMENT_ID))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+    }
+
+    @Test
+    public void mustHandleUUIDAsRegularField() throws Exception {
+      final String UUID = "16725312-0000-0000-0000-000000000000";
+      String json = """
+            {"value": {"$uuid": "%s"}}
+          """.formatted(UUID);
+      final ComparisonExpression expectedResult =
+          new ComparisonExpression(
+              "value",
+              List.of(
+                  new ValueComparisonOperation(
+                      ValueComparisonOperator.EQ, new JsonLiteral(UUID, JsonType.STRING))),
+              null);
+      FilterClause filterClause = objectMapper.readValue(json, FilterClause.class);
+      assertThat(filterClause.logicalExpression().logicalExpressions).hasSize(0);
+      assertThat(filterClause.logicalExpression().comparisonExpressions).hasSize(1);
+      assertThat(
+              filterClause.logicalExpression().comparisonExpressions.get(0).getFilterOperations())
+          .isEqualTo(expectedResult.getFilterOperations());
+      assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
+          .isEqualTo(expectedResult.getPath());
+    }
+
+    @Test
+    public void mustFailOnBadUUIDAsId() throws Exception {
+      String json = """
+         {"_id": {"$uuid": "abc"}}
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .contains(
+                        "Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (\"abc\")");
+              });
+    }
+
+    @Test
+    public void mustFailOnBadObjectIdAsId() throws Exception {
+      String json = """
+         {"_id": {"$objectId": "xyz"}}
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .contains(
+                        "Bad JSON Extension value: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"xyz\")");
+              });
+    }
+
+    @Test
+    public void mustFailOnUnknownOperatorAsId() throws Exception {
+      String json = """
+         {"_id": {"$GUID": "abc"}}
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage()).isEqualTo("Unsupported filter operator: $GUID");
+              });
+    }
+
+    @Test
+    public void mustFailOnBadUUIDAsField() throws Exception {
+      String json = """
+         {"field": {"$uuid": "abc"}}
+        """;
+
+      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
+      assertThat(throwable)
+          .isInstanceOf(JsonApiException.class)
+          .satisfies(
+              t -> {
+                assertThat(t.getMessage())
+                    .isEqualTo(
+                        "Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (\"abc\")");
               });
     }
   }

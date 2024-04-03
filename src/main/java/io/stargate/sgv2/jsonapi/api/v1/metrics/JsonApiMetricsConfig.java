@@ -70,6 +70,18 @@ public interface JsonApiMetricsConfig {
   @WithDefault("command.processor.process")
   String metricsName();
 
+  @NotBlank
+  @WithDefault("vectorize.call.duration")
+  String vectorizeCallDurationMetrics();
+
+  @NotBlank
+  @WithDefault("vectorize.input.bytes")
+  String vectorizeInputBytesMetrics();
+
+  @NotBlank
+  @WithDefault("embedding.provider")
+  String embeddingProvider();
+
   /** List of values that can be used as value for metrics sort_type. */
   enum SortType {
     // Uses vertor search sorting for document resolution

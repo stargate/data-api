@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -31,13 +32,18 @@ public class CommandProcessor {
 
   private final QueryExecutor queryExecutor;
 
+  private final DataVectorizerService dataVectorizerService;
+
   private final CommandResolverService commandResolverService;
 
   @Inject
   public CommandProcessor(
-      QueryExecutor queryExecutor, CommandResolverService commandResolverService) {
+      QueryExecutor queryExecutor,
+      CommandResolverService commandResolverService,
+      DataVectorizerService dataVectorizerService) {
     this.queryExecutor = queryExecutor;
     this.commandResolverService = commandResolverService;
+    this.dataVectorizerService = dataVectorizerService;
   }
 
   /**
@@ -50,16 +56,24 @@ public class CommandProcessor {
    */
   public <T extends Command> Uni<CommandResult> processCommand(
       CommandContext commandContext, T command) {
-    // start by resolving the command, get resolver
-    return commandResolverService
-        .resolverForCommand(command)
+    // vectorize the data
+    return dataVectorizerService
+        .vectorize(commandContext, command)
+        .onItem()
+        .transformToUni(
+            vectorizedCommand -> {
+              // start by resolving the command, get resolver
+              return commandResolverService
+                  .resolverForCommand(vectorizedCommand)
 
-        // resolver can be null, not handled in CommandResolverService for now
-        .flatMap(
-            resolver -> {
-              // if we have resolver, resolve operation
-              Operation operation = resolver.resolveCommand(commandContext, command);
-              return Uni.createFrom().item(operation);
+                  // resolver can be null, not handled in CommandResolverService for now
+                  .flatMap(
+                      resolver -> {
+                        // if we have resolver, resolve operation
+                        Operation operation =
+                            resolver.resolveCommand(commandContext, vectorizedCommand);
+                        return Uni.createFrom().item(operation);
+                      });
             })
 
         //  execute the operation

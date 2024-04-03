@@ -16,7 +16,8 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -132,9 +133,11 @@ public class ShredderDocLimitsTest {
     public void allowDocWithHugeObjectNoIndex() {
       // Max allowed 1000 normally, but if Object not-indexed, not limited
       final ObjectNode doc = docWithNProps("no_index", docLimits.maxObjectProperties() + 100);
-      DocumentProjector indexProjector =
-          DocumentProjector.createForIndexing(null, Collections.singleton("no_index"));
-      assertThat(shredder.shred(doc, null, indexProjector, "testCommand")).isNotNull();
+      IndexingProjector indexProjector =
+          IndexingProjector.createForIndexing(null, Collections.singleton("no_index"));
+      assertThat(
+              shredder.shred(doc, null, indexProjector, "testCommand", CollectionSettings.empty()))
+          .isNotNull();
     }
 
     @Test
@@ -210,9 +213,11 @@ public class ShredderDocLimitsTest {
     public void allowDocWithHugeArrayNoIndex() {
       // Max allowed 1000 normally, but if array not-indexed, not limited
       final ObjectNode doc = docWithNArrayElems("no_index", docLimits.maxArrayLength() + 100);
-      DocumentProjector indexProjector =
-          DocumentProjector.createForIndexing(null, Collections.singleton("no_index"));
-      assertThat(shredder.shred(doc, null, indexProjector, "testCommand")).isNotNull();
+      IndexingProjector indexProjector =
+          IndexingProjector.createForIndexing(null, Collections.singleton("no_index"));
+      assertThat(
+              shredder.shred(doc, null, indexProjector, "testCommand", CollectionSettings.empty()))
+          .isNotNull();
     }
 
     @Test
