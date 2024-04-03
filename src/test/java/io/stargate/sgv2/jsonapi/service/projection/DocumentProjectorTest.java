@@ -753,6 +753,72 @@ public class DocumentProjectorTest {
               }
               """));
     }
+
+    @Test
+    void includeIdExcludeVector() throws Exception {
+      final String docJson =
+          """
+                      {
+                        "_id": "id",
+                        "$vector": [0.25, 0.5],
+                        "value": 42
+                      }
+                      """;
+
+      // First with filter starting with _id:
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                                      { "_id": 1, "$vector": 0 }
+                                      """));
+      // exclusion by default since no regular fields specified
+      assertThat(projection.isInclusion()).isFalse();
+      JsonNode doc = objectMapper.readTree(docJson);
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                                      {
+                                        "_id": "id",
+                                        "value": 42
+                                      }
+                                      """));
+    }
+
+    @Test
+    void excludeIdIncludeVector() throws Exception {
+      final String docJson =
+          """
+                          {
+                            "_id": "id",
+                            "$vector": [0.25, 0.5],
+                            "value": 42
+                          }
+                          """;
+
+      // First with filter starting with _id:
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                                      { "_id": 0, "$vector": 1 }
+                                      """));
+      // exclusion by default since no regular fields specified
+      assertThat(projection.isInclusion()).isFalse();
+      JsonNode doc = objectMapper.readTree(docJson);
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                                      {
+                                        "$vector": [0.25, 0.5],
+                                        "value": 42
+                                      }
+                                      """));
+    }
   }
 
   // Special case of [data-api#1001]: include-all / exclude-all

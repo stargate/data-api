@@ -229,8 +229,11 @@ public class DocumentProjector {
      */
     boolean isDefaultProjection() {
       // Only the case if we have no non-doc-id inclusions/exclusions AND
-      // doc-id is included (by default or explicitly)
-      return paths.isEmpty() && slices.isEmpty() && !Boolean.FALSE.equals(idInclusion);
+      // neither doc-id nor $vector has explicit overrides
+      return paths.isEmpty()
+          && slices.isEmpty()
+          && (idInclusion == null)
+          && ($vectorInclusion == null);
     }
 
     PathCollector collectFromObject(JsonNode ob, String parentPath) {
