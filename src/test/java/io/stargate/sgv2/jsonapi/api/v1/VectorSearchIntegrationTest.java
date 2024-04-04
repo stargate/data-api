@@ -1072,11 +1072,11 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document._id", is("2"))
-          .body("data.document.$vector", contains(0.25f, 0.25f, 0.25f, 0.25f, 0.25f))
+          .body("errors", is(nullValue()))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("data.document._id", is("2"))
+          .body("data.document.$vector", contains(0.25f, 0.25f, 0.25f, 0.25f, 0.25f));
     }
 
     @Test
@@ -1087,7 +1087,6 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       {
                         "findOneAndUpdate": {
                           "filter" : {"name": "Coded Cleats"},
-                          "projection": { "$vector": 1 },
                           "update" : {"$unset" : {"$vector" : null}},
                           "options" : {"returnDocument" : "after"}
                         }
@@ -1102,11 +1101,11 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document._id", is("1"))
-          .body("data.document.$vector", is(nullValue()))
+          .body("errors", is(nullValue()))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("data.document._id", is("1"))
+          .body("data.document.$vector", is(nullValue()));
     }
 
     @Test
@@ -1444,12 +1443,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("data.document._id", is("bigVectorForFindReplace"))
           .body("data.document.$vector", is(notNullValue()))
-          .body("data.document.$vector", hasSize(BIG_VECTOR_SIZE))
-          .body("errors", is(nullValue()));
+          .body("data.document.$vector", hasSize(BIG_VECTOR_SIZE));
 
       // and verify it was set to value with expected size
       given()
@@ -1496,11 +1495,11 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("status.deletedCount", is(1))
           .body("data.document._id", is("3"))
           .body("data.document.$vector", is(notNullValue()))
-          .body("data.document.name", is("Vision Vector Frame"))
-          .body("status.deletedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("data.document.name", is("Vision Vector Frame"));
     }
 
     @Test
@@ -1525,9 +1524,9 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("status.deletedCount", is(1))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("data", is(nullValue()));
 
       // ensure find does not find the document
       json =
@@ -1547,9 +1546,9 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document", is(nullValue()))
+          .body("errors", is(nullValue()))
           .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("data.document", is(nullValue()));
     }
 
     @Test

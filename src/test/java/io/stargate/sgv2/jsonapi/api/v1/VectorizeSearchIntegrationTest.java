@@ -1107,8 +1107,8 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body("errors", is(nullValue()))
           .body("status.deletedCount", is(1))
           .body("data.document._id", is("1"))
-          .body("data.document.$vector", is(notNullValue()))
-          .body("data.document.name", is("Coded Cleats"));
+          .body("data.document.name", is("Coded Cleats"))
+          .body("data.document.$vector", is(notNullValue()));
     }
 
     @Test
