@@ -172,7 +172,8 @@ public enum ErrorCode {
   SERVER_QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
   SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
   SERVER_COORDINATOR_FAILURE("Coordinator failed"),
-  SERVER_FAILURE("Driver failed");
+  SERVER_FAILURE("Driver failed"),
+  SERVER_UNHANDLED_ERROR("Server failed");
 
   private final String message;
 

@@ -9,9 +9,7 @@ import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.*;
 import io.quarkus.security.UnauthorizedException;
-import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.core.Response;
@@ -19,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * Simple mapper for mapping {@link Throwable}s to {@link CommandResult.Error}, with a default
@@ -33,15 +30,6 @@ public final class ThrowableToErrorMapper {
           return jae.getCommandResultError(message, Response.Status.OK);
         }
 
-        // construct fieldsForMetricsTag, only expose exceptionClass in debugMode
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
-        final boolean debugEnabled = debugModeConfig.enabled();
-        Map<String, Object> fields =
-            debugEnabled ? Map.of("exceptionClass", throwable.getClass().getSimpleName()) : null;
-        final Map<String, Object> fieldsForMetricsTag =
-            Map.of("exceptionClass", throwable.getClass().getSimpleName());
-
         // UnauthorizedException from quarkus
         if (throwable instanceof UnauthorizedException) {
           return ErrorCode.UNAUTHENTICATED_REQUEST
@@ -52,22 +40,20 @@ public final class ThrowableToErrorMapper {
 
         // handle all driver exceptions
         if (throwable instanceof DriverException) {
-          return handleDriverException(
-              (DriverException) throwable, message, fields, fieldsForMetricsTag);
+          return handleDriverException((DriverException) throwable, message);
         }
 
         // handle all other exceptions
-        return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
+        return ErrorCode.SERVER_UNHANDLED_ERROR
+            .toApiException(
+                "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
+            .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
       };
 
   private static CommandResult.Error handleDriverException(
-      DriverException throwable,
-      String message,
-      Map<String, Object> fields,
-      Map<String, Object> fieldsForMetricsTag) {
+      DriverException throwable, String message) {
     if (throwable instanceof AllNodesFailedException) {
-      return handleAllNodesFailedException(
-          (AllNodesFailedException) throwable, message, fields, fieldsForMetricsTag);
+      return handleAllNodesFailedException((AllNodesFailedException) throwable, message);
     } else if (throwable instanceof ClosedConnectionException) {
       return ErrorCode.SERVER_CLOSED_CONNECTION
           .toApiException()
@@ -102,8 +88,7 @@ public final class ThrowableToErrorMapper {
 
   private static CommandResult.Error handleQueryExecutionException(
       QueryExecutionException throwable, String message) {
-    if (throwable instanceof QueryConsistencyException) {
-      QueryConsistencyException e = (QueryConsistencyException) throwable;
+    if (throwable instanceof QueryConsistencyException e) {
       if (e instanceof WriteTimeoutException || e instanceof ReadTimeoutException) {
         return ErrorCode.SERVER_TIMEOUT
             .toApiException()
@@ -146,18 +131,9 @@ public final class ThrowableToErrorMapper {
         .getCommandResultError(errorMessage, Response.Status.OK);
   }
 
-  /**
-   * Driver AllNodesFailedException a composite exception, peeling the errors from it
-   *
-   * @param throwable
-   * @param message
-   * @return
-   */
+  /** Driver AllNodesFailedException a composite exception, peeling the errors from it */
   private static CommandResult.Error handleAllNodesFailedException(
-      AllNodesFailedException throwable,
-      String message,
-      Map<String, Object> fields,
-      Map<String, Object> fieldsForMetricsTag) {
+      AllNodesFailedException throwable, String message) {
     Map<Node, List<Throwable>> nodewiseErrors = throwable.getAllErrors();
     if (!nodewiseErrors.isEmpty()) {
       List<Throwable> errors = nodewiseErrors.values().iterator().next();
@@ -191,7 +167,11 @@ public final class ThrowableToErrorMapper {
         }
       }
     }
-    return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
+    // should not happen
+    return ErrorCode.SERVER_UNHANDLED_ERROR
+        .toApiException(
+            "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
+        .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
   }
 
   private static final Function<Throwable, CommandResult.Error> MAPPER =
