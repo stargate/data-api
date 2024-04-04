@@ -936,7 +936,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.includeAllProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -971,7 +971,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               true,
               shredder,
-              DocumentProjector.includeAllProjector(),
+              DocumentProjector.defaultProjector(),
               1,
               3);
 
@@ -1398,7 +1398,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               true,
               shredder,
-              DocumentProjector.includeAllProjector(),
+              DocumentProjector.defaultProjector(),
               1,
               3);
 
@@ -1702,7 +1702,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.includeAllProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               21,
               20,

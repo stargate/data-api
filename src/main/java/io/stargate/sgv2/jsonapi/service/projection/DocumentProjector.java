@@ -131,6 +131,7 @@ public class DocumentProjector {
   }
 
   public void applyProjection(JsonNode document, Float similarityScore) {
+    Objects.requireNonNull(document, "Document to call 'applyProjection()' on must not be null");
     // null -> either include-add or exclude-all; but logic may seem counter-intuitive
     if (rootLayer == null) {
       if (inclusion) { // exclude-all
