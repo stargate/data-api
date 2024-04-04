@@ -1086,7 +1086,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                 {
                   "findOneAndDelete": {
                     "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"},
-                    "projection": { "$vector": 1 }
+                    "projection": { "*": 1 }
                   }
                 }
                 """;
