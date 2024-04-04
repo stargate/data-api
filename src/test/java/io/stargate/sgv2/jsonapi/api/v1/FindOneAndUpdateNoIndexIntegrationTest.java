@@ -126,8 +126,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                         "name": "Joe",
                         "age": 42,
                         "enabled": true,
-                        "value": -1,
-                        "$vector" : [ 0.5, -0.25 ]
+                        "value": -1
                       }
                       """))
           .body("status.matchedCount", is(1))
@@ -144,7 +143,6 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                 "name": "Bob",
                 "age": 77,
                 "enabled": true,
-                "$vector" : [ 0.5, -0.25 ],
                 "value": 3
               }
               """;
