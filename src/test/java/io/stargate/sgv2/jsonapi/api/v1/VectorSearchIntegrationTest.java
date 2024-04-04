@@ -1408,7 +1408,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               """
           {
             "find": {
-              "filter" : {"_id" : "bigVectorForFindReplace"}
+              "filter" : {"_id" : "bigVectorForFindReplace"},
+              "projection": { "*": 1 }
             }
           }
           """)
@@ -1428,6 +1429,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                     {
                       "findOneAndReplace": {
                         "filter" : {"_id" : "bigVectorForFindReplace"},
+                        "projection": { "*": 1 },
                         "replacement" : {"_id" : "bigVectorForFindReplace", "$vector" : [ %s ]},
                         "options" : {"returnDocument" : "after"}
                       }
@@ -1458,7 +1460,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               """
                       {
                         "find": {
-                          "filter" : {"_id" : "bigVectorForFindReplace"}
+                          "filter" : {"_id" : "bigVectorForFindReplace"},
+                          "projection": { "*": 1 }
                         }
                       }
                       """)
@@ -1481,7 +1484,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           """
             {
               "findOneAndDelete": {
-                "projection": { "$vector": 1 },
+                "projection": { "*": 1 },
                 "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
               }
             }
@@ -1498,8 +1501,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors", is(nullValue()))
           .body("status.deletedCount", is(1))
           .body("data.document._id", is("3"))
-          .body("data.document.$vector", is(notNullValue()))
-          .body("data.document.name", is("Vision Vector Frame"));
+          .body("data.document.name", is("Vision Vector Frame"))
+          .body("data.document.$vector", is(notNullValue()));
     }
 
     @Test
