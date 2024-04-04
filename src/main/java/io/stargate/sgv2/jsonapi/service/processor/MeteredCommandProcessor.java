@@ -288,10 +288,6 @@ public class MeteredCommandProcessor {
           Meter.Id id, DistributionStatisticConfig config) {
         if (id.getName().startsWith(jsonApiMetricsConfig.metricsName())
             || id.getName().startsWith(HISTOGRAM_METRICS_NAME)
-            || id.getName().startsWith(jsonApiMetricsConfig.jsonBytesWritten())
-            || id.getName().startsWith(jsonApiMetricsConfig.jsonBytesRead())
-            || id.getName().startsWith(jsonApiMetricsConfig.jsonDocsWritten())
-            || id.getName().startsWith(jsonApiMetricsConfig.jsonDocsRead())
             || id.getName().startsWith(jsonApiMetricsConfig.vectorizeCallDurationMetrics())) {
 
           return DistributionStatisticConfig.builder()
