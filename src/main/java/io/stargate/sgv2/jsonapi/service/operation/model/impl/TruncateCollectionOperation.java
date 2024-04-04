@@ -27,8 +27,14 @@ public record TruncateCollectionOperation(CommandContext context) implements Ope
     // execute
     return queryExecutor
         .executeTruncateSchemaChange(query)
-
-        // if we have a result always respond positively
-        .map(any -> new DeleteOperationPage(null, false, false));
+        .onFailure(error -> error.getMessage().contains("Failed to interrupt compactions"))
+        .retry()
+        .atMost(2)
+        .onItem()
+        .transformToUni(
+            any -> {
+              // if we have a result, always respond positively
+              return Uni.createFrom().item(() -> new DeleteOperationPage(null, false, false));
+            });
   }
 }
