@@ -61,7 +61,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
         false,
         upsert,
         shredder,
-        DocumentProjector.defaultProjector(),
+        DocumentProjector.includeAllProjector(),
         1,
         operationsConfig.lwt().retries());
   }
@@ -81,7 +81,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
       return FindOperation.vsearchSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.defaultProjector(),
+          DocumentProjector.includeAllProjector(),
           ReadType.DOCUMENT,
           objectMapper,
           vector);
@@ -93,7 +93,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
       return FindOperation.sortedSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.defaultProjector(),
+          DocumentProjector.includeAllProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
           ReadType.SORTED_DOCUMENT,
@@ -107,7 +107,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
       return FindOperation.unsortedSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.defaultProjector(),
+          DocumentProjector.includeAllProjector(),
           ReadType.DOCUMENT,
           objectMapper);
     }

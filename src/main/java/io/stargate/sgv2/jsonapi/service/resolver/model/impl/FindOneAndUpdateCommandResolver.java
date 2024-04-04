@@ -86,7 +86,7 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
       return FindOperation.vsearchSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.defaultProjector(),
+          DocumentProjector.includeAllProjector(),
           ReadType.DOCUMENT,
           objectMapper,
           vector);
@@ -99,8 +99,8 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
           commandContext,
           logicalExpression,
           // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
-          // read path, hence pass identity projector.
-          DocumentProjector.defaultProjector(),
+          // read path:
+          DocumentProjector.includeAllProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
           ReadType.SORTED_DOCUMENT,
@@ -115,8 +115,8 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
           commandContext,
           logicalExpression,
           // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
-          // read path, hence pass identity projector.
-          DocumentProjector.defaultProjector(),
+          // read path:
+          DocumentProjector.includeAllProjector(),
           ReadType.DOCUMENT,
           objectMapper);
     }

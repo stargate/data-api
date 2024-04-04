@@ -66,7 +66,7 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
       return FindOperation.vsearchSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.defaultProjector(),
+          DocumentProjector.includeAllProjector(),
           ReadType.DOCUMENT,
           objectMapper,
           vector);
@@ -78,7 +78,7 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
       return FindOperation.sortedSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.defaultProjector(),
+          DocumentProjector.includeAllProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
           ReadType.SORTED_DOCUMENT,
@@ -92,7 +92,7 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
       return FindOperation.unsortedSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.defaultProjector(),
+          DocumentProjector.includeAllProjector(),
           ReadType.DOCUMENT,
           objectMapper);
     }
