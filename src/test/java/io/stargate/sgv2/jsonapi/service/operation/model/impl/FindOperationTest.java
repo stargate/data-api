@@ -9,11 +9,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.bpodgursky.jbool_expressions.Expression;
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.data.CqlVector;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.servererrors.ReadFailureException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -25,6 +28,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
+import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -35,19 +39,20 @@ import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Response;
 import java.math.BigDecimal;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
@@ -73,11 +78,9 @@ public class FindOperationTest extends OperationTestBase {
             COLLECTION_NAME,
             new CollectionSettings(
                 COLLECTION_NAME,
-                true,
-                -1,
-                CollectionSettings.SimilarityFunction.COSINE,
-                null,
-                null,
+                CollectionSettings.IdConfig.defaultIdConfig(),
+                new CollectionSettings.VectorConfig(
+                    true, -1, CollectionSettings.SimilarityFunction.COSINE, null),
                 null),
             null,
             "testCommand",
@@ -128,7 +131,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               commandContext,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               20,
               20,
@@ -273,7 +276,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               2,
               2,
@@ -314,7 +317,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               2,
               2,
@@ -403,7 +406,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               2,
               2,
@@ -486,7 +489,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               1,
               2,
@@ -550,7 +553,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -604,7 +607,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               1,
               1,
@@ -668,7 +671,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -732,7 +735,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -796,7 +799,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -861,7 +864,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -926,7 +929,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -990,7 +993,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1055,7 +1058,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1116,7 +1119,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1178,7 +1181,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1249,7 +1252,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               explicitOr,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1320,7 +1323,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               explicitOr,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1384,7 +1387,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               1,
               1,
@@ -1456,7 +1459,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1524,7 +1527,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1591,7 +1594,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1658,7 +1661,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1716,7 +1719,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
@@ -1879,7 +1882,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.sorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               5,
               20,
@@ -2078,7 +2081,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.sorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               5,
               20,
@@ -2258,7 +2261,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.sorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               5,
               20,
@@ -2432,7 +2435,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.sorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               5,
               20,
@@ -2467,6 +2470,132 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
     }
+  }
+
+  @Test
+  public void findAllSortByUUIDv6() throws Exception {
+    // same for uuidv7
+    String collectionReadCql =
+        "SELECT key, tx_id, doc_json, query_text_values['uuidv6'], query_dbl_values['uuidv6'], query_bool_values['uuidv6'], query_null_values['uuidv6'], query_timestamp_values['uuidv6'] FROM \"%s\".\"%s\" LIMIT %s"
+            .formatted(KEYSPACE_NAME, COLLECTION_NAME, 20);
+
+    // These are UUIDv6 ids generated at 30 second intervals.
+    String doc1 =
+        """
+                      {
+                        "_id": "doc1",
+                        "uuidv6": "1e712685-714f-6720-a23a-c90103f70be6"
+                      }
+                      """;
+    String doc2 =
+        """
+                      {
+                        "_id": "doc2",
+                        "uuidv6": "1e712686-8f82-60c0-ac07-7d6641ed230d"
+                      }
+                      """;
+    String doc3 =
+        """
+                      {
+                        "_id": "doc3",
+                        "uuidv6": "1e712687-ada3-68f0-93f8-c1ebf8e6fc8c"
+                      }
+                      """;
+
+    SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql);
+    ColumnDefinitions columnDefs =
+        buildColumnDefs(
+            TestColumn.keyColumn(),
+            TestColumn.ofUuid("tx_id"),
+            TestColumn.ofVarchar("doc_json"),
+            TestColumn.ofVarchar("query_text_values['uuidv6']"),
+            TestColumn.ofDecimal("query_dbl_values['uuidv6']"),
+            TestColumn.ofBoolean("query_bool_values['uuidv6']"),
+            TestColumn.ofVarchar("query_null_values['uuidv6']"),
+            TestColumn.ofDate("query_timestamp_values['uuidv6']"));
+    List<Row> rows =
+        Arrays.asList(
+            resultRow(
+                columnDefs,
+                1,
+                byteBufferForKey("doc1"),
+                UUID.randomUUID(),
+                doc1,
+                "1e712685-714f-6720-a23a-c90103f70be6",
+                null,
+                null,
+                null,
+                null),
+            resultRow(
+                columnDefs,
+                2,
+                byteBufferForKey("doc2"),
+                UUID.randomUUID(),
+                doc2,
+                "1e712686-8f82-60c0-ac07-7d6641ed230d",
+                null,
+                null,
+                null,
+                null),
+            resultRow(
+                columnDefs,
+                3,
+                byteBufferForKey("doc3"),
+                UUID.randomUUID(),
+                doc3,
+                "1e712687-ada3-68f0-93f8-c1ebf8e6fc8c",
+                null,
+                null,
+                null,
+                null));
+
+    AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
+    final AtomicInteger callCount = new AtomicInteger();
+    QueryExecutor queryExecutor = mock(QueryExecutor.class);
+    when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+        .then(
+            invocation -> {
+              callCount.incrementAndGet();
+              return Uni.createFrom().item(results);
+            });
+
+    LogicalExpression implicitAnd = LogicalExpression.and();
+    FindOperation operation =
+        FindOperation.sorted(
+            COMMAND_CONTEXT,
+            implicitAnd,
+            DocumentProjector.defaultProjector(),
+            null,
+            5,
+            20,
+            ReadType.SORTED_DOCUMENT,
+            objectMapper,
+            List.of(new FindOperation.OrderBy("uuidv6", true)),
+            0,
+            20);
+
+    Supplier<CommandResult> execute =
+        operation
+            .execute(queryExecutor)
+            .subscribe()
+            .withSubscriber(UniAssertSubscriber.create())
+            .awaitItem()
+            .getItem();
+
+    // assert query execution
+    assertThat(callCount.get()).isEqualTo(1);
+
+    // then result
+    CommandResult result = execute.get();
+    assertThat(result.data().getResponseDocuments())
+        .hasSize(3)
+        .isEqualTo(
+            List.of(
+                objectMapper.readTree(doc1),
+                objectMapper.readTree(doc2),
+                objectMapper.readTree(doc3)));
+    assertThat(result.status()).isNullOrEmpty();
+    assertThat(result.errors()).isNullOrEmpty();
   }
 
   @Nested
@@ -2514,7 +2643,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.vsearch(
               VECTOR_COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               2,
               2,
@@ -2582,7 +2711,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.vsearchSingle(
               VECTOR_COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper,
               new float[] {0.25f, 0.25f, 0.25f, 0.25f});
@@ -2623,7 +2752,7 @@ public class FindOperationTest extends OperationTestBase {
             FindOperation.unsortedSingle(
                 COMMAND_CONTEXT,
                 implicitAnd1,
-                DocumentProjector.identityProjector(),
+                DocumentProjector.defaultProjector(),
                 ReadType.DOCUMENT,
                 objectMapper);
 
@@ -2640,7 +2769,7 @@ public class FindOperationTest extends OperationTestBase {
             FindOperation.unsortedSingle(
                 COMMAND_CONTEXT,
                 implicitAnd2,
-                DocumentProjector.identityProjector(),
+                DocumentProjector.defaultProjector(),
                 ReadType.DOCUMENT,
                 objectMapper);
 
@@ -2648,6 +2777,68 @@ public class FindOperationTest extends OperationTestBase {
             ExpressionBuilder.buildExpressions(operation2.logicalExpression(), null);
         assertThat(expressions1.toString()).isEqualTo(expressions2.toString());
       }
+    }
+  }
+
+  @Nested
+  class DriverException {
+    @Test
+    public void readFailureException() throws UnknownHostException {
+
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      Node coordinator = mock(Node.class);
+      ConsistencyLevel consistencyLevel = ConsistencyLevel.ONE;
+      int received = 1;
+      int blockFor = 0;
+      int numFailures = 1;
+      boolean dataPresent = false;
+      Map<InetAddress, Integer> reasonMap = new HashMap<>();
+      reasonMap.put(InetAddress.getByName("127.0.0.1"), 0x0000);
+      Mockito.when(queryExecutor.executeVectorSearch(any(), any(), anyInt()))
+          .thenThrow(
+              new ReadFailureException(
+                  coordinator,
+                  consistencyLevel,
+                  received,
+                  blockFor,
+                  numFailures,
+                  dataPresent,
+                  reasonMap));
+
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      FindOperation operation =
+          FindOperation.vsearch(
+              VECTOR_COMMAND_CONTEXT,
+              implicitAnd,
+              DocumentProjector.defaultProjector(),
+              null,
+              2,
+              2,
+              ReadType.DOCUMENT,
+              objectMapper,
+              new float[] {0.25f, 0.25f, 0.25f, 0.25f});
+
+      // Throwable
+      Throwable failure =
+          operation
+              .execute(queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitFailure()
+              .getFailure();
+      CommandResult.Error error =
+          ThrowableToErrorMapper.getMapperWithMessageFunction()
+              .apply(failure, failure.getMessage());
+      AssertionsForClassTypes.assertThat(error).isNotNull();
+      AssertionsForClassTypes.assertThat(error.message())
+          .isEqualTo(
+              "Cassandra failure during read query at consistency ONE (0 responses were required but only 1 replica responded, 1 failed)");
+      AssertionsForClassTypes.assertThat(error.fields().get("errorCode"))
+          .isEqualTo("DATABASE_READ_FAILED");
+      AssertionsForClassTypes.assertThat(error.fields().get("exceptionClass"))
+          .isEqualTo("JsonApiException");
+      AssertionsForClassTypes.assertThat(error.status())
+          .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
     }
   }
 

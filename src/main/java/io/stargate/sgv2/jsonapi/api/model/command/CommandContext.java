@@ -1,15 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
-import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
-import java.util.List;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 
 /**
  * Defines the context in which to execute the command.
@@ -23,7 +17,7 @@ public record CommandContext(
     String namespace,
     String collection,
     CollectionSettings collectionSettings,
-    EmbeddingService embeddingService,
+    EmbeddingProvider embeddingProvider,
     String commandName,
     JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
 
@@ -35,10 +29,10 @@ public record CommandContext(
       String namespace,
       String collection,
       CollectionSettings collectionSettings,
-      EmbeddingService embeddingService,
+      EmbeddingProvider embeddingProvider,
       String commandName) {
     return new CommandContext(
-        namespace, collection, collectionSettings, embeddingService, commandName, null);
+        namespace, collection, collectionSettings, embeddingProvider, commandName, null);
   }
 
   public CommandContext(
@@ -67,26 +61,14 @@ public record CommandContext(
   }
 
   public CollectionSettings.SimilarityFunction similarityFunction() {
-    return collectionSettings.similarityFunction();
+    return collectionSettings.vectorConfig().similarityFunction();
   }
 
   public boolean isVectorEnabled() {
-    return collectionSettings.vectorEnabled();
+    return collectionSettings.vectorConfig().vectorEnabled();
   }
 
-  public DocumentProjector indexingProjector() {
+  public IndexingProjector indexingProjector() {
     return collectionSettings.indexingProjector();
-  }
-
-  public void tryVectorize(JsonNodeFactory nodeFactory, List<JsonNode> documents) {
-    new DataVectorizer(embeddingService(), nodeFactory).vectorize(documents);
-  }
-
-  public void tryVectorize(JsonNodeFactory nodeFactory, SortClause sortClause) {
-    new DataVectorizer(embeddingService(), nodeFactory).vectorize(sortClause);
-  }
-
-  public void tryVectorize(JsonNodeFactory nodeFactory, UpdateClause updataClause) {
-    new DataVectorizer(embeddingService(), nodeFactory).vectorizeUpdateClause(updataClause);
   }
 }

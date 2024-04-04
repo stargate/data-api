@@ -43,9 +43,6 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
   public Operation resolveCommand(CommandContext commandContext, UpdateManyCommand command) {
     FindOperation findOperation = getFindOperation(commandContext, command);
 
-    // Vectorize update clause
-    commandContext.tryVectorize(objectMapper.getNodeFactory(), command.updateClause());
-
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
 
     // resolve upsert
@@ -61,7 +58,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         false,
         upsert,
         shredder,
-        DocumentProjector.identityProjector(),
+        DocumentProjector.defaultProjector(),
         operationsConfig.maxDocumentUpdateCount(),
         operationsConfig.lwt().retries());
   }
@@ -71,7 +68,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
     return FindOperation.unsorted(
         commandContext,
         logicalExpression,
-        DocumentProjector.identityProjector(),
+        DocumentProjector.defaultProjector(),
         null != command.options() ? command.options().pageState() : null,
         Integer.MAX_VALUE,
         operationsConfig.defaultPageSize(),

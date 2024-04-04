@@ -43,7 +43,7 @@ public interface DocumentId {
 
   /**
    * Accessor used to get canonical String representation of the id to be stored in database. Does
-   * NOT contain type prefix or suffic.
+   * NOT contain type prefix or suffix.
    *
    * @return Canonical String representation of the id
    */
@@ -51,40 +51,46 @@ public interface DocumentId {
 
   static DocumentId fromJson(JsonNode node) {
     switch (node.getNodeType()) {
-      case BOOLEAN -> {
+      case BOOLEAN:
         return fromBoolean(node.booleanValue());
-      }
-      case NULL -> {
+      case NULL:
         return fromNull();
-      }
-      case NUMBER -> {
+      case NUMBER:
         return fromNumber(node.decimalValue());
-      }
-      case STRING -> {
+      case STRING:
         return fromString(node.textValue());
-      }
-      case OBJECT -> {
-        Date dt = JsonUtil.tryExtractEJsonDate(node);
-        if (dt != null) {
-          return fromTimestamp(dt);
+      case OBJECT:
+        if (!JsonUtil.looksLikeEJsonValue(node)) {
+          break;
         }
-      }
+        JsonExtensionType extType = JsonUtil.findJsonExtensionType(node);
+        if (extType != null) {
+          // We know it's single-entry Object so can just get the one property value
+          JsonNode valueNode = node.iterator().next();
+          switch (extType) {
+            case EJSON_DATE:
+              if (valueNode.isIntegralNumber() && valueNode.canConvertToLong()) {
+                return fromTimestamp(valueNode.longValue());
+              }
+              break;
+            default:
+              return fromExtensionType(extType, valueNode);
+          }
+        }
+        throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+            "unrecognized JSON extension type '%s'", node.fieldNames().next());
     }
-    throw new JsonApiException(
-        ErrorCode.SHRED_BAD_DOCID_TYPE,
-        String.format(
-            "%s: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got %s",
-            ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), node.getNodeType()));
+    throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+        "Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got %s",
+        node.getNodeType());
   }
 
   static DocumentId fromDatabase(int typeId, String documentIdAsText) {
     JsonType type = DocumentConstants.KeyTypeId.getJsonType(typeId);
     if (type == null) {
-      throw new JsonApiException(
-          ErrorCode.SHRED_BAD_DOCID_TYPE,
-          String.format(
-              "%s: Document Id must be a JSON String(1), Number(2), Boolean(3), NULL(4) or Date(5) instead got %d",
-              ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), typeId));
+      throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+          "Document Id must be a JSON String(1), Number(2), Boolean(3), NULL(4) or Date(5) instead got %d",
+          typeId);
     }
     switch (type) {
       case BOOLEAN -> {
@@ -164,6 +170,15 @@ public interface DocumentId {
 
   static DocumentId fromTimestamp(long keyAsLong) {
     return new DateId(keyAsLong);
+  }
+
+  static DocumentId fromExtensionType(JsonExtensionType extType, JsonNode valueNode) {
+    try {
+      Object rawId = JsonUtil.extractExtendedValueUnwrapped(extType, valueNode);
+      return new ExtensionTypeId(extType, String.valueOf(rawId));
+    } catch (JsonApiException e) {
+      throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(e.getMessage());
+    }
   }
 
   /*
@@ -317,6 +332,36 @@ public interface DocumentId {
     @Override
     public String toString() {
       return "null";
+    }
+  }
+
+  record ExtensionTypeId(JsonExtensionType type, String valueAsString) implements DocumentId {
+    @Override
+    public int typeId() {
+      return DocumentConstants.KeyTypeId.TYPE_ID_STRING;
+    }
+
+    @Override
+    public Object value() {
+      // Important! Need to serialize as JSON Extension representation for use by Jackson
+      return JsonUtil.createJsonExtensionValueAsMap(type(), valueAsString());
+    }
+
+    @Override
+    public JsonNode asJson(JsonNodeFactory nodeFactory) {
+      // Stored as JSON Object in doc_json, needs to be exposed as JSON Object
+      // here as well
+      return JsonUtil.createJsonExtensionValue(nodeFactory, type(), valueAsString());
+    }
+
+    @Override
+    public String asDBKey() {
+      return valueAsString();
+    }
+
+    @Override
+    public String toString() {
+      return valueAsString();
     }
   }
 }

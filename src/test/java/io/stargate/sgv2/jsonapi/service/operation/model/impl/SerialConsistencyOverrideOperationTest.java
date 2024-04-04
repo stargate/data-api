@@ -134,7 +134,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.KEY,
               objectMapper);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
@@ -332,7 +332,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
       DocumentUpdater documentUpdater =
@@ -348,7 +348,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               false,
               false,
               shredder,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               1,
               3);
 

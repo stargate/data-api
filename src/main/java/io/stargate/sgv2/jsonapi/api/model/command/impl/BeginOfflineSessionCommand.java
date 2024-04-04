@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import jakarta.inject.Inject;
@@ -48,7 +48,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
   private final int fileWriterBufferSizeInMB;
 
   @JsonIgnore private final CollectionSettings collectionSettings;
-  @JsonIgnore private final EmbeddingService embeddingService;
+  @JsonIgnore private final EmbeddingProvider embeddingProvider;
   @JsonIgnore private final String sessionId;
   @JsonIgnore private final FileWriterParams fileWriterParams;
 
@@ -69,7 +69,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
     this.createCollection = createCollection;
     this.ssTableOutputDirectory = ssTableOutputDirectory;
     this.collectionSettings = buildCollectionSettings();
-    this.embeddingService = null; // TODO-SL
+    this.embeddingProvider = null; // TODO-SL
     this.sessionId = UUID.randomUUID().toString();
     this.fileWriterBufferSizeInMB = fileWriterBufferSizeInMB;
     this.fileWriterParams = buildFileWriterParams();
@@ -97,11 +97,13 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
   private FileWriterParams buildFileWriterParams() {
     CreateCollectionOperation createCollectionOperation =
         CreateCollectionOperation.forCQL(
-            this.collectionSettings.vectorEnabled(),
-            this.collectionSettings.vectorEnabled()
-                ? this.collectionSettings.similarityFunction().toString()
+            this.collectionSettings.vectorConfig().vectorEnabled(),
+            this.collectionSettings.vectorConfig().vectorEnabled()
+                ? this.collectionSettings.vectorConfig().similarityFunction().toString()
                 : null,
-            this.collectionSettings.vectorEnabled() ? this.collectionSettings.vectorSize() : 0,
+            this.collectionSettings.vectorConfig().vectorEnabled()
+                ? this.collectionSettings.vectorConfig().vectorSize()
+                : 0,
             null); // TODO-SL fix comments field
     String createTableCQL =
         createCollectionOperation
@@ -116,7 +118,9 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
     String insertStatementCQL =
         InsertOperation.forCQL(new CommandContext(this.namespace, this.createCollection.name()))
             .buildInsertQuery(
-                this.collectionSettings.vectorEnabled()); // TODO-SL add conditionalInsert to method
+                this.collectionSettings
+                    .vectorConfig()
+                    .vectorEnabled()); // TODO-SL add conditionalInsert to method
     return new FileWriterParams(
         this.namespace,
         this.getCreateCollectionCommand().name(),
@@ -125,7 +129,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
         createTableCQL,
         insertStatementCQL,
         indexCQLs,
-        this.collectionSettings.vectorEnabled());
+        this.collectionSettings.vectorConfig().vectorEnabled());
   }
 
   public String getNamespace() {
@@ -144,8 +148,8 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
     return this.collectionSettings;
   }
 
-  public EmbeddingService getEmbeddingService() {
-    return this.embeddingService;
+  public EmbeddingProvider getEmbeddingProvider() {
+    return this.embeddingProvider;
   }
 
   public String getSessionId() {

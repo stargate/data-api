@@ -42,7 +42,9 @@ public record CreateCollectionOperation(
     String vectorFunction,
     String comment,
     int ddlDelayMillis,
-    boolean tooManyIndexesRollbackEnabled)
+    boolean tooManyIndexesRollbackEnabled,
+    // if true, deny all indexing option is set and no indexes will be created
+    boolean indexingDenyAll)
     implements Operation {
   private static final Logger logger = LoggerFactory.getLogger(CreateCollectionOperation.class);
 
@@ -59,7 +61,8 @@ public record CreateCollectionOperation(
       String vectorFunction,
       String comment,
       int ddlDelayMillis,
-      boolean tooManyIndexesRollbackEnabled) {
+      boolean tooManyIndexesRollbackEnabled,
+      boolean indexingDenyAll) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -71,7 +74,8 @@ public record CreateCollectionOperation(
         vectorFunction,
         comment,
         ddlDelayMillis,
-        tooManyIndexesRollbackEnabled);
+        tooManyIndexesRollbackEnabled,
+        indexingDenyAll);
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
@@ -82,7 +86,8 @@ public record CreateCollectionOperation(
       String name,
       String comment,
       int ddlDelayMillis,
-      boolean tooManyIndexesRollbackEnabled) {
+      boolean tooManyIndexesRollbackEnabled,
+      boolean indexingDenyAll) {
     return new CreateCollectionOperation(
         commandContext,
         dbLimitsConfig,
@@ -94,13 +99,25 @@ public record CreateCollectionOperation(
         null,
         comment,
         ddlDelayMillis,
-        tooManyIndexesRollbackEnabled);
+        tooManyIndexesRollbackEnabled,
+        indexingDenyAll);
   }
 
   public static CreateCollectionOperation forCQL(
       boolean vectorSearch, String vectorFunction, int vectorSize, String comment) {
     return new CreateCollectionOperation(
-        null, null, null, null, null, vectorSearch, vectorSize, vectorFunction, comment, 0, false);
+        null,
+        null,
+        null,
+        null,
+        null,
+        vectorSearch,
+        vectorSize,
+        vectorFunction,
+        comment,
+        0,
+        false,
+        false);
   }
 
   @Override
@@ -146,7 +163,7 @@ public record CreateCollectionOperation(
     return Uni.createFrom()
         .failure(
             ErrorCode.INVALID_COLLECTION_NAME.toApiException(
-                "provided collection ('%s') already exists with different 'vector' and/or 'indexing' options",
+                "provided collection ('%s') already exists with different collection options",
                 name));
   }
 
@@ -352,41 +369,42 @@ public record CreateCollectionOperation(
 
   public List<SimpleStatement> getIndexStatements(String keyspace, String table) {
     List<SimpleStatement> statements = new ArrayList<>(10);
+    if (!indexingDenyAll()) {
+      String existKeys =
+          "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON \"%s\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'";
 
-    String existKeys =
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON \"%s\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'";
+      statements.add(SimpleStatement.newInstance(String.format(existKeys, table, keyspace, table)));
 
-    statements.add(SimpleStatement.newInstance(String.format(existKeys, table, keyspace, table)));
+      String arraySize =
+          "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'";
+      statements.add(SimpleStatement.newInstance(String.format(arraySize, table, keyspace, table)));
 
-    String arraySize =
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'";
-    statements.add(SimpleStatement.newInstance(String.format(arraySize, table, keyspace, table)));
+      String arrayContains =
+          "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON \"%s\".\"%s\" (array_contains) USING 'StorageAttachedIndex'";
+      statements.add(
+          SimpleStatement.newInstance(String.format(arrayContains, table, keyspace, table)));
 
-    String arrayContains =
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON \"%s\".\"%s\" (array_contains) USING 'StorageAttachedIndex'";
-    statements.add(
-        SimpleStatement.newInstance(String.format(arrayContains, table, keyspace, table)));
+      String boolQuery =
+          "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON \"%s\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex'";
+      statements.add(SimpleStatement.newInstance(String.format(boolQuery, table, keyspace, table)));
 
-    String boolQuery =
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON \"%s\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex'";
-    statements.add(SimpleStatement.newInstance(String.format(boolQuery, table, keyspace, table)));
+      String dblQuery =
+          "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON \"%s\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex'";
+      statements.add(SimpleStatement.newInstance(String.format(dblQuery, table, keyspace, table)));
 
-    String dblQuery =
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON \"%s\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex'";
-    statements.add(SimpleStatement.newInstance(String.format(dblQuery, table, keyspace, table)));
+      String textQuery =
+          "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex'";
+      statements.add(SimpleStatement.newInstance(String.format(textQuery, table, keyspace, table)));
 
-    String textQuery =
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex'";
-    statements.add(SimpleStatement.newInstance(String.format(textQuery, table, keyspace, table)));
+      String timestampQuery =
+          "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_timestamp_values ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex'";
+      statements.add(
+          SimpleStatement.newInstance(String.format(timestampQuery, table, keyspace, table)));
 
-    String timestampQuery =
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_timestamp_values ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex'";
-    statements.add(
-        SimpleStatement.newInstance(String.format(timestampQuery, table, keyspace, table)));
-
-    String nullQuery =
-        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON \"%s\".\"%s\" (query_null_values) USING 'StorageAttachedIndex'";
-    statements.add(SimpleStatement.newInstance(String.format(nullQuery, table, keyspace, table)));
+      String nullQuery =
+          "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON \"%s\".\"%s\" (query_null_values) USING 'StorageAttachedIndex'";
+      statements.add(SimpleStatement.newInstance(String.format(nullQuery, table, keyspace, table)));
+    }
 
     if (vectorSearch) {
       String vectorSearch =

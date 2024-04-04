@@ -186,6 +186,32 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
     }
 
     @Test
+    public void filterVectorFieldInDenyAll() {
+      // explicitly deny "address.city", implicitly allow "_id", "name", "address.street"
+      String filterData =
+          """
+                  {
+                    "find": {
+                      "filter": {"$vector": {"$exists": true}}
+                    }
+                  }
+                    """;
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(filterData)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, denyAllIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].message", endsWith("filter path '$vector' is not indexed"))
+          .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
     public void filterFieldNotInDenyOne() {
       // explicitly deny "address.city", implicitly allow "_id", "name", "address.street"
       String filterData1 =

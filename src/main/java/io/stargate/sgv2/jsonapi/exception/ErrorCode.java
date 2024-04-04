@@ -26,6 +26,22 @@ public enum ErrorCode {
   DOCUMENT_REPLACE_DIFFERENT_DOCID(
       "The replace document and document resolved using filter have different _id"),
 
+  /** Embedding provider service error codes. */
+  EMBEDDING_PROVIDER_SERVER_ERROR(
+      "The configured Embedding Provider for this collection encountered an error processing the request"),
+  EMBEDDING_PROVIDER_RATE_LIMITED(
+      "The configured Embedding Provider for this collection is rate limiting your requests"),
+
+  EMBEDDING_PROVIDER_TIMEOUT("The configured Embedding Provider timed out."),
+  EMBEDDING_PROVIDER_UNAVAILBLE(
+      "The configured Embedding Provider for this collection could not be contacted."),
+
+  EMBEDDING_PROVIDER_INVALID_REQUEST(
+      "The configured Embedding Provider for this collection refused to process the request, response was"),
+
+  EMBEDDING_PROVIDER_INVALID_RESPONSE(
+      "The configured Embedding Provider for this collection return an invalid response"),
+
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 
   FILTER_MULTIPLE_ID_FILTER(
@@ -65,12 +81,14 @@ public enum ErrorCode {
 
   SHRED_DOC_KEY_NAME_VIOLATION("Document key name constraints violated"),
 
-  SHRED_BAD_EJSON_VALUE("Bad EJSON value"),
+  SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
 
   SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
 
   SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
-  SHRED_BAD_VECTORIZE_VALUE("$vectorize search needs to be text value"),
+  SHRED_BAD_VECTORIZE_VALUE("$vectorize search clause needs to be text value"),
+
+  INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
@@ -91,7 +109,7 @@ public enum ErrorCode {
   INVALID_SORT_CLAUSE_VALUE(
       "Sort ordering value can only be `1` for ascending or `-1` for descending."),
 
-  INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together."),
+  INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 
   UNSUPPORTED_OPERATION("Unsupported operation class"),
 
@@ -100,11 +118,8 @@ public enum ErrorCode {
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
 
   UNSUPPORTED_UPDATE_OPERATION("Unsupported update operation"),
-
-  UNSUPPORTED_COMMAND_EMBEDDING_SERVICE(
-      "Unsupported command `createEmbeddingService` since application is configured for property based embedding"),
-
-  UNAVAILABLE_EMBEDDING_SERVICE("Unable to vectorize data, embedding service not available"),
+  EMBEDDING_SERVICE_NOT_CONFIGURED(
+      "Unable to vectorize data, embedding service not configured for the collection "),
 
   UNSUPPORTED_UPDATE_OPERATION_MODIFIER("Unsupported update operation modifier"),
 
@@ -128,18 +143,20 @@ public enum ErrorCode {
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name: "),
 
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
+
+  VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
 
-  VECTORIZE_SERVICE_TYPE_NOT_ENABLED("Vectorize service type not enabled : "),
-  VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupported : "),
+  VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupported "),
 
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
-
+  VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   INVALID_QUERY("Invalid query"),
+  DATABASE_READ_FAILED("Database read failed"),
   DRIVER_TIMEOUT("Driver timeout"),
   DRIVER_CLOSED_CONNECTION("Driver request connection is closed"),
   NO_NODE_AVAILABLE("No node was available to execute the query"),
@@ -147,7 +164,10 @@ public enum ErrorCode {
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
   OFFLINE_WRITER_SESSION_NOT_FOUND("Offline writer session not found :"),
-  UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION("Unable to create offline writer session");
+  UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION("Unable to create offline writer session"),
+  INVALID_SCHEMA_VERSION(
+      "Collection has invalid schema version. Recommend re-creating the collection"),
+  INVALID_ID_TYPE("Invalid Id type");
 
   private final String message;
 

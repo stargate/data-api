@@ -1,40 +1,66 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.core.Response;
 import java.net.URI;
+import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
+import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class VertexAIEmbeddingClient implements EmbeddingService {
+public class VertexAIEmbeddingClient implements EmbeddingProvider {
+  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String apiKey;
   private String modelName;
-  private final VertexAIEmbeddingService embeddingService;
+  private final VertexAIEmbeddingProvider embeddingProvider;
 
-  public VertexAIEmbeddingClient(String baseUrl, String apiKey, String modelName) {
+  public VertexAIEmbeddingClient(
+      EmbeddingProviderConfigStore.RequestProperties requestProperties,
+      String baseUrl,
+      String apiKey,
+      String modelName) {
+    this.requestProperties = requestProperties;
     this.apiKey = apiKey;
     this.modelName = modelName;
-    embeddingService =
+    embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .build(VertexAIEmbeddingService.class);
+            .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
+            .build(VertexAIEmbeddingProvider.class);
   }
 
   @RegisterRestClient
-  public interface VertexAIEmbeddingService {
+  @RegisterProvider(EmbeddingProviderResponseValidation.class)
+  public interface VertexAIEmbeddingProvider {
     @POST
     @Path("/{modelId}:predict")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
-    EmbeddingResponse embed(
+    Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken,
         @PathParam("modelId") String modelId,
         EmbeddingRequest request);
+
+    @ClientExceptionMapper
+    static RuntimeException mapException(Response response) {
+      return HttpResponseErrorMessageMapper.getDefaultException(response);
+    }
   }
 
   private record EmbeddingRequest(List<Content> instances) {
@@ -104,13 +130,38 @@ public class VertexAIEmbeddingClient implements EmbeddingService {
   }
 
   @Override
-  public List<float[]> vectorize(List<String> texts) {
+  public Uni<List<float[]>> vectorize(
+      List<String> texts,
+      Optional<String> apiKeyOverride,
+      EmbeddingRequestType embeddingRequestType) {
     EmbeddingRequest request =
         new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
-    EmbeddingResponse serviceResponse =
-        embeddingService.embed("Bearer " + apiKey, modelName, request);
-    return serviceResponse.getPredictions().stream()
-        .map(prediction -> prediction.getEmbeddings().getValues())
-        .collect(Collectors.toList());
+    Uni<EmbeddingResponse> serviceResponse =
+        embeddingProvider
+            .embed(
+                "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey),
+                modelName,
+                request)
+            .onFailure(
+                throwable -> {
+                  return (throwable.getCause() != null
+                      && throwable.getCause() instanceof JsonApiException jae
+                      && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT);
+                })
+            .retry()
+            .withBackOff(Duration.ofMillis(requestProperties.retryDelayInMillis()))
+            .atMost(requestProperties.maxRetries());
+    ;
+    return serviceResponse
+        .onItem()
+        .transform(
+            response -> {
+              if (response.getPredictions() == null) {
+                return Collections.emptyList();
+              }
+              return response.getPredictions().stream()
+                  .map(prediction -> prediction.getEmbeddings().getValues())
+                  .collect(Collectors.toList());
+            });
   }
 }

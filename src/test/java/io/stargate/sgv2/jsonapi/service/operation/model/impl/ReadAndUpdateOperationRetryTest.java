@@ -219,7 +219,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
         FindOperation.unsortedSingle(
             COMMAND_CONTEXT,
             implicitAnd,
-            DocumentProjector.identityProjector(),
+            DocumentProjector.defaultProjector(),
             ReadType.DOCUMENT,
             objectMapper);
 
@@ -236,7 +236,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             false,
             shredder,
-            DocumentProjector.identityProjector(),
+            DocumentProjector.defaultProjector(),
             1,
             3);
 
@@ -362,7 +362,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
         FindOperation.unsortedSingle(
             COMMAND_CONTEXT,
             implicitAnd,
-            DocumentProjector.identityProjector(),
+            DocumentProjector.defaultProjector(),
             ReadType.DOCUMENT,
             objectMapper);
 
@@ -379,7 +379,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             false,
             shredder,
-            DocumentProjector.identityProjector(),
+            DocumentProjector.defaultProjector(),
             1,
             3);
 
@@ -513,7 +513,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
         FindOperation.unsortedSingle(
             COMMAND_CONTEXT,
             implicitAnd,
-            DocumentProjector.identityProjector(),
+            DocumentProjector.defaultProjector(),
             ReadType.DOCUMENT,
             objectMapper);
 
@@ -530,7 +530,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             true,
             shredder,
-            DocumentProjector.identityProjector(),
+            DocumentProjector.defaultProjector(),
             1,
             3);
 
@@ -696,7 +696,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
         FindOperation.unsorted(
             COMMAND_CONTEXT,
             implicitAnd,
-            DocumentProjector.identityProjector(),
+            DocumentProjector.defaultProjector(),
             null,
             3,
             3,
@@ -716,7 +716,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             false,
             shredder,
-            DocumentProjector.identityProjector(),
+            DocumentProjector.defaultProjector(),
             2,
             3);
 
@@ -907,7 +907,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
         FindOperation.unsorted(
             COMMAND_CONTEXT,
             implicitAnd,
-            DocumentProjector.identityProjector(),
+            DocumentProjector.defaultProjector(),
             null,
             3,
             3,
@@ -926,7 +926,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             false,
             false,
             shredder,
-            DocumentProjector.identityProjector(),
+            DocumentProjector.defaultProjector(),
             2,
             3);
 

@@ -53,6 +53,11 @@ public interface ReadOperation extends Operation {
           "query_null_values['%s']",
           "query_timestamp_values['%s']");
   int SORT_INDEX_COLUMNS_SIZE = sortIndexColumns.size();
+
+  double TOTAL_TOKEN_RANGE = Math.pow(2, 64);
+  double MAX_TOKEN = Math.pow(2, 63) - 1;
+  double MIN_TOKEN = Math.pow(-2, 63);
+
   /**
    * Default implementation to query and parse the result set
    *
@@ -414,6 +419,64 @@ public interface ReadOperation extends Operation {
       counter.addAndGet(rs.remaining());
       if (rs.hasMorePages()) {
         rs.fetchNextPage().whenComplete((nextRs, e) -> getCount(nextRs, e, counter));
+      }
+    }
+  }
+
+  /**
+   * Run estimated count query and parse the result set
+   *
+   * @param queryExecutor
+   * @param simpleStatement
+   * @return
+   */
+  default Uni<CountResponse> estimateDocumentCount(
+      DataApiRequestInfo dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      SimpleStatement simpleStatement) {
+    AtomicLong counter = new AtomicLong();
+    final CompletionStage<AsyncResultSet> async =
+        queryExecutor
+            .executeEstimatedCount(dataApiRequestInfo, simpleStatement)
+            .whenComplete(
+                (rs, error) -> {
+                  getEstimatedCount(rs, error, counter);
+                });
+
+    return Uni.createFrom()
+        .completionStage(async)
+        .onItem()
+        .transform(
+            rs -> {
+              return new CountResponse(counter.get());
+            });
+  }
+
+  private void getEstimatedCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
+    if (error != null) {
+      throw ErrorCode.COUNT_READ_FAILED.toApiException("root cause: %s", error.getMessage());
+    } else {
+
+      // calculate the total range size and total partitions count for each range
+      double totalPartitionsCount = 0;
+      double totalRangeSize = 0;
+
+      for (Row row : rs.currentPage()) {
+        long rangeStart = Long.parseLong(row.getString("range_start"));
+        long rangeEnd = Long.parseLong(row.getString("range_end"));
+        if (rangeStart >= rangeEnd) {
+          totalRangeSize += (MAX_TOKEN - rangeStart) + (rangeEnd - MIN_TOKEN);
+        } else {
+          totalRangeSize += rangeEnd - rangeStart;
+        }
+        totalPartitionsCount += row.getLong("partitions_count");
+      }
+
+      // estimate the total row count by dividing the total partition count by the ratio
+      // of the sum of all token ranges to the entire token range, avoiding division by zero
+      // relies on the assumption that the supershredding schema uses one row per partition
+      if (totalRangeSize > 0) {
+        counter.addAndGet((long) (totalPartitionsCount / (totalRangeSize / TOTAL_TOKEN_RANGE)));
       }
     }
   }

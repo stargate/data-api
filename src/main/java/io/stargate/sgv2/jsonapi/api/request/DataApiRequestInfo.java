@@ -10,21 +10,24 @@ import jakarta.ws.rs.core.SecurityContext;
 import java.util.Optional;
 
 /**
- * This class is used to get the request info like tenantId and cassandraToken. This is a
- * replacement to DataApiRequestInfo so bridge connection is removed.
+ * This class is used to get the request info like tenantId, cassandraToken and embeddingApiKey.
+ * This is a replacement to StargateRequestInfo so bridge connection is removed.
  */
 @RequestScoped
 public class DataApiRequestInfo {
   private Optional<String> tenantId;
   private final Optional<String> cassandraToken;
+  private final Optional<String> embeddingApiKey;
 
   public DataApiRequestInfo() {
     this.cassandraToken = Optional.empty();
+    this.embeddingApiKey = Optional.empty(); // TODO-SL
   }
 
   public DataApiRequestInfo(Optional<String> tenantId) {
     this.tenantId = tenantId;
     this.cassandraToken = Optional.empty();
+    this.embeddingApiKey = Optional.empty(); // TODO-SL
   }
 
   @Inject
@@ -32,7 +35,9 @@ public class DataApiRequestInfo {
       RoutingContext routingContext,
       SecurityContext securityContext,
       Instance<TenantResolver> tenantResolver,
-      Instance<CassandraTokenResolver> tokenResolver) {
+      Instance<CassandraTokenResolver> tokenResolver,
+      Instance<EmbeddingApiKeyResolver> apiKeyResolver) {
+    this.embeddingApiKey = apiKeyResolver.get().resolveApiKey(routingContext);
     this.tenantId =
         ((TenantResolver) tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken =
@@ -49,5 +54,9 @@ public class DataApiRequestInfo {
 
   public Optional<String> getCassandraToken() {
     return this.cassandraToken;
+  }
+
+  public Optional<String> getEmbeddingApiKey() {
+    return this.embeddingApiKey;
   }
 }

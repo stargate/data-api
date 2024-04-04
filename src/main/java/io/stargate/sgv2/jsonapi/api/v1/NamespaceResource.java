@@ -91,7 +91,7 @@ public class NamespaceResource {
     // create context
     CommandContext commandContext = new CommandContext(namespace, null);
 
-    // call processor
+    //     call processor
     return meteredCommandProcessor
         .processCommand(dataApiRequestInfo, commandContext, command)
         // map to 2xx unless overridden by error

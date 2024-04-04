@@ -82,6 +82,20 @@ public class QueryExecutor {
   }
 
   /**
+   * Execute count query with bound statement.
+   *
+   * @param simpleStatement - Simple statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @return AsyncResultSet
+   */
+  public CompletionStage<AsyncResultSet> executeEstimatedCount(
+      DataApiRequestInfo dataApiRequestInfo, SimpleStatement simpleStatement) {
+    simpleStatement =
+        simpleStatement.setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
+
+    return cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement);
+  }
+  /**
    * Execute vector search query with bound statement.
    *
    * @param simpleStatement - Simple statement with query and parameters. The table name used in the

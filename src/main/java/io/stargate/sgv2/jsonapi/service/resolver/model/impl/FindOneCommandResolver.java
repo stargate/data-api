@@ -44,9 +44,6 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
       sortClause.validate(commandContext);
     }
 
-    // vectorize sort clause
-    commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);
-
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
     if (vector != null) {

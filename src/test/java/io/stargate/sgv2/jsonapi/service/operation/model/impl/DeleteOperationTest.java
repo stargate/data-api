@@ -130,7 +130,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.KEY,
               objectMapper);
 
@@ -214,13 +214,13 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               commandContext,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
               objectMapper);
 
       DeleteOperation operation =
           DeleteOperation.deleteOneAndReturn(
-              commandContext, findOperation, 3, DocumentProjector.identityProjector());
+              commandContext, findOperation, 3, DocumentProjector.defaultProjector());
       Supplier<CommandResult> execute =
           operation
               .execute(dataApiRequestInfo, queryExecutor)
@@ -394,7 +394,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.sortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               2,
               ReadType.SORTED_DOCUMENT,
               objectMapper,
@@ -404,7 +404,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       DeleteOperation operation =
           DeleteOperation.deleteOneAndReturn(
-              COMMAND_CONTEXT, findOperation, 3, DocumentProjector.identityProjector());
+              COMMAND_CONTEXT, findOperation, 3, DocumentProjector.defaultProjector());
 
       Supplier<CommandResult> execute =
           operation
@@ -517,7 +517,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.sortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               2,
               ReadType.SORTED_DOCUMENT,
               objectMapper,
@@ -527,7 +527,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       DeleteOperation operation =
           DeleteOperation.deleteOneAndReturn(
-              COMMAND_CONTEXT, findOperation, 3, DocumentProjector.identityProjector());
+              COMMAND_CONTEXT, findOperation, 3, DocumentProjector.defaultProjector());
 
       Supplier<CommandResult> execute =
           operation
@@ -578,7 +578,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.KEY,
               objectMapper);
 
@@ -658,7 +658,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.KEY,
               objectMapper);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
@@ -779,7 +779,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.KEY,
               objectMapper);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
@@ -901,7 +901,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.KEY,
               objectMapper);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
@@ -1004,7 +1004,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.KEY,
               objectMapper);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
@@ -1103,7 +1103,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               3,
               2,
@@ -1162,7 +1162,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.unsortedSingle(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               ReadType.KEY,
               objectMapper);
 
@@ -1301,7 +1301,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               3,
               3,
@@ -1496,7 +1496,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               3,
               3,
@@ -1637,7 +1637,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               3,
               1,
@@ -1790,7 +1790,7 @@ public class DeleteOperationTest extends OperationTestBase {
           FindOperation.unsorted(
               COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.identityProjector(),
+              DocumentProjector.defaultProjector(),
               null,
               3,
               1,

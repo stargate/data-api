@@ -13,11 +13,7 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
@@ -564,7 +560,615 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: No option \"InDex\" found as createCollectionCommand option (known options: \"indexing\", \"vector\")"))
+                  "The provided options are invalid: No option \"InDex\" found as createCollectionCommand option (known options: \"defaultId\", \"indexing\", \"vector\")"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void happyCreateCollectionWithEmbeddingService() {
+      final String createCollectionRequest =
+          """
+                  {
+                      "createCollection": {
+                          "name": "collection_with_vector_service",
+                          "options": {
+                              "vector": {
+                                  "metric": "cosine",
+                                  "dimension": 768,
+                                  "service": {
+                                      "provider": "vertexai",
+                                      "modelName": "textembedding-gecko@003",
+                                      "authentication": {
+                                          "type": [
+                                              "HEADER"
+                                          ],
+                                          "secretName": "test"
+                                      },
+                                      "parameters": {
+                                          "PROJECT_ID": "test"
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+                      """;
+
+      // create vector collection with vector service
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(createCollectionRequest)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // Also: should be idempotent so try creating again
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(createCollectionRequest)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+    }
+
+    @Test
+    public void happyCreateCollectionWithEmbeddingServiceAutoPopulateDimension() {
+      final String createCollectionWithoutDimension =
+          """
+                      {
+                          "createCollection": {
+                              "name": "collection_with_vector_service",
+                              "options": {
+                                  "vector": {
+                                      "metric": "cosine",
+                                      "service": {
+                                          "provider": "vertexai",
+                                          "modelName": "textembedding-gecko@003",
+                                          "authentication": {
+                                              "type": [
+                                                  "HEADER"
+                                              ],
+                                              "secretName": "test"
+                                          },
+                                          "parameters": {
+                                              "PROJECT_ID": "test"
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                          """;
+      final String createCollectionWithDimension =
+          """
+                      {
+                          "createCollection": {
+                              "name": "collection_with_vector_service",
+                              "options": {
+                                  "vector": {
+                                      "metric": "cosine",
+                                      "dimension": 768,
+                                      "service": {
+                                          "provider": "vertexai",
+                                          "modelName": "textembedding-gecko@003",
+                                          "authentication": {
+                                              "type": [
+                                                  "HEADER"
+                                              ],
+                                              "secretName": "test"
+                                          },
+                                          "parameters": {
+                                              "PROJECT_ID": "test"
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                          """;
+      // create vector collection with vector service and no dimension
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithoutDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // Also: should be idempotent when try creating with correct dimension
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+
+      // create vector collection with vector service and correct dimension
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // Also: should be idempotent when try creating with no dimension
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithoutDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceNoDimension() {
+      // create a collection with no dimension and service
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine"
+                                }
+                            }
+                        }
+                    }
+                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: The 'dimension' can not be null if 'service' is not provided"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceProviderNotSupport() {
+      // create a collection with embedding service provider not support
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                  {
+                      "createCollection": {
+                          "name": "collection_with_vector_service",
+                          "options": {
+                              "vector": {
+                                  "metric": "cosine",
+                                  "dimension": 768,
+                                  "service": {
+                                      "provider": "test",
+                                      "modelName": "textembedding-gecko@003",
+                                      "authentication": {
+                                          "type": [
+                                              "HEADER","SHARED_SECRET"
+                                          ],
+                                          "secretName": "test"
+                                      },
+                                      "parameters": {
+                                          "PROJECT_ID": "test"
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+                  """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Service provider 'test' is not supported"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceAuthenticationTypeUnsupported() {
+      // create a collection with authentication type not support
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "openai",
+                                        "modelName": "text-embedding-3-small",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER","SHARED_SECRET"
+                                            ],
+                                            "secretName": "test"
+                                        },
+                                        "parameters": {
+                                            "PROJECT_ID": "test"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Authentication type 'SHARED_SECRET' is not supported"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    // TODO: Enable it when support SHARED_SECRET
+    @Disabled
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceNoSecretName() {
+      // create a collection with "SHARED_SECRET" authentication type but no 'secretName'
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "vertexai",
+                                        "modelName": "text-embedding-3-small",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER","SHARED_SECRET"
+                                            ]
+                                        },
+                                        "parameters": {
+                                            "PROJECT_ID": "test"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: 'secretName' must be provided for 'SHARED_SECRET' authentication type"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceNotProvideRequiredParameters() {
+      // create a collection without providing required parameters
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "vertexai",
+                                        "modelName": "text-embedding-3-small",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ],
+                                            "secretName": "test"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Required parameter 'PROJECT_ID' for the provider 'vertexai' missing"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceWithUnconfiguredParameters() {
+      // create a collection with unconfigured parameters
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "vertexai",
+                                        "modelName": "textembedding-gecko@003",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ],
+                                            "secretName": "test"
+                                        },
+                                        "parameters": {
+                                            "test": "test"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'vertexai' provided"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "openai",
+                                        "modelName": "text-embedding-3-small",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ]
+                                        },
+                                        "parameters": {
+                                            "test": "test"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Parameters provided but the provider 'openai' expects none"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceWrongParameterType() {
+      // create a collection with wrong parameter type
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "vertexai",
+                                        "modelName": "textembedding-gecko@003",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ],
+                                            "secretName": "test"
+                                        },
+                                        "parameters": {
+                                            "PROJECT_ID": 123
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: The provided parameter 'PROJECT_ID' type is incorrect. Expected: 'STRING'"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceUnsupportedModel() {
+      // create a collection with unsupported model name
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "vertexai",
+                                        "modelName": "testModel",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ],
+                                            "secretName": "test"
+                                        },
+                                        "parameters": {
+                                            "PROJECT_ID": "123"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Model name 'testModel' for provider 'vertexai' is not supported"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceUnmatchedVectorDimension() {
+      // create a collection with unmatched vector dimension
+      given()
+          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 123,
+                                    "service": {
+                                        "provider": "vertexai",
+                                        "modelName": "textembedding-gecko@003",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ],
+                                            "secretName": "test"
+                                        },
+                                        "parameters": {
+                                            "PROJECT_ID": "123"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: The provided dimension value '123' doesn't match the model supports dimension value '768'"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }

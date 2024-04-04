@@ -52,8 +52,7 @@ public class CustomTaggingMetricIdGenerator implements MetricIdGenerator {
   @Override
   public MetricId sessionMetricId(@NonNull SessionMetric metric) {
     return new DefaultMetricId(
-        sessionPrefix + metric.getPath(),
-        ImmutableMap.of("session", sessionName, "tenant", tenantId));
+        sessionPrefix + metric.getPath(), ImmutableMap.of("tenant", tenantId));
   }
 
   @NonNull
@@ -61,7 +60,6 @@ public class CustomTaggingMetricIdGenerator implements MetricIdGenerator {
   public MetricId nodeMetricId(@NonNull Node node, @NonNull NodeMetric metric) {
     return new DefaultMetricId(
         nodePrefix + metric.getPath(),
-        ImmutableMap.of(
-            "session", sessionName, "node", node.getEndPoint().toString(), "tenant", tenantId));
+        ImmutableMap.of("node", node.getEndPoint().toString(), "tenant", tenantId));
   }
 }

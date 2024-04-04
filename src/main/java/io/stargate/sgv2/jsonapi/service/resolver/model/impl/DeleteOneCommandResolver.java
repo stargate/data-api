@@ -56,16 +56,13 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
       sortClause.validate(commandContext);
     }
 
-    // vectorize sort clause
-    commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);
-
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
     if (vector != null) {
       return FindOperation.vsearchSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.identityProjector(),
+          DocumentProjector.defaultProjector(),
           ReadType.KEY,
           objectMapper,
           vector);
@@ -77,7 +74,7 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
       return FindOperation.sortedSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.identityProjector(),
+          DocumentProjector.defaultProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
           ReadType.SORTED_DOCUMENT,
@@ -91,7 +88,7 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
       return FindOperation.unsortedSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.identityProjector(),
+          DocumentProjector.defaultProjector(),
           ReadType.KEY,
           objectMapper);
     }
