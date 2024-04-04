@@ -1,5 +1,35 @@
 # Changelog
 
+## [v1.0.5](https://github.com/stargate/data-api/tree/v1.0.5) (2024-04-03)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.4...v1.0.5)
+
+**Closed issues:**
+
+- Refactor `DocumentProjector` by adding `IndexingProjector`, unshare \(re-duplicate\) code [\#1006](https://github.com/stargate/data-api/issues/1006)
+- \[Indexing Option\] Do not create index in case of deny: \["\*"\] [\#1002](https://github.com/stargate/data-api/issues/1002)
+- Support wildcard "include EVERYTHING" and "include NOTHING" for Projection clause [\#1001](https://github.com/stargate/data-api/issues/1001)
+- Java driver ReadFailureException on Find command [\#949](https://github.com/stargate/data-api/issues/949)
+- NullPointerException on CreateCollection [\#944](https://github.com/stargate/data-api/issues/944)
+- Was able to use $vectorize used with non vectorize collection  [\#901](https://github.com/stargate/data-api/issues/901)
+- Add Metrics for in-flight commands \(Gauge on `MeteredCommandProcessor`\) [\#854](https://github.com/stargate/data-api/issues/854)
+- CQL execution profile for transactional queries [\#791](https://github.com/stargate/data-api/issues/791)
+- Wording of timeout error message [\#743](https://github.com/stargate/data-api/issues/743)
+- Microbench for $in and $nin [\#723](https://github.com/stargate/data-api/issues/723)
+
+**Merged pull requests:**
+
+- Adding back InsertOperationTest [\#1018](https://github.com/stargate/data-api/pull/1018) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix vectorize time metrics [\#1015](https://github.com/stargate/data-api/pull/1015) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Use Stargate v2.1.0-BETA-10 [\#1014](https://github.com/stargate/data-api/pull/1014) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Move `EmbeddingProviderResponseValidation` class to the correct package [\#1011](https://github.com/stargate/data-api/pull/1011) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Reduce CQL driver metrics and shredder metrics [\#1010](https://github.com/stargate/data-api/pull/1010) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Map Java driver ReadFailureException on Find command to JsonApiException [\#1009](https://github.com/stargate/data-api/pull/1009) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add support for "star" inclusion/exclusion \(include all/exclude all\) [\#1008](https://github.com/stargate/data-api/pull/1008) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Refactor DocumentProjector by splitting out IndexingProjector [\#1007](https://github.com/stargate/data-api/pull/1007) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Deny all improvement to not create super shredder indexes [\#1004](https://github.com/stargate/data-api/pull/1004) ([maheshrajamani](https://github.com/maheshrajamani))
+- Bumping version for next data-api release [\#1003](https://github.com/stargate/data-api/pull/1003) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.4](https://github.com/stargate/data-api/tree/v1.0.4) (2024-03-27)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.3...v1.0.4)
