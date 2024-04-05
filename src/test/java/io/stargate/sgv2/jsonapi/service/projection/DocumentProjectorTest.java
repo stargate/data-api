@@ -292,6 +292,7 @@ public class DocumentProjectorTest {
                                       {
                                          "_id" : 1,
                                          "value1": 42,
+                                         "$vectorize": "Quick brown fox",
                                          "$vector": [0.0, 1.0],
                                          "value2": -3
                                       }
@@ -334,6 +335,7 @@ public class DocumentProjectorTest {
                                  "nested2" : {
                                     "z": 5
                                  },
+                                 "$vectorize": "hello work!",
                                  "$vector" : [0.11, 0.22, 0.33, 0.44]
                               }
                               """);
@@ -347,7 +349,8 @@ public class DocumentProjectorTest {
                                         },
                                         "nested.z": 1,
                                         "nosuchprop": 1,
-                                        "$vector": 1
+                                        "$vector": 1,
+                                        "$vectorize": 1
                                       }
                                       """));
       assertThat(projection.isInclusion()).isTrue();
@@ -356,15 +359,16 @@ public class DocumentProjectorTest {
           .isEqualTo(
               objectMapper.readTree(
                   """
-                                      { "_id" : 1,
-                                         "value2" : false,
-                                         "nested" : {
-                                            "x": 3,
-                                            "z": -1
-                                         },
-                                         "$vector" : [0.11, 0.22, 0.33, 0.44]
-                                      }
-                                              """));
+                  { "_id" : 1,
+                     "value2" : false,
+                     "nested" : {
+                        "x": 3,
+                        "z": -1
+                     },
+                     "$vectorize": "hello work!",
+                     "$vector" : [0.11, 0.22, 0.33, 0.44]
+                  }
+                  """));
     }
 
     @Test
@@ -383,6 +387,7 @@ public class DocumentProjectorTest {
                                  "nested2" : {
                                     "z": 5
                                  },
+                                 "$vectorize": "hello work!",
                                  "$vector" : [0.11, 0.22, 0.33, 0.44]
                               }
                               """);
@@ -398,7 +403,9 @@ public class DocumentProjectorTest {
       assertThat(projection.isInclusion()).isTrue();
       projection.applyProjection(doc, 0.25f);
       assertThat(doc.get("value2")).isNotNull();
+      // we only include $vector explicitly, not $vectorize so:
       assertThat(doc.get("$vector")).isNotNull();
+      assertThat(doc.get("$vectorize")).isNull();
       assertThat(doc.get("$similarity").floatValue()).isEqualTo(0.25f);
     }
 
@@ -852,6 +859,72 @@ public class DocumentProjectorTest {
                                       }
                                       """));
     }
+
+    @Test
+    void includeIdExcludeVectorize() throws Exception {
+      final String docJson =
+          """
+                          {
+                            "_id": "id",
+                            "$vectorize": "Hello world!",
+                            "value": 42
+                          }
+                          """;
+
+      // First with filter starting with _id:
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                                                  { "_id": 1, "$vectorize": 0 }
+                                                  """));
+      // exclusion by default since no regular fields specified
+      assertThat(projection.isInclusion()).isFalse();
+      JsonNode doc = objectMapper.readTree(docJson);
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                                                  {
+                                                    "_id": "id",
+                                                    "value": 42
+                                                  }
+                                                  """));
+    }
+
+    @Test
+    void excludeIdIncludeVectorize() throws Exception {
+      final String docJson =
+          """
+                              {
+                                "_id": "id",
+                                "$vectorize": "Hello world!",
+                                "value": 42
+                              }
+                              """;
+
+      // First with filter starting with _id:
+      DocumentProjector projection =
+          DocumentProjector.createFromDefinition(
+              objectMapper.readTree(
+                  """
+                                      { "_id": 0, "$vectorize": 1 }
+                                      """));
+      // exclusion by default since no regular fields specified
+      assertThat(projection.isInclusion()).isFalse();
+      JsonNode doc = objectMapper.readTree(docJson);
+      projection.applyProjection(doc);
+      assertThat(doc)
+          .isEqualTo(
+              objectMapper.readTree(
+                  """
+                                    {
+                                      "$vectorize": "Hello world!",
+                                      "value": 42
+                                    }
+                                    """));
+    }
   }
 
   // Special case of [data-api#1001]: include-all / exclude-all
@@ -864,6 +937,7 @@ public class DocumentProjectorTest {
                       {
                         "_id": "docStarInclude",
                         "value": 42,
+                        "$vectorize": "Quick brown fox",
                         "$vector": [ 1.0, 0.5, -0.25 ]
                       }
                       """;
@@ -898,6 +972,7 @@ public class DocumentProjectorTest {
                           {
                             "_id": "docStarExclude",
                             "value": 42,
+                            "$vectorize": "Quick brown fox",
                             "$vector": [ 1.0, 0.5, -0.25 ]
                           }
                           """;
