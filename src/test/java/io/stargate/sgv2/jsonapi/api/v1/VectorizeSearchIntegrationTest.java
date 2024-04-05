@@ -665,9 +665,9 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith("$vectorize search clause needs to be text value"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].message", startsWith("$vectorize search clause needs to be text value"));
     }
 
     @Test
@@ -677,7 +677,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           """
             {
               "find": {
-                "projection": { "$vector": 1 },
+                "projection": { "$vector": 1, "$vectorize" : 1 },
                 "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"}
               }
             }
@@ -699,8 +699,8 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body("data.documents", hasSize(1))
           .body("data.documents[0]._id", is("1"))
           .body("data.documents[0].$vector", is(notNullValue()))
-          .body("data.documents[0].$vectorize", is(notNullValue()))
-          .body("data.documents[0].$vector", contains(0.1f, 0.15f, 0.3f, 0.12f, 0.05f));
+          .body("data.documents[0].$vector", contains(0.1f, 0.15f, 0.3f, 0.12f, 0.05f))
+          .body("data.documents[0].$vectorize", is(notNullValue()));
     }
   }
 
@@ -739,8 +739,8 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document._id", is("1"))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("data.document._id", is("1"));
     }
 
     @Test
