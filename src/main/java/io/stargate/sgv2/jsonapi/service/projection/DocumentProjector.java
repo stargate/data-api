@@ -140,7 +140,7 @@ public class DocumentProjector {
       // In either case, we may need to add similarity score if present
       if (includeSimilarityScore && similarityScore != null) {
         ((ObjectNode) document)
-            .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
+            .put(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD, similarityScore);
       }
       return;
     }
@@ -151,7 +151,7 @@ public class DocumentProjector {
     }
     if (includeSimilarityScore && similarityScore != null) {
       ((ObjectNode) document)
-          .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
+          .put(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD, similarityScore);
     }
   }
 
@@ -178,8 +178,8 @@ public class DocumentProjector {
    */
   static class DefaultProjectorWrapper {
     /**
-     * Default projector that drops $vector but otherwise leaves document as-is. Constructed from
-     * empty definition (no inclusions/exclusions).
+     * Default projector that drops $vector and $vectorize fields but otherwise leaves document
+     * as-is. Constructed from empty definition (no inclusions/exclusions).
      */
     private static final DocumentProjector DEFAULT_PROJECTOR;
 
@@ -212,9 +212,11 @@ public class DocumentProjector {
 
     private int exclusions, inclusions;
 
-    private Boolean idInclusion = null;
+    private Boolean idInclusion;
 
-    private Boolean $vectorInclusion = null;
+    private Boolean $vectorInclusion;
+
+    private Boolean $vectorizeInclusion;
 
     /** Whether similarity score is needed. */
     private final boolean includeSimilarityScore;
@@ -237,7 +239,9 @@ public class DocumentProjector {
                 // doc-id included unless explicitly excluded
                 !Boolean.FALSE.equals(idInclusion),
                 // $vector only included if explicitly included
-                Boolean.TRUE.equals($vectorInclusion)),
+                Boolean.TRUE.equals($vectorInclusion),
+                // $vectorize only included if explicitly included
+                Boolean.TRUE.equals($vectorizeInclusion)),
             true,
             includeSimilarityScore);
       } else { // exclusion-based
@@ -248,7 +252,9 @@ public class DocumentProjector {
                 // doc-id excluded only if explicitly excluded
                 Boolean.FALSE.equals(idInclusion),
                 // $vector excluded unless explicitly included
-                !Boolean.TRUE.equals($vectorInclusion)),
+                !Boolean.TRUE.equals($vectorInclusion),
+                // $vectorize excluded unless explicitly included
+                !Boolean.TRUE.equals($vectorizeInclusion)),
             false,
             includeSimilarityScore);
       }
@@ -373,6 +379,8 @@ public class DocumentProjector {
         idInclusion = false;
       } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
         $vectorInclusion = false;
+      } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
+        $vectorizeInclusion = false;
       } else {
         // Must not mix exclusions and inclusions
         if (inclusions > 0) {
@@ -393,6 +401,8 @@ public class DocumentProjector {
         idInclusion = true;
       } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
         $vectorInclusion = true;
+      } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
+        $vectorizeInclusion = true;
       } else {
         // Must not mix exclusions and inclusions
         if (exclusions > 0) {
