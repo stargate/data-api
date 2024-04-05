@@ -551,7 +551,9 @@ public class InsertOperationTest extends OperationTestBase {
               error -> {
                 assertThat(error.message())
                     .isEqualTo("Failed to insert document with _id 'doc1': Test break #1");
-                assertThat(error.fields()).containsEntry("exceptionClass", "RuntimeException");
+                assertThat(error.fields())
+                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
+                    .containsEntry("exceptionClass", "JsonApiException");
               });
     }
 
@@ -634,7 +636,9 @@ public class InsertOperationTest extends OperationTestBase {
               error -> {
                 assertThat(error.message())
                     .isEqualTo("Failed to insert document with _id 'doc2': Test break #2");
-                assertThat(error.fields()).containsEntry("exceptionClass", "RuntimeException");
+                assertThat(error.fields())
+                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
+                    .containsEntry("exceptionClass", "JsonApiException");
               });
     }
 
@@ -718,7 +722,9 @@ public class InsertOperationTest extends OperationTestBase {
               error -> {
                 assertThat(error.message())
                     .isEqualTo("Failed to insert document with _id 'doc1': Test break #1");
-                assertThat(error.fields()).containsEntry("exceptionClass", "RuntimeException");
+                assertThat(error.fields())
+                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
+                    .containsEntry("exceptionClass", "JsonApiException");
               });
     }
 

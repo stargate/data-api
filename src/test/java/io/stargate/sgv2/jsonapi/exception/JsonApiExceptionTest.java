@@ -81,8 +81,9 @@ class JsonApiExceptionTest {
               error -> {
                 assertThat(error.message()).isEqualTo("Cause message is important");
                 assertThat(error.fields())
-                    .hasSize(1)
-                    .containsEntry("exceptionClass", "IllegalArgumentException");
+                    .hasSize(2)
+                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
+                    .containsEntry("exceptionClass", "JsonApiException");
               });
     }
   }

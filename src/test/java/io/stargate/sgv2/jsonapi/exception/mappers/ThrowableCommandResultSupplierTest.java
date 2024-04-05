@@ -33,10 +33,11 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("With dedicated message");
-                assertThat(error.status()).isEqualTo(Response.Status.OK);
+                assertThat(error.status()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
                 assertThat(error.fields())
-                    .hasSize(1)
-                    .containsEntry("exceptionClass", "RuntimeException");
+                    .hasSize(2)
+                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
+                    .containsEntry("exceptionClass", "JsonApiException");
               });
     }
 
@@ -55,17 +56,19 @@ class ThrowableCommandResultSupplierTest {
           .anySatisfy(
               error -> {
                 assertThat(error.message()).isEqualTo("With dedicated message");
-                assertThat(error.status()).isEqualTo(Response.Status.OK);
+                assertThat(error.status()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
                 assertThat(error.fields())
-                    .hasSize(1)
-                    .containsEntry("exceptionClass", "RuntimeException");
+                    .hasSize(2)
+                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
+                    .containsEntry("exceptionClass", "JsonApiException");
               })
           .anySatisfy(
               error -> {
                 assertThat(error.message()).isEqualTo("Cause message is important");
                 assertThat(error.fields())
-                    .hasSize(1)
-                    .containsEntry("exceptionClass", "IllegalArgumentException");
+                    .hasSize(2)
+                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
+                    .containsEntry("exceptionClass", "JsonApiException");
               });
     }
 
@@ -83,10 +86,11 @@ class ThrowableCommandResultSupplierTest {
           .satisfies(
               error -> {
                 assertThat(error.message()).isEqualTo("ALREADY_EXISTS");
-                assertThat(error.status()).isEqualTo(Response.Status.OK);
+                assertThat(error.status()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
                 assertThat(error.fields())
-                    .hasSize(1)
-                    .containsEntry("exceptionClass", "StatusRuntimeException");
+                    .hasSize(2)
+                    .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
+                    .containsEntry("exceptionClass", "JsonApiException");
               });
     }
   }
