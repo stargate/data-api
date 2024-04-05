@@ -47,7 +47,7 @@ public final class ThrowableToErrorMapper {
         return ErrorCode.SERVER_UNHANDLED_ERROR
             .toApiException(
                 "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
-            .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+            .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
       };
 
   private static CommandResult.Error handleDriverException(
@@ -68,7 +68,7 @@ public final class ThrowableToErrorMapper {
       return ErrorCode.SERVER_FAILURE
           .toApiException(
               "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
-          .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+          .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -82,7 +82,7 @@ public final class ThrowableToErrorMapper {
       return ErrorCode.SERVER_COORDINATOR_FAILURE
           .toApiException(
               "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
-          .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+          .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -96,17 +96,17 @@ public final class ThrowableToErrorMapper {
       } else if (e instanceof ReadFailureException) {
         return ErrorCode.SERVER_READ_FAILED
             .toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage())
-            .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+            .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
       } else {
         return ErrorCode.SERVER_QUERY_CONSISTENCY_FAILURE
             .toApiException("root cause: (%s) %s", e.getClass().getName(), e.getMessage())
-            .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+            .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
       }
     } else {
       return ErrorCode.SERVER_QUERY_EXECUTION_FAILURE
           .toApiException(
               "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
-          .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+          .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -171,7 +171,7 @@ public final class ThrowableToErrorMapper {
     return ErrorCode.SERVER_UNHANDLED_ERROR
         .toApiException(
             "root cause: (%s) %s", throwable.getClass().getName(), throwable.getMessage())
-        .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+        .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
   }
 
   private static final Function<Throwable, CommandResult.Error> MAPPER =

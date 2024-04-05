@@ -2832,7 +2832,7 @@ public class FindOperationTest extends OperationTestBase {
       AssertionsForClassTypes.assertThat(error).isNotNull();
       AssertionsForClassTypes.assertThat(error.message())
           .isEqualTo(
-              "Cassandra failure during read query at consistency ONE (0 responses were required but only 1 replica responded, 1 failed)");
+              "Database read failed: root cause: (com.datastax.oss.driver.api.core.servererrors.ReadFailureException) Cassandra failure during read query at consistency ONE (0 responses were required but only 1 replica responded, 1 failed)");
       AssertionsForClassTypes.assertThat(error.fields().get("errorCode"))
           .isEqualTo("SERVER_READ_FAILED");
       AssertionsForClassTypes.assertThat(error.fields().get("exceptionClass"))
