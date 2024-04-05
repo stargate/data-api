@@ -11,6 +11,7 @@ import com.datastax.oss.driver.api.core.servererrors.QueryValidationException;
 import com.datastax.oss.driver.api.core.servererrors.ReadFailureException;
 import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
+import io.quarkus.logging.Log;
 import io.quarkus.security.UnauthorizedException;
 import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -131,6 +132,7 @@ public final class ThrowableToErrorMapper {
               message, fieldsForMetricsTag, fields, Response.Status.INTERNAL_SERVER_ERROR);
         }
 
+          Log.error("here!!!");
         return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
       };
 

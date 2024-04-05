@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -27,9 +28,9 @@ public record TruncateCollectionOperation(CommandContext context) implements Ope
     // execute
     return queryExecutor
         .executeTruncateSchemaChange(query)
-        .onFailure(error -> error.getMessage().contains("Failed to interrupt compactions"))
+        .onFailure().invoke(e->logger.error("here" + e)).onFailure()
         .retry()
-        .atMost(2)
+        .atMost(4)
         .onItem()
         .transformToUni(
             any -> {

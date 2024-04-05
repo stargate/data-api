@@ -5,8 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
@@ -35,15 +34,13 @@ import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
+
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -1812,6 +1809,78 @@ public class DeleteOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.DELETED_COUNT, 2)
           .containsEntry(CommandStatus.MORE_DATA, true);
+    }
+
+    @Test
+    public void truncateWithRetry() {
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      TruncateCollectionOperation operation = new TruncateCollectionOperation(COMMAND_CONTEXT);
+
+      List<Row> deleteRows =
+          Arrays.asList(new MockRow(DELETE_RESULT_COLUMNS, 0, Arrays.asList(byteBufferFrom(true))));
+
+      AsyncResultSet mockResults = new MockAsyncResultSet(DELETE_RESULT_COLUMNS, deleteRows, null);
+
+
+      // Mock the behavior of executeTruncateSchemaChange to throw an exception
+        when(queryExecutor.executeTruncateSchemaChange(any()))
+//          .thenThrow( new RuntimeException("Failed to interrupt compactions"))
+          .thenReturn(Uni.createFrom().failure(new RuntimeException("Failed to interrupt compactions")))
+          .thenReturn(Uni.createFrom().item(mockResults));
+
+        operation.execute(queryExecutor).subscribe().with(
+                result -> System.out.println("result is " + result),
+                failure -> System.out.println("errort is " + failure)
+        );
+
+
+      // Call the execute method
+//        Supplier<CommandResult> execute =
+//                operation
+//                        .execute(queryExecutor)
+//                        .subscribe()
+//                        .withSubscriber(UniAssertSubscriber.create())
+//                        .awaitItem()
+//                        .getItem();
+//
+//        CommandResult result = execute.get();
+//        assertThat(result.status().get(CommandStatus.DELETED_COUNT))
+//                .isEqualTo(-1);
+
+//      Uni<Supplier<CommandResult>> result = operation.execute(queryExecutor);
+
+      // Verify that executeTruncateSchemaChange was called 3 times (2 retries + 1 success)
+      verify(queryExecutor, times(3)).executeTruncateSchemaChange(any());
+
+      // Verify that the retry logic eventually succeeded
+//      assertThat(result.await().indefinitely().get().status().get(CommandStatus.DELETED_COUNT))
+//          .isEqualTo(-1);
+    }
+
+    @Test
+      public void test() {
+        class Executor {
+
+        }
+        class MyClass {
+            String someMethod(){
+                return "some arg";
+            }
+        }
+        MyClass mock = mock(MyClass.class);
+        when(mock.someMethod())
+                .thenThrow(new RuntimeException())
+                .thenReturn("foo");
+
+        // First call: throws runtime exception:
+        try {
+            mock.someMethod();
+        }catch (Exception e) {
+            System.out.println("here!!");
+        }
+
+        // Second call: prints "foo"
+        System.out.println(mock.someMethod());
     }
   }
 }
