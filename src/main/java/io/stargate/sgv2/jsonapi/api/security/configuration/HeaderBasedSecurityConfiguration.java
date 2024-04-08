@@ -20,10 +20,10 @@ package io.stargate.sgv2.jsonapi.api.security.configuration;
 import io.quarkus.arc.lookup.LookupIfProperty;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
-import io.stargate.sgv2.api.common.security.challenge.ChallengeSender;
 import io.stargate.sgv2.jsonapi.api.security.HeaderAuthenticationRequest;
 import io.stargate.sgv2.jsonapi.api.security.HeaderBasedAuthenticationMechanism;
 import io.stargate.sgv2.jsonapi.api.security.HeaderIdentityProvider;
+import io.stargate.sgv2.jsonapi.api.security.challenge.impl.ErrorChallengeSender;
 import io.stargate.sgv2.jsonapi.config.AuthConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
@@ -36,7 +36,7 @@ public class HeaderBasedSecurityConfiguration {
   @ApplicationScoped
   @LookupIfProperty(name = "stargate.auth.header-based.enabled", stringValue = "true")
   HttpAuthenticationMechanism httpAuthenticationMechanism(
-      AuthConfig config, Instance<ChallengeSender> customChallengeSender) {
+      AuthConfig config, Instance<ErrorChallengeSender> customChallengeSender) {
     String headerName = config.headerBased().headerName();
     return new HeaderBasedAuthenticationMechanism(headerName, customChallengeSender);
   }

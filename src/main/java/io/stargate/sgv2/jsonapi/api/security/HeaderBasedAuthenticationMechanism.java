@@ -29,6 +29,7 @@ import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.security.challenge.impl.ErrorChallengeSender;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.inject.Instance;
 import java.util.Collections;
@@ -47,13 +48,10 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
   private final String headerName;
 
   /** Customize the challenge. */
-  private final Instance<io.stargate.sgv2.api.common.security.challenge.ChallengeSender>
-      customChallengeSender;
+  private final Instance<ErrorChallengeSender> customChallengeSender;
 
   public HeaderBasedAuthenticationMechanism(
-      String headerName,
-      Instance<io.stargate.sgv2.api.common.security.challenge.ChallengeSender>
-          customChallengeSender) {
+      String headerName, Instance<ErrorChallengeSender> customChallengeSender) {
     this.headerName = headerName;
     this.customChallengeSender = customChallengeSender;
   }
@@ -96,7 +94,7 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
    */
   @Override
   public Uni<Boolean> sendChallenge(RoutingContext context) {
-    // if we should not customize use default
+    // if we should not custo   mize use default
     if (!customChallengeSender.isResolvable()) {
       return HttpAuthenticationMechanism.super.sendChallenge(context);
     }
