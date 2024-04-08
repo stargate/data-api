@@ -47,7 +47,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].exceptionClass", is("JsonParseException"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].message", is(not(blankString())));
     }
 

@@ -44,7 +44,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
-          .body("errors[0].exceptionClass", is("JsonParseException"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].message", is(not(blankString())));
     }
 

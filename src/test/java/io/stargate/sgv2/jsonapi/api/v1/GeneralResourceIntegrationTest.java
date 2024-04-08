@@ -52,7 +52,7 @@ class GeneralResourceIntegrationTest {
           .then()
           .statusCode(200)
           .body("errors[0].message", is(not(blankString())))
-          .body("errors[0].exceptionClass", is("JsonParseException"));
+          .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
