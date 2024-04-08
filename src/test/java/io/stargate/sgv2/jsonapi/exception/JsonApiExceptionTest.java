@@ -79,7 +79,9 @@ class JsonApiExceptionTest {
               })
           .anySatisfy(
               error -> {
-                assertThat(error.message()).isEqualTo("Cause message is important");
+                assertThat(error.message())
+                    .isEqualTo(
+                        "Server failed: root cause: (java.lang.IllegalArgumentException) Cause message is important");
                 assertThat(error.fields())
                     .hasSize(2)
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
