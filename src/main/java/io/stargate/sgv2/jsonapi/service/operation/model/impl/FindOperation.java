@@ -7,10 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 import io.smallrye.mutiny.Uni;
-import io.stargate.bridge.grpc.Values;
-import io.stargate.bridge.proto.QueryOuterClass;
-import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
-import io.stargate.sgv2.api.common.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
@@ -19,8 +15,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cql.builder.BuiltCondition;
+import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
+import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ChainedComparator;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -414,9 +412,11 @@ public record FindOperation(
     List<SimpleStatement> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
         expression -> {
-          List<Object> collect = ExpressionBuilder.getExpressionValuesInOrder(expression);
+          //          List<Object> collect =
+          // ExpressionBuilder.getExpressionValuesInOrder(expression);
+          final Query query;
           if (vector() == null) {
-            final QueryOuterClass.Query query =
+            query =
                 new QueryBuilder()
                     .select()
                     .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
@@ -424,20 +424,10 @@ public record FindOperation(
                     .where(expression)
                     .limit(limit)
                     .build();
-            final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
-            queries.add(simpleStatement.setPositionalValues(collect));
           } else {
-            QueryOuterClass.Query query = getVectorSearchQueryByExpression(expression);
-            collect.add(CQLBindValues.getVectorValue(vector()));
-            final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
-            if (projection().doIncludeSimilarityScore()) {
-              List<Object> appendedCollect = new ArrayList<>();
-              appendedCollect.add(collect.get(collect.size() - 1));
-              appendedCollect.addAll(collect);
-              collect = appendedCollect;
-            }
-            queries.add(simpleStatement.setPositionalValues(collect));
+            query = getVectorSearchQueryByExpression(expression);
           }
+          queries.add(query.queryToStatement());
         });
 
     return queries;
@@ -447,54 +437,19 @@ public record FindOperation(
    * A separate method to build vector search query by using expression, expression can contain
    * logic operations like 'or','and'..
    */
-  private QueryOuterClass.Query getVectorSearchQueryByExpression(
-      Expression<BuiltCondition> expression) {
-    QueryOuterClass.Query builtQuery = null;
+  private Query getVectorSearchQueryByExpression(Expression<BuiltCondition> expression) {
     if (projection().doIncludeSimilarityScore()) {
-      switch (commandContext().similarityFunction()) {
-        case COSINE, UNDEFINED -> {
-          return new QueryBuilder()
-              .select()
-              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-              .similarityCosine(
-                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, Values.NULL)
-              .from(commandContext.namespace(), commandContext.collection())
-              .where(expression)
-              .limit(limit)
-              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
-              .build();
-        }
-        case EUCLIDEAN -> {
-          return new QueryBuilder()
-              .select()
-              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-              .similarityEuclidean(
-                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, Values.NULL)
-              .from(commandContext.namespace(), commandContext.collection())
-              .where(expression)
-              .limit(limit)
-              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
-              .build();
-        }
-        case DOT_PRODUCT -> {
-          return new QueryBuilder()
-              .select()
-              .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-              .similarityDotProduct(
-                  DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, Values.NULL)
-              .from(commandContext.namespace(), commandContext.collection())
-              .where(expression)
-              .limit(limit)
-              .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
-              .build();
-        }
-        default -> {
-          throw new JsonApiException(
-              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
-              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage()
-                  + commandContext().similarityFunction());
-        }
-      }
+      return new QueryBuilder()
+          .select()
+          .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
+          .similarityFunction(
+              DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
+              commandContext().similarityFunction())
+          .from(commandContext.namespace(), commandContext.collection())
+          .where(expression)
+          .limit(limit)
+          .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
+          .build();
     } else {
       return new QueryBuilder()
           .select()
@@ -502,7 +457,7 @@ public record FindOperation(
           .from(commandContext.namespace(), commandContext.collection())
           .where(expression)
           .limit(limit)
-          .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME)
+          .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
           .build();
     }
   }
@@ -531,8 +486,9 @@ public record FindOperation(
     List<SimpleStatement> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
         expression -> {
-          List<Object> collect = ExpressionBuilder.getExpressionValuesInOrder(expression);
-          final QueryOuterClass.Query query =
+          //          List<Object> collect =
+          // ExpressionBuilder.getExpressionValuesInOrder(expression);
+          final Query query =
               new QueryBuilder()
                   .select()
                   .column(columnsToAdd)
@@ -540,8 +496,7 @@ public record FindOperation(
                   .where(expression)
                   .limit(maxSortReadLimit())
                   .build();
-          final SimpleStatement simpleStatement = SimpleStatement.newInstance(query.getCql());
-          queries.add(simpleStatement.setPositionalValues(collect));
+          queries.add(query.queryToStatement());
         });
 
     return queries;
