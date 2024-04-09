@@ -77,7 +77,7 @@ jobs:
         include:
           - type: docker
             profile: ''
-          - type: dse
+          - type: dse-it
             profile: '-Pdse-it'
         exclude:
           - type: native
