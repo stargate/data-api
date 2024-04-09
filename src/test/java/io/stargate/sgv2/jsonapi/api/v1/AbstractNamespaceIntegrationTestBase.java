@@ -105,42 +105,41 @@ public abstract class AbstractNamespaceIntegrationTestBase {
   }
 
   protected Map<String, ?> getHeaders() {
-    if (useDseCql()) {
+    if (runCoordinator()) {
+      return Map.of(
+          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+          getAuthToken(),
+          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+          CustomITEmbeddingProvider.TEST_API_KEY);
+    } else {
       String credential = getCassandraUsername() + "/" + getCassandraPassword();
       return Map.of(
           HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
           Base64.getEncoder().encodeToString(credential.getBytes()),
           HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
           CustomITEmbeddingProvider.TEST_API_KEY);
-    } else {
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          getAuthToken(),
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
     }
   }
 
   protected Map<String, ?> getInvalidHeaders() {
-    if (useDseCql()) {
+    if (runCoordinator()) {
+      return Map.of(
+          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+          "invalid",
+          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+          CustomITEmbeddingProvider.TEST_API_KEY);
+    } else {
       String credential = "invalid" + "/" + getCassandraPassword();
       return Map.of(
           HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
           Base64.getEncoder().encodeToString(credential.getBytes()),
           HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
           CustomITEmbeddingProvider.TEST_API_KEY);
-    } else {
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          "invalid",
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
     }
   }
 
-  protected boolean useDseCql() {
-    String cqlHost = System.getProperty("testing.containers.cql-host", "stargate");
-    return "dse".equals(cqlHost);
+  protected boolean runCoordinator() {
+    return Boolean.getBoolean("testing.containers.run-coordinator");
   }
 
   public static void checkMetrics(String commandName) {

@@ -32,7 +32,7 @@
     <stargate.int-test.cluster.persistence>persistence-dse-next</stargate.int-test.cluster.persistence>
     <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
-    <stargate.int-test.cql.host>stargate</stargate.int-test.cql.host>
+    <stargate.int-test.run-coordinator>true</stargate.int-test.run-coordinator>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -220,7 +220,7 @@
                 <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
                 <maven.home>${maven.home}</maven.home>
-                <testing.containers.cql-host>${stargate.int-test.cql.host}</testing.containers.cql-host>
+                <testing.containers.run-coordinator>${testing.containers.run-coordinator}</testing.containers.run-coordinator>
               </systemPropertyVariables>
               <includes>
                 <include>**/*IntegrationTest.*</include>
@@ -255,7 +255,7 @@
         </property>
       </activation>
       <properties>
-        <stargate.int-test.cql.host>dse</stargate.int-test.cql.host>
+        <stargate.int-test.run-coordinator>false</stargate.int-test.run-coordinator>
       </properties>
     </profile>
   </profiles>

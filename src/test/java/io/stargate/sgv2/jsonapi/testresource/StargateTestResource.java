@@ -61,7 +61,7 @@ public abstract class StargateTestResource
       } else {
         propsBuilder = this.startWithoutContainerNetwork(reuse);
       }
-      if (!useDseCql()) {
+      if (runCoordinator()) {
         Integer authPort = this.stargateContainer.getMappedPort(8081);
         String token = this.getAuthToken(this.stargateContainer.getHost(), authPort);
         LOG.info("Using auth token %s for integration tests.".formatted(token));
@@ -106,7 +106,7 @@ public abstract class StargateTestResource
     this.cassandraContainer = this.baseCassandraContainer(reuse);
     this.cassandraContainer.withNetwork(network);
     this.cassandraContainer.start();
-    if (!useDseCql()) {
+    if (runCoordinator()) {
       this.stargateContainer = this.baseCoordinatorContainer(reuse);
       this.stargateContainer.withNetwork(network).withEnv("SEED", "cassandra");
       this.stargateContainer.start();
@@ -127,7 +127,7 @@ public abstract class StargateTestResource
     this.cassandraContainer.start();
     String cassandraHost =
         this.cassandraContainer.getCurrentContainerInfo().getConfig().getHostName();
-    if (!useDseCql()) {
+    if (runCoordinator()) {
       this.stargateContainer = this.baseCoordinatorContainer(reuse);
       this.stargateContainer
           .withNetworkMode(networkId)
@@ -248,9 +248,13 @@ public abstract class StargateTestResource
     return "true".equals(dse);
   }
 
-  protected boolean useDseCql() {
-    String cqlHost = System.getProperty("testing.containers.cql-host", Defaults.CQL_HOST);
-    return "dse".equals(cqlHost);
+  /**
+   * Returns if coordinator should be started and used.
+   *
+   * @return
+   */
+  protected boolean runCoordinator() {
+    return Boolean.getBoolean("testing.containers.run-coordinator");
   }
 
   private Duration getCassandraStartupTimeout() {
