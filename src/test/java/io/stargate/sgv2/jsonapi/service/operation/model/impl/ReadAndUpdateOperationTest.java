@@ -1721,7 +1721,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               false,
               true,
               shredder,
-              DocumentProjector.defaultProjector(),
+              DocumentProjector.includeAllProjector(),
               20,
               3);
 
