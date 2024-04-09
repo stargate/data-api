@@ -73,10 +73,12 @@ jobs:
 
       # matrix props:
       matrix:
-        type: [ docker, native ]
+        type: [ docker, native, dse-it ]
         include:
           - type: docker
             profile: ''
+          - type: dse-it
+            profile: '-Pdse-it'
         exclude:
           - type: native
             #profile: '-Pnative'

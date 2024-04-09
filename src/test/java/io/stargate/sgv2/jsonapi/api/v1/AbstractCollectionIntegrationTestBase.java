@@ -1,11 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.*;
 
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -32,7 +30,7 @@ public abstract class AbstractCollectionIntegrationTestBase
   protected void createSimpleCollection(String collectionToCreate) {
     given()
         .port(getTestPort())
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
             """
@@ -52,7 +50,7 @@ public abstract class AbstractCollectionIntegrationTestBase
   protected void createComplexCollection(String collectionSetting) {
     given()
         .port(getTestPort())
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
             """
@@ -79,7 +77,7 @@ public abstract class AbstractCollectionIntegrationTestBase
     while (true) {
       Boolean moreData =
           given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .headers(getHeaders())
               .contentType(ContentType.JSON)
               .body(json)
               .when()
@@ -109,7 +107,7 @@ public abstract class AbstractCollectionIntegrationTestBase
             .formatted(docJson);
 
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(doc)
         .when()
@@ -132,7 +130,7 @@ public abstract class AbstractCollectionIntegrationTestBase
             .formatted(docJson);
 
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(doc)
         .when()
@@ -156,7 +154,7 @@ public abstract class AbstractCollectionIntegrationTestBase
             .formatted(docsJson);
 
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(doc)
         .when()

@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -10,7 +9,6 @@ import static org.hamcrest.Matchers.nullValue;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
@@ -73,7 +71,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -114,7 +112,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -160,7 +158,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -209,7 +207,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
     public void byIdDefaultProjection() {
       insertDoc(EXT_DOC1);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -232,7 +230,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
     public void byIdIncludeExtValues() {
       insertDoc(EXT_DOC1);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -266,7 +264,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
     public void byIdExcludeExtValues() {
       insertDoc(EXT_DOC1);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -319,7 +317,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -357,7 +355,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -401,7 +399,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -443,7 +441,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -486,7 +484,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
