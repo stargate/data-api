@@ -123,11 +123,10 @@ public abstract class AbstractNamespaceIntegrationTestBase {
 
   protected Map<String, ?> getInvalidHeaders() {
     if (useDseCql()) {
+      String credential = "invalid" + "/" + getCassandraPassword();
       return Map.of(
-          HttpConstants.AUTHENTICATION_USER_NAME_HEADER,
-          "invalid",
-          HttpConstants.AUTHENTICATION_PASSWORD_HEADER,
-          getCassandraPassword(),
+          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+          Base64.getEncoder().encodeToString(credential.getBytes()),
           HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
           CustomITEmbeddingProvider.TEST_API_KEY);
     } else {
