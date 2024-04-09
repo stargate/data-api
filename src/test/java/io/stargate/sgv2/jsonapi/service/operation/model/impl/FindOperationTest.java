@@ -2552,7 +2552,7 @@ public class FindOperationTest extends OperationTestBase {
     AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
     final AtomicInteger callCount = new AtomicInteger();
     QueryExecutor queryExecutor = mock(QueryExecutor.class);
-    when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
         .then(
             invocation -> {
               callCount.incrementAndGet();
@@ -2576,7 +2576,7 @@ public class FindOperationTest extends OperationTestBase {
 
     Supplier<CommandResult> execute =
         operation
-            .execute(queryExecutor)
+            .execute(dataApiRequestInfo, queryExecutor)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .awaitItem()
@@ -2794,7 +2794,8 @@ public class FindOperationTest extends OperationTestBase {
       boolean dataPresent = false;
       Map<InetAddress, Integer> reasonMap = new HashMap<>();
       reasonMap.put(InetAddress.getByName("127.0.0.1"), 0x0000);
-      Mockito.when(queryExecutor.executeVectorSearch(any(), any(), anyInt()))
+      Mockito.when(
+              queryExecutor.executeVectorSearch(eq(dataApiRequestInfo), any(), any(), anyInt()))
           .thenThrow(
               new ReadFailureException(
                   coordinator,
@@ -2821,7 +2822,7 @@ public class FindOperationTest extends OperationTestBase {
       // Throwable
       Throwable failure =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()

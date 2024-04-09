@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -88,14 +89,7 @@ public class FileWriterSession implements CqlSession {
       throw new FileNotFoundException(
           "Directory does not exist: " + fileWriterParams.ssTableOutputDirectory());
     }
-    this.ssTableOutputDirectory =
-        fileWriterParams.ssTableOutputDirectory()
-            + File.separator
-            + sessionId
-            + File.separator
-            + this.keyspace
-            + File.separator
-            + this.table;
+    this.ssTableOutputDirectory = fileWriterParams.ssTableOutputDirectory();
     this.fileWriterBufferSizeInMB = fileWriterParams.fileWriterBufferSizeInMB();
     Files.createDirectories(Path.of(ssTableOutputDirectory));
     CQLSSTableWriter.Builder cqlSSTableWriterBuilder =
@@ -225,6 +219,12 @@ public class FileWriterSession implements CqlSession {
           TypeCodecs.vectorOf(cqlVector.size(), TypeCodecs.FLOAT)
               .encode(cqlVector, ProtocolVersion.DEFAULT);
       boundValues.set(vectorColumnIndex, encodedVectorData);
+    }
+    // Change Instant to Date
+    for (int i = 0; i < boundValues.size(); i++) {
+      if (boundValues.get(i) instanceof Instant instant) {
+        boundValues.set(i, new Date(instant.toEpochMilli()));
+      }
     }
   }
 

@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
+import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -20,7 +21,8 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingService;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.BeginOfflineSessionCommandResolver;
@@ -116,7 +118,7 @@ public class OfflineLoaderTester {
   private static Pair<String, CommandContext> beginSession(boolean vectorTest)
       throws ExecutionException, InterruptedException {
     CommandProcessor commandProcessor =
-        new CommandProcessor(buildQueryExecutor(), buildCommandResolverService());
+        new CommandProcessor(buildQueryExecutor(), buildCommandResolverService(), null); // TODO-SL
     // Create the beginOfflineSession command so we can create a new offline session
     String namespace = "demo_namespace";
     String collection = "players";
@@ -124,17 +126,22 @@ public class OfflineLoaderTester {
     int vectorSize = 3;
     int fileWriterBufferSizeInMB = 5;
     String similarityFunction = CollectionSettings.SimilarityFunction.COSINE.toString();
-
+    CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig vectorizeConfig =
+        null; // TODO-SL
     var vectorSearchConfig =
-        new CreateCollectionCommand.Options.VectorSearchConfig(vectorSize, similarityFunction);
+        new CreateCollectionCommand.Options.VectorSearchConfig(
+            vectorSize, similarityFunction, vectorizeConfig);
+    CreateCollectionCommand.Options.IdConfig idConfig =
+        new CreateCollectionCommand.Options.IdConfig("uuid");
+
     var options =
-        new CreateCollectionCommand.Options(vectorTest ? vectorSearchConfig : null, null, null);
+        new CreateCollectionCommand.Options(idConfig, vectorTest ? vectorSearchConfig : null, null);
     var createCollectionCommand = new CreateCollectionCommand(collection, options);
     var beginOfflineSessionCommand =
         new BeginOfflineSessionCommand(
             namespace, createCollectionCommand, ssTablesOutputDirectory, fileWriterBufferSizeInMB);
 
-    EmbeddingService embeddingService = null; // TODO
+    EmbeddingProvider embeddingService = null; // TODO
     JsonProcessingMetricsReporter jsonProcessingMetricsReporter = null; // TODO
 
     DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo();
@@ -166,7 +173,8 @@ public class OfflineLoaderTester {
       String sessionId, CommandContext commandContext, List<JsonNode> records)
       throws ExecutionException, InterruptedException, JsonProcessingException {
     CommandProcessor commandProcessor =
-        new CommandProcessor(buildQueryExecutor(), buildCommandResolverService());
+        new CommandProcessor(
+            buildQueryExecutor(), buildCommandResolverService(), buildDataVectorizeService());
     DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo();
     dataApiRequestInfo.setTenantId(sessionId);
     // TODO - SL, what is the max number of docs in the offline insert many ?
@@ -186,10 +194,27 @@ public class OfflineLoaderTester {
     return offlineInsertManyCommandResponse;
   }
 
+  private static DataVectorizerService buildDataVectorizeService() {
+    ObjectMapper objectMapper = new ObjectMapper();
+    SmallRyeConfig smallRyeConfig =
+        new SmallRyeConfigBuilder()
+            .withMapping(DocumentLimitsConfig.class)
+            .withMapping(OperationsConfig.class)
+            .withMapping(MetricsConfig.class)
+            .build();
+    DocumentLimitsConfig documentLimitsConfig =
+        smallRyeConfig.getConfigMapping(DocumentLimitsConfig.class);
+    MetricsConfig metricsConfig = smallRyeConfig.getConfigMapping(MetricsConfig.class);
+
+    return new DataVectorizerService(
+        objectMapper, new DataApiRequestInfo(), new SimpleMeterRegistry(), null, metricsConfig);
+  }
+
   public static CommandResult endSession(String sessionId, CommandContext commandContext)
       throws ExecutionException, InterruptedException {
     CommandProcessor commandProcessor =
-        new CommandProcessor(buildQueryExecutor(), buildCommandResolverService());
+        new CommandProcessor(
+            buildQueryExecutor(), buildCommandResolverService(), buildDataVectorizeService());
     DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo();
     dataApiRequestInfo.setTenantId(sessionId);
     // TODO SL - response should include file path and size
@@ -207,7 +232,8 @@ public class OfflineLoaderTester {
   public static CommandResult getStatus(CommandContext commandContext, String sessionId)
       throws ExecutionException, InterruptedException {
     CommandProcessor commandProcessor =
-        new CommandProcessor(buildQueryExecutor(), buildCommandResolverService());
+        new CommandProcessor(
+            buildQueryExecutor(), buildCommandResolverService(), buildDataVectorizeService());
     DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo();
     dataApiRequestInfo.setTenantId(sessionId);
     // TODO: SL - Add a test that loops calling insertMany, checking the size of the SSTable with

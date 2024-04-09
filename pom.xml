@@ -186,6 +186,31 @@
   <build>
     <plugins>
       <plugin>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <phase>deploy</phase>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!-- explicitly define maven-deploy-plugin after other to force exec order -->
+        <artifactId>maven-deploy-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>deploy</id>
+            <phase>deploy</phase>
+            <goals>
+              <goal>deploy</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>${quarkus.platform.version}</version>
@@ -295,10 +320,16 @@
       <distributionManagement>
         <repository>
           <uniqueVersion>false</uniqueVersion>
-          <id>artifactory-snapshots</id>
-          <name>DataStax Maven repository</name>
-          <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+          <id>stargate-central</id>
+          <name>stargate-releases</name>
+          <url>https://repo.datastax.com/artifactory/stargate-private</url>
         </repository>
+        <snapshotRepository>
+          <uniqueVersion>false</uniqueVersion>
+          <id>stargate-snapshots</id>
+          <name>stargate-snapshots</name>
+          <url>https://repo.datastax.com/artifactory/stargate-private</url>
+        </snapshotRepository>
       </distributionManagement>
     </profile>
   </profiles>
