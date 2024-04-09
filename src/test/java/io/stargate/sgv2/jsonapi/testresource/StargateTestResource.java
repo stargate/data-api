@@ -70,7 +70,9 @@ public abstract class StargateTestResource
         propsBuilder.put("stargate.int-test.coordinator.cql-port", cqlPort);
       }
 
-      propsBuilder.put("stargate.int-test.cassandra.host", this.cassandraContainer.getHost());
+      propsBuilder.put(
+          "stargate.int-test.cassandra.host",
+          this.cassandraContainer.getCurrentContainerInfo().getConfig().getHostName());
       propsBuilder.put(
           "stargate.int-test.cassandra.cql-port",
           this.cassandraContainer.getMappedPort(9042).toString());
