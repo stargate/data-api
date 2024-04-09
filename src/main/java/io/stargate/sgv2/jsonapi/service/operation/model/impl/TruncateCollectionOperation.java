@@ -27,6 +27,7 @@ public record TruncateCollectionOperation(CommandContext context) implements Ope
     // execute
     return queryExecutor
         .executeTruncateSchemaChange(query)
+
         // if we have a result always respond positively
         .map(any -> new DeleteOperationPage(null, false, false));
   }
