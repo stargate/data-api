@@ -119,6 +119,8 @@ public class CQLSessionCache {
               .addContactPoints(seeds)
               .withClassLoader(Thread.currentThread().getContextClassLoader())
               .withApplicationName(APPLICATION_NAME);
+      // To use username and password, a Base64Encoded text of the credential is passed as token.
+      // The text needs to be in format <username>/<password> Eg: cassandra/cassandra
       if (getFixedToken() == null) {
         UsernamePasswordCredentials upc =
             UsernamePasswordCredentials.from(dataApiRequestInfo.getCassandraToken().orElseThrow());
