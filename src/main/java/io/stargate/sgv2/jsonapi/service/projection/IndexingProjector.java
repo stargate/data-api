@@ -60,7 +60,7 @@ public class IndexingProjector {
       if (!allowed.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
         allowed.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
       }
-      return new IndexingProjector(ProjectionLayer.buildLayersOverlapOk(allowed), true, false);
+      return new IndexingProjector(ProjectionLayer.buildLayersForIndexing(allowed), true, false);
     }
     if (denied != null && !denied.isEmpty()) {
       // (special) Case 4:
@@ -71,10 +71,10 @@ public class IndexingProjector {
         overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
         overrideFields.add(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
         return new IndexingProjector(
-            ProjectionLayer.buildLayersOverlapOk(overrideFields), true, true);
+            ProjectionLayer.buildLayersForIndexing(overrideFields), true, true);
       }
       // Case 2: exclusion-based projection
-      return new IndexingProjector(ProjectionLayer.buildLayersOverlapOk(denied), false, false);
+      return new IndexingProjector(ProjectionLayer.buildLayersForIndexing(denied), false, false);
     }
     // Case 3: include-all (identity) projection
     return identityProjector();

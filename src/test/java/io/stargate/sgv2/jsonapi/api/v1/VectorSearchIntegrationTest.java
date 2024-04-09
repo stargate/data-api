@@ -200,7 +200,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           """
         {
           "find": {
-            "filter" : {"_id" : "1"}
+            "filter" : {"_id" : "1"},
+            "projection": { "*": 1 }
           }
         }
         """;
@@ -222,8 +223,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(expected))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     // Test to verify vector embedding size can exceed general Array length limit
@@ -241,7 +242,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               """
             {
               "find": {
-                "filter" : {"_id" : "bigVector1"}
+                "filter" : {"_id" : "bigVector1"},
+                "projection": { "*": 1 }
               }
             }
             """)
@@ -453,7 +455,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           """
                       {
                         "find": {
-                          "filter" : {"_id" : "2"}
+                          "filter" : {"_id" : "2"},
+                          "projection": { "*": 1 }
                         }
                       }
                       """;
@@ -475,8 +478,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(expected))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("data.documents[0]", jsonEquals(expected));
     }
   }
 
@@ -1052,6 +1055,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       {
                         "findOneAndUpdate": {
                           "filter" : {"_id": "2"},
+                          "projection": { "*": 1 },
                           "update" : {"$set" : {"$vector" : [0.25, 0.25, 0.25, 0.25, 0.25]}},
                           "options" : {"returnDocument" : "after"}
                         }
@@ -1066,11 +1070,11 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document._id", is("2"))
-          .body("data.document.$vector", contains(0.25f, 0.25f, 0.25f, 0.25f, 0.25f))
+          .body("errors", is(nullValue()))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("data.document._id", is("2"))
+          .body("data.document.$vector", contains(0.25f, 0.25f, 0.25f, 0.25f, 0.25f));
     }
 
     @Test
@@ -1095,11 +1099,11 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document._id", is("1"))
-          .body("data.document.$vector", is(nullValue()))
+          .body("errors", is(nullValue()))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("data.document._id", is("1"))
+          .body("data.document.$vector", is(nullValue()));
     }
 
     @Test
@@ -1110,6 +1114,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       {
                         "findOneAndUpdate": {
                           "filter" : {"_id": "11"},
+                          "projection": { "*": 1 },
                           "update" : {"$setOnInsert" : {"$vector": [0.11, 0.22, 0.33, 0.44, 0.55]}},
                           "options" : {"returnDocument" : "after", "upsert": true}
                         }
@@ -1174,12 +1179,13 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .contentType(ContentType.JSON)
           .body(
               """
-                                      {
-                                        "find": {
-                                          "filter" : {"_id" : "bigVectorForSet"}
-                                        }
-                                      }
-                                      """)
+                {
+                  "find": {
+                    "filter" : {"_id" : "bigVectorForSet"},
+                    "projection": { "*": 1 }
+                  }
+                }
+                """)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
           .then()
@@ -1196,6 +1202,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       {
                         "findOneAndUpdate": {
                           "filter" : {"_id": "bigVectorForSet"},
+                          "projection": { "*": 1 },
                           "update" : {"$set" : {"$vector" : [ %s ]}},
                           "options" : {"returnDocument" : "after"}
                         }
@@ -1226,7 +1233,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               """
                         {
                           "find": {
-                            "filter" : {"_id" : "bigVectorForSet"}
+                            "filter" : {"_id" : "bigVectorForSet"},
+                            "projection": { "*": 1 }
                           }
                         }
                         """)
@@ -1330,6 +1338,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       {
                         "findOneAndReplace": {
                           "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                          "projection": { "*": 1 },
                           "replacement" : {"_id" : "3", "username": "user3", "status" : false, "$vector" : [0.12, 0.05, 0.08, 0.32, 0.6]},
                           "options" : {"returnDocument" : "after"}
                         }
@@ -1397,7 +1406,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               """
           {
             "find": {
-              "filter" : {"_id" : "bigVectorForFindReplace"}
+              "filter" : {"_id" : "bigVectorForFindReplace"},
+              "projection": { "*": 1 }
             }
           }
           """)
@@ -1417,6 +1427,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                     {
                       "findOneAndReplace": {
                         "filter" : {"_id" : "bigVectorForFindReplace"},
+                        "projection": { "*": 1 },
                         "replacement" : {"_id" : "bigVectorForFindReplace", "$vector" : [ %s ]},
                         "options" : {"returnDocument" : "after"}
                       }
@@ -1432,12 +1443,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("data.document._id", is("bigVectorForFindReplace"))
           .body("data.document.$vector", is(notNullValue()))
-          .body("data.document.$vector", hasSize(BIG_VECTOR_SIZE))
-          .body("errors", is(nullValue()));
+          .body("data.document.$vector", hasSize(BIG_VECTOR_SIZE));
 
       // and verify it was set to value with expected size
       given()
@@ -1447,7 +1458,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               """
                       {
                         "find": {
-                          "filter" : {"_id" : "bigVectorForFindReplace"}
+                          "filter" : {"_id" : "bigVectorForFindReplace"},
+                          "projection": { "*": 1 }
                         }
                       }
                       """)
@@ -1470,6 +1482,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           """
             {
               "findOneAndDelete": {
+                "projection": { "*": 1 },
                 "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
               }
             }
@@ -1483,11 +1496,11 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document._id", is("3"))
-          .body("data.document.$vector", is(notNullValue()))
-          .body("data.document.name", is("Vision Vector Frame"))
+          .body("errors", is(nullValue()))
           .body("status.deletedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("data.document._id", is("3"))
+          .body("data.document.name", is("Vision Vector Frame"))
+          .body("data.document.$vector", is(notNullValue()));
     }
 
     @Test
@@ -1512,9 +1525,9 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("status.deletedCount", is(1))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("data", is(nullValue()));
 
       // ensure find does not find the document
       json =
@@ -1534,9 +1547,9 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document", is(nullValue()))
+          .body("errors", is(nullValue()))
           .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("data.document", is(nullValue()));
     }
 
     @Test
