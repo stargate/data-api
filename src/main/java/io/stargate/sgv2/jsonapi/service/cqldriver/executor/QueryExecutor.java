@@ -166,7 +166,7 @@ public class QueryExecutor {
     return executeSchemaChange(boundStatement, "truncate");
   }
 
-  public Uni<AsyncResultSet> executeSchemaChange(SimpleStatement boundStatement, String profile) {
+  private Uni<AsyncResultSet> executeSchemaChange(SimpleStatement boundStatement, String profile) {
     return Uni.createFrom()
         .completionStage(
             cqlSessionCache
