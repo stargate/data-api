@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.api.common.config.AuthConfig;
 import io.stargate.sgv2.api.common.security.challenge.ChallengeSender;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
@@ -31,29 +30,12 @@ public class ErrorChallengeSender implements ChallengeSender {
   /** Result is always constant */
   private final CommandResult commandResult;
 
-  private final AuthConfig authConfig;
-
   @Inject
-  public ErrorChallengeSender(ObjectMapper objectMapper, AuthConfig authConfig) {
+  public ErrorChallengeSender(ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
-    this.authConfig = authConfig;
-    String message;
-    if (authConfig
-        .headerBased()
-        .headerName()
-        .contains(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME)) {
-      message =
-          "Role unauthorized for operation: Missing authentication header, expecting %s header."
-              .formatted(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME);
-    } else {
-      // if server data-api started to connect using username/password
-      message =
-          "Role unauthorized for operation: Missing authentication header, expecting %s headers."
-              .formatted(
-                  HttpConstants.AUTHENTICATION_USER_NAME_HEADER
-                      + " and "
-                      + HttpConstants.AUTHENTICATION_PASSWORD_HEADER);
-    }
+    String message =
+        "Role unauthorized for operation: Missing token, expecting one in the %s header."
+            .formatted(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME);
     CommandResult.Error error =
         new CommandResult.Error(
             message, Collections.emptyMap(), Collections.emptyMap(), Response.Status.UNAUTHORIZED);
