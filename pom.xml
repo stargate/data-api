@@ -220,7 +220,7 @@
                 <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
                 <maven.home>${maven.home}</maven.home>
-                <testing.containers.run-coordinator>${testing.containers.run-coordinator}</testing.containers.run-coordinator>
+                <testing.containers.run-coordinator>${stargate.int-test.run-coordinator}</testing.containers.run-coordinator>
               </systemPropertyVariables>
               <includes>
                 <include>**/*IntegrationTest.*</include>
