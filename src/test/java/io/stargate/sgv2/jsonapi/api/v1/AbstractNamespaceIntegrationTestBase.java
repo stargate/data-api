@@ -105,7 +105,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
   }
 
   protected Map<String, ?> getHeaders() {
-    if (runCoordinator()) {
+    if (useCoordinator()) {
       return Map.of(
           HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
           getAuthToken(),
@@ -122,7 +122,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
   }
 
   protected Map<String, ?> getInvalidHeaders() {
-    if (runCoordinator()) {
+    if (useCoordinator()) {
       return Map.of(
           HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
           "invalid",
@@ -138,8 +138,8 @@ public abstract class AbstractNamespaceIntegrationTestBase {
     }
   }
 
-  protected boolean runCoordinator() {
-    return Boolean.getBoolean("testing.containers.run-coordinator");
+  protected boolean useCoordinator() {
+    return Boolean.getBoolean("testing.containers.use-coordinator");
   }
 
   public static void checkMetrics(String commandName) {
