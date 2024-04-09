@@ -24,10 +24,4 @@ public interface HttpConstants {
   /** @return Embedding service header name <code>20</code>. */
   @WithDefault(EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME)
   String embeddingApiKey();
-
-  @WithDefault(AUTHENTICATION_USER_NAME_HEADER)
-  String authenticationUserNameHeader();
-
-  @WithDefault(AUTHENTICATION_PASSWORD_HEADER)
-  String authenticationPasswordHeader();
 }

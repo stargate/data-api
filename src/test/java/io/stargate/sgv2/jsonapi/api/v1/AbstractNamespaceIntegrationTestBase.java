@@ -12,6 +12,7 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -105,11 +106,10 @@ public abstract class AbstractNamespaceIntegrationTestBase {
 
   protected Map<String, ?> getHeaders() {
     if (useDseCql()) {
+      String credential = getCassandraUsername() + "/" + getCassandraPassword();
       return Map.of(
-          HttpConstants.AUTHENTICATION_USER_NAME_HEADER,
-          getCassandraUsername(),
-          HttpConstants.AUTHENTICATION_PASSWORD_HEADER,
-          getCassandraPassword(),
+          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+          Base64.getEncoder().encodeToString(credential.getBytes()),
           HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
           CustomITEmbeddingProvider.TEST_API_KEY);
     } else {

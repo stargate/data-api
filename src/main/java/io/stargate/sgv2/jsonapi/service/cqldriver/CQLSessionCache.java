@@ -15,6 +15,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -118,7 +119,9 @@ public class CQLSessionCache {
               .addContactPoints(seeds)
               .withClassLoader(Thread.currentThread().getContextClassLoader())
               .withApplicationName(APPLICATION_NAME);
-      if (cacheKey.credentials instanceof UsernamePasswordCredentials upc) {
+      if (getFixedToken() == null) {
+        UsernamePasswordCredentials upc =
+            UsernamePasswordCredentials.from(dataApiRequestInfo.getCassandraToken().orElseThrow());
         builder.withAuthCredentials(
             Objects.requireNonNull(upc.userName()), Objects.requireNonNull(upc.password()));
       } else {
@@ -171,13 +174,7 @@ public class CQLSessionCache {
   private SessionCacheKey getSessionCacheKey() {
     switch (operationsConfig.databaseConfig().type()) {
       case CASSANDRA -> {
-        if (dataApiRequestInfo.getCassandraCredentials().isPresent()) {
-          return new SessionCacheKey(
-              dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
-              new UsernamePasswordCredentials(
-                  dataApiRequestInfo.getCassandraCredentials().get().userName(),
-                  dataApiRequestInfo.getCassandraCredentials().get().password()));
-        } else if (dataApiRequestInfo.getCassandraToken().isPresent()) {
+        if (dataApiRequestInfo.getCassandraToken().isPresent()) {
           return new SessionCacheKey(
               dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
               new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
@@ -222,7 +219,19 @@ public class CQLSessionCache {
    * @param password
    */
   private record UsernamePasswordCredentials(String userName, String password)
-      implements Credentials {}
+      implements Credentials {
+
+    public static UsernamePasswordCredentials from(String encodedCredentials) {
+      String decoded = new String(Base64.getDecoder().decode(encodedCredentials));
+      int index = decoded.indexOf("/");
+      if (index == -1) {
+        throw new RuntimeException("Invalid credentials provided");
+      }
+      String userName = decoded.substring(0, index);
+      String password = decoded.substring(index + 1);
+      return new UsernamePasswordCredentials(userName, password);
+    }
+  }
 
   /**
    * Credentials for CQLSession cache when token is provided.

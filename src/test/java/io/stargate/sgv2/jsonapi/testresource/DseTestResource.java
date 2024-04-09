@@ -88,8 +88,6 @@ public class DseTestResource extends StargateTestResource {
       if (defaultToken != null) {
         propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);
       }
-    } else {
-      propsBuilder.put("stargate.auth.header-based.header-name", "X-Cassandra-Username");
     }
     propsBuilder.put("stargate.data-store.ignore-bridge", "true");
     propsBuilder.put("stargate.debug.enabled", "true");
