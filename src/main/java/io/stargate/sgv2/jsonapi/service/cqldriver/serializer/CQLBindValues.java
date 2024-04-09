@@ -75,6 +75,14 @@ public class CQLBindValues {
     return to;
   }
 
+  public static Map<String, Date> getTimestampAsDateMapValues(Map<JsonPath, Date> from) {
+    final Map<String, Date> to = new HashMap<>(from.size());
+    for (Map.Entry<JsonPath, Date> entry : from.entrySet()) {
+      to.put(entry.getKey().toString(), entry.getValue());
+    }
+    return to;
+  }
+
   private static TupleType tupleType = DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
 
   public static TupleValue getDocumentIdValue(DocumentId documentId) {

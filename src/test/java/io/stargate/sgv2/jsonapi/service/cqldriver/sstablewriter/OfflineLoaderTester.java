@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -15,6 +16,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -31,6 +33,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineGetStatusComm
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineInsertManyCommandResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -40,6 +43,8 @@ import org.testcontainers.shaded.org.apache.commons.lang3.tuple.ImmutablePair;
 import org.testcontainers.shaded.org.apache.commons.lang3.tuple.Pair;
 
 public class OfflineLoaderTester {
+  private static CQLSessionCache cqlSessionCache;
+
   public static void main(String[] args) throws InterruptedException, ExecutionException {
     OfflineFileWriterInitializer.initialize();
     int iterationCount = 1;
@@ -73,8 +78,8 @@ public class OfflineLoaderTester {
     List<String> sessionIds = new ArrayList<>();
     // System.out.println(threadId + "Started");
     boolean vectorTest = true;
-    int totalRecords = 100_000;
-    int chuckSize = totalRecords / 20;
+    int totalRecords = 10;
+    int chuckSize = 10;
     int createNewSessionAfterDataInMB = 20;
     List<JsonNode> records = getRecords(vectorTest, totalRecords);
     List<List<JsonNode>> recordsList = new ArrayList<>(Lists.partition(records, chuckSize));
@@ -118,7 +123,10 @@ public class OfflineLoaderTester {
   private static Pair<String, CommandContext> beginSession(boolean vectorTest)
       throws ExecutionException, InterruptedException {
     CommandProcessor commandProcessor =
-        new CommandProcessor(buildQueryExecutor(), buildCommandResolverService(), null); // TODO-SL
+        new CommandProcessor(
+            buildQueryExecutor(),
+            buildCommandResolverService(),
+            buildVectorizerService()); // TODO-SL
     // Create the beginOfflineSession command so we can create a new offline session
     String namespace = "demo_namespace";
     String collection = "players";
@@ -167,6 +175,16 @@ public class OfflineLoaderTester {
     String sessionId =
         commandResult.status().get(CommandStatus.OFFLINE_WRITER_SESSION_ID).toString();
     return new ImmutablePair<>(sessionId, commandContext);
+  }
+
+  private static DataVectorizerService buildVectorizerService() {
+    ObjectMapper objectMapper = new ObjectMapper();
+    DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo();
+    MeterRegistry meterRegistry = new SimpleMeterRegistry();
+    JsonApiMetricsConfig jsonApiMetricsConfig = null;
+    MetricsConfig metricsConfig = null;
+    return new DataVectorizerService(
+        objectMapper, dataApiRequestInfo, meterRegistry, jsonApiMetricsConfig, metricsConfig);
   }
 
   private static CommandResult loadData(
@@ -264,8 +282,9 @@ public class OfflineLoaderTester {
   private static List<JsonNode> getRecords(boolean isVectorEnabled, int totalRecords)
       throws JsonProcessingException {
     List<JsonNode> records = new ArrayList<>();
-    String template = """
-        {"_id": %s,"name": "person%s", "age":"%s"%s}
+    String template =
+        """
+        {"_id": %s,"name": "person%s", "rank":%s, "dob":{"$date": %s}%s}
         """;
     for (int i = 0; i < totalRecords; i++) {
       records.add(
@@ -276,6 +295,7 @@ public class OfflineLoaderTester {
                       i,
                       i,
                       (int) (Math.random() * 99) + 1,
+                      Instant.ofEpochMilli(System.currentTimeMillis()).toEpochMilli(),
                       isVectorEnabled ? ",\"$vector\": [0.3,0.4,0.5]" : "")));
     }
     return records;
@@ -304,8 +324,9 @@ public class OfflineLoaderTester {
             .withDefaultValue("stargate.jsonapi.operations.database-config.type", OFFLINE_WRITER)
             .build();
     OperationsConfig operationsConfig = smallRyeConfig.getConfigMapping(OperationsConfig.class);
-    CQLSessionCache cqlSessionCache =
-        new CQLSessionCache(operationsConfig, new SimpleMeterRegistry());
+    if (cqlSessionCache == null) {
+      cqlSessionCache = new CQLSessionCache(operationsConfig, new SimpleMeterRegistry());
+    }
     return new QueryExecutor(cqlSessionCache, operationsConfig);
   }
 }

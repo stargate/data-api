@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -219,12 +218,6 @@ public class FileWriterSession implements CqlSession {
           TypeCodecs.vectorOf(cqlVector.size(), TypeCodecs.FLOAT)
               .encode(cqlVector, ProtocolVersion.DEFAULT);
       boundValues.set(vectorColumnIndex, encodedVectorData);
-    }
-    // Change Instant to Date
-    for (int i = 0; i < boundValues.size(); i++) {
-      if (boundValues.get(i) instanceof Instant instant) {
-        boundValues.set(i, new Date(instant.toEpochMilli()));
-      }
     }
   }
 
