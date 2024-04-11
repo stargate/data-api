@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
@@ -15,7 +14,6 @@ import static org.hamcrest.Matchers.startsWith;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -101,7 +99,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -124,7 +122,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -148,7 +146,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -172,7 +170,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -197,7 +195,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -213,7 +211,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     @Test
     public void byId() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -237,7 +235,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     @Test
     public void byIdEmptySort() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -270,7 +268,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -295,7 +293,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
       // findOne resolves any one of the resolved documents. So the order of the documents in the
       // $in clause is not guaranteed.
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -319,7 +317,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
         }
             """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -342,7 +340,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
         }
         """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -367,7 +365,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
             }
             """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -392,7 +390,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
         }
         """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -414,7 +412,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -439,7 +437,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -463,7 +461,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -488,7 +486,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -514,7 +512,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -540,7 +538,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -565,7 +563,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -589,7 +587,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -613,7 +611,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -637,7 +635,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -661,7 +659,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -688,7 +686,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -713,7 +711,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -737,7 +735,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -839,7 +837,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
 
       // We should only match one of ids so ordering won't matter
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(request)
           .when()
@@ -870,7 +868,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
 
       // We should only match one of ids so ordering won't matter
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(request)
           .when()
@@ -901,7 +899,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
 
       // We should only match one of ids so ordering won't matter
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(request)
           .when()
@@ -932,7 +930,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
 
       // We should only match one of ids so ordering won't matter
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(request)
           .when()
@@ -953,7 +951,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     @Test
     public void failForMissingCollection() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{ \"findOne\": { \"filter\" : {\"_id\": \"doc1\"}}}")
           .when()
@@ -973,7 +971,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     @Test
     public void failForInvalidCollectionName() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{ \"findOne\": { \"filter\" : {\"_id\": \"doc1\"}}}")
           .when()
@@ -994,7 +992,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     @Test
     public void failForInvalidJsonExtension() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{ \"findOne\": { \"filter\" : {\"_id\": {\"$guid\": \"doc1\"}}}}")
           .when()
@@ -1012,7 +1010,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     @Test
     public void failForInvalidUUIDAsId() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{ \"findOne\": { \"filter\" : {\"_id\": {\"$uuid\": \"not-an-uuid\"}}}}")
           .when()
@@ -1033,7 +1031,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     @Test
     public void failForInvalidObjectIdAsId() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{ \"findOne\": { \"filter\" : {\"_id\": {\"$objectId\": \"bogus\"}}}}")
           .when()

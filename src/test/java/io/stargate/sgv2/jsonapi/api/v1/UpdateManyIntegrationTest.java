@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
@@ -13,7 +12,6 @@ import static org.hamcrest.Matchers.nullValue;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -60,7 +58,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -91,7 +89,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -118,7 +116,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -142,7 +140,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -169,7 +167,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -190,7 +188,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -213,7 +211,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -235,7 +233,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -259,7 +257,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -281,7 +279,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -305,7 +303,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               """;
       String nextPageState =
           given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .headers(getHeaders())
               .contentType(ContentType.JSON)
               .body(json)
               .when()
@@ -333,7 +331,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               """
               .formatted(nextPageState);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -354,7 +352,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
         }
         """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -378,7 +376,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -409,7 +407,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -436,7 +434,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               }
               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -467,7 +465,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               }
               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -491,7 +489,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -521,7 +519,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -545,7 +543,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -568,7 +566,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
             """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -592,7 +590,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -624,7 +622,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -676,7 +674,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
                 () -> {
                   try {
                     given()
-                        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                        .headers(getHeaders())
                         .contentType(ContentType.JSON)
                         .body(updateJson)
                         .when()
@@ -719,7 +717,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
@@ -745,7 +743,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()

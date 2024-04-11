@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
@@ -27,7 +26,6 @@ import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -75,7 +73,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -86,7 +84,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -128,7 +126,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -139,7 +137,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -181,7 +179,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -211,7 +209,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(query_json)
           .when()
@@ -238,7 +236,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -268,7 +266,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(query_json)
           .when()
@@ -294,7 +292,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -322,7 +320,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -349,7 +347,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -376,7 +374,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -407,7 +405,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -430,7 +428,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -461,7 +459,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -484,7 +482,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -507,7 +505,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -559,7 +557,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               """
               .formatted(UUID_KEY);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .when()
@@ -572,7 +570,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
       // Find by UUID, full $uuid notation
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{\"find\": { \"filter\" : {\"_id\" : {\"$uuid\":\"%s\"}}}}".formatted(UUID_KEY))
           .when()
@@ -584,7 +582,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
       // Find by UUID, short-cut (unwrapped)
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(UUID_KEY))
           .when()
@@ -608,7 +606,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               """
               .formatted(OBJECTID_KEY);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .when()
@@ -620,7 +618,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()));
       // Find by ObjectId, full $objectId notation
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               "{\"find\": { \"filter\" : {\"_id\": {\"$objectId\":\"%s\"}}}}"
@@ -633,7 +631,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors", is(nullValue()));
       // Find by ObjectId, shortcut notation
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(OBJECTID_KEY))
           .when()
@@ -655,7 +653,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
       Response response =
           given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .headers(getHeaders())
               .contentType(ContentType.JSON)
               .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
               .when()
@@ -679,7 +677,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
       // And with that, we should be able to find the document
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               "{\"find\": { \"filter\" : {\"_id\": {\"$objectId\":\"%s\"}}}}"
@@ -711,7 +709,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                   """
               .formatted(KEY, UUID_VALUE, UUID_VALUE2);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .when()
@@ -722,7 +720,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{\"find\": { \"filter\" : {\"_id\" : {\"$uuid\": \"%s\"}}}}".formatted(KEY))
           .when()
@@ -751,7 +749,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                   """
               .formatted(KEY, OBJECTID_VALUE, OBJECTID_VALUE2);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .when()
@@ -762,7 +760,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(KEY))
           .when()
@@ -786,7 +784,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                           }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .when()
@@ -814,7 +812,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                               }
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .when()
@@ -842,7 +840,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
           .when()
@@ -894,7 +892,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               """
               .formatted(doc);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -946,7 +944,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """
               .formatted(doc);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -999,7 +997,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                     """
               .formatted(tooLongNumStr);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1048,7 +1046,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                         """
               .formatted(tooLongString);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1082,7 +1080,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
       // But in this case, let's also verify that we can find it via nested properties
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1113,7 +1111,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                         """
               .formatted(bigDoc);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1150,7 +1148,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               """
               .formatted(tooManyPropsDoc);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1193,7 +1191,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                             """
               .formatted(tooManyPropsDoc);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1222,7 +1220,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               .formatted(doc);
       // Insert has to succeed
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1235,7 +1233,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
       // But let's also verify doc can be fetched and is what we inserted
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1266,7 +1264,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       createSimpleCollection(COLLECTION_MIXED);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1287,7 +1285,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1343,7 +1341,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1363,7 +1361,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1402,7 +1400,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1423,7 +1421,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1462,7 +1460,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1498,7 +1496,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1518,7 +1516,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1555,7 +1553,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1576,7 +1574,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1608,7 +1606,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1636,7 +1634,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1662,7 +1660,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1694,7 +1692,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1721,7 +1719,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1762,7 +1760,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               .formatted(tooLongNumStr);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1801,7 +1799,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                   createBigDoc("big4", bigSize).toString(),
                   createBigDoc("big5", bigSize).toString());
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1843,7 +1841,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       // needs to be for Exception and only then verifying
       try {
         given()
-            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+            .headers(getHeaders())
             .contentType(ContentType.JSON)
             .body(json)
             .when()
@@ -1891,7 +1889,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               .formatted(docs.toString());
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
