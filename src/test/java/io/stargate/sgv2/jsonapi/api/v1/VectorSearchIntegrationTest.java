@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
@@ -10,7 +9,6 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
@@ -53,7 +51,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -79,7 +77,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             }
             """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -99,7 +97,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       final int maxDimension = DocumentLimitsConfig.DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH;
       final int tooHighDimension = maxDimension + 10;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -150,7 +148,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                     }
                 """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -187,7 +185,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -202,7 +200,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           """
         {
           "find": {
-            "filter" : {"_id" : "1"}
+            "filter" : {"_id" : "1"},
+            "projection": { "*": 1 }
           }
         }
         """;
@@ -217,15 +216,15 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(expected))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("data.documents[0]", jsonEquals(expected));
     }
 
     // Test to verify vector embedding size can exceed general Array length limit
@@ -237,13 +236,14 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
       // Then verify it was inserted correctly
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
             {
               "find": {
-                "filter" : {"_id" : "bigVector1"}
+                "filter" : {"_id" : "bigVector1"},
+                "projection": { "*": 1 }
               }
             }
             """)
@@ -271,7 +271,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorSearchStr);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(findRequest)
           .when()
@@ -301,7 +301,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -330,7 +330,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -358,7 +358,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -391,7 +391,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -439,7 +439,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -455,7 +455,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           """
                       {
                         "find": {
-                          "filter" : {"_id" : "2"}
+                          "filter" : {"_id" : "2"},
+                          "projection": { "*": 1 }
                         }
                       }
                       """;
@@ -470,15 +471,15 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents[0]", jsonEquals(expected))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("data.documents[0]", jsonEquals(expected));
     }
   }
 
@@ -492,7 +493,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             """;
 
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(json)
         .when()
@@ -531,7 +532,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                     }
                     """;
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(json)
         .when()
@@ -570,7 +571,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -603,7 +604,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -636,7 +637,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -667,7 +668,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -697,7 +698,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -725,7 +726,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -754,7 +755,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -785,7 +786,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -815,7 +816,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -846,7 +847,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -883,7 +884,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -908,7 +909,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -933,7 +934,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -961,7 +962,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -990,7 +991,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1018,7 +1019,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1054,6 +1055,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       {
                         "findOneAndUpdate": {
                           "filter" : {"_id": "2"},
+                          "projection": { "*": 1 },
                           "update" : {"$set" : {"$vector" : [0.25, 0.25, 0.25, 0.25, 0.25]}},
                           "options" : {"returnDocument" : "after"}
                         }
@@ -1061,18 +1063,18 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document._id", is("2"))
-          .body("data.document.$vector", contains(0.25f, 0.25f, 0.25f, 0.25f, 0.25f))
+          .body("errors", is(nullValue()))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("data.document._id", is("2"))
+          .body("data.document.$vector", contains(0.25f, 0.25f, 0.25f, 0.25f, 0.25f));
     }
 
     @Test
@@ -1090,18 +1092,18 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document._id", is("1"))
-          .body("data.document.$vector", is(nullValue()))
+          .body("errors", is(nullValue()))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("data.document._id", is("1"))
+          .body("data.document.$vector", is(nullValue()));
     }
 
     @Test
@@ -1112,6 +1114,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       {
                         "findOneAndUpdate": {
                           "filter" : {"_id": "11"},
+                          "projection": { "*": 1 },
                           "update" : {"$setOnInsert" : {"$vector": [0.11, 0.22, 0.33, 0.44, 0.55]}},
                           "options" : {"returnDocument" : "after", "upsert": true}
                         }
@@ -1119,7 +1122,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1149,7 +1152,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1172,16 +1175,17 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
       // and verify we have null for it
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
-                                      {
-                                        "find": {
-                                          "filter" : {"_id" : "bigVectorForSet"}
-                                        }
-                                      }
-                                      """)
+                {
+                  "find": {
+                    "filter" : {"_id" : "bigVectorForSet"},
+                    "projection": { "*": 1 }
+                  }
+                }
+                """)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
           .then()
@@ -1198,6 +1202,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       {
                         "findOneAndUpdate": {
                           "filter" : {"_id": "bigVectorForSet"},
+                          "projection": { "*": 1 },
                           "update" : {"$set" : {"$vector" : [ %s ]}},
                           "options" : {"returnDocument" : "after"}
                         }
@@ -1206,7 +1211,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorStr);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1222,13 +1227,14 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
       // and verify it was set to value with expected size
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
                         {
                           "find": {
-                            "filter" : {"_id" : "bigVectorForSet"}
+                            "filter" : {"_id" : "bigVectorForSet"},
+                            "projection": { "*": 1 }
                           }
                         }
                         """)
@@ -1264,7 +1270,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1292,7 +1298,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1312,7 +1318,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1332,6 +1338,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       {
                         "findOneAndReplace": {
                           "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                          "projection": { "*": 1 },
                           "replacement" : {"_id" : "3", "username": "user3", "status" : false, "$vector" : [0.12, 0.05, 0.08, 0.32, 0.6]},
                           "options" : {"returnDocument" : "after"}
                         }
@@ -1339,7 +1346,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1370,7 +1377,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1393,13 +1400,14 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
       // and verify we have null for it
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
           {
             "find": {
-              "filter" : {"_id" : "bigVectorForFindReplace"}
+              "filter" : {"_id" : "bigVectorForFindReplace"},
+              "projection": { "*": 1 }
             }
           }
           """)
@@ -1419,6 +1427,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                     {
                       "findOneAndReplace": {
                         "filter" : {"_id" : "bigVectorForFindReplace"},
+                        "projection": { "*": 1 },
                         "replacement" : {"_id" : "bigVectorForFindReplace", "$vector" : [ %s ]},
                         "options" : {"returnDocument" : "after"}
                       }
@@ -1427,29 +1436,30 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorStr);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, bigVectorCollectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("data.document._id", is("bigVectorForFindReplace"))
           .body("data.document.$vector", is(notNullValue()))
-          .body("data.document.$vector", hasSize(BIG_VECTOR_SIZE))
-          .body("errors", is(nullValue()));
+          .body("data.document.$vector", hasSize(BIG_VECTOR_SIZE));
 
       // and verify it was set to value with expected size
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
                       {
                         "find": {
-                          "filter" : {"_id" : "bigVectorForFindReplace"}
+                          "filter" : {"_id" : "bigVectorForFindReplace"},
+                          "projection": { "*": 1 }
                         }
                       }
                       """)
@@ -1472,24 +1482,25 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           """
             {
               "findOneAndDelete": {
+                "projection": { "*": 1 },
                 "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]}
               }
             }
             """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document._id", is("3"))
-          .body("data.document.$vector", is(notNullValue()))
-          .body("data.document.name", is("Vision Vector Frame"))
+          .body("errors", is(nullValue()))
           .body("status.deletedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("data.document._id", is("3"))
+          .body("data.document.name", is("Vision Vector Frame"))
+          .body("data.document.$vector", is(notNullValue()));
     }
 
     @Test
@@ -1507,16 +1518,16 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors", is(nullValue()))
           .body("status.deletedCount", is(1))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("data", is(nullValue()));
 
       // ensure find does not find the document
       json =
@@ -1529,16 +1540,16 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document", is(nullValue()))
+          .body("errors", is(nullValue()))
           .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("data.document", is(nullValue()));
     }
 
     @Test
@@ -1563,7 +1574,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorStrCount3);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(jsonVectorStrCount3)
           .when()
@@ -1591,7 +1602,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorStrCount7);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(jsonVectorStrCount7)
           .when()
@@ -1621,7 +1632,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorStrCount3);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(jsonVectorStrCount3)
           .when()
@@ -1647,7 +1658,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
               .formatted(vectorStrCount7);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(jsonVectorStrCount7)
           .when()
@@ -1679,7 +1690,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1706,7 +1717,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1724,10 +1735,9 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
   }
 
-  private static void createVectorCollection(
-      String namespaceName, String collectionName, int vectorSize) {
+  private void createVectorCollection(String namespaceName, String collectionName, int vectorSize) {
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
             """
@@ -1767,7 +1777,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     // First insert a document with a big vector
 
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
             """

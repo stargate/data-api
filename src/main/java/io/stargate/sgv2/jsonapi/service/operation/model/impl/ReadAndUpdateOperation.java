@@ -198,7 +198,9 @@ public record ReadAndUpdateOperation(
                               returnUpdatedDocument ? updatedDocument : originalDocument;
                           // Some operations (findOneAndUpdate) define projection to apply to
                           // result:
-                          resultProjection.applyProjection(documentToReturn);
+                          if (documentToReturn != null) { // null for some Operation tests
+                            resultProjection.applyProjection(documentToReturn);
+                          }
                         }
                         return new UpdatedDocument(
                             writableShreddedDocument.id(), upsert, documentToReturn, null);

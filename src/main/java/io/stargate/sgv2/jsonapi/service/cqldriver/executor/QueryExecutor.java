@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import com.datastax.oss.driver.api.core.servererrors.TruncateException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -195,7 +196,10 @@ public class QueryExecutor {
                             operationsConfig.queriesConfig().consistency().schemaChanges())))
         .onFailure(
             error ->
-                error instanceof DriverTimeoutException || error instanceof InvalidQueryException)
+                error instanceof DriverTimeoutException
+                    || error instanceof InvalidQueryException
+                    || (error instanceof TruncateException
+                        && "Failed to interrupt compactions".equals(error.getMessage())))
         .recoverWithUni(
             throwable -> {
               logger.error(
@@ -226,7 +230,10 @@ public class QueryExecutor {
             })
         .onFailure(
             error ->
-                error instanceof DriverTimeoutException || error instanceof InvalidQueryException)
+                error instanceof DriverTimeoutException
+                    || error instanceof InvalidQueryException
+                    || (error instanceof TruncateException
+                        && "Failed to interrupt compactions".equals(error.getMessage())))
         .retry()
         .atMost(2);
   }

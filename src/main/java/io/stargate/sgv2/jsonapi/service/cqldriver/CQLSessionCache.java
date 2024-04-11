@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.RemovalListener;
@@ -14,6 +15,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -123,16 +125,25 @@ public class CQLSessionCache {
                       new InetSocketAddress(
                           host, operationsConfig.databaseConfig().cassandraPort()))
               .collect(Collectors.toList());
-
-      return new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
-          .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
-          .addContactPoints(seeds)
-          .withClassLoader(Thread.currentThread().getContextClassLoader())
-          .withAuthCredentials(
-              Objects.requireNonNull(databaseConfig.userName()),
-              Objects.requireNonNull(databaseConfig.password()))
-          .withApplicationName(APPLICATION_NAME)
-          .build();
+      CqlSessionBuilder builder =
+          new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
+              .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+              .addContactPoints(seeds)
+              .withClassLoader(Thread.currentThread().getContextClassLoader())
+              .withApplicationName(APPLICATION_NAME);
+      // To use username and password, a Base64Encoded text of the credential is passed as token.
+      // The text needs to be in format <username>/<password> Eg: cassandra/cassandra
+      if (getFixedToken() == null) {
+        UsernamePasswordCredentials upc =
+            UsernamePasswordCredentials.from(((TokenCredentials) cacheKey.credentials()).token());
+        builder.withAuthCredentials(
+            Objects.requireNonNull(upc.userName()), Objects.requireNonNull(upc.password()));
+      } else {
+        builder.withAuthCredentials(
+            Objects.requireNonNull(databaseConfig.userName()),
+            Objects.requireNonNull(databaseConfig.password()));
+      }
+      return builder.build();
     } else if (ASTRA.equals(databaseConfig.type())) {
       return new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
           .withAuthCredentials(
@@ -185,12 +196,11 @@ public class CQLSessionCache {
           return new SessionCacheKey(
               dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
               new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
+        } else {
+          throw new RuntimeException(
+              "Missing/Invalid authentication credentials provided for type: "
+                  + operationsConfig.databaseConfig().type());
         }
-        return new SessionCacheKey(
-            dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
-            new UsernamePasswordCredentials(
-                operationsConfig.databaseConfig().userName(),
-                operationsConfig.databaseConfig().password()));
       }
       case ASTRA -> {
         return new SessionCacheKey(
@@ -246,7 +256,19 @@ public class CQLSessionCache {
    * @param password
    */
   private record UsernamePasswordCredentials(String userName, String password)
-      implements Credentials {}
+      implements Credentials {
+
+    public static UsernamePasswordCredentials from(String encodedCredentials) {
+      String decoded = new String(Base64.getDecoder().decode(encodedCredentials));
+      int index = decoded.indexOf("/");
+      if (index == -1) {
+        throw new RuntimeException("Invalid credentials provided");
+      }
+      String userName = decoded.substring(0, index);
+      String password = decoded.substring(index + 1);
+      return new UsernamePasswordCredentials(userName, password);
+    }
+  }
 
   /**
    * Credentials for CQLSession cache when token is provided.

@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.projection;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -23,12 +24,6 @@ public class DocumentProjector {
    * No-op projector that does not modify documents. Considered "exclusion" projector since "no
    * exclusions" is conceptually what happens ("no inclusions" would drop all content)
    */
-  private static final DocumentProjector DEFAULT_PROJECTOR =
-      new DocumentProjector(null, false, false);
-
-  private static final DocumentProjector DEFAULT_PROJECTOR_WITH_SIMILARITY =
-      new DocumentProjector(null, false, true);
-
   private static final DocumentProjector INCLUDE_ALL_PROJECTOR =
       new DocumentProjector(null, false, false);
 
@@ -57,7 +52,18 @@ public class DocumentProjector {
   }
 
   public static DocumentProjector defaultProjector() {
-    return DEFAULT_PROJECTOR;
+    return DefaultProjectorWrapper.defaultProjector();
+  }
+
+  public static DocumentProjector includeAllProjector() {
+    return INCLUDE_ALL_PROJECTOR;
+  }
+
+  DocumentProjector withIncludeSimilarity(boolean includeSimilarityScore) {
+    if (this.includeSimilarityScore == includeSimilarityScore) {
+      return this;
+    }
+    return new DocumentProjector(rootLayer, inclusion, includeSimilarityScore);
   }
 
   public static DocumentProjector createFromDefinition(JsonNode projectionDefinition) {
@@ -69,9 +75,9 @@ public class DocumentProjector {
     // First special case: "simple" default projection
     if (projectionDefinition == null || projectionDefinition.isEmpty()) {
       if (includeSimilarity) {
-        return DEFAULT_PROJECTOR_WITH_SIMILARITY;
+        return DefaultProjectorWrapper.defaultProjectorWithSimilarity();
       }
-      return DEFAULT_PROJECTOR;
+      return DefaultProjectorWrapper.defaultProjector();
     }
     if (!projectionDefinition.isObject()) {
       throw new JsonApiException(
@@ -125,6 +131,7 @@ public class DocumentProjector {
   }
 
   public void applyProjection(JsonNode document, Float similarityScore) {
+    Objects.requireNonNull(document, "Document to call 'applyProjection()' on must not be null");
     // null -> either include-add or exclude-all; but logic may seem counter-intuitive
     if (rootLayer == null) {
       if (inclusion) { // exclude-all
@@ -133,7 +140,7 @@ public class DocumentProjector {
       // In either case, we may need to add similarity score if present
       if (includeSimilarityScore && similarityScore != null) {
         ((ObjectNode) document)
-            .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
+            .put(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD, similarityScore);
       }
       return;
     }
@@ -144,7 +151,7 @@ public class DocumentProjector {
     }
     if (includeSimilarityScore && similarityScore != null) {
       ((ObjectNode) document)
-          .put(DocumentConstants.Fields.VECTOR_FUNCTION_PROJECTION_FIELD, similarityScore);
+          .put(DocumentConstants.Fields.VECTOR_FUNCTION_SIMILARITY_FIELD, similarityScore);
     }
   }
 
@@ -166,6 +173,34 @@ public class DocumentProjector {
   }
 
   /**
+   * Due to the way projection is handled, we need to handle construction of default instance via
+   * separate class (to avoid cyclic dependency)
+   */
+  static class DefaultProjectorWrapper {
+    /**
+     * Default projector that drops $vector and $vectorize fields but otherwise leaves document
+     * as-is. Constructed from empty definition (no inclusions/exclusions).
+     */
+    private static final DocumentProjector DEFAULT_PROJECTOR;
+
+    static {
+      ObjectNode emptyDef = new ObjectNode(JsonNodeFactory.instance);
+      DEFAULT_PROJECTOR = PathCollector.collectPaths(emptyDef, false).buildProjector();
+    }
+
+    private static final DocumentProjector DEFAULT_PROJECTOR_WITH_SIMILARITY =
+        DEFAULT_PROJECTOR.withIncludeSimilarity(true);
+
+    public static DocumentProjector defaultProjector() {
+      return DEFAULT_PROJECTOR;
+    }
+
+    public static DocumentProjector defaultProjectorWithSimilarity() {
+      return DEFAULT_PROJECTOR_WITH_SIMILARITY;
+    }
+  }
+
+  /**
    * Helper object used to traverse and collection inclusion/exclusion path definitions and verify
    * that there are only one or the other (except for doc id). Does not build data structures for
    * actual matching.
@@ -177,7 +212,11 @@ public class DocumentProjector {
 
     private int exclusions, inclusions;
 
-    private Boolean idInclusion = null;
+    private Boolean idInclusion;
+
+    private Boolean $vectorInclusion;
+
+    private Boolean $vectorizeInclusion;
 
     /** Whether similarity score is needed. */
     private final boolean includeSimilarityScore;
@@ -191,34 +230,34 @@ public class DocumentProjector {
     }
 
     public DocumentProjector buildProjector() {
-      if (isDefaultProjection()) {
-        return defaultProjector();
-      }
-
       // One more thing: do we need to add document id?
       if (inclusions > 0) { // inclusion-based projection
-        // doc-id included unless explicitly excluded
         return new DocumentProjector(
-            ProjectionLayer.buildLayersNoOverlap(paths, slices, !Boolean.FALSE.equals(idInclusion)),
+            ProjectionLayer.buildLayersForProjection(
+                paths,
+                slices,
+                // doc-id included unless explicitly excluded
+                !Boolean.FALSE.equals(idInclusion),
+                // $vector only included if explicitly included
+                Boolean.TRUE.equals($vectorInclusion),
+                // $vectorize only included if explicitly included
+                Boolean.TRUE.equals($vectorizeInclusion)),
             true,
             includeSimilarityScore);
       } else { // exclusion-based
-        // doc-id excluded only if explicitly excluded
         return new DocumentProjector(
-            ProjectionLayer.buildLayersNoOverlap(paths, slices, Boolean.FALSE.equals(idInclusion)),
+            ProjectionLayer.buildLayersForProjection(
+                paths,
+                slices,
+                // doc-id excluded only if explicitly excluded
+                Boolean.FALSE.equals(idInclusion),
+                // $vector excluded unless explicitly included
+                !Boolean.TRUE.equals($vectorInclusion),
+                // $vectorize excluded unless explicitly included
+                !Boolean.TRUE.equals($vectorizeInclusion)),
             false,
             includeSimilarityScore);
       }
-    }
-
-    /**
-     * Accessor to use for checking if collected paths indicate "empty" (no-operation) projection:
-     * if so, caller can avoid actual construction or evaluation.
-     */
-    boolean isDefaultProjection() {
-      // Only the case if we have no non-doc-id inclusions/exclusions AND
-      // doc-id is included (by default or explicitly)
-      return paths.isEmpty() && slices.isEmpty() && !Boolean.FALSE.equals(idInclusion);
     }
 
     PathCollector collectFromObject(JsonNode ob, String parentPath) {
@@ -338,6 +377,10 @@ public class DocumentProjector {
     private void addExclusion(String path) {
       if (DocumentConstants.Fields.DOC_ID.equals(path)) {
         idInclusion = false;
+      } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
+        $vectorInclusion = false;
+      } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
+        $vectorizeInclusion = false;
       } else {
         // Must not mix exclusions and inclusions
         if (inclusions > 0) {
@@ -356,6 +399,10 @@ public class DocumentProjector {
     private void addInclusion(String path) {
       if (DocumentConstants.Fields.DOC_ID.equals(path)) {
         idInclusion = true;
+      } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
+        $vectorInclusion = true;
+      } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
+        $vectorizeInclusion = true;
       } else {
         // Must not mix exclusions and inclusions
         if (exclusions > 0) {

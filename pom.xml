@@ -7,7 +7,7 @@
     <version>2.1.0-BETA-10</version>
   </parent>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.5-SNAPSHOT</version>
+  <version>1.0.6-SNAPSHOT</version>
   <properties>
     <stargate.version>${project.parent.version}</stargate.version>
     <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->
@@ -32,6 +32,7 @@
     <stargate.int-test.cluster.persistence>persistence-dse-next</stargate.int-test.cluster.persistence>
     <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
+    <stargate.int-test.use-coordinator>true</stargate.int-test.use-coordinator>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -244,6 +245,7 @@
                 <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
                 <maven.home>${maven.home}</maven.home>
+                <testing.containers.use-coordinator>${stargate.int-test.use-coordinator}</testing.containers.use-coordinator>
               </systemPropertyVariables>
               <includes>
                 <include>**/*IntegrationTest.*</include>
@@ -331,6 +333,17 @@
           <url>https://repo.datastax.com/artifactory/stargate-private</url>
         </snapshotRepository>
       </distributionManagement>
+    </profile>
+    <profile>
+      <id>dse-it</id>
+      <activation>
+        <property>
+          <name>dse-it</name>
+        </property>
+      </activation>
+      <properties>
+        <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
+      </properties>
     </profile>
   </profiles>
 </project>
