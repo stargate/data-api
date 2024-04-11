@@ -69,7 +69,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           objectMapper,
           cqlSessionCache,
           command.name(),
-          generateComment(false, false, command.name(), null, null, null),
+          generateComment(objectMapper, false, false, command.name(), null, null, null),
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
           false); // Since the options is null
@@ -95,6 +95,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
     String comment =
         generateComment(
+            objectMapper,
             hasIndexing,
             hasVectorSearch,
             command.name(),
@@ -139,7 +140,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    * @param vector vector config after validation
    * @return the comment string
    */
-  private String generateComment(
+  public static String generateComment(
+      ObjectMapper objectMapper,
       boolean hasIndexing,
       boolean hasVectorSearch,
       String commandName,

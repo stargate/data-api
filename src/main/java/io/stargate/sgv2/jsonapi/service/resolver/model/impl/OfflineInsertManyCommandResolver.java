@@ -37,7 +37,8 @@ public class OfflineInsertManyCommandResolver implements CommandResolver<Offline
     final List<WritableShreddedDocument> shreddedDocuments =
         command.documents().stream().map(doc -> shredder.shred(ctx, doc, null)).toList();
 
-    boolean ordered = true; // TODO-SL
+    // Offline insert is always ordered
+    boolean ordered = true;
 
     return new InsertOperation(ctx, shreddedDocuments, ordered);
   }

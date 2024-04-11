@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
-import jakarta.inject.Inject;
+import io.stargate.sgv2.jsonapi.service.resolver.model.impl.CreateCollectionCommandResolver;
 import java.util.List;
 import java.util.UUID;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -51,6 +51,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
   @JsonIgnore private final EmbeddingProvider embeddingProvider;
   @JsonIgnore private final String sessionId;
   @JsonIgnore private final FileWriterParams fileWriterParams;
+  @JsonIgnore private String comment;
 
   /**
    * fileWriterBufferSize Constructs a new {@link BeginOfflineSessionCommand}.
@@ -59,26 +60,29 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
    * @param createCollection the create collection command
    * @param ssTableOutputDirectory the SSTable output directory
    */
-  @Inject
   public BeginOfflineSessionCommand(
       String namespace,
       CreateCollectionCommand createCollection,
       String ssTableOutputDirectory,
+      EmbeddingProvider embeddingProvider,
       int fileWriterBufferSizeInMB) {
     this.namespace = namespace;
     this.createCollection = createCollection;
     this.ssTableOutputDirectory = ssTableOutputDirectory;
-    this.collectionSettings = buildCollectionSettings();
-    this.embeddingProvider = null; // TODO-SL
+    this.embeddingProvider = embeddingProvider;
     this.sessionId = UUID.randomUUID().toString();
     this.fileWriterBufferSizeInMB = fileWriterBufferSizeInMB;
     this.fileWriterParams = buildFileWriterParams();
+    this.collectionSettings = buildCollectionSettings();
   }
 
   private CollectionSettings buildCollectionSettings() {
     boolean isVectorEnabled =
         this.createCollection.options() != null && this.createCollection.options().vector() != null;
-    int vectorSize = isVectorEnabled ? this.createCollection.options().vector().dimension() : 0;
+    int vectorSize =
+        (isVectorEnabled && this.createCollection.options().vector().dimension() != null)
+            ? this.createCollection.options().vector().dimension()
+            : 0;
     CollectionSettings.SimilarityFunction similarityFunction =
         isVectorEnabled
             ? CollectionSettings.SimilarityFunction.fromString(
@@ -90,21 +94,55 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
         isVectorEnabled,
         vectorSize,
         similarityFunction,
-        null, // TODO
-        new ObjectMapper()); // TODO
+        this.comment,
+        new ObjectMapper());
   }
 
   private FileWriterParams buildFileWriterParams() {
+    CreateCollectionCommand.Options createCollectionOptions = this.createCollection.options();
+    CreateCollectionCommand.Options.IndexingConfig indexingConfig =
+        createCollectionOptions != null ? createCollectionOptions.indexing() : null;
+    CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig =
+        createCollectionOptions != null ? createCollectionOptions.vector() : null;
+    CreateCollectionCommand.Options.IdConfig idConfig =
+        createCollectionOptions != null ? createCollectionOptions.idConfig() : null;
+    boolean hasIndexing = indexingConfig != null;
+    boolean hasVector = vectorSearchConfig != null;
+    this.comment =
+        CreateCollectionCommandResolver.generateComment(
+            new ObjectMapper(),
+            hasIndexing,
+            hasVector,
+            this.getClass().getSimpleName(),
+            indexingConfig,
+            vectorSearchConfig,
+            idConfig);
     CreateCollectionOperation createCollectionOperation =
-        CreateCollectionOperation.forCQL(
-            this.collectionSettings.vectorConfig().vectorEnabled(),
-            this.collectionSettings.vectorConfig().vectorEnabled()
-                ? this.collectionSettings.vectorConfig().similarityFunction().toString()
-                : null,
-            this.collectionSettings.vectorConfig().vectorEnabled()
-                ? this.collectionSettings.vectorConfig().vectorSize()
-                : 0,
-            null); // TODO-SL fix comments field
+        hasVector
+            ? CreateCollectionOperation.withVectorSearch(
+                new CommandContext(this.namespace, this.createCollection.name()),
+                null,
+                new ObjectMapper(),
+                null,
+                this.createCollection.name(),
+                this.createCollection.options().vector().dimension() != null
+                    ? this.createCollection.options().vector().dimension()
+                    : 0,
+                this.createCollection.options().vector().metric(),
+                comment,
+                0,
+                false,
+                false)
+            : CreateCollectionOperation.withoutVectorSearch(
+                new CommandContext(this.namespace, this.createCollection.name()),
+                null,
+                new ObjectMapper(),
+                null,
+                this.createCollection.name(),
+                comment,
+                0,
+                false,
+                false);
     String createTableCQL =
         createCollectionOperation
             .getCreateTable(this.namespace, this.createCollection.name())
@@ -115,12 +153,13 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
             .stream()
             .map(SimpleStatement::getQuery)
             .toList();
-    String insertStatementCQL =
-        InsertOperation.forCQL(new CommandContext(this.namespace, this.createCollection.name()))
-            .buildInsertQuery(
-                this.collectionSettings
-                    .vectorConfig()
-                    .vectorEnabled()); // TODO-SL add conditionalInsert to method
+    InsertOperation insertOperation =
+        new InsertOperation(
+            new CommandContext(this.namespace, this.createCollection.name()),
+            List.of(),
+            true,
+            true);
+    String insertStatementCQL = insertOperation.buildInsertQuery(hasVector);
     return new FileWriterParams(
         this.namespace,
         this.getCreateCollectionCommand().name(),
@@ -129,7 +168,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
         createTableCQL,
         insertStatementCQL,
         indexCQLs,
-        this.collectionSettings.vectorConfig().vectorEnabled());
+        hasVector);
   }
 
   public String getNamespace() {

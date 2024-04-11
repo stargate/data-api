@@ -75,7 +75,7 @@ public class GeneralResource {
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
     // call processor
     return meteredCommandProcessor
-        .processCommand(dataApiRequestInfo, CommandContext.empty(), command) // TODO-SL
+        .processCommand(dataApiRequestInfo, CommandContext.empty(), command)
         // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.map());
   }

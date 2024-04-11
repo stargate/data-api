@@ -10,7 +10,6 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.detach.AttachmentPoint;
 import com.datastax.oss.driver.api.core.metadata.Metadata;
-import com.datastax.oss.driver.api.core.metadata.schema.*;
 import com.datastax.oss.driver.api.core.metrics.Metrics;
 import com.datastax.oss.driver.api.core.session.Request;
 import com.datastax.oss.driver.api.core.type.codec.TypeCodecs;
@@ -58,8 +57,6 @@ public class FileWriterSession implements CqlSession {
   private final CQLSSTableWriter cqlsSSTableWriter;
   private final int fileWriterBufferSizeInMB;
   private final FileWriterParams fileWriterParams;
-  private static final String EMPTY_CASSANDRA_DATA_DIRECTORY =
-      "/var/tmp/sstables_test/cassandra"; // TODO-SL use temp directory
 
   public FileWriterSession(
       CQLSessionCache cqlSessionCache,
@@ -104,16 +101,27 @@ public class FileWriterSession implements CqlSession {
       LOGGER.trace("Create table CQL: " + fileWriterParams.createTableCQL());
       LOGGER.trace("Insert statement: " + fileWriterParams.insertStatementCQL());
     }
+    String emptyCassandraDataDirectory =
+        System.getProperty("java.io.tmpdir")
+            + File.separator
+            + "cassandra"
+            + File.separator
+            + "data";
+    if (!new File(emptyCassandraDataDirectory).exists()) {
+      if (!new File(emptyCassandraDataDirectory).mkdirs()) {
+        throw new RuntimeException("Failed to create directory: " + emptyCassandraDataDirectory);
+      }
+    }
     DatabaseDescriptor.getRawConfig().data_file_directories =
-        new String[] {EMPTY_CASSANDRA_DATA_DIRECTORY + File.separator + "data"};
+        new String[] {emptyCassandraDataDirectory + File.separator + "data"};
     DatabaseDescriptor.getRawConfig().commitlog_directory =
-        EMPTY_CASSANDRA_DATA_DIRECTORY + File.separator + "commitlog";
+        emptyCassandraDataDirectory + File.separator + "commitlog";
     DatabaseDescriptor.getRawConfig().saved_caches_directory =
-        EMPTY_CASSANDRA_DATA_DIRECTORY + File.separator + "saved_caches";
+        emptyCassandraDataDirectory + File.separator + "saved_caches";
     DatabaseDescriptor.getRawConfig().hints_directory =
-        EMPTY_CASSANDRA_DATA_DIRECTORY + File.separator + "hints";
+        emptyCassandraDataDirectory + File.separator + "hints";
     DatabaseDescriptor.getRawConfig().metadata_directory =
-        EMPTY_CASSANDRA_DATA_DIRECTORY + File.separator + "metadata_directory";
+        emptyCassandraDataDirectory + File.separator + "metadata_directory";
     DatabaseDescriptor.getRawConfig().commitlog_sync = Config.CommitLogSync.batch;
   }
 

@@ -20,14 +20,15 @@ public class DataApiRequestInfo {
   private final Optional<String> embeddingApiKey;
 
   public DataApiRequestInfo() {
+    this.tenantId = Optional.empty();
     this.cassandraToken = Optional.empty();
-    this.embeddingApiKey = Optional.empty(); // TODO-SL
+    this.embeddingApiKey = Optional.empty();
   }
 
   public DataApiRequestInfo(Optional<String> tenantId) {
     this.tenantId = tenantId;
     this.cassandraToken = Optional.empty();
-    this.embeddingApiKey = Optional.empty(); // TODO-SL
+    this.embeddingApiKey = Optional.empty();
   }
 
   @Inject

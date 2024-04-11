@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,23 +102,6 @@ public record CreateCollectionOperation(
         indexingDenyAll);
   }
 
-  public static CreateCollectionOperation forCQL(
-      boolean vectorSearch, String vectorFunction, int vectorSize, String comment) {
-    return new CreateCollectionOperation(
-        null,
-        null,
-        null,
-        null,
-        null,
-        vectorSearch,
-        vectorSize,
-        vectorFunction,
-        comment,
-        0,
-        false,
-        false);
-  }
-
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
@@ -170,9 +152,10 @@ public record CreateCollectionOperation(
   /**
    * execute collection creation and indexes creation
    *
-   * @param queryExecutor
-   * @param collectionExisted
-   * @return
+   * @param dataApiRequestInfo DataApiRequestInfo
+   * @param queryExecutor QueryExecutor instance
+   * @param collectionExisted boolean that says if collection existed before
+   * @return Uni<Supplier<CommandResult>>
    */
   private Uni<Supplier<CommandResult>> executeCollectionCreation(
       DataApiRequestInfo dataApiRequestInfo,
@@ -298,7 +281,7 @@ public record CreateCollectionOperation(
         allKeyspaces.values().stream()
             .map(keyspace -> keyspace.getTables().values())
             .flatMap(Collection::stream)
-            .collect(Collectors.toList());
+            .toList();
     final long collectionCount = allTables.stream().filter(COLLECTION_MATCHER).count();
     final int MAX_COLLECTIONS = dbLimitsConfig.maxCollections();
     if (collectionCount >= MAX_COLLECTIONS) {

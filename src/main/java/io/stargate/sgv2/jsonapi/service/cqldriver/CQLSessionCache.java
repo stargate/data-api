@@ -31,7 +31,7 @@ public class CQLSessionCache {
   private static final Logger LOGGER = LoggerFactory.getLogger(JsonApiStartUp.class);
 
   /** Configuration for the JSON API operations. */
-  private final OperationsConfig operationsConfig;
+  private OperationsConfig operationsConfig;
 
   /**
    * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
@@ -52,9 +52,21 @@ public class CQLSessionCache {
   @ConfigProperty(name = "quarkus.application.name")
   String APPLICATION_NAME;
 
+  private static boolean initialized = false;
+
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
-    // TODO-SL handle multiple initializations
+    if (!initialized) {
+      LOGGER.info("Initializing CQLSessionCache");
+      init(operationsConfig, meterRegistry);
+    }
+  }
+
+  private synchronized void init(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
+    if (initialized) {
+      // CqlSession cache is application scoped and must be initialized only once
+      throw new IllegalStateException("CQLSessionCache already initialized");
+    }
     this.operationsConfig = operationsConfig;
     LoadingCache<SessionCacheKey, CqlSession> loadingCache =
         Caffeine.newBuilder()
@@ -86,6 +98,7 @@ public class CQLSessionCache {
         "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
         operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
         operationsConfig.databaseConfig().sessionCacheMaxSize());
+    initialized = true;
   }
 
   /**

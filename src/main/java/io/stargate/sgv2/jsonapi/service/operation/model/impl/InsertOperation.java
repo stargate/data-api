@@ -34,19 +34,11 @@ public record InsertOperation(
 
   public InsertOperation(
       CommandContext commandContext, List<WritableShreddedDocument> documents, boolean ordered) {
-    this(commandContext, documents, ordered, true);
+    this(commandContext, documents, ordered, false);
   }
 
   public InsertOperation(CommandContext commandContext, WritableShreddedDocument document) {
-    this(commandContext, List.of(document), false, true);
-  }
-
-  private InsertOperation(CommandContext commandContext) {
-    this(commandContext, List.of(), false, false);
-  }
-
-  public static InsertOperation forCQL(CommandContext commandContext) {
-    return new InsertOperation(commandContext);
+    this(commandContext, List.of(document), false, false);
   }
 
   /** {@inheritDoc} */
@@ -60,7 +52,7 @@ public record InsertOperation(
           ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage() + commandContext().collection());
     }
     // create json doc write metrics
-    if (commandContext.jsonProcessingMetricsReporter() != null) { // TODO-SL
+    if (commandContext.jsonProcessingMetricsReporter() != null) {
       commandContext
           .jsonProcessingMetricsReporter()
           .reportJsonWrittenDocsMetrics(commandContext().commandName(), documents.size());
@@ -187,7 +179,7 @@ public record InsertOperation(
               + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values, query_vector_value)"
               + " VALUES"
               + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
-              + (offlineMode ? " IF NOT EXISTS" : "");
+              + (offlineMode ? "" : " IF NOT EXISTS");
       return String.format(
           insertWithVector, commandContext.namespace(), commandContext.collection());
     } else {
@@ -196,7 +188,7 @@ public record InsertOperation(
               + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
               + " VALUES"
               + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
-              + (offlineMode ? " IF NOT EXISTS" : "");
+              + (offlineMode ? "" : " IF NOT EXISTS");
       return String.format(insert, commandContext.namespace(), commandContext.collection());
     }
   }
