@@ -1,4 +1,8 @@
-package io.stargate.sgv2.jsonapi.api.security;
+package io.stargate.sgv2.jsonapi.api.security.challenge.impl;
+
+// TODO: create Data API ChallengerSender when remove quarkus-common dependency
+// This class is commented out, since there will be two ChallengeSender implemented
+// need to resolve when we actually remove quarkus-common-module dependency
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
