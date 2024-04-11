@@ -165,7 +165,13 @@ public enum ErrorCode {
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
   INVALID_SCHEMA_VERSION(
       "Collection has invalid schema version. Recommend re-creating the collection"),
-  INVALID_ID_TYPE("Invalid Id type");
+  INVALID_ID_TYPE("Invalid Id type"),
+
+  UNSUPPORTED_CQL_QUERY_TYPE("Unsupported cql query type"),
+
+  MISSING_VECTOR_VALUE("Missing the vector value when building cql"),
+
+  INVALID_LOGIC_OPERATOR("Invalid logical operator");
 
   private final String message;
 
