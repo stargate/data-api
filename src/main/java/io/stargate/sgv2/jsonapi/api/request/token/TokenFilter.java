@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.v1;
+package io.stargate.sgv2.jsonapi.api.request.token;
 
 import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.DEPRECATED_AUTHENTICATION_TOKEN_HEADER_NAME;
 
