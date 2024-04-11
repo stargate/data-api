@@ -52,7 +52,7 @@ public class CQLSessionCache {
   public static final String OFFLINE_WRITER = "offline_writer";
 
   @ConfigProperty(name = "quarkus.application.name")
-  String APPLICATION_NAME;
+  private String APPLICATION_NAME;
 
   private static boolean initialized = false;
 
