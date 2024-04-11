@@ -314,7 +314,7 @@
         <dependency>
           <groupId>com.datastax.dse</groupId>
           <artifactId>dse-db-all</artifactId>
-          <version>4.0.11-0248d170a615</version>
+          <version>4.0.11-591d171ac9c9</version>
         </dependency>
       </dependencies>
       <distributionManagement>

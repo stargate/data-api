@@ -58,6 +58,7 @@ public class OfflineCommandsProcessor {
     if (initialized) {
       return;
     }
+    OfflineFileWriterInitializer.initialize();
     offlineCommandsProcessor = new OfflineCommandsProcessor();
     offlineCommandsProcessor.operationsConfig = buildOperationsConfig();
     offlineCommandsProcessor.cqlSessionCache =
@@ -128,7 +129,7 @@ public class OfflineCommandsProcessor {
     return OfflineGetStatusResponse.fromCommandResult(commandResult);
   }
 
-  public static boolean canEndSession(
+  public boolean canEndSession(
       OfflineWriterSessionStatus offlineWriterSessionStatus, int createNewSessionAfterDataInMB) {
     ;
     return offlineWriterSessionStatus.dataDirectorySizeInMB() >= createNewSessionAfterDataInMB;

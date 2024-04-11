@@ -102,7 +102,7 @@ public class OfflineLoaderTester {
           && !offlineGetStatusResponse.errors().isEmpty()) {
         throw new RuntimeException("Error in get status " + offlineGetStatusResponse.errors());
       }
-      if (OfflineCommandsProcessor.canEndSession(
+      if (offlineCommandsProcessor.canEndSession(
           offlineGetStatusResponse.offlineWriterSessionStatus(), createNewSessionAfterDataInMB)) {
         closeSession = false;
         EndOfflineSessionResponse endOfflineSessionResponse =
