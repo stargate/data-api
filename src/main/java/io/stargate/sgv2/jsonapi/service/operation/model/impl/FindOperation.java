@@ -412,8 +412,6 @@ public record FindOperation(
     List<SimpleStatement> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
         expression -> {
-          //          List<Object> collect =
-          // ExpressionBuilder.getExpressionValuesInOrder(expression);
           final Query query;
           if (vector() == null) {
             query =
@@ -486,8 +484,6 @@ public record FindOperation(
     List<SimpleStatement> queries = new ArrayList<>(expressions.size());
     expressions.forEach(
         expression -> {
-          //          List<Object> collect =
-          // ExpressionBuilder.getExpressionValuesInOrder(expression);
           final Query query =
               new QueryBuilder()
                   .select()

@@ -147,7 +147,7 @@ public class QueryBuilder {
       builder.append(" LIMIT ").append(limitInt == -1 ? "?" : limitInt);
     }
 
-    return new Query(builder.toString(), values, null);
+    return new Query(builder.toString(), values);
   }
 
   private void appendWheres(StringBuilder builder, List<Object> values) {

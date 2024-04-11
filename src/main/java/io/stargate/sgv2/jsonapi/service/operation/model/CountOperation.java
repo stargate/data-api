@@ -47,10 +47,6 @@ public record CountOperation(
   private SimpleStatement buildSelectQuery() {
     final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, null);
-    //    List<Object> collect = new ArrayList<>();
-    //    if (expressions != null && !expressions.isEmpty() && expressions.get(0) != null) {
-    //      collect = ExpressionBuilder.getExpressionValuesInOrder(expressions.get(0));
-    //    }
     Query query = null;
     if (limit == -1) {
       query =

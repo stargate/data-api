@@ -191,38 +191,4 @@ public class ExpressionBuilder {
     return ExpressionUtils.buildExpression(
         conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
   }
-  //
-  //  /**
-  //   * Get all positional cql values from express recursively. Result order is in consistent of
-  // the
-  //   * expression structure
-  //   */
-  //  public static List<Object> getExpressionValuesInOrder(Expression<BuiltCondition> expression) {
-  //    List<Object> values = new ArrayList<>();
-  //    if (expression != null) {
-  //      populateValuesRecursive(values, expression);
-  //    }
-  //    return values;
-  //  }
-  //
-  //  private static void populateValuesRecursive(
-  //      List<Object> values, Expression<BuiltCondition> outerExpression) {
-  //    if (outerExpression.getExprType().equals("variable")) {
-  //      Variable<BuiltCondition> var = (Variable<BuiltCondition>) outerExpression;
-  //      BuiltCondition builtCondition = var.getValue();
-  //      JsonTerm term = builtCondition.jsonTerm;
-  //      if (term.getKey() != null) {
-  //        values.add(term.getKey());
-  //      }
-  //      values.add(term.getValue());
-  //      return;
-  //    }
-  //    if (outerExpression.getExprType().equals("and") ||
-  // outerExpression.getExprType().equals("or")) {
-  //      List<Expression<BuiltCondition>> innerExpressions = outerExpression.getChildren();
-  //      for (Expression<BuiltCondition> innerExpression : innerExpressions) {
-  //        populateValuesRecursive(values, innerExpression);
-  //      }
-  //    }
-  //  }
 }

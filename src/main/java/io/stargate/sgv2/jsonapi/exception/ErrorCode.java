@@ -169,7 +169,9 @@ public enum ErrorCode {
 
   UNSUPPORTED_CQL_QUERY_TYPE("Unsupported cql query type"),
 
-  MISSING_VECTOR_VALUE("Missing the vector value when building cql");
+  MISSING_VECTOR_VALUE("Missing the vector value when building cql"),
+
+  INVALID_LOGIC_OPERATOR("Invalid logical operator");
 
   private final String message;
 
