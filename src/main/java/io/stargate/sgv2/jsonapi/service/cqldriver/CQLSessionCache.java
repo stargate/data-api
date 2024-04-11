@@ -120,12 +120,16 @@ public class CQLSessionCache {
               .withClassLoader(Thread.currentThread().getContextClassLoader())
               .withApplicationName(APPLICATION_NAME);
       // To use username and password, a Base64Encoded text of the credential is passed as token.
-      // The text needs to be in format <username>/<password> Eg: cassandra/cassandra
+      // The text needs to be in format Cassandra:Base64(username):Base64(password)
+      String token = dataApiRequestInfo.getCassandraToken().orElseThrow();
       if (getFixedToken() == null) {
-        UsernamePasswordCredentials upc =
-            UsernamePasswordCredentials.from(dataApiRequestInfo.getCassandraToken().orElseThrow());
-        builder.withAuthCredentials(
-            Objects.requireNonNull(upc.userName()), Objects.requireNonNull(upc.password()));
+        if (token.startsWith("Cassandra:")) {
+          UsernamePasswordCredentials upc = UsernamePasswordCredentials.from(token);
+          builder.withAuthCredentials(
+              Objects.requireNonNull(upc.userName()), Objects.requireNonNull(upc.password()));
+        } else {
+          throw new RuntimeException("Invalid credentials provided");
+        }
       } else {
         builder.withAuthCredentials(
             Objects.requireNonNull(databaseConfig.userName()),
@@ -224,13 +228,12 @@ public class CQLSessionCache {
       implements Credentials {
 
     public static UsernamePasswordCredentials from(String encodedCredentials) {
-      String decoded = new String(Base64.getDecoder().decode(encodedCredentials));
-      int index = decoded.indexOf("/");
-      if (index == -1) {
+      String[] parts = encodedCredentials.split(":");
+      if (parts.length != 3) {
         throw new RuntimeException("Invalid credentials provided");
       }
-      String userName = decoded.substring(0, index);
-      String password = decoded.substring(index + 1);
+      String userName = new String(Base64.getDecoder().decode(parts[1]));
+      String password = new String(Base64.getDecoder().decode(parts[2]));
       return new UsernamePasswordCredentials(userName, password);
     }
   }
