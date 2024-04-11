@@ -133,10 +133,14 @@ public abstract class AbstractNamespaceIntegrationTestBase {
           HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
           CustomITEmbeddingProvider.TEST_API_KEY);
     } else {
-      String credential = "invalid" + "/" + getCassandraPassword();
+      String credential =
+          "Cassandra:"
+              + Base64.getEncoder().encodeToString("invalid".getBytes())
+              + ":"
+              + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
       return Map.of(
           HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          Base64.getEncoder().encodeToString(credential.getBytes()),
+          credential,
           HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
           CustomITEmbeddingProvider.TEST_API_KEY);
     }
