@@ -128,7 +128,8 @@ public class CQLSessionCache {
           builder.withAuthCredentials(
               Objects.requireNonNull(upc.userName()), Objects.requireNonNull(upc.password()));
         } else {
-          throw new RuntimeException("Invalid credentials provided");
+          throw new RuntimeException(
+              "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
         }
       } else {
         builder.withAuthCredentials(
@@ -230,11 +231,17 @@ public class CQLSessionCache {
     public static UsernamePasswordCredentials from(String encodedCredentials) {
       String[] parts = encodedCredentials.split(":");
       if (parts.length != 3) {
-        throw new RuntimeException("Invalid credentials provided");
+        throw new RuntimeException(
+            "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
       }
-      String userName = new String(Base64.getDecoder().decode(parts[1]));
-      String password = new String(Base64.getDecoder().decode(parts[2]));
-      return new UsernamePasswordCredentials(userName, password);
+      try {
+        String userName = new String(Base64.getDecoder().decode(parts[1]));
+        String password = new String(Base64.getDecoder().decode(parts[2]));
+        return new UsernamePasswordCredentials(userName, password);
+      } catch (Exception e) {
+        throw new RuntimeException(
+            "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
+      }
     }
   }
 
