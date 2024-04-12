@@ -83,7 +83,8 @@ public class CQLSessionCache {
                     })
             .recordStats()
             .build(this::getNewSession);
-    this.sessionCache = CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
+    this.sessionCache =
+        CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
     LOGGER.info(
         "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
         operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
