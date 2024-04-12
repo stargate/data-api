@@ -187,31 +187,6 @@
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-source-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <phase>deploy</phase>
-            <goals>
-              <goal>jar-no-fork</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <!-- explicitly define maven-deploy-plugin after other to force exec order -->
-        <artifactId>maven-deploy-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>deploy</id>
-            <phase>deploy</phase>
-            <goals>
-              <goal>deploy</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>${quarkus.platform.version}</version>
@@ -292,6 +267,7 @@
                 <exclude>io/stargate/sgv2/jsonapi/service/operation/model/impl/OfflineGetStatusOperation.java</exclude>
                 <exclude>io/stargate/sgv2/jsonapi/service/resolver/model/impl/BeginOfflineSessionCommandResolver.java</exclude>
                 <exclude>io/stargate/sgv2/jsonapi/service/resolver/model/impl/OfflineGetStatusCommandResolver.java</exclude>
+                <exclude>io/stargate/sgv2/jsonapi/service/cqldriver/sstablewriter/OfflineCommandsProcessor.java</exclude>
               </excludes>
               <testExcludes>
                 <testExclude>io/stargate/sgv2/jsonapi/service/cqldriver/sstablewriter/OfflineLoaderTester.java</testExclude>
