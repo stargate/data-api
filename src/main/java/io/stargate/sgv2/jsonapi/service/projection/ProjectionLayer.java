@@ -50,17 +50,26 @@ class ProjectionLayer {
     nextLayers = null;
   }
 
-  public static ProjectionLayer buildLayersNoOverlap(
-      Collection<String> dotPaths, List<SliceDef> slices, boolean addDocId) {
-    return buildLayers(dotPaths, slices, addDocId, true);
+  public static ProjectionLayer buildLayersForProjection(
+      Collection<String> dotPaths,
+      List<SliceDef> slices,
+      boolean addDocId,
+      boolean add$vector,
+      boolean add$vectorize) {
+    return buildLayers(dotPaths, slices, true, addDocId, add$vector, add$vectorize);
   }
 
-  public static ProjectionLayer buildLayersOverlapOk(Collection<String> dotPaths) {
-    return buildLayers(dotPaths, Collections.emptyList(), false, false);
+  public static ProjectionLayer buildLayersForIndexing(Collection<String> dotPaths) {
+    return buildLayers(dotPaths, Collections.emptyList(), false, false, false, false);
   }
 
   private static ProjectionLayer buildLayers(
-      Collection<String> dotPaths, List<SliceDef> slices, boolean addDocId, boolean failOnOverlap) {
+      Collection<String> dotPaths,
+      List<SliceDef> slices,
+      boolean failOnOverlap,
+      boolean addDocId,
+      boolean add$vector,
+      boolean add$vectorize) {
     // Root is always branch (not terminal):
     ProjectionLayer root = new ProjectionLayer("", false);
     for (String fullPath : dotPaths) {
@@ -82,6 +91,20 @@ class ProjectionLayer {
           DocumentConstants.Fields.DOC_ID,
           root,
           new String[] {DocumentConstants.Fields.DOC_ID});
+    }
+    if (add$vector) {
+      buildPath(
+          failOnOverlap,
+          DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD,
+          root,
+          new String[] {DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD});
+    }
+    if (add$vectorize) {
+      buildPath(
+          failOnOverlap,
+          DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+          root,
+          new String[] {DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD});
     }
     return root;
   }

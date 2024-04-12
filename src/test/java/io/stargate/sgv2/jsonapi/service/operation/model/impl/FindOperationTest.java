@@ -22,13 +22,13 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
+import io.stargate.sgv2.jsonapi.service.cql.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -2643,7 +2643,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.vsearch(
               VECTOR_COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.defaultProjector(),
+              DocumentProjector.includeAllProjector(),
               null,
               2,
               2,
@@ -2711,7 +2711,7 @@ public class FindOperationTest extends OperationTestBase {
           FindOperation.vsearchSingle(
               VECTOR_COMMAND_CONTEXT,
               implicitAnd,
-              DocumentProjector.defaultProjector(),
+              DocumentProjector.includeAllProjector(),
               ReadType.DOCUMENT,
               objectMapper,
               new float[] {0.25f, 0.25f, 0.25f, 0.25f});

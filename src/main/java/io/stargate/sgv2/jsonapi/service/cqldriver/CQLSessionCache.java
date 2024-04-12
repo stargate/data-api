@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.RemovalListener;
@@ -14,6 +15,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.InetSocketAddress;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -111,17 +113,30 @@ public class CQLSessionCache {
                       new InetSocketAddress(
                           host, operationsConfig.databaseConfig().cassandraPort()))
               .collect(Collectors.toList());
-
-      return new TenantAwareCqlSessionBuilder(
-              dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
-          .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
-          .addContactPoints(seeds)
-          .withClassLoader(Thread.currentThread().getContextClassLoader())
-          .withAuthCredentials(
-              Objects.requireNonNull(databaseConfig.userName()),
-              Objects.requireNonNull(databaseConfig.password()))
-          .withApplicationName(APPLICATION_NAME)
-          .build();
+      CqlSessionBuilder builder =
+          new TenantAwareCqlSessionBuilder(dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
+              .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+              .addContactPoints(seeds)
+              .withClassLoader(Thread.currentThread().getContextClassLoader())
+              .withApplicationName(APPLICATION_NAME);
+      // To use username and password, a Base64Encoded text of the credential is passed as token.
+      // The text needs to be in format Cassandra:Base64(username):Base64(password)
+      String token = dataApiRequestInfo.getCassandraToken().orElseThrow();
+      if (getFixedToken() == null) {
+        if (token.startsWith("Cassandra:")) {
+          UsernamePasswordCredentials upc = UsernamePasswordCredentials.from(token);
+          builder.withAuthCredentials(
+              Objects.requireNonNull(upc.userName()), Objects.requireNonNull(upc.password()));
+        } else {
+          throw new RuntimeException(
+              "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
+        }
+      } else {
+        builder.withAuthCredentials(
+            Objects.requireNonNull(databaseConfig.userName()),
+            Objects.requireNonNull(databaseConfig.password()));
+      }
+      return builder.build();
     } else if (ASTRA.equals(databaseConfig.type())) {
       return new TenantAwareCqlSessionBuilder(dataApiRequestInfo.getTenantId().orElseThrow())
           .withAuthCredentials(
@@ -170,12 +185,11 @@ public class CQLSessionCache {
           return new SessionCacheKey(
               dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
               new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
+        } else {
+          throw new RuntimeException(
+              "Missing/Invalid authentication credentials provided for type: "
+                  + operationsConfig.databaseConfig().type());
         }
-        return new SessionCacheKey(
-            dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
-            new UsernamePasswordCredentials(
-                operationsConfig.databaseConfig().userName(),
-                operationsConfig.databaseConfig().password()));
       }
       case ASTRA -> {
         return new SessionCacheKey(
@@ -212,7 +226,24 @@ public class CQLSessionCache {
    * @param password
    */
   private record UsernamePasswordCredentials(String userName, String password)
-      implements Credentials {}
+      implements Credentials {
+
+    public static UsernamePasswordCredentials from(String encodedCredentials) {
+      String[] parts = encodedCredentials.split(":");
+      if (parts.length != 3) {
+        throw new RuntimeException(
+            "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
+      }
+      try {
+        String userName = new String(Base64.getDecoder().decode(parts[1]));
+        String password = new String(Base64.getDecoder().decode(parts[2]));
+        return new UsernamePasswordCredentials(userName, password);
+      } catch (Exception e) {
+        throw new RuntimeException(
+            "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
+      }
+    }
+  }
 
   /**
    * Credentials for CQLSession cache when token is provided.
