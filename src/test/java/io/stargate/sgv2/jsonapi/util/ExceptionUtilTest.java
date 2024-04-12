@@ -53,8 +53,11 @@ public class ExceptionUtilTest {
         .satisfies(
             err -> {
               assertThat(err.message())
-                  .isEqualTo("test error for ids ['doc1', 'doc2']: Some error");
-              assertThat(err.fields()).containsEntry("exceptionClass", "RuntimeException");
+                  .isEqualTo(
+                      "Server failed: root cause: (java.lang.RuntimeException) test error for ids ['doc1', 'doc2']: Some error");
+              assertThat(err.fields())
+                  .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
+                  .containsEntry("exceptionClass", "JsonApiException");
             });
   }
 }
