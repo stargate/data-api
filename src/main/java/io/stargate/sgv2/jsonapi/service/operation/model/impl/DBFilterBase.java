@@ -6,11 +6,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.bridge.grpc.Values;
-import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
-import io.stargate.sgv2.api.common.cql.builder.Predicate;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cql.builder.BuiltCondition;
+import io.stargate.sgv2.jsonapi.service.cql.builder.Predicate;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -135,42 +134,42 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       switch (operator) {
         case EQ:
           return BuiltCondition.of(
-              DATA_CONTAINS,
+              BuiltCondition.LHS.column(DATA_CONTAINS),
               Predicate.CONTAINS,
               new JsonTerm(getHashValue(new DocValueHasher(), key, value)));
         case NE:
           return BuiltCondition.of(
-              DATA_CONTAINS,
+              BuiltCondition.LHS.column(DATA_CONTAINS),
               Predicate.NOT_CONTAINS,
               new JsonTerm(getHashValue(new DocValueHasher(), key, value)));
         case MAP_EQUALS:
           return BuiltCondition.of(
-              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              BuiltCondition.LHS.mapAccess(columnName, key),
               Predicate.EQ,
               new JsonTerm(key, value));
         case MAP_NOT_EQUALS:
           return BuiltCondition.of(
-              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              BuiltCondition.LHS.mapAccess(columnName, key),
               Predicate.NEQ,
               new JsonTerm(key, value));
         case GT:
           return BuiltCondition.of(
-              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              BuiltCondition.LHS.mapAccess(columnName, key),
               Predicate.GT,
               new JsonTerm(key, value));
         case GTE:
           return BuiltCondition.of(
-              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              BuiltCondition.LHS.mapAccess(columnName, key),
               Predicate.GTE,
               new JsonTerm(key, value));
         case LT:
           return BuiltCondition.of(
-              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              BuiltCondition.LHS.mapAccess(columnName, key),
               Predicate.LT,
               new JsonTerm(key, value));
         case LTE:
           return BuiltCondition.of(
-              BuiltCondition.LHS.mapAccess(columnName, Values.NULL),
+              BuiltCondition.LHS.mapAccess(columnName, key),
               Predicate.LTE,
               new JsonTerm(key, value));
         default:
@@ -314,13 +313,13 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
           if (documentId.value() instanceof BigDecimal numberId) {
             return List.of(
                 BuiltCondition.of(
-                    BuiltCondition.LHS.mapAccess("query_dbl_values", Values.NULL),
+                    BuiltCondition.LHS.mapAccess("query_dbl_values", DOC_ID),
                     Predicate.NEQ,
                     new JsonTerm(DOC_ID, numberId)));
           } else if (documentId.value() instanceof String strId) {
             return List.of(
                 BuiltCondition.of(
-                    BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                    BuiltCondition.LHS.mapAccess("query_text_values", DOC_ID),
                     Predicate.NEQ,
                     new JsonTerm(DOC_ID, strId)));
           } else {
@@ -415,20 +414,20 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
               // array element is sub_doc
               inResult.add(
                   BuiltCondition.of(
-                      BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                      BuiltCondition.LHS.mapAccess("query_text_values", this.getPath()),
                       Predicate.EQ,
                       new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
             } else if (value instanceof List) {
               // array element is array
               inResult.add(
                   BuiltCondition.of(
-                      BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                      BuiltCondition.LHS.mapAccess("query_text_values", this.getPath()),
                       Predicate.EQ,
                       new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
             } else {
               inResult.add(
                   BuiltCondition.of(
-                      DATA_CONTAINS,
+                      BuiltCondition.LHS.column(DATA_CONTAINS),
                       Predicate.CONTAINS,
                       new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
             }
@@ -443,20 +442,20 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                 // array element is sub_doc
                 ninResults.add(
                     BuiltCondition.of(
-                        BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                        BuiltCondition.LHS.mapAccess("query_text_values", this.getPath()),
                         Predicate.NEQ,
                         new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
               } else if (value instanceof List) {
                 // array element is array
                 ninResults.add(
                     BuiltCondition.of(
-                        BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                        BuiltCondition.LHS.mapAccess("query_text_values", this.getPath()),
                         Predicate.NEQ,
                         new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
               } else {
                 ninResults.add(
                     BuiltCondition.of(
-                        DATA_CONTAINS,
+                        BuiltCondition.LHS.column(DATA_CONTAINS),
                         Predicate.NOT_CONTAINS,
                         new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
               }
@@ -471,14 +470,14 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                 if (docIdValue instanceof BigDecimal numberId) {
                   BuiltCondition condition =
                       BuiltCondition.of(
-                          BuiltCondition.LHS.mapAccess("query_dbl_values", Values.NULL),
+                          BuiltCondition.LHS.mapAccess("query_dbl_values", DOC_ID),
                           Predicate.NEQ,
                           new JsonTerm(DOC_ID, numberId));
                   conditions.add(condition);
                 } else if (docIdValue instanceof String strId) {
                   BuiltCondition condition =
                       BuiltCondition.of(
-                          BuiltCondition.LHS.mapAccess("query_text_values", Values.NULL),
+                          BuiltCondition.LHS.mapAccess("query_text_values", DOC_ID),
                           Predicate.NEQ,
                           new JsonTerm(DOC_ID, strId));
                   conditions.add(condition);
@@ -537,9 +536,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     public BuiltCondition get() {
       switch (operator) {
         case CONTAINS:
-          return BuiltCondition.of(columnName, Predicate.CONTAINS, new JsonTerm(value));
+          return BuiltCondition.of(
+              BuiltCondition.LHS.column(columnName), Predicate.CONTAINS, new JsonTerm(value));
         case NOT_CONTAINS:
-          return BuiltCondition.of(columnName, Predicate.NOT_CONTAINS, new JsonTerm(value));
+          return BuiltCondition.of(
+              BuiltCondition.LHS.column(columnName), Predicate.NOT_CONTAINS, new JsonTerm(value));
         default:
           throw new JsonApiException(
               ErrorCode.UNSUPPORTED_FILTER_OPERATION,
@@ -620,7 +621,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       for (Object value : arrayValue) {
         result.add(
             BuiltCondition.of(
-                DATA_CONTAINS,
+                BuiltCondition.LHS.column(DATA_CONTAINS),
                 negation ? Predicate.NOT_CONTAINS : Predicate.CONTAINS,
                 new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
       }

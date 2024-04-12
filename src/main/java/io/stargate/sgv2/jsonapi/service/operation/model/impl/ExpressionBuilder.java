@@ -2,11 +2,11 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
-import io.stargate.sgv2.api.common.cql.ExpressionUtils;
-import io.stargate.sgv2.api.common.cql.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.cql.ExpressionUtils;
+import io.stargate.sgv2.jsonapi.service.cql.builder.BuiltCondition;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -190,36 +190,5 @@ public class ExpressionBuilder {
 
     return ExpressionUtils.buildExpression(
         conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
-  }
-
-  /**
-   * Get all positional cql values from express recursively. Result order is in consistent of the
-   * expression structure
-   */
-  public static List<Object> getExpressionValuesInOrder(Expression<BuiltCondition> expression) {
-    List<Object> values = new ArrayList<>();
-    if (expression != null) {
-      populateValuesRecursive(values, expression);
-    }
-    return values;
-  }
-
-  private static void populateValuesRecursive(
-      List<Object> values, Expression<BuiltCondition> outerExpression) {
-    if (outerExpression.getExprType().equals("variable")) {
-      Variable<BuiltCondition> var = (Variable<BuiltCondition>) outerExpression;
-      JsonTerm term = ((JsonTerm) var.getValue().value());
-      if (term.getKey() != null) {
-        values.add(term.getKey());
-      }
-      values.add(term.getValue());
-      return;
-    }
-    if (outerExpression.getExprType().equals("and") || outerExpression.getExprType().equals("or")) {
-      List<Expression<BuiltCondition>> innerExpressions = outerExpression.getChildren();
-      for (Expression<BuiltCondition> innerExpression : innerExpressions) {
-        populateValuesRecursive(values, innerExpression);
-      }
-    }
   }
 }
