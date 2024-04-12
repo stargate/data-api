@@ -54,21 +54,9 @@ public class CQLSessionCache {
   @ConfigProperty(name = "quarkus.application.name")
   private String APPLICATION_NAME;
 
-  private static boolean initialized = false;
-
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
-    if (!initialized) {
-      LOGGER.info("Initializing CQLSessionCache");
-      init(operationsConfig, meterRegistry);
-    }
-  }
-
-  private synchronized void init(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
-    if (initialized) {
-      // CqlSession cache is application scoped and must be initialized only once
-      throw new IllegalStateException("CQLSessionCache already initialized");
-    }
+    LOGGER.info("Initializing CQLSessionCache");
     this.operationsConfig = operationsConfig;
     LoadingCache<SessionCacheKey, CqlSession> loadingCache =
         Caffeine.newBuilder()
@@ -100,7 +88,6 @@ public class CQLSessionCache {
         "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
         operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
         operationsConfig.databaseConfig().sessionCacheMaxSize());
-    initialized = true;
   }
 
   /**
