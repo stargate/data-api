@@ -33,7 +33,7 @@ public class CQLSessionCache {
   private static final Logger LOGGER = LoggerFactory.getLogger(JsonApiStartUp.class);
 
   /** Configuration for the JSON API operations. */
-  private OperationsConfig operationsConfig;
+  private final OperationsConfig operationsConfig;
 
   /**
    * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
@@ -43,7 +43,7 @@ public class CQLSessionCache {
   /** CQL username to be used when the backend is AstraDB */
   private static final String TOKEN = "token";
   /** CQLSession cache. */
-  private LoadingCache<SessionCacheKey, CqlSession> sessionCache;
+  private final LoadingCache<SessionCacheKey, CqlSession> sessionCache;
   /** Database type Astra */
   public static final String ASTRA = "astra";
   /** Database type OSS cassandra */
@@ -52,7 +52,7 @@ public class CQLSessionCache {
   public static final String OFFLINE_WRITER = "offline_writer";
 
   @ConfigProperty(name = "quarkus.application.name")
-  private String APPLICATION_NAME;
+  String APPLICATION_NAME;
 
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
@@ -83,7 +83,7 @@ public class CQLSessionCache {
                     })
             .recordStats()
             .build(this::getNewSession);
-    sessionCache = CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
+    this.sessionCache = CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
     LOGGER.info(
         "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
         operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
@@ -231,8 +231,8 @@ public class CQLSessionCache {
   /**
    * Put CQLSession in cache.
    *
-   * @param sessionCacheKey
-   * @param cqlSession
+   * @param sessionCacheKey key for CQLSession cache
+   * @param cqlSession CQLSession instance
    */
   public void putSession(SessionCacheKey sessionCacheKey, CqlSession cqlSession) {
     sessionCache.put(sessionCacheKey, cqlSession);
