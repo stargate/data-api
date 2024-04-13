@@ -30,6 +30,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineGetStatusComm
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineInsertManyCommandResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -106,8 +107,7 @@ public class OfflineCommandsProcessor {
             .withMapping(MetricsConfig.class)
             .build();
     MetricsConfig metricsConfig = smallRyeConfig.getConfigMapping(MetricsConfig.class);
-    return new DataVectorizerService(
-        objectMapper, new DataApiRequestInfo(), new SimpleMeterRegistry(), null, metricsConfig);
+    return new DataVectorizerService(objectMapper, new SimpleMeterRegistry(), null, metricsConfig);
   }
 
   public OfflineGetStatusResponse getStatus(CommandContext commandContext, String sessionId)
@@ -117,8 +117,7 @@ public class OfflineCommandsProcessor {
             new QueryExecutor(cqlSessionCache, operationsConfig),
             commandResolverService,
             dataVectorizerService);
-    DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo();
-    dataApiRequestInfo.setTenantId(sessionId);
+    DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo(Optional.of(sessionId));
     OfflineGetStatusCommand offlineGetStatusCommand = new OfflineGetStatusCommand(sessionId);
     CommandResult commandResult =
         commandProcessor
@@ -155,7 +154,8 @@ public class OfflineCommandsProcessor {
             embeddingProvider,
             fileWriterBufferSizeInMB);
 
-    DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo();
+    DataApiRequestInfo dataApiRequestInfo =
+        new DataApiRequestInfo(Optional.of(beginOfflineSessionCommand.getSessionId()));
 
     CommandContext commandContext =
         CommandContext.from(
@@ -185,8 +185,7 @@ public class OfflineCommandsProcessor {
             new QueryExecutor(cqlSessionCache, operationsConfig),
             commandResolverService,
             dataVectorizerService);
-    DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo();
-    dataApiRequestInfo.setTenantId(sessionId);
+    DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo(Optional.of(sessionId));
     // TODO - SL, what is the max number of docs in the offline insert many ?
     // TODO - SL, what happens if some documents fail ?
     OfflineInsertManyCommand offlineInsertManyCommand =
@@ -207,8 +206,7 @@ public class OfflineCommandsProcessor {
             new QueryExecutor(cqlSessionCache, operationsConfig),
             commandResolverService,
             OfflineCommandsProcessor.buildDataVectorizeService());
-    DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo();
-    dataApiRequestInfo.setTenantId(sessionId);
+    DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo(Optional.of(sessionId));
     // TODO SL - response should include file path and size
     EndOfflineSessionCommand offlineEndWriterCommand = new EndOfflineSessionCommand(sessionId);
     CommandResult commandResult =

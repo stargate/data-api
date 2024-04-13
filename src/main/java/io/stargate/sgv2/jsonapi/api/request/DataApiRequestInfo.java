@@ -15,15 +15,9 @@ import java.util.Optional;
  */
 @RequestScoped
 public class DataApiRequestInfo {
-  private Optional<String> tenantId;
+  private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
   private final Optional<String> embeddingApiKey;
-
-  public DataApiRequestInfo() {
-    this.tenantId = Optional.empty();
-    this.cassandraToken = Optional.empty();
-    this.embeddingApiKey = Optional.empty();
-  }
 
   public DataApiRequestInfo(Optional<String> tenantId) {
     this.tenantId = tenantId;
@@ -41,10 +35,6 @@ public class DataApiRequestInfo {
     this.embeddingApiKey = apiKeyResolver.get().resolveApiKey(routingContext);
     this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
-  }
-
-  public void setTenantId(String tenantId) {
-    this.tenantId = Optional.ofNullable(tenantId);
   }
 
   public Optional<String> getTenantId() {

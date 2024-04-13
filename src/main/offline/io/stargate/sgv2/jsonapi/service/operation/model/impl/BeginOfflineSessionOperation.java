@@ -28,7 +28,6 @@ public record BeginOfflineSessionOperation(
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     try {
-      dataApiRequestInfo.setTenantId(sessionId);
       CQLSessionCache.SessionCacheKey sessionCacheKey =
           new CQLSessionCache.SessionCacheKey(dataApiRequestInfo.getTenantId().orElseThrow(), null);
       FileWriterSession fileWriterSession =
