@@ -2,6 +2,8 @@
 # please keep properties in the alphabetical order
 
 stargate:
+  data-store:
+    ignore-bridge: true
 
   # security and authentication configuration
   # see io.stargate.sgv2.jsonapi.config.AuthConfig for all config properties and options
