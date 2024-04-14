@@ -15,4 +15,10 @@ public record OfflineGetStatusCommand(
             type = SchemaType.STRING,
             implementation = String.class)
         String sessionId)
-    implements CollectionCommand {}
+    implements CollectionCommand {
+  public OfflineGetStatusCommand {
+    if (sessionId == null || sessionId.isBlank()) {
+      throw new IllegalArgumentException("sessionId is required");
+    }
+  }
+}

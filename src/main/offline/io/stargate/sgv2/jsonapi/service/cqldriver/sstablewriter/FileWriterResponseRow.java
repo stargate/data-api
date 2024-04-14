@@ -11,9 +11,10 @@ import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
 import com.datastax.oss.driver.internal.core.type.codec.registry.DefaultCodecRegistry;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Objects;
 
 public class FileWriterResponseRow implements Row {
-  private final CodecRegistry DEFAULT_CODECS = new DefaultCodecRegistry("json-api-test");
+  private final CodecRegistry DEFAULT_CODECS = new DefaultCodecRegistry("data-api-offline");
   private final ColumnDefinitions columnDefs;
   private final int index;
   private final List<ByteBuffer> values;
@@ -92,23 +93,18 @@ public class FileWriterResponseRow implements Row {
   @Override
   public void attach(AttachmentPoint attachmentPoint) {}
 
-  // equals and hashCode required for TCK tests that check that two subscribers
-  // receive the exact same set of items.
-
   @Override
   public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof FileWriterResponseRow)) {
-      return false;
-    }
-    FileWriterResponseRow fileWriterResponseRow = (FileWriterResponseRow) o;
-    return index == fileWriterResponseRow.index;
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    FileWriterResponseRow that = (FileWriterResponseRow) o;
+    return index == that.index
+        && Objects.equals(columnDefs, that.columnDefs)
+        && Objects.equals(values, that.values);
   }
 
   @Override
   public int hashCode() {
-    return index;
+    return Objects.hash(columnDefs, index, values);
   }
 }

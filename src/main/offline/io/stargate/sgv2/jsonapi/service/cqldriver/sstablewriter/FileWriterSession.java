@@ -46,7 +46,8 @@ import org.slf4j.LoggerFactory;
 
 public class FileWriterSession implements CqlSession {
   private static final Logger LOGGER = LoggerFactory.getLogger(FileWriterSession.class);
-  private static final AtomicInteger counter = new AtomicInteger(0);
+  private static final AtomicInteger insertsSucceeded = new AtomicInteger(0);
+  private static final AtomicInteger insertsFailed = new AtomicInteger(0);
   private final String sessionId;
   private final String keyspace;
   private final String table;
@@ -197,9 +198,11 @@ public class FileWriterSession implements CqlSession {
               new FileWriterAsyncResultSet(
                   responseColumnDefinitions,
                   new FileWriterResponseRow(responseColumnDefinitions, 0, buffers)));
+      insertsSucceeded.incrementAndGet();
       return (ResultT) resultSetCompletionStage;
-    } catch (IOException e) {
+    } catch (Exception e) {
       LOGGER.error("Error writing to SSTable", e);
+      insertsFailed.incrementAndGet();
       throw new RuntimeException(e);
     }
   }
@@ -269,7 +272,9 @@ public class FileWriterSession implements CqlSession {
         this.table,
         this.ssTableOutputDirectory,
         this.fileWriterBufferSizeInMB,
-        getDirectorySizeInMB(this.ssTableOutputDirectory));
+        getDirectorySizeInMB(this.ssTableOutputDirectory),
+        insertsSucceeded.get(),
+        insertsFailed.get());
   }
 
   private int getDirectorySizeInMB(String dataDirectory) {

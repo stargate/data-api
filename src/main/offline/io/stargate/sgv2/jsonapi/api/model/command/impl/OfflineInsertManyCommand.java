@@ -4,8 +4,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.ModifyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.validation.MaxInsertManyDocuments;
-import jakarta.validation.constraints.NotEmpty;
+import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.OfflineModeConstants;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -21,12 +20,18 @@ public record OfflineInsertManyCommand(
             implementation = String.class,
             type = SchemaType.STRING)
         String writerSessionId,
-    @NotNull
-        @NotEmpty
-        @MaxInsertManyDocuments
-        @Schema(
+    @Schema(
             description = "JSON document to insert.",
             implementation = Object.class,
             type = SchemaType.ARRAY)
         List<JsonNode> documents)
-    implements ModifyCommand {}
+    implements ModifyCommand {
+  public OfflineInsertManyCommand {
+    if (writerSessionId == null || writerSessionId.isBlank()) {
+      throw new IllegalArgumentException("writerSessionId is required");
+    }
+    if (documents != null && documents.size() > OfflineModeConstants.MAX_INSERT_MANY_DOCUMENTS) {
+      throw new IllegalArgumentException("amount of documents to insert is over the max limit");
+    }
+  }
+}
