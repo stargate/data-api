@@ -13,8 +13,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.CreateCollectionCommandResolver;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -88,14 +87,79 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
             ? CollectionSettings.SimilarityFunction.fromString(
                 this.createCollection.options().vector().metric())
             : null;
-
-    return CollectionSettings.getCollectionSettings(
+    CollectionSettings.VectorConfig.VectorizeConfig vectorizeConfig =
+        isVectorEnabled
+            ? toCollectionSettingsVectorizeConfig(
+                this.createCollection.options().vector().vectorizeConfig())
+            : null;
+    CollectionSettings.VectorConfig vectorConfig =
+        isVectorEnabled
+            ? new CollectionSettings.VectorConfig(
+                isVectorEnabled, vectorSize, similarityFunction, null)
+            : null;
+    return new CollectionSettings(
         this.createCollection.name(),
-        isVectorEnabled,
-        vectorSize,
-        similarityFunction,
-        this.comment,
-        new ObjectMapper());
+        toCollectionSettingsIdConfig(
+            this.createCollection.options() != null
+                ? this.createCollection.options().idConfig()
+                : null),
+        vectorConfig,
+        toCollectionSettingsIndexing(
+            this.createCollection.options() != null
+                ? this.createCollection.options().indexing()
+                : null));
+  }
+
+  private CollectionSettings.IndexingConfig toCollectionSettingsIndexing(
+      CreateCollectionCommand.Options.IndexingConfig indexing) {
+    if (indexing == null) {
+      return null;
+    }
+    return new CollectionSettings.IndexingConfig(
+        indexing.allow() != null ? new HashSet<>(indexing.allow()) : null,
+        indexing.deny() != null ? new HashSet<>(indexing.deny()) : null);
+  }
+
+  private CollectionSettings.IdConfig toCollectionSettingsIdConfig(
+      CreateCollectionCommand.Options.IdConfig idConfig) {
+    if (idConfig == null) return null;
+    // TODO-SL: check if idConfig.idType() is null and handle accordingly
+    return new CollectionSettings.IdConfig(CollectionSettings.IdType.fromString(idConfig.idType()));
+  }
+
+  private CollectionSettings.VectorConfig.VectorizeConfig toCollectionSettingsVectorizeConfig(
+      CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig vectorize) {
+    if (vectorize == null) {
+      return null;
+    }
+    String provider = vectorize.provider();
+    String model = vectorize.modelName();
+    CollectionSettings.VectorConfig.VectorizeConfig.VectorizeServiceAuthentication
+        vectorizeServiceAuthentication =
+            toCollectionSettingsVectorizeServiceAuthentication(
+                vectorize.vectorizeServiceAuthentication());
+    return new CollectionSettings.VectorConfig.VectorizeConfig(
+        provider, model, vectorizeServiceAuthentication, vectorize.vectorizeServiceParameter());
+  }
+
+  private CollectionSettings.VectorConfig.VectorizeConfig.VectorizeServiceAuthentication
+      toCollectionSettingsVectorizeServiceAuthentication(
+          CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig
+                  .VectorizeServiceAuthentication
+              vectorizeServiceAuthentication) {
+    if (vectorizeServiceAuthentication == null) {
+      return null;
+    }
+    Set<CollectionSettings.AuthenticationType> authenticationTypes = null;
+    if (vectorizeServiceAuthentication.type() != null) {
+      authenticationTypes = new HashSet<>();
+      for (String authenticationType : vectorizeServiceAuthentication.type()) {
+        authenticationTypes.add(
+            CollectionSettings.AuthenticationType.fromString(authenticationType));
+      }
+    }
+    return new CollectionSettings.VectorConfig.VectorizeConfig.VectorizeServiceAuthentication(
+        authenticationTypes, vectorizeServiceAuthentication.secretName());
   }
 
   private FileWriterParams buildFileWriterParams() {
@@ -162,8 +226,8 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
     String insertStatementCQL = insertOperation.buildInsertQuery(hasVector);
     return new FileWriterParams(
         this.namespace,
-        this.getCreateCollectionCommand().name(),
-        this.getSsTableOutputDirectory(),
+        this.createCollection.name(),
+        this.ssTableOutputDirectory,
         fileWriterBufferSizeInMB,
         createTableCQL,
         insertStatementCQL,
@@ -171,24 +235,8 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
         hasVector);
   }
 
-  public String getNamespace() {
-    return namespace;
-  }
-
-  public CreateCollectionCommand getCreateCollectionCommand() {
-    return createCollection;
-  }
-
-  public String getSsTableOutputDirectory() {
-    return ssTableOutputDirectory;
-  }
-
   public CollectionSettings getCollectionSettings() {
     return this.collectionSettings;
-  }
-
-  public EmbeddingProvider getEmbeddingProvider() {
-    return this.embeddingProvider;
   }
 
   public String getSessionId() {

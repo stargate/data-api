@@ -10,14 +10,23 @@ public record FileWriterParams(
     String createTableCQL,
     String insertStatementCQL,
     List<String> indexCQLs,
-    boolean vectorEnabled) {
+    Boolean vectorEnabled) {
   public FileWriterParams {
     if (keyspaceName == null
+        || keyspaceName.isBlank()
         || tableName == null
+        || tableName.isBlank()
         || ssTableOutputDirectory == null
+        || ssTableOutputDirectory.isBlank()
+        || fileWriterBufferSizeInMB <= 0
         || createTableCQL == null
-        || insertStatementCQL == null) {
-      throw new IllegalArgumentException("All parameters must be non-null");
+        || createTableCQL.isBlank()
+        || insertStatementCQL == null
+        || insertStatementCQL.isBlank()
+        || indexCQLs == null
+        || indexCQLs.isEmpty()
+        || vectorEnabled == null) {
+      throw new IllegalArgumentException("Invalid FileWriterParams");
     }
   }
 }
