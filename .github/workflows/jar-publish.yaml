@@ -1,0 +1,75 @@
+name: JAR Publish
+
+# runs on
+# * every push on the "main"
+# * manual trigger
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+# global env vars, available in all jobs and steps
+env:
+  MAVEN_OPTS: '-Xmx4g'
+  DSE_ARTIFACTORY_USERNAME: ${{ secrets.DSE_ARTIFACTORY_USERNAME }}
+  DSE_ARTIFACTORY_PASSWORD: ${{ secrets.DSE_ARTIFACTORY_PASSWORD }}
+
+jobs:
+
+  # builds and publishes the jar
+  main:
+    name: Build and Publish Jar
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven
+
+      - name: Setup Maven
+        run: |
+          mkdir -p ~/.m2
+          cat <<EOF > ~/.m2/settings.xml
+          <settings>
+            <servers>
+              <server>
+                <id>stargate-central</id>
+                <username>${DSE_ARTIFACTORY_USERNAME}</username>
+                <password>${DSE_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>stargate-snapshots</id>
+                <username>${DSE_ARTIFACTORY_USERNAME}</username>
+                <password>${DSE_ARTIFACTORY_PASSWORD}</password>
+             </server>
+              <server>
+                <id>artifactory</id>
+                <username>${DSE_ARTIFACTORY_USERNAME}</username>
+                <password>${DSE_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-snapshots</id>
+                <username>${DSE_ARTIFACTORY_USERNAME}</username>
+                <password>${DSE_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-releases</id>
+                <username>${DSE_ARTIFACTORY_USERNAME}</username>
+                <password>${DSE_ARTIFACTORY_PASSWORD}</password>
+             </server>
+           </servers>
+          </settings>
+          EOF
+
+      - name: Build
+        run: |
+          JAVA_HOME=$JAVA_17 ./mvnw -B -ntp clean package -P offline         
+
+      - name: Publish JAR
+        run: |
+          JAVA_HOME=$JAVA_17 ./mvnw -B -ntp clean deploy -DskipTests -P offline
