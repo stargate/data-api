@@ -676,6 +676,91 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .statusCode(200)
           .body("data.documents[0]", jsonEquals(expectedAfterReplace));
     }
+
+    // Reproduction to verify https://github.com/stargate/data-api/issues/1000
+    // is fixed
+    @Test
+    public void projectionBeforeWithoutId() {
+      insertDoc(
+          """
+              {
+                "_id": "docProjBeforeNoId",
+                "username": "aaron",
+                "human": true,
+                "age": 47,
+                "password": null,
+                "address": {
+                  "number": 86,
+                  "street": "monkey street",
+                  "is_office": false
+                }
+              }
+              """);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                        {
+                          "findOneAndReplace": {
+                            "filter": { "address.city": "nyc" },
+                            "replacement": {
+                              "_id": "docProjBeforeNoId_2",
+                              "username": "jimr",
+                              "human": true,
+                              "age": 52,
+                              "password": "gasxaq==",
+                              "address": {
+                                "number": 57
+                              }
+                            },
+                            "options": { "returnDocument": "before", "upsert": true },
+                            "projection": { "_id": 0 }
+                          }
+                        }
+                        """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("status.matchedCount", is(0))
+          .body("status.modifiedCount", is(0))
+          // No match so no before-document:
+          .body("data.document", is(nullValue()));
+
+      // assert state after update
+      String expectedAfterReplace =
+          """
+                      {
+                        "_id": "docProjBeforeNoId_2",
+                        "username": "jimr",
+                        "human": true,
+                        "age": 52,
+                        "password": "gasxaq==",
+                        "address": {
+                          "number": 57
+                        }
+                      }
+              """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                        {
+                          "find": {
+                            "filter" : {"_id" : "docProjBeforeNoId_2"}
+                          }
+                        }
+                        """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(expectedAfterReplace));
+    }
   }
 
   @AfterEach
