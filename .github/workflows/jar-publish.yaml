@@ -11,8 +11,8 @@ on:
 # global env vars, available in all jobs and steps
 env:
   MAVEN_OPTS: '-Xmx4g'
-  DSE_ARTIFACTORY_USERNAME: ${{ secrets.DSE_ARTIFACTORY_USERNAME }}
-  DSE_ARTIFACTORY_PASSWORD: ${{ secrets.DSE_ARTIFACTORY_PASSWORD }}
+  DS_ARTIFACTORY_USERNAME: ${{ secrets.DS_ARTIFACTORY_USERNAME }}
+  DS_ARTIFACTORY_PASSWORD: ${{ secrets.DS_ARTIFACTORY_PASSWORD }}
 
 jobs:
 
@@ -39,28 +39,28 @@ jobs:
             <servers>
               <server>
                 <id>stargate-central</id>
-                <username>${DSE_ARTIFACTORY_USERNAME}</username>
-                <password>${DSE_ARTIFACTORY_PASSWORD}</password>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
               </server>
               <server>
                 <id>stargate-snapshots</id>
-                <username>${DSE_ARTIFACTORY_USERNAME}</username>
-                <password>${DSE_ARTIFACTORY_PASSWORD}</password>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
              </server>
               <server>
                 <id>artifactory</id>
-                <username>${DSE_ARTIFACTORY_USERNAME}</username>
-                <password>${DSE_ARTIFACTORY_PASSWORD}</password>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
               </server>
               <server>
                 <id>artifactory-snapshots</id>
-                <username>${DSE_ARTIFACTORY_USERNAME}</username>
-                <password>${DSE_ARTIFACTORY_PASSWORD}</password>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
               </server>
               <server>
                 <id>artifactory-releases</id>
-                <username>${DSE_ARTIFACTORY_USERNAME}</username>
-                <password>${DSE_ARTIFACTORY_PASSWORD}</password>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
              </server>
            </servers>
           </settings>
