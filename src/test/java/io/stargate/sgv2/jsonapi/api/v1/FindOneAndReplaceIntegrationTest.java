@@ -697,7 +697,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
                   """
                         {
                           "findOneAndReplace": {
-                            "filter": { "address.city": "nyc" },
+                            "filter": { "no.such.field": "or.value" },
                             "replacement": { },
                             "options": { "returnDocument": "before", "upsert": true },
                             "projection": { "*": 0 }
