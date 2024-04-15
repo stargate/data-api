@@ -1,0 +1,23 @@
+version: '2'
+
+services:
+  dse:
+    image: stargateio/dse-next:${DSETAG}
+    hostname: dse
+    networks:
+      - stargate
+    mem_limit: 2G
+    environment:
+      - MAX_HEAP_SIZE=1536M
+      - CASSANDRA_CLUSTER_NAME=dse-${DSETAG}-cluster
+    healthcheck:
+      test: [ "CMD", "cqlsh","-u cassandra", "-p cassandra" ,"-e describe keyspaces" ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    ports:
+      - "9042:9042"
+    volumes:
+      - ${PWD}/config/cassandra.yaml:/etc/cassandra/cassandra.yaml
+networks:
+  stargate:
