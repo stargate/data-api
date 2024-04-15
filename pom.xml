@@ -250,6 +250,18 @@
     <profile>
       <!-- This profile needs to be activated while working with offline mode related files such as FileWriterSession.java -->
       <id>offline</id>
+      <repositories>
+        <repository>
+          <id>artifactory</id>
+          <url>https://repo.datastax.com/dse</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
       <dependencies>
         <dependency>
           <groupId>com.datastax.dse</groupId>
