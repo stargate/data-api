@@ -685,65 +685,41 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           """
               {
                 "_id": "docProjBeforeNoId",
-                "username": "aaron",
-                "human": true,
-                "age": 47,
-                "password": null,
-                "address": {
-                  "number": 86,
-                  "street": "monkey street",
-                  "is_office": false
-                }
+                "username": "aaron"
               }
               """);
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
-              """
+      String upsertedId =
+          given()
+              .headers(getHeaders())
+              .contentType(ContentType.JSON)
+              .body(
+                  """
                         {
                           "findOneAndReplace": {
                             "filter": { "address.city": "nyc" },
-                            "replacement": {
-                              "_id": "docProjBeforeNoId_2",
-                              "username": "jimr",
-                              "human": true,
-                              "age": 52,
-                              "password": "gasxaq==",
-                              "address": {
-                                "number": 57
-                              }
-                            },
+                            "replacement": { },
                             "options": { "returnDocument": "before", "upsert": true },
-                            "projection": { "_id": 0 }
+                            "projection": { "*": 0 }
                           }
                         }
                         """)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(nullValue()))
-          .body("status.matchedCount", is(0))
-          .body("status.modifiedCount", is(0))
-          // No match so no before-document:
-          .body("data.document", is(nullValue()));
+              .when()
+              .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+              .then()
+              .statusCode(200)
+              .body("errors", is(nullValue()))
+              .body("status.matchedCount", is(0))
+              .body("status.modifiedCount", is(0))
+              // Does upsert
+              .body("status.upsertedId", is(notNullValue()))
+              // No match so no before-document:
+              .body("data.document", is(nullValue()))
+              .extract()
+              .path("status.upsertedId");
 
       // assert state after update
-      String expectedAfterReplace =
-          """
-                      {
-                        "_id": "docProjBeforeNoId_2",
-                        "username": "jimr",
-                        "human": true,
-                        "age": 52,
-                        "password": "gasxaq==",
-                        "address": {
-                          "number": 57
-                        }
-                      }
-              """;
+      String expectedAfterReplace = "{\"_id\":\"%s\"}".formatted(upsertedId);
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -751,10 +727,11 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
               """
                         {
                           "find": {
-                            "filter" : {"_id" : "docProjBeforeNoId_2"}
+                            "filter" : {"_id" : "%s"}
                           }
                         }
-                        """)
+                        """
+                  .formatted(upsertedId))
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
