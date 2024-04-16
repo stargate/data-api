@@ -174,7 +174,7 @@ public class DocumentProjector {
 
   @Override
   public int hashCode() {
-    return rootLayer.hashCode();
+    return (rootLayer == null) ? -1 : rootLayer.hashCode();
   }
 
   /**
