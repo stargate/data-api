@@ -57,7 +57,16 @@ public class DocumentProjector {
          for v1.0.7 or later.
     */
     // return DefaultProjectorWrapper.defaultProjector();
-    return includeAllProjector();
+    return INCLUDE_ALL_PROJECTOR;
+  }
+
+  public static DocumentProjector defaultProjectorWithSimilarity() {
+    /* 16-Apr-2024, tatu: For v1.0.6 need to revert to default being
+         "include all", and then go back to "exclude $vector/$vectorize"
+         for v1.0.7 or later.
+    */
+    // return DefaultProjectorWrapper.defaultProjectorWithSimilarity();
+    return INCLUDE_ALL_PROJECTOR_WITH_SIMILARITY;
   }
 
   public static DocumentProjector includeAllProjector() {
@@ -80,9 +89,9 @@ public class DocumentProjector {
     // First special case: "simple" default projection
     if (projectionDefinition == null || projectionDefinition.isEmpty()) {
       if (includeSimilarity) {
-        return DefaultProjectorWrapper.defaultProjectorWithSimilarity();
+        return defaultProjectorWithSimilarity();
       }
-      return DefaultProjectorWrapper.defaultProjector();
+      return defaultProjector();
     }
     if (!projectionDefinition.isObject()) {
       throw new JsonApiException(
