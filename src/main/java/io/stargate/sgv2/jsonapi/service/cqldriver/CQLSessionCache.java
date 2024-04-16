@@ -11,6 +11,7 @@ import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.InetSocketAddress;
@@ -158,7 +159,7 @@ public class CQLSessionCache {
     String fixedToken;
     if ((fixedToken = getFixedToken()) != null
         && !dataApiRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
-      throw new UnauthorizedException("Unauthorized");
+      throw new UnauthorizedException(ErrorCode.UNAUTHENTICATED_REQUEST.getMessage());
     }
     return sessionCache.get(getSessionCacheKey());
   }
