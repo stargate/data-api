@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
+import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
+import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.benmanes.caffeine.cache.RemovalListener;
@@ -99,6 +101,10 @@ public class CQLSessionCache {
    * @throws RuntimeException if database type is not supported
    */
   private CqlSession getNewSession(SessionCacheKey cacheKey) {
+    DriverConfigLoader loader =
+        DriverConfigLoader.programmaticBuilder()
+            .withString(DefaultDriverOption.SESSION_NAME, cacheKey.tenantId)
+            .build();
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId);
     }
@@ -119,6 +125,7 @@ public class CQLSessionCache {
               .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
               .addContactPoints(seeds)
               .withClassLoader(Thread.currentThread().getContextClassLoader())
+              .withConfigLoader(loader)
               .withApplicationName(APPLICATION_NAME);
       // To use username and password, a Base64Encoded text of the credential is passed as token.
       // The text needs to be in format Cassandra:Base64(username):Base64(password)
@@ -145,6 +152,7 @@ public class CQLSessionCache {
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           .withClassLoader(Thread.currentThread().getContextClassLoader())
           .withApplicationName(APPLICATION_NAME)
+          .withConfigLoader(loader)
           .build();
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
