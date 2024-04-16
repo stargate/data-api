@@ -49,26 +49,26 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
-    EmbeddingGateway.EmbeddingRequest embeddingRequest =
-        EmbeddingGateway.EmbeddingRequest.newBuilder()
+    EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest embeddingRequest =
+        EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.newBuilder()
             .setModelName(modelName)
             .setDimensions(dimension)
             .setInputType(
                 embeddingRequestType == EmbeddingRequestType.INDEX
-                    ? EmbeddingGateway.EmbeddingRequest.InputType.INDEX
-                    : EmbeddingGateway.EmbeddingRequest.InputType.SEARCH)
+                    ? EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.InputType.INDEX
+                    : EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.InputType.SEARCH)
             .addAllInputs(texts)
             .build();
 
-    final EmbeddingGateway.ProviderContext.Builder builder =
-        EmbeddingGateway.ProviderContext.newBuilder()
+    final EmbeddingGateway.ProviderEmbedRequest.ProviderContext.Builder builder =
+        EmbeddingGateway.ProviderEmbedRequest.ProviderContext.newBuilder()
             .setProviderName(provider)
             .setTenantId(tenant.orElse("default"));
     if (apiKeyOverride.isPresent()) {
       builder.putAuthTokens("API_KEY", apiKeyOverride.orElse(apiKey));
     }
 
-    EmbeddingGateway.ProviderContext providerContext = builder.build();
+    EmbeddingGateway.ProviderEmbedRequest.ProviderContext providerContext = builder.build();
     EmbeddingGateway.ProviderEmbedRequest providerEmbedRequest =
         EmbeddingGateway.ProviderEmbedRequest.newBuilder()
             .setEmbeddingRequest(embeddingRequest)
