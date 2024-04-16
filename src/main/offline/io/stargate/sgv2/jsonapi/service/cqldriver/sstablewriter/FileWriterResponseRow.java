@@ -15,16 +15,17 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A {@link Row} implementation that is used to represent the response of a write operation to an SSTable file
+ * A {@link Row} implementation that is used to represent the response of a write operation to an
+ * SSTable file
  */
 public class FileWriterResponseRow implements Row {
   /* The default codec registry */
   private final CodecRegistry DEFAULT_CODECS = new DefaultCodecRegistry("data-api-offline");
   /* The column definitions */
   private final ColumnDefinitions columnDefs;
-    /* The index */
+  /* The index */
   private final int index;
-    /* The values */
+  /* The values */
   private final List<ByteBuffer> values;
 
   public FileWriterResponseRow(ColumnDefinitions columnDefs, int index, List<ByteBuffer> values) {

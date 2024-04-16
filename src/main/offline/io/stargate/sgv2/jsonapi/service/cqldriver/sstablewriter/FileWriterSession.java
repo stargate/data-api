@@ -78,7 +78,6 @@ public class FileWriterSession implements CqlSession {
     }
     this.ssTableOutputDirectory = fileWriterParams.ssTableOutputDirectory();
     this.fileWriterBufferSizeInMB = fileWriterParams.fileWriterBufferSizeInMB();
-    Files.createDirectories(Path.of(ssTableOutputDirectory));
     CQLSSTableWriter.Builder cqlSSTableWriterBuilder =
         CQLSSTableWriter.builder()
             .inDirectory(ssTableOutputDirectory)
@@ -89,15 +88,10 @@ public class FileWriterSession implements CqlSession {
     }
     this.cqlsSSTableWriter = cqlSSTableWriterBuilder.build();
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Create table CQL: " + fileWriterParams.createTableCQL());
-      LOGGER.trace("Insert statement: " + fileWriterParams.insertStatementCQL());
+      LOGGER.trace("Create table CQL: {}", fileWriterParams.createTableCQL());
+      LOGGER.trace("Insert statement: {}", fileWriterParams.insertStatementCQL());
     }
-    String emptyCassandraDataDirectory =
-        System.getProperty("java.io.tmpdir")
-            + File.separator
-            + "cassandra"
-            + File.separator
-            + "data";
+    String emptyCassandraDataDirectory = getEmptyCassandraDir();
     if (!new File(emptyCassandraDataDirectory).exists()) {
       if (!new File(emptyCassandraDataDirectory).mkdirs()) {
         throw new RuntimeException("Failed to create directory: " + emptyCassandraDataDirectory);
@@ -114,6 +108,14 @@ public class FileWriterSession implements CqlSession {
     DatabaseDescriptor.getRawConfig().metadata_directory =
         emptyCassandraDataDirectory + File.separator + "metadata_directory";
     DatabaseDescriptor.getRawConfig().commitlog_sync = Config.CommitLogSync.batch;
+  }
+
+  private String getEmptyCassandraDir() {
+    return System.getProperty("java.io.tmpdir")
+        + File.separator
+        + "cassandra"
+        + File.separator
+        + "data";
   }
 
   private ColumnDefinitions getOfflineWriterResponseRowCols(String keyspace, String table) {
@@ -275,12 +277,12 @@ public class FileWriterSession implements CqlSession {
         this.table,
         this.ssTableOutputDirectory,
         this.fileWriterBufferSizeInMB,
-        getDirectorySizeInMB(this.ssTableOutputDirectory),
+        getDirectorySizeInMBTopLevel(this.ssTableOutputDirectory),
         insertsSucceeded.get(),
         insertsFailed.get());
   }
 
-  private int getDirectorySizeInMB(String dataDirectory) {
+  private int getDirectorySizeInMBTopLevel(String dataDirectory) {
     File file = new File(dataDirectory);
     long size = 0;
     for (File f : Objects.requireNonNull(file.listFiles())) {
