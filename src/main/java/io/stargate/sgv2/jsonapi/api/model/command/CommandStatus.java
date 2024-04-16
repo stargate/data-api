@@ -13,6 +13,9 @@ public enum CommandStatus {
   /** Status for reporting existing namespaces. */
   @JsonProperty("namespaces")
   EXISTING_NAMESPACES,
+  /** Status for reporting existing embedding services. */
+  @JsonProperty("embeddingProviders")
+  EXISTING_VECTOR_PROVIDERS,
   /** Status for reporting existing collections. */
   @JsonProperty("collections")
   EXISTING_COLLECTIONS,
@@ -35,6 +38,10 @@ public enum CommandStatus {
   /** The element has value 1 if collection is created */
   @JsonProperty("ok")
   OK,
+
+  /** Next page state value that can be used in client side for pagination */
+  @JsonProperty("nextPageState")
+  PAGE_STATE,
   /**
    * The element has the document id of newly inserted document part of update, when upserted option
    * is 'true' and no document available in DB for matching condition

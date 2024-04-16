@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
-import io.stargate.bridge.grpc.Values;
-import io.stargate.sgv2.api.common.cql.builder.Literal;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -10,7 +9,7 @@ import java.util.Objects;
  * required as a placeholder to set values in query builder and extracted out to set the value in
  * SimpleStatement positional values
  */
-public class JsonTerm extends Literal {
+public class JsonTerm {
   static final String NULL_ERROR_MESSAGE = "Use Values.NULL to bind a null CQL value";
   private final Object key;
   private final Object value;
@@ -20,7 +19,6 @@ public class JsonTerm extends Literal {
   }
 
   public JsonTerm(Object key, Object value) {
-    super(Values.NULL);
     this.key = key;
     this.value = value;
   }
@@ -46,5 +44,19 @@ public class JsonTerm extends Literal {
 
   public int hashCode() {
     return Objects.hash(new Object[] {this.value, this.key});
+  }
+
+  /**
+   * This method is used for populate positional cql value list e.g. select * from table where
+   * map[?] = ? limit 1; For this case, we populate as key and value
+   *
+   * <p>e.g. select * from table where array_contains contains ? limit 1; * For this case, we
+   * populate positional cql value
+   */
+  public void addToCqlValues(List<Object> values) {
+    if (this.key != null) {
+      values.add(this.key);
+    }
+    values.add(this.value);
   }
 }

@@ -1,13 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -171,7 +169,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
               }
                 """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData)
           .when()
@@ -181,6 +179,32 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"))
+          .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void filterVectorFieldInDenyAll() {
+      // explicitly deny "address.city", implicitly allow "_id", "name", "address.street"
+      String filterData =
+          """
+                  {
+                    "find": {
+                      "filter": {"$vector": {"$exists": true}}
+                    }
+                  }
+                    """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(filterData)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, denyAllIndexingCollection)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].message", endsWith("filter path '$vector' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -197,7 +221,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
               }
                 """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData1)
           .when()
@@ -223,7 +247,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   }
                     """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData2)
           .when()
@@ -249,7 +273,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                       }
                         """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData3)
           .when()
@@ -276,7 +300,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   }
                     """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData)
           .when()
@@ -302,7 +326,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   }
                     """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData)
           .when()
@@ -328,7 +352,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   }
                     """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterId1)
           .when()
@@ -355,7 +379,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterId2)
           .when()
@@ -386,7 +410,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                 }
                     """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterId3)
           .when()
@@ -415,7 +439,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   }
                     """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData)
           .when()
@@ -446,7 +470,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                       }
                         """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData1)
           .when()
@@ -474,7 +498,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                     }
                         """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData2)
           .when()
@@ -498,7 +522,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                       }
                         """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData3)
           .when()
@@ -545,7 +569,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                       }
                             """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData)
           .when()
@@ -591,7 +615,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                 }
                             """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData1)
           .when()
@@ -621,7 +645,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                     """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData2)
           .when()
@@ -653,7 +677,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   }
                   """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData1)
           .when()
@@ -679,7 +703,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData2)
           .when()
@@ -708,7 +732,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData3)
           .when()
@@ -741,7 +765,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   }
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData4)
           .when()
@@ -776,7 +800,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(filterData1)
           .when()
@@ -804,7 +828,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                   }
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(sortData)
           .when()
@@ -831,7 +855,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
                       }
                               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(sortData)
           .when()

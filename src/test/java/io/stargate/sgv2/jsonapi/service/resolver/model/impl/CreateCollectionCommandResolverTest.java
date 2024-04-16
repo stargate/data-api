@@ -7,9 +7,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@TestProfile(NoGlobalResourcesTestProfile.Impl.class)
+@TestProfile(EnabledVectorizeProfile.class)
 class CreateCollectionCommandResolverTest {
 
   @Inject ObjectMapper objectMapper;
@@ -92,23 +92,29 @@ class CreateCollectionCommandResolverTest {
     public void happyPathVectorizeSearch() throws Exception {
       String json =
           """
-          {
-            "createCollection": {
-              "name" : "my_collection",
-              "options": {
-                "vector": {
-                  "dimension": 4,
-                  "metric": "cosine"
-                },
-                "vectorize": {
-                  "service" : "openai",
-                  "options" : {
-                    "modelName": "text-embedding-ada-002"
-                  }
+            {
+                "createCollection": {
+                    "name": "my_collection",
+                    "options": {
+                        "vector": {
+                            "metric": "cosine",
+                            "dimension": 768,
+                            "service": {
+                                "provider": "vertexai",
+                                "modelName": "textembedding-gecko@003",
+                                "authentication": {
+                                    "type": [
+                                        "HEADER"
+                                    ]
+                                },
+                                "parameters": {
+                                    "PROJECT_ID": "test project"
+                                }
+                            }
+                        }
+                    }
                 }
-              }
             }
-          }
           """;
 
       CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
@@ -121,11 +127,12 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.name()).isEqualTo("my_collection");
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.vectorSearch()).isEqualTo(true);
-                assertThat(op.vectorSize()).isEqualTo(4);
+                assertThat(op.vectorSize()).isEqualTo(768);
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
                 assertThat(op.comment())
                     .isEqualTo(
-                        "{\"vectorize\":{\"service\":\"openai\",\"options\":{\"modelName\":\"text-embedding-ada-002\"}}}");
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"vector\":{\"dimension\":768,\"metric\":\"cosine\",\"service\":{\"provider\":\"vertexai\",\"modelName\":\"textembedding-gecko@003\",\"authentication\":{\"type\":[\"HEADER\"]},\"parameters\":{\"PROJECT_ID\":\"test project\"}}},\"defaultId\":{\"type\":\"\"}}}}",
+                        TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }
 
@@ -161,7 +168,10 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorSearch()).isEqualTo(true);
                 assertThat(op.vectorSize()).isEqualTo(4);
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
-                assertThat(op.comment()).isEqualTo("{\"indexing\":{\"deny\":[\"comment\"]}}");
+                assertThat(op.comment())
+                    .isEqualTo(
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"indexing\":{\"deny\":[\"comment\"]},\"vector\":{\"dimension\":4,\"metric\":\"cosine\"},\"defaultId\":{\"type\":\"\"}}}}",
+                        TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }
 

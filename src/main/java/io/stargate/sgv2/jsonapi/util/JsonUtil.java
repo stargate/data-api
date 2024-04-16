@@ -8,14 +8,17 @@ import com.google.common.base.Utf8;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
+import org.bson.types.ObjectId;
 
 public class JsonUtil {
-  public static final String EJSON_VALUE_KEY_DATE = "$date";
+  @Deprecated // use JsonExtensionType.EJSON_DATE.encodedName() instead
+  public static final String EJSON_VALUE_KEY_DATE = JsonExtensionType.EJSON_DATE.encodedName();
 
   /**
    * Method that compares to JSON values for equality using Mongo semantics which are otherwise same
@@ -101,14 +104,9 @@ public class JsonUtil {
           return new Date(value.longValue());
         }
         // Otherwise we have an error case
-        throw new JsonApiException(
-            ErrorCode.SHRED_BAD_EJSON_VALUE,
-            String.format(
-                "%s: Date (%s) needs to have NUMBER value, has %s (path '%s')",
-                ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage(),
-                EJSON_VALUE_KEY_DATE,
-                value.getNodeType(),
-                path));
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "Date (%s) needs to have NUMBER value, has %s (path '%s')",
+            EJSON_VALUE_KEY_DATE, value.getNodeType(), path);
       }
     }
     return null;
@@ -144,8 +142,110 @@ public class JsonUtil {
     return Map.of(EJSON_VALUE_KEY_DATE, timestamp);
   }
 
+  public static ObjectNode createJsonExtensionValue(
+      JsonNodeCreator f, JsonExtensionType type, String valueAsString) {
+    return f.objectNode().put(type.encodedName(), valueAsString);
+  }
+
+  public static Map<String, Object> createJsonExtensionValueAsMap(
+      JsonExtensionType type, String valueAsString) {
+    return Map.of(type.encodedName(), valueAsString);
+  }
+
   public static Date createDateFromDocumentId(DocumentId documentId) {
     return new Date((Long) ((Map) documentId.value()).get(EJSON_VALUE_KEY_DATE));
+  }
+
+  public static JsonExtensionType findJsonExtensionType(JsonNode jsonValue) {
+    if (jsonValue.isObject() && jsonValue.size() == 1) {
+      String fieldName = jsonValue.fieldNames().next();
+      return JsonExtensionType.fromEncodedName(fieldName);
+    }
+    return null;
+  }
+
+  public static JsonExtensionType findJsonExtensionType(String encodedType) {
+    return JsonExtensionType.fromEncodedName(encodedType);
+  }
+
+  public static Object extractExtendedValue(JsonExtensionType etype, JsonNode valueWrapper) {
+    Object value = tryExtractExtendedValue(etype, valueWrapper);
+    if (value == null) {
+      failOnInvalidExtendedValue(etype, valueWrapper.iterator().next());
+    }
+    return value;
+  }
+
+  public static Object extractExtendedValue(
+      JsonExtensionType etype, Map.Entry<String, JsonNode> valueEntry) {
+    Object value = tryExtractExtendedValue(etype, valueEntry);
+    if (value == null) {
+      failOnInvalidExtendedValue(etype, valueEntry.getValue());
+    }
+    return value;
+  }
+
+  public static Object extractExtendedValueUnwrapped(
+      JsonExtensionType etype, JsonNode unwrappedValue) {
+    Object value = tryExtractExtendedFromUnwrapped(etype, unwrappedValue);
+    if (value == null) {
+      failOnInvalidExtendedValue(etype, unwrappedValue);
+    }
+    return value;
+  }
+
+  public static Object tryExtractExtendedValue(JsonExtensionType etype, JsonNode valueWrapper) {
+    // Caller should have verified that we have a single-field Object; but double check
+    if (valueWrapper.isObject() && valueWrapper.size() == 1) {
+      return tryExtractExtendedFromUnwrapped(etype, valueWrapper.iterator().next());
+    }
+    return null;
+  }
+
+  public static Object tryExtractExtendedValue(
+      JsonExtensionType etype, Map.Entry<String, JsonNode> valueEntry) {
+    return tryExtractExtendedFromUnwrapped(etype, valueEntry.getValue());
+  }
+
+  private static Object tryExtractExtendedFromUnwrapped(JsonExtensionType etype, JsonNode value) {
+    switch (etype) {
+      case EJSON_DATE:
+        if (value.isIntegralNumber() && value.canConvertToLong()) {
+          return new Date(value.longValue());
+        }
+        break;
+      case OBJECT_ID:
+        try {
+          return new ObjectId(value.asText());
+        } catch (IllegalArgumentException e) {
+        }
+        break;
+      case UUID:
+        try {
+          return java.util.UUID.fromString(value.asText());
+        } catch (IllegalArgumentException e) {
+        }
+        break;
+    }
+    return null;
+  }
+
+  private static void failOnInvalidExtendedValue(JsonExtensionType etype, JsonNode value) {
+    switch (etype) {
+      case EJSON_DATE:
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "'%s' value has to be an epoch timestamp, instead got (%s)",
+            etype.encodedName(), value);
+      case OBJECT_ID:
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)",
+            etype.encodedName(), value);
+      case UUID:
+        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+            "'%s' value has to be 36-character UUID String, instead got (%s)",
+            etype.encodedName(), value);
+    }
+    throw new IllegalStateException("Unrecognized JsonExtensionType: " + etype);
   }
 
   /**

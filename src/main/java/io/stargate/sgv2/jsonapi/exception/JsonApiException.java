@@ -75,6 +75,10 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     return new CommandResult.Error(message, fieldsForMetricsTag, fields, status);
   }
 
+  public CommandResult.Error getCommandResultError(Response.Status status) {
+    return getCommandResultError(getMessage(), status);
+  }
+
   public ErrorCode getErrorCode() {
     return errorCode;
   }

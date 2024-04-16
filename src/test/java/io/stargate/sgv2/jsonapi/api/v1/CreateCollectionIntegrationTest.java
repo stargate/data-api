@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -10,14 +9,9 @@ import static org.hamcrest.Matchers.startsWith;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
@@ -91,7 +85,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               .formatted(collectionName);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -106,7 +100,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void duplicateNonVectorCollectionName() {
       // create a non vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createNonVectorCollectionJson)
           .when()
@@ -117,7 +111,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // recreate the same non vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createNonVectorCollectionJson)
           .when()
@@ -128,7 +122,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // create a vector collection with the same name
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createVectorCollection)
           .when()
@@ -149,7 +143,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void duplicateVectorCollectionName() {
       // create a vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createVectorCollection)
           .when()
@@ -159,7 +153,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("status.ok", is(1));
       // recreate the same vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createVectorCollection)
           .when()
@@ -169,7 +163,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("status.ok", is(1));
       // create a non vector collection with the same name
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createNonVectorCollectionJson)
           .when()
@@ -190,7 +184,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void duplicateVectorCollectionNameWithDiffSetting() {
       // create a vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createVectorCollection)
           .when()
@@ -200,7 +194,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("status.ok", is(1));
       // create another vector collection with the same name but different size setting
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createVectorCollectionWithOtherSizeSettings)
           .when()
@@ -216,7 +210,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("errors[0].exceptionClass", is("JsonApiException"));
       // create another vector collection with the same name but different function setting
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createVectorCollectionWithOtherFunctionSettings)
           .when()
@@ -256,7 +250,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // create vector collection with indexing allow option
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
@@ -267,7 +261,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // Also: should be idempotent so try creating again
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
@@ -301,7 +295,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
@@ -312,7 +306,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // Also: should be idempotent so try creating again
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
@@ -328,7 +322,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     @Test
     public void createCollectionWithIndexingStar() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -352,7 +346,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // create vector collection with indexing deny option
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -376,7 +370,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // And then check that we can't use both
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -409,7 +403,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failCreateCollectionWithIndexHavingDuplicates() {
       // create vector collection with error indexing option
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -441,7 +435,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failCreateCollectionWithIndexHavingAllowAndDeny() {
       // create vector collection with error indexing option
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -476,7 +470,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failWithInvalidNameInIndexingAllows() {
       // create a vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           // Brackets not allowed in field names
           .body(
@@ -510,7 +504,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void failWithInvalidNameInIndexingDeny() {
       // create a vector collection
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               // Dollars not allowed in regular field names (can only start operators)
@@ -542,7 +536,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     @Test
     public void failWithInvalidOption() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -564,7 +558,615 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: No option \"InDex\" found as createCollectionCommand option (known options: \"indexing\", \"vector\")"))
+                  "The provided options are invalid: No option \"InDex\" found as createCollectionCommand option (known options: \"defaultId\", \"indexing\", \"vector\")"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void happyCreateCollectionWithEmbeddingService() {
+      final String createCollectionRequest =
+          """
+                  {
+                      "createCollection": {
+                          "name": "collection_with_vector_service",
+                          "options": {
+                              "vector": {
+                                  "metric": "cosine",
+                                  "dimension": 768,
+                                  "service": {
+                                      "provider": "vertexai",
+                                      "modelName": "textembedding-gecko@003",
+                                      "authentication": {
+                                          "type": [
+                                              "HEADER"
+                                          ],
+                                          "secretName": "test"
+                                      },
+                                      "parameters": {
+                                          "PROJECT_ID": "test"
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+                      """;
+
+      // create vector collection with vector service
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionRequest)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // Also: should be idempotent so try creating again
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionRequest)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+    }
+
+    @Test
+    public void happyCreateCollectionWithEmbeddingServiceAutoPopulateDimension() {
+      final String createCollectionWithoutDimension =
+          """
+                      {
+                          "createCollection": {
+                              "name": "collection_with_vector_service",
+                              "options": {
+                                  "vector": {
+                                      "metric": "cosine",
+                                      "service": {
+                                          "provider": "vertexai",
+                                          "modelName": "textembedding-gecko@003",
+                                          "authentication": {
+                                              "type": [
+                                                  "HEADER"
+                                              ],
+                                              "secretName": "test"
+                                          },
+                                          "parameters": {
+                                              "PROJECT_ID": "test"
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                          """;
+      final String createCollectionWithDimension =
+          """
+                      {
+                          "createCollection": {
+                              "name": "collection_with_vector_service",
+                              "options": {
+                                  "vector": {
+                                      "metric": "cosine",
+                                      "dimension": 768,
+                                      "service": {
+                                          "provider": "vertexai",
+                                          "modelName": "textembedding-gecko@003",
+                                          "authentication": {
+                                              "type": [
+                                                  "HEADER"
+                                              ],
+                                              "secretName": "test"
+                                          },
+                                          "parameters": {
+                                              "PROJECT_ID": "test"
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                          """;
+      // create vector collection with vector service and no dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithoutDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // Also: should be idempotent when try creating with correct dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+
+      // create vector collection with vector service and correct dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // Also: should be idempotent when try creating with no dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithoutDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceNoDimension() {
+      // create a collection with no dimension and service
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine"
+                                }
+                            }
+                        }
+                    }
+                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: The 'dimension' can not be null if 'service' is not provided"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceProviderNotSupport() {
+      // create a collection with embedding service provider not support
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                  {
+                      "createCollection": {
+                          "name": "collection_with_vector_service",
+                          "options": {
+                              "vector": {
+                                  "metric": "cosine",
+                                  "dimension": 768,
+                                  "service": {
+                                      "provider": "test",
+                                      "modelName": "textembedding-gecko@003",
+                                      "authentication": {
+                                          "type": [
+                                              "HEADER","SHARED_SECRET"
+                                          ],
+                                          "secretName": "test"
+                                      },
+                                      "parameters": {
+                                          "PROJECT_ID": "test"
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+                  """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Service provider 'test' is not supported"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceAuthenticationTypeUnsupported() {
+      // create a collection with authentication type not support
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "openai",
+                                        "modelName": "text-embedding-3-small",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER","SHARED_SECRET"
+                                            ],
+                                            "secretName": "test"
+                                        },
+                                        "parameters": {
+                                            "PROJECT_ID": "test"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Authentication type 'SHARED_SECRET' is not supported"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    // TODO: Enable it when support SHARED_SECRET
+    @Disabled
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceNoSecretName() {
+      // create a collection with "SHARED_SECRET" authentication type but no 'secretName'
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "vertexai",
+                                        "modelName": "text-embedding-3-small",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER","SHARED_SECRET"
+                                            ]
+                                        },
+                                        "parameters": {
+                                            "PROJECT_ID": "test"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: 'secretName' must be provided for 'SHARED_SECRET' authentication type"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceNotProvideRequiredParameters() {
+      // create a collection without providing required parameters
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "vertexai",
+                                        "modelName": "text-embedding-3-small",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ],
+                                            "secretName": "test"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Required parameter 'PROJECT_ID' for the provider 'vertexai' missing"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceWithUnconfiguredParameters() {
+      // create a collection with unconfigured parameters
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "vertexai",
+                                        "modelName": "textembedding-gecko@003",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ],
+                                            "secretName": "test"
+                                        },
+                                        "parameters": {
+                                            "test": "test"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'vertexai' provided"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "openai",
+                                        "modelName": "text-embedding-3-small",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ]
+                                        },
+                                        "parameters": {
+                                            "test": "test"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Parameters provided but the provider 'openai' expects none"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceWrongParameterType() {
+      // create a collection with wrong parameter type
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "vertexai",
+                                        "modelName": "textembedding-gecko@003",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ],
+                                            "secretName": "test"
+                                        },
+                                        "parameters": {
+                                            "PROJECT_ID": 123
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: The provided parameter 'PROJECT_ID' type is incorrect. Expected: 'STRING'"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceUnsupportedModel() {
+      // create a collection with unsupported model name
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 768,
+                                    "service": {
+                                        "provider": "vertexai",
+                                        "modelName": "testModel",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ],
+                                            "secretName": "test"
+                                        },
+                                        "parameters": {
+                                            "PROJECT_ID": "123"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Model name 'testModel' for provider 'vertexai' is not supported"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceUnmatchedVectorDimension() {
+      // create a collection with unmatched vector dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 123,
+                                    "service": {
+                                        "provider": "vertexai",
+                                        "modelName": "textembedding-gecko@003",
+                                        "authentication": {
+                                            "type": [
+                                                "HEADER"
+                                            ],
+                                            "secretName": "test"
+                                        },
+                                        "parameters": {
+                                            "PROJECT_ID": "123"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: The provided dimension value '123' doesn't match the model supports dimension value '768'"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -572,7 +1174,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
   private void deleteCollection(String collectionName) {
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
             """

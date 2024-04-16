@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.nullValue;
@@ -9,7 +8,6 @@ import static org.hamcrest.Matchers.nullValue;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import net.javacrumbs.jsonunit.ConfigurableJsonMatcher;
 import org.junit.jupiter.api.*;
@@ -21,7 +19,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   private void insert(String json) {
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(json)
         .when()
@@ -194,7 +192,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -228,7 +226,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                      """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -258,7 +256,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -286,7 +284,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -311,7 +309,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -336,7 +334,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                             }
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -370,7 +368,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                             }
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -408,7 +406,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -433,7 +431,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -457,7 +455,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -490,7 +488,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -517,7 +515,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -548,7 +546,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -580,7 +578,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -611,7 +609,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -647,7 +645,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -672,7 +670,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -699,7 +697,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -727,7 +725,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
       // should find everything
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -754,7 +752,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
       // should find everything
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -786,7 +784,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
       // should find nothing
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -817,7 +815,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
       // should find everything
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -843,7 +841,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
       // should find nothing
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()

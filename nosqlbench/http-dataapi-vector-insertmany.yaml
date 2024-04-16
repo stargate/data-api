@@ -1,0 +1,329 @@
+min_version: "5.17.0"
+
+description: |
+  This workload emulates vector insertmany operations for Stargate Data API.
+  It requires a data set file (default vector-dataset.txt), where contains vectors of size 1536
+  1536 is a standard vector size that openAI embedding generates, using this size for benchmark
+
+scenarios:
+  default:
+    schema: run driver=http tags==block:schema threads==1 cycles==UNDEF
+    rampup: run driver=http tags==block:rampup cycles===TEMPLATE(rampup-cycles,10000000) threads=auto
+    main: run driver=http tags==block:"main.*" cycles===TEMPLATE(main-cycles,10000000) threads=auto
+
+  astra:
+    schema: run driver=http tags==block:schema-astra threads==1 cycles==UNDEF
+    rampup: run driver=http tags==block:rampup cycles===TEMPLATE(rampup-cycles,10000000) threads=auto
+    main: run driver=http tags==block:"main.*" cycles===TEMPLATE(main-cycles,10000000) threads=auto
+
+  basic_check:
+    schema: run driver=http tags==block:schema threads==1 cycles==UNDEF
+    rampup: run driver=http tags==block:rampup cycles===TEMPLATE(rampup-cycles,10) threads=auto
+    main: run driver=http tags==block:"main.*" cycles===TEMPLATE(main-cycles,10) threads=auto
+
+bindings:
+  # To enable an optional weighted set of hosts in place of a load balancer
+  # Examples
+  #   single host: dataapi_host=host1
+  #   multiple hosts: dataapi_host=host1,host2,host3
+  #   multiple weighted hosts: dataapi_host=host1:3,host2:7
+  weighted_hosts: WeightedStrings('<<dataapi_host:<<stargate_host:localhost>>>>')
+
+  seq_key: Mod(TEMPLATE(keycount,50000000000L)); ToString() -> String
+  created_on: Uniform(1262304000,1577836800) -> long
+  year_born: Uniform(1950,2023) -> int
+  number_children: Uniform(0,5) -> int
+  full_name: FullNames()
+  married: ModuloToBoolean()
+  city: Cities()
+  country_code: CountryCodes()
+
+
+  vector_value: HashedFloatVectors(<<dimensions:1536>>); ToCqlVector()
+
+  request_id: ToHashedUUID(); ToString();
+  token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
+
+
+blocks:
+  schema:
+    ops:
+      delete-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "deleteCollection": {
+              "name": "<<collection:TEMPLATE(table,keyvalue)>>"
+            }
+          }
+      create-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "createCollection": {
+              "name": "<<collection:TEMPLATE(table,keyvalue)>>",
+              "options": {
+                          "vector": {
+                              "size": 1536
+                          }
+              }
+            }
+          }
+
+
+  insertMany-uuid:
+    ops:
+      insertMany:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: '.*\"insertedIds\":\[.*\].*'
+        body: >2
+          {
+            "insertMany" : {
+              "documents" : 
+                [
+                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },
+                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  },                  {
+                  "created_on" : {created_on},
+                  "year_born" : {year_born},
+                  "number_children" : {number_children},
+                  "full_name" : "{full_name}",
+                  "married":      {married},
+                  "address": {
+                      "city":   "{city}",
+                      "country_code":     "{country_code}"
+                  },
+                  "$vector":      {vector_value}
+                  }
+                ],
+                "options": {
+                  "ordered": false
+                }
+            }
+          }
+          

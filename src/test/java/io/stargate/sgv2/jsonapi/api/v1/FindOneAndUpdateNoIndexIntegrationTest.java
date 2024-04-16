@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
@@ -15,7 +14,6 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -55,7 +53,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                   """
               .formatted(collectionName);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -72,7 +70,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
     @Test
     public void byIdAfterUpdate() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -94,7 +92,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
           .statusCode(200);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -126,8 +124,8 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                         "name": "Joe",
                         "age": 42,
                         "enabled": true,
-                        "value": -1,
-                        "$vector" : [ 0.5, -0.25 ]
+                        "$vector" : [ 0.5, -0.25 ],
+                        "value": -1
                       }
                       """))
           .body("status.matchedCount", is(1))
@@ -144,13 +142,12 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                 "name": "Bob",
                 "age": 77,
                 "enabled": true,
-                "$vector" : [ 0.5, -0.25 ],
                 "value": 3
               }
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -167,7 +164,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
           .statusCode(200);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -207,7 +204,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
       insertEmptyDoc("array_size_big_noindex_doc");
       final String arrayJson = bigArray(DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH + 10);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -238,7 +235,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
       insertEmptyDoc("array_size_too_big_doc");
       final String arrayJson = bigArray(DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH + 10);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -278,7 +275,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
         final String objectJson =
             bigObject(DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES + 10);
         given()
-            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+            .headers(getHeaders())
             .contentType(ContentType.JSON)
             .body(
                 """
@@ -310,7 +307,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
         final String objectJson =
             bigObject(DocumentLimitsConfig.DEFAULT_MAX_OBJECT_PROPERTIES + 10);
         given()
-            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+            .headers(getHeaders())
             .contentType(ContentType.JSON)
             .body(
                 """
@@ -342,7 +339,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
 
     private void insertEmptyDoc(String docId) {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """

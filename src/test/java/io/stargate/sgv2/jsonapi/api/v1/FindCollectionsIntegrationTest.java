@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -12,7 +11,6 @@ import static org.hamcrest.Matchers.is;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.ClassOrderer;
@@ -35,10 +33,37 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
 
     @Test
     @Order(1)
+    /**
+     * The keyspace that exists when database is created, and check if there is no collection in
+     * this default keyspace.
+     */
+    public void checkNamespaceHasNoCollections() {
+      // then find
+      String json =
+          """
+              {
+                "findCollections": {
+                }
+              }
+              """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.collections", hasSize(0));
+    }
+
+    @Test
+    @Order(2)
     public void happyPath() {
       // create first
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -57,7 +82,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
 
       // then find
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -74,7 +99,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     }
 
     @Test
-    @Order(2)
+    @Order(3)
     public void happyPathWithExplain() {
       String json =
           """
@@ -96,7 +121,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               .formatted("collection2");
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -108,7 +133,8 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
       String expected1 =
           """
                   {
-                    "name": "%s"
+                    "name": "%s",
+                    "options":{}
                   }
                     """
               .formatted("collection1");
@@ -140,7 +166,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -154,10 +180,10 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     }
 
     @Test
-    @Order(3)
+    @Order(4)
     public void happyPathWithMixedCase() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -175,7 +201,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
 
       // then find
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -192,7 +218,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     public void emptyNamespace() {
       // create namespace first
       String namespace = "nam" + RandomStringUtils.randomNumeric(16);
@@ -207,7 +233,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               .formatted(namespace);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -226,7 +252,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -247,7 +273,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               .formatted(namespace);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -255,33 +281,6 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
-    }
-
-    @Test
-    @Order(5)
-    /**
-     * The keyspace that exists when database is created, and check if there is no collection in
-     * this default keyspace.
-     */
-    public void checkNamespaceHasNoCollections() {
-      // then find
-      String json =
-          """
-          {
-            "findCollections": {
-            }
-          }
-          """;
-
-      given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(NamespaceResource.BASE_PATH, "data_endpoint_auth")
-          .then()
-          .statusCode(200)
-          .body("status.collections", hasSize(0));
     }
 
     @Test
@@ -297,7 +296,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -319,6 +318,9 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                     "createCollection": {
                       "name": "%s",
                       "options": {
+                        "defaultId" : {
+                          "type" : "objectId"
+                        },
                         "indexing": {
                           "deny" : ["comment"]
                         }
@@ -329,7 +331,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
               .formatted("collection4");
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -338,11 +340,21 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .statusCode(200)
           .body("status.ok", is(1));
 
+      json =
+          """
+                  {
+                    "findCollections": {
+                      "options": {
+                        "explain" : true
+                      }
+                    }
+                  }
+                  """;
       String expected1 = """
-      {"name":"TableName"}
+      {"name":"TableName","options":{}}
       """;
       String expected2 = """
-              {"name":"collection1"}
+              {"name":"collection1", "options":{}}
               """;
       String expected3 =
           """
@@ -350,7 +362,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
       """;
       String expected4 =
           """
-              {"name":"collection4", "options":{"indexing":{"deny":["comment"]}}}
+              {"name":"collection4","options":{"defaultId" : {"type" : "objectId"}, "indexing":{"deny":["comment"]}}}
               """;
       json =
           """
@@ -364,7 +376,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                   """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()

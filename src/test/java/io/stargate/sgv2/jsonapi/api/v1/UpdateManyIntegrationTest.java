@@ -1,17 +1,17 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -58,7 +58,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -68,6 +68,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
 
       // assert state after update, first changed document
@@ -88,7 +89,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -115,7 +116,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -139,7 +140,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -149,6 +150,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
     }
 
@@ -165,7 +167,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -175,6 +177,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(5))
           .body("status.modifiedCount", is(5))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
 
       // assert all updated
@@ -185,7 +188,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -208,7 +211,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -217,7 +220,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .statusCode(200)
           .body("status.matchedCount", is(20))
           .body("status.modifiedCount", is(20))
-          .body("status.moreData", nullValue())
+          .body("status.moreData", is(true))
+          .body("status.nextPageState", not(isEmptyOrNullString()))
           .body("errors", is(nullValue()));
 
       json =
@@ -229,7 +233,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -253,7 +257,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -263,6 +267,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(20))
           .body("status.modifiedCount", is(20))
           .body("status.moreData", is(true))
+          .body("status.nextPageState", not(isEmptyOrNullString()))
           .body("errors", is(nullValue()));
 
       json =
@@ -274,7 +279,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -282,6 +287,79 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .then()
           .statusCode(200)
           .body("data.documents.active_user", everyItem(is(true)));
+    }
+
+    @Test
+    public void updatePagination() {
+      insert(25);
+      String json =
+          """
+              {
+                "updateMany": {
+                  "filter" : {"active_user" : true},
+                  "update" : {"$set" : {"new_data": "new_data_value"}}
+                }
+              }
+              """;
+      String nextPageState =
+          given()
+              .headers(getHeaders())
+              .contentType(ContentType.JSON)
+              .body(json)
+              .when()
+              .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+              .then()
+              .statusCode(200)
+              .body("status.matchedCount", is(20))
+              .body("status.modifiedCount", is(20))
+              .body("status.moreData", is(true))
+              .body("status.nextPageState", notNullValue())
+              .body("errors", is(nullValue()))
+              .extract()
+              .body()
+              .path("status.nextPageState");
+
+      json =
+          """
+              {
+                "updateMany": {
+                  "filter" : {"active_user" : true},
+                  "update" : {"$set" : {"new_data": "new_data_value"}},
+                  "options" : {"pageState": "%s"}}
+                }
+              }
+              """
+              .formatted(nextPageState);
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(5))
+          .body("status.modifiedCount", is(5))
+          .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
+          .body("errors", is(nullValue()));
+      json =
+          """
+        {
+          "find": {
+            "filter" : {"active_user": true}
+          }
+        }
+        """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents.new_data", everyItem(is("new_data_value")));
     }
 
     @Test
@@ -298,7 +376,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -309,6 +387,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
 
       // assert upsert
@@ -328,7 +407,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -355,7 +434,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               }
               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -366,6 +445,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
 
       // assert upsert
@@ -385,7 +465,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               }
               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -409,7 +489,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -419,6 +499,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(0))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
 
       String expected =
@@ -438,7 +519,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -462,7 +543,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -485,7 +566,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
             """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -509,7 +590,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -520,6 +601,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
           .body("status.moreData", nullValue())
+          .body("status.nextPageState", nullValue())
           .body("errors", is(nullValue()));
 
       // assert state after update
@@ -540,7 +622,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -592,7 +674,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
                 () -> {
                   try {
                     given()
-                        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+                        .headers(getHeaders())
                         .contentType(ContentType.JSON)
                         .body(updateJson)
                         .when()
@@ -635,7 +717,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(findJson)
           .when()
@@ -661,7 +743,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(updateJson)
           .when()

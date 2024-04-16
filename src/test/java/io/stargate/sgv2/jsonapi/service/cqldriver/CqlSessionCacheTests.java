@@ -137,7 +137,10 @@ public class CqlSessionCacheTests {
     operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
     // Throwable
     Throwable t = catchThrowable(cqlSessionCacheForTest::getSession);
-    assertThat(t).isNotNull().isInstanceOf(UnauthorizedException.class).hasMessage("Unauthorized");
+    assertThat(t)
+        .isNotNull()
+        .isInstanceOf(UnauthorizedException.class)
+        .hasMessage("UNAUTHENTICATED: Invalid token");
     // metrics test
     Gauge cacheSizeMetric =
         meterRegistry.find("cache.size").tag("cache", "cql_sessions_cache").gauge();

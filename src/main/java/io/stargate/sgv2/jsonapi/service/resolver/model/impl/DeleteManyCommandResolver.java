@@ -59,7 +59,7 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
     return FindOperation.unsorted(
         commandContext,
         logicalExpression,
-        DocumentProjector.identityProjector(),
+        DocumentProjector.includeAllProjector(),
         null,
         operationsConfig.maxDocumentDeleteCount() + 1,
         operationsConfig.defaultPageSize(),

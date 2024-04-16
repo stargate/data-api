@@ -123,6 +123,10 @@ public interface OperationsConfig {
   @WithDefault("1000")
   int maxCountLimit();
 
+  /** @return Boolean flag to enable astra index guardrail too many indexes rollback */
+  @WithDefault("true")
+  boolean tooManyIndexesRollbackEnabled();
+
   /**
    * @return Defines the default page size for count operation, having separate from
    *     `defaultPageSize` config because count will read more keys per page, defaults to <code>100
@@ -247,4 +251,7 @@ public interface OperationsConfig {
       ConsistencyLevel vectorSearch();
     }
   }
+  /** @return Flag to enable server side vectorization. */
+  @WithDefault("false")
+  boolean vectorizeEnabled();
 }

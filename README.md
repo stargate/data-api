@@ -1,7 +1,7 @@
-# Stargate JSON API
+# Stargate Data API
 
-This project implements the stand-alone JSON API microservice for Stargate.
-JSON API is an HTTP service that gives access to data stored in a Cassandra cluster using a JSON Document based interface.
+This project implements the stand-alone Data API microservice for Stargate.
+Data API is an HTTP service that gives access to data stored in a Cassandra cluster using a JSON Document based interface.
 
 Specifications and design documents for this service are defined in the [docs](docs) directory.
 
@@ -22,23 +22,23 @@ The project depends on the [sgv2-quarkus-common](https://github.com/stargate/sta
 
 ## Quick Start
 
-Most users will want to use the JSON API through a client library such as the [stargate-mongoose](https://github.com/stargate/stargate-mongoose) for JavaScript development. See the [stargate-mongoose-sample-apps](https://github.com/stargate/stargate-mongoose-sample-apps) for a quick demonstration.
+Most users will want to use the Data API through a client library such as the [stargate-mongoose](https://github.com/stargate/stargate-mongoose) for JavaScript development. See the [stargate-mongoose-sample-apps](https://github.com/stargate/stargate-mongoose-sample-apps) for a quick demonstration.
 
-The quickest way to test out the JSON API directly is to start a local copy of the service and supporting infrastructure using the [Docker compose](docker-compose) scripts:
+The quickest way to test out the Data API directly is to start a local copy of the service and supporting infrastructure using the [Docker compose](docker-compose) scripts:
 
 ```shell
 cd docker-compose
-./start_dse_70_dev_mode.sh
+./start_dse_next_dev_mode.sh
 ```
 
-This starts an instance of the JSON API along with a Stargate coordinator node in "developer mode" (with DataStax Enterprise 7.0 embedded). 
+This starts an instance of the Data API along with a Stargate coordinator node in "developer mode" (with DataStax Enterprise 6.8 embedded). 
 
 > **Warning**
-> Running this script with no options will use the latest `v1` tagged version of JSON API and latest `v2` tagged version of the Stargate coordinator. Therefore, if you have these tags already present in your local Docker from other development/testing, those are the images that will be used. See our Docker compose [README](docker-compose/README.md) to see additional options.
+> Running this script with no options will use the latest `v1` tagged version of Data API and latest `v2` tagged version of the Stargate coordinator. Therefore, if you have these tags already present in your local Docker from other development/testing, those are the images that will be used. See our Docker compose [README](docker-compose/README.md) to see additional options.
 
 Once the services are up, you can access the Swagger endpoint at: http://localhost:8181/swagger-ui/
 
-We also have a Postman collection you can use to learn about the various operations supported by the JSON API as part of the [Stargate-Cassandra](https://www.postman.com/datastax/workspace/stargate-cassandra/overview) workspace. 
+We also have a Postman collection you can use to learn about the various operations supported by the Data API as part of the [Stargate-Cassandra](https://www.postman.com/datastax/workspace/stargate-cassandra/overview) workspace. 
 
 ## Concepts
 
@@ -71,7 +71,7 @@ Note that this project uses Java 17, please ensure that you have the target JDK 
 
 You can run your application in dev mode that enables live coding using:
 ```shell script
-docker run -d --rm -e CLUSTER_NAME=dse-cluster -e CLUSTER_VERSION=7.0 -e ENABLE_AUTH=true -e DEVELOPER_MODE=true -e DS_LICENSE=accept -e DSE=true -p 8081:8081 -p 8091:8091 -p 9042:9042 stargateio/coordinator-dse-next:v2
+docker run -d --rm -e CLUSTER_NAME=dse-cluster -e CLUSTER_VERSION=6.8 -e ENABLE_AUTH=true -e DEVELOPER_MODE=true -e DS_LICENSE=accept -e DSE=true -p 8081:8081 -p 8091:8091 -p 9042:9042 stargateio/coordinator-dse-next:v2
 
 ./mvnw compile quarkus:dev
 ```
@@ -104,7 +104,7 @@ Running integration tests from an IDE is supported out of the box.
 The tests will use the DSE Next as the data store by default.
 Running a test with a different version of the data store or the Stargate coordinator requires changing the run configuration and specifying the following system properties:
 
-* `testing.containers.cassandra-image` - version of the Cassandra docker image to use, for example: `datastax/dse-server:7.0.0-alpha.4`
+* `testing.containers.cassandra-image` - version of the Cassandra docker image to use, for example: `stargateio/dse-next:4.0.7-336cdd7405ee`
 * `testing.containers.stargate-image` - version of the Stargate coordinator docker image to use, for example: `stargateio/coordinator-4_0:v2.1` (must be V2.1 coordinator for the target data store)
 * `testing.containers.cluster-dse` - optional and only needed if coordinator is used
 

@@ -1,10 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
+import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
@@ -22,21 +22,26 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
@@ -68,7 +73,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -79,7 +84,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -121,7 +126,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -132,7 +137,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -174,7 +179,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -204,7 +209,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(query_json)
           .when()
@@ -231,7 +236,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -261,7 +266,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(query_json)
           .when()
@@ -287,7 +292,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -315,7 +320,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -342,7 +347,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -369,7 +374,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -400,7 +405,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -423,7 +428,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -454,7 +459,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -477,7 +482,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -500,7 +505,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -518,6 +523,342 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
   @Nested
   @Order(2)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class InsertOneWithJsonExtensions {
+    static final String COLLECTION_WITH_AUTO_OBJECTID = "CollectionWithAutoObjectId";
+
+    @Order(-1)
+    @Test
+    void createCollectionWithAutoGenerated() {
+      createComplexCollection(
+          """
+              {
+                "name": "%s",
+                "options" : {
+                  "defaultId" : {
+                    "type" : "objectId"
+                  }
+                }
+              }
+              """
+              .formatted(COLLECTION_WITH_AUTO_OBJECTID));
+    }
+
+    @Test
+    @Order(1)
+    public void insertDocWithUUIDKey() {
+      final String UUID_KEY = UUID.randomUUID().toString();
+      String doc =
+          """
+                  {
+                    "_id": { "$uuid": "%s"},
+                    "value": 42
+                  }
+              """
+              .formatted(UUID_KEY);
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("status.insertedIds[0]", is(Map.of("$uuid", UUID_KEY)))
+          .body("data", is(nullValue()));
+
+      // Find by UUID, full $uuid notation
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{\"find\": { \"filter\" : {\"_id\" : {\"$uuid\":\"%s\"}}}}".formatted(UUID_KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+
+      // Find by UUID, short-cut (unwrapped)
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(UUID_KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    @Order(2)
+    public void insertDocWithObjectIdKey() {
+      final String OBJECTID_KEY = new ObjectId().toHexString();
+      String doc =
+          """
+                  {
+                    "_id": { "$objectId": "%s"},
+                    "value": "unknown"
+                  }
+              """
+              .formatted(OBJECTID_KEY);
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("status.insertedIds[0]", is(Map.of("$objectId", OBJECTID_KEY)))
+          .body("data", is(nullValue()));
+      // Find by ObjectId, full $objectId notation
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              "{\"find\": { \"filter\" : {\"_id\": {\"$objectId\":\"%s\"}}}}"
+                  .formatted(OBJECTID_KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+      // Find by ObjectId, shortcut notation
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(OBJECTID_KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    @Order(3)
+    public void insertDocWithAutoObjectIdKey() {
+      String doc =
+          """
+                        {
+                          "value": "random"
+                        }
+                      """;
+      Response response =
+          given()
+              .headers(getHeaders())
+              .contentType(ContentType.JSON)
+              .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+              .when()
+              .post(CollectionResource.BASE_PATH, namespaceName, COLLECTION_WITH_AUTO_OBJECTID)
+              .then()
+              .statusCode(200)
+              .body("errors", is(nullValue()))
+              .body("status.insertedIds", hasSize(1))
+              .body("status.insertedIds[0]", any(Map.class))
+              .body("data", is(nullValue()))
+              .extract()
+              .response();
+      Object insertedIdRaw = response.path("status.insertedIds[0]");
+      assertThat(insertedIdRaw).isInstanceOf(Map.class);
+      Map<String, Object> insertedId = (Map<String, Object>) insertedIdRaw;
+      assertThat(insertedId).hasSize(1);
+      assertThat(insertedId).containsKey("$objectId");
+      // Validate goodness by constructing an ObjectId from String:
+      ObjectId objectId = new ObjectId((String) insertedId.get("$objectId"));
+      assertThat(objectId).isNotNull();
+
+      // And with that, we should be able to find the document
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              "{\"find\": { \"filter\" : {\"_id\": {\"$objectId\":\"%s\"}}}}"
+                  .formatted(objectId.toString()))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, COLLECTION_WITH_AUTO_OBJECTID)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0].value", is("random"));
+    }
+
+    @Test
+    @Order(4)
+    public void insertDocWithUUIDValues() {
+      final String KEY = UUID.randomUUID().toString();
+      final String UUID_VALUE = UUID.randomUUID().toString();
+      final String UUID_VALUE2 = UUID.randomUUID().toString();
+      String doc =
+          """
+                      {
+                        "_id": "%s",
+                        "value": { "$uuid": "%s"},
+                        "nested": {
+                          "id": { "$uuid": "%s"}
+                        }
+                      }
+                  """
+              .formatted(KEY, UUID_VALUE, UUID_VALUE2);
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(KEY))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{\"find\": { \"filter\" : {\"_id\" : {\"$uuid\": \"%s\"}}}}".formatted(KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    @Order(5)
+    public void insertDocWithObjectIdValues() {
+      final String KEY = UUID.randomUUID().toString();
+      final String OBJECTID_VALUE = new ObjectId().toHexString();
+      final String OBJECTID_VALUE2 = new ObjectId().toHexString();
+      String doc =
+          """
+                      {
+                        "_id": "%s",
+                        "subdoc": {
+                          "id": { "$objectId": "%s"}
+                        },
+                        "value": { "$objectId": "%s"}
+                      }
+                  """
+              .formatted(KEY, OBJECTID_VALUE, OBJECTID_VALUE2);
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(KEY))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{\"find\": { \"filter\" : {\"_id\" : \"%s\"}}}".formatted(KEY))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(doc))
+          .body("errors", is(nullValue()));
+    }
+
+    // // // Failing cases
+
+    @Test
+    @Order(6)
+    public void failInsertDocWithInvalidUUIDAsDocId() {
+      String doc =
+          """
+                          {
+                            "_id": { "$uuid": 42},
+                            "value": 42
+                          }
+                      """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Bad type for '_id' property: Bad JSON Extension value: '$uuid' value has to be 36-character UUID String, instead got (42)"));
+    }
+
+    @Test
+    @Order(7)
+    public void failInsertDocWithInvalidObjectIdAsDocId() {
+      String doc =
+          """
+                              {
+                                "_id": { "$objectId": "not-quite-objectid" },
+                                "value": 42
+                              }
+                          """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body(
+              "errors[0].message",
+              containsString(
+                  "Bad JSON Extension value: '$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"not-quite-objectid\")"));
+    }
+
+    @Test
+    @Order(8)
+    public void failInsertDocWithUnknownExtensionAsDocId() {
+      String doc =
+          """
+              {
+                "_id": { "$myOwnThing": "xyz"},
+                "value": 42
+              }
+          """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCID_TYPE"))
+          .body(
+              "errors[0].message",
+              startsWith("Bad type for '_id' property: unrecognized JSON extension type"));
+    }
+  }
+
+  @Nested
+  @Order(3)
   class InsertOneConstraintChecking {
     private static final int MAX_ARRAY_LENGTH = DocumentLimitsConfig.DEFAULT_MAX_ARRAY_LENGTH;
 
@@ -551,7 +892,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               """
               .formatted(doc);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -603,7 +944,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                       """
               .formatted(doc);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -656,7 +997,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                     """
               .formatted(tooLongNumStr);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -705,7 +1046,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                         """
               .formatted(tooLongString);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -739,7 +1080,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
       // But in this case, let's also verify that we can find it via nested properties
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -770,7 +1111,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                         """
               .formatted(bigDoc);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -807,7 +1148,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               """
               .formatted(tooManyPropsDoc);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -850,7 +1191,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                             """
               .formatted(tooManyPropsDoc);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -879,7 +1220,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               .formatted(doc);
       // Insert has to succeed
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -892,7 +1233,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
       // But let's also verify doc can be fetched and is what we inserted
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -913,7 +1254,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(3)
+  @Order(4)
   class InsertInMixedCaseCollection {
     private static final String COLLECTION_MIXED = "MyCollection";
 
@@ -923,7 +1264,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       createSimpleCollection(COLLECTION_MIXED);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -944,7 +1285,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -973,7 +1314,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(4)
+  @Order(5)
   class InsertMany {
 
     @Test
@@ -1000,7 +1341,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1020,7 +1361,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1059,7 +1400,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1080,7 +1421,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1119,7 +1460,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1155,7 +1496,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1175,7 +1516,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1212,7 +1553,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1233,7 +1574,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1265,7 +1606,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1293,7 +1634,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1319,7 +1660,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1351,7 +1692,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1378,7 +1719,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1392,7 +1733,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(5)
+  @Order(6)
   class InsertManyLimitsChecking {
     @Test
     public void tryInsertTooLongNumber() {
@@ -1419,7 +1760,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               .formatted(tooLongNumStr);
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1458,7 +1799,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                   createBigDoc("big4", bigSize).toString(),
                   createBigDoc("big5", bigSize).toString());
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1500,7 +1841,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
       // needs to be for Exception and only then verifying
       try {
         given()
-            .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+            .headers(getHeaders())
             .contentType(ContentType.JSON)
             .body(json)
             .when()
@@ -1517,7 +1858,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   }
 
   @Nested
-  @Order(6)
+  @Order(7)
   class InsertManyFails {
     @Test
     public void insertManyWithTooManyDocuments() {
@@ -1548,7 +1889,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               .formatted(docs.toString());
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()

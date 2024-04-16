@@ -3,6 +3,23 @@
 
 stargate:
 
+  # security and authentication configuration
+  # see io.stargate.sgv2.jsonapi.config.AuthConfig for all config properties and options
+  auth:
+    # header-based security by default
+    # if changed, adapt token resolver type
+    header-based:
+      enabled: true
+
+    # Cassandra token resolver from principal
+    token-resolver:
+      type: principal
+
+  # multi tenancy settings
+  # see io.stargate.sgv2.jsonapi.config.MultiTenancyConfig  for all config properties and options
+  multi-tenancy:
+    enabled: false
+
   database:
     limits:
       max-collections: 5
@@ -33,40 +50,18 @@ stargate:
     global-tags:
       module: sgv2-jsonapi
 
-  # custom properties for enabling vectorize method
-  jsonapi:
-    embedding:
-      config:
-        # This can be `property` or `in-memory` to store Embedding service configuration
-        store: property
-      service:
-        # Open AI embedding service configuration
-        openai:
-          enabled: false
-          url: https://api.openai.com/v1/
-          api-key: YOUR_API_KEY
-
-        # Hugging face embedding service configuration
-        huggingface:
-          enabled: false
-          url: https://api-inference.huggingface.co
-          api-key: YOUR_API_KEY
-
-        # Vertex AI embedding service configuration
-        vertexai:
-          enabled: false
-          url: https://us-central1-aiplatform.googleapis.com
-          api-key: YOUR_API_KEY
-
 quarkus:
 
   # general app properties
   application:
-    name: Stargate JSON API
+    name: Stargate DATA API
 
   # banner for the startup
   banner:
     path: banner/banner.txt
+
+  log:
+    min-level: trace
 
   # HTTP settings
   http:
@@ -88,9 +83,6 @@ quarkus:
       max-body-size: 20M
 
     port: 8181
-
-  log:
-    min-level: trace
 
   # built-in micrometer properties
   micrometer:

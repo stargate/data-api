@@ -46,9 +46,6 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
   public Operation resolveCommand(CommandContext commandContext, UpdateOneCommand command) {
     FindOperation findOperation = getFindOperation(commandContext, command);
 
-    // Vectorize update clause
-    commandContext.tryVectorize(objectMapper.getNodeFactory(), command.updateClause());
-
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
 
     // resolve upsert
@@ -64,7 +61,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
         false,
         upsert,
         shredder,
-        DocumentProjector.identityProjector(),
+        DocumentProjector.includeAllProjector(),
         1,
         operationsConfig.lwt().retries());
   }
@@ -78,16 +75,13 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
       sortClause.validate(commandContext);
     }
 
-    // vectorize sort clause
-    commandContext.tryVectorize(objectMapper.getNodeFactory(), sortClause);
-
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
     if (vector != null) {
       return FindOperation.vsearchSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.identityProjector(),
+          DocumentProjector.includeAllProjector(),
           ReadType.DOCUMENT,
           objectMapper,
           vector);
@@ -99,7 +93,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
       return FindOperation.sortedSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.identityProjector(),
+          DocumentProjector.includeAllProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
           ReadType.SORTED_DOCUMENT,
@@ -113,7 +107,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
       return FindOperation.unsortedSingle(
           commandContext,
           logicalExpression,
-          DocumentProjector.identityProjector(),
+          DocumentProjector.includeAllProjector(),
           ReadType.DOCUMENT,
           objectMapper);
     }

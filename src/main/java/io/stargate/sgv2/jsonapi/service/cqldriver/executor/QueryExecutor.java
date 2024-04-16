@@ -7,8 +7,8 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import com.datastax.oss.driver.api.core.servererrors.TruncateException;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -28,14 +28,12 @@ public class QueryExecutor {
   private static final Logger logger = LoggerFactory.getLogger(QueryExecutor.class);
   private final OperationsConfig operationsConfig;
 
-  private final DataApiRequestInfo dataApiRequestInfo;
   /** CQLSession cache. */
   @Inject CQLSessionCache cqlSessionCache;
 
   @Inject
-  public QueryExecutor(OperationsConfig operationsConfig, DataApiRequestInfo dataApiRequestInfo) {
+  public QueryExecutor(OperationsConfig operationsConfig) {
     this.operationsConfig = operationsConfig;
-    this.dataApiRequestInfo = dataApiRequestInfo;
   }
 
   /**
@@ -77,6 +75,19 @@ public class QueryExecutor {
     return cqlSessionCache.getSession().executeAsync(simpleStatement);
   }
 
+  /**
+   * Execute count query with bound statement.
+   *
+   * @param simpleStatement - Simple statement with query and parameters. The table name used in the
+   *     query must have keyspace prefixed.
+   * @return AsyncResultSet
+   */
+  public CompletionStage<AsyncResultSet> executeEstimatedCount(SimpleStatement simpleStatement) {
+    simpleStatement =
+        simpleStatement.setConsistencyLevel(operationsConfig.queriesConfig().consistency().reads());
+
+    return cqlSessionCache.getSession().executeAsync(simpleStatement);
+  }
   /**
    * Execute vector search query with bound statement.
    *
@@ -168,7 +179,10 @@ public class QueryExecutor {
                             operationsConfig.queriesConfig().consistency().schemaChanges())))
         .onFailure(
             error ->
-                error instanceof DriverTimeoutException || error instanceof InvalidQueryException)
+                error instanceof DriverTimeoutException
+                    || error instanceof InvalidQueryException
+                    || (error instanceof TruncateException
+                        && "Failed to interrupt compactions".equals(error.getMessage())))
         .recoverWithUni(
             throwable -> {
               logger.error(
@@ -199,7 +213,10 @@ public class QueryExecutor {
             })
         .onFailure(
             error ->
-                error instanceof DriverTimeoutException || error instanceof InvalidQueryException)
+                error instanceof DriverTimeoutException
+                    || error instanceof InvalidQueryException
+                    || (error instanceof TruncateException
+                        && "Failed to interrupt compactions".equals(error.getMessage())))
         .retry()
         .atMost(2);
   }

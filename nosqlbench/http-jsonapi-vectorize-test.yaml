@@ -1,0 +1,149 @@
+min_version: "5.17.3"
+
+description: >2
+  NosqlBench test workload for vectorize
+
+scenarios:
+  default:
+    schema-namespace:   run driver=http tags==block:schema-namespace threads==1 cycles==UNDEF
+    schema-collection:   run driver=http tags==block:schema-collection threads==1 cycles==UNDEF
+    ramp-up-insert-one:    run driver=http tags==name:"write.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
+    find-one:    run driver=http tags==name:"find-one.*" cycles===TEMPLATE(write-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
+    find-one-update: run driver=http tags==name:"find-one-update.*" cycles===TEMPLATE(update-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
+    find-one-delete:    run driver=http tags==name:"find-one-delete.*" cycles===TEMPLATE(delete-cycles,TEMPLATE(docscount,10000)) threads=auto errors=timer,warn
+
+bindings:
+  # To enable an optional weighted set of hosts in place of a load balancer
+  # Examples
+  #   single host: jsonapi_host=host1
+  #   multiple hosts: jsonapi_host=host1,host2,host3
+  #   multiple weighted hosts: jsonapi_host=host1:3,host2:7
+  weighted_hosts: WeightedStrings('<<jsonapi_host:<<stargate_host:localhost>>>>')
+
+  # http request id
+  request_id: ToHashedUUID(); ToString();
+
+  # autogenerate auth token to use on API calls using configured uri/uid/password, unless one is provided
+  token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
+
+  movie_id: ToHashedUUID(); ToString() -> String
+  movie_short_description: HashedLineToString('<<dataset:vectorize-dataset.txt>>');
+
+
+blocks:
+  schema:
+    ops:
+      delete-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "deleteCollection": {
+              "name": "<<collection:TEMPLATE(table,keyvalue)>>"
+            }
+          }
+      create-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "createCollection": {
+              "name" : "<<collection:TEMPLATE(table,keyvalue)>>",
+              "options": {
+                "vector": {
+                  "dimension": 1024 ,
+                  "metric": "cosine"
+                },
+                "vectorize": {
+                  "service" : "nvidia",
+                  "options" : {
+                    "modelName": "query"
+                  }
+                }
+              }
+            }
+          }
+
+  ramp-up-insert-one:
+    ops:
+      insert-one-vectorize:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: '.*\"insertedIds\":\[.*\].*'
+        body: >2
+            {
+               "insertOne": {
+                  "document": {
+                      "user_id":      "{user_id}",
+                      "description": "{movie_short_description}",
+                      "$vectorize": "{movie_short_description}"
+                  }
+               }
+            }
+
+  find-one:
+    ops:
+      find-one-vectorize:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+            {
+              "findOne": {
+                "sort" : {"$vectorize" : "{movie_short_description}"},
+              }
+            }
+
+  find-one-update:
+    ops:
+      find-one-update-vectorize:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"modifiedCount\":[0,1].*"
+        body: >2
+          {
+            "findOneAndUpdate": {
+              "sort" : {"$vectorize" : "{movie_short_description}"},
+              "update" : {"$set" : {"status" : "active", "$vectorize" : "{movie_short_description}"}},
+              "options" : {"returnDocument" : "after"}
+            }
+          }
+
+  find-one-delete:
+    ops:
+      find-one-delete-vectorize:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<jsonapi_port:8181>><<path_prefix:>>/v1/<<namespace:TEMPLATE(keyspace,baselines)>>/<<collection:TEMPLATE(table,keyvalue)>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        X-Cassandra-Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"deletedCount\":[0,1].*"
+        body: >2
+          {
+            "findOneAndDelete": {
+              "sort" : {"$vectorize" : "{movie_short_description}"}
+            }
+          }

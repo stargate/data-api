@@ -1,12 +1,107 @@
 # Changelog
 
-## [Unreleased](https://github.com/stargate/jsonapi/tree/HEAD)
+## [v1.0.5](https://github.com/stargate/data-api/tree/v1.0.5) (2024-04-03)
 
-[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.1...HEAD)
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.4...v1.0.5)
 
 **Closed issues:**
 
+- Refactor `DocumentProjector` by adding `IndexingProjector`, unshare \(re-duplicate\) code [\#1006](https://github.com/stargate/data-api/issues/1006)
+- \[Indexing Option\] Do not create index in case of deny: \["\*"\] [\#1002](https://github.com/stargate/data-api/issues/1002)
+- Support wildcard "include EVERYTHING" and "include NOTHING" for Projection clause [\#1001](https://github.com/stargate/data-api/issues/1001)
+- Java driver ReadFailureException on Find command [\#949](https://github.com/stargate/data-api/issues/949)
+- NullPointerException on CreateCollection [\#944](https://github.com/stargate/data-api/issues/944)
+- Was able to use $vectorize used with non vectorize collection  [\#901](https://github.com/stargate/data-api/issues/901)
+- Add Metrics for in-flight commands \(Gauge on `MeteredCommandProcessor`\) [\#854](https://github.com/stargate/data-api/issues/854)
+- CQL execution profile for transactional queries [\#791](https://github.com/stargate/data-api/issues/791)
+- Wording of timeout error message [\#743](https://github.com/stargate/data-api/issues/743)
+- Microbench for $in and $nin [\#723](https://github.com/stargate/data-api/issues/723)
+
+**Merged pull requests:**
+
+- Adding back InsertOperationTest [\#1018](https://github.com/stargate/data-api/pull/1018) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix vectorize time metrics [\#1015](https://github.com/stargate/data-api/pull/1015) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Use Stargate v2.1.0-BETA-10 [\#1014](https://github.com/stargate/data-api/pull/1014) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Move `EmbeddingProviderResponseValidation` class to the correct package [\#1011](https://github.com/stargate/data-api/pull/1011) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Reduce CQL driver metrics and shredder metrics [\#1010](https://github.com/stargate/data-api/pull/1010) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Map Java driver ReadFailureException on Find command to JsonApiException [\#1009](https://github.com/stargate/data-api/pull/1009) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add support for "star" inclusion/exclusion \(include all/exclude all\) [\#1008](https://github.com/stargate/data-api/pull/1008) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Refactor DocumentProjector by splitting out IndexingProjector [\#1007](https://github.com/stargate/data-api/pull/1007) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Deny all improvement to not create super shredder indexes [\#1004](https://github.com/stargate/data-api/pull/1004) ([maheshrajamani](https://github.com/maheshrajamani))
+- Bumping version for next data-api release [\#1003](https://github.com/stargate/data-api/pull/1003) ([github-actions[bot]](https://github.com/apps/github-actions))
+
+## [v1.0.4](https://github.com/stargate/data-api/tree/v1.0.4) (2024-03-27)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.3...v1.0.4)
+
+**Closed issues:**
+
+- Returned identifiers when working with different `defaultId` \(ObjectId\) are String [\#995](https://github.com/stargate/data-api/issues/995)
+- ChangeLog not generating during release workflow [\#990](https://github.com/stargate/data-api/issues/990)
+
+**Merged pull requests:**
+
+- Adjust CQL execution profile timeouts [\#999](https://github.com/stargate/data-api/pull/999) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Stop tagging CQL metrics by session id [\#998](https://github.com/stargate/data-api/pull/998) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Fix \#995: return full JSON Extension value for \_id, not Stringified [\#997](https://github.com/stargate/data-api/pull/997) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Changelog script fix after renaming the repo [\#991](https://github.com/stargate/data-api/pull/991) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix 1.0.3 link in CHANGELOG.md [\#989](https://github.com/stargate/data-api/pull/989) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
+## [v1.0.3](https://github.com/stargate/jsonapi/tree/v1.0.3) (2024-03-20)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.2...v1.0.3)
+
+**Closed issues:**
+
+- Add `EstimatedDocumentCount` command [\#793](https://github.com/stargate/data-api/issues/793)
+- Renaming to Data API [\#860](https://github.com/stargate/data-api/issues/860)
+- Support auto-generation/explicit use of ObjectId, UUID (v4, v6, v7) as document ids (_id) [\#922](https://github.com/stargate/data-api/issues/922)
+- Filter $not with $size as 0 not working correctly [\#981](https://github.com/stargate/data-api/issues/981)
+
+**Merged pull requests:**
+
+- Implement EstimatedDocumentCount operation [\#866](https://github.com/stargate/data-api/pull/866)
+- ObjectId, UUID typed support (auto-generation, explicit usage) [\#928](https://github.com/stargate/data-api/pull/928)
+- Update Jackson to 2.16.2 (from 2.16.1) [\#980](https://github.com/stargate/data-api/pull/980)
+- Fixes \#981: fix $not with $size 0 [\#982](https://github.com/stargate/data-api/pull/982)
+
+## [v1.0.2](https://github.com/stargate/jsonapi/tree/v1.0.2) (2024-03-11)
+
+[Full Changelog](https://github.com/stargate/jsonapi/compare/v1.0.1...v1.0.2)
+
+**Closed issues:**
+
+- Support pagination to `UpdateMany` command [\#937](https://github.com/stargate/jsonapi/issues/937)
+- Rollback on CreateCollection failure [\#912](https://github.com/stargate/jsonapi/issues/912)
+- Change `EmbeddingService` and `VectorProvider` to `EmbeddingProvider` [\#911](https://github.com/stargate/jsonapi/issues/911)
+- Missing `errorCode` when `find\(\)` fails with invalid Collection name [\#904](https://github.com/stargate/jsonapi/issues/904)
+- Confusing error message when trying to find by multiple `\_id` values [\#898](https://github.com/stargate/jsonapi/issues/898)
+- Truncate value length included by `ConstraintViolationExceptionMapper` into configurable max length [\#895](https://github.com/stargate/jsonapi/issues/895)
+- OpenAPI spec, investigate sdk generator tool stainless [\#892](https://github.com/stargate/jsonapi/issues/892)
 - Invalid request / allow filtering error on find command \(due to failed index creation for `createCollection`\) [\#812](https://github.com/stargate/jsonapi/issues/812)
+- Add content size metrics for serialization \(shredding output\) to `doc\_json` [\#759](https://github.com/stargate/jsonapi/issues/759)
+- Add timing metrics for serialization \(shredding output\) to `doc\_json` [\#669](https://github.com/stargate/jsonapi/issues/669)
+- Add timing metrics for deserialization of `doc\_json` [\#668](https://github.com/stargate/jsonapi/issues/668)
+
+**Merged pull requests:**
+
+- Enable CI for PRs against feature branches \("feature/\*"\) [\#942](https://github.com/stargate/jsonapi/pull/942) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- some cleanup with bridge removal [\#941](https://github.com/stargate/jsonapi/pull/941) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Revert "remove some bridge related dependencies" [\#940](https://github.com/stargate/jsonapi/pull/940) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Paginated updateMany [\#939](https://github.com/stargate/jsonapi/pull/939) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix deprecated references to InjectMock: use non-deprecated import [\#931](https://github.com/stargate/jsonapi/pull/931) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- collection limit rollback change [\#929](https://github.com/stargate/jsonapi/pull/929) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Remove gauge metrics from driver [\#914](https://github.com/stargate/jsonapi/pull/914) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fixes \#898: improve error message for "multiple \_id filters" case [\#913](https://github.com/stargate/jsonapi/pull/913) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- bug fix: valid vector metric [\#908](https://github.com/stargate/jsonapi/pull/908) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fixes \#904: convert ConstraintsViolationException to JsonApiException to include `errorCode` [\#906](https://github.com/stargate/jsonapi/pull/906) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- delete the performance testing github workflow [\#902](https://github.com/stargate/jsonapi/pull/902) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fixes \#895: truncate reported value that fails constraint violation if too long [\#899](https://github.com/stargate/jsonapi/pull/899) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#893: add IT for InsertMany failure due to doc count exceeding limit [\#894](https://github.com/stargate/jsonapi/pull/894) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- remove some bridge related dependencies [\#890](https://github.com/stargate/jsonapi/pull/890) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Bumping version for next jsonapi release [\#886](https://github.com/stargate/jsonapi/pull/886) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Rename jsonapi -\> dataapi [\#864](https://github.com/stargate/jsonapi/pull/864) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Build doc json size metrics and doc counter metrics [\#829](https://github.com/stargate/jsonapi/pull/829) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 
 ## [v1.0.1](https://github.com/stargate/jsonapi/tree/v1.0.1) (2024-02-20)
 

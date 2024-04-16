@@ -1,14 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -24,6 +23,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
 
     @Test
     public void tokenMissing() {
+      final Map<String, ?> headers = getHeaders();
       given()
           .contentType(ContentType.JSON)
           .body("{}")
@@ -40,14 +40,14 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
     @Test
     public void malformedBody() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body("{wrong}")
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].exceptionClass", is("JsonParseException"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].message", is(not(blankString())));
     }
 
@@ -62,7 +62,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -87,7 +87,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -114,7 +114,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -132,7 +132,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
     @Test
     public void emptyBody() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)

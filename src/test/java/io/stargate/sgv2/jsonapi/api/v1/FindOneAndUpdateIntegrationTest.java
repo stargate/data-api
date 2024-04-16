@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.any;
@@ -16,7 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
@@ -57,7 +56,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -87,7 +86,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -121,7 +120,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
         }
         """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -146,7 +145,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -172,7 +171,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -204,7 +203,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -227,7 +226,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
 
       // assert state after update
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -266,7 +265,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
               }
               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -292,7 +291,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
 
       // assert state after update
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -324,7 +323,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -349,7 +348,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -381,7 +380,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -404,7 +403,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -435,7 +434,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -465,7 +464,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -497,7 +496,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -525,7 +524,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -581,7 +580,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -603,7 +602,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
         }
         """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -659,7 +658,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -681,7 +680,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -717,7 +716,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -739,7 +738,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -770,7 +769,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -792,7 +791,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -824,7 +823,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -849,7 +848,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -882,7 +881,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -907,7 +906,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -939,7 +938,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -964,7 +963,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -997,7 +996,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                       """
               .formatted(tooLongNumStr);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1062,7 +1061,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1096,7 +1095,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1142,7 +1141,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
            }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1180,7 +1179,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1221,7 +1220,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1236,7 +1235,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
 
       // assert state on insert
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1275,7 +1274,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1298,7 +1297,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1341,7 +1340,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1356,7 +1355,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
 
       // And verify that the document was inserted as expected:
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1423,7 +1422,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                   }
                   """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(updateQuery)
           .when()
@@ -1450,7 +1449,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                   """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1515,7 +1514,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(updateQuery)
           .when()
@@ -1541,7 +1540,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1573,7 +1572,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                 """;
       insertDoc(document);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1604,7 +1603,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1634,7 +1633,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                     """;
       insertDoc(document);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1662,7 +1661,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1701,7 +1700,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
               }
               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1714,7 +1713,8 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .body(
               "errors[0].message",
               is(
-                  "Bad EJSON value: Date ($date) needs to have NUMBER value, has STRING (path 'createdAt')"));
+                  ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
+                      + ": Date ($date) needs to have NUMBER value, has STRING (path 'createdAt')"));
     }
   }
 
@@ -1737,7 +1737,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                     """;
       insertDoc(document);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -1764,7 +1764,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
 
       String json =
           given()
-              .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+              .headers(getHeaders())
               .contentType(ContentType.JSON)
               .body(
                   """
@@ -1809,7 +1809,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
                   }
                   """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()

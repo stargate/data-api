@@ -64,23 +64,34 @@ public class DseTestResource extends StargateTestResource {
     Map<String, String> env = super.start();
     ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
     propsBuilder.putAll(env);
-    propsBuilder.put("stargate.jsonapi.embedding.service.custom.enabled", "true");
+    propsBuilder.put("stargate.jsonapi.embedding.custom.enabled", "true");
     propsBuilder.put(
-        "stargate.jsonapi.embedding.service.custom.clazz",
-        "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingService");
+        "stargate.jsonapi.embedding.custom.clazz",
+        "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider");
     if (this.containerNetworkId.isPresent()) {
-      String host = System.getProperty("quarkus.grpc.clients.bridge.host");
+      String host =
+          useCoordinator()
+              ? System.getProperty("quarkus.grpc.clients.bridge.host")
+              : System.getProperty("stargate.int-test.cassandra.host");
       propsBuilder.put("stargate.jsonapi.operations.database-config.cassandra-end-points", host);
     } else {
-      int port = Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP);
+      int port =
+          useCoordinator()
+              ? Integer.getInteger(IntegrationTestUtils.STARGATE_CQL_PORT_PROP)
+              : Integer.getInteger(IntegrationTestUtils.CASSANDRA_CQL_PORT_PROP);
       propsBuilder.put(
           "stargate.jsonapi.operations.database-config.cassandra-port", String.valueOf(port));
     }
-    String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
-    if (defaultToken != null) {
-      propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);
+    if (useCoordinator()) {
+      String defaultToken = System.getProperty(IntegrationTestUtils.AUTH_TOKEN_PROP);
+      if (defaultToken != null) {
+        propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);
+      }
     }
+    propsBuilder.put("stargate.data-store.ignore-bridge", "true");
     propsBuilder.put("stargate.debug.enabled", "true");
+    // Reduce the delay for ITs
+    propsBuilder.put("stargate.jsonapi.operations.database-config.ddl-delay-millis", "50");
     return propsBuilder.build();
   }
 }

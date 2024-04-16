@@ -21,7 +21,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateEmbeddingServiceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
@@ -31,7 +30,9 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.inject.Inject;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -367,36 +368,6 @@ class ObjectMapperConfigurationTest {
   }
 
   @Nested
-  class CreateEmbeddingService {
-    @Test
-    public void happyPath() throws Exception {
-      String json =
-          """
-                      {
-                        "createEmbeddingService": {
-                          "name": "openai",
-                          "apiProvider" : "openai",
-                          "apiKey" : "API-TOKEN",
-                          "baseUrl" : "https://api.openai.com/v1/"
-                        }
-                      }
-                      """;
-
-      Command result = objectMapper.readValue(json, Command.class);
-
-      assertThat(result)
-          .isInstanceOfSatisfying(
-              CreateEmbeddingServiceCommand.class,
-              createEmbeddingServiceCommand -> {
-                assertThat(createEmbeddingServiceCommand.name()).isNotNull();
-                assertThat(createEmbeddingServiceCommand.apiKey()).isNotNull();
-                assertThat(createEmbeddingServiceCommand.apiProvider()).isNotNull();
-                assertThat(createEmbeddingServiceCommand.baseUrl()).isNotNull();
-              });
-    }
-  }
-
-  @Nested
   class CreateCollection {
     @Test
     public void happyPath() throws Exception {
@@ -487,26 +458,41 @@ class ObjectMapperConfigurationTest {
     public void happyPathVectorizeSearch() throws Exception {
       String json =
           """
-                        {
-                          "createCollection": {
+                    {
+                        "createCollection": {
                             "name": "some_name",
                             "options": {
-                              "vector": {
-                                "dimension": 5,
-                                "metric": "cosine"
-                              },
-                              "vectorize" : {
-                                "service" : "my_service",
-                                "options" : {
-                                  "modelName": "text-embedding-ada-002"
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 1536,
+                                    "service": {
+                                        "provider": "openai",
+                                        "modelName": "text-embedding-ada-002",
+                                        "authentication": {
+                                            "type": [
+                                                "SHARED_SECRET"
+                                            ],
+                                            "secretName": "name_given_by_user"
+                                        },
+                                        "parameters": {
+                                            "project_id": "test project"
+                                        }
+                                    }
+                                },
+                                "indexing": {
+                                    "deny": [
+                                        "address"
+                                    ]
                                 }
-                              }
                             }
-                          }
                         }
+                    }
                         """;
 
       Command result = objectMapper.readValue(json, Command.class);
+
+      Map<String, Object> parameterMap = new HashMap<>();
+      parameterMap.put("project_id", "test project");
 
       assertThat(result)
           .isInstanceOfSatisfying(
@@ -516,14 +502,47 @@ class ObjectMapperConfigurationTest {
                 assertThat(name).isNotNull();
                 assertThat(createCollection.options()).isNotNull();
                 assertThat(createCollection.options().vector()).isNotNull();
-                assertThat(createCollection.options().vector().dimension()).isEqualTo(5);
+                assertThat(createCollection.options().vector().dimension()).isEqualTo(1536);
                 assertThat(createCollection.options().vector().metric()).isEqualTo("cosine");
-                assertThat(createCollection.options().vectorize()).isNotNull();
-                assertThat(createCollection.options().vectorize().service())
-                    .isEqualTo("my_service");
-                assertThat(createCollection.options().vectorize().options()).isNotNull();
-                assertThat(createCollection.options().vectorize().options().modelName())
+                assertThat(createCollection.options().vector().vectorizeConfig()).isNotNull();
+                assertThat(createCollection.options().vector().vectorizeConfig().provider())
+                    .isEqualTo("openai");
+                assertThat(createCollection.options().vector().vectorizeConfig().modelName())
                     .isEqualTo("text-embedding-ada-002");
+                assertThat(
+                        createCollection
+                            .options()
+                            .vector()
+                            .vectorizeConfig()
+                            .vectorizeServiceAuthentication()
+                            .type())
+                    .contains("SHARED_SECRET");
+                assertThat(
+                        createCollection
+                            .options()
+                            .vector()
+                            .vectorizeConfig()
+                            .vectorizeServiceAuthentication()
+                            .secretName())
+                    .isEqualTo("name_given_by_user");
+                assertThat(
+                        createCollection
+                            .options()
+                            .vector()
+                            .vectorizeConfig()
+                            .vectorizeServiceParameter())
+                    .isNotNull();
+                assertThat(
+                        createCollection
+                            .options()
+                            .vector()
+                            .vectorizeConfig()
+                            .vectorizeServiceParameter())
+                    .isEqualTo(parameterMap);
+                assertThat(createCollection.options().indexing()).isNotNull();
+                assertThat(createCollection.options().indexing().allow()).isNull();
+                assertThat(createCollection.options().indexing().deny()).hasSize(1);
+                assertThat(createCollection.options().indexing().deny()).contains("address");
               });
     }
 

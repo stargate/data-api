@@ -14,19 +14,19 @@ DSETAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.cassandra.i
 SGTAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
 
 # Default to latest released version
-JSONTAG="v1"
-JSONIMAGE="stargateio/jsonapi"
+DATAAPITAG="v1"
+DATAAPIIMAGE="stargateio/data-api"
 
 while getopts "lqnr:t:j:" opt; do
   case $opt in
     l)
-      JSONTAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
+      DATAAPITAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
       ;;
     j)
-      JSONTAG=$OPTARG
+      DATAAPITAG=$OPTARG
       ;;
     n)
-      JSONIMAGE="stargateio/jsonapi-native"
+      DATAAPIIMAGE="stargateio/data-api-native"
       ;;
     q)
       REQUESTLOG=true
@@ -39,9 +39,9 @@ while getopts "lqnr:t:j:" opt; do
       ;;
     \?)
       echo "Valid options:"
-      echo "  -l - use JSON API Docker image from local build (see project README for build instructions)"
-      echo "  -j <tag> - use JSON API Docker image tagged with specified JSON API version (will pull images from Docker Hub if needed)"
-      echo "  -n <tag> - use JSON API native image instead of default Java-based image"
+      echo "  -l - use Data API Docker image from local build (see project README for build instructions)"
+      echo "  -j <tag> - use Data API Docker image tagged with specified Data API version (will pull images from Docker Hub if needed)"
+      echo "  -n <tag> - use Data API native image instead of default Java-based image"
       echo "  -t <tag> - use Stargate coordinator Docker image tagged with specified  version (will pull images from Docker Hub if needed)"
       echo "  -q - enable request logging for APIs in 'io.quarkus.http.access-log' (default: disabled)"
       echo "  -r - specify root log level for APIs (defaults to INFO); usually DEBUG, WARN or ERROR"
@@ -54,9 +54,9 @@ export LOGLEVEL
 export REQUESTLOG
 export DSETAG
 export SGTAG
-export JSONTAG
-export JSONIMAGE
+export DATAAPITAG
+export DATAAPIIMAGE
 
-echo "Running with DSE $DSETAG, Stargate $SGTAG, JSON API $JSONIMAGE:$JSONTAG"
+echo "Running with DSE $DSETAG, Stargate $SGTAG, Data API $DATAAPIIMAGE:$DATAAPITAG"
 
 docker compose -f docker-compose-dev-mode.yml up -d --wait

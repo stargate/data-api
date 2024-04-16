@@ -1,0 +1,155 @@
+min_version: "5.17.3"
+
+# Example command line (when Stargate is running on localhost):
+# nb5 -v http-dataapi-keyvalue dataapi_host=localhost docscount=20000 threads=20
+
+description: >2
+  This workload emulates a key-value data model and access patterns.
+  This should be identical to the cql variant except for:
+  - Schema creation with the Docs API, we don't use cql because the Docs API is opinionated about schema.
+  - There is no instrumentation with the http driver.
+  - There is no async mode with the http driver.
+  Note that dataapi_port should reflect the port where the Docs API is exposed (defaults to 8181).
+
+scenarios:
+  default:
+    schema: run driver=http tags==block:schema threads==1 cycles==UNDEF
+    rampup: run driver=http tags==block:rampup cycles===TEMPLATE(rampup-cycles,TEMPLATE(docscount,10000000)) threads=auto
+    main: run driver=http tags==block:main cycles===TEMPLATE(main-cycles,TEMPLATE(docscount,10000000)) threads=auto
+
+bindings:
+  # To enable an optional weighted set of hosts in place of a load balancer
+  # Examples
+  #   single host: dataapi_host=host1
+  #   multiple hosts: dataapi_host=host1,host2,host3
+  #   multiple weighted hosts: dataapi_host=host1:3,host2:7
+  weighted_hosts: WeightedStrings('<<dataapi_host:dataapi>>')
+
+  # spread into different spaces to use multiple connections
+  space: HashRange(1,<<connections:20>>); ToString();
+
+  # http request id
+  request_id: ToHashedUUID(); ToString();
+
+  # autogenerate auth token to use on API calls using configured uri/uid/password, unless one is provided
+  token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
+
+  seq_key: Mod(<<keycount:10000000>>); ToString() -> String
+  seq_value: Hash(); Mod(<<valuecount:10000000>>); ToString() -> String
+  rw_key: <<keydist:Uniform(0,<<keycount:10000000>>)->int>>; ToString() -> String
+  rw_value: Hash(); <<valdist:Uniform(0,<<keycount:10000000>>)->int>>; ToString() -> String
+
+blocks:
+  schema:
+    ops:
+      create-namespace:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "createNamespace": {
+              "name": "<<namespace:dataapi_keyvalue>>"
+            }
+          }
+
+      delete-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_keyvalue>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "deleteCollection": {
+              "name": "<<collection:docs_collection>>"
+            }
+          }
+
+      create-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_keyvalue>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "createCollection": {
+              "name": "<<collection:docs_collection>>"
+            }
+          }
+
+  rampup:
+    ops:
+      rampup-insert:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_keyvalue>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: '.*\"insertedIds\":\[.*\].*'
+        body: >2
+          {
+            "insertOne" : {
+              "document" : {
+                "_id" :       "{seq_key}",
+                "{seq_key}" : "{seq_value}"
+              }
+            }
+          }
+
+  main:
+    params:
+      ratio: <<read_ratio:5>>
+    ops:
+      main-select:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_keyvalue>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "findOne" : {
+              "filter" : {
+                "_id" : "{rw_key}"
+              }
+            }
+          }
+          
+      main-write:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_keyvalue>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        # because this is not an upsert, modified count could be 0 or 1
+        ok-body: ".*\"modifiedCount\":[0,1].*"
+        body: >2          
+          {
+            "updateOne" : {
+              "filter": {
+                "_id" : "{rw_key}"
+              },
+              "update": {
+                "$set": {
+                  "{rw_key}":"{rw_value}"
+                }
+              }
+            }
+          }

@@ -7,7 +7,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import java.util.Arrays;
 import java.util.HashSet;
 import org.junit.jupiter.api.Test;
@@ -22,8 +22,12 @@ public class CollectionSettingsTest {
     CollectionSettings.IndexingConfig indexingConfig =
         new CollectionSettings.IndexingConfig(new HashSet<String>(Arrays.asList("abc")), null);
     CollectionSettings settings =
-        new CollectionSettings("collectionName", false, -1, null, null, null, indexingConfig);
-    DocumentProjector indexingProj = settings.indexingProjector();
+        new CollectionSettings(
+            "collectionName",
+            CollectionSettings.IdConfig.defaultIdConfig(),
+            CollectionSettings.VectorConfig.notEnabledVectorConfig(),
+            indexingConfig);
+    IndexingProjector indexingProj = settings.indexingProjector();
     assertThat(indexingProj)
         .isNotNull()
         // Should get the same instance second time due to memoization

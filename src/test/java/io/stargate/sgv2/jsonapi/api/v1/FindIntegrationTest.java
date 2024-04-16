@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
@@ -9,7 +8,6 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -20,7 +18,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   private void insert(String json) {
     given()
-        .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+        .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(json)
         .when()
@@ -137,7 +135,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -154,7 +152,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     @Test
     public void noFilter() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -175,7 +173,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     @Test
     public void noFilterWithOptions() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -199,7 +197,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     @Test
     public void byId() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -236,7 +234,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     @Test
     public void byIdEmptyProjection() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -269,11 +267,68 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                       """));
     }
 
+    @Test
+    public void byIdIncludeAllProjection() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                "find": {
+                                  "filter" : {"_id" : "doc5"},
+                                  "projection": { "*": 1 }
+                                }
+                              }
+                              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body(
+              "data.documents[0]",
+              jsonEquals(
+                  """
+                        {
+                            "_id": "doc5",
+                            "username": "user5",
+                            "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
+                        }
+                        """));
+    }
+
+    @Test
+    public void byIdExcludeAllProjection() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                              {
+                                "find": {
+                                  "filter" : {"_id" : "doc5"},
+                                  "projection": { "*": 0 }
+                                }
+                              }
+                              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body("data.documents[0]", jsonEquals("{}"));
+    }
+
     // https://github.com/stargate/jsonapi/issues/572 -- is passing empty Object for "sort" ok?
     @Test
     public void byIdEmptySort() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -327,7 +382,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                       }
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -356,7 +411,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               {"username":"user1"}
               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -385,7 +440,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -402,7 +457,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     @Test
     public void byColumnWithHyphen() {
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
@@ -446,7 +501,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -474,7 +529,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -509,7 +564,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -543,7 +598,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -601,7 +656,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -637,7 +692,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -666,7 +721,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -696,7 +751,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -725,7 +780,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
            {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -750,7 +805,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -782,7 +837,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -815,7 +870,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           }
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -840,7 +895,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -864,7 +919,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -892,7 +947,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -917,7 +972,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -927,6 +982,37 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
           .body("data.documents", hasSize(0));
+    }
+
+    @Test
+    public void withSizeOperatorNotZero() {
+      String json =
+          """
+                  {
+                      "find": {
+                          "filter": {
+                              "$not": {
+                                  "tags": {
+                                      "$size": 0
+                                  }
+                              }
+                          }
+                      }
+                  }
+                      """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          // should have all the documents
+          .body("data.documents", hasSize(6));
     }
 
     @Test
@@ -945,7 +1031,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -974,7 +1060,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -999,7 +1085,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1023,7 +1109,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1051,7 +1137,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1081,7 +1167,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                           {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1120,7 +1206,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
                   """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1177,7 +1263,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
                   """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1217,7 +1303,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1235,7 +1321,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               { "find": { "sort" : {"$gt" : 1} } }
               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1257,7 +1343,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               { "find": { "sort" : {"" : 1} } }
               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1280,7 +1366,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               { "find": { "filter" : {"$gt" : {"test" : 5}} } }
               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1303,7 +1389,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                   { "find": { "filter" : {"address" : {"city" : {"$eq" : "Beijing"}}}}}
                   """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1322,7 +1408,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
       // Max allowed 64, so fail with 65
       String json = createJsonStringWithNFilterFields(65);
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1406,7 +1492,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                   }
                                   """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1469,7 +1555,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                   }
                                   """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1532,7 +1618,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                   }
                                   """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1595,7 +1681,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                   }
                                   """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1658,7 +1744,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                   }
                                   """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1729,7 +1815,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                   }
                                   """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1794,7 +1880,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                                           }
                                           """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1860,7 +1946,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                       {"_id":"doc2", "username":"user2", "subdoc":{"id":"abc"},"array":["value1"]}
                       """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1891,7 +1977,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                               {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1920,7 +2006,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
               {"_id": "doc3","username": "user3","tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true], "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}
               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -1950,7 +2036,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                               {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
                               """;
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()

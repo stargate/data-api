@@ -25,6 +25,7 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
+import org.testcontainers.utility.MountableFile;
 
 public abstract class StargateTestResource
     implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
@@ -60,17 +61,22 @@ public abstract class StargateTestResource
       } else {
         propsBuilder = this.startWithoutContainerNetwork(reuse);
       }
+      if (useCoordinator()) {
+        Integer authPort = this.stargateContainer.getMappedPort(8081);
+        String token = this.getAuthToken(this.stargateContainer.getHost(), authPort);
+        LOG.info("Using auth token %s for integration tests.".formatted(token));
+        propsBuilder.put("stargate.int-test.auth-token", token);
+        String cqlPort = this.stargateContainer.getMappedPort(9042).toString();
+        propsBuilder.put("stargate.int-test.coordinator.cql-port", cqlPort);
+      }
 
-      Integer authPort = this.stargateContainer.getMappedPort(8081);
-      String token = this.getAuthToken(this.stargateContainer.getHost(), authPort);
-      LOG.info("Using auth token %s for integration tests.".formatted(token));
-      propsBuilder.put("stargate.int-test.auth-token", token);
-      propsBuilder.put("stargate.int-test.cassandra.host", this.cassandraContainer.getHost());
+      propsBuilder.put(
+          "stargate.int-test.cassandra.host",
+          this.cassandraContainer.getCurrentContainerInfo().getConfig().getHostName());
       propsBuilder.put(
           "stargate.int-test.cassandra.cql-port",
           this.cassandraContainer.getMappedPort(9042).toString());
-      String cqlPort = this.stargateContainer.getMappedPort(9042).toString();
-      propsBuilder.put("stargate.int-test.coordinator.cql-port", cqlPort);
+
       propsBuilder.put("stargate.int-test.cluster.persistence", getPersistenceModule());
       // Many ITs create more Collections than default Max 5, use more than 50 indexes so:
       propsBuilder.put(
@@ -84,6 +90,7 @@ public abstract class StargateTestResource
       propsBuilder.put(
           "stargate.jsonapi.operations.default-count-page-size",
           String.valueOf(getCountPageSize()));
+      propsBuilder.put("stargate.jsonapi.operations.vectorize-enabled", "true");
 
       ImmutableMap<String, String> props = propsBuilder.build();
       props.forEach(System::setProperty);
@@ -101,13 +108,18 @@ public abstract class StargateTestResource
     this.cassandraContainer = this.baseCassandraContainer(reuse);
     this.cassandraContainer.withNetwork(network);
     this.cassandraContainer.start();
-    this.stargateContainer = this.baseCoordinatorContainer(reuse);
-    this.stargateContainer.withNetwork(network).withEnv("SEED", "cassandra");
-    this.stargateContainer.start();
-    Integer bridgePort = this.stargateContainer.getMappedPort(8091);
-    ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
-    propsBuilder.put("quarkus.grpc.clients.bridge.port", String.valueOf(bridgePort));
-    return propsBuilder;
+    if (useCoordinator()) {
+      this.stargateContainer = this.baseCoordinatorContainer(reuse);
+      this.stargateContainer.withNetwork(network).withEnv("SEED", "cassandra");
+      this.stargateContainer.start();
+      Integer bridgePort = this.stargateContainer.getMappedPort(8091);
+      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
+      propsBuilder.put("quarkus.grpc.clients.bridge.port", String.valueOf(bridgePort));
+      return propsBuilder;
+    } else {
+      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
+      return propsBuilder;
+    }
   }
 
   private ImmutableMap.Builder<String, String> startWithContainerNetwork(
@@ -117,17 +129,22 @@ public abstract class StargateTestResource
     this.cassandraContainer.start();
     String cassandraHost =
         this.cassandraContainer.getCurrentContainerInfo().getConfig().getHostName();
-    this.stargateContainer = this.baseCoordinatorContainer(reuse);
-    this.stargateContainer
-        .withNetworkMode(networkId)
-        .withEnv("BIND_TO_LISTEN_ADDRESS", "true")
-        .withEnv("SEED", cassandraHost);
-    this.stargateContainer.start();
-    String stargateHost =
-        this.stargateContainer.getCurrentContainerInfo().getConfig().getHostName();
-    ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
-    propsBuilder.put("quarkus.grpc.clients.bridge.host", stargateHost);
-    return propsBuilder;
+    if (useCoordinator()) {
+      this.stargateContainer = this.baseCoordinatorContainer(reuse);
+      this.stargateContainer
+          .withNetworkMode(networkId)
+          .withEnv("BIND_TO_LISTEN_ADDRESS", "true")
+          .withEnv("SEED", cassandraHost);
+      this.stargateContainer.start();
+      String stargateHost =
+          this.stargateContainer.getCurrentContainerInfo().getConfig().getHostName();
+      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
+      propsBuilder.put("quarkus.grpc.clients.bridge.host", stargateHost);
+      return propsBuilder;
+    } else {
+      ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
+      return propsBuilder;
+    }
   }
 
   public void stop() {
@@ -143,16 +160,16 @@ public abstract class StargateTestResource
   private GenericContainer<?> baseCassandraContainer(boolean reuse) {
     String image = this.getCassandraImage();
     GenericContainer<?> container =
-        (new GenericContainer(image))
+        new GenericContainer<>(image)
+            .withCopyFileToContainer(
+                MountableFile.forClasspathResource("cassandra.yaml"),
+                "/etc/cassandra/cassandra.yaml")
             .withEnv("HEAP_NEWSIZE", "512M")
             .withEnv("MAX_HEAP_SIZE", "2048M")
             .withEnv("CASSANDRA_CGROUP_MEMORY_LIMIT", "true")
-            .withEnv("CLUSTER_NAME", getClusterName())
-            .withEnv("DC", "datacenter1")
-            .withEnv("RACK", "rack1")
             .withEnv(
                 "JVM_EXTRA_OPTS",
-                "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1")
+                "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8")
             .withNetworkAliases(new String[] {"cassandra"})
             .withExposedPorts(new Integer[] {7000, 9042})
             .withLogConsumer(
@@ -162,7 +179,9 @@ public abstract class StargateTestResource
             .withStartupTimeout(this.getCassandraStartupTimeout())
             .withReuse(reuse);
     if (this.isDse()) {
-      container.withEnv("DS_LICENSE", "accept");
+      container.withEnv("CLUSTER_NAME", getClusterName()).withEnv("DS_LICENSE", "accept");
+    } else {
+      container.withEnv("CASSANDRA_CLUSTER_NAME", getClusterName());
     }
 
     return container;
@@ -180,9 +199,7 @@ public abstract class StargateTestResource
         (new GenericContainer(image))
             .withEnv("JAVA_OPTS", javaOpts)
             .withEnv("CLUSTER_NAME", getClusterName())
-            .withEnv("DATACENTER_NAME", "datacenter1")
-            .withEnv("RACK_NAME", "rack1")
-            // .withEnv("SIMPLE_SNITCH", "true")
+            .withEnv("SIMPLE_SNITCH", "true")
             .withEnv("ENABLE_AUTH", "true")
             .withNetworkAliases(new String[] {"coordinator"})
             .withExposedPorts(new Integer[] {8091, 8081, 8084, 9042})
@@ -192,9 +209,9 @@ public abstract class StargateTestResource
             .waitingFor(Wait.forHttp("/checker/readiness").forPort(8084).forStatusCode(200))
             .withStartupTimeout(this.getCoordinatorStartupTimeout())
             .withReuse(reuse);
-    // if (this.isDse()) {
-    //   container.withEnv("DSE", "1");
-    // }
+    if (this.isDse()) {
+      container.withEnv("DSE", "1");
+    }
 
     return container;
   }
@@ -231,6 +248,15 @@ public abstract class StargateTestResource
         System.getProperty(
             "testing.containers.cluster-dse", StargateTestResource.Defaults.CLUSTER_DSE);
     return "true".equals(dse);
+  }
+
+  /**
+   * Returns if coordinator should be started and used.
+   *
+   * @return
+   */
+  protected boolean useCoordinator() {
+    return Boolean.getBoolean("testing.containers.use-coordinator");
   }
 
   private Duration getCassandraStartupTimeout() {
@@ -280,7 +306,9 @@ public abstract class StargateTestResource
     String STARGATE_IMAGE_TAG = "v2.1";
     String CLUSTER_NAME = "int-test-cluster";
     String PERSISTENCE_MODULE = "persistence-cassandra-4.0";
-    String CLUSTER_DSE = "true";
+    String CLUSTER_DSE = null;
+
+    String CQL_HOST = "stargate";
     long CASSANDRA_STARTUP_TIMEOUT = 2L;
     long COORDINATOR_STARTUP_TIMEOUT = 3L;
   }

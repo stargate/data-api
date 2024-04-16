@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -61,7 +60,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -102,7 +101,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -142,7 +141,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -180,7 +179,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -218,7 +217,7 @@ public class FindCommandResolverTest {
                         "tags", DBFilterBase.MapFilterBase.Operator.MAP_EQUALS, 0);
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -261,7 +260,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -297,7 +296,7 @@ public class FindCommandResolverTest {
               find -> {
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -332,7 +331,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.pageState()).isNull();
@@ -368,7 +367,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.pageState()).isNull();
@@ -403,43 +402,7 @@ public class FindCommandResolverTest {
                 float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
-                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
-                assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
-                assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
-                assertThat(find.skip()).isZero();
-                assertThat(find.maxSortReadLimit()).isZero();
-                assertThat(find.singleResponse()).isFalse();
-                assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
-              });
-    }
-
-    @Test
-    public void vectorizeSearch() throws Exception {
-      String json =
-          """
-                  {
-                    "find": {
-                      "sort" : {"$vectorize" : "test data"}
-                    }
-                  }
-                  """;
-
-      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
-      Operation operation =
-          resolver.resolveCommand(TestEmbeddingService.commandContextWithVectorize, findOneCommand);
-
-      assertThat(operation)
-          .isInstanceOfSatisfying(
-              FindOperation.class,
-              find -> {
-                float[] vector = new float[] {0.25f, 0.25f, 0.25f};
-                assertThat(find.objectMapper()).isEqualTo(objectMapper);
-                assertThat(find.commandContext())
-                    .isEqualTo(TestEmbeddingService.commandContextWithVectorize);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
                 assertThat(find.pageState()).isNull();
@@ -513,7 +476,7 @@ public class FindCommandResolverTest {
                 float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
                 assertThat(find.pageState()).isNull();
@@ -551,7 +514,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
                 assertThat(find.limit()).isEqualTo(10);
                 assertThat(find.pageState()).isNull();
@@ -588,7 +551,7 @@ public class FindCommandResolverTest {
               find -> {
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(7);
                 assertThat(find.pageState()).isEqualTo("dlavjhvbavkjbna");
@@ -625,7 +588,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -670,7 +633,7 @@ public class FindCommandResolverTest {
                         "age", DBFilterBase.TextFilter.Operator.EQ, "testAge");
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -734,7 +697,7 @@ public class FindCommandResolverTest {
                         "age", DBFilterBase.TextFilter.Operator.EQ, "testAge");
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -790,7 +753,7 @@ public class FindCommandResolverTest {
               find -> {
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -854,7 +817,7 @@ public class FindCommandResolverTest {
                         "height", DBFilterBase.TextFilter.Operator.EQ, "testHeight");
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -941,7 +904,7 @@ public class FindCommandResolverTest {
               find -> {
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -1086,7 +1049,7 @@ public class FindCommandResolverTest {
                         DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -1130,7 +1093,7 @@ public class FindCommandResolverTest {
                         DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id1"));
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -1176,7 +1139,7 @@ public class FindCommandResolverTest {
                         List.of(DocumentId.fromString("id1"), DocumentId.fromString("id2")));
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -1221,7 +1184,7 @@ public class FindCommandResolverTest {
                 float[] vector = new float[] {0.15f, 0.1f, 0.1f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
                 assertThat(find.pageState()).isNull();
@@ -1268,7 +1231,7 @@ public class FindCommandResolverTest {
                 float[] vector = new float[] {0.15f, 0.1f, 0.1f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
                 assertThat(find.pageState()).isNull();
@@ -1315,7 +1278,7 @@ public class FindCommandResolverTest {
                         DBFilterBase.InFilter.Operator.IN, "name", List.of("test1", "test2"));
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.pageState()).isNull();
@@ -1365,7 +1328,7 @@ public class FindCommandResolverTest {
                         List.of(DocumentId.fromString("id1"), DocumentId.fromString("id2")));
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.pageState()).isNull();
@@ -1413,7 +1376,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -1452,7 +1415,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -1491,7 +1454,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -1530,7 +1493,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -1569,7 +1532,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
@@ -1608,7 +1571,7 @@ public class FindCommandResolverTest {
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
-                assertThat(find.projection()).isEqualTo(DocumentProjector.identityProjector());
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();

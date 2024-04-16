@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static io.stargate.sgv2.common.IntegrationTestUtils.getAuthToken;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -10,7 +9,6 @@ import static org.hamcrest.Matchers.nullValue;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
@@ -73,7 +71,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -114,7 +112,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -160,7 +158,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -190,6 +188,118 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
   }
 
   @Nested
+  class ProjectionWithJSONExtensions {
+    private static final String UUID1 = "123e4567-e89b-12d3-a456-426614174000";
+    private static final String OBJECTID1 = "5f3b3e3b3e3b3e3b3e3b3e3b";
+    private static final String EXT_DOC1 =
+        """
+                      {
+                        "_id": "ext1",
+                        "username": "user1",
+                        "uid": { "$uuid": "%s" },
+                        "oid": { "$objectId": "%s" },
+                        "enabled": true
+                      }
+                      """
+            .formatted(UUID1, OBJECTID1);
+
+    @Test
+    public void byIdDefaultProjection() {
+      insertDoc(EXT_DOC1);
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                      {
+                        "findOne": {
+                          "filter" : {"_id" : "ext1"}
+                        }
+                      }
+                      """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.document", jsonEquals(EXT_DOC1));
+    }
+
+    @Test
+    public void byIdIncludeExtValues() {
+      insertDoc(EXT_DOC1);
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+              {
+                "findOne": {
+                  "filter" : {"_id" : "ext1"},
+                  "projection": { "uid": 1, "oid": 1 }
+                }
+              }
+              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body(
+              "data.document",
+              jsonEquals(
+                  """
+                                        {
+                                          "_id": "ext1",
+                                          "uid": { "$uuid": "%s" },
+                                          "oid": { "$objectId": "%s" }
+                                        }
+                                        """
+                      .formatted(UUID1, OBJECTID1)));
+    }
+
+    @Test
+    public void byIdExcludeExtValues() {
+      insertDoc(EXT_DOC1);
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+              {
+                "findOne": {
+                  "filter" : {"_id" : "ext1"},
+                  "projection": { "uid": 0, "oid": 0 }
+                }
+              }
+              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body(
+              "data.document",
+              jsonEquals(
+                  """
+                      {
+                        "_id": "ext1",
+                        "username": "user1",
+                        "enabled": true
+                      }
+                                        """));
+    }
+
+    @AfterEach
+    public void cleanUpData() {
+      deleteAllDocuments();
+    }
+  }
+
+  @Nested
   class ProjectionWithSimpleSlice {
     @Test
     public void byIdRootSliceHead() {
@@ -207,7 +317,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -245,7 +355,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                       """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -289,7 +399,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -331,7 +441,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
@@ -374,7 +484,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
               """;
 
       given()
-          .header(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME, getAuthToken())
+          .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()

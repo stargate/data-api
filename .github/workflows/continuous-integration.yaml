@@ -9,7 +9,7 @@ on:
     branches: [ "main"]
 
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "feature/*" ]
     paths:
       - 'src/**'
       - 'pom.xml'
@@ -73,10 +73,12 @@ jobs:
 
       # matrix props:
       matrix:
-        type: [ docker, native ]
+        type: [ docker, native, dse-it ]
         include:
           - type: docker
             profile: ''
+          - type: dse-it
+            profile: '-Pdse-it'
         exclude:
           - type: native
             #profile: '-Pnative'

@@ -1,0 +1,717 @@
+min_version: "5.17.3"
+
+# Example command line (when Stargate is running on localhost):
+# nb5 -v http-dataapi-search-advanced dataapi_host=localhost docscount=20000 threads=20
+
+description: >2
+  This workload emulates advanced search filter combinations for the Stargate Documents API.
+  During the rampup phase, it generates documents, writes them to a table, and then warms up the search paths.
+  During the main phase it performs various basic search filters and times their execution.
+  Note that dataapi_port should reflect the port where the Docs API is exposed (defaults to 8181).
+
+# These are the filter combinations tested in this workload, and their names:
+# in: match1 IN [0]
+# not-in: match2 NOT IN ["false"]
+# mem-and: match2 EQ "true" AND match3 NOT EQ false
+# mem-or: match1 LT 1 OR match3 EXISTS
+# complex1: match1 EQ 0 AND (match2 EQ "true" OR match3 EQ false)
+# complex2: (match1 LTE 0 OR match2 EQ "false") AND (match2 EQ "false" OR match3 EQ true)
+# complex3: (match1 LTE 0 AND match2 EQ "true") OR (match2 EQ "false" AND match3 EQ true)
+scenarios:
+  default:
+    schema: run driver=http tags==block:schema threads==<<threads:1>> cycles==UNDEF
+    rampup-write: run driver=http tags==name:"rampup--rampup-put.*" cycles===TEMPLATE(rampup-cycles,TEMPLATE(docscount,10000000)) docpadding=TEMPLATE(docpadding,0) match-ratio=TEMPLATE(match-ratio,0.01) threads=<<threads:auto>> errors=timer,warn
+    rampup-read: run driver=http tags==name:"rampup--rampup-get.*" cycles===TEMPLATE(rampup-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+    main: run driver=http tags==block:main cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+  get:
+    get-in: run driver=http tags==name:main--main-get-in,filter:in cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+    get-not-in: run driver=http tags==name:main--main-get-not-in cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+    main-get-exists-false: run driver=http tags==name:main-get-exists-false cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+    main-get-exists-true: run driver=http tags==name:main-get-exists-true cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+    get-mem-and: run driver=http tags==name:main--main-get-mem-and cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+    get-mem-or: run driver=http tags==name:main--main-get-mem-or cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+    get-complex1: run driver=http tags==name:main--main-get-complex1 cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+    get-complex2: run driver=http tags==name:main--main-get-complex2 cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+    get-complex3: run driver=http tags==name:main--main-get-complex3 cycles===TEMPLATE(read-cycles,TEMPLATE(docscount,10000000)) page-size=TEMPLATE(page-size,3) fields=TEMPLATE(fields,%5b%5d) threads=<<threads:auto>> errors=timer,warn
+
+bindings:
+  # To enable an optional weighted set of hosts in place of a load balancer
+  # Examples
+  #   single host: dataapi_host=host1
+  #   multiple hosts: dataapi_host=host1,host2,host3
+  #   multiple weighted hosts: dataapi_host=host1:3,host2:7
+  weighted_hosts: WeightedStrings('<<dataapi_host:dataapi>>')
+
+  # spread into different spaces to use multiple connections
+  space: HashRange(1,<<connections:20>>); ToString();
+
+  # http request id
+  request_id: ToHashedUUID(); ToString();
+
+  # autogenerate auth token to use on API calls using configured uri/uid/password, unless one is provided
+  token: Discard(); Token('<<auth_token:>>','<<uri:http://localhost:8081/v1/auth>>', '<<uid:cassandra>>', '<<pswd:cassandra>>');
+
+  seq_key: Mod(<<docscount:10000000>>); ToString() -> String
+  random_key: Uniform(0,<<docscount:10000000>>); ToString() -> String
+
+  user_id: ToHashedUUID(); ToString() -> String
+  created_on: Uniform(1262304000,1577836800) -> long
+  full_name: FullNames()
+  married: ModuloToBoolean()
+  city: Cities()
+  country_code: CountryCodes()
+  lat: Uniform(-180d, 180d)
+  lng: Hash() -> long; Uniform(-180d, 180d)
+  friend_id: Add(-1); ToHashedUUID(); ToString() -> String
+
+  match1: Identity(); CoinFunc(<<match-ratio>>, FixedValue(0), FixedValue(1000))
+  match2: Identity(); CoinFunc(<<match-ratio>>, FixedValue("true"), FixedValue("false"))
+  match3: Identity(); CoinFunc(<<match-ratio>>, FixedValue("true"), FixedValue("false"))
+
+  additional_fields: ListSizedStepped(<<docpadding:0>>,Template("\"{}\":{}",Identity(),Identity())); ToString(); ReplaceAll('\[\"', ',\"'); ReplaceAll('\[', ''); ReplaceAll('\]', '') -> String
+
+blocks:
+  schema:
+    ops:
+      create-namespace:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "createNamespace": {
+              "name": "<<namespace:dataapi_search_advanced>>"
+            }
+          }
+
+      delete-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "deleteCollection": {
+              "name": "<<collection:docs_collection>>"
+            }
+          }
+
+      create-collection:
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"ok\":1.*"
+        body: >2
+          {
+            "createCollection": {
+              "name": "<<collection:docs_collection>>"
+            }
+          }
+
+  rampup:
+    ops:
+      rampup-put:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: '.*\"insertedIds\":\[.*\].*'
+        body: >2
+          {
+            "insertOne": {
+              "document": {
+                "_id":          "{seq_key}",
+                "user_id":      "{user_id}",
+                "created_on":   {created_on},
+                "full_name":    "{full_name}",
+                "married":      {married},
+                "address": {
+                  "primary": {
+                      "city":   "{city}",
+                      "cc":     "{country_code}"
+                  },
+                  "secondary":  {}
+                },
+                "coordinates": [
+                                {lat},
+                                {lng}
+                ],
+                "children":     [],
+                "friends": [
+                                "{friend_id}"
+                ],
+                "debt":         null,
+                "match1":       {match1},
+                "match2":       "{match2}",
+                "match3":       {match3}
+                {additional_fields}
+              }
+            }
+          }
+
+      # where={"match1":{"$in":[0]}}
+      rampup-get-in:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "match1" : {
+                  "$in": [0]
+                }
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
+
+      # where={"match2":{"$nin":["false"]}}
+      rampup-get-not-in:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "match2" : {
+                  "$nin": ["false"]
+                }
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
+
+      # where={"match2":{"$eq":"true"},"match3":{"$ne": false}}
+      rampup-get-mem-and:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "match2" : {
+                  "$eq": "true"
+                },
+                "match3" : {
+                  "$ne": false
+                }
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
+
+      # where={"$or":[{"match1":{"$lt":1}},{"match3":{"$exists":true}}]}
+      rampup-get-mem-or:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "$or": [
+                  {
+                    "match1": {
+                      "$lt":1
+                    }
+                  },
+                  {
+                    "match3": {
+                      "$exists": true
+                    }
+                  }
+                ]
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
+
+      # where={"$and":[{"match1":{"$eq":0}},{"$or":[{"match2":{"$eq":"true"}},{"match3":{"$eq":false}}]}]}
+      rampup-get-complex1:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "$and": [
+                  {
+                    "match1": { 
+                      "$eq":0
+                    }
+                  },
+                  { 
+                    "$or": [
+                      {
+                        "match2": {
+                          "$eq":"true"
+                        }
+                      },
+                      { 
+                        "match3": {
+                          "$eq":false
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
+
+      # where={"$and":[{"$or":[{"match1":{"$lte":0}},{"match2":{"$eq":"false"}}]},{"$or":[{"match2":{"$eq":"false"}},{"match3":{"$eq":true}}]}]}
+      rampup-get-complex2:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "$and": [
+                  {
+                    "$or": [
+                      {
+                        "match1": {
+                          "$lte":0
+                        }
+                      },
+                      {
+                        "match2": {
+                          "$eq":"false"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "$or": [
+                      {
+                        "match2": {
+                          "$eq":"false"
+                        }
+                      },
+                      {
+                        "match3": {
+                          "$eq":true
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
+
+      # where={"$or":[{"$and":[{"match1":{"$lte":0}},{"match2":{"$eq":"true"}}]},{"$and":[{"match2":{"$eq":"false"}},{"match3":{"$eq":true}}]}]}
+      rampup-get-complex3:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "$or": [
+                  {
+                    "$and":[
+                      {
+                        "match1": {
+                          "$lte": 0
+                        }
+                      },
+                      {
+                        "match2": {
+                          "$eq": "true"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "$and": [
+                      {
+                        "match2": {
+                          "$eq":"false"
+                        }
+                      },
+                      {
+                        "match3": {
+                          "$eq":true
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
+
+  main:
+    ops:
+      # where={"match1":{"$in":[0]}}
+      main-get-in:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "match1" : {
+                  "$in": [0] 
+                }
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
+
+      # where={"match2":{"$nin":["false"]}}
+      main-get-not-in:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "match2" : {
+                  "$nin": ["false"]
+                }
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
+
+      # where={"match3":{"$exists":false}}
+      main-get-exists-false:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                    "match3": {
+                      "$exists": false
+                    }
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }          
+
+      # where={"match3":{"$exists":true}}
+      main-get-exists-true:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                    "match3": {
+                      "$exists": true
+                    }
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }              
+
+      # where={"match2":{"$eq":"true"},"match3":{"$ne": false}}
+      main-get-mem-and:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "match2": {
+                  "$eq": "true"
+                },
+                "match3": {
+                  "$ne": false
+                }
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
+
+      # where={"$or":[{"match1":{"$lt":1}},{"match3":{"$exists":true}}]}
+      main-get-mem-or:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "$or": [
+                  {
+                    "match1": { 
+                      "$lt":1
+                    }
+                  },
+                  {
+                    "match3": {
+                      "$exists": true
+                    }
+                  }
+                ]
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
+
+      # where={"$and":[{"match1":{"$eq":0}},{"$or":[{"match2":{"$eq":"true"}},{"match3":{"$eq":false}}]}]}
+      main-get-complex1:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "$and": [
+                  {
+                    "match1": {
+                      "$eq":0
+                    }
+                  },
+                  {
+                    "$or": [
+                      {
+                        "match2": {
+                          "$eq":"true"
+                        }
+                      },
+                      {
+                        "match3": {
+                          "$eq":false
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
+
+      # where={"$and":[{"$or":[{"match1":{"$lte":0}},{"match2":{"$eq":"false"}}]},{"$or":[{"match2":{"$eq":"false"}},{"match3":{"$eq":true}}]}]}
+      main-get-complex2:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<collection:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "$and": [
+                  {
+                    "$or": [
+                      {
+                        "match1": {
+                          "$lte":0
+                        }
+                      },
+                      {
+                        "match2": {
+                          "$eq":"false"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "$or": [
+                      {
+                        "match2": {
+                          "$eq": "false"
+                        }
+                      },
+                      {
+                        "match3": {
+                          "$eq":true
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
+
+      # where={"$or":[{"$and":[{"match1":{"$lte":0}},{"match2":{"$eq":"true"}}]},{"$and":[{"match2":{"$eq":"false"}},{"match3":{"$eq":true}}]}]}
+      main-get-complex3:
+        space: "{space}"
+        method: POST
+        uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_search_advanced>>/<<table:docs_collection>>
+        Accept: "application/json"
+        X-Cassandra-Request-Id: "{request_id}"
+        Token: "{token}"
+        Content-Type: "application/json"
+        ok-body: ".*\"data\".*"
+        body: >2
+          {
+            "find" : {
+              "filter" : {
+                "$or": [
+                  {
+                    "$and": [
+                      {
+                        "match1": {
+                          "$lte":0
+                        }
+                      },
+                      {
+                        "match2": {
+                          "$eq":"true"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "$and": [
+                      {
+                        "match2": {
+                          "$eq":"false"
+                        }
+                      },
+                      {
+                        "match3": {
+                          "$eq": true
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "options": {
+                "limit": <<page_size,20>> 
+              }
+            }
+          }
