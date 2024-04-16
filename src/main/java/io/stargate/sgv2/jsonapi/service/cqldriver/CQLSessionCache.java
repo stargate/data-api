@@ -13,6 +13,7 @@ import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.InetSocketAddress;
@@ -135,7 +136,7 @@ public class CQLSessionCache {
           builder.withAuthCredentials(
               Objects.requireNonNull(upc.userName()), Objects.requireNonNull(upc.password()));
         } else {
-          throw new RuntimeException(
+          throw new UnauthorizedException(
               "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
         }
       } else {
@@ -166,7 +167,7 @@ public class CQLSessionCache {
     String fixedToken;
     if ((fixedToken = getFixedToken()) != null
         && !dataApiRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
-      throw new UnauthorizedException("Unauthorized");
+      throw new UnauthorizedException(ErrorCode.UNAUTHENTICATED_REQUEST.getMessage());
     }
     return sessionCache.get(getSessionCacheKey());
   }
@@ -239,7 +240,7 @@ public class CQLSessionCache {
     public static UsernamePasswordCredentials from(String encodedCredentials) {
       String[] parts = encodedCredentials.split(":");
       if (parts.length != 3) {
-        throw new RuntimeException(
+        throw new UnauthorizedException(
             "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
       }
       try {
@@ -247,7 +248,7 @@ public class CQLSessionCache {
         String password = new String(Base64.getDecoder().decode(parts[2]));
         return new UsernamePasswordCredentials(userName, password);
       } catch (Exception e) {
-        throw new RuntimeException(
+        throw new UnauthorizedException(
             "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
       }
     }
