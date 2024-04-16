@@ -180,7 +180,8 @@ public class CollectionResource {
                       embeddingProviderFactory.getConfiguration(
                           dataApiRequestInfo.getTenantId(),
                           collectionProperty.vectorConfig().vectorizeConfig().provider(),
-                          collectionProperty.vectorConfig().vectorizeConfig().modelName());
+                          collectionProperty.vectorConfig().vectorizeConfig().modelName(),
+                          collectionProperty.vectorConfig().vectorSize());
                 }
 
                 CommandContext commandContext =

@@ -254,4 +254,8 @@ public interface OperationsConfig {
   /** @return Flag to enable server side vectorization. */
   @WithDefault("false")
   boolean vectorizeEnabled();
+
+  /** @return Flag to enable vectorization using embedding-gateway. */
+  @WithDefault("false")
+  boolean enableEmbeddingGateway();
 }

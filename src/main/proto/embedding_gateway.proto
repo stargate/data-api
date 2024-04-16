@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+option java_package = "io.stargate.embedding.gateway";
+
+package stargate;
+
+message ProviderEmbedRequest {
+  ProviderContext 			provider_context = 1;
+  EmbeddingRequest			embedding_request = 2;
+}
+
+message ProviderContext {
+  string 					provider_name = 1;
+  string  					tenant_id = 2;
+  map<string, string>  			auth_tokens = 3;
+}
+
+message EmbeddingRequest {
+  string 					model_name = 1;
+  optional int32 				dimensions = 2;
+  map<string, ParameterValue>  	parameters = 4;
+  InputType 					input_type = 5;
+  repeated string 				inputs = 6;
+
+  message ParameterValue {
+    oneof ParameterValueOneOf {
+      string 	str_value = 1;
+      int32 	int_value = 2;
+      float 	float_value = 3;
+      bool 		bool_value = 4;
+    }
+  }
+
+  enum InputType {
+    INDEX = 0;
+    SEARCH = 1;
+  }
+}
+
+message EmbeddingResponse {
+  Usage 					usage = 1;
+  repeated FloatEmbedding		embeddings = 2;
+
+  message FloatEmbedding {
+    int32 				index = 1;
+    repeated float			embedding = 2;
+  }
+
+  message Usage {
+    string 				provider_name = 1;
+    string 				model_name = 2;
+    string  				tenant_id = 3;
+    int32 				prompt_tokens = 4;
+    int32 				total_tokens = 5;
+    int32 				input_bytes = 6;
+    int32					output_bytes = 7;
+    int32					call_duration_us = 8;
+  }
+}
+
+message ErrorResponse {
+  string error_code = 1;
+  string error_message = 2;
+}
+
+
+service EmbeddingService {
+  rpc Embed (ProviderEmbedRequest) returns (EmbeddingResponse) {}
+}
