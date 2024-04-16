@@ -112,4 +112,4 @@ jobs:
         env:
           COORD_IMAGE: ${{ secrets.ECR_REPOSITORY }}/stargateio/coordinator-dse-next
         run: |
-          ./mvnw -B -ntp clean verify -DskipUnitTests -Dquarkus.log.handlers=console -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Dstargate.int-test.coordinator.image=$COORD_IMAGE ${{ matrix.profile }}
+          ./mvnw -ntp clean verify -DskipUnitTests -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Dstargate.int-test.coordinator.image=$COORD_IMAGE ${{ matrix.profile }}
