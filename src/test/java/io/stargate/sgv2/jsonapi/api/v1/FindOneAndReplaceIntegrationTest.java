@@ -678,7 +678,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
     }
 
     // Reproduction to verify https://github.com/stargate/data-api/issues/1000
-    // is fixed
+    // is fixed in v1.0.6
     @Test
     public void projectionBeforeWithoutId() {
       insertDoc(
