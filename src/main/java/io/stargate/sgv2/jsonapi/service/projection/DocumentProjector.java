@@ -52,7 +52,12 @@ public class DocumentProjector {
   }
 
   public static DocumentProjector defaultProjector() {
-    return DefaultProjectorWrapper.defaultProjector();
+    /* 16-Apr-2024, tatu: For v1.0.6 need to revert to default being
+         "include all", and then go back to "exclude $vector/$vectorize"
+         for v1.0.7 or later.
+    */
+    // return DefaultProjectorWrapper.defaultProjector();
+    return includeAllProjector();
   }
 
   public static DocumentProjector includeAllProjector() {
