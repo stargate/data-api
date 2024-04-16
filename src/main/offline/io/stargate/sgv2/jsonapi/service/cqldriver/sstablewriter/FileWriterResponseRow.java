@@ -9,14 +9,22 @@ import com.datastax.oss.driver.api.core.detach.AttachmentPoint;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
 import com.datastax.oss.driver.internal.core.type.codec.registry.DefaultCodecRegistry;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * A {@link Row} implementation that is used to represent the response of a write operation to an SSTable file
+ */
 public class FileWriterResponseRow implements Row {
+  /* The default codec registry */
   private final CodecRegistry DEFAULT_CODECS = new DefaultCodecRegistry("data-api-offline");
+  /* The column definitions */
   private final ColumnDefinitions columnDefs;
+    /* The index */
   private final int index;
+    /* The values */
   private final List<ByteBuffer> values;
 
   public FileWriterResponseRow(ColumnDefinitions columnDefs, int index, List<ByteBuffer> values) {
@@ -30,53 +38,61 @@ public class FileWriterResponseRow implements Row {
     return columnDefs.size();
   }
 
+  @NonNull
   @Override
   public CodecRegistry codecRegistry() {
     return DEFAULT_CODECS;
   }
 
+  @NonNull
   @Override
   public ProtocolVersion protocolVersion() {
     return DefaultProtocolVersion.V5;
   }
 
+  @NonNull
   @Override
   public ColumnDefinitions getColumnDefinitions() {
     return columnDefs;
   }
 
+  @NonNull
   @Override
-  public List<Integer> allIndicesOf(String name) {
+  public List<Integer> allIndicesOf(@NonNull String name) {
     return columnDefs.allIndicesOf(name);
   }
 
   @Override
-  public int firstIndexOf(String name) {
+  public int firstIndexOf(@NonNull String name) {
     return columnDefs.firstIndexOf(name);
   }
 
+  @NonNull
   @Override
-  public List<Integer> allIndicesOf(CqlIdentifier id) {
+  public List<Integer> allIndicesOf(@NonNull CqlIdentifier id) {
     return columnDefs.allIndicesOf(id);
   }
 
   @Override
-  public int firstIndexOf(CqlIdentifier id) {
+  public int firstIndexOf(@NonNull CqlIdentifier id) {
     return columnDefs.firstIndexOf(id);
   }
 
+  @NonNull
   @Override
   public DataType getType(int i) {
     return columnDefs.get(i).getType();
   }
 
+  @NonNull
   @Override
-  public DataType getType(String name) {
+  public DataType getType(@NonNull String name) {
     return columnDefs.get(name).getType();
   }
 
+  @NonNull
   @Override
-  public DataType getType(CqlIdentifier id) {
+  public DataType getType(@NonNull CqlIdentifier id) {
     return columnDefs.get(id).getType();
   }
 
@@ -91,7 +107,7 @@ public class FileWriterResponseRow implements Row {
   }
 
   @Override
-  public void attach(AttachmentPoint attachmentPoint) {}
+  public void attach(@NonNull AttachmentPoint attachmentPoint) {}
 
   @Override
   public boolean equals(Object o) {

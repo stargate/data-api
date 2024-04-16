@@ -71,17 +71,7 @@ public class FileWriterSession implements CqlSession {
     this.sessionId = sessionId;
     this.keyspace = fileWriterParams.keyspaceName();
     this.table = fileWriterParams.tableName();
-    this.responseColumnDefinitions =
-        DefaultColumnDefinitions.valueOf(
-            List.of(
-                new DefaultColumnDefinition(
-                    new ColumnSpec(
-                        keyspace,
-                        table,
-                        "[applied]",
-                        0,
-                        RawType.PRIMITIVES.get(ProtocolConstants.DataType.BOOLEAN)),
-                    AttachmentPoint.NONE)));
+    this.responseColumnDefinitions = getOfflineWriterResponseRowCols(keyspace, table);
     if (!Files.exists(Path.of(fileWriterParams.ssTableOutputDirectory()))) {
       throw new FileNotFoundException(
           "Directory does not exist: " + fileWriterParams.ssTableOutputDirectory());
@@ -124,6 +114,19 @@ public class FileWriterSession implements CqlSession {
     DatabaseDescriptor.getRawConfig().metadata_directory =
         emptyCassandraDataDirectory + File.separator + "metadata_directory";
     DatabaseDescriptor.getRawConfig().commitlog_sync = Config.CommitLogSync.batch;
+  }
+
+  private ColumnDefinitions getOfflineWriterResponseRowCols(String keyspace, String table) {
+    return DefaultColumnDefinitions.valueOf(
+        List.of(
+            new DefaultColumnDefinition(
+                new ColumnSpec(
+                    keyspace,
+                    table,
+                    "[applied]",
+                    0,
+                    RawType.PRIMITIVES.get(ProtocolConstants.DataType.BOOLEAN)),
+                AttachmentPoint.NONE)));
   }
 
   @NonNull
