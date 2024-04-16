@@ -34,8 +34,7 @@ public final class ThrowableToErrorMapper {
         if (throwable instanceof UnauthorizedException) {
           return ErrorCode.UNAUTHENTICATED_REQUEST
               .toApiException()
-              .getCommandResultError(
-                  ErrorCode.UNAUTHENTICATED_REQUEST.getMessage(), Response.Status.UNAUTHORIZED);
+              .getCommandResultError(message, Response.Status.UNAUTHORIZED);
         }
 
         // handle all driver exceptions
