@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -114,6 +115,22 @@ public class OfflineCommandsProcessorIT {
       throw new RuntimeException(
           "Error while getting status : " + offlineGetStatusResponse.errors());
     }
+    assertEquals(sessionId, offlineGetStatusResponse.offlineWriterSessionStatus().sessionId());
+    assertEquals(namespace, offlineGetStatusResponse.offlineWriterSessionStatus().keyspace());
+    assertEquals(
+        "test_collection_" + isVectorSearch,
+        offlineGetStatusResponse.offlineWriterSessionStatus().tableName());
+    assertEquals(
+        sstablesOutputDirectory,
+        offlineGetStatusResponse.offlineWriterSessionStatus().ssTableOutputDirectory());
+    assertEquals(
+        fileWriterBufferSizeInMB,
+        offlineGetStatusResponse.offlineWriterSessionStatus().fileWriterBufferSizeInMB());
+    assertEquals(10, offlineGetStatusResponse.offlineWriterSessionStatus().insertsSucceeded());
+    assertEquals(0, offlineGetStatusResponse.offlineWriterSessionStatus().insertsFailed());
+    // it will be zero since the data is not flushed to disk yet
+    assertEquals(
+        0, offlineGetStatusResponse.offlineWriterSessionStatus().dataDirectorySizeInBytes());
     // end session
     EndOfflineSessionResponse endOfflineSessionResponse =
         endSession(offlineCommandsProcessor, commandContext, sessionId);
@@ -122,6 +139,21 @@ public class OfflineCommandsProcessorIT {
       throw new RuntimeException(
           "Error while ending session : " + endOfflineSessionResponse.errors());
     }
+    assertEquals(sessionId, endOfflineSessionResponse.offlineWriterSessionStatus().sessionId());
+    assertEquals(namespace, endOfflineSessionResponse.offlineWriterSessionStatus().keyspace());
+    assertEquals(
+        "test_collection_" + isVectorSearch,
+        endOfflineSessionResponse.offlineWriterSessionStatus().tableName());
+    assertEquals(
+        sstablesOutputDirectory,
+        endOfflineSessionResponse.offlineWriterSessionStatus().ssTableOutputDirectory());
+    assertEquals(
+        fileWriterBufferSizeInMB,
+        endOfflineSessionResponse.offlineWriterSessionStatus().fileWriterBufferSizeInMB());
+    assertEquals(10, endOfflineSessionResponse.offlineWriterSessionStatus().insertsSucceeded());
+    assertEquals(0, endOfflineSessionResponse.offlineWriterSessionStatus().insertsFailed());
+    assertTrue(
+        endOfflineSessionResponse.offlineWriterSessionStatus().dataDirectorySizeInBytes() > 0);
     // verify all files are created
     File[] files = new File(sstablesOutputDirectory).listFiles();
     if (files == null || files.length == 0) {

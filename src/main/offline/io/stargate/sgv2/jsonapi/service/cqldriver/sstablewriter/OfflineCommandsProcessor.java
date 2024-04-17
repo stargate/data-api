@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter;
 
-import static io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache.OFFLINE_WRITER;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -61,22 +59,13 @@ public class OfflineCommandsProcessor {
     }
     OfflineFileWriterInitializer.initialize();
     offlineCommandsProcessor = new OfflineCommandsProcessor();
-    offlineCommandsProcessor.operationsConfig = buildOperationsConfig();
+    offlineCommandsProcessor.operationsConfig =
+        OfflineFileWriterInitializer.buildOperationsConfig();
     offlineCommandsProcessor.cqlSessionCache =
         buildCqlSessionCache(offlineCommandsProcessor.operationsConfig);
     offlineCommandsProcessor.commandResolverService = buildCommandResolverService();
     offlineCommandsProcessor.dataVectorizerService = buildDataVectorizeService();
     initialized = true;
-  }
-
-  private static OperationsConfig buildOperationsConfig() {
-    SmallRyeConfig smallRyeConfig =
-        new SmallRyeConfigBuilder()
-            .withMapping(OperationsConfig.class)
-            // TODO-SL increase cache expiry limit
-            .withDefaultValue("stargate.jsonapi.operations.database-config.type", OFFLINE_WRITER)
-            .build();
-    return smallRyeConfig.getConfigMapping(OperationsConfig.class);
   }
 
   private static CQLSessionCache buildCqlSessionCache(OperationsConfig operationsConfig) {
@@ -92,10 +81,10 @@ public class OfflineCommandsProcessor {
     Shredder shredder = new Shredder(objectMapper, documentLimitsConfig, null);
     return new CommandResolverService(
         List.of(
-            new BeginOfflineSessionCommandResolver(shredder, objectMapper),
-            new EndOfflineSessionCommandResolver(shredder, objectMapper),
-            new OfflineGetStatusCommandResolver(shredder, objectMapper),
-            new OfflineInsertManyCommandResolver(shredder, objectMapper)));
+            new BeginOfflineSessionCommandResolver(),
+            new EndOfflineSessionCommandResolver(),
+            new OfflineGetStatusCommandResolver(),
+            new OfflineInsertManyCommandResolver(shredder)));
   }
 
   private static DataVectorizerService buildDataVectorizeService() {
@@ -131,7 +120,7 @@ public class OfflineCommandsProcessor {
   public boolean canEndSession(
       OfflineWriterSessionStatus offlineWriterSessionStatus, int createNewSessionAfterDataInMB) {
     ;
-    return offlineWriterSessionStatus.dataDirectorySizeInMB() >= createNewSessionAfterDataInMB;
+    return offlineWriterSessionStatus.dataDirectorySizeInBytes() >= createNewSessionAfterDataInMB;
   }
 
   public Pair<BeginOfflineSessionResponse, CommandContext> beginSession(
@@ -186,7 +175,6 @@ public class OfflineCommandsProcessor {
             commandResolverService,
             dataVectorizerService);
     DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo(Optional.of(sessionId));
-    // TODO - SL, what is the max number of docs in the offline insert many ?
     // TODO - SL, what happens if some documents fail ?
     OfflineInsertManyCommand offlineInsertManyCommand =
         new OfflineInsertManyCommand(sessionId, records);
@@ -207,7 +195,6 @@ public class OfflineCommandsProcessor {
             commandResolverService,
             OfflineCommandsProcessor.buildDataVectorizeService());
     DataApiRequestInfo dataApiRequestInfo = new DataApiRequestInfo(Optional.of(sessionId));
-    // TODO SL - response should include file path and size
     EndOfflineSessionCommand offlineEndWriterCommand = new EndOfflineSessionCommand(sessionId);
     CommandResult commandResult =
         commandProcessor

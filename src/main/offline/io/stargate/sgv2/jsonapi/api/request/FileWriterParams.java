@@ -23,8 +23,6 @@ public record FileWriterParams(
         || createTableCQL.isBlank()
         || insertStatementCQL == null
         || insertStatementCQL.isBlank()
-        || indexCQLs == null
-        || indexCQLs.isEmpty()
         || vectorEnabled == null) {
       throw new IllegalArgumentException("Invalid FileWriterParams");
     }

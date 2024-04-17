@@ -1,8 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -13,16 +11,10 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.FileWriterSession;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import java.util.Map;
 import java.util.function.Supplier;
 
-public record BeginOfflineSessionOperation(
-    CommandContext ctx,
-    String sessionId,
-    FileWriterParams fileWriterParams,
-    Shredder shredder,
-    ObjectMapper objectMapper)
+public record BeginOfflineSessionOperation(String sessionId, FileWriterParams fileWriterParams)
     implements Operation {
   @Override
   public Uni<Supplier<CommandResult>> execute(

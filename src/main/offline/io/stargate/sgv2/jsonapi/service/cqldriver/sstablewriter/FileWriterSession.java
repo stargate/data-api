@@ -46,8 +46,8 @@ import org.slf4j.LoggerFactory;
 
 public class FileWriterSession implements CqlSession {
   private static final Logger LOGGER = LoggerFactory.getLogger(FileWriterSession.class);
-  private static final AtomicInteger insertsSucceeded = new AtomicInteger(0);
-  private static final AtomicInteger insertsFailed = new AtomicInteger(0);
+  private final AtomicInteger insertsSucceeded = new AtomicInteger(0);
+  private final AtomicInteger insertsFailed = new AtomicInteger(0);
   private final String sessionId;
   private final String keyspace;
   private final String table;
@@ -277,17 +277,17 @@ public class FileWriterSession implements CqlSession {
         this.table,
         this.ssTableOutputDirectory,
         this.fileWriterBufferSizeInMB,
-        getDirectorySizeInMBTopLevel(this.ssTableOutputDirectory),
+        getDirectorySizeInBytesTopLevel(this.ssTableOutputDirectory),
         insertsSucceeded.get(),
         insertsFailed.get());
   }
 
-  private int getDirectorySizeInMBTopLevel(String dataDirectory) {
+  public static int getDirectorySizeInBytesTopLevel(String dataDirectory) {
     File file = new File(dataDirectory);
     long size = 0;
     for (File f : Objects.requireNonNull(file.listFiles())) {
       size += f.length();
     }
-    return (int) (size / (1024 * 1024));
+    return (int) size;
   }
 }

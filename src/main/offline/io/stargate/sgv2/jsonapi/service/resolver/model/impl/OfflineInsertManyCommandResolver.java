@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineInsertManyCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -18,7 +17,7 @@ public class OfflineInsertManyCommandResolver implements CommandResolver<Offline
   private final Shredder shredder;
 
   @Inject
-  public OfflineInsertManyCommandResolver(Shredder shredder, ObjectMapper objectMapper) {
+  public OfflineInsertManyCommandResolver(Shredder shredder) {
     this.shredder = shredder;
   }
 

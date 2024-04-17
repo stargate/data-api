@@ -67,7 +67,7 @@ public class FileWriterSessionTest {
     assertEquals(tableName, fileWritterSession.getStatus().tableName());
     assertEquals(ssTableOutputDirectory, fileWritterSession.getStatus().ssTableOutputDirectory());
     assertEquals(10, fileWritterSession.getStatus().fileWriterBufferSizeInMB());
-    assertEquals(0, fileWritterSession.getStatus().dataDirectorySizeInMB());
+    assertEquals(0, fileWritterSession.getStatus().dataDirectorySizeInBytes());
     assertEquals(0, fileWritterSession.getStatus().insertsSucceeded());
     assertEquals(0, fileWritterSession.getStatus().insertsFailed());
   }

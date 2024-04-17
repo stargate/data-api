@@ -6,6 +6,6 @@ public record OfflineWriterSessionStatus(
     String tableName,
     String ssTableOutputDirectory,
     int fileWriterBufferSizeInMB,
-    int dataDirectorySizeInMB,
+    int dataDirectorySizeInBytes,
     int insertsSucceeded,
     int insertsFailed) {}
