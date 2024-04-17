@@ -117,7 +117,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(deleteStmt)))
           .then(
               invocation -> {
-                SimpleStatement stmt = invocation.getArgument(0);
+                SimpleStatement stmt = invocation.getArgument(1);
                 callCountDelete.incrementAndGet();
                 return Uni.createFrom().item(deleteResults);
               });
