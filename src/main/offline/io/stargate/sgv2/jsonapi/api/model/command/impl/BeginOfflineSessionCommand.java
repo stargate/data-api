@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.CreateCollectionCommandResolver;
@@ -47,11 +46,10 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
   private final int fileWriterBufferSizeInMB;
 
   @JsonIgnore private final CollectionSettings collectionSettings;
-  @JsonIgnore private final EmbeddingProvider embeddingProvider;
   @JsonIgnore private final String sessionId;
   @JsonIgnore private final FileWriterParams fileWriterParams;
 
-    /**
+  /**
    * fileWriterBufferSize Constructs a new {@link BeginOfflineSessionCommand}.
    *
    * @param namespace the namespace to write to
@@ -62,12 +60,10 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
       String namespace,
       CreateCollectionCommand createCollection,
       String ssTableOutputDirectory,
-      EmbeddingProvider embeddingProvider,
       int fileWriterBufferSizeInMB) {
     this.namespace = namespace;
     this.createCollection = createCollection;
     this.ssTableOutputDirectory = ssTableOutputDirectory;
-    this.embeddingProvider = embeddingProvider;
     this.sessionId = UUID.randomUUID().toString();
     this.fileWriterBufferSizeInMB = fileWriterBufferSizeInMB;
     this.fileWriterParams = buildFileWriterParams();
@@ -171,14 +167,15 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
         createCollectionOptions != null ? createCollectionOptions.idConfig() : null;
     boolean hasIndexing = indexingConfig != null;
     boolean hasVector = vectorSearchConfig != null;
-      String comment = CreateCollectionCommandResolver.generateComment(
-              new ObjectMapper(),
-              hasIndexing,
-              hasVector,
-              this.getClass().getSimpleName(),
-              indexingConfig,
-              vectorSearchConfig,
-              idConfig);
+    String comment =
+        CreateCollectionCommandResolver.generateComment(
+            new ObjectMapper(),
+            hasIndexing,
+            hasVector,
+            this.getClass().getSimpleName(),
+            indexingConfig,
+            vectorSearchConfig,
+            idConfig);
     CreateCollectionOperation createCollectionOperation =
         hasVector
             ? CreateCollectionOperation.withVectorSearch(

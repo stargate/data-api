@@ -25,7 +25,7 @@ public class BeginOfflineSessionCommandResolverTest {
         beginOfflineSessionCommandResolver.resolveCommand(
             null,
             new BeginOfflineSessionCommand(
-                "namespace1", createCollectionCommand, "ssTableOutputDirectory", null, 20)));
+                "namespace1", createCollectionCommand, "ssTableOutputDirectory", 20)));
     assertEquals(
         BeginOfflineSessionCommand.class, beginOfflineSessionCommandResolver.getCommandClass());
   }

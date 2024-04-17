@@ -30,11 +30,7 @@ class BeginOfflineSessionCommandTest {
         new CreateCollectionCommand(collectionName, createCollectionCommandOptions);
     BeginOfflineSessionCommand beginOfflineSessionCommand =
         new BeginOfflineSessionCommand(
-            namespace,
-            createCollectionCommand,
-            ssTableOutputDirectory,
-            null,
-            fileWriterBufferSizeInMB);
+            namespace, createCollectionCommand, ssTableOutputDirectory, fileWriterBufferSizeInMB);
 
     verifySessionId(beginOfflineSessionCommand);
     verifyFileWriterParams(
@@ -132,11 +128,7 @@ class BeginOfflineSessionCommandTest {
         new CreateCollectionCommand(collectionName, createCollectionCommandOptions);
     BeginOfflineSessionCommand beginOfflineSessionCommand =
         new BeginOfflineSessionCommand(
-            namespace,
-            createCollectionCommand,
-            ssTableOutputDirectory,
-            null,
-            fileWriterBufferSizeInMB);
+            namespace, createCollectionCommand, ssTableOutputDirectory, fileWriterBufferSizeInMB);
 
     verifySessionId(beginOfflineSessionCommand);
     verifyFileWriterParams(

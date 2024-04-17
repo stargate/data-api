@@ -137,11 +137,7 @@ public class OfflineCommandsProcessor {
             dataVectorizerService);
     BeginOfflineSessionCommand beginOfflineSessionCommand =
         new BeginOfflineSessionCommand(
-            namespace,
-            createCollectionCommand,
-            ssTablesOutputDirectory,
-            embeddingProvider,
-            fileWriterBufferSizeInMB);
+            namespace, createCollectionCommand, ssTablesOutputDirectory, fileWriterBufferSizeInMB);
 
     DataApiRequestInfo dataApiRequestInfo =
         new DataApiRequestInfo(Optional.of(beginOfflineSessionCommand.getSessionId()));
