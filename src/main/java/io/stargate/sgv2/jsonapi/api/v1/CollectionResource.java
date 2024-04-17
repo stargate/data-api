@@ -160,7 +160,8 @@ public class CollectionResource {
           @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
-        .getCollectionSettings(dataApiRequestInfo.getTenantId(), namespace, collection)
+        .getCollectionSettings(
+            dataApiRequestInfo, dataApiRequestInfo.getTenantId(), namespace, collection)
         .onItemOrFailure()
         .transformToUni(
             (collectionProperty, throwable) -> {
@@ -193,7 +194,8 @@ public class CollectionResource {
                         jsonProcessingMetricsReporter);
 
                 // call processor
-                return meteredCommandProcessor.processCommand(commandContext, command);
+                return meteredCommandProcessor.processCommand(
+                    dataApiRequestInfo, commandContext, command);
               }
             })
         .map(commandResult -> commandResult.map());

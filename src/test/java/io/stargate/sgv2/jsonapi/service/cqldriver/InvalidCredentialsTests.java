@@ -64,17 +64,13 @@ public class InvalidCredentialsTests {
     when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    Field dataApiRequestInfoField =
-        cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-    dataApiRequestInfoField.setAccessible(true);
-    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
     // set operation config
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
     operationsConfigField.setAccessible(true);
     operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
     // Throwable
-    Throwable t = catchThrowable(cqlSessionCacheForTest::getSession);
+    Throwable t = catchThrowable(() -> cqlSessionCacheForTest.getSession(dataApiRequestInfo));
     assertThat(t).isInstanceOf(AllNodesFailedException.class);
     CommandResult.Error error =
         ThrowableToErrorMapper.getMapperWithMessageFunction().apply(t, t.getMessage());

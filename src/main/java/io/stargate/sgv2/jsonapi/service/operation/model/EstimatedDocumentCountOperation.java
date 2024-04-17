@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.EstimatedCountResult;
 import java.util.function.Supplier;
@@ -15,9 +16,11 @@ public record EstimatedDocumentCountOperation(CommandContext commandContext)
     implements ReadOperation {
 
   @Override
-  public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+  public Uni<Supplier<CommandResult>> execute(
+      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     SimpleStatement simpleStatement = buildSelectQuery();
-    Uni<CountResponse> countResponse = estimateDocumentCount(queryExecutor, simpleStatement);
+    Uni<CountResponse> countResponse =
+        estimateDocumentCount(dataApiRequestInfo, queryExecutor, simpleStatement);
 
     return countResponse
         .onItem()
