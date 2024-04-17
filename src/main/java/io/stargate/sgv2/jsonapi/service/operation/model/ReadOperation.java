@@ -86,8 +86,7 @@ public interface ReadOperation extends Operation {
       int limit,
       boolean vectorSearch,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      DataApiRequestInfo dataApiRequestInfo) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
 
     return Multi.createFrom()
         .items(queries.stream())
@@ -201,8 +200,7 @@ public interface ReadOperation extends Operation {
       DocumentProjector projection,
       boolean vectorSearch,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      DataApiRequestInfo dataApiRequestInfo) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
     final AtomicInteger documentCounter = new AtomicInteger(0);
     final JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
     return Multi.createFrom()

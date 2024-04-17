@@ -338,8 +338,7 @@ public record FindOperation(
             projection(),
             vector() != null,
             commandContext.commandName(),
-            commandContext.jsonProcessingMetricsReporter(),
-            dataApiRequestInfo);
+            commandContext.jsonProcessingMetricsReporter());
       }
       case DOCUMENT, KEY -> {
         List<SimpleStatement> queries = buildSelectQueries(additionalIdFilter);
@@ -355,8 +354,7 @@ public record FindOperation(
             limit(),
             vector() != null,
             commandContext.commandName(),
-            commandContext.jsonProcessingMetricsReporter(),
-            dataApiRequestInfo);
+            commandContext.jsonProcessingMetricsReporter());
       }
       default -> {
         JsonApiException failure =

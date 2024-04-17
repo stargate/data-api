@@ -40,8 +40,6 @@ public class GeneralResource {
 
   private final MeteredCommandProcessor meteredCommandProcessor;
 
-  @Inject private DataApiRequestInfo dataApiRequestInfo;
-
   @Inject
   public GeneralResource(MeteredCommandProcessor meteredCommandProcessor) {
     this.meteredCommandProcessor = meteredCommandProcessor;
