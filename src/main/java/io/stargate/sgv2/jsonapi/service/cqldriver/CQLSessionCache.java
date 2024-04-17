@@ -38,9 +38,6 @@ public class CQLSessionCache {
   /** Configuration for the JSON API operations. */
   private final OperationsConfig operationsConfig;
 
-  /** Stargate request info. */
-  @Inject DataApiRequestInfo dataApiRequestInfo;
-
   /**
    * Default tenant to be used when the backend is OSS cassandra and when no tenant is passed in the
    * request
@@ -121,7 +118,7 @@ public class CQLSessionCache {
                           host, operationsConfig.databaseConfig().cassandraPort()))
               .collect(Collectors.toList());
       CqlSessionBuilder builder =
-          new TenantAwareCqlSessionBuilder(dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT))
+          new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
               .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
               .addContactPoints(seeds)
               .withClassLoader(Thread.currentThread().getContextClassLoader())
@@ -129,7 +126,7 @@ public class CQLSessionCache {
               .withApplicationName(APPLICATION_NAME);
       // To use username and password, a Base64Encoded text of the credential is passed as token.
       // The text needs to be in format Cassandra:Base64(username):Base64(password)
-      String token = dataApiRequestInfo.getCassandraToken().orElseThrow();
+      String token = ((TokenCredentials) cacheKey.credentials()).token();
       if (getFixedToken() == null) {
         if (token.startsWith("Cassandra:")) {
           UsernamePasswordCredentials upc = UsernamePasswordCredentials.from(token);
@@ -146,9 +143,9 @@ public class CQLSessionCache {
       }
       return builder.build();
     } else if (ASTRA.equals(databaseConfig.type())) {
-      return new TenantAwareCqlSessionBuilder(dataApiRequestInfo.getTenantId().orElseThrow())
+      return new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
           .withAuthCredentials(
-              TOKEN, Objects.requireNonNull(dataApiRequestInfo.getCassandraToken().orElseThrow()))
+              TOKEN, Objects.requireNonNull(((TokenCredentials) cacheKey.credentials()).token()))
           .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
           .withClassLoader(Thread.currentThread().getContextClassLoader())
           .withApplicationName(APPLICATION_NAME)
@@ -163,13 +160,13 @@ public class CQLSessionCache {
    *
    * @return CQLSession
    */
-  public CqlSession getSession() {
+  public CqlSession getSession(DataApiRequestInfo dataApiRequestInfo) {
     String fixedToken;
     if ((fixedToken = getFixedToken()) != null
         && !dataApiRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException(ErrorCode.UNAUTHENTICATED_REQUEST.getMessage());
     }
-    return sessionCache.get(getSessionCacheKey());
+    return sessionCache.get(getSessionCacheKey(dataApiRequestInfo));
   }
 
   /**
@@ -187,7 +184,7 @@ public class CQLSessionCache {
    *
    * @return key for CQLSession cache
    */
-  private SessionCacheKey getSessionCacheKey() {
+  private SessionCacheKey getSessionCacheKey(DataApiRequestInfo dataApiRequestInfo) {
     switch (operationsConfig.databaseConfig().type()) {
       case CASSANDRA -> {
         if (dataApiRequestInfo.getCassandraToken().isPresent()) {
