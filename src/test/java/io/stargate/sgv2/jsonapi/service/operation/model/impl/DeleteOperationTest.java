@@ -137,7 +137,7 @@ public class DeleteOperationTest extends OperationTestBase {
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -223,7 +223,7 @@ public class DeleteOperationTest extends OperationTestBase {
               commandContext, findOperation, 3, DocumentProjector.defaultProjector());
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -408,7 +408,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -531,7 +531,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -585,7 +585,7 @@ public class DeleteOperationTest extends OperationTestBase {
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -665,7 +665,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -786,7 +786,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -908,7 +908,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1011,7 +1011,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1113,7 +1113,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1170,7 +1170,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1312,7 +1312,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1507,7 +1507,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1647,7 +1647,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1801,7 +1801,7 @@ public class DeleteOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()

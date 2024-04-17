@@ -140,7 +140,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -285,7 +285,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -326,7 +326,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -415,7 +415,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -498,7 +498,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -559,7 +559,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -616,7 +616,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -677,7 +677,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -741,7 +741,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -805,7 +805,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -870,7 +870,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -935,7 +935,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -999,7 +999,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1064,7 +1064,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1125,7 +1125,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1187,7 +1187,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1258,7 +1258,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1329,7 +1329,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1396,7 +1396,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1465,7 +1465,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1533,7 +1533,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1600,7 +1600,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1667,7 +1667,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1725,7 +1725,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Throwable failure =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -1894,7 +1894,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2093,7 +2093,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2273,7 +2273,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2447,7 +2447,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2576,7 +2576,7 @@ public class FindOperationTest extends OperationTestBase {
 
     Supplier<CommandResult> execute =
         operation
-            .execute(queryExecutor)
+            .execute(dataApiRequestInfo, queryExecutor)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .awaitItem()
@@ -2653,7 +2653,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2718,7 +2718,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2822,7 +2822,7 @@ public class FindOperationTest extends OperationTestBase {
       // Throwable
       Throwable failure =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()

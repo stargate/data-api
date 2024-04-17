@@ -140,7 +140,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -211,7 +211,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -354,7 +354,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
