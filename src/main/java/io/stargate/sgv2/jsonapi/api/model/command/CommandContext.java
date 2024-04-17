@@ -65,7 +65,8 @@ public record CommandContext(
   }
 
   public boolean isVectorEnabled() {
-    return collectionSettings.vectorConfig().vectorEnabled();
+    return collectionSettings.vectorConfig() != null
+        && collectionSettings.vectorConfig().vectorEnabled();
   }
 
   public IndexingProjector indexingProjector() {

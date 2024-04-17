@@ -168,7 +168,7 @@ public class OfflineCommandsProcessor {
         commandProcessor
             .processCommand(dataApiRequestInfo, commandContext, beginOfflineSessionCommand)
             .onFailure()
-            .invoke(t -> System.out.println("Error : " + t))
+            .invoke(t -> logger.error("Exception while beginning session", t))
             .subscribe()
             .asCompletionStage()
             .get();
