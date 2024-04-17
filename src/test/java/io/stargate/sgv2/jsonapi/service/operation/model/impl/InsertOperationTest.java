@@ -119,7 +119,7 @@ public class InsertOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(insertStmt)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -128,7 +128,7 @@ public class InsertOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertOperation(COMMAND_CONTEXT_NON_VECTOR, shredDocument)
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -171,7 +171,7 @@ public class InsertOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(insertStmt)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -180,7 +180,7 @@ public class InsertOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertOperation(COMMAND_CONTEXT_NON_VECTOR, shredDocument)
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -247,13 +247,13 @@ public class InsertOperationTest extends OperationTestBase {
       final List<Integer> calls = new ArrayList<>();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(insertStmt1)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt1)))
           .then(
               invocation -> {
                 calls.add(1);
                 return Uni.createFrom().item(results1);
               });
-      when(queryExecutor.executeWrite(eq(insertStmt2)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt2)))
           .then(
               invocation -> {
                 calls.add(2);
@@ -264,7 +264,7 @@ public class InsertOperationTest extends OperationTestBase {
           createCommandContextWithCommandName("jsonDocsWrittenInsertManyCommand");
       Supplier<CommandResult> execute =
           new InsertOperation(commandContext, List.of(shredDocument1, shredDocument2), true)
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -371,7 +371,7 @@ public class InsertOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(insertStmt)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -380,7 +380,7 @@ public class InsertOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertOperation(COMMAND_CONTEXT_NON_VECTOR, shredDocument)
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -439,13 +439,13 @@ public class InsertOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(insertStmt1)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt1)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
                 return Uni.createFrom().item(results1);
               });
-      when(queryExecutor.executeWrite(eq(insertStmt2)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt2)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
@@ -455,7 +455,7 @@ public class InsertOperationTest extends OperationTestBase {
       Supplier<CommandResult> execute =
           new InsertOperation(
                   COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), false)
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -516,13 +516,13 @@ public class InsertOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(insertStmt1)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt1)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
                 return Uni.createFrom().failure(new RuntimeException("Test break #1"));
               });
-      when(queryExecutor.executeWrite(eq(insertStmt2)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt2)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
@@ -532,7 +532,7 @@ public class InsertOperationTest extends OperationTestBase {
       Supplier<CommandResult> execute =
           new InsertOperation(
                   COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), true)
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -601,13 +601,13 @@ public class InsertOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(insertStmt1)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt1)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
                 return Uni.createFrom().item(resultOk);
               });
-      when(queryExecutor.executeWrite(eq(insertStmt2)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt2)))
           .then(
               invocation -> {
                 callCount.addAndGet(1);
@@ -617,7 +617,7 @@ public class InsertOperationTest extends OperationTestBase {
       Supplier<CommandResult> execute =
           new InsertOperation(
                   COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), true)
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -687,13 +687,13 @@ public class InsertOperationTest extends OperationTestBase {
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(insertStmt1)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt1)))
           .then(
               invocation -> {
                 callCount1.addAndGet(1);
                 return Uni.createFrom().failure(new RuntimeException("Test break #1"));
               });
-      when(queryExecutor.executeWrite(eq(insertStmt2)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt2)))
           .then(
               invocation -> {
                 callCount2.addAndGet(1);
@@ -703,7 +703,7 @@ public class InsertOperationTest extends OperationTestBase {
       Supplier<CommandResult> execute =
           new InsertOperation(
                   COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), false)
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -775,13 +775,13 @@ public class InsertOperationTest extends OperationTestBase {
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(insertStmt1)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt1)))
           .then(
               invocation -> {
                 callCount1.addAndGet(1);
                 return Uni.createFrom().failure(new RuntimeException("Insert 1 failed"));
               });
-      when(queryExecutor.executeWrite(eq(insertStmt2)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt2)))
           .then(
               invocation -> {
                 callCount2.addAndGet(1);
@@ -791,7 +791,7 @@ public class InsertOperationTest extends OperationTestBase {
       Supplier<CommandResult> execute =
           new InsertOperation(
                   COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), false)
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -841,7 +841,7 @@ public class InsertOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(insertStmt)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -850,7 +850,7 @@ public class InsertOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertOperation(COMMAND_CONTEXT_VECTOR, shredDocument)
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -892,7 +892,7 @@ public class InsertOperationTest extends OperationTestBase {
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      when(queryExecutor.executeWrite(eq(insertStmt)))
+      when(queryExecutor.executeWrite(eq(dataApiRequestInfo), eq(insertStmt)))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -901,7 +901,7 @@ public class InsertOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertOperation(COMMAND_CONTEXT_VECTOR, shredDocument)
-              .execute(queryExecutor)
+              .execute(eq(dataApiRequestInfo), queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -940,7 +940,8 @@ public class InsertOperationTest extends OperationTestBase {
       InsertOperation operation = new InsertOperation(COMMAND_CONTEXT_NON_VECTOR, shredDocument);
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
-      Throwable failure = catchThrowable(() -> operation.execute(queryExecutor));
+      Throwable failure =
+          catchThrowable(() -> operation.execute(dataApiRequestInfo, queryExecutor));
       assertThat(failure)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED);
