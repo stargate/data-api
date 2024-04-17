@@ -34,6 +34,8 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Tag(ref = "General")
 public class GeneralResource {
 
+  @Inject private DataApiRequestInfo dataApiRequestInfo;
+
   public static final String BASE_PATH = "/v1";
 
   private final MeteredCommandProcessor meteredCommandProcessor;

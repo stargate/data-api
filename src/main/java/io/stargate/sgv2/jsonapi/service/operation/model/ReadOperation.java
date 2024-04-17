@@ -75,6 +75,7 @@ public interface ReadOperation extends Operation {
    * @return
    */
   default Uni<FindResponse> findDocument(
+      DataApiRequestInfo dataApiRequestInfo,
       QueryExecutor queryExecutor,
       List<SimpleStatement> queries,
       String pageState,
@@ -187,6 +188,7 @@ public interface ReadOperation extends Operation {
    * @return
    */
   default Uni<FindResponse> findOrderDocument(
+      DataApiRequestInfo dataApiRequestInfo,
       QueryExecutor queryExecutor,
       List<SimpleStatement> queries,
       int pageSize,
@@ -393,6 +395,7 @@ public interface ReadOperation extends Operation {
   /**
    * Default implementation to run count query and parse the result set
    *
+   * @param dataApiRequestInfo
    * @param queryExecutor
    * @param simpleStatement
    * @return

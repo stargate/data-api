@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import static io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilderTest.TENANT_ID_PROPERTY_KEY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -122,13 +123,11 @@ public class CqlSessionCacheTests {
     operationsConfigField.setAccessible(true);
     operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
     // Throwable
-    Throwable t = null;
-    try {
-      CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
-    } catch (Throwable throwable) {
-      t = throwable;
-    }
-    assertThat(t).isNotNull().isInstanceOf(UnauthorizedException.class).hasMessage("Unauthorized");
+    Throwable t = catchThrowable(() -> cqlSessionCacheForTest.getSession(dataApiRequestInfo));
+    assertThat(t)
+        .isNotNull()
+        .isInstanceOf(UnauthorizedException.class)
+        .hasMessage("UNAUTHENTICATED: Invalid token");
     // metrics test
     Gauge cacheSizeMetric =
         meterRegistry.find("cache.size").tag("cache", "cql_sessions_cache").gauge();

@@ -80,7 +80,6 @@ public record InsertOperation(
             doc ->
                 insertDocument(
                         dataApiRequestInfo, queryExecutor, query, doc, vectorEnabled, offlineMode)
-
                     // wrap item and failure
                     // the collection can decide how to react on failure
                     .onItemOrFailure()
@@ -128,7 +127,6 @@ public record InsertOperation(
             doc ->
                 insertDocument(
                         dataApiRequestInfo, queryExecutor, query, doc, vectorEnabled, offlineMode)
-
                     // handle errors fail silent mode
                     .onItemOrFailure()
                     .transform((id, t) -> Tuple2.of(doc, t)))

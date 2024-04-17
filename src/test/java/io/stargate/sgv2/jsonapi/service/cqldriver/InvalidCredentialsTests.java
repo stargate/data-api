@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -63,12 +64,7 @@ public class InvalidCredentialsTests {
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
     // Throwable
-    Throwable t = null;
-    try {
-      CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
-    } catch (Throwable throwable) {
-      t = throwable;
-    }
+    Throwable t = catchThrowable(() -> cqlSessionCacheForTest.getSession(dataApiRequestInfo));
     assertThat(t).isInstanceOf(AllNodesFailedException.class);
     CommandResult.Error error =
         ThrowableToErrorMapper.getMapperWithMessageFunction().apply(t, t.getMessage());

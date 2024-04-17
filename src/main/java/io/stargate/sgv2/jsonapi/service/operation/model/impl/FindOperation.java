@@ -325,6 +325,7 @@ public record FindOperation(
       case SORTED_DOCUMENT -> {
         List<SimpleStatement> queries = buildSortedSelectQueries(additionalIdFilter);
         return findOrderDocument(
+            dataApiRequestInfo,
             queryExecutor,
             queries,
             pageSize,
@@ -343,6 +344,7 @@ public record FindOperation(
       case DOCUMENT, KEY -> {
         List<SimpleStatement> queries = buildSelectQueries(additionalIdFilter);
         return findDocument(
+            dataApiRequestInfo,
             queryExecutor,
             queries,
             pageState,
