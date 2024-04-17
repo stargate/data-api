@@ -50,9 +50,8 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
   @JsonIgnore private final EmbeddingProvider embeddingProvider;
   @JsonIgnore private final String sessionId;
   @JsonIgnore private final FileWriterParams fileWriterParams;
-  @JsonIgnore private String comment;
 
-  /**
+    /**
    * fileWriterBufferSize Constructs a new {@link BeginOfflineSessionCommand}.
    *
    * @param namespace the namespace to write to
@@ -172,15 +171,14 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
         createCollectionOptions != null ? createCollectionOptions.idConfig() : null;
     boolean hasIndexing = indexingConfig != null;
     boolean hasVector = vectorSearchConfig != null;
-    this.comment =
-        CreateCollectionCommandResolver.generateComment(
-            new ObjectMapper(),
-            hasIndexing,
-            hasVector,
-            this.getClass().getSimpleName(),
-            indexingConfig,
-            vectorSearchConfig,
-            idConfig);
+      String comment = CreateCollectionCommandResolver.generateComment(
+              new ObjectMapper(),
+              hasIndexing,
+              hasVector,
+              this.getClass().getSimpleName(),
+              indexingConfig,
+              vectorSearchConfig,
+              idConfig);
     CreateCollectionOperation createCollectionOperation =
         hasVector
             ? CreateCollectionOperation.withVectorSearch(
