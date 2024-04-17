@@ -901,7 +901,7 @@ public class InsertOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertOperation(COMMAND_CONTEXT_VECTOR, shredDocument)
-              .execute(eq(dataApiRequestInfo), queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
