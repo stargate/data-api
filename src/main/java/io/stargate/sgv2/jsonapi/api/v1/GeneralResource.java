@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
@@ -32,6 +33,8 @@ import org.jboss.resteasy.reactive.RestResponse;
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
 @Tag(ref = "General")
 public class GeneralResource {
+
+  @Inject private DataApiRequestInfo dataApiRequestInfo;
 
   public static final String BASE_PATH = "/v1";
 
@@ -72,7 +75,7 @@ public class GeneralResource {
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
     // call processor
     return meteredCommandProcessor
-        .processCommand(CommandContext.empty(), command)
+        .processCommand(dataApiRequestInfo, CommandContext.empty(), command)
         // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.map());
   }

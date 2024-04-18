@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -61,7 +62,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
       final AtomicInteger schemaCounter = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCreateSchemaChange(any()))
+      when(queryExecutor.executeCreateSchemaChange(eq(dataApiRequestInfo), any()))
           .then(
               invocation -> {
                 schemaCounter.incrementAndGet();
@@ -70,7 +71,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       CQLSessionCache sessionCache = mock(CQLSessionCache.class);
       CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession()).thenReturn(session);
+      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
       Metadata metadata = mock(Metadata.class);
       when(session.getMetadata()).thenReturn(metadata);
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
@@ -102,7 +103,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -119,7 +120,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
       final AtomicInteger schemaCounter = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCreateSchemaChange(any()))
+      when(queryExecutor.executeCreateSchemaChange(eq(dataApiRequestInfo), any()))
           .then(
               invocation -> {
                 schemaCounter.incrementAndGet();
@@ -128,7 +129,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       CQLSessionCache sessionCache = mock(CQLSessionCache.class);
       CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession()).thenReturn(session);
+      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
       Metadata metadata = mock(Metadata.class);
       when(session.getMetadata()).thenReturn(metadata);
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
@@ -162,7 +163,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -179,7 +180,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
       final AtomicInteger schemaCounter = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCreateSchemaChange(any()))
+      when(queryExecutor.executeCreateSchemaChange(eq(dataApiRequestInfo), any()))
           .then(
               invocation -> {
                 schemaCounter.incrementAndGet();
@@ -188,7 +189,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       CQLSessionCache sessionCache = mock(CQLSessionCache.class);
       CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession()).thenReturn(session);
+      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
       Metadata metadata = mock(Metadata.class);
       when(session.getMetadata()).thenReturn(metadata);
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
@@ -220,7 +221,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -237,7 +238,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(RESULT_COLUMNS, resultRows, null);
       final AtomicInteger schemaCounter = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeCreateSchemaChange(any()))
+      when(queryExecutor.executeCreateSchemaChange(eq(dataApiRequestInfo), any()))
           .then(
               invocation -> {
                 schemaCounter.incrementAndGet();
@@ -246,7 +247,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       CQLSessionCache sessionCache = mock(CQLSessionCache.class);
       CqlSession session = mock(CqlSession.class);
-      when(sessionCache.getSession()).thenReturn(session);
+      when(sessionCache.getSession(dataApiRequestInfo)).thenReturn(session);
       Metadata metadata = mock(Metadata.class);
       when(session.getMetadata()).thenReturn(metadata);
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces = new HashMap<>();
@@ -280,7 +281,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()

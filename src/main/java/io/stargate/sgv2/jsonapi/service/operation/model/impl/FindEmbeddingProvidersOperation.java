@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.PropertyBasedEmbeddingProviderConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -19,7 +20,8 @@ import java.util.stream.Collectors;
 public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConfig config)
     implements Operation {
   @Override
-  public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+  public Uni<Supplier<CommandResult>> execute(
+      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     return Uni.createFrom()
         .item(
             () -> {

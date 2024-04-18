@@ -1,5 +1,58 @@
 # Changelog
 
+## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.6...HEAD)
+
+**Closed issues:**
+
+- Run JSON API with DSE 7 [\#600](https://github.com/stargate/data-api/issues/600)
+
+## [v1.0.6](https://github.com/stargate/data-api/tree/v1.0.6) (2024-04-17)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/file_loader_changes...v1.0.6)
+
+**Merged pull requests:**
+
+- Pass DataAPIRequestInfo instead of injecting [\#1036](https://github.com/stargate/data-api/pull/1036) ([kathirsvn](https://github.com/kathirsvn))
+- Use Stargate v2.1.0-BETA-11 [\#1035](https://github.com/stargate/data-api/pull/1035) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fixes \#1031: partially revert change \#1005, making default Projection go back to "include all" [\#1033](https://github.com/stargate/data-api/pull/1033) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix DSE Integration, Username/Password credential based token [\#1030](https://github.com/stargate/data-api/pull/1030) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Add tenantId to driver logs [\#1027](https://github.com/stargate/data-api/pull/1027) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Add test to show \#1000 no longer applies [\#1026](https://github.com/stargate/data-api/pull/1026) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
+## [file_loader_changes](https://github.com/stargate/data-api/tree/file_loader_changes) (2024-04-17)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.5...file_loader_changes)
+
+**Implemented enhancements:**
+
+- Bridge Removal - Separate Data API QueryBuilder from Quarkus Common Module [\#977](https://github.com/stargate/data-api/issues/977)
+- Bridge Removal - Data API headerBased Auth, header resolver [\#976](https://github.com/stargate/data-api/issues/976)
+- Bridge Removal - Data API Tenant resolver [\#975](https://github.com/stargate/data-api/issues/975)
+
+**Closed issues:**
+
+- Revert \(parts of\) \#1005: default project to include everything \(similar to `{"\*":1}`\) [\#1031](https://github.com/stargate/data-api/issues/1031)
+- Exclude $vector and $vectorize from the default Projection [\#1005](https://github.com/stargate/data-api/issues/1005)
+- Upsertion with `projection: { \_id: 0 }` appears broken [\#1000](https://github.com/stargate/data-api/issues/1000)
+- Extend test framework to support running without coordinator [\#987](https://github.com/stargate/data-api/issues/987)
+- internal server error with Data Api during astrapy ci test [\#970](https://github.com/stargate/data-api/issues/970)
+- Add username/password option to RequestInfo [\#644](https://github.com/stargate/data-api/issues/644)
+- Token is useless in open source version of JSON API [\#632](https://github.com/stargate/data-api/issues/632)
+- Define acceptable consistency levels set globally [\#94](https://github.com/stargate/data-api/issues/94)
+
+**Merged pull requests:**
+
+- Quarkus Common Removal: Separate tenant resolver, token resolver, hea… [\#1024](https://github.com/stargate/data-api/pull/1024) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Username/Password credential based token format [\#1023](https://github.com/stargate/data-api/pull/1023) ([maheshrajamani](https://github.com/maheshrajamani))
+- Quarkus Common Removal: Data API queryBuilder [\#1022](https://github.com/stargate/data-api/pull/1022) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Retry on truncate error `Failed to interrupt compactions` [\#1021](https://github.com/stargate/data-api/pull/1021) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Bumping version for next data-api release [\#1019](https://github.com/stargate/data-api/pull/1019) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Add support for default exclusion of $vector and $vectorize [\#1016](https://github.com/stargate/data-api/pull/1016) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Refactor `ThrowableToErrorMapper` class [\#1013](https://github.com/stargate/data-api/pull/1013) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Changes for dse-7 integration [\#1012](https://github.com/stargate/data-api/pull/1012) ([maheshrajamani](https://github.com/maheshrajamani))
+
 ## [v1.0.5](https://github.com/stargate/data-api/tree/v1.0.5) (2024-04-03)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.4...v1.0.5)
