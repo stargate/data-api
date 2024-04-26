@@ -73,7 +73,6 @@ jobs:
 
       # matrix props:
       matrix:
-        type: [ docker, native ]
         type: [ docker, native, dse-it ]
         include:
           - type: docker
