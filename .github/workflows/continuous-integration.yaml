@@ -10,10 +10,6 @@ on:
 
   pull_request:
     branches: [ "main", "feature/*" ]
-    paths:
-      - 'src/**'
-      - 'pom.xml'
-      - '.github/workflows/continuous-integration.yaml'
 
   workflow_dispatch:
 
