@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -56,10 +57,42 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
+    Map<String, EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue>
+        grpcVectorizeServiceParameter = new HashMap<>();
+    if (vectorizeServiceParameter != null) {
+      vectorizeServiceParameter.forEach(
+          (key, value) -> {
+            if (value instanceof String)
+              grpcVectorizeServiceParameter.put(
+                  key,
+                  EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
+                      .setStrValue((String) value)
+                      .build());
+            else if (value instanceof Integer)
+              grpcVectorizeServiceParameter.put(
+                  key,
+                  EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
+                      .setIntValue((Integer) value)
+                      .build());
+            else if (value instanceof Float)
+              grpcVectorizeServiceParameter.put(
+                  key,
+                  EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
+                      .setFloatValue((Float) value)
+                      .build());
+            else if (value instanceof Boolean)
+              grpcVectorizeServiceParameter.put(
+                  key,
+                  EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue.newBuilder()
+                      .setBoolValue((Boolean) value)
+                      .build());
+          });
+    }
     EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest embeddingRequest =
         EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.newBuilder()
             .setModelName(modelName)
             .setDimensions(dimension)
+            .putAllParameters(grpcVectorizeServiceParameter)
             .setInputType(
                 embeddingRequestType == EmbeddingRequestType.INDEX
                     ? EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.InputType.INDEX
