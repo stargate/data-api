@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -278,7 +279,8 @@ public record FindOperation(
   }
 
   @Override
-  public Uni<Supplier<CommandResult>> execute(QueryExecutor queryExecutor) {
+  public Uni<Supplier<CommandResult>> execute(
+      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     final boolean vectorEnabled = commandContext().isVectorEnabled();
     if (vector() != null && !vectorEnabled) {
       return Uni.createFrom()
@@ -289,7 +291,7 @@ public record FindOperation(
                       + commandContext().collection()));
     }
     // get FindResponse
-    return getDocuments(queryExecutor, pageState(), null)
+    return getDocuments(dataApiRequestInfo, queryExecutor, pageState(), null)
 
         // map the response to result
         .map(
@@ -312,7 +314,10 @@ public record FindOperation(
    * @return
    */
   public Uni<FindResponse> getDocuments(
-      QueryExecutor queryExecutor, String pageState, DBFilterBase.IDFilter additionalIdFilter) {
+      DataApiRequestInfo dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      String pageState,
+      DBFilterBase.IDFilter additionalIdFilter) {
 
     // ensure we pass failure down if read type is not DOCUMENT or KEY
     // COUNT is not supported
@@ -320,6 +325,7 @@ public record FindOperation(
       case SORTED_DOCUMENT -> {
         List<SimpleStatement> queries = buildSortedSelectQueries(additionalIdFilter);
         return findOrderDocument(
+            dataApiRequestInfo,
             queryExecutor,
             queries,
             pageSize,
@@ -337,6 +343,7 @@ public record FindOperation(
       case DOCUMENT, KEY -> {
         List<SimpleStatement> queries = buildSelectQueries(additionalIdFilter);
         return findDocument(
+            dataApiRequestInfo,
             queryExecutor,
             queries,
             pageState,

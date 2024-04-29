@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.MinMaxPriorityQueue;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -74,6 +75,7 @@ public interface ReadOperation extends Operation {
    * @return
    */
   default Uni<FindResponse> findDocument(
+      DataApiRequestInfo dataApiRequestInfo,
       QueryExecutor queryExecutor,
       List<SimpleStatement> queries,
       String pageState,
@@ -93,10 +95,10 @@ public interface ReadOperation extends Operation {
             simpleStatement -> {
               if (vectorSearch) {
                 return queryExecutor.executeVectorSearch(
-                    simpleStatement, Optional.ofNullable(pageState), pageSize);
+                    dataApiRequestInfo, simpleStatement, Optional.ofNullable(pageState), pageSize);
               } else {
                 return queryExecutor.executeRead(
-                    simpleStatement, Optional.ofNullable(pageState), pageSize);
+                    dataApiRequestInfo, simpleStatement, Optional.ofNullable(pageState), pageSize);
               }
             })
         .onItem()
@@ -185,6 +187,7 @@ public interface ReadOperation extends Operation {
    * @return
    */
   default Uni<FindResponse> findOrderDocument(
+      DataApiRequestInfo dataApiRequestInfo,
       QueryExecutor queryExecutor,
       List<SimpleStatement> queries,
       int pageSize,
@@ -213,12 +216,19 @@ public interface ReadOperation extends Operation {
                           if (vectorSearch) {
                             return queryExecutor
                                 .executeVectorSearch(
-                                    q, Optional.ofNullable(stateRef.get()), pageSize)
+                                    dataApiRequestInfo,
+                                    q,
+                                    Optional.ofNullable(stateRef.get()),
+                                    pageSize)
                                 .onItem()
                                 .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
                           } else {
                             return queryExecutor
-                                .executeRead(q, Optional.ofNullable(stateRef.get()), pageSize)
+                                .executeRead(
+                                    dataApiRequestInfo,
+                                    q,
+                                    Optional.ofNullable(stateRef.get()),
+                                    pageSize)
                                 .onItem()
                                 .invoke(rs -> stateRef.set(extractPageStateFromResultSet(rs)));
                           }
@@ -359,11 +369,13 @@ public interface ReadOperation extends Operation {
    * @return
    */
   default Uni<CountResponse> countDocumentsByKey(
-      QueryExecutor queryExecutor, SimpleStatement simpleStatement) {
+      DataApiRequestInfo dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      SimpleStatement simpleStatement) {
     AtomicLong counter = new AtomicLong();
     final CompletionStage<AsyncResultSet> async =
         queryExecutor
-            .executeCount(simpleStatement)
+            .executeCount(dataApiRequestInfo, simpleStatement)
             .whenComplete(
                 (rs, error) -> {
                   getCount(rs, error, counter);
@@ -381,14 +393,17 @@ public interface ReadOperation extends Operation {
   /**
    * Default implementation to run count query and parse the result set
    *
+   * @param dataApiRequestInfo
    * @param queryExecutor
    * @param simpleStatement
    * @return
    */
   default Uni<CountResponse> countDocuments(
-      QueryExecutor queryExecutor, SimpleStatement simpleStatement) {
+      DataApiRequestInfo dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      SimpleStatement simpleStatement) {
     return Uni.createFrom()
-        .completionStage(queryExecutor.executeCount(simpleStatement))
+        .completionStage(queryExecutor.executeCount(dataApiRequestInfo, simpleStatement))
         .onItem()
         .transform(
             rSet -> {
@@ -417,11 +432,13 @@ public interface ReadOperation extends Operation {
    * @return
    */
   default Uni<CountResponse> estimateDocumentCount(
-      QueryExecutor queryExecutor, SimpleStatement simpleStatement) {
+      DataApiRequestInfo dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      SimpleStatement simpleStatement) {
     AtomicLong counter = new AtomicLong();
     final CompletionStage<AsyncResultSet> async =
         queryExecutor
-            .executeEstimatedCount(simpleStatement)
+            .executeEstimatedCount(dataApiRequestInfo, simpleStatement)
             .whenComplete(
                 (rs, error) -> {
                   getEstimatedCount(rs, error, counter);
