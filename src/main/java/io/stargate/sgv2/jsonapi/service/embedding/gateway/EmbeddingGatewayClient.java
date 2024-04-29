@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.service.embedding.gateway;
 import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.util.Collections;
@@ -81,6 +83,11 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
         .onItem()
         .transform(
             resp -> {
+              if (resp.hasError()) {
+                throw new JsonApiException(
+                    ErrorCode.valueOf(resp.getError().getErrorCode()),
+                    resp.getError().getErrorMessage());
+              }
               if (resp.getEmbeddingsList() == null) {
                 return Collections.emptyList();
               }

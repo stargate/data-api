@@ -52,6 +52,7 @@ message ProviderEmbedRequest {
 message EmbeddingResponse {
   Usage 					usage = 1;
   repeated FloatEmbedding		embeddings = 2;
+  ErrorResponse error = 3;
 
   // The embedding response message
   message FloatEmbedding {
@@ -72,13 +73,15 @@ message EmbeddingResponse {
     int32					output_bytes = 7;
     int32					call_duration_us = 8;
   }
+
+  // The error response message for the embedding gateway gRPC API
+  message ErrorResponse {
+    string error_code = 1;
+    string error_message = 2;
+  }
 }
 
-// The error response message for the embedding gateway gRPC API
-message ErrorResponse {
-  string error_code = 1;
-  string error_message = 2;
-}
+
 
 // The embedding gateway gPRC API to generate embeddings
 service EmbeddingService {
