@@ -248,6 +248,42 @@
       </properties>
     </profile>
     <profile>
+      <id>offline</id>
+      <repositories>
+        <repository>
+          <id>artifactory</id>
+          <url>https://repo.datastax.com/dse</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+      <dependencies>
+        <dependency>
+          <groupId>com.datastax.dse</groupId>
+          <artifactId>dse-db-all</artifactId>
+          <version>4.0.11-591d171ac9c9</version>
+        </dependency>
+      </dependencies>
+      <distributionManagement>
+        <repository>
+          <uniqueVersion>false</uniqueVersion>
+          <id>stargate-central</id>
+          <name>stargate-releases</name>
+          <url>https://repo.datastax.com/artifactory/stargate-private</url>
+        </repository>
+        <snapshotRepository>
+          <uniqueVersion>false</uniqueVersion>
+          <id>stargate-snapshots</id>
+          <name>stargate-snapshots</name>
+          <url>https://repo.datastax.com/artifactory/stargate-private</url>
+        </snapshotRepository>
+      </distributionManagement>
+    </profile>
+    <profile>
       <id>dse-it</id>
       <activation>
         <property>
