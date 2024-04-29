@@ -29,7 +29,8 @@ public class EmbeddingProviderFactory {
         EmbeddingProviderConfigStore.RequestProperties requestProperties,
         String baseUrl,
         String apiKey,
-        String modelName);
+        String modelName,
+        Map<String, Object> vectorizeServiceParameter);
   }
 
   private static final Map<String, ProviderConstructor> providersMap =
@@ -41,12 +42,20 @@ public class EmbeddingProviderFactory {
           Map.entry(ProviderConstants.NVIDIA, NVidiaEmbeddingClient::new));
 
   public EmbeddingProvider getConfiguration(
-      Optional<String> tenant, String serviceName, String modelName, int dimension) {
-    return addService(tenant, serviceName, modelName, dimension);
+      Optional<String> tenant,
+      String serviceName,
+      String modelName,
+      int dimension,
+      Map<String, Object> vectorizeServiceParameter) {
+    return addService(tenant, serviceName, modelName, dimension, vectorizeServiceParameter);
   }
 
   private synchronized EmbeddingProvider addService(
-      Optional<String> tenant, String serviceName, String modelName, int dimension) {
+      Optional<String> tenant,
+      String serviceName,
+      String modelName,
+      int dimension,
+      Map<String, Object> vectorizeServiceParameter) {
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
         embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
 
@@ -59,7 +68,8 @@ public class EmbeddingProviderFactory {
           configuration.baseUrl(),
           configuration.apiKey(),
           modelName,
-          embeddingService);
+          embeddingService,
+          vectorizeServiceParameter);
     }
 
     if (configuration.serviceProvider().equals(ProviderConstants.CUSTOM)) {
@@ -89,6 +99,7 @@ public class EmbeddingProviderFactory {
             configuration.requestConfiguration(),
             configuration.baseUrl(),
             configuration.apiKey(),
-            modelName);
+            modelName,
+            vectorizeServiceParameter);
   }
 }

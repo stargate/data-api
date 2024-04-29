@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -27,6 +28,8 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
   private String baseUrl;
   private EmbeddingService embeddingService;
 
+  private Map<String, Object> vectorizeServiceParameter;
+
   public EmbeddingGatewayClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String provider,
@@ -35,7 +38,8 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
       String baseUrl,
       String apiKey,
       String modelName,
-      EmbeddingService embeddingService) {
+      EmbeddingService embeddingService,
+      Map<String, Object> vectorizeServiceParameter) {
     this.requestProperties = requestProperties;
     this.provider = provider;
     this.dimension = dimension;
@@ -44,6 +48,7 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
     this.modelName = modelName;
     this.baseUrl = baseUrl;
     this.embeddingService = embeddingService;
+    this.vectorizeServiceParameter = vectorizeServiceParameter;
   }
 
   @Override

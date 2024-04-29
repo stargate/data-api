@@ -181,7 +181,13 @@ public class CollectionResource {
                           dataApiRequestInfo.getTenantId(),
                           collectionProperty.vectorConfig().vectorizeConfig().provider(),
                           collectionProperty.vectorConfig().vectorizeConfig().modelName(),
-                          collectionProperty.vectorConfig().vectorSize());
+                          collectionProperty.vectorConfig().vectorSize(),
+                          collectionProperty.vectorConfig().vectorizeConfig() != null
+                              ? collectionProperty
+                                  .vectorConfig()
+                                  .vectorizeConfig()
+                                  .vectorizeServiceParameter()
+                              : null);
                 }
 
                 CommandContext commandContext =
