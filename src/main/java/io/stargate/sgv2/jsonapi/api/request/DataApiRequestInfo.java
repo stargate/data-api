@@ -19,6 +19,12 @@ public class DataApiRequestInfo {
   private final Optional<String> cassandraToken;
   private final Optional<String> embeddingApiKey;
 
+  /**
+   * Constructor that will be useful in the offline library mode, where only the tenant will be set
+   * and accessed.
+   *
+   * @param tenantId Tenant Id
+   */
   public DataApiRequestInfo(Optional<String> tenantId) {
     this.tenantId = tenantId;
     this.cassandraToken = Optional.empty();
