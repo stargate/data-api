@@ -74,7 +74,7 @@ public class OfflineCommandsProcessor {
     return new CQLSessionCache(operationsConfig, new SimpleMeterRegistry());
   }
 
-  private static CommandResolverService buildCommandResolverService() {
+  private CommandResolverService buildCommandResolverService() {
     ObjectMapper objectMapper = new ObjectMapper();
     SmallRyeConfig smallRyeConfig =
         new SmallRyeConfigBuilder().withMapping(DocumentLimitsConfig.class).build();
@@ -86,7 +86,7 @@ public class OfflineCommandsProcessor {
             new BeginOfflineSessionCommandResolver(),
             new EndOfflineSessionCommandResolver(),
             new OfflineGetStatusCommandResolver(),
-            new OfflineInsertManyCommandResolver(shredder)));
+            new OfflineInsertManyCommandResolver(shredder, this.operationsConfig)));
   }
 
   private static DataVectorizerService buildDataVectorizeService() {

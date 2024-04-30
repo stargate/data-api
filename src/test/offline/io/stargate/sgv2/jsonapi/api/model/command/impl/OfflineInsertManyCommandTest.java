@@ -40,15 +40,4 @@ class OfflineInsertManyCommandTest {
         new OfflineInsertManyCommand(sessionId, documents);
     assertEquals(sessionId, offlineInsertManyCommand.writerSessionId());
   }
-
-  @Test
-  public void testMaxLimitDocumentsError() {
-    String sessionId = "sessionId";
-    List<JsonNode> documents = mock(List.class);
-    when(documents.size()).thenReturn(1001);
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> new OfflineInsertManyCommand(sessionId, documents),
-        "amount of documents to insert is over the max limit");
-  }
 }
