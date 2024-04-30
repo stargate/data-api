@@ -178,6 +178,8 @@ public record InsertOperation(
               + " VALUES"
               + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
               + (offlineMode ? "" : " IF NOT EXISTS");
+      // The offline mode SSTableWriter does not support conditional inserts, so it can not have the
+      // IF NOT EXISTS clause
       return String.format(
           insertWithVector, commandContext.namespace(), commandContext.collection());
     } else {
@@ -187,6 +189,8 @@ public record InsertOperation(
               + " VALUES"
               + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
               + (offlineMode ? "" : " IF NOT EXISTS");
+      // The offline mode SSTableWriter does not support conditional inserts, so it can not have the
+      // IF NOT EXISTS clause
       return String.format(insert, commandContext.namespace(), commandContext.collection());
     }
   }
