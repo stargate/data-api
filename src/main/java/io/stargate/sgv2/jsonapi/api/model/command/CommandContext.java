@@ -25,6 +25,17 @@ public record CommandContext(
     this(namespace, collection, CollectionSettings.empty(), null, null, null);
   }
 
+  /**
+   * An utility method to create a new instance of {@link CommandContext} by passing the namespace,
+   * the collection, the collection settings, embedding provider and the command name.
+   *
+   * @param namespace Namespace
+   * @param collection Collection
+   * @param collectionSettings Collection settings
+   * @param embeddingProvider Embedding provider
+   * @param commandName Command name
+   * @return Returns a new instance of {@link CommandContext}.
+   */
   public static CommandContext from(
       String namespace,
       String collection,
