@@ -61,6 +61,7 @@ public class OfflineCommandsProcessor {
     return offlineCommandsProcessor;
   }
 
+  //TODO-SL see if init can be removed
   private static synchronized void init() {
     if (initialized) {
       return;
@@ -120,7 +121,6 @@ public class OfflineCommandsProcessor {
 
   public boolean canEndSession(
       OfflineWriterSessionStatus offlineWriterSessionStatus, int createNewSessionAfterDataInMB) {
-    ;
     return offlineWriterSessionStatus.dataDirectorySizeInBytes() >= createNewSessionAfterDataInMB;
   }
 
