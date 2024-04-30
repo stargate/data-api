@@ -26,10 +26,14 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   private final ErrorCode errorCode;
 
   static {
-    if (ApiConstants.isOffline()) {
-      config = new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
-    } else {
-      config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+    try {
+      if (ApiConstants.isOffline()) {
+        config = new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
+      } else {
+        config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+      }
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to initialize JsonApiException", e);
     }
   }
 
