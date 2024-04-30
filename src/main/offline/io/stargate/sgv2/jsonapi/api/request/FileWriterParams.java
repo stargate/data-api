@@ -34,9 +34,6 @@ public record FileWriterParams(
       throw new IllegalArgumentException(
           "Invalid FileWriterParams, insertStatementCQL is null or empty");
     }
-    if (indexCQLs == null || indexCQLs.isEmpty()) {
-      throw new IllegalArgumentException("Invalid FileWriterParams, indexCQLs is null or empty");
-    }
     if (vectorEnabled == null) {
       throw new IllegalArgumentException("Invalid FileWriterParams, vectorEnabled is null");
     }
