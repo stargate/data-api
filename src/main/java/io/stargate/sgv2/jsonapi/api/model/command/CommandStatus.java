@@ -35,19 +35,6 @@ public enum CommandStatus {
    */
   @JsonProperty("moreData")
   MORE_DATA,
-  /** The element has value 1 if collection is created */
-  @JsonProperty("ok")
-  OK,
-
-  /** Next page state value that can be used in client side for pagination */
-  @JsonProperty("nextPageState")
-  PAGE_STATE,
-  /**
-   * The element has the document id of newly inserted document part of update, when upserted option
-   * is 'true' and no document available in DB for matching condition
-   */
-  @JsonProperty("upsertedId")
-  UPSERTED_ID,
   /**
    * The element has the session id of offline writer, which is used to write the data offline to
    * the SSTable files for example
@@ -60,5 +47,18 @@ public enum CommandStatus {
    * to
    */
   @JsonProperty("offlineWriterSessionStatus")
-  OFFLINE_WRITER_SESSION_STATUS
+  OFFLINE_WRITER_SESSION_STATUS,
+  /** The element has value 1 if collection is created */
+  @JsonProperty("ok")
+  OK,
+
+  /** Next page state value that can be used in client side for pagination */
+  @JsonProperty("nextPageState")
+  PAGE_STATE,
+  /**
+   * The element has the document id of newly inserted document part of update, when upserted option
+   * is 'true' and no document available in DB for matching condition
+   */
+  @JsonProperty("upsertedId")
+  UPSERTED_ID
 }
