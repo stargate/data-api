@@ -98,6 +98,12 @@ public interface PropertyBasedEmbeddingProviderConfig {
       @JsonProperty
       String name();
 
+      /**
+       * vectorDimension is not null if the model supports a single dimension value. It will be null
+       * if the model supports different dimensions. A parameter called vectorDimension is included.
+       *
+       * @return
+       */
       @Nullable
       @JsonProperty
       Optional<Integer> vectorDimension();
@@ -123,6 +129,21 @@ public interface PropertyBasedEmbeddingProviderConfig {
       @JsonProperty
       Optional<String> defaultValue();
 
+      /**
+       * validation is an object that describes how the Data API will validate the parameters, and
+       * how the UI may want to provide data entry hints. Only one of the validation methods will be
+       * specified for each parameter.
+       *
+       * <p>`numericRange` if present is an array of two numbers that represent the inclusive value
+       * range for a number parameter. E.g. the dimensions for the text-embedding-3
+       *
+       * <p>`options` if present is an array of valid options the user must select from, for example
+       * if a model supports 3 different dimensions. If options are present the only allowed values
+       * for the parameter are those in the options list. If not present, null, or an empty array
+       * any value of the correct type is accepted.
+       *
+       * @return
+       */
       @Nullable
       @JsonProperty
       Map<String, List<Integer>> validation();
