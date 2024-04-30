@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorCode.OFFLINE_WRITER_SESSION_NOT_FOUND;
+
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -24,7 +26,10 @@ public record OfflineGetStatusOperation(String sessionId) implements Operation {
           new CommandResult(
               List.of(
                   new CommandResult.Error(
-                      "Session not found", null, null, Response.Status.NOT_FOUND)));
+                      OFFLINE_WRITER_SESSION_NOT_FOUND.getMessage(),
+                      null,
+                      null,
+                      Response.Status.NOT_FOUND)));
       return Uni.createFrom().item(() -> () -> commandResult);
     }
     OfflineWriterSessionStatus offlineWriterSessionStatus = fileWriterSession.getStatus();

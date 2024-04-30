@@ -157,7 +157,7 @@ public enum ErrorCode {
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
-  OFFLINE_WRITER_SESSION_NOT_FOUND("Offline writer session not found :"),
+  OFFLINE_WRITER_SESSION_NOT_FOUND("Offline writer session not found"),
   UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION("Unable to create offline writer session"),
   INVALID_SCHEMA_VERSION(
       "Collection has invalid schema version. Recommend re-creating the collection"),
