@@ -32,7 +32,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       } else {
         config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
       }
-    } catch (Exception e) {
+    } catch (Throwable e) {
       throw new RuntimeException("Failed to initialize JsonApiException", e);
     }
   }
