@@ -37,14 +37,22 @@ import org.slf4j.LoggerFactory;
 
 public class OfflineCommandsProcessor {
   private static final Logger logger = LoggerFactory.getLogger(OfflineCommandsProcessor.class);
-  private OperationsConfig operationsConfig;
-  private CQLSessionCache cqlSessionCache;
-  private CommandResolverService commandResolverService;
-  private DataVectorizerService dataVectorizerService;
+  private final OperationsConfig operationsConfig;
+  private final CQLSessionCache cqlSessionCache;
+  private final CommandResolverService commandResolverService;
+  private final DataVectorizerService dataVectorizerService;
   private static OfflineCommandsProcessor offlineCommandsProcessor;
   private static boolean initialized;
 
-  private OfflineCommandsProcessor() {}
+  private OfflineCommandsProcessor() {
+    OfflineFileWriterInitializer.initialize();
+    operationsConfig =
+            OfflineFileWriterInitializer.buildOperationsConfig();
+    cqlSessionCache =
+            buildCqlSessionCache(offlineCommandsProcessor.operationsConfig);
+    commandResolverService = buildCommandResolverService();
+    dataVectorizerService = buildDataVectorizeService();
+  }
 
   public static OfflineCommandsProcessor getInstance() {
     if (!initialized) {
@@ -57,14 +65,7 @@ public class OfflineCommandsProcessor {
     if (initialized) {
       return;
     }
-    OfflineFileWriterInitializer.initialize();
     offlineCommandsProcessor = new OfflineCommandsProcessor();
-    offlineCommandsProcessor.operationsConfig =
-        OfflineFileWriterInitializer.buildOperationsConfig();
-    offlineCommandsProcessor.cqlSessionCache =
-        buildCqlSessionCache(offlineCommandsProcessor.operationsConfig);
-    offlineCommandsProcessor.commandResolverService = buildCommandResolverService();
-    offlineCommandsProcessor.dataVectorizerService = buildDataVectorizeService();
     initialized = true;
   }
 
