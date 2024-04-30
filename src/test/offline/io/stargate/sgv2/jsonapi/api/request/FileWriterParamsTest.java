@@ -22,7 +22,8 @@ class FileWriterParamsTest {
       String createTableCQL,
       String insertStatementCQL,
       List<String> indexCQLs,
-      Boolean vectorEnabled) {
+      Boolean vectorEnabled,
+      String expectedMessage) {
     assertThrows(
         IllegalArgumentException.class,
         () ->
@@ -34,7 +35,8 @@ class FileWriterParamsTest {
                 createTableCQL,
                 insertStatementCQL,
                 indexCQLs,
-                vectorEnabled));
+                vectorEnabled),
+        expectedMessage);
   }
 
   public static Arguments[] sampleFileWriterParamsProvider() {
@@ -47,7 +49,8 @@ class FileWriterParamsTest {
           "createTableCQL",
           "insertStatementCQL",
           List.of("indexCQLs"),
-          true),
+          true,
+          "Invalid FileWriterParams, keyspaceName is null or empty"),
       arguments(
           "",
           "tableName",
@@ -56,7 +59,8 @@ class FileWriterParamsTest {
           "createTableCQL",
           "insertStatementCQL",
           List.of("indexCQLs"),
-          true),
+          true,
+          "Invalid FileWriterParams, keyspaceName is null or empty"),
       arguments(
           "keyspaceName",
           null,
@@ -65,7 +69,8 @@ class FileWriterParamsTest {
           "createTableCQL",
           "insertStatementCQL",
           List.of("indexCQLs"),
-          true),
+          true,
+          "Invalid FileWriterParams, tableName is null or empty"),
       arguments(
           "keyspaceName",
           "",
@@ -74,7 +79,8 @@ class FileWriterParamsTest {
           "createTableCQL",
           "insertStatementCQL",
           List.of("indexCQLs"),
-          true),
+          true,
+          "Invalid FileWriterParams, tableName is null or empty"),
       arguments(
           "keyspaceName",
           "tableName",
@@ -83,7 +89,8 @@ class FileWriterParamsTest {
           "createTableCQL",
           "insertStatementCQL",
           List.of("indexCQLs"),
-          true),
+          true,
+          "Invalid FileWriterParams, ssTableOutputDirectory is null or empty"),
       arguments(
           "keyspaceName",
           "tableName",
@@ -92,7 +99,8 @@ class FileWriterParamsTest {
           "createTableCQL",
           "insertStatementCQL",
           List.of("indexCQLs"),
-          true),
+          true,
+          "Invalid FileWriterParams, ssTableOutputDirectory is null or empty"),
       arguments(
           "keyspaceName",
           "tableName",
@@ -101,7 +109,8 @@ class FileWriterParamsTest {
           "createTableCQL",
           "insertStatementCQL",
           List.of("indexCQLs"),
-          true),
+          true,
+          "Invalid FileWriterParams, fileWriterBufferSizeInMB is less than or equal to 0"),
       arguments(
           "keyspaceName",
           "tableName",
@@ -110,7 +119,8 @@ class FileWriterParamsTest {
           null,
           "insertStatementCQL",
           List.of("indexCQLs"),
-          true),
+          true,
+          "Invalid FileWriterParams, createTableCQL is null or empty"),
       arguments(
           "keyspaceName",
           "tableName",
@@ -119,7 +129,8 @@ class FileWriterParamsTest {
           "",
           "insertStatementCQL",
           List.of("indexCQLs"),
-          true),
+          true,
+          "Invalid FileWriterParams, createTableCQL is null or empty"),
       arguments(
           "keyspaceName",
           "tableName",
@@ -128,7 +139,8 @@ class FileWriterParamsTest {
           "createTableCQL",
           null,
           List.of("indexCQLs"),
-          true),
+          true,
+          "Invalid FileWriterParams, insertStatementCQL is null or empty"),
       arguments(
           "keyspaceName",
           "tableName",
@@ -137,7 +149,8 @@ class FileWriterParamsTest {
           "createTableCQL",
           "",
           List.of("indexCQLs"),
-          true),
+          true,
+          "Invalid FileWriterParams, insertStatementCQL is null or empty"),
       arguments(
           "keyspaceName",
           "tableName",
@@ -146,7 +159,8 @@ class FileWriterParamsTest {
           "createTableCQL",
           "insertStatementCQL",
           null,
-          true),
+          true,
+          "Invalid FileWriterParams, indexCQLs is null or empty"),
       arguments(
           "keyspaceName",
           "tableName",
@@ -155,7 +169,8 @@ class FileWriterParamsTest {
           "createTableCQL",
           "insertStatementCQL",
           List.of(),
-          true),
+          true,
+          "Invalid FileWriterParams, indexCQLs is null or empty"),
       arguments(
           "keyspaceName",
           "tableName",
@@ -164,7 +179,8 @@ class FileWriterParamsTest {
           "createTableCQL",
           "insertStatementCQL",
           List.of("indexCQLs"),
-          null),
+          null,
+          "Invalid FileWriterParams, vectorEnabled is null"),
     };
   }
 }
