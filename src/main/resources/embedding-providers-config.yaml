@@ -9,7 +9,16 @@ stargate:
           url: https://api.openai.com/v1/
           api-key: YOUR_API_KEY
           supported-authentication:
-            - "HEADER"
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-provider-key
+                  forwarded: Authorization
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: Authorization
           models:
             - name: text-embedding-3-small
               vector-dimension: 1536
@@ -24,7 +33,16 @@ stargate:
           url: https://api-inference.huggingface.co/pipeline/feature-extraction/
           api-key: YOUR_API_KEY
           supported-authentication:
-            - "HEADER"
+            HEADER:
+                enabled: true
+                tokens:
+                  - accepted: x-embedding-provider-key
+                    forwarded: Authorization
+            SHARED_SECRET:
+                enabled: false
+                tokens:
+                  - accepted: providerKey
+                    forwarded: Authorization
           models:
             - name: sentence-transformers/all-MiniLM-L6-v2
               vector-dimension: 384
@@ -35,7 +53,16 @@ stargate:
           url: "https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/{MODEL}:predict"
           api-key: YOUR_API_KEY
           supported-authentication:
-            - "HEADER"
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-provider-key
+                  forwarded: Authorization
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: Authorization
           parameters:
             - name: PROJECT_ID
               type: STRING
@@ -55,15 +82,22 @@ stargate:
               properties:
                 max-tokens: 3072
 
-
-
         # Cohere embedding service configuration
         cohere:
           enabled: true
           url: https://api.cohere.ai/v1/
           api-key: YOUR_API_KEY
           supported-authentication:
-            - "HEADER"
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-provider-key
+                  forwarded: Authorization
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: Authorization
           models:
             - name: embed-english-v3.0
               vector-dimension: 1024
@@ -76,7 +110,16 @@ stargate:
           url: https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/091a03bb-7364-4087-8090-bd71e9277520
           api-key: YOUR_API_KEY
           supported-authentication:
-            - "HEADER"
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-provider-key
+                  forwarded: Authorization
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: Authorization
           models:
             - name: NVIDIA Retrieval QA Embedding Model-1.0
               vector-dimension: 1024

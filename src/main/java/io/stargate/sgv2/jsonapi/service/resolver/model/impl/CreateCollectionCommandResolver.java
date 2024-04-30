@@ -260,7 +260,9 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   }
 
   // TODO: 1. remove the first if statement when fully support validateAuthentication
-  //  2. validate the 'secretName' in the future
+  //  2. Check if user authentication type is support
+  //  3. Check if required token is provided
+  //  4. Check if token is valid
   private void validateAuthentication(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig providerConfig) {
@@ -268,14 +270,14 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       return;
     }
     // Check if user authentication type is support
-    userConfig.vectorizeServiceAuthentication().type().stream()
-        .filter(type -> !providerConfig.supportedAuthentication().contains(type))
-        .findFirst()
-        .ifPresent(
-            type -> {
-              throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                  "Authentication type '%s' is not supported", type);
-            });
+    //    userConfig.vectorizeServiceAuthentication().type().stream()
+    //        .filter(type -> !providerConfig.supportedAuthentication().contains(type))
+    //        .findFirst()
+    //        .ifPresent(
+    //            type -> {
+    //              throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+    //                  "Authentication type '%s' is not supported", type);
+    //            });
     // Check if 'secretName' is provided if authentication type is 'SHARED_SECRET'
     if (userConfig.vectorizeServiceAuthentication().type().contains("SHARED_SECRET")
         && (userConfig.vectorizeServiceAuthentication().secretName() == null

@@ -60,7 +60,8 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
    */
   private record EmbeddingProviderResponse(
       String url,
-      List<String> supportedAuthentication,
+      Map<String, PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.AuthenticationConfig>
+          supportedAuthentication,
       List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
       List<ModelConfigResponse> models) {
     private static EmbeddingProviderResponse provider(
