@@ -44,6 +44,10 @@ import org.apache.cassandra.io.sstable.CQLSSTableWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A session that writes data to SSTable files. This implements the {@link CqlSession} interface so that this can be cached by the {@link CQLSessionCache}.
+ * This class primarily takes the CQL insert statement, bound values and writes the data to SSTable files.
+ */
 public class FileWriterSession implements CqlSession {
   private static final Logger LOGGER = LoggerFactory.getLogger(FileWriterSession.class);
   private final AtomicInteger insertsSucceeded = new AtomicInteger(0);
@@ -59,6 +63,14 @@ public class FileWriterSession implements CqlSession {
   private final int fileWriterBufferSizeInMB;
   private final FileWriterParams fileWriterParams;
 
+  /**
+   * Creates a new instance of {@link FileWriterSession}
+   * @param cqlSessionCache The cache that holds the session
+   * @param cacheKey The cache key
+   * @param sessionId The session id
+   * @param fileWriterParams The parameters required to write the data to SSTable files
+   * @throws IOException If there are IO errors while creating SSTable files related directories
+   */
   public FileWriterSession(
       CQLSessionCache cqlSessionCache,
       CQLSessionCache.SessionCacheKey cacheKey,
@@ -282,6 +294,11 @@ public class FileWriterSession implements CqlSession {
         insertsFailed.get());
   }
 
+  /**
+   * Returns the size of the directory in bytes by summing the size of all the files in the directory only at the top level and not recursively by traversing the subdirectories.
+   * @param dataDirectory The directory
+   * @return The size of the directory in bytes
+   */
   public static int getDirectorySizeInBytesTopLevel(String dataDirectory) {
     File file = new File(dataDirectory);
     long size = 0;

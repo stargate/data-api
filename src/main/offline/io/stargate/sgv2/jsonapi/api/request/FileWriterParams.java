@@ -1,9 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
+import com.datastax.oss.driver.api.core.CqlSession;
+
 import java.util.List;
+import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.FileWriterSession;
 
 /**
- * The parameters that are required to write the data to SSTable files used primarily by <code>FileWriterSession</code>
+ * The parameters that are required to write the data to SSTable files used primarily by {@link FileWriterSession}
  */
 public record FileWriterParams(
         /* The name of the keyspace */
