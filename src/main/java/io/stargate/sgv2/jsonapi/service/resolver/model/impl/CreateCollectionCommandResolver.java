@@ -378,6 +378,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   }
 
   // TODO: check model parameters provided by the user, will support in the future
+  // TODO: fix code 396-405
   private Integer validateModelAndDimension(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig providerConfig,
@@ -392,14 +393,16 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
                         "Model name '%s' for provider '%s' is not supported",
                         userConfig.modelName(), userConfig.provider()));
 
-    Integer configVectorDimension = model.vectorDimension();
-    if (userVectorDimension == null) {
-      return configVectorDimension; // Use config dimension if user didn't provide one
-    } else if (!configVectorDimension.equals(userVectorDimension)) {
-      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "The provided dimension value '%s' doesn't match the model supports dimension value '%s'",
-          userVectorDimension, configVectorDimension);
-    }
-    return configVectorDimension;
+    //    Integer configVectorDimension = model.vectorDimension();
+    //    if (userVectorDimension == null) {
+    //      return configVectorDimension; // Use config dimension if user didn't provide one
+    //    } else if (!configVectorDimension.equals(userVectorDimension)) {
+    //      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+    //          "The provided dimension value '%s' doesn't match the model supports dimension value
+    // '%s'",
+    //          userVectorDimension, configVectorDimension);
+    //    }
+    //    return configVectorDimension;
+    return 0;
   }
 }

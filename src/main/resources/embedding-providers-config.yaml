@@ -9,6 +9,8 @@ stargate:
           url: https://api.openai.com/v1/
           api-key: YOUR_API_KEY
           supported-authentication:
+            NONE:
+              enabled: false
             HEADER:
               enabled: true
               tokens:
@@ -21,9 +23,23 @@ stargate:
                   forwarded: Authorization
           models:
             - name: text-embedding-3-small
-              vector-dimension: 1536
+              parameters:
+                - name: "vectorDimension"
+                  type: NUMBER
+                  required: true
+                  default-value: 1536
+                  validation:
+                    numeric-range: [512, 1536]
+                  help: "The vector dimension could be any number between 512 and 1536."
             - name: text-embedding-3-large
-              vector-dimension: 3072
+              parameters:
+                - name: "vectorDimension"
+                  type: NUMBER
+                  required: true
+                  default-value: 1024
+                  validation:
+                    numeric-range: [256, 3072]
+                  help: "The vector dimension could be any number between 256 and 3072."
             - name: text-embedding-ada-002
               vector-dimension: 1536
 
@@ -33,6 +49,8 @@ stargate:
           url: https://api-inference.huggingface.co/pipeline/feature-extraction/
           api-key: YOUR_API_KEY
           supported-authentication:
+            NONE:
+              enabled: false
             HEADER:
                 enabled: true
                 tokens:
@@ -53,6 +71,8 @@ stargate:
           url: "https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/{MODEL}:predict"
           api-key: YOUR_API_KEY
           supported-authentication:
+            NONE:
+              enabled: false
             HEADER:
               enabled: true
               tokens:
@@ -67,6 +87,7 @@ stargate:
             - name: PROJECT_ID
               type: STRING
               required: true
+              help: "The Google Cloud Project ID to use when calling"
           properties:
             max-retries: 3
             request-timeout-millis: 1000
@@ -79,6 +100,7 @@ stargate:
                   type: BOOLEAN
                   required: false
                   default-value: true
+                  help: "If set to false, text that exceeds the token limit causes the request to fail. The default value is true."
               properties:
                 max-tokens: 3072
 
@@ -88,6 +110,8 @@ stargate:
           url: https://api.cohere.ai/v1/
           api-key: YOUR_API_KEY
           supported-authentication:
+            NONE:
+              enabled: false
             HEADER:
               enabled: true
               tokens:
@@ -110,8 +134,10 @@ stargate:
           url: https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/091a03bb-7364-4087-8090-bd71e9277520
           api-key: YOUR_API_KEY
           supported-authentication:
-            HEADER:
+            NONE:
               enabled: true
+            HEADER:
+              enabled: false
               tokens:
                 - accepted: x-embedding-provider-key
                   forwarded: Authorization
@@ -121,10 +147,6 @@ stargate:
                 - accepted: providerKey
                   forwarded: Authorization
           models:
-            - name: NVIDIA Retrieval QA Embedding Model-1.0
-              vector-dimension: 1024
-              properties:
-                max-tokens: 512
             - name: NV-Embed-QA
               vector-dimension: 1024
               properties:

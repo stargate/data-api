@@ -30,8 +30,8 @@ public interface PropertyBasedEmbeddingProviderConfig {
     String apiKey();
 
     /**
-     * A map of supported authentications. HEADER and SHARED_SECRET are the only techniques the
-     * DataAPI supports (i.e. the key of map can only be HEADER or SHARED_SECRET).
+     * A map of supported authentications. HEADER, SHARED_SECRET and NONE are the only techniques
+     * the DataAPI supports (i.e. the key of map can only be HEADER, SHARED_SECRET or NONE).
      *
      * @return
      */
@@ -98,8 +98,9 @@ public interface PropertyBasedEmbeddingProviderConfig {
       @JsonProperty
       String name();
 
+      @Nullable
       @JsonProperty
-      Integer vectorDimension();
+      Optional<Integer> vectorDimension();
 
       @JsonProperty
       List<ParameterConfig> parameters();
@@ -121,6 +122,10 @@ public interface PropertyBasedEmbeddingProviderConfig {
       @Nullable
       @JsonProperty
       Optional<String> defaultValue();
+
+      @Nullable
+      @JsonProperty
+      Map<String, List<Integer>> validation();
 
       @Nullable
       @JsonProperty

@@ -64,13 +64,14 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
           supportedAuthentication,
       List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
       List<ModelConfigResponse> models) {
+    // TODO: fix code 74, 0 supposed to be model.vectorDimension()
     private static EmbeddingProviderResponse provider(
         PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig embeddingProviderConfig) {
       ArrayList<ModelConfigResponse> modelsRemoveProperties = new ArrayList<>();
       for (PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ModelConfig model :
           embeddingProviderConfig.models()) {
         ModelConfigResponse returnModel =
-            new ModelConfigResponse(model.name(), model.vectorDimension(), model.parameters());
+            new ModelConfigResponse(model.name(), 0, model.parameters());
         modelsRemoveProperties.add(returnModel);
       }
       return new EmbeddingProviderResponse(
