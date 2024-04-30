@@ -4,10 +4,10 @@
   <parent>
     <groupId>io.stargate</groupId>
     <artifactId>sgv2-api-parent</artifactId>
-    <version>2.1.0-BETA-10</version>
+    <version>2.1.0-BETA-11</version>
   </parent>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.6-SNAPSHOT</version>
+  <version>1.0.7-SNAPSHOT</version>
   <properties>
     <stargate.version>${project.parent.version}</stargate.version>
     <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->
@@ -259,6 +259,42 @@
         <quarkus.container-image.name>jsonapi-native</quarkus.container-image.name>
         <quarkus.native.native-image-xmx>6G</quarkus.native.native-image-xmx>
       </properties>
+    </profile>
+    <profile>
+      <id>offline</id>
+      <repositories>
+        <repository>
+          <id>artifactory</id>
+          <url>https://repo.datastax.com/dse</url>
+          <releases>
+            <enabled>true</enabled>
+          </releases>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        </repository>
+      </repositories>
+      <dependencies>
+        <dependency>
+          <groupId>com.datastax.dse</groupId>
+          <artifactId>dse-db-all</artifactId>
+          <version>4.0.11-591d171ac9c9</version>
+        </dependency>
+      </dependencies>
+      <distributionManagement>
+        <repository>
+          <uniqueVersion>false</uniqueVersion>
+          <id>stargate-central</id>
+          <name>stargate-releases</name>
+          <url>https://repo.datastax.com/artifactory/stargate-private</url>
+        </repository>
+        <snapshotRepository>
+          <uniqueVersion>false</uniqueVersion>
+          <id>stargate-snapshots</id>
+          <name>stargate-snapshots</name>
+          <url>https://repo.datastax.com/artifactory/stargate-private</url>
+        </snapshotRepository>
+      </distributionManagement>
     </profile>
     <profile>
       <id>dse-it</id>

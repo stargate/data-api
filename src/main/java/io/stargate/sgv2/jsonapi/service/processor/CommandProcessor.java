@@ -4,6 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -55,7 +56,7 @@ public class CommandProcessor {
    * @param <T> Type of the command.
    */
   public <T extends Command> Uni<CommandResult> processCommand(
-      CommandContext commandContext, T command) {
+      DataApiRequestInfo dataApiRequestInfo, CommandContext commandContext, T command) {
     // vectorize the data
     return dataVectorizerService
         .vectorize(commandContext, command)
@@ -77,7 +78,7 @@ public class CommandProcessor {
             })
 
         //  execute the operation
-        .flatMap(operation -> operation.execute(queryExecutor))
+        .flatMap(operation -> operation.execute(dataApiRequestInfo, queryExecutor))
 
         // handle failures here
         .onFailure()
