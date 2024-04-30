@@ -2,14 +2,25 @@ package io.stargate.sgv2.jsonapi.api.request;
 
 import java.util.List;
 
+/**
+ * The parameters that are required to write the data to SSTable files used primarily by <code>FileWriterSession</code>
+ */
 public record FileWriterParams(
+        /* The name of the keyspace */
     String keyspaceName,
+        /* The name of the table */
     String tableName,
+        /* The directory where the SSTable files will be written */
     String ssTableOutputDirectory,
+        /* The size of the buffer used to write the SSTable files */
     int fileWriterBufferSizeInMB,
+        /* The CQL to create the table */
     String createTableCQL,
+        /* The CQL to insert the data into the table */
     String insertStatementCQL,
+        /* The CQL to create the indexes */
     List<String> indexCQLs,
+        /* The flag to enable vector */
     Boolean vectorEnabled) {
   public FileWriterParams {
     if (keyspaceName == null || keyspaceName.isBlank()) {
