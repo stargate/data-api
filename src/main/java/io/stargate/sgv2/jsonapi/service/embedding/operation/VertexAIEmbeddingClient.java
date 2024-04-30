@@ -44,6 +44,7 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
     this.apiKey = apiKey;
     this.modelName = modelName;
     this.vectorizeServiceParameter = vectorizeServiceParameter;
+    baseUrl = baseUrl.replace("PROJECT_ID", vectorizeServiceParameter.get("PROJECT_ID").toString());
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
