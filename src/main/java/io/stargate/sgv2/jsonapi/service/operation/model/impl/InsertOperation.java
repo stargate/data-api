@@ -212,6 +212,8 @@ public record InsertOperation(
           CQLBindValues.getDoubleMapValues(doc.queryNumberValues()),
           CQLBindValues.getStringMapValues(doc.queryTextValues()),
           CQLBindValues.getSetValue(doc.queryNullValues()),
+          // The offline SSTableWriter component expects the timestamp as a Date object instead of
+          // Instant for Date data type
           offlineMode
               ? CQLBindValues.getTimestampAsDateMapValues(doc.queryTimestampValues())
               : CQLBindValues.getTimestampMapValues(doc.queryTimestampValues()),
@@ -229,6 +231,8 @@ public record InsertOperation(
           CQLBindValues.getDoubleMapValues(doc.queryNumberValues()),
           CQLBindValues.getStringMapValues(doc.queryTextValues()),
           CQLBindValues.getSetValue(doc.queryNullValues()),
+          // The offline SSTableWriter component expects the timestamp as a Date object instead of
+          // Instant for Date data type
           offlineMode
               ? CQLBindValues.getTimestampAsDateMapValues(doc.queryTimestampValues())
               : CQLBindValues.getTimestampMapValues(doc.queryTimestampValues()));
