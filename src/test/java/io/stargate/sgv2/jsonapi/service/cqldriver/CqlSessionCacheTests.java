@@ -55,12 +55,11 @@ public class CqlSessionCacheTests {
   }
 
   @Test
-  public void testOSSCxCQLSessionCacheDefaultTenant()
-      throws NoSuchFieldException, IllegalAccessException {
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
+  public void testOSSCxCQLSessionCacheDefaultTenant() {
     DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
     when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
     CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
     sessionsCreatedInTests.add(cqlSession);
     assertThat(
