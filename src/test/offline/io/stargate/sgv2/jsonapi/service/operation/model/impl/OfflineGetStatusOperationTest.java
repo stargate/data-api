@@ -68,7 +68,8 @@ public class OfflineGetStatusOperationTest {
     assertNull(offlineGetStatusResponse.offlineWriterSessionStatus());
     assertNotNull(offlineGetStatusResponse.errors());
     assertEquals(1, offlineGetStatusResponse.errors().size());
-    assertEquals("Session not found", offlineGetStatusResponse.errors().get(0).message());
+    assertEquals(
+        "Offline writer session not found", offlineGetStatusResponse.errors().get(0).message());
     assertEquals(
         Response.Status.NOT_FOUND.getStatusCode(),
         offlineGetStatusResponse.errors().get(0).status().getStatusCode());
