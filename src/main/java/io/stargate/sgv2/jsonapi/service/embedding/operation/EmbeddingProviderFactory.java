@@ -1,9 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import io.quarkus.grpc.GrpcClient;
+import io.stargate.embedding.gateway.EmbeddingService;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
+import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -17,12 +21,16 @@ public class EmbeddingProviderFactory {
   private static Logger logger = org.slf4j.LoggerFactory.getLogger(EmbeddingProviderFactory.class);
   @Inject Instance<EmbeddingProviderConfigStore> embeddingProviderConfigStore;
 
+  @Inject OperationsConfig config;
+  @GrpcClient EmbeddingService embeddingService;
+
   private interface ProviderConstructor {
     EmbeddingProvider create(
         EmbeddingProviderConfigStore.RequestProperties requestProperties,
         String baseUrl,
         String apiKey,
-        String modelName);
+        String modelName,
+        Map<String, Object> vectorizeServiceParameter);
   }
 
   private static final Map<String, ProviderConstructor> providersMap =
@@ -34,14 +42,35 @@ public class EmbeddingProviderFactory {
           Map.entry(ProviderConstants.NVIDIA, NVidiaEmbeddingClient::new));
 
   public EmbeddingProvider getConfiguration(
-      Optional<String> tenant, String serviceName, String modelName) {
-    return addService(tenant, serviceName, modelName);
+      Optional<String> tenant,
+      String serviceName,
+      String modelName,
+      int dimension,
+      Map<String, Object> vectorizeServiceParameter) {
+    return addService(tenant, serviceName, modelName, dimension, vectorizeServiceParameter);
   }
 
   private synchronized EmbeddingProvider addService(
-      Optional<String> tenant, String serviceName, String modelName) {
+      Optional<String> tenant,
+      String serviceName,
+      String modelName,
+      int dimension,
+      Map<String, Object> vectorizeServiceParameter) {
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
         embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
+
+    if (config.enableEmbeddingGateway()) {
+      return new EmbeddingGatewayClient(
+          configuration.requestConfiguration(),
+          configuration.serviceProvider(),
+          dimension,
+          tenant,
+          configuration.baseUrl(),
+          configuration.apiKey(),
+          modelName,
+          embeddingService,
+          vectorizeServiceParameter);
+    }
 
     if (configuration.serviceProvider().equals(ProviderConstants.CUSTOM)) {
       try {
@@ -70,6 +99,7 @@ public class EmbeddingProviderFactory {
             configuration.requestConfiguration(),
             configuration.baseUrl(),
             configuration.apiKey(),
-            modelName);
+            modelName,
+            vectorizeServiceParameter);
   }
 }
