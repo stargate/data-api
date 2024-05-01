@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -153,10 +152,10 @@ public record CreateCollectionOperation(
   /**
    * execute collection creation and indexes creation
    *
-   * @param dataApiRequestInfo
-   * @param queryExecutor
-   * @param collectionExisted
-   * @return
+   * @param dataApiRequestInfo DataApiRequestInfo
+   * @param queryExecutor QueryExecutor instance
+   * @param collectionExisted boolean that says if collection existed before
+   * @return Uni<Supplier<CommandResult>>
    */
   private Uni<Supplier<CommandResult>> executeCollectionCreation(
       DataApiRequestInfo dataApiRequestInfo,
@@ -180,8 +179,9 @@ public record CreateCollectionOperation(
                         .items(indexStatements.stream())
                         .onItem()
                         .transformToUni(
-                            stmt ->
-                                queryExecutor.executeCreateSchemaChange(dataApiRequestInfo, stmt))
+                            indexStatement ->
+                                queryExecutor.executeCreateSchemaChange(
+                                    dataApiRequestInfo, indexStatement))
                         .concatenate()
                         .collect()
                         .asList()
@@ -281,7 +281,7 @@ public record CreateCollectionOperation(
         allKeyspaces.values().stream()
             .map(keyspace -> keyspace.getTables().values())
             .flatMap(Collection::stream)
-            .collect(Collectors.toList());
+            .toList();
     final long collectionCount = allTables.stream().filter(COLLECTION_MATCHER).count();
     final int MAX_COLLECTIONS = dbLimitsConfig.maxCollections();
     if (collectionCount >= MAX_COLLECTIONS) {
@@ -305,7 +305,7 @@ public record CreateCollectionOperation(
     return null;
   }
 
-  protected SimpleStatement getCreateTable(String keyspace, String table) {
+  public SimpleStatement getCreateTable(String keyspace, String table) {
     if (vectorSearch) {
       String createTableWithVector =
           "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
@@ -350,7 +350,7 @@ public record CreateCollectionOperation(
     }
   }
 
-  protected List<SimpleStatement> getIndexStatements(String keyspace, String table) {
+  public List<SimpleStatement> getIndexStatements(String keyspace, String table) {
     List<SimpleStatement> statements = new ArrayList<>(10);
     if (!indexingDenyAll()) {
       String existKeys =

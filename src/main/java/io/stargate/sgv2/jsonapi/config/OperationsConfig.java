@@ -255,7 +255,20 @@ public interface OperationsConfig {
   @WithDefault("false")
   boolean vectorizeEnabled();
 
+
   /** @return Flag to enable vectorization using embedding-gateway. */
   @WithDefault("false")
   boolean enableEmbeddingGateway();
+
+  /** Offline mode configuration. */
+  @NotNull
+  @Valid
+  OfflineModeConfig offlineModeConfig();
+
+  interface OfflineModeConfig {
+
+    /** Database type can be <code>cassandra</code> or <code>astra</code>. */
+    @WithDefault("1000")
+    int maxDocumentInsertCount();
+  }
 }
