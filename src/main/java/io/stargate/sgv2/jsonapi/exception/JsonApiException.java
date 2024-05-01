@@ -21,21 +21,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
  */
 public class JsonApiException extends RuntimeException implements Supplier<CommandResult> {
 
-  private static final SmallRyeConfig config;
-
   private final ErrorCode errorCode;
-
-  static {
-    try {
-      if (ApiConstants.isOffline()) {
-        config = new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
-      } else {
-        config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-      }
-    } catch (Throwable e) {
-      throw new RuntimeException("Failed to initialize JsonApiException", e);
-    }
-  }
 
   public JsonApiException(ErrorCode errorCode) {
     this(errorCode, errorCode.getMessage(), null);
@@ -80,6 +66,12 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     Map<String, Object> fieldsForMetricsTag =
         Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
     // enable debug mode for unit tests, since it can not be injected
+    SmallRyeConfig config;
+    if (ApiConstants.isOffline()) {
+      config = new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
+    } else {
+      config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+    }
     DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
     final boolean debugEnabled = debugModeConfig.enabled();
     final Map<String, Object> fields =
