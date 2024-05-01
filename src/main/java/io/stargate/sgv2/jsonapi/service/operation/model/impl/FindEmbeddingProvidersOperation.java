@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Operation that list all available and vector providers into the {@link
+ * Operation that list all available and enabled vector providers into the {@link
  * CommandStatus#EXISTING_VECTOR_PROVIDERS} command status.
  */
 public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConfig config)
@@ -65,7 +65,6 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
           supportedAuthentication,
       List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
       List<ModelConfigResponse> models) {
-    // TODO: fix code 74, 0 supposed to be model.vectorDimension()
     private static EmbeddingProviderResponse provider(
         PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig embeddingProviderConfig) {
       ArrayList<ModelConfigResponse> modelsRemoveProperties = new ArrayList<>();
