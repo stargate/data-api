@@ -974,7 +974,8 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors[0].errorCode", is("INVALID_QUERY"))
           .body(
               "errors[0].message",
-              endsWith("Zero and near-zero vectors cannot be indexed or queried with cosine similarity"));
+              endsWith(
+                  "Zero and near-zero vectors cannot be indexed or queried with cosine similarity"));
     }
 
     @Test
