@@ -30,19 +30,19 @@ public class OpenAiEmbeddingClient implements EmbeddingProvider {
   private String modelName;
   private String baseUrl;
   private final OpenAiEmbeddingProvider embeddingProvider;
-  private Map<String, Object> vectorizeServiceParameter;
+  private Map<String, Object> vectorizeServiceParameters;
 
   public OpenAiEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String apiKey,
       String modelName,
-      Map<String, Object> vectorizeServiceParameter) {
+      Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
     this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
-    this.vectorizeServiceParameter = vectorizeServiceParameter;
+    this.vectorizeServiceParameters = vectorizeServiceParameters;
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))

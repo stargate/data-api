@@ -31,19 +31,19 @@ public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
 
   private String baseUrl;
   private final HuggingFaceEmbeddingProvider embeddingProvider;
-  private Map<String, Object> vectorizeServiceParameter;
+  private Map<String, Object> vectorizeServiceParameters;
 
   public HuggingFaceEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String apiKey,
       String modelName,
-      Map<String, Object> vectorizeServiceParameter) {
+      Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
     this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
-    this.vectorizeServiceParameter = vectorizeServiceParameter;
+    this.vectorizeServiceParameters = vectorizeServiceParameters;
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))

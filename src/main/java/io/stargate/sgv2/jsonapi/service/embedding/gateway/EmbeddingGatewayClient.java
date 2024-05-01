@@ -12,10 +12,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.lang3.ArrayUtils;
 
 /** Grpc client for embedding gateway service */
 public class EmbeddingGatewayClient implements EmbeddingProvider {
+
+  private static final String DEFAULT_TENANT_ID = "default";
+  private static final String API_KEY = "API_KEY";
 
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
 
@@ -123,9 +125,9 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
     final EmbeddingGateway.ProviderEmbedRequest.ProviderContext.Builder builder =
         EmbeddingGateway.ProviderEmbedRequest.ProviderContext.newBuilder()
             .setProviderName(provider)
-            .setTenantId(tenant.orElse("default"));
+            .setTenantId(tenant.orElse(DEFAULT_TENANT_ID));
     if (apiKeyOverride.isPresent()) {
-      builder.putAuthTokens("API_KEY", apiKeyOverride.orElse(apiKey));
+      builder.putAuthTokens(API_KEY, apiKeyOverride.orElse(apiKey));
     }
 
     EmbeddingGateway.ProviderEmbedRequest.ProviderContext providerContext = builder.build();
@@ -152,9 +154,11 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
               return resp.getEmbeddingsList().stream()
                   .map(
                       data -> {
-                        Float[] embedding = new Float[data.getEmbeddingList().size()];
-                        data.getEmbeddingList().toArray(embedding);
-                        return ArrayUtils.toPrimitive(embedding);
+                        float[] embedding = new float[data.getEmbeddingCount()];
+                        for (int i = 0; i < data.getEmbeddingCount(); i++) {
+                          embedding[i] = data.getEmbedding(i);
+                        }
+                        return embedding;
                       })
                   .toList();
             });
