@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.ArrayUtils;
 
+/** Grpc client for embedding gateway service */
 public class EmbeddingGatewayClient implements EmbeddingProvider {
 
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
@@ -31,6 +32,17 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
 
   private Map<String, Object> vectorizeServiceParameter;
 
+  /**
+   * @param requestProperties
+   * @param provider - Embedding provider `openai`, `cohere`, etc
+   * @param dimension - Dimension of the embedding to be returned
+   * @param tenant - Tenant id {aka database id}
+   * @param baseUrl - base url of the embedding client
+   * @param apiKey - Api key for the embedding provider
+   * @param modelName - Model name for the embedding provider
+   * @param embeddingService - Embedding service client
+   * @param vectorizeServiceParameter - Additional parameters for the vectorize service
+   */
   public EmbeddingGatewayClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String provider,
@@ -52,6 +64,14 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
     this.vectorizeServiceParameter = vectorizeServiceParameter;
   }
 
+  /**
+   * Vectorize the given list of texts
+   *
+   * @param texts List of texts to be vectorized
+   * @param apiKeyOverride API key sent as header
+   * @param embeddingRequestType Type of request (INDEX or SEARCH)
+   * @return
+   */
   @Override
   public Uni<List<float[]>> vectorize(
       List<String> texts,

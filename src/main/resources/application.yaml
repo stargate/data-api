@@ -86,7 +86,7 @@ quarkus:
 
   # properties for the gRPC clients
   grpc:
-    # all the clients' setup, only bridge
+    # all the clients' setup, only embedding gateway
     clients:
       embeddingService:
         host: 0.0.0.0
