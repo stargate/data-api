@@ -10,11 +10,12 @@ import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Operation that list all available vector providers into the {@link
+ * Operation that list all available and vector providers into the {@link
  * CommandStatus#EXISTING_VECTOR_PROVIDERS} command status.
  */
 public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConfig config)
@@ -71,7 +72,7 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
       for (PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ModelConfig model :
           embeddingProviderConfig.models()) {
         ModelConfigResponse returnModel =
-            new ModelConfigResponse(model.name(), 0, model.parameters());
+            new ModelConfigResponse(model.name(), model.vectorDimension(), model.parameters());
         modelsRemoveProperties.add(returnModel);
       }
       return new EmbeddingProviderResponse(
@@ -93,7 +94,7 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
    */
   private record ModelConfigResponse(
       String name,
-      Integer vectorDimension,
+      Optional<Integer> vectorDimension,
       List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig>
           parameters) {}
 }
