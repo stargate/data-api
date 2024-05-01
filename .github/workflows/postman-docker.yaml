@@ -20,12 +20,12 @@ jobs:
       ENVIRONMENT_ID: 12949543-2e78cf27-bd8c-43f2-909f-70a2b87d65fe
     steps:
       # force checkout of main branch so we get a SHA that will have a corresponding docker image tag in ECR
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: main
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -41,7 +41,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
         with:
           mask-password: 'true'
 
