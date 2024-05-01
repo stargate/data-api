@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
-
 import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.FileWriterSession;
 import java.util.List;
 
