@@ -50,8 +50,7 @@ public class CqlSessionCacheTimingTests {
   }
 
   @Test
-  public void testOSSCxCQLSessionCacheTimedEviction()
-      throws NoSuchFieldException, IllegalAccessException, InterruptedException {
+  public void testOSSCxCQLSessionCacheTimedEviction() throws InterruptedException {
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
     int sessionsToCreate = operationsConfig.databaseConfig().sessionCacheMaxSize();
     for (int i = 0; i < sessionsToCreate; i++) {

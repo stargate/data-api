@@ -254,4 +254,16 @@ public interface OperationsConfig {
   /** @return Flag to enable server side vectorization. */
   @WithDefault("false")
   boolean vectorizeEnabled();
+
+  /** Offline mode configuration. */
+  @NotNull
+  @Valid
+  OfflineModeConfig offlineModeConfig();
+
+  interface OfflineModeConfig {
+
+    /** Database type can be <code>cassandra</code> or <code>astra</code>. */
+    @WithDefault("1000")
+    int maxDocumentInsertCount();
+  }
 }
