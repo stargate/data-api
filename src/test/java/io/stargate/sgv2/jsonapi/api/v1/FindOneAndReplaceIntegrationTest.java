@@ -676,6 +676,68 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .statusCode(200)
           .body("data.documents[0]", jsonEquals(expectedAfterReplace));
     }
+
+    // Reproduction to verify https://github.com/stargate/data-api/issues/1000
+    // is fixed in v1.0.6
+    @Test
+    public void projectionBeforeWithoutId() {
+      insertDoc(
+          """
+              {
+                "_id": "docProjBeforeNoId",
+                "username": "aaron"
+              }
+              """);
+
+      String upsertedId =
+          given()
+              .headers(getHeaders())
+              .contentType(ContentType.JSON)
+              .body(
+                  """
+                        {
+                          "findOneAndReplace": {
+                            "filter": { "no.such.field": "or.value" },
+                            "replacement": { },
+                            "options": { "returnDocument": "before", "upsert": true },
+                            "projection": { "*": 0 }
+                          }
+                        }
+                        """)
+              .when()
+              .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+              .then()
+              .statusCode(200)
+              .body("errors", is(nullValue()))
+              .body("status.matchedCount", is(0))
+              .body("status.modifiedCount", is(0))
+              // Does upsert
+              .body("status.upsertedId", is(notNullValue()))
+              // No match so no before-document:
+              .body("data.document", is(nullValue()))
+              .extract()
+              .path("status.upsertedId");
+
+      // assert state after update
+      String expectedAfterReplace = "{\"_id\":\"%s\"}".formatted(upsertedId);
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                        {
+                          "find": {
+                            "filter" : {"_id" : "%s"}
+                          }
+                        }
+                        """
+                  .formatted(upsertedId))
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]", jsonEquals(expectedAfterReplace));
+    }
   }
 
   @AfterEach
