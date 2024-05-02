@@ -182,9 +182,20 @@ public interface PropertyBasedEmbeddingProviderConfig {
     }
 
     enum ParameterType {
-      STRING,
-      NUMBER,
-      BOOLEAN
+      STRING("string"),
+      NUMBER("number"),
+      BOOLEAN("boolean");
+
+      private final String type;
+
+      ParameterType(final String type) {
+        this.type = type;
+      }
+
+      @Override
+      public String toString() {
+        return type;
+      }
     }
   }
 

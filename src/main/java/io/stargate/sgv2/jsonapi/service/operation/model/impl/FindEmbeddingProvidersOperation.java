@@ -71,7 +71,8 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
       for (PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ModelConfig model :
           embeddingProviderConfig.models()) {
         ModelConfigResponse returnModel =
-            new ModelConfigResponse(model.name(), model.vectorDimension(), model.parameters());
+            ModelConfigResponse.returnModelConfigResponse(
+                model.name(), model.vectorDimension(), model.parameters());
         modelsRemoveProperties.add(returnModel);
       }
       return new EmbeddingProviderResponse(
@@ -92,8 +93,49 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
    * @param parameters Parameters for customizing the model.
    */
   private record ModelConfigResponse(
+      String name, Optional<Integer> vectorDimension, List<ParameterConfigResponse> parameters) {
+    private static ModelConfigResponse returnModelConfigResponse(
+        String name,
+        Optional<Integer> vectorDimension,
+        List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig>
+            parameters) {
+      // reconstruct each parameter for lowercase parameter type
+      ArrayList<ParameterConfigResponse> parametersResponse = new ArrayList<>();
+      for (PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig parameter :
+          parameters) {
+        ParameterConfigResponse returnParameter =
+            new ParameterConfigResponse(
+                parameter.name(),
+                parameter.type().toString(),
+                parameter.required(),
+                parameter.defaultValue(),
+                parameter.validation(),
+                parameter.help());
+        parametersResponse.add(returnParameter);
+      }
+
+      return new ModelConfigResponse(name, vectorDimension, parametersResponse);
+    }
+  }
+
+  /**
+   * This is used to reconstruct the {@code
+   * PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig} body for
+   * parameter type by not directly using the enum class (uppercase) but instead using the value
+   * (lowercase) in the enum class.
+   *
+   * @param name
+   * @param type
+   * @param required
+   * @param defaultValue
+   * @param validation
+   * @param help
+   */
+  private record ParameterConfigResponse(
       String name,
-      Optional<Integer> vectorDimension,
-      List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig>
-          parameters) {}
+      String type,
+      boolean required,
+      Optional<String> defaultValue,
+      Map<String, List<Integer>> validation,
+      Optional<String> help) {}
 }
