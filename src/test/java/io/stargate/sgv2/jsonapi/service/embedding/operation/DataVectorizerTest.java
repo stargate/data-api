@@ -316,7 +316,7 @@ public class DataVectorizerTest {
       UpdateClause updateClause = command.updateClause();
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+              testService, objectMapper.getNodeFactory(), Optional.of("test"), collectionSettings);
       try {
         dataVectorizer.vectorizeUpdateClause(updateClause).subscribe().asCompletionStage().get();
       } catch (Exception e) {
