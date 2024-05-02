@@ -59,7 +59,7 @@ public class CommandProcessor {
       DataApiRequestInfo dataApiRequestInfo, CommandContext commandContext, T command) {
     // vectorize the data
     return dataVectorizerService
-        .vectorize(commandContext, command)
+        .vectorize(dataApiRequestInfo, commandContext, command)
         .onItem()
         .transformToUni(
             vectorizedCommand -> {

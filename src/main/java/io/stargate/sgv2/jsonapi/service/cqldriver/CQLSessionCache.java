@@ -51,14 +51,17 @@ public class CQLSessionCache {
   public static final String ASTRA = "astra";
   /** Database type OSS cassandra */
   public static final String CASSANDRA = "cassandra";
+  /** Persistence type SSTable Writer */
+  public static final String OFFLINE_WRITER = "offline_writer";
 
   @ConfigProperty(name = "quarkus.application.name")
-  private String APPLICATION_NAME;
+  String APPLICATION_NAME;
 
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
+    LOGGER.info("Initializing CQLSessionCache");
     this.operationsConfig = operationsConfig;
-    LoadingCache<SessionCacheKey, CqlSession> sessionCache =
+    LoadingCache<SessionCacheKey, CqlSession> loadingCache =
         Caffeine.newBuilder()
             .expireAfterAccess(
                 Duration.ofSeconds(operationsConfig.databaseConfig().sessionCacheTtlSeconds()))
@@ -74,7 +77,7 @@ public class CQLSessionCache {
                       if (sessionCacheKey != null) {
                         if (LOGGER.isTraceEnabled()) {
                           LOGGER.trace(
-                              "Removing session for tenant : {}", sessionCacheKey.tenantId);
+                              "Removing session for tenant : {}", sessionCacheKey.tenantId());
                         }
                       }
                       if (session != null) {
@@ -84,7 +87,7 @@ public class CQLSessionCache {
             .recordStats()
             .build(this::getNewSession);
     this.sessionCache =
-        CaffeineCacheMetrics.monitor(meterRegistry, sessionCache, "cql_sessions_cache");
+        CaffeineCacheMetrics.monitor(meterRegistry, loadingCache, "cql_sessions_cache");
     LOGGER.info(
         "CQLSessionCache initialized with ttl of {} seconds and max size of {}",
         operationsConfig.databaseConfig().sessionCacheTtlSeconds(),
@@ -103,7 +106,7 @@ public class CQLSessionCache {
             .withString(DefaultDriverOption.SESSION_NAME, cacheKey.tenantId)
             .build();
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId);
+      LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId());
     }
     OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
     if (LOGGER.isTraceEnabled()) {
@@ -166,7 +169,11 @@ public class CQLSessionCache {
         && !dataApiRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
       throw new UnauthorizedException(ErrorCode.UNAUTHENTICATED_REQUEST.getMessage());
     }
-    return sessionCache.get(getSessionCacheKey(dataApiRequestInfo));
+    if (!OFFLINE_WRITER.equals(operationsConfig.databaseConfig().type())) {
+      return sessionCache.get(getSessionCacheKey(dataApiRequestInfo));
+    } else {
+      return sessionCache.getIfPresent(getSessionCacheKey(dataApiRequestInfo));
+    }
   }
 
   /**
@@ -202,6 +209,9 @@ public class CQLSessionCache {
             dataApiRequestInfo.getTenantId().orElseThrow(),
             new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
       }
+      case OFFLINE_WRITER -> {
+        return new SessionCacheKey(dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT), null);
+      }
     }
     throw new RuntimeException(
         "Unsupported database type: " + operationsConfig.databaseConfig().type());
@@ -218,12 +228,28 @@ public class CQLSessionCache {
   }
 
   /**
-   * Key for CQLSession cache.
+   * Remove CQLSession from cache.
    *
-   * @param tenantId tenant id
-   * @param credentials credentials (username/password or token)
+   * @param cacheKey key for CQLSession cache
    */
-  private record SessionCacheKey(String tenantId, Credentials credentials) {}
+  public void removeSession(SessionCacheKey cacheKey) {
+    sessionCache.invalidate(cacheKey);
+    sessionCache.cleanUp();
+    LOGGER.trace("Session removed for tenant : {}", cacheKey.tenantId());
+  }
+
+  /**
+   * Put CQLSession in cache.
+   *
+   * @param sessionCacheKey key for CQLSession cache
+   * @param cqlSession CQLSession instance
+   */
+  public void putSession(SessionCacheKey sessionCacheKey, CqlSession cqlSession) {
+    sessionCache.put(sessionCacheKey, cqlSession);
+  }
+
+  /** Key for CQLSession cache. */
+  public record SessionCacheKey(String tenantId, Credentials credentials) {}
 
   /**
    * Credentials for CQLSession cache when username and password is provided.

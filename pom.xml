@@ -21,11 +21,12 @@
     <quarkus.container-image.tag>v${project.version}</quarkus.container-image.tag>
     <quarkus.container-image.additional-tags>v1</quarkus.container-image.additional-tags>
     <skipITs>false</skipITs>
+    <cassandra.version>4.0.11-591d171ac9c9</cassandra.version>
     <!-- Integration test props -->
     <!-- When updating please change defaults in the DseTestResource class -->
     <stargate.int-test.cassandra.image>stargateio/dse-next</stargate.int-test.cassandra.image>
     <!-- from Stargate persistence, latest as of 2024-01-24: -->
-    <stargate.int-test.cassandra.image-tag>4.0.11-0248d170a615</stargate.int-test.cassandra.image-tag>
+    <stargate.int-test.cassandra.image-tag>${cassandra.version}</stargate.int-test.cassandra.image-tag>
     <stargate.int-test.coordinator.image>stargateio/coordinator-dse-next</stargate.int-test.coordinator.image>
     <stargate.int-test.coordinator.image-tag>v${stargate.version}</stargate.int-test.coordinator.image-tag>
     <stargate.int-test.cluster.name>dse-next-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
@@ -187,6 +188,19 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>io.smallrye</groupId>
+        <artifactId>jandex-maven-plugin</artifactId>
+        <version>3.1.6</version>
+        <executions>
+          <execution>
+            <id>make-index</id>
+            <goals>
+              <goal>jandex</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
         <version>${quarkus.platform.version}</version>
@@ -248,6 +262,7 @@
       </properties>
     </profile>
     <profile>
+      <!-- This profile needs to be activated while working with offline mode related files such as FileWriterSession.java -->
       <id>offline</id>
       <repositories>
         <repository>
@@ -265,9 +280,67 @@
         <dependency>
           <groupId>com.datastax.dse</groupId>
           <artifactId>dse-db-all</artifactId>
-          <version>4.0.11-591d171ac9c9</version>
+          <version>${cassandra.version}</version>
         </dependency>
       </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.coveo</groupId>
+            <artifactId>fmt-maven-plugin</artifactId>
+            <version>2.13</version>
+            <executions>
+              <execution>
+                <phase>process-sources</phase>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <sourceDirectory>src/main/java</sourceDirectory>
+              <testSourceDirectory>src/test/java</testSourceDirectory>
+              <additionalSourceDirectories>
+                <param>src/main/offline</param>
+                <param>src/test/offline</param>
+              </additionalSourceDirectories>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <version>3.2.0</version>
+            <executions>
+              <execution>
+                <id>add-source</id>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>add-source</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/main/java/</source>
+                    <source>src/main/offline/</source>
+                  </sources>
+                </configuration>
+              </execution>
+              <execution>
+                <id>add-test-source</id>
+                <phase>generate-test-sources</phase>
+                <goals>
+                  <goal>add-test-source</goal>
+                </goals>
+                <configuration>
+                  <sources>
+                    <source>src/test/java/</source>
+                    <source>src/test/offline/</source>
+                  </sources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
       <distributionManagement>
         <repository>
           <uniqueVersion>false</uniqueVersion>

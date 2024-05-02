@@ -18,6 +18,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -31,14 +32,21 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
   private String modelName;
   private final VertexAIEmbeddingProvider embeddingProvider;
 
+  private static final String PROJECT_ID = "PROJECT_ID";
+
+  private Map<String, Object> vectorizeServiceParameters;
+
   public VertexAIEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String apiKey,
-      String modelName) {
+      String modelName,
+      Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
     this.apiKey = apiKey;
     this.modelName = modelName;
+    this.vectorizeServiceParameters = vectorizeServiceParameters;
+    baseUrl = baseUrl.replace(PROJECT_ID, vectorizeServiceParameters.get(PROJECT_ID).toString());
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
