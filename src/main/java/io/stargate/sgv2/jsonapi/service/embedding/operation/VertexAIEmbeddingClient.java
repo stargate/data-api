@@ -28,7 +28,6 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class VertexAIEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String apiKey;
   private String modelName;
   private final VertexAIEmbeddingProvider embeddingProvider;
 
@@ -39,11 +38,9 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
   public VertexAIEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String apiKey,
       String modelName,
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
-    this.apiKey = apiKey;
     this.modelName = modelName;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
     baseUrl = baseUrl.replace(PROJECT_ID, vectorizeServiceParameters.get(PROJECT_ID).toString());
@@ -146,10 +143,7 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
         new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
     Uni<EmbeddingResponse> serviceResponse =
         embeddingProvider
-            .embed(
-                "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey),
-                modelName,
-                request)
+            .embed("Bearer " + apiKeyOverride.get(), modelName, request)
             .onFailure(
                 throwable -> {
                   return (throwable.getCause() != null

@@ -14,10 +14,8 @@ public class PropertyBasedOverrideProfile implements QuarkusTestProfile {
   public Map<String, String> getConfigOverrides() {
     return ImmutableMap.<String, String>builder()
         .put("stargate.jsonapi.embedding.providers.openai.enabled", "true")
-        .put("stargate.jsonapi.embedding.providers.openai.api-key", "openai-api-key")
         .put("stargate.jsonapi.embedding.providers.openai.url", "https://api.openai.com/v1/")
         .put("stargate.jsonapi.embedding.providers.huggingface.enabled", "true")
-        .put("stargate.jsonapi.embedding.providers.huggingface.api-key", "hf-api-key")
         .put(
             "stargate.jsonapi.embedding.providers.huggingface.url",
             "https://api-inference.huggingface.co")
