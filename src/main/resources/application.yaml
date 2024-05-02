@@ -88,7 +88,7 @@ quarkus:
   grpc:
     # all the clients' setup, only embedding gateway
     clients:
-      embeddingService:
+      embedding:
         host: 0.0.0.0
         port: 9000
 
