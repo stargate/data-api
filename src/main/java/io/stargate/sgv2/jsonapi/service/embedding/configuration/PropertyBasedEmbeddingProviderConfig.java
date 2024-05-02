@@ -33,7 +33,13 @@ public interface PropertyBasedEmbeddingProviderConfig {
      * @return
      */
     @JsonProperty
-    Map<String, AuthenticationConfig> supportedAuthentication();
+    Map<AuthenticationType, AuthenticationConfig> supportedAuthentications();
+
+    enum AuthenticationType {
+      NONE,
+      HEADER,
+      SHARED_SECRET
+    }
 
     /**
      * enabled() is a JSON boolean to flag if this technique is supported. If false the rest of the
@@ -143,11 +149,27 @@ public interface PropertyBasedEmbeddingProviderConfig {
        */
       @Nullable
       @JsonProperty
-      Map<String, List<Integer>> validation();
+      Map<ValidationType, List<Integer>> validation();
 
       @Nullable
       @JsonProperty
       Optional<String> help();
+    }
+
+    enum ValidationType {
+      NUMERIC_RANGE("numericRange"),
+      OPTIONS("options");
+
+      private final String type;
+
+      ValidationType(final String type) {
+        this.type = type;
+      }
+
+      @Override
+      public String toString() {
+        return type;
+      }
     }
 
     /** A set of http properties used for request to the embedding providers. */

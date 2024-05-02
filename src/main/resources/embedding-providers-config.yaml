@@ -7,7 +7,7 @@ stargate:
           #see https://platform.openai.com/docs/api-reference/embeddings/create
           enabled: true
           url: https://api.openai.com/v1/
-          supported-authentication:
+          supported-authentications:
             NONE:
               enabled: false
             HEADER:
@@ -45,7 +45,7 @@ stargate:
           # see https://learn.microsoft.com/en-us/azure/ai-services/openai/reference
           enabled: true
           url: https://{resourceName}.openai.azure.com/openai/deployments/{deploymentId}/embeddings?api-version={apiVersion}
-          supported-authentication:
+          supported-authentications:
             NONE:
               enabled: false
             HEADER:
@@ -78,7 +78,7 @@ stargate:
           # see https://huggingface.co/blog/getting-started-with-embeddings
           enabled: true
           url: https://api-inference.huggingface.co/pipeline/feature-extraction/
-          supported-authentication:
+          supported-authentications:
             NONE:
               enabled: false
             HEADER:
@@ -99,7 +99,7 @@ stargate:
           # see https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#get_text_embeddings_for_a_snippet_of_text
           enabled: true
           url: "https://us-central1-aiplatform.googleapis.com/v1/projects/{projectId}/locations/us-central1/publishers/google/models"
-          supported-authentication:
+          supported-authentications:
             NONE:
               enabled: false
             HEADER:
@@ -137,7 +137,7 @@ stargate:
         cohere:
           enabled: true
           url: https://api.cohere.ai/v1/
-          supported-authentication:
+          supported-authentications:
             NONE:
               enabled: false
             HEADER:
@@ -158,7 +158,7 @@ stargate:
         nvidia:
           enabled: true
           url: https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/091a03bb-7364-4087-8090-bd71e9277520
-          supported-authentication:
+          supported-authentications:
             NONE:
               enabled: true
             HEADER:
@@ -180,7 +180,7 @@ stargate:
           #see https://api.jina.ai/redoc#tag/embeddings
           enabled: true
           url: https://api.jina.ai/v1/embeddings
-          supported-authentication:
+          supported-authentications:
             NONE:
               enabled: false
             HEADER:
@@ -207,7 +207,7 @@ stargate:
           # see https://docs.voyageai.com/docs/embeddings
           enabled: true
           url: https://api.voyageai.com/v1/embeddings
-          supported-authentication:
+          supported-authentications:
             NONE:
               enabled: false
             HEADER:
@@ -245,7 +245,7 @@ stargate:
           # see https://docs.mistral.ai/api/#operation/createEmbedding
           enabled: true
           url: https://api.mistral.ai/v1/embeddings
-          supported-authentication:
+          supported-authentications:
             NONE:
               enabled: false
             HEADER:

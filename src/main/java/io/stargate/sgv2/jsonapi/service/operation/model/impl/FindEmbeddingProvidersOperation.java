@@ -61,7 +61,9 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
    */
   private record EmbeddingProviderResponse(
       String url,
-      Map<String, PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.AuthenticationConfig>
+      Map<
+              PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.AuthenticationType,
+              PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.AuthenticationConfig>
           supportedAuthentication,
       List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
       List<ModelConfigResponse> models) {
@@ -77,7 +79,7 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
       }
       return new EmbeddingProviderResponse(
           embeddingProviderConfig.url(),
-          embeddingProviderConfig.supportedAuthentication(),
+          embeddingProviderConfig.supportedAuthentications(),
           embeddingProviderConfig.parameters(),
           modelsRemoveProperties);
     }
@@ -136,6 +138,9 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
       String type,
       boolean required,
       Optional<String> defaultValue,
-      Map<String, List<Integer>> validation,
+      Map<
+              PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ValidationType,
+              List<Integer>>
+          validation,
       Optional<String> help) {}
 }
