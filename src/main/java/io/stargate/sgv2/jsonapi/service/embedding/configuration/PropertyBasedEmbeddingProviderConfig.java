@@ -26,9 +26,6 @@ public interface PropertyBasedEmbeddingProviderConfig {
     @JsonProperty
     String url();
 
-    @JsonProperty
-    String apiKey();
-
     /**
      * A map of supported authentications. HEADER, SHARED_SECRET and NONE are the only techniques
      * the DataAPI supports (i.e. the key of map can only be HEADER, SHARED_SECRET or NONE).
@@ -179,6 +176,15 @@ public interface PropertyBasedEmbeddingProviderConfig {
        */
       @WithDefault("10000")
       int requestTimeoutMillis();
+
+      @Nullable
+      Optional<String> maxInputLength();
+
+      @Nullable
+      Optional<String> taskTypeStore();
+
+      @Nullable
+      Optional<String> taskTypeRead();
     }
 
     enum ParameterType {

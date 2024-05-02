@@ -30,7 +30,6 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
-                  "test",
                   null)
               .vectorize(
                   List.of("429"), Optional.empty(), EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -52,7 +51,6 @@ public class EmbeddingProviderErrorMessageTest {
           new NVidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
-                  "test",
                   "test",
                   null)
               .vectorize(
@@ -76,7 +74,6 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
-                  "test",
                   null)
               .vectorize(
                   List.of("503"), Optional.empty(), EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -99,7 +96,6 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
-                  "test",
                   null)
               .vectorize(
                   List.of("408"), Optional.empty(), EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -120,7 +116,6 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
-                  "test",
                   null)
               .vectorize(
                   List.of("application/json"),
@@ -139,7 +134,6 @@ public class EmbeddingProviderErrorMessageTest {
           new NVidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
-                  "test",
                   "test",
                   null)
               .vectorize(
@@ -165,7 +159,6 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
-                  "test",
                   null)
               .vectorize(
                   List.of("no json body"),
@@ -189,7 +182,6 @@ public class EmbeddingProviderErrorMessageTest {
           new NVidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
-                  "test",
                   "test",
                   null)
               .vectorize(

@@ -40,7 +40,6 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
    * @param dimension - Dimension of the embedding to be returned
    * @param tenant - Tenant id {aka database id}
    * @param baseUrl - base url of the embedding client
-   * @param apiKey - Api key for the embedding provider
    * @param modelName - Model name for the embedding provider
    * @param embeddingService - Embedding service client
    * @param vectorizeServiceParameter - Additional parameters for the vectorize service
@@ -51,7 +50,6 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
       int dimension,
       Optional<String> tenant,
       String baseUrl,
-      String apiKey,
       String modelName,
       EmbeddingService embeddingService,
       Map<String, Object> vectorizeServiceParameter) {
@@ -59,7 +57,6 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
     this.provider = provider;
     this.dimension = dimension;
     this.tenant = tenant;
-    this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
     this.embeddingService = embeddingService;
