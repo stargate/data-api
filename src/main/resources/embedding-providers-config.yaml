@@ -3,86 +3,268 @@ stargate:
   jsonapi:
     embedding:
       providers:
-        # Open AI embedding service configuration
         openai:
+          #see https://platform.openai.com/docs/api-reference/embeddings/create
           enabled: true
           url: https://api.openai.com/v1/
-          api-key: YOUR_API_KEY
-          supported-authentication:
-            - "HEADER"
+          supported-authentications:
+            NONE:
+              enabled: false
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-provider-key
+                  forwarded: Authorization
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: Authorization
           models:
             - name: text-embedding-3-small
-              vector-dimension: 1536
+              parameters:
+                - name: vectorDimension
+                  type: number
+                  required: true
+                  default-value: 512
+                  validation:
+                    numeric-range: [2, 1536]
+                  help: "Vector dimension to use in the database and when calling Open AI."
             - name: text-embedding-3-large
-              vector-dimension: 3072
+              parameters:
+                - name: vectorDimension
+                  type: number
+                  required: true
+                  default-value: 1024
+                  validation:
+                    numeric-range: [256, 3072]
+                  help: "Vector dimension to use in the database and when calling Open AI."
             - name: text-embedding-ada-002
               vector-dimension: 1536
-
-        # Hugging face embedding service configuration
+        azureOpenAI:
+          # see https://learn.microsoft.com/en-us/azure/ai-services/openai/reference
+          enabled: true
+          url: https://{resourceName}.openai.azure.com/openai/deployments/{deploymentId}/embeddings?api-version={apiVersion}
+          supported-authentications:
+            NONE:
+              enabled: false
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-provider-key
+                  forwarded: api-key
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: api-key
+          parameters:
+            - name: "resourceName"
+              type: string
+              required: true
+              help: "The name of your Azure OpenAI Resource."
+            - name: "deploymentId"
+              type: string
+              required: true
+              help: "The name of your model deployment. You're required to first deploy a model before you can make calls."
+            - name: "apiVersion"
+              type: string
+              required: true
+              default-value: 2024-02-01
+              help: "The API version to use for this operation. This follows the YYYY-MM-DD format."
+          properties:
+            max-input-length: 16
         huggingface:
+          # see https://huggingface.co/blog/getting-started-with-embeddings
           enabled: true
           url: https://api-inference.huggingface.co/pipeline/feature-extraction/
-          api-key: YOUR_API_KEY
-          supported-authentication:
-            - "HEADER"
+          supported-authentications:
+            NONE:
+              enabled: false
+            HEADER:
+                enabled: true
+                tokens:
+                  - accepted: x-embedding-provider-key
+                    forwarded: Authorization
+            SHARED_SECRET:
+                enabled: false
+                tokens:
+                  - accepted: providerKey
+                    forwarded: Authorization
           models:
             - name: sentence-transformers/all-MiniLM-L6-v2
               vector-dimension: 384
-
-        # Vertex AI embedding service configuration
+        # OUT OF SCOPE FOR INITIAL PREVIEW
         vertexai:
+          # see https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#get_text_embeddings_for_a_snippet_of_text
           enabled: true
-          url: "https://us-central1-aiplatform.googleapis.com/v1/projects/PROJECT_ID/locations/us-central1/publishers/google/models"
-          api-key: YOUR_API_KEY
-          supported-authentication:
-            - "HEADER"
+          url: "https://us-central1-aiplatform.googleapis.com/v1/projects/{projectId}/locations/us-central1/publishers/google/models"
+          supported-authentications:
+            NONE:
+              enabled: false
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-provider-key
+                  forwarded: Authorization
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: Authorization
           parameters:
-            - name: PROJECT_ID
-              type: STRING
+            - name: projectId
+              type: string
               required: true
+              help: "The Google Cloud Project ID to use when calling"
           properties:
             max-retries: 3
             request-timeout-millis: 1000
             retry-delay-millis: 100
+            task-type-store: RETRIEVAL_DOCUMENT # see https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#api_changes_to_models_released_on_or_after_august_2023
+            task-type-read: QUESTION_ANSWERING
+            max-input-length: 5
           models:
             - name: textembedding-gecko@003
               vector-dimension: 768
               parameters:
                 - name: "autoTruncate"
-                  type: BOOLEAN
+                  type: boolean
                   required: false
                   default-value: true
-              properties:
-                max-tokens: 3072
-
-
-
-        # Cohere embedding service configuration
+                  help: "If set to false, text that exceeds the token limit causes the request to fail. The default value is true."
+        # OUT OF SCOPE FOR INITIAL PREVIEW
         cohere:
           enabled: true
           url: https://api.cohere.ai/v1/
-          api-key: YOUR_API_KEY
-          supported-authentication:
-            - "HEADER"
+          supported-authentications:
+            NONE:
+              enabled: false
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-provider-key
+                  forwarded: Authorization
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: Authorization
           models:
             - name: embed-english-v3.0
               vector-dimension: 1024
             - name: embed-english-v2.0
               vector-dimension: 4096
-
-        # NVidia embedding service configuration
         nvidia:
           enabled: true
           url: https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/091a03bb-7364-4087-8090-bd71e9277520
-          api-key: YOUR_API_KEY
-          supported-authentication:
-            - "HEADER"
+          supported-authentications:
+            NONE:
+              enabled: true
+            HEADER:
+              enabled: false
+              tokens:
+                - accepted: x-embedding-provider-key
+                  forwarded: Authorization
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: Authorization
           models:
-            - name: NVIDIA Retrieval QA Embedding Model-1.0
-              vector-dimension: 1024
-              properties:
-                max-tokens: 512
             - name: NV-Embed-QA
               vector-dimension: 1024
               properties:
                 max-tokens: 512
+        jinaAI:
+          #see https://api.jina.ai/redoc#tag/embeddings
+          enabled: true
+          url: https://api.jina.ai/v1/embeddings
+          supported-authentications:
+            NONE:
+              enabled: false
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-provider-key
+                  forwarded: Authorization
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: Authorization
+          models:
+            - name: jina-embedding-t-en-v1
+              vector-dimension: 312
+            - name: jina-embedding-s-en-v1
+              vector-dimension: 512
+            - name: jina-embedding-b-en-v1
+              vector-dimension: 768
+            - name: jina-embedding-l-en-v1
+              vector-dimension: 1024
+        voyageAI:
+          # see https://docs.voyageai.com/reference/embeddings-api
+          # see https://docs.voyageai.com/docs/embeddings
+          enabled: true
+          url: https://api.voyageai.com/v1/embeddings
+          supported-authentications:
+            NONE:
+              enabled: false
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-provider-key
+                  forwarded: Authorization
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: Authorization
+          parameters:
+            - name: "autoTruncate"
+              type: BOOLEAN
+              required: false
+              default-value: true
+              help: "Whether to truncate the input texts to fit within the context length. Defaults to true."
+          properties:
+            max-input-length: 128
+            task-type-store: document
+            task-type-read: query
+          models:
+            - name: voyage-large-2-instruct
+              vector-dimension: 1024
+            - name: voyage-law-2
+              vector-dimension: 1024
+            - name: voyage-code-2
+              vector-dimension: 1536
+            - name: voyage-large-2
+              vector-dimension: 1536
+            - name: voyage-2
+              vector-dimension: 1024
+        mistral:
+          # see https://docs.mistral.ai/api/#operation/createEmbedding
+          enabled: true
+          url: https://api.mistral.ai/v1/embeddings
+          supported-authentications:
+            NONE:
+              enabled: false
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-provider-key
+                  forwarded: Authorization
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: Authorization
+          parameters:
+          properties:
+          models:
+            - name: mistral-embed
+              vector-dimension: 1024
+        # upstage:
+        # see https://developers.upstage.ai/docs/apis/embeddings
+        # NOTE: they have a model for storing and a diff one for reading, this is different to everyone else
+        # holding on the config / implementation until we confirm if this can change
+

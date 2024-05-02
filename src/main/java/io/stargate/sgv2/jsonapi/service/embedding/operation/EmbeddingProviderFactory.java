@@ -28,7 +28,6 @@ public class EmbeddingProviderFactory {
     EmbeddingProvider create(
         EmbeddingProviderConfigStore.RequestProperties requestProperties,
         String baseUrl,
-        String apiKey,
         String modelName,
         Map<String, Object> vectorizeServiceParameter);
   }
@@ -66,7 +65,6 @@ public class EmbeddingProviderFactory {
           dimension,
           tenant,
           configuration.baseUrl(),
-          configuration.apiKey(),
           modelName,
           embeddingService,
           vectorizeServiceParameter);
@@ -98,7 +96,6 @@ public class EmbeddingProviderFactory {
         .create(
             configuration.requestConfiguration(),
             configuration.baseUrl(),
-            configuration.apiKey(),
             modelName,
             vectorizeServiceParameter);
   }
