@@ -17,20 +17,20 @@ import java.io.File;
 import java.util.Optional;
 import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BeginOfflineSessionOperationTest {
   private static final Logger logger =
       LoggerFactory.getLogger(BeginOfflineSessionOperationTest.class);
-  private static final String SSTAbleOutputDirectory =
-      System.getProperty("java.io.tmpdir") + File.separator + "sstables_test";
+  private static String SSTAbleOutputDirectory;
 
   @BeforeAll
-  public static void setup() {
+  public static void setup(@TempDir File tempDir) {
+    BeginOfflineSessionOperationTest.SSTAbleOutputDirectory = tempDir.getAbsolutePath();
     OfflineFileWriterInitializer.initialize();
     File sstablesDirectory = new File(SSTAbleOutputDirectory);
     logger.info("Trying to create sstables directory if not exists: {}", SSTAbleOutputDirectory);
@@ -38,16 +38,6 @@ public class BeginOfflineSessionOperationTest {
       logger.info("Directory {} doesn't exist, creating", SSTAbleOutputDirectory);
       if (!sstablesDirectory.mkdirs()) {
         throw new RuntimeException("Failed to create sstables directory");
-      }
-    }
-  }
-
-  @AfterAll
-  public static void cleanup() {
-    File sstablesDirectory = new File(SSTAbleOutputDirectory);
-    if (sstablesDirectory.exists()) {
-      if (!sstablesDirectory.delete()) {
-        throw new RuntimeException("Failed to delete sstables directory");
       }
     }
   }
