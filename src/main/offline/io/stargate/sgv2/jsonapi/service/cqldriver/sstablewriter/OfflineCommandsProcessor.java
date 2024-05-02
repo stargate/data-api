@@ -47,7 +47,7 @@ public class OfflineCommandsProcessor {
   private OfflineCommandsProcessor() {
     OfflineFileWriterInitializer.initialize();
     operationsConfig = OfflineFileWriterInitializer.buildOperationsConfig();
-    cqlSessionCache = buildCqlSessionCache(offlineCommandsProcessor.operationsConfig);
+    cqlSessionCache = buildCqlSessionCache(operationsConfig);
     commandResolverService = buildCommandResolverService();
     dataVectorizerService = buildDataVectorizeService();
   }

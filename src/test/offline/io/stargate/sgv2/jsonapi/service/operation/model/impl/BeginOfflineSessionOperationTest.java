@@ -20,17 +20,22 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BeginOfflineSessionOperationTest {
-
+  private static final Logger logger =
+      LoggerFactory.getLogger(BeginOfflineSessionOperationTest.class);
   private static final String SSTAbleOutputDirectory =
-      System.getProperty("java.io.tmpdir") + "sstables_test";
+      System.getProperty("java.io.tmpdir") + File.separator + "sstables_test";
 
   @BeforeAll
   public static void setup() {
     OfflineFileWriterInitializer.initialize();
     File sstablesDirectory = new File(SSTAbleOutputDirectory);
+    logger.info("Trying to create sstables directory if not exists: {}", SSTAbleOutputDirectory);
     if (!sstablesDirectory.exists()) {
+      logger.info("Directory {} doesn't exist, creating", SSTAbleOutputDirectory);
       if (!sstablesDirectory.mkdirs()) {
         throw new RuntimeException("Failed to create sstables directory");
       }
