@@ -256,7 +256,7 @@ public interface OperationsConfig {
   boolean vectorizeEnabled();
 
   /** @return Flag to enable vectorization using embedding-gateway. */
-  @WithDefault("false")
+  @WithDefault("true")
   boolean enableEmbeddingGateway();
 
   /** Offline mode configuration. */

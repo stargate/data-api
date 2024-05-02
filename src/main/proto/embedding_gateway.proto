@@ -81,9 +81,68 @@ message EmbeddingResponse {
   }
 }
 
+// The request message for the get supported providers gRPC API
+message GetSupportedProvidersRequest {}
+
+
+// The response message for the get supported providers gRPC API if successful
+message GetSupportedProvidersResponse {
+  map<string, ProviderConfig>  	supportedProviders = 1;
+  ErrorResponse error = 2;
+
+  // ProviderConfig message represents configuration for an embedding provider.
+  message ProviderConfig {
+    bool enabled = 1;
+    string url = 2;
+    string api_key = 3;
+    repeated string supported_authentication = 4;
+    repeated ParameterConfig parameters = 5;
+    RequestProperties properties = 6;
+    repeated ModelConfig models = 7;
+
+    // ParameterConfig message represents configuration for a parameter.
+    message ParameterConfig {
+      string name = 1;
+      ParameterType type = 2;
+      bool required = 3;
+      string default_value = 4;
+      string help = 5;
+
+      // ParameterType enum represents types of parameters.
+      enum ParameterType {
+        STRING = 0;
+        NUMBER = 1;
+        BOOLEAN = 2;
+      }
+    }
+
+    // RequestProperties message represents http properties for requests to the embedding providers.
+    message RequestProperties {
+      int32 max_retries = 1;
+      int32 retry_delay_millis = 2;
+      int32 request_timeout_millis = 3;
+    }
+
+    // ModelConfig message represents configuration for a specific model.
+    message ModelConfig {
+      string name = 1;
+      int32 vector_dimension = 2;
+      repeated ParameterConfig parameters = 3;
+      map<string, string> properties = 4;
+    }
+  }
+
+  // The error response message for the embedding gateway gRPC API
+  message ErrorResponse {
+    string error_code = 1;
+    string error_message = 2;
+  }
+}
+
 
 
 // The embedding gateway gPRC API to generate embeddings
 service EmbeddingService {
   rpc Embed (ProviderEmbedRequest) returns (EmbeddingResponse) {}
+  rpc GetSupportedProviders (GetSupportedProvidersRequest) returns (GetSupportedProvidersResponse){}
 }

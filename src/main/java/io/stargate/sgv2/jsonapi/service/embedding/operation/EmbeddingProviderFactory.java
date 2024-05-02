@@ -58,7 +58,6 @@ public class EmbeddingProviderFactory {
       Map<String, Object> vectorizeServiceParameter) {
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
         embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
-
     if (config.enableEmbeddingGateway()) {
       return new EmbeddingGatewayClient(
           configuration.requestConfiguration(),

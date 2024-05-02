@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.PropertyBasedEmbeddingProviderConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * Operation that list all available vector providers into the {@link
  * CommandStatus#EXISTING_VECTOR_PROVIDERS} command status.
  */
-public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConfig config)
+public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
     implements Operation {
   @Override
   public Uni<Supplier<CommandResult>> execute(
@@ -61,12 +61,12 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
   private record EmbeddingProviderResponse(
       String url,
       List<String> supportedAuthentication,
-      List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
+      List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
       List<ModelConfigResponse> models) {
     private static EmbeddingProviderResponse provider(
-        PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig embeddingProviderConfig) {
+        EmbeddingProvidersConfig.EmbeddingProviderConfig embeddingProviderConfig) {
       ArrayList<ModelConfigResponse> modelsRemoveProperties = new ArrayList<>();
-      for (PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ModelConfig model :
+      for (EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model :
           embeddingProviderConfig.models()) {
         ModelConfigResponse returnModel =
             new ModelConfigResponse(model.name(), model.vectorDimension(), model.parameters());
@@ -92,6 +92,5 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
   private record ModelConfigResponse(
       String name,
       Integer vectorDimension,
-      List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig>
-          parameters) {}
+      List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters) {}
 }
