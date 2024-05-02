@@ -39,9 +39,9 @@ public interface OperationsConfig {
 
   /**
    * Defines the default maximum documents to insert setting for {@code InsertMany} command;
-   * defaults to 20
+   * defaults to 100
    */
-  public static final int DEFAULT_MAX_DOCUMENT_INSERT_COUNT = 20;
+  public static final int DEFAULT_MAX_DOCUMENT_INSERT_COUNT = 100;
 
   /** @return Defines the default document page size, defaults to <code>20</code>. */
   @Max(500)
@@ -254,4 +254,20 @@ public interface OperationsConfig {
   /** @return Flag to enable server side vectorization. */
   @WithDefault("false")
   boolean vectorizeEnabled();
+
+  /** @return Flag to enable vectorization using embedding-gateway. */
+  @WithDefault("false")
+  boolean enableEmbeddingGateway();
+
+  /** Offline mode configuration. */
+  @NotNull
+  @Valid
+  OfflineModeConfig offlineModeConfig();
+
+  interface OfflineModeConfig {
+
+    /** Database type can be <code>cassandra</code> or <code>astra</code>. */
+    @WithDefault("1000")
+    int maxDocumentInsertCount();
+  }
 }

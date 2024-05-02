@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
@@ -160,7 +161,8 @@ public class CollectionResource {
           @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
-        .getCollectionSettings(dataApiRequestInfo.getTenantId(), namespace, collection)
+        .getCollectionSettings(
+            dataApiRequestInfo, dataApiRequestInfo.getTenantId(), namespace, collection)
         .onItemOrFailure()
         .transformToUni(
             (collectionProperty, throwable) -> {
@@ -175,12 +177,16 @@ public class CollectionResource {
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
                 EmbeddingProvider embeddingProvider = null;
-                if (collectionProperty.vectorConfig().vectorizeConfig() != null) {
+                final CollectionSettings.VectorConfig.VectorizeConfig vectorizeConfig =
+                    collectionProperty.vectorConfig().vectorizeConfig();
+                if (vectorizeConfig != null) {
                   embeddingProvider =
                       embeddingProviderFactory.getConfiguration(
                           dataApiRequestInfo.getTenantId(),
-                          collectionProperty.vectorConfig().vectorizeConfig().provider(),
-                          collectionProperty.vectorConfig().vectorizeConfig().modelName());
+                          vectorizeConfig.provider(),
+                          vectorizeConfig.modelName(),
+                          collectionProperty.vectorConfig().vectorSize(),
+                          vectorizeConfig.vectorizeServiceParameter());
                 }
 
                 CommandContext commandContext =
@@ -193,7 +199,8 @@ public class CollectionResource {
                         jsonProcessingMetricsReporter);
 
                 // call processor
-                return meteredCommandProcessor.processCommand(commandContext, command);
+                return meteredCommandProcessor.processCommand(
+                    dataApiRequestInfo, commandContext, command);
               }
             })
         .map(commandResult -> commandResult.map());

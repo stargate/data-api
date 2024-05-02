@@ -35,6 +35,19 @@ public enum CommandStatus {
    */
   @JsonProperty("moreData")
   MORE_DATA,
+  /**
+   * The element has the session id of offline writer, which is used to write the data offline to
+   * the SSTable files for example
+   */
+  @JsonProperty("offlineWriterSessionId")
+  OFFLINE_WRITER_SESSION_ID,
+
+  /**
+   * The element has the status of offline writer session, which is used to write the data offline
+   * to
+   */
+  @JsonProperty("offlineWriterSessionStatus")
+  OFFLINE_WRITER_SESSION_STATUS,
   /** The element has value 1 if collection is created */
   @JsonProperty("ok")
   OK,
@@ -47,5 +60,5 @@ public enum CommandStatus {
    * is 'true' and no document available in DB for matching condition
    */
   @JsonProperty("upsertedId")
-  UPSERTED_ID;
+  UPSERTED_ID
 }

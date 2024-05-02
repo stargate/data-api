@@ -119,7 +119,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -140,7 +140,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -250,13 +250,13 @@ public class FindOperationTest extends OperationTestBase {
       final AtomicInteger callCount1 = new AtomicInteger();
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
                 return Uni.createFrom().item(results1);
               });
-      when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt2), any(), anyInt()))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -285,7 +285,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -326,7 +326,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -373,13 +373,13 @@ public class FindOperationTest extends OperationTestBase {
       final AtomicInteger callCount1 = new AtomicInteger();
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
                 return Uni.createFrom().item(results1);
               });
-      when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt2), any(), anyInt()))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -415,7 +415,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -463,13 +463,13 @@ public class FindOperationTest extends OperationTestBase {
       final AtomicInteger callCount1 = new AtomicInteger();
       final AtomicInteger callCount2 = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt1), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
           .then(
               invocation -> {
                 callCount1.incrementAndGet();
                 return Uni.createFrom().item(results1);
               });
-      when(queryExecutor.executeRead(eq(stmt2), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt2), any(), anyInt()))
           .then(
               invocation -> {
                 callCount2.incrementAndGet();
@@ -498,7 +498,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -535,7 +535,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -559,7 +559,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -588,7 +588,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, Arrays.asList(), null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -616,7 +616,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -652,7 +652,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -677,7 +677,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -716,7 +716,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -741,7 +741,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -780,7 +780,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -805,7 +805,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -845,7 +845,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -870,7 +870,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -910,7 +910,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -935,7 +935,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -974,7 +974,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -999,7 +999,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1039,7 +1039,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1064,7 +1064,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1102,7 +1102,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1125,7 +1125,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1165,7 +1165,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1187,7 +1187,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1228,7 +1228,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1258,7 +1258,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1299,7 +1299,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1329,7 +1329,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1368,7 +1368,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1396,7 +1396,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1437,7 +1437,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1465,7 +1465,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1505,7 +1505,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1533,7 +1533,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1572,7 +1572,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1600,7 +1600,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1639,7 +1639,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1667,7 +1667,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -1700,7 +1700,7 @@ public class FindOperationTest extends OperationTestBase {
           SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1725,7 +1725,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Throwable failure =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -1870,7 +1870,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -1894,7 +1894,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2069,7 +2069,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2093,7 +2093,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2249,7 +2249,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2273,7 +2273,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2423,7 +2423,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2447,7 +2447,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2552,7 +2552,7 @@ public class FindOperationTest extends OperationTestBase {
     AsyncResultSet results = new MockAsyncResultSet(columnDefs, rows, null);
     final AtomicInteger callCount = new AtomicInteger();
     QueryExecutor queryExecutor = mock(QueryExecutor.class);
-    when(queryExecutor.executeRead(eq(stmt), any(), anyInt()))
+    when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
         .then(
             invocation -> {
               callCount.incrementAndGet();
@@ -2576,7 +2576,7 @@ public class FindOperationTest extends OperationTestBase {
 
     Supplier<CommandResult> execute =
         operation
-            .execute(queryExecutor)
+            .execute(dataApiRequestInfo, queryExecutor)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
             .awaitItem()
@@ -2631,7 +2631,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeVectorSearch(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeVectorSearch(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2653,7 +2653,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2692,7 +2692,7 @@ public class FindOperationTest extends OperationTestBase {
       AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
-      when(queryExecutor.executeVectorSearch(eq(stmt), any(), anyInt()))
+      when(queryExecutor.executeVectorSearch(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
           .then(
               invocation -> {
                 callCount.incrementAndGet();
@@ -2718,7 +2718,7 @@ public class FindOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -2794,7 +2794,8 @@ public class FindOperationTest extends OperationTestBase {
       boolean dataPresent = false;
       Map<InetAddress, Integer> reasonMap = new HashMap<>();
       reasonMap.put(InetAddress.getByName("127.0.0.1"), 0x0000);
-      Mockito.when(queryExecutor.executeVectorSearch(any(), any(), anyInt()))
+      Mockito.when(
+              queryExecutor.executeVectorSearch(eq(dataApiRequestInfo), any(), any(), anyInt()))
           .thenThrow(
               new ReadFailureException(
                   coordinator,
@@ -2821,7 +2822,7 @@ public class FindOperationTest extends OperationTestBase {
       // Throwable
       Throwable failure =
           operation
-              .execute(queryExecutor)
+              .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -2832,9 +2833,9 @@ public class FindOperationTest extends OperationTestBase {
       AssertionsForClassTypes.assertThat(error).isNotNull();
       AssertionsForClassTypes.assertThat(error.message())
           .isEqualTo(
-              "Cassandra failure during read query at consistency ONE (0 responses were required but only 1 replica responded, 1 failed)");
+              "Database read failed: root cause: (com.datastax.oss.driver.api.core.servererrors.ReadFailureException) Cassandra failure during read query at consistency ONE (0 responses were required but only 1 replica responded, 1 failed)");
       AssertionsForClassTypes.assertThat(error.fields().get("errorCode"))
-          .isEqualTo("DATABASE_READ_FAILED");
+          .isEqualTo("SERVER_READ_FAILED");
       AssertionsForClassTypes.assertThat(error.fields().get("exceptionClass"))
           .isEqualTo("JsonApiException");
       AssertionsForClassTypes.assertThat(error.status())

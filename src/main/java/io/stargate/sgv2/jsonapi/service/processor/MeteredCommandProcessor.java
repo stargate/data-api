@@ -3,7 +3,12 @@ package io.stargate.sgv2.jsonapi.service.processor;
 import static io.stargate.sgv2.api.common.config.constants.LoggingConstants.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.micrometer.core.instrument.*;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.smallrye.mutiny.Uni;
@@ -93,11 +98,11 @@ public class MeteredCommandProcessor {
    * @return Uni emitting the result of the command execution.
    */
   public <T extends Command> Uni<CommandResult> processCommand(
-      CommandContext commandContext, T command) {
+      DataApiRequestInfo dataApiRequestInfo, CommandContext commandContext, T command) {
     MDC.put("tenantId", dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     // start by resolving the command, get resolver
     return commandProcessor
-        .processCommand(commandContext, command)
+        .processCommand(dataApiRequestInfo, commandContext, command)
         .onItem()
         .invoke(
             result -> {

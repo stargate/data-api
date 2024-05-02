@@ -55,17 +55,12 @@ public class CqlSessionCacheTests {
   }
 
   @Test
-  public void testOSSCxCQLSessionCacheDefaultTenant()
-      throws NoSuchFieldException, IllegalAccessException {
-    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
+  public void testOSSCxCQLSessionCacheDefaultTenant() {
     DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
     when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
-    Field dataApiRequestInfoField =
-        cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-    dataApiRequestInfoField.setAccessible(true);
-    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
-    CqlSession cqlSession = cqlSessionCacheForTest.getSession();
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
+    CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
     sessionsCreatedInTests.add(cqlSession);
     assertThat(
             ((DefaultDriverContext) cqlSession.getContext())
@@ -91,16 +86,12 @@ public class CqlSessionCacheTests {
     when(dataApiRequestInfo.getCassandraToken())
         .thenReturn(operationsConfig.databaseConfig().fixedToken());
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    Field dataApiRequestInfoField =
-        cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-    dataApiRequestInfoField.setAccessible(true);
-    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
     // set operation config
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
     operationsConfigField.setAccessible(true);
     operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
-    CqlSession cqlSession = cqlSessionCacheForTest.getSession();
+    CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
     sessionsCreatedInTests.add(cqlSession);
     assertThat(
             ((DefaultDriverContext) cqlSession.getContext())
@@ -126,18 +117,17 @@ public class CqlSessionCacheTests {
     when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
     when(dataApiRequestInfo.getCassandraToken()).thenReturn(Optional.of("invalid_token"));
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    Field dataApiRequestInfoField =
-        cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-    dataApiRequestInfoField.setAccessible(true);
-    dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
     // set operation config
     Field operationsConfigField =
         cqlSessionCacheForTest.getClass().getDeclaredField("operationsConfig");
     operationsConfigField.setAccessible(true);
     operationsConfigField.set(cqlSessionCacheForTest, operationsConfig);
     // Throwable
-    Throwable t = catchThrowable(cqlSessionCacheForTest::getSession);
-    assertThat(t).isNotNull().isInstanceOf(UnauthorizedException.class).hasMessage("Unauthorized");
+    Throwable t = catchThrowable(() -> cqlSessionCacheForTest.getSession(dataApiRequestInfo));
+    assertThat(t)
+        .isNotNull()
+        .isInstanceOf(UnauthorizedException.class)
+        .hasMessage("UNAUTHENTICATED: Invalid token");
     // metrics test
     Gauge cacheSizeMetric =
         meterRegistry.find("cache.size").tag("cache", "cql_sessions_cache").gauge();
@@ -170,11 +160,7 @@ public class CqlSessionCacheTests {
       when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
       when(dataApiRequestInfo.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());
-      Field dataApiRequestInfoField =
-          cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-      dataApiRequestInfoField.setAccessible(true);
-      dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
-      CqlSession cqlSession = cqlSessionCacheForTest.getSession();
+      CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
       sessionsCreatedInTests.add(cqlSession);
       assertThat(
               ((DefaultDriverContext) cqlSession.getContext())
@@ -217,11 +203,7 @@ public class CqlSessionCacheTests {
       when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
       when(dataApiRequestInfo.getCassandraToken())
           .thenReturn(operationsConfig.databaseConfig().fixedToken());
-      Field dataApiRequestInfoField =
-          cqlSessionCacheForTest.getClass().getDeclaredField("dataApiRequestInfo");
-      dataApiRequestInfoField.setAccessible(true);
-      dataApiRequestInfoField.set(cqlSessionCacheForTest, dataApiRequestInfo);
-      CqlSession cqlSession = cqlSessionCacheForTest.getSession();
+      CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
       sessionsCreatedInTests.add(cqlSession);
       assertThat(
               ((DefaultDriverContext) cqlSession.getContext())
