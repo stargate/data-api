@@ -584,7 +584,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                           "secretName": "test"
                                       },
                                       "parameters": {
-                                          "PROJECT_ID": "test"
+                                          "projectId": "test"
                                       }
                                   }
                               }
@@ -638,7 +638,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                               "secretName": "test"
                                           },
                                           "parameters": {
-                                              "PROJECT_ID": "test"
+                                              "projectId": "test"
                                           }
                                       }
                                   }
@@ -665,7 +665,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                               "secretName": "test"
                                           },
                                           "parameters": {
-                                              "PROJECT_ID": "test"
+                                              "projectId": "test"
                                           }
                                       }
                                   }
@@ -841,7 +841,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Required parameter 'PROJECT_ID' for the provider 'vertexai' missing"))
+                  "The provided options are invalid: Required parameter 'projectId' for the provider 'vertexai' missing"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -960,7 +960,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "secretName": "test"
                                         },
                                         "parameters": {
-                                            "PROJECT_ID": 123
+                                            "projectId": 123
                                         }
                                     }
                                 }
@@ -977,7 +977,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided parameter 'PROJECT_ID' type is incorrect. Expected: 'STRING'"))
+                  "The provided options are invalid: The provided parameter 'projectId' type is incorrect. Expected: 'string'"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -1007,7 +1007,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "secretName": "test"
                                         },
                                         "parameters": {
-                                            "PROJECT_ID": "123"
+                                            "projectId": "123"
                                         }
                                     }
                                 }
@@ -1054,7 +1054,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "secretName": "test"
                                         },
                                         "parameters": {
-                                            "PROJECT_ID": "123"
+                                            "projectId": "123"
                                         }
                                     }
                                 }
