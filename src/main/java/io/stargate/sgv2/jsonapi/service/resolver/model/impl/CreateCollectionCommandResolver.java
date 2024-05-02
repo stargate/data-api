@@ -262,7 +262,9 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   }
 
   // TODO: 1. remove the first if statement when fully support validateAuthentication
-  //  2. validate the 'secretName' in the future
+  //  2. Check if user authentication type is support
+  //  3. Check if required token is provided
+  //  4. Check if token is valid
   private void validateAuthentication(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
@@ -270,14 +272,14 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       return;
     }
     // Check if user authentication type is support
-    userConfig.vectorizeServiceAuthentication().type().stream()
-        .filter(type -> !providerConfig.supportedAuthentication().contains(type))
-        .findFirst()
-        .ifPresent(
-            type -> {
-              throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                  "Authentication type '%s' is not supported", type);
-            });
+    //    userConfig.vectorizeServiceAuthentication().type().stream()
+    //        .filter(type -> !providerConfig.supportedAuthentication().contains(type))
+    //        .findFirst()
+    //        .ifPresent(
+    //            type -> {
+    //              throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+    //                  "Authentication type '%s' is not supported", type);
+    //            });
     // Check if 'secretName' is provided if authentication type is 'SHARED_SECRET'
     if (userConfig.vectorizeServiceAuthentication().type().contains("SHARED_SECRET")
         && (userConfig.vectorizeServiceAuthentication().secretName() == null
@@ -373,6 +375,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   }
 
   // TODO: check model parameters provided by the user, will support in the future
+  // TODO: fix code 396-408
   private Integer validateModelAndDimension(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
@@ -387,14 +390,18 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
                         "Model name '%s' for provider '%s' is not supported",
                         userConfig.modelName(), userConfig.provider()));
 
-    Integer configVectorDimension = model.vectorDimension();
-    if (userVectorDimension == null) {
-      return configVectorDimension; // Use config dimension if user didn't provide one
-    } else if (!configVectorDimension.equals(userVectorDimension)) {
-      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "The provided dimension value '%s' doesn't match the model supports dimension value '%s'",
-          userVectorDimension, configVectorDimension);
+    // TODO: is dimension required? do we still auto populate the dimension?
+    if (model.vectorDimension().isPresent()) {
+      Integer configVectorDimension = model.vectorDimension().get();
+      if (userVectorDimension == null) {
+        return configVectorDimension; // Use config dimension if user didn't provide one
+      } else if (!configVectorDimension.equals(userVectorDimension)) {
+        throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+            "The provided dimension value '%s' doesn't match the model supports dimension value '%s'",
+            userVectorDimension, configVectorDimension);
+      }
+      return configVectorDimension;
     }
-    return configVectorDimension;
+    return 0;
   }
 }

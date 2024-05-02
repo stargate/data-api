@@ -26,7 +26,6 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class OpenAiEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String apiKey;
   private String modelName;
   private String baseUrl;
   private final OpenAiEmbeddingProvider embeddingProvider;
@@ -35,11 +34,9 @@ public class OpenAiEmbeddingClient implements EmbeddingProvider {
   public OpenAiEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String apiKey,
       String modelName,
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
-    this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
@@ -82,8 +79,7 @@ public class OpenAiEmbeddingClient implements EmbeddingProvider {
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName);
     Uni<EmbeddingResponse> response =
         embeddingProvider
-            .embed(
-                "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey), request)
+            .embed("Bearer " + apiKeyOverride.get(), request)
             .onFailure(
                 throwable -> {
                   return (throwable.getCause() != null

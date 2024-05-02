@@ -29,7 +29,6 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
     return ServiceConfig.provider(
         serviceName,
         serviceName,
-        config.providers().get(serviceName).apiKey(),
         config.providers().get(serviceName).url().toString(),
         RequestProperties.of(
             config.providers().get(serviceName).properties().maxRetries(),

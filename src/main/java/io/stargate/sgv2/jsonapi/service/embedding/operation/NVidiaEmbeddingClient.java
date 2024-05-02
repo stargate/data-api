@@ -30,7 +30,6 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  */
 public class NVidiaEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String apiKey;
   private String modelName;
   private String baseUrl;
   private final NVidiaEmbeddingProvider embeddingProvider;
@@ -40,11 +39,9 @@ public class NVidiaEmbeddingClient implements EmbeddingProvider {
   public NVidiaEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String apiKey,
       String modelName,
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
-    this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
@@ -95,8 +92,7 @@ public class NVidiaEmbeddingClient implements EmbeddingProvider {
         new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
     Uni<EmbeddingResponse> response =
         embeddingProvider
-            .embed(
-                "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey), request)
+            .embed("Bearer " + apiKeyOverride.get(), request)
             .onFailure(
                 throwable -> {
                   return (throwable.getCause() != null

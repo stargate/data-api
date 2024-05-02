@@ -30,10 +30,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
-                  "test",
                   null)
               .vectorize(
-                  List.of("429"), Optional.empty(), EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  List.of("429"), Optional.of("test"), EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -53,10 +52,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
-                  "test",
                   null)
               .vectorize(
-                  List.of("400"), Optional.empty(), EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  List.of("400"), Optional.of("test"), EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -76,10 +74,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
-                  "test",
                   null)
               .vectorize(
-                  List.of("503"), Optional.empty(), EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  List.of("503"), Optional.of("test"), EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -99,10 +96,9 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
-                  "test",
                   null)
               .vectorize(
-                  List.of("408"), Optional.empty(), EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  List.of("408"), Optional.of("test"), EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -120,11 +116,10 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
-                  "test",
                   null)
               .vectorize(
                   List.of("application/json"),
-                  Optional.empty(),
+                  Optional.of("test"),
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -140,11 +135,10 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
-                  "test",
                   null)
               .vectorize(
                   List.of("application/xml"),
-                  Optional.empty(),
+                  Optional.of("test"),
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -165,11 +159,10 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
-                  "test",
                   null)
               .vectorize(
                   List.of("no json body"),
-                  Optional.empty(),
+                  Optional.of("test"),
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -190,11 +183,10 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
-                  "test",
                   null)
               .vectorize(
                   List.of("empty json body"),
-                  Optional.empty(),
+                  Optional.of("test"),
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())

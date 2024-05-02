@@ -10,11 +10,12 @@ import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Operation that list all available vector providers into the {@link
+ * Operation that list all available and enabled vector providers into the {@link
  * CommandStatus#EXISTING_VECTOR_PROVIDERS} command status.
  */
 public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
@@ -62,6 +63,11 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
       String url,
       List<String> supportedAuthentication,
       List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
+      Map<
+              PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.AuthenticationType,
+              PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.AuthenticationConfig>
+          supportedAuthentication,
+      List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
       List<ModelConfigResponse> models) {
     private static EmbeddingProviderResponse provider(
         EmbeddingProvidersConfig.EmbeddingProviderConfig embeddingProviderConfig) {
@@ -69,12 +75,13 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
       for (EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model :
           embeddingProviderConfig.models()) {
         ModelConfigResponse returnModel =
-            new ModelConfigResponse(model.name(), model.vectorDimension(), model.parameters());
+            ModelConfigResponse.returnModelConfigResponse(
+                model.name(), model.vectorDimension(), model.parameters());
         modelsRemoveProperties.add(returnModel);
       }
       return new EmbeddingProviderResponse(
           embeddingProviderConfig.url(),
-          embeddingProviderConfig.supportedAuthentication(),
+          embeddingProviderConfig.supportedAuthentications(),
           embeddingProviderConfig.parameters(),
           modelsRemoveProperties);
     }
@@ -90,6 +97,54 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
    * @param parameters Parameters for customizing the model.
    */
   private record ModelConfigResponse(
+      String name, Optional<Integer> vectorDimension, List<ParameterConfigResponse> parameters) {
+    private static ModelConfigResponse returnModelConfigResponse(
+        String name,
+        Optional<Integer> vectorDimension,
+        List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig>
+            parameters) {
+      // reconstruct each parameter for lowercase parameter type
+      ArrayList<ParameterConfigResponse> parametersResponse = new ArrayList<>();
+      for (PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig parameter :
+          parameters) {
+        ParameterConfigResponse returnParameter =
+            new ParameterConfigResponse(
+                parameter.name(),
+                parameter.type().toString(),
+                parameter.required(),
+                parameter.defaultValue(),
+                parameter.validation(),
+                parameter.help());
+        parametersResponse.add(returnParameter);
+      }
+
+      return new ModelConfigResponse(name, vectorDimension, parametersResponse);
+    }
+  }
+
+  /**
+   * This is used to reconstruct the {@code
+   * PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig} body for
+   * parameter type by not directly using the enum class (uppercase) but instead using the value
+   * (lowercase) in the enum class.
+   *
+   * @param name
+   * @param type
+   * @param required
+   * @param defaultValue
+   * @param validation
+   * @param help
+   */
+  private record ParameterConfigResponse(
+      String name,
+      String type,
+      boolean required,
+      Optional<String> defaultValue,
+      Map<
+              PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ValidationType,
+              List<Integer>>
+          validation,
+      Optional<String> help) {}
       String name,
       Integer vectorDimension,
       List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters) {}
