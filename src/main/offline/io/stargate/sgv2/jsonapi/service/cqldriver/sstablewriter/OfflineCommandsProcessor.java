@@ -46,10 +46,8 @@ public class OfflineCommandsProcessor {
 
   private OfflineCommandsProcessor() {
     OfflineFileWriterInitializer.initialize();
-    operationsConfig =
-            OfflineFileWriterInitializer.buildOperationsConfig();
-    cqlSessionCache =
-            buildCqlSessionCache(offlineCommandsProcessor.operationsConfig);
+    operationsConfig = OfflineFileWriterInitializer.buildOperationsConfig();
+    cqlSessionCache = buildCqlSessionCache(operationsConfig);
     commandResolverService = buildCommandResolverService();
     dataVectorizerService = buildDataVectorizeService();
   }
@@ -61,7 +59,7 @@ public class OfflineCommandsProcessor {
     return offlineCommandsProcessor;
   }
 
-  //TODO-SL see if init can be removed
+  // TODO-SL see if init can be removed
   private static synchronized void init() {
     if (initialized) {
       return;

@@ -23,14 +23,15 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class OfflineCommandsProcessorIT {
 
-  private static final String SSTABLES_TEST_DIRECTORY =
-      System.getProperty("java.io.tmpdir") + File.separator + "sstables_test";
+  private static String SSTABLES_TEST_DIRECTORY;
 
   @BeforeAll
-  public static void setup() {
+  public static void setup(@TempDir File tempDir) {
+    SSTABLES_TEST_DIRECTORY = tempDir.getAbsolutePath() + File.separator + "sstables";
     File sstablesTestDirectory = new File(SSTABLES_TEST_DIRECTORY);
     if (!sstablesTestDirectory.exists()) {
       if (!sstablesTestDirectory.mkdirs()) {

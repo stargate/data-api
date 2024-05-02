@@ -11,8 +11,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.FileWriterSession;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import jakarta.json.Json;
-
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -32,7 +30,8 @@ public record BeginOfflineSessionOperation(String sessionId, FileWriterParams fi
           new CommandResult(Map.of(CommandStatus.OFFLINE_WRITER_SESSION_ID, sessionId));
       return Uni.createFrom().item(() -> () -> commandResult);
     } catch (Exception e) {
-      JsonApiException jsonApiException = ErrorCode.UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION.toApiException("'%s'", sessionId);
+      JsonApiException jsonApiException =
+          ErrorCode.UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION.toApiException("'%s'", sessionId);
       return Uni.createFrom().failure(jsonApiException);
     }
   }

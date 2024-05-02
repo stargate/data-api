@@ -21,14 +21,15 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class EndOfflineSessionOperationTest {
 
-  private static final String SSTAbleOutputDirectory =
-      System.getProperty("java.io.tmpdir") + "sstables_test";
+  private static String SSTAbleOutputDirectory;
 
   @BeforeAll
-  public static void setup() {
+  public static void setup(@TempDir File tempDir) {
+    SSTAbleOutputDirectory = tempDir.getAbsolutePath() + File.separator + "sstables";
     OfflineFileWriterInitializer.initialize();
     File sstablesDirectory = new File(SSTAbleOutputDirectory);
     if (!sstablesDirectory.exists()) {

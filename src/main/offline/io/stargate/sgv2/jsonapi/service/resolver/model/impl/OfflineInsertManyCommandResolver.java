@@ -31,7 +31,8 @@ public class OfflineInsertManyCommandResolver implements CommandResolver<Offline
 
   @Override
   public Operation resolveCommand(CommandContext ctx, OfflineInsertManyCommand command) {
-    if(command.documents().size() > operationsConfig.offlineModeConfig().maxDocumentInsertCount()){
+    if (command.documents().size()
+        > operationsConfig.offlineModeConfig().maxDocumentInsertCount()) {
       throw new IllegalArgumentException("Exceeded max document insert count");
     }
     final List<WritableShreddedDocument> shreddedDocuments =
