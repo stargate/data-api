@@ -29,6 +29,7 @@ public class EmbeddingProviderFactory {
         EmbeddingProviderConfigStore.RequestProperties requestProperties,
         String baseUrl,
         String modelName,
+        int dimension,
         Map<String, Object> vectorizeServiceParameter);
   }
 
@@ -97,6 +98,7 @@ public class EmbeddingProviderFactory {
             configuration.requestConfiguration(),
             configuration.baseUrl(),
             modelName,
+            dimension,
             vectorizeServiceParameter);
   }
 }

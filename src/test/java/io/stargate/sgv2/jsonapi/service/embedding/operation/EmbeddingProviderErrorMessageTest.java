@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @QuarkusTestResource(EmbeddingClientTestResource.class)
 public class EmbeddingProviderErrorMessageTest {
+  private static final int DEFAULT_DIMENSIONS = 0;
 
   @Inject PropertyBasedEmbeddingProviderConfig config;
 
@@ -30,6 +31,7 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
+                  DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   List.of("429"), Optional.of("test"), EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -52,6 +54,7 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
+                  DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   List.of("400"), Optional.of("test"), EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -74,6 +77,7 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
+                  DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   List.of("503"), Optional.of("test"), EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -96,6 +100,7 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
+                  DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   List.of("408"), Optional.of("test"), EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -116,6 +121,7 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
+                  DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   List.of("application/json"),
@@ -135,6 +141,7 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
+                  DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   List.of("application/xml"),
@@ -159,6 +166,7 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
+                  DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   List.of("no json body"),
@@ -183,6 +191,7 @@ public class EmbeddingProviderErrorMessageTest {
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
+                  DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   List.of("empty json body"),

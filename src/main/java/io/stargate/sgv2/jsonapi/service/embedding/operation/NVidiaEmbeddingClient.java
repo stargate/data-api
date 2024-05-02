@@ -40,6 +40,7 @@ public class NVidiaEmbeddingClient implements EmbeddingProvider {
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
+      int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
     this.modelName = modelName;
