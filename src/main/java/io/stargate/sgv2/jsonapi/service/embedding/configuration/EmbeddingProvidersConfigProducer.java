@@ -30,12 +30,12 @@ public class EmbeddingProvidersConfigProducer {
   @GrpcClient EmbeddingService embeddingService;
 
   @Produces
-  EmbeddingProvidersConfig produce(FileEmbeddingProviderConfig fileEmbeddingProvidersConfigStore) {
+  EmbeddingProvidersConfig produce(DefaultEmbeddingProviderConfig defaultEmbeddingProviderConfig) {
     EmbeddingProvidersConfig defaultConfig =
         new EmbeddingProvidersConfigImpl(
-            fileEmbeddingProvidersConfigStore.providers(),
+            defaultEmbeddingProviderConfig.providers(),
             new EmbeddingProvidersConfigImpl.CustomConfigImpl());
-    // FileEmbeddingProviderConfig is what we mapped from embedding-providers-config.yaml
+    // defaultEmbeddingProviderConfig is what we mapped from embedding-providers-config.yaml
     // and will be used if embedding-gateway is not enabled
     if (!operationsConfig.enableEmbeddingGateway()) {
       LOG.info("embedding gateway disabled, use default config");

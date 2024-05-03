@@ -9,7 +9,7 @@ import java.util.Map;
  * produced by EmbeddingProvidersConfigProducer based on EGW enabled or not
  */
 @ConfigMapping(prefix = "stargate.jsonapi.embedding")
-public interface FileEmbeddingProviderConfig {
+public interface DefaultEmbeddingProviderConfig {
   @Nullable
   Map<String, EmbeddingProvidersConfig.EmbeddingProviderConfig> providers();
 }
