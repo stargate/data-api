@@ -31,7 +31,7 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
   private String modelName;
   private final VertexAIEmbeddingProvider embeddingProvider;
 
-  private static final String PROJECT_ID = "PROJECT_ID";
+  private static final String PROJECT_ID = "projectId";
 
   private Map<String, Object> vectorizeServiceParameters;
 

@@ -700,15 +700,15 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                         "models": []
                                     },
                                     "vertexai": {
-                                        "url": "https://us-central1-aiplatform.googleapis.com/v1/projects/{PROJECT_ID}/locations/us-central1/publishers/google/models/{MODEL}:predict",
+                                        "url": "https://us-central1-aiplatform.googleapis.com/v1/projects/{projectId}/locations/us-central1/publishers/google/models/{MODEL}:predict",
                                         "supportedAuthentication": [
                                             "HEADER",
                                             "SHARED_SECRETS"
                                         ],
                                         "parameters": [
                                             {
-                                                "name": "PROJECT_ID",
-                                                "type": "STRING",
+                                                "name": "projectId",
+                                                "type": "string",
                                                 "defaultValue": null,
                                                 "help": null,
                                                 "required": true
@@ -720,7 +720,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                                 "parameters": [
                                                     {
                                                         "name": "autoTruncate",
-                                                        "type": "BOOLEAN",
+                                                        "type": "boolean",
                                                         "defaultValue": "true",
                                                         "help": null,
                                                         "required": false
