@@ -57,7 +57,8 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingProvider {
     // no path specified, as it is already included in the baseUri
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
-        @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
+        // API keys as "api-key", MS Entra as "Authorization: Bearer [token]
+        @HeaderParam("api-key") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
     static RuntimeException mapException(Response response) {
@@ -85,7 +86,8 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingProvider {
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
     Uni<EmbeddingResponse> response =
         embeddingProvider
-            .embed("Bearer " + apiKeyOverride.get(), request)
+            // NOTE: NO "Bearer " prefix with API key for Azure OpenAI
+            .embed(apiKeyOverride.get(), request)
             .onFailure(
                 throwable -> {
                   return (throwable.getCause() != null
