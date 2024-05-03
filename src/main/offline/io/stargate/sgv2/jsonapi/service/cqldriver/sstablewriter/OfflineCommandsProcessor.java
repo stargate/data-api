@@ -118,8 +118,9 @@ public class OfflineCommandsProcessor {
   }
 
   public boolean canEndSession(
-      OfflineWriterSessionStatus offlineWriterSessionStatus, int createNewSessionAfterDataInMB) {
-    return offlineWriterSessionStatus.dataDirectorySizeInBytes() >= createNewSessionAfterDataInMB;
+      OfflineWriterSessionStatus offlineWriterSessionStatus, int createNewSessionAfterDataInBytes) {
+    return offlineWriterSessionStatus.dataDirectorySizeInBytes()
+        >= createNewSessionAfterDataInBytes;
   }
 
   public Pair<BeginOfflineSessionResponse, CommandContext> beginSession(
