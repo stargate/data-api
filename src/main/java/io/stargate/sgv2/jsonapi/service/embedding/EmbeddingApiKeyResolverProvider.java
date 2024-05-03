@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi;
+package io.stargate.sgv2.jsonapi.service.embedding;
 
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingApiKeyResolver;
 import io.stargate.sgv2.jsonapi.api.request.HeaderBasedEmbeddingApiKeyResolver;
