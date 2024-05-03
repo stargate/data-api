@@ -22,7 +22,9 @@ public class EmbeddingProviderFactory {
   @Inject Instance<EmbeddingProviderConfigStore> embeddingProviderConfigStore;
 
   @Inject OperationsConfig config;
-  @GrpcClient EmbeddingService embeddingService;
+
+  @GrpcClient("embedding")
+  EmbeddingService embeddingService;
 
   private interface ProviderConstructor {
     EmbeddingProvider create(
