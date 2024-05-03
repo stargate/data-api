@@ -475,7 +475,7 @@ class ObjectMapperConfigurationTest {
                                             "secretName": "name_given_by_user"
                                         },
                                         "parameters": {
-                                            "project_id": "test project"
+                                            "projectId": "test project"
                                         }
                                     }
                                 },
@@ -492,7 +492,7 @@ class ObjectMapperConfigurationTest {
       Command result = objectMapper.readValue(json, Command.class);
 
       Map<String, Object> parameterMap = new HashMap<>();
-      parameterMap.put("project_id", "test project");
+      parameterMap.put("projectId", "test project");
 
       assertThat(result)
           .isInstanceOfSatisfying(
