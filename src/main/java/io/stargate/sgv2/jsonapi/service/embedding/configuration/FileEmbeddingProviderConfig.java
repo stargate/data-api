@@ -5,8 +5,8 @@ import jakarta.annotation.Nullable;
 import java.util.Map;
 
 /**
- Do NOT inject this interface, use EmbeddingProvidersConfig instead
- EmbeddingProvidersConfig bean produced by EmbeddingProvidersConfigProducer based on EGW enabled or not
+ * Do NOT inject this interface, use EmbeddingProvidersConfig instead EmbeddingProvidersConfig bean
+ * produced by EmbeddingProvidersConfigProducer based on EGW enabled or not
  */
 @ConfigMapping(prefix = "stargate.jsonapi.embedding")
 public interface FileEmbeddingProviderConfig {

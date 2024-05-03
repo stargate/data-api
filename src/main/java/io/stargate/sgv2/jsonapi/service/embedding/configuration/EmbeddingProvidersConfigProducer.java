@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
 import io.quarkus.grpc.GrpcClient;
-import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.unchecked.Unchecked;

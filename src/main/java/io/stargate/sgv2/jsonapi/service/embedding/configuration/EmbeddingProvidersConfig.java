@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
@@ -165,14 +164,15 @@ public interface EmbeddingProvidersConfig {
         this.type = type;
       }
 
-      public static ValidationType fromString(String type){
-        if(type.equals("numericRange")){
+      public static ValidationType fromString(String type) {
+        if (type.equals("numericRange")) {
           return NUMERIC_RANGE;
-        }else if(type.equals("options")){
+        } else if (type.equals("options")) {
           return OPTIONS;
         }
         throw ErrorCode.INVALID_PARAMETER_VALIDATION_TYPE.toApiException(type);
       }
+
       @Override
       public String toString() {
         return type;

@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
-import io.quarkus.logging.Log;
 import io.smallrye.config.WithConverter;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import jakarta.annotation.Nullable;
@@ -63,8 +62,8 @@ public record EmbeddingProvidersConfigImpl(
             grpcModelParameter.getValidationMap().entrySet().stream()
                 .collect(
                     Collectors.toMap(
-                            // @Hazel TODO ValidationType
-                        e ->  ValidationType.fromString(e.getKey()),
+                        // @Hazel TODO ValidationType
+                        e -> ValidationType.fromString(e.getKey()),
                         e -> new ArrayList<>(e.getValue().getValuesList()))),
             Optional.ofNullable(grpcModelParameter.getHelp()));
       }
