@@ -51,7 +51,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                                         "secretName": "name_given_by_user"
                                     },
                                     "parameters": {
-                                        "project_id": "test project"
+                                        "projectId": "test project"
                                     }
                                 }
                             }
@@ -88,7 +88,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                                             "secretName": "name_given_by_user"
                                         },
                                         "parameters": {
-                                            "project_id": "test project"
+                                            "projectId": "test project"
                                         }
                                     }
                                 },
