@@ -94,11 +94,23 @@ message GetSupportedProvidersResponse {
   message ProviderConfig {
     bool enabled = 1;
     string url = 2;
-    string api_key = 3;
-    repeated string supported_authentication = 4;
-    repeated ParameterConfig parameters = 5;
-    RequestProperties properties = 6;
-    repeated ModelConfig models = 7;
+    // No AuthenticationType Enum, since enum can not be key of map in grpc message
+    map<string, AuthenticationConfig> supported_authentications = 3;
+    repeated ParameterConfig parameters = 4;
+    RequestProperties properties = 5;
+    repeated ModelConfig models = 6;
+
+
+    message AuthenticationConfig{
+      bool enabled = 1;
+      repeated TokenConfig tokens = 2;
+
+      message TokenConfig{
+        string accepted = 1;
+        string forwarded = 2;
+      }
+    }
+
 
     // ParameterConfig message represents configuration for a parameter.
     message ParameterConfig {
@@ -106,13 +118,25 @@ message GetSupportedProvidersResponse {
       ParameterType type = 2;
       bool required = 3;
       string default_value = 4;
-      string help = 5;
+      //No ValidationType Enum, since enum can not be key of map in grpc message
+      map<string, IntList> validation = 5;
+      string help = 6;
+
+      message IntList {
+        repeated int32 values = 1;
+      }
 
       // ParameterType enum represents types of parameters.
       enum ParameterType {
         STRING = 0;
         NUMBER = 1;
         BOOLEAN = 2;
+      }
+
+      // ValidationType enum represents types of validation.
+      enum ValidationType {
+        NUMERIC_RANGE = 0;
+        OPTIONS = 1;
       }
     }
 
@@ -121,6 +145,9 @@ message GetSupportedProvidersResponse {
       int32 max_retries = 1;
       int32 retry_delay_millis = 2;
       int32 request_timeout_millis = 3;
+      string max_input_length = 4;
+      string task_type_store = 5;
+      string task_type_read = 6;
     }
 
     // ModelConfig message represents configuration for a specific model.

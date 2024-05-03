@@ -61,13 +61,11 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
    */
   private record EmbeddingProviderResponse(
       String url,
-      List<String> supportedAuthentication,
-      List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
       Map<
-              PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.AuthenticationType,
-              PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.AuthenticationConfig>
+              EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType,
+              EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig>
           supportedAuthentication,
-      List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
+      List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
       List<ModelConfigResponse> models) {
     private static EmbeddingProviderResponse provider(
         EmbeddingProvidersConfig.EmbeddingProviderConfig embeddingProviderConfig) {
@@ -101,11 +99,10 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
     private static ModelConfigResponse returnModelConfigResponse(
         String name,
         Optional<Integer> vectorDimension,
-        List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig>
-            parameters) {
+        List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters) {
       // reconstruct each parameter for lowercase parameter type
       ArrayList<ParameterConfigResponse> parametersResponse = new ArrayList<>();
-      for (PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig parameter :
+      for (EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig parameter :
           parameters) {
         ParameterConfigResponse returnParameter =
             new ParameterConfigResponse(
@@ -140,12 +137,7 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
       String type,
       boolean required,
       Optional<String> defaultValue,
-      Map<
-              PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ValidationType,
-              List<Integer>>
+      Map<EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType, List<Integer>>
           validation,
       Optional<String> help) {}
-      String name,
-      Integer vectorDimension,
-      List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters) {}
 }

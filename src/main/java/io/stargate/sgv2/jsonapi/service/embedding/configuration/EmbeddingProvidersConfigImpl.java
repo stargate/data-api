@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
+import io.quarkus.logging.Log;
 import io.smallrye.config.WithConverter;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import jakarta.annotation.Nullable;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public record EmbeddingProvidersConfigImpl(
     Map<String, EmbeddingProviderConfig> providers, CustomConfig custom)
@@ -14,16 +14,21 @@ public record EmbeddingProvidersConfigImpl(
   public record EmbeddingProviderConfigImpl(
       boolean enabled,
       String url,
-      String apiKey,
-      List<String> supportedAuthentication,
+      Map<AuthenticationType, AuthenticationConfig> supportedAuthentications,
       List<ParameterConfig> parameters,
       RequestProperties properties,
       List<ModelConfig> models)
       implements EmbeddingProviderConfig {
 
+    public record AuthenticationConfigImpl(boolean enabled, List<TokenConfig> tokens)
+        implements AuthenticationConfig {
+
+      public record TokenConfigImpl(String accepted, String forwarded) implements TokenConfig {}
+    }
+
     public record ModelConfigImpl(
         String name,
-        Integer vectorDimension,
+        Optional<Integer> vectorDimension,
         List<ParameterConfig> parameters,
         Map<String, String> properties)
         implements ModelConfig {
@@ -33,7 +38,7 @@ public record EmbeddingProvidersConfigImpl(
           List<ParameterConfig> modelParameterList) {
         this(
             grpcModelConfig.getName(),
-            grpcModelConfig.getVectorDimension(),
+            Optional.ofNullable(grpcModelConfig.getVectorDimension()),
             modelParameterList,
             grpcModelConfig.getPropertiesMap());
       }
@@ -44,6 +49,7 @@ public record EmbeddingProvidersConfigImpl(
         ParameterType type,
         boolean required,
         Optional<String> defaultValue,
+        Map<ValidationType, List<Integer>> validation,
         Optional<String> help)
         implements ParameterConfig {
       public ParameterConfigImpl(
@@ -53,13 +59,24 @@ public record EmbeddingProvidersConfigImpl(
             grpcModelParameter.getName(),
             ParameterType.valueOf(grpcModelParameter.getType().name()),
             grpcModelParameter.getRequired(),
-            Optional.of(grpcModelParameter.getDefaultValue()),
-            Optional.of(grpcModelParameter.getHelp()));
+            Optional.ofNullable(grpcModelParameter.getDefaultValue()),
+            grpcModelParameter.getValidationMap().entrySet().stream()
+                .collect(
+                    Collectors.toMap(
+                            // @Hazel TODO ValidationType
+                        e ->  ValidationType.fromString(e.getKey()),
+                        e -> new ArrayList<>(e.getValue().getValuesList()))),
+            Optional.ofNullable(grpcModelParameter.getHelp()));
       }
     }
 
     public record RequestPropertiesImpl(
-        int maxRetries, int retryDelayMillis, int requestTimeoutMillis)
+        int maxRetries,
+        int retryDelayMillis,
+        int requestTimeoutMillis,
+        Optional<String> maxInputLength,
+        Optional<String> taskTypeStore,
+        Optional<String> taskTypeRead)
         implements RequestProperties {
       public RequestPropertiesImpl(
           EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig.RequestProperties
@@ -67,7 +84,10 @@ public record EmbeddingProvidersConfigImpl(
         this(
             grpcProviderConfigProperties.getMaxRetries(),
             grpcProviderConfigProperties.getRetryDelayMillis(),
-            grpcProviderConfigProperties.getRequestTimeoutMillis());
+            grpcProviderConfigProperties.getRequestTimeoutMillis(),
+            Optional.ofNullable(grpcProviderConfigProperties.getMaxInputLength()),
+            Optional.ofNullable(grpcProviderConfigProperties.getTaskTypeStore()),
+            Optional.ofNullable(grpcProviderConfigProperties.getTaskTypeRead()));
       }
     }
   }

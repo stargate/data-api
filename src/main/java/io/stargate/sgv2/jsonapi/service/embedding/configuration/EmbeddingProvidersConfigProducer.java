@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.mutiny.unchecked.Unchecked;
@@ -89,14 +90,43 @@ public class EmbeddingProvidersConfigProducer {
       final EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig grpcProviderConfig =
           entry.getValue();
 
-      // 1. construct parameterConfig list for the provider
+      // 1. construct supportedAuthentications map
+      Map<
+              EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType,
+              EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig>
+          supportedAuthenticationsMap =
+              grpcProviderConfig.getSupportedAuthenticationsMap().entrySet().stream()
+                  .collect(
+                      Collectors.toMap(
+                          eachEntry ->
+                              EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType
+                                  .valueOf(eachEntry.getKey()),
+                          eachEntry -> {
+                            EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig
+                                    .AuthenticationConfig
+                                grpcProviderAuthConfig = eachEntry.getValue();
+                            List<EmbeddingProvidersConfig.EmbeddingProviderConfig.TokenConfig>
+                                tokenConfigs =
+                                    grpcProviderAuthConfig.getTokensList().stream()
+                                        .map(
+                                            token ->
+                                                new EmbeddingProvidersConfigImpl
+                                                    .EmbeddingProviderConfigImpl
+                                                    .AuthenticationConfigImpl.TokenConfigImpl(
+                                                    token.getAccepted(), token.getForwarded()))
+                                        .collect(Collectors.toList());
+                            return new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl
+                                .AuthenticationConfigImpl(
+                                grpcProviderAuthConfig.getEnabled(), tokenConfigs);
+                          }));
+
+      // 2. construct parameterConfig list for the provider
       List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> providerParameterList =
           grpcProviderConfig.getParametersList().stream()
               .map(
                   EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl.ParameterConfigImpl::new)
               .collect(Collectors.toList());
-
-      // 2. construct modelConfig list for the provider
+      // 3. construct modelConfig list for the provider
       List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig> providerModelList =
           new ArrayList<>();
       final List<EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig.ModelConfig>
@@ -115,7 +145,7 @@ public class EmbeddingProvidersConfigProducer {
                 grpcModelConfig, modelParameterList));
       }
 
-      // 3. construct requestProperties
+      // 4. construct requestProperties
       final EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig.RequestProperties
           grpcProviderConfigProperties = grpcProviderConfig.getProperties();
       EmbeddingProvidersConfig.EmbeddingProviderConfig.RequestProperties providerRequestProperties =
@@ -127,8 +157,7 @@ public class EmbeddingProvidersConfigProducer {
           new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
               grpcProviderConfig.getEnabled(),
               grpcProviderConfig.getUrl(),
-              grpcProviderConfig.getApiKey(),
-              grpcProviderConfig.getSupportedAuthenticationList().stream().toList(),
+              supportedAuthenticationsMap,
               providerParameterList,
               providerRequestProperties,
               providerModelList);
