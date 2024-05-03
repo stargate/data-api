@@ -584,7 +584,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                           "secretName": "test"
                                       },
                                       "parameters": {
-                                          "PROJECT_ID": "test"
+                                          "projectId": "test"
                                       }
                                   }
                               }
@@ -638,7 +638,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                               "secretName": "test"
                                           },
                                           "parameters": {
-                                              "PROJECT_ID": "test"
+                                              "projectId": "test"
                                           }
                                       }
                                   }
@@ -665,7 +665,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                               "secretName": "test"
                                           },
                                           "parameters": {
-                                              "PROJECT_ID": "test"
+                                              "projectId": "test"
                                           }
                                       }
                                   }
@@ -803,101 +803,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
-    public void failCreateCollectionWithEmbeddingServiceAuthenticationTypeUnsupported() {
-      // create a collection with authentication type not support
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-                    {
-                        "createCollection": {
-                            "name": "collection_with_vector_service",
-                            "options": {
-                                "vector": {
-                                    "metric": "cosine",
-                                    "dimension": 768,
-                                    "service": {
-                                        "provider": "openai",
-                                        "modelName": "text-embedding-3-small",
-                                        "authentication": {
-                                            "type": [
-                                                "HEADER","SHARED_SECRET"
-                                            ],
-                                            "secretName": "test"
-                                        },
-                                        "parameters": {
-                                            "PROJECT_ID": "test"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    """)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "The provided options are invalid: Authentication type 'SHARED_SECRET' is not supported"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    // TODO: Enable it when support SHARED_SECRET
-    @Disabled
-    @Test
-    public void failCreateCollectionWithEmbeddingServiceNoSecretName() {
-      // create a collection with "SHARED_SECRET" authentication type but no 'secretName'
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-                    {
-                        "createCollection": {
-                            "name": "collection_with_vector_service",
-                            "options": {
-                                "vector": {
-                                    "metric": "cosine",
-                                    "dimension": 768,
-                                    "service": {
-                                        "provider": "vertexai",
-                                        "modelName": "text-embedding-3-small",
-                                        "authentication": {
-                                            "type": [
-                                                "HEADER","SHARED_SECRET"
-                                            ]
-                                        },
-                                        "parameters": {
-                                            "PROJECT_ID": "test"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    """)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "The provided options are invalid: 'secretName' must be provided for 'SHARED_SECRET' authentication type"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    @Test
     public void failCreateCollectionWithEmbeddingServiceNotProvideRequiredParameters() {
       // create a collection without providing required parameters
       given()
@@ -936,7 +841,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Required parameter 'PROJECT_ID' for the provider 'vertexai' missing"))
+                  "The provided options are invalid: Required parameter 'projectId' for the provider 'vertexai' missing"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -1055,7 +960,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "secretName": "test"
                                         },
                                         "parameters": {
-                                            "PROJECT_ID": 123
+                                            "projectId": 123
                                         }
                                     }
                                 }
@@ -1072,7 +977,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided parameter 'PROJECT_ID' type is incorrect. Expected: 'STRING'"))
+                  "The provided options are invalid: The provided parameter 'projectId' type is incorrect. Expected: 'string'"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -1102,7 +1007,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "secretName": "test"
                                         },
                                         "parameters": {
-                                            "PROJECT_ID": "123"
+                                            "projectId": "123"
                                         }
                                     }
                                 }
@@ -1149,7 +1054,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "secretName": "test"
                                         },
                                         "parameters": {
-                                            "PROJECT_ID": "123"
+                                            "projectId": "123"
                                         }
                                     }
                                 }

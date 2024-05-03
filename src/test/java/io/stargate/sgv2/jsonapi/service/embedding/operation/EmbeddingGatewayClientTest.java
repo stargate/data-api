@@ -50,7 +50,6 @@ public class EmbeddingGatewayClientTest {
             1536,
             Optional.of("default"),
             "https://api.openai.com/v1/",
-            "api-key",
             "text-embedding-3-small",
             embeddingService,
             Map.of());
@@ -94,7 +93,6 @@ public class EmbeddingGatewayClientTest {
             1536,
             Optional.of("default"),
             "https://api.openai.com/v1/",
-            "api-key",
             "text-embedding-3-small",
             embeddingService,
             Map.of());
