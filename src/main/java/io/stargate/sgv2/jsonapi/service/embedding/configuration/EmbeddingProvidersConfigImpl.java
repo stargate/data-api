@@ -1,8 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
-import io.smallrye.config.WithConverter;
 import io.stargate.embedding.gateway.EmbeddingGateway;
-import jakarta.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -87,20 +85,6 @@ public record EmbeddingProvidersConfigImpl(
             Optional.ofNullable(grpcProviderConfigProperties.getTaskTypeStore()),
             Optional.ofNullable(grpcProviderConfigProperties.getTaskTypeRead()));
       }
-    }
-  }
-
-  public record CustomConfigImpl() implements CustomConfig {
-    @Override
-    public boolean enabled() {
-      return false;
-    }
-
-    @Nullable
-    @Override
-    @WithConverter(ClassNameResolver.class)
-    public Optional<Class<?>> clazz() {
-      return Optional.empty();
     }
   }
 }

@@ -27,14 +27,15 @@ public class EmbeddingProvidersConfigProducer {
 
   @Inject OperationsConfig operationsConfig;
 
-  @GrpcClient EmbeddingService embeddingService;
+  @Inject EmbeddingProvidersConfig.CustomConfig customConfig;
+
+  @GrpcClient("embedding")
+  EmbeddingService embeddingService;
 
   @Produces
   EmbeddingProvidersConfig produce(DefaultEmbeddingProviderConfig defaultEmbeddingProviderConfig) {
     EmbeddingProvidersConfig defaultConfig =
-        new EmbeddingProvidersConfigImpl(
-            defaultEmbeddingProviderConfig.providers(),
-            new EmbeddingProvidersConfigImpl.CustomConfigImpl());
+        new EmbeddingProvidersConfigImpl(defaultEmbeddingProviderConfig.providers(), customConfig);
     // defaultEmbeddingProviderConfig is what we mapped from embedding-providers-config.yaml
     // and will be used if embedding-gateway is not enabled
     if (!operationsConfig.enableEmbeddingGateway()) {
@@ -162,6 +163,6 @@ public class EmbeddingProvidersConfigProducer {
               providerModelList);
       providerMap.put(entry.getKey(), providerConfig);
     }
-    return new EmbeddingProvidersConfigImpl(providerMap, null);
+    return new EmbeddingProvidersConfigImpl(providerMap, customConfig);
   }
 }

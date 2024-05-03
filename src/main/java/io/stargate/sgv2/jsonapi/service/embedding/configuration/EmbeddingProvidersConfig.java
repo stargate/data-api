@@ -1,10 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import jakarta.annotation.Nullable;
+import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,6 +16,7 @@ public interface EmbeddingProvidersConfig {
   Map<String, EmbeddingProviderConfig> providers();
 
   @Nullable
+  @Inject
   CustomConfig custom();
 
   interface EmbeddingProviderConfig {
@@ -234,6 +237,7 @@ public interface EmbeddingProvidersConfig {
     }
   }
 
+  @ConfigMapping(prefix = "stargate.jsonapi.custom.embedding")
   interface CustomConfig {
     @WithDefault("false")
     boolean enabled();
