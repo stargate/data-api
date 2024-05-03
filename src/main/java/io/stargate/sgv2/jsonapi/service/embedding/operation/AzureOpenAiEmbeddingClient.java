@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseEr
 import io.stargate.sgv2.jsonapi.service.embedding.util.EmbeddingUtil;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
@@ -26,14 +25,13 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class OpenAiEmbeddingClient implements EmbeddingProvider {
+public class AzureOpenAiEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private int dimension;
   private final OpenAiEmbeddingProvider embeddingProvider;
-  private Map<String, Object> vectorizeServiceParameters;
 
-  public OpenAiEmbeddingClient(
+  public AzureOpenAiEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
@@ -43,10 +41,11 @@ public class OpenAiEmbeddingClient implements EmbeddingProvider {
     this.modelName = modelName;
     // One special case: legacy "ada-002" model does not accept "dimension" parameter
     this.dimension = EmbeddingUtil.acceptsOpenAIDimensions(modelName) ? dimension : 0;
-    this.vectorizeServiceParameters = vectorizeServiceParameters;
+    String actualUrl = EmbeddingUtil.replaceParameters(baseUrl, vectorizeServiceParameters);
+
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(baseUrl))
+            .baseUri(URI.create(actualUrl))
             .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
             .build(OpenAiEmbeddingProvider.class);
   }
@@ -55,7 +54,7 @@ public class OpenAiEmbeddingClient implements EmbeddingProvider {
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
   public interface OpenAiEmbeddingProvider {
     @POST
-    @Path("/embeddings")
+    // no path specified, as it is already included in the baseUri
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
