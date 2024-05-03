@@ -62,7 +62,6 @@ public record EmbeddingProvidersConfigImpl(
             grpcModelParameter.getValidationMap().entrySet().stream()
                 .collect(
                     Collectors.toMap(
-                        // @Hazel TODO ValidationType
                         e -> ValidationType.fromString(e.getKey()),
                         e -> new ArrayList<>(e.getValue().getValuesList()))),
             Optional.ofNullable(grpcModelParameter.getHelp()));

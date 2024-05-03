@@ -17,7 +17,8 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
       YamlConfigSource configSource = new YamlConfigSource(resourceURL);
       return Collections.singletonList(configSource);
     } catch (IOException e) {
-      throw new RuntimeException("Failed to load vector provider config", e);
+      throw new RuntimeException(
+          "Failed to load embedding provider config from embedding-providers-config.yaml, ", e);
     }
   }
 }

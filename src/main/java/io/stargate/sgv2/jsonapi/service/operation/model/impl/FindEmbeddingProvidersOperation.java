@@ -141,15 +141,11 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
         String type,
         boolean required,
         Optional<String> defaultValue,
-        Map<
-                EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType,
-                List<Integer>>
+        Map<EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType, List<Integer>>
             validation,
         Optional<String> help) {
       Map<String, List<Integer>> validationMap = new HashMap<>();
-      for (Map.Entry<
-              EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType,
-              List<Integer>>
+      for (Map.Entry<EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType, List<Integer>>
           entry : validation.entrySet()) {
         validationMap.put(entry.getKey().toString(), entry.getValue());
       }
