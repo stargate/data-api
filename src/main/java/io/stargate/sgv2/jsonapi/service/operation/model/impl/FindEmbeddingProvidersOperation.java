@@ -7,10 +7,7 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -105,7 +102,7 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
       for (EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig parameter :
           parameters) {
         ParameterConfigResponse returnParameter =
-            new ParameterConfigResponse(
+            ParameterConfigResponse.returnParameterConfigResponse(
                 parameter.name(),
                 parameter.type().toString(),
                 parameter.required(),
@@ -120,10 +117,10 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
   }
 
   /**
-   * This is used to reconstruct the {@code
-   * PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig} body for
-   * parameter type by not directly using the enum class (uppercase) but instead using the value
-   * (lowercase) in the enum class.
+   * Represents the configuration details for a parameter of a model. This is used to reconstruct
+   * the {@code PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig} body
+   * by not directly using the enum class (uppercase) but instead using the value (lowercase) in the
+   * enum class. It transforms the parameter type and validation fields to lowercase.
    *
    * @param name
    * @param type
@@ -137,7 +134,26 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
       String type,
       boolean required,
       Optional<String> defaultValue,
-      Map<EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType, List<Integer>>
-          validation,
-      Optional<String> help) {}
+      Map<String, List<Integer>> validation,
+      Optional<String> help) {
+    private static ParameterConfigResponse returnParameterConfigResponse(
+        String name,
+        String type,
+        boolean required,
+        Optional<String> defaultValue,
+        Map<
+                EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType,
+                List<Integer>>
+            validation,
+        Optional<String> help) {
+      Map<String, List<Integer>> validationMap = new HashMap<>();
+      for (Map.Entry<
+              EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType,
+              List<Integer>>
+          entry : validation.entrySet()) {
+        validationMap.put(entry.getKey().toString(), entry.getValue());
+      }
+      return new ParameterConfigResponse(name, type, required, defaultValue, validationMap, help);
+    }
+  }
 }

@@ -780,7 +780,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                           "secretName": "test"
                                       },
                                       "parameters": {
-                                          "PROJECT_ID": "test"
+                                          "projectId": "test"
                                       }
                                   }
                               }
