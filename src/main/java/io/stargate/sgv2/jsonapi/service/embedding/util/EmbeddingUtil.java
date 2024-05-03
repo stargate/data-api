@@ -29,7 +29,8 @@ public class EmbeddingUtil {
 
       Object value = parameters.get(key);
       if (value == null) {
-        throw new IllegalArgumentException("Missing URL parameter '" + key + "'");
+        throw new IllegalArgumentException(
+            "Missing URL parameter '" + key + "' (available: " + parameters.keySet() + ")");
       }
       baseUrl.append(value);
     }
