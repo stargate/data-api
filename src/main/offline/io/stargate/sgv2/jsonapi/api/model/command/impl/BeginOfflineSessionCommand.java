@@ -130,7 +130,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
     String provider = vectorize.provider();
     String model = vectorize.modelName();
     return new CollectionSettings.VectorConfig.VectorizeConfig(
-        provider, model, vectorize.authentication(), vectorize.parameter());
+        provider, model, vectorize.authentication(), vectorize.parameters());
   }
 
   private FileWriterParams buildFileWriterParams() {
