@@ -349,15 +349,17 @@ public record CollectionSettings(
     // populate the vectorSearchConfig
     if (collectionSetting.vectorConfig.vectorEnabled) {
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig vectorizeConfig = null;
-      Map<String, String> authentication =
-          collectionSetting.vectorConfig.vectorizeConfig.authentication;
-      Map<String, Object> parameters = collectionSetting.vectorConfig.vectorizeConfig.parameters;
-      vectorizeConfig =
-          new CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig(
-              collectionSetting.vectorConfig.vectorizeConfig.provider,
-              collectionSetting.vectorConfig.vectorizeConfig.modelName,
-              authentication == null ? null : Map.copyOf(authentication),
-              parameters == null ? null : Map.copyOf(parameters));
+      if (collectionSetting.vectorConfig.vectorizeConfig != null) {
+        Map<String, String> authentication =
+            collectionSetting.vectorConfig.vectorizeConfig.authentication;
+        Map<String, Object> parameters = collectionSetting.vectorConfig.vectorizeConfig.parameters;
+        vectorizeConfig =
+            new CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig(
+                collectionSetting.vectorConfig.vectorizeConfig.provider,
+                collectionSetting.vectorConfig.vectorizeConfig.modelName,
+                authentication == null ? null : Map.copyOf(authentication),
+                parameters == null ? null : Map.copyOf(parameters));
+      }
       vectorSearchConfig =
           new CreateCollectionCommand.Options.VectorSearchConfig(
               collectionSetting.vectorConfig.vectorSize,
