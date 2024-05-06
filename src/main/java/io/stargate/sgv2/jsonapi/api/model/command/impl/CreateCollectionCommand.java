@@ -133,11 +133,10 @@ public record CreateCollectionCommand(
               @Nullable
               @Schema(
                   description = "Authentication config for chosen embedding service",
-                  type = SchemaType.OBJECT,
-                  implementation = VectorizeServiceAuthentication.class)
+                  type = SchemaType.OBJECT)
               @JsonProperty("authentication")
               @JsonInclude(JsonInclude.Include.NON_NULL)
-              VectorizeServiceAuthentication vectorizeServiceAuthentication,
+              Map<String, String> authentication,
           @Nullable
               @Schema(
                   description =
@@ -145,33 +144,7 @@ public record CreateCollectionCommand(
                   type = SchemaType.OBJECT)
               @JsonProperty("parameters")
               @JsonInclude(JsonInclude.Include.NON_NULL)
-              Map<String, Object> vectorizeServiceParameter) {
-        public record VectorizeServiceAuthentication(
-            @Nullable
-                @JsonInclude(JsonInclude.Include.NON_NULL)
-                @Schema(
-                    description =
-                        "List of authentications that can be used when sending documents that need vectorization. One or more of \"NONE\", \"HEADER\", \"SHARED_SECRET\"",
-                    type = SchemaType.ARRAY,
-                    implementation = String.class)
-                @JsonProperty("type")
-                List<
-                        @Pattern(
-                            regexp = "(NONE|HEADER|SHARED_SECRET)",
-                            message =
-                                "authentication type can only be one or more of 'NONE', 'HEADER' or 'SHARED_SECRET'")
-                        String>
-                    type,
-            @Nullable
-                @JsonInclude(JsonInclude.Include.NON_NULL)
-                @Schema(
-                    description =
-                        "Secret name. when stored_secrets authentication is used must be provided with the name of a pre-registered secret",
-                    type = SchemaType.STRING,
-                    implementation = String.class)
-                @JsonProperty("secretName")
-                String secretName) {}
-      }
+              Map<String, Object> parameters) {}
     }
 
     public record IndexingConfig(
