@@ -8,7 +8,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.PropertyBasedEmbeddingProviderConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 public class EmbeddingProviderErrorMessageTest {
   private static final int DEFAULT_DIMENSIONS = 0;
 
-  @Inject PropertyBasedEmbeddingProviderConfig config;
+  @Inject EmbeddingProvidersConfig config;
 
   @Nested
   class NVidiaEmbeddingClientTest {

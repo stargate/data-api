@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindEmbeddingProvidersCommand;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.PropertyBasedEmbeddingProviderConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindEmbeddingProvidersOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -14,7 +14,7 @@ import jakarta.inject.Inject;
 public class FindEmbeddingProvidersCommandResolver
     implements CommandResolver<FindEmbeddingProvidersCommand> {
 
-  @Inject PropertyBasedEmbeddingProviderConfig propertyBasedEmbeddingProviderConfig;
+  @Inject EmbeddingProvidersConfig embeddingProvidersConfig;
 
   public FindEmbeddingProvidersCommandResolver() {}
 
@@ -25,6 +25,6 @@ public class FindEmbeddingProvidersCommandResolver
 
   @Override
   public Operation resolveCommand(CommandContext ctx, FindEmbeddingProvidersCommand command) {
-    return new FindEmbeddingProvidersOperation(propertyBasedEmbeddingProviderConfig);
+    return new FindEmbeddingProvidersOperation(embeddingProvidersConfig);
   }
 }

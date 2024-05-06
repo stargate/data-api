@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.PropertyBasedEmbeddingProviderConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import java.util.*;
 import java.util.function.Supplier;
@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * Operation that list all available and enabled vector providers into the {@link
  * CommandStatus#EXISTING_VECTOR_PROVIDERS} command status.
  */
-public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConfig config)
+public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
     implements Operation {
   @Override
   public Uni<Supplier<CommandResult>> execute(
@@ -59,15 +59,15 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
   private record EmbeddingProviderResponse(
       String url,
       Map<
-              PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.AuthenticationType,
-              PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.AuthenticationConfig>
+              EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType,
+              EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig>
           supportedAuthentication,
-      List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
+      List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
       List<ModelConfigResponse> models) {
     private static EmbeddingProviderResponse provider(
-        PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig embeddingProviderConfig) {
+        EmbeddingProvidersConfig.EmbeddingProviderConfig embeddingProviderConfig) {
       ArrayList<ModelConfigResponse> modelsRemoveProperties = new ArrayList<>();
-      for (PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ModelConfig model :
+      for (EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model :
           embeddingProviderConfig.models()) {
         ModelConfigResponse returnModel =
             ModelConfigResponse.returnModelConfigResponse(
@@ -96,11 +96,10 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
     private static ModelConfigResponse returnModelConfigResponse(
         String name,
         Optional<Integer> vectorDimension,
-        List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig>
-            parameters) {
+        List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters) {
       // reconstruct each parameter for lowercase parameter type
       ArrayList<ParameterConfigResponse> parametersResponse = new ArrayList<>();
-      for (PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig parameter :
+      for (EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig parameter :
           parameters) {
         ParameterConfigResponse returnParameter =
             ParameterConfigResponse.returnParameterConfigResponse(
@@ -142,15 +141,11 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
         String type,
         boolean required,
         Optional<String> defaultValue,
-        Map<
-                PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ValidationType,
-                List<Integer>>
+        Map<EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType, List<Integer>>
             validation,
         Optional<String> help) {
       Map<String, List<Integer>> validationMap = new HashMap<>();
-      for (Map.Entry<
-              PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ValidationType,
-              List<Integer>>
+      for (Map.Entry<EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType, List<Integer>>
           entry : validation.entrySet()) {
         validationMap.put(entry.getKey().toString(), entry.getValue());
       }
