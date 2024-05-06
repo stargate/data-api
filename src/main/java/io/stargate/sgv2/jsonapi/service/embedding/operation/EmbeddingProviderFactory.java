@@ -47,8 +47,10 @@ public class EmbeddingProviderFactory {
       String serviceName,
       String modelName,
       int dimension,
-      Map<String, Object> vectorizeServiceParameter) {
-    return addService(tenant, serviceName, modelName, dimension, vectorizeServiceParameter);
+      Map<String, Object> vectorizeServiceParameter,
+      String commandName) {
+    return addService(
+        tenant, serviceName, modelName, dimension, vectorizeServiceParameter, commandName);
   }
 
   private synchronized EmbeddingProvider addService(
@@ -56,7 +58,8 @@ public class EmbeddingProviderFactory {
       String serviceName,
       String modelName,
       int dimension,
-      Map<String, Object> vectorizeServiceParameter) {
+      Map<String, Object> vectorizeServiceParameter,
+      String commandName) {
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
         embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
     if (config.enableEmbeddingGateway()) {
@@ -68,7 +71,8 @@ public class EmbeddingProviderFactory {
           configuration.baseUrl(),
           modelName,
           embeddingService,
-          vectorizeServiceParameter);
+          vectorizeServiceParameter,
+          commandName);
     }
 
     if (configuration.serviceProvider().equals(ProviderConstants.CUSTOM)) {
