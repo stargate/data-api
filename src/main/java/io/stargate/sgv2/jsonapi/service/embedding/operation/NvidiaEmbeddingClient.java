@@ -26,20 +26,21 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 /**
  * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
- * of chosen nvidia model.
+ * of chosen Nvidia model.
  */
-public class NVidiaEmbeddingClient implements EmbeddingProvider {
+public class NvidiaEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private String baseUrl;
-  private final NVidiaEmbeddingProvider embeddingProvider;
+  private final NvidiaEmbeddingProvider embeddingProvider;
 
   private Map<String, Object> vectorizeServiceParameters;
 
-  public NVidiaEmbeddingClient(
+  public NvidiaEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
+      int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
     this.modelName = modelName;
@@ -49,12 +50,12 @@ public class NVidiaEmbeddingClient implements EmbeddingProvider {
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
             .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
-            .build(NVidiaEmbeddingProvider.class);
+            .build(NvidiaEmbeddingProvider.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface NVidiaEmbeddingProvider {
+  public interface NvidiaEmbeddingProvider {
     @POST
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
