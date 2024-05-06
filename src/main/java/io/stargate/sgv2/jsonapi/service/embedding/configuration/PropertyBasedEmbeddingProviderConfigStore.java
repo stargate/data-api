@@ -8,7 +8,7 @@ import java.util.Optional;
 @ApplicationScoped
 public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProviderConfigStore {
 
-  @Inject private PropertyBasedEmbeddingProviderConfig config;
+  @Inject private EmbeddingProvidersConfig config;
 
   @Override
   public void saveConfiguration(Optional<String> tenant, ServiceConfig serviceConfig) {
@@ -18,7 +18,7 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
   @Override
   public EmbeddingProviderConfigStore.ServiceConfig getConfiguration(
       Optional<String> tenant, String serviceName) {
-    // already checked if the service exists and enabled in CreatCollectionCommandResolver
+    // already checked if the service exists and enabled in CreateCollectionCommandResolver
     if (serviceName.equals(ProviderConstants.CUSTOM)) {
       return ServiceConfig.custom(config.custom().clazz());
     }
