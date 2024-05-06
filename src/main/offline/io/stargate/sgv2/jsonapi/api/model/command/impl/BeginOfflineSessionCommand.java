@@ -129,32 +129,8 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
     }
     String provider = vectorize.provider();
     String model = vectorize.modelName();
-    CollectionSettings.VectorConfig.VectorizeConfig.VectorizeServiceAuthentication
-        vectorizeServiceAuthentication =
-            toCollectionSettingsVectorizeServiceAuthentication(
-                vectorize.vectorizeServiceAuthentication());
     return new CollectionSettings.VectorConfig.VectorizeConfig(
-        provider, model, vectorizeServiceAuthentication, vectorize.vectorizeServiceParameter());
-  }
-
-  private CollectionSettings.VectorConfig.VectorizeConfig.VectorizeServiceAuthentication
-      toCollectionSettingsVectorizeServiceAuthentication(
-          CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig
-                  .VectorizeServiceAuthentication
-              vectorizeServiceAuthentication) {
-    if (vectorizeServiceAuthentication == null) {
-      return null;
-    }
-    Set<CollectionSettings.AuthenticationType> authenticationTypes = null;
-    if (vectorizeServiceAuthentication.type() != null) {
-      authenticationTypes = new HashSet<>();
-      for (String authenticationType : vectorizeServiceAuthentication.type()) {
-        authenticationTypes.add(
-            CollectionSettings.AuthenticationType.fromString(authenticationType));
-      }
-    }
-    return new CollectionSettings.VectorConfig.VectorizeConfig.VectorizeServiceAuthentication(
-        authenticationTypes, vectorizeServiceAuthentication.secretName());
+        provider, model, vectorize.authentication(), vectorize.parameter());
   }
 
   private FileWriterParams buildFileWriterParams() {
