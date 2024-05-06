@@ -347,3 +347,19 @@ jobs:
           branch-suffix: "short-commit-hash"
           base: "main"
 
+  # dispatch release event
+  dispatch:
+    name: Dispatch release event
+    needs: [ 'resolve-tag', 'publish-jar', 'publish-image-dockerhub', 'publish-image-ecr']
+    if: ${{ always() }}
+    continue-on-error: true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repository dispatch
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.STARGATE_GH_RELEASE }}
+          repository: riptano/embedding-gateway
+          event-type: data-api-release
+          client-payload: '{"version": "${{ needs.resolve-tag.outputs.release-tag}}"}'
