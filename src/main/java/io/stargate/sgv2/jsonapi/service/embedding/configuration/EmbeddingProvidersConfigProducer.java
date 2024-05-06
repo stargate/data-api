@@ -39,10 +39,10 @@ public class EmbeddingProvidersConfigProducer {
     // defaultEmbeddingProviderConfig is what we mapped from embedding-providers-config.yaml
     // and will be used if embedding-gateway is not enabled
     if (!operationsConfig.enableEmbeddingGateway()) {
-      LOG.info("embedding gateway disabled, use default config");
+      LOG.trace("embedding gateway disabled, use default config");
       return defaultConfig;
     }
-    LOG.info("embedding gateway enabled, fetch supported providers from embedding gateway");
+    LOG.trace("embedding gateway enabled, fetch supported providers from embedding gateway");
     final EmbeddingGateway.GetSupportedProvidersRequest getSupportedProvidersRequest =
         EmbeddingGateway.GetSupportedProvidersRequest.newBuilder().build();
     final Uni<EmbeddingGateway.GetSupportedProvidersResponse> getSupportedProvidersResponseUni =
@@ -66,10 +66,7 @@ public class EmbeddingProvidersConfigProducer {
               .subscribeAsCompletionStage()
               .get();
     } catch (Exception e) {
-      LOG.error(
-          "embedding gateway enabled, but fail to fetch supported providers, use default config, exception: "
-              + e);
-      return defaultConfig;
+      throw ErrorCode.EBG_NOT_AVAILABLE.toApiException();
     }
     return grpcResponseToConfig(getSupportedProvidersResponse);
   }
@@ -98,9 +95,13 @@ public class EmbeddingProvidersConfigProducer {
               grpcProviderConfig.getSupportedAuthenticationsMap().entrySet().stream()
                   .collect(
                       Collectors.toMap(
+                          // Convert AuthenticationType string from grpc response to
+                          // AuthenticationType
                           eachEntry ->
                               EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType
                                   .valueOf(eachEntry.getKey()),
+                          // Construct AuthenticationConfig which includes list of tokenConfig in
+                          // it.
                           eachEntry -> {
                             EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig
                                     .AuthenticationConfig
