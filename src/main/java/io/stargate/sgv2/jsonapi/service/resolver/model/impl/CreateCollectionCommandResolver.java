@@ -268,7 +268,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private void validateAuthentication(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig providerConfig) {
-    if (userConfig.vectorizeServiceAuthentication() == null) {
+    if (userConfig.authentication() == null) {
       return;
     }
     // Check if user authentication type is support
@@ -280,13 +280,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     //              throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
     //                  "Authentication type '%s' is not supported", type);
     //            });
-    // Check if 'secretName' is provided if authentication type is 'SHARED_SECRET'
-    if (userConfig.vectorizeServiceAuthentication().type().contains("SHARED_SECRET")
-        && (userConfig.vectorizeServiceAuthentication().secretName() == null
-            || userConfig.vectorizeServiceAuthentication().secretName().isEmpty())) {
-      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'secretName' must be provided for 'SHARED_SECRET' authentication type");
-    }
   }
 
   private void validateUserParameters(
@@ -296,8 +289,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     if (providerConfig.parameters() == null || providerConfig.parameters().isEmpty()) {
       // If providerConfig.parameters() is null or empty but the user still provides parameters,
       // it's an error
-      if (userConfig.vectorizeServiceParameter() != null
-          && !userConfig.vectorizeServiceParameter().isEmpty()) {
+      if (userConfig.parameters() != null && !userConfig.parameters().isEmpty()) {
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "Parameters provided but the provider '%s' expects none", userConfig.provider());
       }
@@ -310,9 +302,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             .collect(Collectors.toSet());
 
     Map<String, Object> userParameters =
-        (userConfig.vectorizeServiceParameter() != null)
-            ? userConfig.vectorizeServiceParameter()
-            : Collections.emptyMap();
+        (userConfig.parameters() != null) ? userConfig.parameters() : Collections.emptyMap();
     // Check for unconfigured parameters provided by the user
     userParameters
         .keySet()
