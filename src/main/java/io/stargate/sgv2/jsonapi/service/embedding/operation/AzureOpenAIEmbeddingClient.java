@@ -25,6 +25,11 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
+/**
+ * Implementation of client that talks to Azure-deployed OpenAI embedding provider. See <a
+ * href="https://learn.microsoft.com/en-us/azure/ai-services/openai/reference">API reference</a> for
+ * details of REST API being called.
+ */
 public class AzureOpenAIEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
