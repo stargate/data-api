@@ -25,6 +25,8 @@ on:
 # global env vars, available in all jobs and steps
 env:
   MAVEN_OPTS: '-Xmx4g'
+  DS_ARTIFACTORY_USERNAME: ${{ secrets.DS_ARTIFACTORY_USERNAME }}
+  DS_ARTIFACTORY_PASSWORD: ${{ secrets.DS_ARTIFACTORY_PASSWORD }}
 
 jobs:
 
@@ -65,6 +67,69 @@ jobs:
           release_name: Release ${{needs.resolve-tag.outputs.release-tag}}
           draft: false
           prerelease: false
+
+  # builds and publishes the jar
+  publish-jar:
+    name: Build and Publish Jar
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven
+
+      - name: Setup Maven
+        run: |
+          mkdir -p ~/.m2
+          cat <<EOF > ~/.m2/settings.xml
+          <settings>
+            <servers>
+              <server>
+                <id>stargate-central</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>stargate-snapshots</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+             </server>
+              <server>
+                <id>artifactory</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-snapshots</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-releases</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+             </server>
+           </servers>
+          </settings>
+          EOF
+
+      # only set version here
+      - name: Install
+        run: |
+          ./mvnw -B -ntp versions:set -DremoveSnapshot versions:commit
+
+      - name: Build
+        run: |
+          ./mvnw -B -ntp clean package -P offline
+
+      - name: Publish JAR
+        run: |
+          ./mvnw -B -ntp clean deploy -DskipTests -P offline
 
   # publishes the docker image to docker hub
   publish-image-dockerhub:
