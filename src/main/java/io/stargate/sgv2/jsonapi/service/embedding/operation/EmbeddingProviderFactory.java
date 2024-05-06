@@ -37,12 +37,12 @@ public class EmbeddingProviderFactory {
 
   private static final Map<String, ProviderConstructor> providersMap =
       Map.ofEntries(
-          Map.entry(ProviderConstants.OPENAI, OpenAiEmbeddingClient::new),
-          Map.entry(ProviderConstants.AZURE_OPENAI, AzureOpenAiEmbeddingClient::new),
+          Map.entry(ProviderConstants.OPENAI, OpenAIEmbeddingClient::new),
+          Map.entry(ProviderConstants.AZURE_OPENAI, AzureOpenAIEmbeddingClient::new),
           Map.entry(ProviderConstants.HUGGINGFACE, HuggingFaceEmbeddingClient::new),
           Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingClient::new),
           Map.entry(ProviderConstants.COHERE, CohereEmbeddingClient::new),
-          Map.entry(ProviderConstants.NVIDIA, NVidiaEmbeddingClient::new));
+          Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingClient::new));
 
   public EmbeddingProvider getConfiguration(
       Optional<String> tenant,

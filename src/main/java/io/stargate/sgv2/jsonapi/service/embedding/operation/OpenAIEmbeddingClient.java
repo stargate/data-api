@@ -26,14 +26,14 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class OpenAiEmbeddingClient implements EmbeddingProvider {
+public class OpenAIEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private int dimension;
-  private final OpenAiEmbeddingProvider embeddingProvider;
+  private final OpenAIEmbeddingProvider embeddingProvider;
   private Map<String, Object> vectorizeServiceParameters;
 
-  public OpenAiEmbeddingClient(
+  public OpenAIEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
@@ -48,12 +48,12 @@ public class OpenAiEmbeddingClient implements EmbeddingProvider {
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
             .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
-            .build(OpenAiEmbeddingProvider.class);
+            .build(OpenAIEmbeddingProvider.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface OpenAiEmbeddingProvider {
+  public interface OpenAIEmbeddingProvider {
     @POST
     @Path("/embeddings")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")

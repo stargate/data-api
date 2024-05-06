@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
-import io.stargate.sgv2.jsonapi.service.embedding.util.EmbeddingUtil;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.core.Response;
@@ -25,13 +24,19 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class AzureOpenAiEmbeddingClient implements EmbeddingProvider {
+/**
+ * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
+ * of chosen Nvidia model.
+ */
+public class NvidiaEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
-  private int dimension;
-  private final OpenAiEmbeddingProvider embeddingProvider;
+  private String baseUrl;
+  private final NvidiaEmbeddingProvider embeddingProvider;
 
-  public AzureOpenAiEmbeddingClient(
+  private Map<String, Object> vectorizeServiceParameters;
+
+  public NvidiaEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
@@ -39,26 +44,22 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingProvider {
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
     this.modelName = modelName;
-    // One special case: legacy "ada-002" model does not accept "dimension" parameter
-    this.dimension = EmbeddingUtil.acceptsOpenAIDimensions(modelName) ? dimension : 0;
-    String actualUrl = EmbeddingUtil.replaceParameters(baseUrl, vectorizeServiceParameters);
-
+    this.baseUrl = baseUrl;
+    this.vectorizeServiceParameters = vectorizeServiceParameters;
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(actualUrl))
+            .baseUri(URI.create(baseUrl))
             .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
-            .build(OpenAiEmbeddingProvider.class);
+            .build(NvidiaEmbeddingProvider.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface OpenAiEmbeddingProvider {
+  public interface NvidiaEmbeddingProvider {
     @POST
-    // no path specified, as it is already included in the baseUri
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
-        // API keys as "api-key", MS Entra as "Authorization: Bearer [token]
-        @HeaderParam("api-key") String accessToken, EmbeddingRequest request);
+        @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
     static RuntimeException mapException(Response response) {
@@ -66,16 +67,19 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingProvider {
     }
   }
 
-  private record EmbeddingRequest(
-      String[] input,
-      String model,
-      @JsonInclude(value = JsonInclude.Include.NON_DEFAULT) int dimensions) {}
+  private record EmbeddingRequest(String[] input, String model, String input_type) {}
 
-  private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
-    private record Data(String object, int index, float[] embedding) {}
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private record EmbeddingResponse(Data[] data, String model, Usage usage) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record Data(int index, float[] embedding) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record Usage(int prompt_tokens, int total_tokens) {}
   }
+
+  private static final String PASSAGE = "passage";
+  private static final String QUERY = "query";
 
   @Override
   public Uni<List<float[]>> vectorize(
@@ -83,11 +87,13 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingProvider {
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
     String[] textArray = new String[texts.size()];
-    EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
+    String input_type = embeddingRequestType == EmbeddingRequestType.INDEX ? PASSAGE : QUERY;
+
+    EmbeddingRequest request =
+        new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
     Uni<EmbeddingResponse> response =
         embeddingProvider
-            // NOTE: NO "Bearer " prefix with API key for Azure OpenAI
-            .embed(apiKeyOverride.get(), request)
+            .embed("Bearer " + apiKeyOverride.get(), request)
             .onFailure(
                 throwable -> {
                   return (throwable.getCause() != null
@@ -97,6 +103,7 @@ public class AzureOpenAiEmbeddingClient implements EmbeddingProvider {
             .retry()
             .withBackOff(Duration.ofMillis(requestProperties.retryDelayInMillis()))
             .atMost(requestProperties.maxRetries());
+
     return response
         .onItem()
         .transform(

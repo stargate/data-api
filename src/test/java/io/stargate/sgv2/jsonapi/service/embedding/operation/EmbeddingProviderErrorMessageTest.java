@@ -23,11 +23,11 @@ public class EmbeddingProviderErrorMessageTest {
   @Inject EmbeddingProvidersConfig config;
 
   @Nested
-  class NVidiaEmbeddingClientTest {
+  class NvidiaEmbeddingClientTest {
     @Test
     public void test429() throws Exception {
       Throwable exception =
-          new NVidiaEmbeddingClient(
+          new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
@@ -50,7 +50,7 @@ public class EmbeddingProviderErrorMessageTest {
     @Test
     public void test4xx() throws Exception {
       Throwable exception =
-          new NVidiaEmbeddingClient(
+          new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
@@ -73,7 +73,7 @@ public class EmbeddingProviderErrorMessageTest {
     @Test
     public void test5xx() throws Exception {
       Throwable exception =
-          new NVidiaEmbeddingClient(
+          new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
@@ -96,7 +96,7 @@ public class EmbeddingProviderErrorMessageTest {
     @Test
     public void testRetryError() throws Exception {
       Throwable exception =
-          new NVidiaEmbeddingClient(
+          new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
@@ -117,7 +117,7 @@ public class EmbeddingProviderErrorMessageTest {
     @Test
     public void testCorrectHeaderAndBody() {
       List<float[]> result =
-          new NVidiaEmbeddingClient(
+          new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
@@ -137,7 +137,7 @@ public class EmbeddingProviderErrorMessageTest {
     @Test
     public void testIncorrectContentType() {
       Throwable exception =
-          new NVidiaEmbeddingClient(
+          new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
@@ -162,7 +162,7 @@ public class EmbeddingProviderErrorMessageTest {
     @Test
     public void testNoJsonResponse() {
       Throwable exception =
-          new NVidiaEmbeddingClient(
+          new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
@@ -187,7 +187,7 @@ public class EmbeddingProviderErrorMessageTest {
     @Test
     public void testEmptyJsonResponse() {
       List<float[]> result =
-          new NVidiaEmbeddingClient(
+          new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
                   config.providers().get("nvidia").url(),
                   "test",
