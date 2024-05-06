@@ -492,7 +492,7 @@ class ObjectMapperConfigurationTest {
       parameterMap.put("projectId", "test project");
 
       Map<String, Object> authenticationMap = new HashMap<>();
-      parameterMap.put("x-embedding-provider-key", "user_key");
+      authenticationMap.put("x-embedding-provider-key", "user_key");
 
       assertThat(result)
           .isInstanceOfSatisfying(
