@@ -29,7 +29,7 @@ stargate:
                   default-value: 512
                   validation:
                     numeric-range: [2, 1536]
-                  help: "Vector dimension to use in the database and when calling Open AI."
+                  help: "Vector dimension to use in the database and when calling OpenAI."
             - name: text-embedding-3-large
               parameters:
                 - name: vectorDimension
@@ -38,7 +38,7 @@ stargate:
                   default-value: 1024
                   validation:
                     numeric-range: [256, 3072]
-                  help: "Vector dimension to use in the database and when calling Open AI."
+                  help: "Vector dimension to use in the database and when calling OpenAI."
             - name: text-embedding-ada-002
               vector-dimension: 1536
 
@@ -84,7 +84,7 @@ stargate:
                   default-value: 512
                   validation:
                     numeric-range: [2, 1536]
-                  help: "Vector dimension to use in the database and when calling Open AI."
+                  help: "Vector dimension to use in the database and when calling Azure OpenAI."
             - name: text-embedding-3-large
               parameters:
                 - name: vectorDimension
@@ -93,7 +93,7 @@ stargate:
                   default-value: 1024
                   validation:
                     numeric-range: [256, 3072]
-                  help: "Vector dimension to use in the database and when calling Open AI."
+                  help: "Vector dimension to use in the database and when calling Azure OpenAI."
             - name: text-embedding-ada-002
               vector-dimension: 1536
 
