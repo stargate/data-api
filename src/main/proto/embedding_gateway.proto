@@ -174,7 +174,7 @@ message ValidateCredentialRequest {
   string                    credential = 4;
 }
 
-// Request message to validate the credential
+// Response message to validate the credential
 message ValidateCredentialResponse {
   bool                    validity = 1;
   Error                    error = 2;
