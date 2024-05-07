@@ -30,8 +30,8 @@ import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,11 +118,13 @@ public class OfflineCommandsProcessor {
   }
 
   public boolean canEndSession(
-      OfflineWriterSessionStatus offlineWriterSessionStatus, int createNewSessionAfterDataInMB) {
-    return offlineWriterSessionStatus.dataDirectorySizeInBytes() >= createNewSessionAfterDataInMB;
+      OfflineWriterSessionStatus offlineWriterSessionStatus,
+      long createNewSessionAfterDataInBytes) {
+    return offlineWriterSessionStatus.dataDirectorySizeInBytes()
+        >= createNewSessionAfterDataInBytes;
   }
 
-  public Pair<BeginOfflineSessionResponse, CommandContext> beginSession(
+  public Triple<BeginOfflineSessionResponse, CommandContext, String> beginSession(
       CreateCollectionCommand createCollectionCommand,
       String namespace,
       String ssTablesOutputDirectory,
@@ -158,7 +160,10 @@ public class OfflineCommandsProcessor {
             .get();
     BeginOfflineSessionResponse beginOfflineSessionResponse =
         BeginOfflineSessionResponse.fromCommandResult(commandResult);
-    return new ImmutablePair<>(beginOfflineSessionResponse, commandContext);
+    return new ImmutableTriple<>(
+        beginOfflineSessionResponse,
+        commandContext,
+        beginOfflineSessionCommand.getFileWriterParams().createTableCQL());
   }
 
   public OfflineInsertManyResponse loadData(

@@ -19,7 +19,9 @@ public class OfflineFileWriterInitializer {
     SmallRyeConfig smallRyeConfig =
         new SmallRyeConfigBuilder()
             .withMapping(OperationsConfig.class)
-            // TODO-SL increase cache expiry limit
+            .withDefaultValue(
+                "stargate.jsonapi.operations.database-config.session-cache-ttl-seconds",
+                String.valueOf(60 * 60 * 24)) // 24 hours
             .withDefaultValue("stargate.jsonapi.operations.database-config.type", OFFLINE_WRITER)
             .build();
     return smallRyeConfig.getConfigMapping(OperationsConfig.class);
