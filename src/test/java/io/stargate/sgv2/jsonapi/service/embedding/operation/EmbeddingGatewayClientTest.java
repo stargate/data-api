@@ -29,7 +29,7 @@ public class EmbeddingGatewayClientTest {
   public static final String TESTING_COMMAND_NAME = "test_command";
 
   @Test
-  void handleValidResponse() throws ExecutionException, InterruptedException {
+  void handleValidResponse() {
     EmbeddingService embeddingService = mock(EmbeddingService.class);
     final EmbeddingGateway.EmbeddingResponse.Builder builder =
         EmbeddingGateway.EmbeddingResponse.newBuilder();
@@ -77,7 +77,7 @@ public class EmbeddingGatewayClientTest {
   }
 
   @Test
-  void handleError() throws ExecutionException, InterruptedException {
+  void handleError() {
     EmbeddingService embeddingService = mock(EmbeddingService.class);
     final EmbeddingGateway.EmbeddingResponse.Builder builder =
         EmbeddingGateway.EmbeddingResponse.newBuilder();
