@@ -31,8 +31,8 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
   private String modelName;
   private String baseUrl;
   private EmbeddingService embeddingService;
-
   private Map<String, Object> vectorizeServiceParameter;
+  private String commandName;
 
   /**
    * @param requestProperties
@@ -52,7 +52,8 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
       String baseUrl,
       String modelName,
       EmbeddingService embeddingService,
-      Map<String, Object> vectorizeServiceParameter) {
+      Map<String, Object> vectorizeServiceParameter,
+      String commandName) {
     this.requestProperties = requestProperties;
     this.provider = provider;
     this.dimension = dimension;
@@ -61,6 +62,7 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
     this.baseUrl = baseUrl;
     this.embeddingService = embeddingService;
     this.vectorizeServiceParameter = vectorizeServiceParameter;
+    this.commandName = commandName;
   }
 
   /**
@@ -111,6 +113,7 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
         EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.newBuilder()
             .setModelName(modelName)
             .setDimensions(dimension)
+            .setCommandName(commandName)
             .putAllParameters(grpcVectorizeServiceParameter)
             .setInputType(
                 embeddingRequestType == EmbeddingRequestType.INDEX
