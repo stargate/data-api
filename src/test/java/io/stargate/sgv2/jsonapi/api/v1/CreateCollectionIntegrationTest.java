@@ -796,6 +796,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
     }
 
     @Test
