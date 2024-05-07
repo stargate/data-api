@@ -103,12 +103,10 @@ class CreateCollectionCommandResolverTest {
                                 "provider": "vertexai",
                                 "modelName": "textembedding-gecko@003",
                                 "authentication": {
-                                    "type": [
-                                        "HEADER"
-                                    ]
+                                    "x-embedding-provider-key": "user_key"
                                 },
                                 "parameters": {
-                                    "PROJECT_ID": "test project"
+                                    "projectId": "test project"
                                 }
                             }
                         }
@@ -131,7 +129,7 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
                 assertThat(op.comment())
                     .isEqualTo(
-                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"vector\":{\"dimension\":768,\"metric\":\"cosine\",\"service\":{\"provider\":\"vertexai\",\"modelName\":\"textembedding-gecko@003\",\"authentication\":{\"type\":[\"HEADER\"]},\"parameters\":{\"PROJECT_ID\":\"test project\"}}},\"defaultId\":{\"type\":\"\"}}}}",
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"vector\":{\"dimension\":768,\"metric\":\"cosine\",\"service\":{\"provider\":\"vertexai\",\"modelName\":\"textembedding-gecko@003\",\"authentication\":{\"x-embedding-provider-key\":\"user_key\"},\"parameters\":{\"projectId\":\"test project\"}}},\"defaultId\":{\"type\":\"\"}}}}",
                         TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }

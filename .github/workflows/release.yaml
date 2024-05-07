@@ -25,6 +25,8 @@ on:
 # global env vars, available in all jobs and steps
 env:
   MAVEN_OPTS: '-Xmx4g'
+  DS_ARTIFACTORY_USERNAME: ${{ secrets.DS_ARTIFACTORY_USERNAME }}
+  DS_ARTIFACTORY_PASSWORD: ${{ secrets.DS_ARTIFACTORY_PASSWORD }}
 
 jobs:
 
@@ -58,13 +60,76 @@ jobs:
     steps:
       - name: Create release
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{needs.resolve-tag.outputs.release-tag}}
           release_name: Release ${{needs.resolve-tag.outputs.release-tag}}
           draft: false
           prerelease: false
+
+  # builds and publishes the jar
+  publish-jar:
+    name: Build and Publish Jar
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: maven
+
+      - name: Setup Maven
+        run: |
+          mkdir -p ~/.m2
+          cat <<EOF > ~/.m2/settings.xml
+          <settings>
+            <servers>
+              <server>
+                <id>stargate-central</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>stargate-snapshots</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+             </server>
+              <server>
+                <id>artifactory</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-snapshots</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+              </server>
+              <server>
+                <id>artifactory-releases</id>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+             </server>
+           </servers>
+          </settings>
+          EOF
+
+      # only set version here
+      - name: Install
+        run: |
+          ./mvnw -B -ntp versions:set -DremoveSnapshot versions:commit
+
+      - name: Build
+        run: |
+          ./mvnw -B -ntp clean package -P offline
+
+      - name: Publish JAR
+        run: |
+          ./mvnw -B -ntp clean deploy -DskipTests -P offline
 
   # publishes the docker image to docker hub
   publish-image-dockerhub:
@@ -84,17 +149,17 @@ jobs:
             #profile: '-Pnative'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: maven
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       # only set version here
       - name: Install
@@ -103,7 +168,7 @@ jobs:
 
       # build and push OSS image to Docker hub
       - name: Login to DockerHub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
@@ -136,17 +201,17 @@ jobs:
             #profile: '-Pnative'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
           cache: maven
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       # only set version here
       - name: Install
@@ -155,7 +220,7 @@ jobs:
 
       # build and push Astra image to Amazon ECR
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
@@ -163,7 +228,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
         with:
           mask-password: 'true'
 
@@ -214,7 +279,7 @@ jobs:
           cosign-release: ${COSIGN_VERSION}
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1-node16
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.ECR_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.ECR_SECRET_KEY }}
@@ -222,7 +287,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
         with:
           mask-password: 'true'
 
@@ -251,10 +316,10 @@ jobs:
     needs: create-release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
@@ -272,7 +337,7 @@ jobs:
           ./mvnw -B -ntp xml-format:xml-format fmt:format
 
       - name: Version bump PR
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v6
         env:
           GITHUB_TOKEN:
         with:
@@ -282,3 +347,19 @@ jobs:
           branch-suffix: "short-commit-hash"
           base: "main"
 
+  # dispatch release event
+  dispatch:
+    name: Dispatch release event
+    needs: [ 'resolve-tag', 'publish-jar', 'publish-image-dockerhub', 'publish-image-ecr']
+    if: ${{ always() }}
+    continue-on-error: true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repository dispatch
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.STARGATE_GH_RELEASE }}
+          repository: riptano/embedding-gateway
+          event-type: data-api-release
+          client-payload: '{"version": "${{ needs.resolve-tag.outputs.release-tag}}"}'

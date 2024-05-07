@@ -157,6 +157,8 @@ public enum ErrorCode {
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(
       "Collection creation failure (unable to create table). Recommend re-creating the collection"),
+  OFFLINE_WRITER_SESSION_NOT_FOUND("Offline writer session not found"),
+  UNABLE_TO_CREATE_OFFLINE_WRITER_SESSION("Unable to create offline writer session"),
   INVALID_SCHEMA_VERSION(
       "Collection has invalid schema version. Recommend re-creating the collection"),
   INVALID_ID_TYPE("Invalid Id type"),
@@ -176,7 +178,9 @@ public enum ErrorCode {
   SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
   SERVER_COORDINATOR_FAILURE("Coordinator failed"),
   SERVER_FAILURE("Driver failed"),
-  SERVER_UNHANDLED_ERROR("Server failed");
+  SERVER_UNHANDLED_ERROR("Server failed"),
+  INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
+  EBG_NOT_AVAILABLE("Embedding Gateway is not available");
 
   private final String message;
 

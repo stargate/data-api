@@ -469,13 +469,10 @@ class ObjectMapperConfigurationTest {
                                         "provider": "openai",
                                         "modelName": "text-embedding-ada-002",
                                         "authentication": {
-                                            "type": [
-                                                "SHARED_SECRET"
-                                            ],
-                                            "secretName": "name_given_by_user"
+                                            "x-embedding-provider-key": "user_key"
                                         },
                                         "parameters": {
-                                            "project_id": "test project"
+                                            "projectId": "test project"
                                         }
                                     }
                                 },
@@ -492,7 +489,10 @@ class ObjectMapperConfigurationTest {
       Command result = objectMapper.readValue(json, Command.class);
 
       Map<String, Object> parameterMap = new HashMap<>();
-      parameterMap.put("project_id", "test project");
+      parameterMap.put("projectId", "test project");
+
+      Map<String, Object> authenticationMap = new HashMap<>();
+      authenticationMap.put("x-embedding-provider-key", "user_key");
 
       assertThat(result)
           .isInstanceOfSatisfying(
@@ -509,35 +509,13 @@ class ObjectMapperConfigurationTest {
                     .isEqualTo("openai");
                 assertThat(createCollection.options().vector().vectorizeConfig().modelName())
                     .isEqualTo("text-embedding-ada-002");
-                assertThat(
-                        createCollection
-                            .options()
-                            .vector()
-                            .vectorizeConfig()
-                            .vectorizeServiceAuthentication()
-                            .type())
-                    .contains("SHARED_SECRET");
-                assertThat(
-                        createCollection
-                            .options()
-                            .vector()
-                            .vectorizeConfig()
-                            .vectorizeServiceAuthentication()
-                            .secretName())
-                    .isEqualTo("name_given_by_user");
-                assertThat(
-                        createCollection
-                            .options()
-                            .vector()
-                            .vectorizeConfig()
-                            .vectorizeServiceParameter())
+                assertThat(createCollection.options().vector().vectorizeConfig().authentication())
                     .isNotNull();
-                assertThat(
-                        createCollection
-                            .options()
-                            .vector()
-                            .vectorizeConfig()
-                            .vectorizeServiceParameter())
+                assertThat(createCollection.options().vector().vectorizeConfig().authentication())
+                    .isEqualTo(authenticationMap);
+                assertThat(createCollection.options().vector().vectorizeConfig().parameters())
+                    .isNotNull();
+                assertThat(createCollection.options().vector().vectorizeConfig().parameters())
                     .isEqualTo(parameterMap);
                 assertThat(createCollection.options().indexing()).isNotNull();
                 assertThat(createCollection.options().indexing().allow()).isNull();

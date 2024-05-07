@@ -25,7 +25,6 @@ import java.util.Optional;
 public class DataVectorizerService {
 
   private final ObjectMapper objectMapper;
-  private final DataApiRequestInfo dataApiRequestInfo;
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
   private final MetricsConfig metricsConfig;
@@ -33,12 +32,10 @@ public class DataVectorizerService {
   @Inject
   public DataVectorizerService(
       ObjectMapper objectMapper,
-      DataApiRequestInfo dataApiRequestInfo,
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       MetricsConfig metricsConfig) {
     this.objectMapper = objectMapper;
-    this.dataApiRequestInfo = dataApiRequestInfo;
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
     this.metricsConfig = metricsConfig;
@@ -47,11 +44,13 @@ public class DataVectorizerService {
   /**
    * This will vectorize the sort clause, update clause and the document with `$vectorize` field
    *
+   * @param dataApiRequestInfo
    * @param commandContext
    * @param command
    * @return
    */
-  public Uni<Command> vectorize(CommandContext commandContext, Command command) {
+  public Uni<Command> vectorize(
+      DataApiRequestInfo dataApiRequestInfo, CommandContext commandContext, Command command) {
     EmbeddingProvider embeddingProvider =
         Optional.ofNullable(commandContext.embeddingProvider())
             .map(
@@ -60,7 +59,6 @@ public class DataVectorizerService {
                         meterRegistry,
                         jsonApiMetricsConfig,
                         dataApiRequestInfo,
-                        metricsConfig,
                         provider,
                         command.getClass().getSimpleName()))
             .orElse(null);

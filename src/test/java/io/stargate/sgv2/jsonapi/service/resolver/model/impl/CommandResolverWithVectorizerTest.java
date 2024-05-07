@@ -108,7 +108,10 @@ public class CommandResolverWithVectorizerTest {
       final FindCommand vectorizedCommand =
           (FindCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, findOneCommand)
+                  .vectorize(
+                      dataApiRequestInfo,
+                      TestEmbeddingProvider.commandContextWithVectorize,
+                      findOneCommand)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
@@ -153,7 +156,7 @@ public class CommandResolverWithVectorizerTest {
 
       Throwable throwable =
           dataVectorizerService
-              .vectorize(VECTOR_COMMAND_CONTEXT, findOneCommand)
+              .vectorize(dataApiRequestInfo, VECTOR_COMMAND_CONTEXT, findOneCommand)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .getFailure();
@@ -188,7 +191,10 @@ public class CommandResolverWithVectorizerTest {
       final DeleteOneCommand vectorizedCommand =
           (DeleteOneCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, deleteOneCommand)
+                  .vectorize(
+                      dataApiRequestInfo,
+                      TestEmbeddingProvider.commandContextWithVectorize,
+                      deleteOneCommand)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
@@ -252,7 +258,10 @@ public class CommandResolverWithVectorizerTest {
       final UpdateOneCommand vectorizedCommand =
           (UpdateOneCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, command)
+                  .vectorize(
+                      dataApiRequestInfo,
+                      TestEmbeddingProvider.commandContextWithVectorize,
+                      command)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
@@ -330,7 +339,7 @@ public class CommandResolverWithVectorizerTest {
       UpdateOneCommand command = objectMapper.readValue(json, UpdateOneCommand.class);
       Throwable throwable =
           dataVectorizerService
-              .vectorize(VECTOR_COMMAND_CONTEXT, command)
+              .vectorize(dataApiRequestInfo, VECTOR_COMMAND_CONTEXT, command)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .getFailure();
@@ -364,7 +373,10 @@ public class CommandResolverWithVectorizerTest {
       final FindOneAndDeleteCommand vectorizedCommand =
           (FindOneAndDeleteCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, command)
+                  .vectorize(
+                      dataApiRequestInfo,
+                      TestEmbeddingProvider.commandContextWithVectorize,
+                      command)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
@@ -427,7 +439,10 @@ public class CommandResolverWithVectorizerTest {
       final FindOneAndReplaceCommand vectorizedCommand =
           (FindOneAndReplaceCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, command)
+                  .vectorize(
+                      dataApiRequestInfo,
+                      TestEmbeddingProvider.commandContextWithVectorize,
+                      command)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
@@ -510,7 +525,10 @@ public class CommandResolverWithVectorizerTest {
       final FindOneAndUpdateCommand vectorizedCommand =
           (FindOneAndUpdateCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, command)
+                  .vectorize(
+                      dataApiRequestInfo,
+                      TestEmbeddingProvider.commandContextWithVectorize,
+                      command)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
@@ -596,7 +614,10 @@ public class CommandResolverWithVectorizerTest {
       final FindOneCommand vectorizedCommand =
           (FindOneCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, command)
+                  .vectorize(
+                      dataApiRequestInfo,
+                      TestEmbeddingProvider.commandContextWithVectorize,
+                      command)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
@@ -658,7 +679,10 @@ public class CommandResolverWithVectorizerTest {
       final InsertManyCommand vectorizedCommand =
           (InsertManyCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, command)
+                  .vectorize(
+                      dataApiRequestInfo,
+                      TestEmbeddingProvider.commandContextWithVectorize,
+                      command)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()
@@ -708,7 +732,7 @@ public class CommandResolverWithVectorizerTest {
       InsertManyCommand command = objectMapper.readValue(json, InsertManyCommand.class);
       final Throwable throwable =
           dataVectorizerService
-              .vectorize(VECTOR_COMMAND_CONTEXT, command)
+              .vectorize(dataApiRequestInfo, VECTOR_COMMAND_CONTEXT, command)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .getFailure();
@@ -745,7 +769,10 @@ public class CommandResolverWithVectorizerTest {
       final InsertOneCommand vectorizedCommand =
           (InsertOneCommand)
               dataVectorizerService
-                  .vectorize(TestEmbeddingProvider.commandContextWithVectorize, command)
+                  .vectorize(
+                      dataApiRequestInfo,
+                      TestEmbeddingProvider.commandContextWithVectorize,
+                      command)
                   .subscribe()
                   .withSubscriber(UniAssertSubscriber.create())
                   .awaitItem()

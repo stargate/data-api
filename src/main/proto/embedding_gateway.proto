@@ -1,0 +1,177 @@
+syntax = "proto3";
+
+option java_package = "io.stargate.embedding.gateway";
+
+package stargate;
+// The request message that is sent to embedding gateway gRPC API
+message ProviderEmbedRequest {
+  ProviderContext 			provider_context = 1;
+  EmbeddingRequest			embedding_request = 2;
+
+  // The provider context message for the embedding gateway gRPC API
+  message ProviderContext {
+    string 					          provider_name = 1;
+    string  					        tenant_id = 2;
+    map<string, string>  			auth_tokens = 3;
+  }
+
+  // The request message for the embedding gateway gRPC API
+  message EmbeddingRequest {
+    // The model name for the embedding request
+    string 					      model_name = 1;
+    // The dimensions of the embedding, some providers supports multiple dimensions
+    optional int32 				dimensions = 2;
+    // The parameter value, used when provided needs user specified parameters
+    map<string, ParameterValue>  	parameters = 3;
+    // The input type for the embedding request
+    InputType 					  input_type = 4;
+    // The input data that needs to be vectorized
+    repeated string 			inputs = 5;
+    // The command contains vectorize
+    string command_name = 6;
+
+    // The parameter value, used when provided needs user specified parameters
+    message ParameterValue {
+      oneof ParameterValueOneOf {
+        string 	str_value = 1;
+        int32 	int_value = 2;
+        float 	float_value = 3;
+        bool 		bool_value = 4;
+      }
+    }
+
+    // The input type for the embedding request message, some embedding supports this
+    enum InputType {
+      INDEX = 0;
+      SEARCH = 1;
+    }
+  }
+}
+
+
+
+// The response message for the embedding gateway gRPC API if successful
+message EmbeddingResponse {
+  Usage 					usage = 1;
+  repeated FloatEmbedding		embeddings = 2;
+  ErrorResponse error = 3;
+
+  // The embedding response message
+  message FloatEmbedding {
+    // The index of the embedding corresponding to the input
+    int32 				index = 1;
+    // The embedding values
+    repeated float			embedding = 2;
+  }
+
+  // The usage statistics for the embedding gateway gRPC API on successful response
+  message Usage {
+    string 				provider_name = 1;
+    string 				model_name = 2;
+    string  			tenant_id = 3;
+    int32 				prompt_tokens = 4;
+    int32 				total_tokens = 5;
+    int32 				input_bytes = 6;
+    int32					output_bytes = 7;
+    int32					call_duration_us = 8;
+  }
+
+  // The error response message for the embedding gateway gRPC API
+  message ErrorResponse {
+    string error_code = 1;
+    string error_message = 2;
+  }
+}
+
+// The request message for the get supported providers gRPC API
+message GetSupportedProvidersRequest {}
+
+
+// The response message for the get supported providers gRPC API if successful
+message GetSupportedProvidersResponse {
+  map<string, ProviderConfig>  	supportedProviders = 1;
+  ErrorResponse error = 2;
+
+  // ProviderConfig message represents configuration for an embedding provider.
+  message ProviderConfig {
+    bool enabled = 1;
+    string url = 2;
+    // No AuthenticationType Enum, since enum can not be key of map in grpc message
+    map<string, AuthenticationConfig> supported_authentications = 3;
+    repeated ParameterConfig parameters = 4;
+    RequestProperties properties = 5;
+    repeated ModelConfig models = 6;
+
+
+    message AuthenticationConfig{
+      bool enabled = 1;
+      repeated TokenConfig tokens = 2;
+
+      message TokenConfig{
+        string accepted = 1;
+        string forwarded = 2;
+      }
+    }
+
+
+    // ParameterConfig message represents configuration for a parameter.
+    message ParameterConfig {
+      string name = 1;
+      ParameterType type = 2;
+      bool required = 3;
+      string default_value = 4;
+      //No ValidationType Enum, since enum can not be key of map in grpc message
+      map<string, IntList> validation = 5;
+      string help = 6;
+
+      message IntList {
+        repeated int32 values = 1;
+      }
+
+      // ParameterType enum represents types of parameters.
+      enum ParameterType {
+        STRING = 0;
+        NUMBER = 1;
+        BOOLEAN = 2;
+      }
+
+      // ValidationType enum represents types of validation.
+      enum ValidationType {
+        NUMERIC_RANGE = 0;
+        OPTIONS = 1;
+      }
+    }
+
+    // RequestProperties message represents http properties for requests to the embedding providers.
+    message RequestProperties {
+      int32 max_retries = 1;
+      int32 retry_delay_millis = 2;
+      int32 request_timeout_millis = 3;
+      string max_input_length = 4;
+      string task_type_store = 5;
+      string task_type_read = 6;
+    }
+
+    // ModelConfig message represents configuration for a specific model.
+    message ModelConfig {
+      string name = 1;
+      int32 vector_dimension = 2;
+      repeated ParameterConfig parameters = 3;
+      map<string, string> properties = 4;
+    }
+  }
+
+  // The error response message for the embedding gateway gRPC API
+  message ErrorResponse {
+    string error_code = 1;
+    string error_message = 2;
+  }
+}
+
+
+
+// The embedding gateway gPRC API to generate embeddings
+service EmbeddingService {
+  rpc Embed (ProviderEmbedRequest) returns (EmbeddingResponse) {}
+  rpc GetSupportedProviders (GetSupportedProvidersRequest) returns (GetSupportedProvidersResponse){}
+}

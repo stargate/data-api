@@ -1,0 +1,10 @@
+{"_id":1,"name":"John Doe","dob":{"$date":631152000000},"livingInUSA":true,"$vector":[0.1,0.5,0.8]}
+{"_id":2,"name":"Jane Smith","dob":{"$date":484396400000},"livingInUSA":false,"$vector":[0.2,0.6,0.9]}
+{"_id":3,"name":"Michael Johnson","dob":{"$date":400554000000},"livingInUSA":true,"$vector":[0.3,0.7,0.2]}
+{"_id":4,"name":"Emily Brown","dob":{"$date":818784000000},"livingInUSA":false,"$vector":[0.4,0.8,0.5]}
+{"_id":5,"name":"David Williams","dob":{"$date":270036000000},"livingInUSA":true,"$vector":[0.5,0.9,0.3]}
+{"_id":6,"name":"Sarah Martinez","dob":{"$date":574704000000},"livingInUSA":false,"$vector":[0.6,0.1,0.6]}
+{"_id":7,"name":"James Lee","dob":{"$date":722868000000},"livingInUSA":true,"$vector":[0.7,0.2,0.7]}
+{"_id":8,"name":"Olivia Taylor","dob":{"$date":320515200000},"livingInUSA":false,"$vector":[0.8,0.3,0.8]}
+{"_id":9,"name":"William Garcia","dob":{"$date":212688000000},"livingInUSA":true,"$vector":[0.9,0.4,0.9]}
+{"_id":10,"name":"Emma Rodriguez","dob":{"$date":887414400000},"livingInUSA":false,"$vector":[0.2,0.3,0.4]}

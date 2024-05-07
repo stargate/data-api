@@ -17,6 +17,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
@@ -29,20 +30,21 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  */
 public class CohereEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String apiKey;
   private String modelName;
   private String baseUrl;
   private final CohereEmbeddingProvider embeddingProvider;
+  private Map<String, Object> vectorizeServiceParameters;
 
   public CohereEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String apiKey,
-      String modelName) {
+      String modelName,
+      int dimension,
+      Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
-    this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
+    this.vectorizeServiceParameters = vectorizeServiceParameters;
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
@@ -99,8 +101,7 @@ public class CohereEmbeddingClient implements EmbeddingProvider {
         new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
     Uni<EmbeddingResponse> response =
         embeddingProvider
-            .embed(
-                "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey), request)
+            .embed("Bearer " + apiKeyOverride.get(), request)
             .onFailure(
                 throwable -> {
                   return (throwable.getCause() != null

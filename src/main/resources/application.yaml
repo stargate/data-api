@@ -84,6 +84,14 @@ quarkus:
 
     port: 8181
 
+  # properties for the gRPC clients
+  grpc:
+    # all the clients' setup, only embedding gateway
+    clients:
+      embedding:
+        host: 0.0.0.0
+        port: 9000
+
   # built-in micrometer properties
   micrometer:
     binder:
