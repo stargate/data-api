@@ -2,7 +2,10 @@ name: JAR Publish
 
 # runs on
 # * manual trigger
+# * push to main branch (updates SNAPSHOT version)
 on:
+  push:
+    branches: [ "main" ]
   workflow_dispatch:
 
 # global env vars, available in all jobs and steps

@@ -186,7 +186,7 @@ public class CollectionResource {
                           vectorizeConfig.provider(),
                           vectorizeConfig.modelName(),
                           collectionProperty.vectorConfig().vectorSize(),
-                          vectorizeConfig.vectorizeServiceParameter(),
+                          vectorizeConfig.parameters(),
                           command.getClass().getSimpleName());
                 }
 

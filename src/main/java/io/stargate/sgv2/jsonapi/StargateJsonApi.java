@@ -733,7 +733,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                                                 1536
                                                             ]
                                                         },
-                                                        "help": "Vector dimension to use in the database and when calling Open AI."
+                                                        "help": "Vector dimension to use in the database and when calling OpenAI."
                                                     }
                                                 ]
                                             },
@@ -752,7 +752,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                                                 3072
                                                             ]
                                                         },
-                                                        "help": "Vector dimension to use in the database and when calling Open AI."
+                                                        "help": "Vector dimension to use in the database and when calling OpenAI."
                                                     }
                                                 ]
                                             },
