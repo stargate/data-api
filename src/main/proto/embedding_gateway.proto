@@ -27,6 +27,8 @@ message ProviderEmbedRequest {
     InputType 					  input_type = 4;
     // The input data that needs to be vectorized
     repeated string 			inputs = 5;
+    // The command contains vectorize
+    string command_name = 6;
 
     // The parameter value, used when provided needs user specified parameters
     message ParameterValue {
