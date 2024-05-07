@@ -414,6 +414,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       }
       return configVectorDimension;
     }
-    return 0;
+    return userVectorDimension;
   }
 }

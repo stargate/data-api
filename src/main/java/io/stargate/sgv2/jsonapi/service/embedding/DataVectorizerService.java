@@ -59,7 +59,6 @@ public class DataVectorizerService {
                         meterRegistry,
                         jsonApiMetricsConfig,
                         dataApiRequestInfo,
-                        metricsConfig,
                         provider,
                         command.getClass().getSimpleName()))
             .orElse(null);
