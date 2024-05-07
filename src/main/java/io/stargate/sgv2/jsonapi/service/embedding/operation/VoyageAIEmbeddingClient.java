@@ -31,6 +31,7 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
   private final VoyageAIEmbeddingProvider embeddingProvider;
 
   private final String requestTypeQuery, requestTypeIndex;
+  private final Boolean autoTruncate;
 
   public VoyageAIEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
@@ -40,8 +41,11 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
     this.modelName = modelName;
+    // use configured input_type if available
     requestTypeQuery = requestProperties.requestTypeQuery().orElse(null);
     requestTypeIndex = requestProperties.requestTypeIndex().orElse(null);
+    Object v = vectorizeServiceParameters.get("autoTruncate");
+    autoTruncate = (v instanceof Boolean) ? (Boolean) v : null;
 
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
@@ -87,9 +91,8 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
     final String inputType =
         (embeddingRequestType == EmbeddingRequestType.SEARCH) ? requestTypeQuery : requestTypeIndex;
     String[] textArray = new String[texts.size()];
-    // !!! TODO: bind "truncation" from "autoTruncate" service parameter
     EmbeddingRequest request =
-        new EmbeddingRequest(inputType, texts.toArray(textArray), modelName, true);
+        new EmbeddingRequest(inputType, texts.toArray(textArray), modelName, autoTruncate);
     Uni<EmbeddingResponse> response =
         embeddingProvider
             .embed("Bearer " + apiKeyOverride.get(), request)

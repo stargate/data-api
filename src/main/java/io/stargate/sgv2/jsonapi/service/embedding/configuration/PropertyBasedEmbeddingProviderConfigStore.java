@@ -26,8 +26,7 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
         || !config.providers().get(serviceName).enabled()) {
       throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(serviceName);
     }
-    EmbeddingProvidersConfig.EmbeddingProviderConfig.RequestProperties properties =
-        config.providers().get(serviceName).properties();
+    final var properties = config.providers().get(serviceName).properties();
     return ServiceConfig.provider(
         serviceName,
         serviceName,
