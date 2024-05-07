@@ -186,7 +186,8 @@ public class CollectionResource {
                           vectorizeConfig.provider(),
                           vectorizeConfig.modelName(),
                           collectionProperty.vectorConfig().vectorSize(),
-                          vectorizeConfig.parameters());
+                          vectorizeConfig.parameters(),
+                          command.getClass().getSimpleName());
                 }
 
                 CommandContext commandContext =
