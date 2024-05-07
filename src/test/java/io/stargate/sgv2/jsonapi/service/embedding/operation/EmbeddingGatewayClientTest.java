@@ -25,6 +25,9 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class EmbeddingGatewayClientTest {
+
+  public static final String TESTING_COMMAND_NAME = "test_command";
+
   @Test
   void handleValidResponse() throws ExecutionException, InterruptedException {
     EmbeddingService embeddingService = mock(EmbeddingService.class);
@@ -52,7 +55,8 @@ public class EmbeddingGatewayClientTest {
             "https://api.openai.com/v1/",
             "text-embedding-3-small",
             embeddingService,
-            Map.of());
+            Map.of(),
+            TESTING_COMMAND_NAME);
 
     final List<float[]> response =
         embeddingGatewayClient
@@ -95,7 +99,8 @@ public class EmbeddingGatewayClientTest {
             "https://api.openai.com/v1/",
             "text-embedding-3-small",
             embeddingService,
-            Map.of());
+            Map.of(),
+            TESTING_COMMAND_NAME);
 
     Throwable result =
         embeddingGatewayClient
