@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
@@ -64,16 +65,18 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
     }
   }
 
-  private record EmbeddingRequest(
+  record EmbeddingRequest(
       @JsonInclude(JsonInclude.Include.NON_EMPTY) String input_type,
       String[] input,
       String model,
-      boolean truncation) {}
+      @JsonInclude(JsonInclude.Include.NON_NULL) Boolean truncation) {}
 
-  private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
-    private record Data(String object, int index, float[] embedding) {}
+  @JsonIgnoreProperties({"object"})
+  record EmbeddingResponse(Data[] data, String model, Usage usage) {
+    @JsonIgnoreProperties({"object"})
+    record Data(int index, float[] embedding) {}
 
-    private record Usage(int prompt_tokens, int total_tokens) {}
+    record Usage(int total_tokens) {}
   }
 
   @Override
@@ -84,6 +87,7 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
     final String inputType =
         (embeddingRequestType == EmbeddingRequestType.SEARCH) ? requestTypeQuery : requestTypeIndex;
     String[] textArray = new String[texts.size()];
+    // !!! TODO: bind "truncation" from "autoTruncate" service parameter
     EmbeddingRequest request =
         new EmbeddingRequest(inputType, texts.toArray(textArray), modelName, true);
     Uni<EmbeddingResponse> response =
