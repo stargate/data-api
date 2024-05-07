@@ -48,7 +48,8 @@ public class EmbeddingGatewayClientTest {
     when(embeddingService.embed(any())).thenReturn(Uni.createFrom().item(builder.build()));
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
-            EmbeddingProviderConfigStore.RequestProperties.of(5, 5, 5),
+            EmbeddingProviderConfigStore.RequestProperties.of(
+                5, 5, 5, Optional.empty(), Optional.empty()),
             "openai",
             1536,
             Optional.of("default"),
@@ -92,7 +93,8 @@ public class EmbeddingGatewayClientTest {
     when(embeddingService.embed(any())).thenReturn(Uni.createFrom().item(builder.build()));
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
-            EmbeddingProviderConfigStore.RequestProperties.of(5, 5, 5),
+            EmbeddingProviderConfigStore.RequestProperties.of(
+                5, 5, 5, Optional.empty(), Optional.empty()),
             "openai",
             1536,
             Optional.of("default"),
