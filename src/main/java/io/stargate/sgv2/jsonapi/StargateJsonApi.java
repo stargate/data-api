@@ -698,7 +698,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                                 "tokens": [
                                                     {
                                                         "forwarded": "Authorization",
-                                                        "accepted": "x-embedding-provider-key"
+                                                        "accepted": "x-embedding-api-key"
                                                     }
                                                 ]
                                             },
