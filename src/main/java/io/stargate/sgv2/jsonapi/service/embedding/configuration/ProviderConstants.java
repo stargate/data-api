@@ -8,6 +8,7 @@ public final class ProviderConstants {
   public static final String COHERE = "cohere";
   public static final String NVIDIA = "nvidia";
   public static final String CUSTOM = "custom";
+  public static final String MISTRAL = "mistral";
 
   // Private constructor to prevent instantiation
   private ProviderConstants() {}

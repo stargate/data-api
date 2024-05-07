@@ -42,7 +42,8 @@ public class EmbeddingProviderFactory {
           Map.entry(ProviderConstants.HUGGINGFACE, HuggingFaceEmbeddingClient::new),
           Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingClient::new),
           Map.entry(ProviderConstants.COHERE, CohereEmbeddingClient::new),
-          Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingClient::new));
+          Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingClient::new),
+          Map.entry(ProviderConstants.MISTRAL, MistralEmbeddingClient::new));
 
   public EmbeddingProvider getConfiguration(
       Optional<String> tenant,
