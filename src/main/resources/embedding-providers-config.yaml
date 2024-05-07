@@ -13,7 +13,7 @@ stargate:
             HEADER:
               enabled: true
               tokens:
-                - accepted: x-embedding-provider-key
+                - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
               enabled: false
@@ -52,7 +52,7 @@ stargate:
             HEADER:
               enabled: true
               tokens:
-                - accepted: x-embedding-provider-key
+                - accepted: x-embedding-api-key
                   forwarded: api-key
             SHARED_SECRET:
               enabled: false
@@ -107,7 +107,7 @@ stargate:
             HEADER:
                 enabled: true
                 tokens:
-                  - accepted: x-embedding-provider-key
+                  - accepted: x-embedding-api-key
                     forwarded: Authorization
             SHARED_SECRET:
                 enabled: false
@@ -129,7 +129,7 @@ stargate:
             HEADER:
               enabled: true
               tokens:
-                - accepted: x-embedding-provider-key
+                - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
               enabled: false
@@ -167,7 +167,7 @@ stargate:
             HEADER:
               enabled: true
               tokens:
-                - accepted: x-embedding-provider-key
+                - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
               enabled: false
@@ -188,7 +188,7 @@ stargate:
             HEADER:
               enabled: false
               tokens:
-                - accepted: x-embedding-provider-key
+                - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
               enabled: false
@@ -210,7 +210,7 @@ stargate:
             HEADER:
               enabled: true
               tokens:
-                - accepted: x-embedding-provider-key
+                - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
               enabled: false
@@ -237,7 +237,7 @@ stargate:
             HEADER:
               enabled: true
               tokens:
-                - accepted: x-embedding-provider-key
+                - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
               enabled: false
@@ -275,7 +275,7 @@ stargate:
             HEADER:
               enabled: true
               tokens:
-                - accepted: x-embedding-provider-key
+                - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
               enabled: false
