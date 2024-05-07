@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import io.micrometer.core.instrument.*;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import java.util.List;
@@ -19,7 +18,6 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
   private final DataApiRequestInfo dataApiRequestInfo;
   private static final String UNKNOWN_VALUE = "unknown";
-  private final MetricsConfig.TenantRequestCounterConfig tenantConfig;
   private final EmbeddingProvider embeddingProvider;
   private final String commandName;
 
@@ -27,13 +25,11 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
       MeterRegistry meterRegistry,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       DataApiRequestInfo dataApiRequestInfo,
-      MetricsConfig metricsConfig,
       EmbeddingProvider embeddingProvider,
       String commandName) {
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
     this.dataApiRequestInfo = dataApiRequestInfo;
-    tenantConfig = metricsConfig.tenantRequestCounter();
     this.embeddingProvider = embeddingProvider;
     this.commandName = commandName;
   }
@@ -79,8 +75,7 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
    */
   private Tags getCustomTags() {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), commandName);
-    Tag tenantTag =
-        Tag.of(tenantConfig.tenantTag(), dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
+    Tag tenantTag = Tag.of("tenant", dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     Tag embeddingProviderTag =
         Tag.of(
             jsonApiMetricsConfig.embeddingProvider(), embeddingProvider.getClass().getSimpleName());
