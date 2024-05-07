@@ -19,7 +19,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest

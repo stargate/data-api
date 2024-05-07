@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -28,7 +29,7 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
   private String modelName;
   private final VoyageAIEmbeddingProvider embeddingProvider;
 
-  // private final String requestQuery, requestIndex;
+  private final String requestTypeQuery, requestTypeIndex;
 
   public VoyageAIEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
@@ -38,6 +39,9 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
     this.modelName = modelName;
+    requestTypeQuery = requestProperties.requestTypeQuery().orElse(null);
+    requestTypeIndex = requestProperties.requestTypeIndex().orElse(null);
+
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
@@ -61,7 +65,10 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
   }
 
   private record EmbeddingRequest(
-      String input_type, String[] input, String model, boolean truncation) {}
+      @JsonInclude(JsonInclude.Include.NON_EMPTY) String input_type,
+      String[] input,
+      String model,
+      boolean truncation) {}
 
   private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
     private record Data(String object, int index, float[] embedding) {}
@@ -75,7 +82,7 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
     final String inputType =
-        (embeddingRequestType == EmbeddingRequestType.SEARCH) ? "query" : "document";
+        (embeddingRequestType == EmbeddingRequestType.SEARCH) ? requestTypeQuery : requestTypeIndex;
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request =
         new EmbeddingRequest(inputType, texts.toArray(textArray), modelName, true);
