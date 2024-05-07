@@ -578,10 +578,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                       "provider": "vertexai",
                                       "modelName": "textembedding-gecko@003",
                                       "authentication": {
-                                          "type": [
-                                              "HEADER"
-                                          ],
-                                          "secretName": "test"
+                                          "x-embedding-provider-key": "user_key"
                                       },
                                       "parameters": {
                                           "projectId": "test"
@@ -632,10 +629,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                           "provider": "vertexai",
                                           "modelName": "textembedding-gecko@003",
                                           "authentication": {
-                                              "type": [
-                                                  "HEADER"
-                                              ],
-                                              "secretName": "test"
+                                              "x-embedding-provider-key": "user_key"
                                           },
                                           "parameters": {
                                               "projectId": "test"
@@ -659,10 +653,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                           "provider": "vertexai",
                                           "modelName": "textembedding-gecko@003",
                                           "authentication": {
-                                              "type": [
-                                                  "HEADER"
-                                              ],
-                                              "secretName": "test"
+                                              "x-embedding-provider-key": "user_key"
                                           },
                                           "parameters": {
                                               "projectId": "test"
@@ -774,10 +765,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                       "provider": "test",
                                       "modelName": "textembedding-gecko@003",
                                       "authentication": {
-                                          "type": [
-                                              "HEADER","SHARED_SECRET"
-                                          ],
-                                          "secretName": "test"
+                                          "x-embedding-provider-key": "user_key",
+                                          "providerKey" : "shared_creds.providerKey"
                                       },
                                       "parameters": {
                                           "projectId": "test"
@@ -821,10 +810,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                         "provider": "vertexai",
                                         "modelName": "text-embedding-3-small",
                                         "authentication": {
-                                            "type": [
-                                                "HEADER"
-                                            ],
-                                            "secretName": "test"
+                                            "x-embedding-provider-key": "user_key"
                                         }
                                     }
                                 }
@@ -865,10 +851,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                         "provider": "vertexai",
                                         "modelName": "textembedding-gecko@003",
                                         "authentication": {
-                                            "type": [
-                                                "HEADER"
-                                            ],
-                                            "secretName": "test"
+                                            "x-embedding-provider-key": "user_key"
                                         },
                                         "parameters": {
                                             "test": "test"
@@ -908,9 +891,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                         "provider": "openai",
                                         "modelName": "text-embedding-3-small",
                                         "authentication": {
-                                            "type": [
-                                                "HEADER"
-                                            ]
+                                            "x-embedding-provider-key": "user_key"
                                         },
                                         "parameters": {
                                             "test": "test"
@@ -954,10 +935,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                         "provider": "vertexai",
                                         "modelName": "textembedding-gecko@003",
                                         "authentication": {
-                                            "type": [
-                                                "HEADER"
-                                            ],
-                                            "secretName": "test"
+                                            "x-embedding-provider-key": "user_key"
                                         },
                                         "parameters": {
                                             "projectId": 123
@@ -1001,10 +979,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                         "provider": "vertexai",
                                         "modelName": "testModel",
                                         "authentication": {
-                                            "type": [
-                                                "HEADER"
-                                            ],
-                                            "secretName": "test"
+                                            "x-embedding-provider-key": "user_key"
                                         },
                                         "parameters": {
                                             "projectId": "123"
@@ -1048,10 +1023,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                         "provider": "vertexai",
                                         "modelName": "textembedding-gecko@003",
                                         "authentication": {
-                                            "type": [
-                                                "HEADER"
-                                            ],
-                                            "secretName": "test"
+                                            "x-embedding-provider-key": "user_key"
                                         },
                                         "parameters": {
                                             "projectId": "123"

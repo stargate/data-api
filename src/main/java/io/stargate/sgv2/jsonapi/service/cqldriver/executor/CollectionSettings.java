@@ -22,7 +22,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Refactored as seperate class that represent a collection property.*
@@ -134,27 +133,13 @@ public record CollectionSettings(
         // provider, modelName, must exist
         String provider = vectorizeServiceNode.get("provider").asText();
         String modelName = vectorizeServiceNode.get("modelName").asText();
-        // construct VectorizeConfig.VectorizeServiceAuthentication, can be null
+        // construct VectorizeConfig.authentication, can be null
         JsonNode vectorizeServiceAuthenticationNode = vectorizeServiceNode.get("authentication");
-        VectorizeConfig.VectorizeServiceAuthentication vectorizeServiceAuthentication = null;
-        if (vectorizeServiceAuthenticationNode != null) {
-          Set<AuthenticationType> authenticationTypeSet = new HashSet<>();
-          vectorizeServiceAuthenticationNode
-              .get("type")
-              .forEach(
-                  node -> authenticationTypeSet.add(AuthenticationType.fromString(node.asText())));
-          // when stored_secrets authentication is used must be provided with the name of a
-          // pre-registered secret.
-
-          String authenticationSecretName =
-              vectorizeServiceAuthenticationNode.has("secretName")
-                  ? vectorizeServiceAuthenticationNode.get("secretName").asText()
-                  : null;
-          vectorizeServiceAuthentication =
-              new VectorizeConfig.VectorizeServiceAuthentication(
-                  authenticationTypeSet, authenticationSecretName);
-        }
-        // construct VectorizeConfig.VectorizeServiceParameter, can be null
+        Map<String, String> vectorizeServiceAuthentication =
+            vectorizeServiceAuthenticationNode == null
+                ? null
+                : objectMapper.convertValue(vectorizeServiceAuthenticationNode, Map.class);
+        // construct VectorizeConfig.parameters, can be null
         JsonNode vectorizeServiceParameterNode = vectorizeServiceNode.get("parameters");
         Map<String, Object> vectorizeServiceParameter =
             vectorizeServiceParameterNode == null
@@ -171,12 +156,8 @@ public record CollectionSettings(
     public record VectorizeConfig(
         String provider,
         String modelName,
-        VectorizeServiceAuthentication vectorizeServiceAuthentication,
-        Map<String, Object> vectorizeServiceParameter) {
-
-      public record VectorizeServiceAuthentication(
-          Set<AuthenticationType> type, String secretName) {}
-    }
+        Map<String, String> authentication,
+        Map<String, Object> parameters) {}
   }
 
   /**
@@ -369,35 +350,15 @@ public record CollectionSettings(
     if (collectionSetting.vectorConfig.vectorEnabled) {
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig vectorizeConfig = null;
       if (collectionSetting.vectorConfig.vectorizeConfig != null) {
-        CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig
-                .VectorizeServiceAuthentication
-            vectorizeServiceAuthentication = null;
-        if (collectionSetting.vectorConfig.vectorizeConfig.vectorizeServiceAuthentication != null) {
-          vectorizeServiceAuthentication =
-              new CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig
-                  .VectorizeServiceAuthentication(
-                  collectionSetting
-                      .vectorConfig
-                      .vectorizeConfig
-                      .vectorizeServiceAuthentication
-                      .type
-                      .stream()
-                      .map(Enum::name)
-                      .collect(Collectors.toList()),
-                  collectionSetting
-                      .vectorConfig
-                      .vectorizeConfig
-                      .vectorizeServiceAuthentication
-                      .secretName);
-        }
-        Map<String, Object> vectorizeServiceParameter =
-            collectionSetting.vectorConfig.vectorizeConfig.vectorizeServiceParameter;
+        Map<String, String> authentication =
+            collectionSetting.vectorConfig.vectorizeConfig.authentication;
+        Map<String, Object> parameters = collectionSetting.vectorConfig.vectorizeConfig.parameters;
         vectorizeConfig =
             new CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig(
                 collectionSetting.vectorConfig.vectorizeConfig.provider,
                 collectionSetting.vectorConfig.vectorizeConfig.modelName,
-                vectorizeServiceAuthentication,
-                vectorizeServiceParameter == null ? null : Map.copyOf(vectorizeServiceParameter));
+                authentication == null ? null : Map.copyOf(authentication),
+                parameters == null ? null : Map.copyOf(parameters));
       }
       vectorSearchConfig =
           new CreateCollectionCommand.Options.VectorSearchConfig(

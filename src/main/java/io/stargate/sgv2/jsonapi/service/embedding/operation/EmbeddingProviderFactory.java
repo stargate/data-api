@@ -31,16 +31,18 @@ public class EmbeddingProviderFactory {
         EmbeddingProviderConfigStore.RequestProperties requestProperties,
         String baseUrl,
         String modelName,
+        int dimension,
         Map<String, Object> vectorizeServiceParameter);
   }
 
   private static final Map<String, ProviderConstructor> providersMap =
       Map.ofEntries(
-          Map.entry(ProviderConstants.OPENAI, OpenAiEmbeddingClient::new),
+          Map.entry(ProviderConstants.OPENAI, OpenAIEmbeddingClient::new),
+          Map.entry(ProviderConstants.AZURE_OPENAI, AzureOpenAIEmbeddingClient::new),
           Map.entry(ProviderConstants.HUGGINGFACE, HuggingFaceEmbeddingClient::new),
           Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingClient::new),
           Map.entry(ProviderConstants.COHERE, CohereEmbeddingClient::new),
-          Map.entry(ProviderConstants.NVIDIA, NVidiaEmbeddingClient::new));
+          Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingClient::new));
 
   public EmbeddingProvider getConfiguration(
       Optional<String> tenant,
@@ -59,7 +61,6 @@ public class EmbeddingProviderFactory {
       Map<String, Object> vectorizeServiceParameter) {
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
         embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
-
     if (config.enableEmbeddingGateway()) {
       return new EmbeddingGatewayClient(
           configuration.requestConfiguration(),
@@ -99,6 +100,7 @@ public class EmbeddingProviderFactory {
             configuration.requestConfiguration(),
             configuration.baseUrl(),
             modelName,
+            dimension,
             vectorizeServiceParameter);
   }
 }

@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.PropertyBasedEmbeddingProviderConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOperation;
@@ -31,7 +31,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private final DocumentLimitsConfig documentLimitsConfig;
   private final DatabaseLimitsConfig dbLimitsConfig;
   private final OperationsConfig operationsConfig;
-  private final PropertyBasedEmbeddingProviderConfig embeddingProviderConfig;
+  private final EmbeddingProvidersConfig embeddingProvidersConfig;
 
   @Inject
   public CreateCollectionCommandResolver(
@@ -41,14 +41,14 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       DocumentLimitsConfig documentLimitsConfig,
       DatabaseLimitsConfig dbLimitsConfig,
       OperationsConfig operationsConfig,
-      PropertyBasedEmbeddingProviderConfig embeddingProviderConfig) {
+      EmbeddingProvidersConfig embeddingProvidersConfig) {
     this.objectMapper = objectMapper;
     this.cqlSessionCache = cqlSessionCache;
     this.dataStoreConfig = dataStoreConfig;
     this.documentLimitsConfig = documentLimitsConfig;
     this.dbLimitsConfig = dbLimitsConfig;
     this.operationsConfig = operationsConfig;
-    this.embeddingProviderConfig = embeddingProviderConfig;
+    this.embeddingProvidersConfig = embeddingProvidersConfig;
   }
 
   public CreateCollectionCommandResolver() {
@@ -237,7 +237,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       return userVectorDimension;
     }
     // Check if the service provider exists and is enabled
-    PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig providerConfig =
+    EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig =
         getAndValidateProviderConfig(userConfig);
 
     // Check secret name for shared secret authentication, if applicable
@@ -250,10 +250,10 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     return validateModelAndDimension(userConfig, providerConfig, userVectorDimension);
   }
 
-  private PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig getAndValidateProviderConfig(
+  private EmbeddingProvidersConfig.EmbeddingProviderConfig getAndValidateProviderConfig(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig) {
-    PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig providerConfig =
-        embeddingProviderConfig.providers().get(userConfig.provider());
+    EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig =
+        embeddingProvidersConfig.providers().get(userConfig.provider());
     if (providerConfig == null || !providerConfig.enabled()) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "Service provider '%s' is not supported", userConfig.provider());
@@ -267,8 +267,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   //  4. Check if token is valid
   private void validateAuthentication(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
-      PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig providerConfig) {
-    if (userConfig.vectorizeServiceAuthentication() == null) {
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
+    if (userConfig.authentication() == null) {
       return;
     }
     // Check if user authentication type is support
@@ -280,24 +280,16 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     //              throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
     //                  "Authentication type '%s' is not supported", type);
     //            });
-    // Check if 'secretName' is provided if authentication type is 'SHARED_SECRET'
-    if (userConfig.vectorizeServiceAuthentication().type().contains("SHARED_SECRET")
-        && (userConfig.vectorizeServiceAuthentication().secretName() == null
-            || userConfig.vectorizeServiceAuthentication().secretName().isEmpty())) {
-      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "'secretName' must be provided for 'SHARED_SECRET' authentication type");
-    }
   }
 
   private void validateUserParameters(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
-      PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig providerConfig) {
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
     // 1. Error if the user provided unconfigured parameters
     if (providerConfig.parameters() == null || providerConfig.parameters().isEmpty()) {
       // If providerConfig.parameters() is null or empty but the user still provides parameters,
       // it's an error
-      if (userConfig.vectorizeServiceParameter() != null
-          && !userConfig.vectorizeServiceParameter().isEmpty()) {
+      if (userConfig.parameters() != null && !userConfig.parameters().isEmpty()) {
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "Parameters provided but the provider '%s' expects none", userConfig.provider());
       }
@@ -306,13 +298,11 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     }
     Set<String> expectedParamNames =
         providerConfig.parameters().stream()
-            .map(PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig::name)
+            .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig::name)
             .collect(Collectors.toSet());
 
     Map<String, Object> userParameters =
-        (userConfig.vectorizeServiceParameter() != null)
-            ? userConfig.vectorizeServiceParameter()
-            : Collections.emptyMap();
+        (userConfig.parameters() != null) ? userConfig.parameters() : Collections.emptyMap();
     // Check for unconfigured parameters provided by the user
     userParameters
         .keySet()
@@ -327,8 +317,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
     // 2. Error if the user doesn't provide required parameters
     // Check for missing required parameters and collect them for type validation
-    List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig>
-        parametersToValidate = new ArrayList<>();
+    List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parametersToValidate =
+        new ArrayList<>();
     providerConfig
         .parameters()
         .forEach(
@@ -352,24 +342,19 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   }
 
   private void validateParameterType(
-      PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig
-          expectedParamConfig,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig expectedParamConfig,
       Object userParamValue) {
 
-    PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterType expectedParamType =
+    EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterType expectedParamType =
         expectedParamConfig.type();
     boolean typeMismatch =
-        expectedParamType
-                    == PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterType
-                        .STRING
+        expectedParamType == EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterType.STRING
                 && !(userParamValue instanceof String)
             || expectedParamType
-                    == PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterType
-                        .NUMBER
+                    == EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterType.NUMBER
                 && !(userParamValue instanceof Number)
             || expectedParamType
-                    == PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterType
-                        .BOOLEAN
+                    == EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterType.BOOLEAN
                 && !(userParamValue instanceof Boolean);
 
     if (typeMismatch) {
@@ -383,9 +368,9 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   // TODO: fix code 396-408
   private Integer validateModelAndDimension(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
-      PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig providerConfig,
+      EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       Integer userVectorDimension) {
-    PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ModelConfig model =
+    EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model =
         providerConfig.models().stream()
             .filter(m -> m.name().equals(userConfig.modelName()))
             .findFirst()
