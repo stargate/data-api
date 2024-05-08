@@ -1,12 +1,45 @@
 # Changelog
 
-## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
+## [v1.0.7](https://github.com/stargate/data-api/tree/v1.0.7) (2024-05-07)
 
-[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.6...HEAD)
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.6...v1.0.7)
 
 **Closed issues:**
 
+- Querying by string \_id matches ObjectId \_id [\#1045](https://github.com/stargate/data-api/issues/1045)
+- Increase DEFAULT\_MAX\_DOCUMENT\_INSERT\_COUNT to 100 \(from 20\) [\#1042](https://github.com/stargate/data-api/issues/1042)
+- Java driver TruncateException returned on DeleteMany command [\#948](https://github.com/stargate/data-api/issues/948)
+- Java driver ProtocolError on FindCommand [\#947](https://github.com/stargate/data-api/issues/947)
+- Java driver ServerError on multiple operations [\#946](https://github.com/stargate/data-api/issues/946)
+- Java driver AllNodesFailedException on multiple operations [\#945](https://github.com/stargate/data-api/issues/945)
+- \[Enhancement\] - Add option `explain` to `findNamespaces\(\)`  [\#932](https://github.com/stargate/data-api/issues/932)
+- Tenant ID does not appear on all log lines for tenant [\#847](https://github.com/stargate/data-api/issues/847)
 - Run JSON API with DSE 7 [\#600](https://github.com/stargate/data-api/issues/600)
+
+**Merged pull requests:**
+
+- Sstable converter fixes [\#1063](https://github.com/stargate/data-api/pull/1063) ([kathirsvn](https://github.com/kathirsvn))
+- Fix bugs found in demo [\#1062](https://github.com/stargate/data-api/pull/1062) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- update workflows to publish jar [\#1061](https://github.com/stargate/data-api/pull/1061) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Wire command name to MeteredEmbeddingProvider [\#1060](https://github.com/stargate/data-api/pull/1060) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Update `createCollection` Command [\#1059](https://github.com/stargate/data-api/pull/1059) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- EGW, get supported providers [\#1058](https://github.com/stargate/data-api/pull/1058) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Additional minor changes caused by PR\#1048 [\#1057](https://github.com/stargate/data-api/pull/1057) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add support for Azure OpenAI embedding service [\#1056](https://github.com/stargate/data-api/pull/1056) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Renaming the service so can override it easily in the helm chart [\#1055](https://github.com/stargate/data-api/pull/1055) ([maheshrajamani](https://github.com/maheshrajamani))
+- Move embedding-service class under embedding package [\#1054](https://github.com/stargate/data-api/pull/1054) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Offline mode CI and formatting fixes [\#1053](https://github.com/stargate/data-api/pull/1053) ([kathirsvn](https://github.com/kathirsvn))
+- Bump the github-actions group with 5 updates [\#1052](https://github.com/stargate/data-api/pull/1052) ([dependabot[bot]](https://github.com/apps/dependabot))
+- Enable Dependabot update for Github action updates [\#1050](https://github.com/stargate/data-api/pull/1050) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- update GH action versions [\#1049](https://github.com/stargate/data-api/pull/1049) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Update Embedding Providers Config  [\#1048](https://github.com/stargate/data-api/pull/1048) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Added support for embedding gateway [\#1047](https://github.com/stargate/data-api/pull/1047) ([maheshrajamani](https://github.com/maheshrajamani))
+- Change CI to always runs for pull request, not just for specified changes [\#1046](https://github.com/stargate/data-api/pull/1046) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#1042: increase `DEFAULT\_MAX\_DOCUMENT\_INSERT\_COUNT` to 100 \(from 20\) [\#1043](https://github.com/stargate/data-api/pull/1043) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixed change log for v1.0.6 manually. [\#1040](https://github.com/stargate/data-api/pull/1040) ([kathirsvn](https://github.com/kathirsvn))
+- Bumping version for next data-api release [\#1039](https://github.com/stargate/data-api/pull/1039) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Publish Data API jar to internal repo in offline mode [\#1025](https://github.com/stargate/data-api/pull/1025) ([kathirsvn](https://github.com/kathirsvn))
+- Data API as library - Offline Mode [\#905](https://github.com/stargate/data-api/pull/905) ([kathirsvn](https://github.com/kathirsvn))
 
 ## [v1.0.6](https://github.com/stargate/data-api/tree/v1.0.6) (2024-04-17)
 
