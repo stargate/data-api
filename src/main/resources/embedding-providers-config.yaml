@@ -287,8 +287,34 @@ stargate:
           models:
             - name: mistral-embed
               vector-dimension: 1024
-        # upstage:
-        # see https://developers.upstage.ai/docs/apis/embeddings
-        # NOTE: they have a model for storing and a diff one for reading, this is different to everyone else
-        # holding on the config / implementation until we confirm if this can change
+
+        # NOTE: UpstageAI have a model for storing and a diff one for reading: this is different
+        #  from everyone else.
+        #  Holding on the config / implementation until we confirm if this can change
+        # NOTE: no free tier available, CC required
+        upstageAI:
+          # see https://developers.upstage.ai/docs/apis/embeddings
+          # NOT enabled until
+          enabled: false
+          url: https://api.upstage.ai/v1/solar/embeddings
+          supported-authentications:
+            NONE:
+              enabled: false
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-api-key
+                  forwarded: Authorization
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: Authorization
+          parameters:
+          properties:
+          models: # NOTE: this is where weirdness exists; including model names as example
+            - name: solar-1-mini-embedding-query
+              vector-dimension: 4096
+            - name: solar-1-mini-embedding-passage
+              vector-dimension: 4096
 
