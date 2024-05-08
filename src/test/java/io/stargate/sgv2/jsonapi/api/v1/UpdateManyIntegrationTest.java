@@ -181,7 +181,8 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("errors", is(nullValue()));
 
       // assert all updated
-      json = """
+      json =
+          """
           {
             "find": {
             }
@@ -320,7 +321,7 @@ public class UpdateManyIntegrationTest extends AbstractCollectionIntegrationTest
               .path("status.nextPageState");
 
       json =
-          """
+              """
               {
                 "updateMany": {
                   "filter" : {"active_user" : true},

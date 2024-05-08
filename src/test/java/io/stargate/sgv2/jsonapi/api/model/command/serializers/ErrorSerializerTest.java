@@ -36,7 +36,8 @@ class ErrorSerializerTest {
       String result = objectMapper.writeValueAsString(error);
 
       assertThat(result)
-          .isEqualTo("""
+          .isEqualTo(
+              """
                     {"message":"My message.","field":"value"}""");
     }
 
@@ -48,7 +49,9 @@ class ErrorSerializerTest {
 
       String result = objectMapper.writeValueAsString(error);
 
-      assertThat(result).isEqualTo("""
+      assertThat(result)
+          .isEqualTo(
+              """
                     {"message":"My message."}""");
     }
 
@@ -74,7 +77,9 @@ class ErrorSerializerTest {
 
       String result = objectMapper.writeValueAsString(error);
 
-      assertThat(result).isEqualTo("""
+      assertThat(result)
+          .isEqualTo(
+              """
                     {"message":null}""");
     }
   }

@@ -51,7 +51,8 @@ public class MetricsTest {
 
   @Test
   public void unauthorizedCollectionResource() {
-    String json = """
+    String json =
+        """
         {
           "find": {
           }

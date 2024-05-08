@@ -49,7 +49,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
 
   protected void createNamespace(String nsToCreate) {
     String json =
-        """
+            """
         {
           "createNamespace": {
             "name": "%s"
@@ -74,7 +74,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
   @AfterAll
   public void dropNamespace() {
     String json =
-        """
+            """
         {
           "dropNamespace": {
             "name": "%s"
