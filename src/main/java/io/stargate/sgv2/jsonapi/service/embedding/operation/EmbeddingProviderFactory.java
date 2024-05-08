@@ -59,6 +59,7 @@ public class EmbeddingProviderFactory {
         modelName,
         dimension,
         vectorizeServiceParameters,
+        authentication,
         commandName);
   }
 
