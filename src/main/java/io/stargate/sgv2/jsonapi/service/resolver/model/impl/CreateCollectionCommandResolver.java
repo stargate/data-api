@@ -426,7 +426,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     }
 
     // Handle models with a range of acceptable dimensions
-    return providerConfig.parameters().stream()
+    return model.parameters().stream()
         .filter(param -> param.name().equals("vectorDimension"))
         .findFirst()
         .map(param -> validateDimensionParameter(param, userVectorDimension))
