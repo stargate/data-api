@@ -13,12 +13,9 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.Map;
 import java.util.Optional;
-import org.slf4j.Logger;
 
 @ApplicationScoped
 public class EmbeddingProviderFactory {
-
-  private static Logger logger = org.slf4j.LoggerFactory.getLogger(EmbeddingProviderFactory.class);
   @Inject Instance<EmbeddingProviderConfigStore> embeddingProviderConfigStore;
 
   @Inject OperationsConfig config;
@@ -41,8 +38,10 @@ public class EmbeddingProviderFactory {
           Map.entry(ProviderConstants.AZURE_OPENAI, AzureOpenAIEmbeddingClient::new),
           Map.entry(ProviderConstants.HUGGINGFACE, HuggingFaceEmbeddingClient::new),
           Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingClient::new),
+          Map.entry(ProviderConstants.VOYAGE_AI, VoyageAIEmbeddingClient::new),
           Map.entry(ProviderConstants.COHERE, CohereEmbeddingClient::new),
-          Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingClient::new));
+          Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingClient::new),
+          Map.entry(ProviderConstants.MISTRAL, MistralEmbeddingClient::new));
 
   public EmbeddingProvider getConfiguration(
       Optional<String> tenant,
@@ -50,7 +49,7 @@ public class EmbeddingProviderFactory {
       String serviceName,
       String modelName,
       int dimension,
-      Map<String, Object> vectorizeServiceParameter,
+      Map<String, Object> vectorizeServiceParameters,
       Map<String, String> authentication,
       String commandName) {
     return addService(
@@ -59,8 +58,7 @@ public class EmbeddingProviderFactory {
         serviceName,
         modelName,
         dimension,
-        vectorizeServiceParameter,
-        authentication,
+        vectorizeServiceParameters,
         commandName);
   }
 
@@ -70,7 +68,7 @@ public class EmbeddingProviderFactory {
       String serviceName,
       String modelName,
       int dimension,
-      Map<String, Object> vectorizeServiceParameter,
+      Map<String, Object> vectorizeServiceParameters,
       Map<String, String> authentication,
       String commandName) {
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
@@ -85,7 +83,7 @@ public class EmbeddingProviderFactory {
           configuration.baseUrl(),
           modelName,
           embeddingService,
-          vectorizeServiceParameter,
+          vectorizeServiceParameters,
           authentication,
           commandName);
     }
@@ -118,6 +116,6 @@ public class EmbeddingProviderFactory {
             configuration.baseUrl(),
             modelName,
             dimension,
-            vectorizeServiceParameter);
+            vectorizeServiceParameters);
   }
 }
