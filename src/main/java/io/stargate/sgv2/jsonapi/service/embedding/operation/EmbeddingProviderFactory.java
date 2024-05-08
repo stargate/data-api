@@ -46,21 +46,32 @@ public class EmbeddingProviderFactory {
 
   public EmbeddingProvider getConfiguration(
       Optional<String> tenant,
+      Optional<String> authToken,
       String serviceName,
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameter,
+      Map<String, String> authentication,
       String commandName) {
     return addService(
-        tenant, serviceName, modelName, dimension, vectorizeServiceParameter, commandName);
+        tenant,
+        authToken,
+        serviceName,
+        modelName,
+        dimension,
+        vectorizeServiceParameter,
+        authentication,
+        commandName);
   }
 
   private synchronized EmbeddingProvider addService(
       Optional<String> tenant,
+      Optional<String> authToken,
       String serviceName,
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameter,
+      Map<String, String> authentication,
       String commandName) {
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
         embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
@@ -70,10 +81,12 @@ public class EmbeddingProviderFactory {
           configuration.serviceProvider(),
           dimension,
           tenant,
+          authToken,
           configuration.baseUrl(),
           modelName,
           embeddingService,
           vectorizeServiceParameter,
+          authentication,
           commandName);
     }
 

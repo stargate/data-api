@@ -30,6 +30,7 @@ message ProviderEmbedRequest {
     // The command contains vectorize
     string command_name = 6;
 
+
     // The parameter value, used when provided needs user specified parameters
     message ParameterValue {
       oneof ParameterValueOneOf {
