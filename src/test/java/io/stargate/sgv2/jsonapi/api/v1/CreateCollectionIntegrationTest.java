@@ -801,137 +801,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
-    public void happyCreateCollectionWithEmbeddingServiceAutoPopulateDimension() {
-      final String createCollectionWithoutDimension =
-          """
-                      {
-                          "createCollection": {
-                              "name": "collection_with_vector_service",
-                              "options": {
-                                  "vector": {
-                                      "metric": "cosine",
-                                      "service": {
-                                          "provider": "vertexai",
-                                          "modelName": "textembedding-gecko@003",
-                                          "authentication": {
-                                              "x-embedding-api-key": "user_key"
-                                          },
-                                          "parameters": {
-                                              "projectId": "test"
-                                          }
-                                      }
-                                  }
-                              }
-                          }
-                      }
-                          """;
-      final String createCollectionWithDimension =
-          """
-                      {
-                          "createCollection": {
-                              "name": "collection_with_vector_service",
-                              "options": {
-                                  "vector": {
-                                      "metric": "cosine",
-                                      "dimension": 768,
-                                      "service": {
-                                          "provider": "vertexai",
-                                          "modelName": "textembedding-gecko@003",
-                                          "authentication": {
-                                              "x-embedding-api-key": "user_key"
-                                          },
-                                          "parameters": {
-                                              "projectId": "test"
-                                          }
-                                      }
-                                  }
-                              }
-                          }
-                      }
-                          """;
-      // create vector collection with vector service and no dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionWithoutDimension)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
-
-      // Also: should be idempotent when try creating with correct dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionWithDimension)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
-
-      deleteCollection("collection_with_vector_service");
-
-      // create vector collection with vector service and correct dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionWithDimension)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
-
-      // Also: should be idempotent when try creating with no dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createCollectionWithoutDimension)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
-
-      deleteCollection("collection_with_vector_service");
-    }
-
-    @Test
-    public void failCreateCollectionWithEmbeddingServiceNoDimension() {
-      // create a collection with no dimension and service
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-                    {
-                        "createCollection": {
-                            "name": "collection_with_vector_service",
-                            "options": {
-                                "vector": {
-                                    "metric": "cosine"
-                                }
-                            }
-                        }
-                    }
-                    """)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "The provided options are invalid: The 'dimension' can not be null if 'service' is not provided"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    @Test
     public void failCreateCollectionWithEmbeddingServiceProviderNotSupport() {
       // create a collection with embedding service provider not support
       given()
@@ -1188,36 +1057,127 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
+  }
+
+  @Nested
+  @Order(2)
+  class CreateCollectionWithEmbeddingServiceTestDimension {
+    @Test
+    public void happyFixDimensionAutoPopulate() {
+      final String createCollectionWithoutDimension =
+          """
+                          {
+                              "createCollection": {
+                                  "name": "collection_with_vector_service",
+                                  "options": {
+                                      "vector": {
+                                          "metric": "cosine",
+                                          "service": {
+                                              "provider": "vertexai",
+                                              "modelName": "textembedding-gecko@003",
+                                              "authentication": {
+                                                  "x-embedding-api-key": "user_key"
+                                              },
+                                              "parameters": {
+                                                  "projectId": "test"
+                                              }
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                              """;
+      final String createCollectionWithDimension =
+          """
+                          {
+                              "createCollection": {
+                                  "name": "collection_with_vector_service",
+                                  "options": {
+                                      "vector": {
+                                          "metric": "cosine",
+                                          "dimension": 768,
+                                          "service": {
+                                              "provider": "vertexai",
+                                              "modelName": "textembedding-gecko@003",
+                                              "authentication": {
+                                                  "x-embedding-api-key": "user_key"
+                                              },
+                                              "parameters": {
+                                                  "projectId": "test"
+                                              }
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                              """;
+      // create vector collection with vector service and no dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithoutDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // Also: should be idempotent when try creating with correct dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+
+      // create vector collection with vector service and correct dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // Also: should be idempotent when try creating with no dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithoutDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+    }
 
     @Test
-    public void failCreateCollectionWithEmbeddingServiceUnmatchedVectorDimension() {
-      // create a collection with unmatched vector dimension
+    public void failNoServiceProviderAndNoDimension() {
+      // create a collection with no dimension and service
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
-                    {
-                        "createCollection": {
-                            "name": "collection_with_vector_service",
-                            "options": {
-                                "vector": {
-                                    "metric": "cosine",
-                                    "dimension": 123,
-                                    "service": {
-                                        "provider": "vertexai",
-                                        "modelName": "textembedding-gecko@003",
-                                        "authentication": {
-                                            "x-embedding-api-key": "user_key"
-                                        },
-                                        "parameters": {
-                                            "projectId": "123"
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine"
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
                             """)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
@@ -1228,7 +1188,257 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided dimension value '123' doesn't match the model supports dimension value '768'"))
+                  "The provided options are invalid: The 'dimension' can not be null if 'service' is not provided"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failFixDimensionUnmatchedVectorDimension() {
+      // create a collection with unmatched vector dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 123,
+                                            "service": {
+                                                "provider": "vertexai",
+                                                "modelName": "textembedding-gecko@003",
+                                                "authentication": {
+                                                    "x-embedding-api-key": "user_key"
+                                                },
+                                                "parameters": {
+                                                    "projectId": "123"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: The provided dimension value '123' doesn't match the model's supported dimension value '768'"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void happyRangeDimensionAutoPopulate() {
+      final String createCollectionWithoutDimension =
+          """
+                  {
+                      "createCollection": {
+                          "name": "collection_with_vector_service",
+                          "options": {
+                              "vector": {
+                                  "metric": "cosine",
+                                  "service": {
+                                      "provider": "openai",
+                                      "modelName": "text-embedding-3-small",
+                                      "authentication": {
+                                          "x-embedding-api-key": "user_key"
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+                      """;
+      final String createCollectionWithDefaultDimension =
+          """
+                  {
+                      "createCollection": {
+                          "name": "collection_with_vector_service",
+                          "options": {
+                              "vector": {
+                                  "metric": "cosine",
+                                  "dimension": 512,
+                                  "service": {
+                                      "provider": "openai",
+                                      "modelName": "text-embedding-3-small",
+                                      "authentication": {
+                                          "x-embedding-api-key": "user_key"
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+                      """;
+      // create vector collection with vector service and no dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithoutDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // Also: should be idempotent when try creating with correct dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithDefaultDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+
+      // create vector collection with vector service and correct dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithDefaultDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // Also: should be idempotent when try creating with no dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithoutDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+    }
+
+    @Test
+    public void happyRangeDimensionInRange() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 512,
+                                            "service": {
+                                                "provider": "openai",
+                                                "modelName": "text-embedding-3-small",
+                                                "authentication": {
+                                                    "x-embedding-api-key": "user_key"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+    }
+
+    @Test
+    public void failRangeDimensionNotInRange() {
+      // create a collection with a dimension lower than the min
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 1,
+                                            "service": {
+                                                "provider": "openai",
+                                                "modelName": "text-embedding-3-small",
+                                                "authentication": {
+                                                    "x-embedding-api-key": "user_key"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: The provided dimension value '1' is not within the supported numeric range"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+
+      // create a collection with a dimension higher than the min
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 2000,
+                                            "service": {
+                                                "provider": "openai",
+                                                "modelName": "text-embedding-3-small",
+                                                "authentication": {
+                                                    "x-embedding-api-key": "user_key"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: The provided dimension value '2000' is not within the supported numeric range"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
