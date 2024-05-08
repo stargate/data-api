@@ -469,7 +469,7 @@ class ObjectMapperConfigurationTest {
                                         "provider": "openai",
                                         "modelName": "text-embedding-ada-002",
                                         "authentication": {
-                                            "x-embedding-provider-key": "user_key"
+                                            "x-embedding-api-key": "user_key"
                                         },
                                         "parameters": {
                                             "projectId": "test project"
@@ -492,7 +492,7 @@ class ObjectMapperConfigurationTest {
       parameterMap.put("projectId", "test project");
 
       Map<String, Object> authenticationMap = new HashMap<>();
-      authenticationMap.put("x-embedding-provider-key", "user_key");
+      authenticationMap.put("x-embedding-api-key", "user_key");
 
       assertThat(result)
           .isInstanceOfSatisfying(
