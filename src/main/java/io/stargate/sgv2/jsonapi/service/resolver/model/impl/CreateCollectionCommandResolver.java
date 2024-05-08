@@ -429,7 +429,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     return model.parameters().stream()
         .filter(param -> param.name().equals("vectorDimension"))
         .findFirst()
-        .map(param -> validateDimensionParameter(param, userVectorDimension))
+        .map(param -> validateRangeDimension(param, userVectorDimension))
         .orElse(userVectorDimension); // should not go here
   }
 
@@ -442,7 +442,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    * @return the appropriate vector dimension based on parameter configuration
    * @throws ApiException if the user-provided dimension is not valid
    */
-  private Integer validateDimensionParameter(
+  private Integer validateRangeDimension(
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig param,
       Integer userVectorDimension) {
     // Use the default value if the user has not provided a dimension
@@ -474,7 +474,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         }
       }
     }
-    // should not go here
     return userVectorDimension;
   }
 }
