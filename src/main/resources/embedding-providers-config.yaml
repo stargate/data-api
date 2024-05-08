@@ -288,14 +288,12 @@ stargate:
             - name: mistral-embed
               vector-dimension: 1024
 
-        # NOTE: UpstageAI have a model for storing and a diff one for reading: this is different
-        #  from everyone else.
-        #  Holding on the config / implementation until we confirm if this can change
-        # NOTE: no free tier available, CC required
+        # NOTE: UpstageAI has one model for storing and a diff one for reading: this is different
+        #  from everyone else. For now these are exposed as separate models; this likely needs
+        #  to be revisited in the future.
         upstageAI:
           # see https://developers.upstage.ai/docs/apis/embeddings
-          # NOT enabled until
-          enabled: false
+          enabled: true
           url: https://api.upstage.ai/v1/solar/embeddings
           supported-authentications:
             NONE:
