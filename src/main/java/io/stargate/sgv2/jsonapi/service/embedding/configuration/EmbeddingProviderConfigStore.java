@@ -26,10 +26,20 @@ public interface EmbeddingProviderConfigStore {
     }
   }
 
-  record RequestProperties(int maxRetries, int retryDelayInMillis, int timeoutInMillis) {
+  record RequestProperties(
+      int maxRetries,
+      int retryDelayInMillis,
+      int timeoutInMillis,
+      Optional<String> requestTypeQuery,
+      Optional<String> requestTypeIndex) {
     public static RequestProperties of(
-        int maxRetries, int retryDelayInMillis, int timeoutInMillis) {
-      return new RequestProperties(maxRetries, retryDelayInMillis, timeoutInMillis);
+        int maxRetries,
+        int retryDelayInMillis,
+        int timeoutInMillis,
+        Optional<String> requestTypeQuery,
+        Optional<String> requestTypeIndex) {
+      return new RequestProperties(
+          maxRetries, retryDelayInMillis, timeoutInMillis, requestTypeQuery, requestTypeIndex);
     }
   }
 

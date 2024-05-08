@@ -7,6 +7,7 @@ public final class ProviderConstants {
   public static final String VERTEXAI = "vertexai";
   public static final String COHERE = "cohere";
   public static final String NVIDIA = "nvidia";
+  public static final String VOYAGE_AI = "voyageAI";
   public static final String CUSTOM = "custom";
 
   // Private constructor to prevent instantiation
