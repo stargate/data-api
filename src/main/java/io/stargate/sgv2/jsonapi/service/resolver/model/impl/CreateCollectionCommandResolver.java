@@ -386,12 +386,22 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     }
   }
 
+  /**
+   * Validates the model name and vector dimension provided in the user configuration against the
+   * specified embedding provider configuration.
+   *
+   * @param userConfig the user-specified vectorization configuration
+   * @param providerConfig the configuration of the embedding provider
+   * @param userVectorDimension the vector dimension provided by the user, or null if not provided
+   * @return the validated vector dimension to be used for the model
+   * @throws ApiException if the model name is not found, or if the dimension is invalid
+   */
   // TODO: check model parameters provided by the user, will support in the future
-  // TODO: fix code 396-408
   private Integer validateModelAndDimension(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       Integer userVectorDimension) {
+    // Find the model configuration by matching the model name
     EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model =
         providerConfig.models().stream()
             .filter(m -> m.name().equals(userConfig.modelName()))
@@ -402,18 +412,69 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
                         "Model name '%s' for provider '%s' is not supported",
                         userConfig.modelName(), userConfig.provider()));
 
-    // TODO: is dimension required? do we still auto populate the dimension?
+    // Handle models with a fixed vector dimension
     if (model.vectorDimension().isPresent()) {
       Integer configVectorDimension = model.vectorDimension().get();
       if (userVectorDimension == null) {
-        return configVectorDimension; // Use config dimension if user didn't provide one
+        return configVectorDimension; // Use model's dimension if user hasn't specified any
       } else if (!configVectorDimension.equals(userVectorDimension)) {
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "The provided dimension value '%s' doesn't match the model supports dimension value '%s'",
+            "The provided dimension value '%s' doesn't match the model's supported dimension value '%s'",
             userVectorDimension, configVectorDimension);
       }
       return configVectorDimension;
     }
+
+    // Handle models with a range of acceptable dimensions
+    return providerConfig.parameters().stream()
+        .filter(param -> param.name().equals("vectorDimension"))
+        .findFirst()
+        .map(param -> validateDimensionParameter(param, userVectorDimension))
+        .orElse(userVectorDimension); // should not go here
+  }
+
+  /**
+   * Validates the user-provided vector dimension against the dimension parameter's validation
+   * constraints.
+   *
+   * @param param the parameter configuration containing validation constraints
+   * @param userVectorDimension the vector dimension provided by the user
+   * @return the appropriate vector dimension based on parameter configuration
+   * @throws ApiException if the user-provided dimension is not valid
+   */
+  private Integer validateDimensionParameter(
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig param,
+      Integer userVectorDimension) {
+    // Use the default value if the user has not provided a dimension
+    if (userVectorDimension == null) {
+      return Integer.valueOf(param.defaultValue().get());
+    }
+
+    // Extract validation type and values for comparison
+    Map.Entry<EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType, List<Integer>>
+        entry = param.validation().entrySet().iterator().next();
+    EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType validationType = entry.getKey();
+    List<Integer> validationValues = entry.getValue();
+
+    // Perform validation based on the validation type
+    switch (validationType) {
+      case NUMERIC_RANGE -> {
+        if (userVectorDimension < validationValues.get(0)
+            || userVectorDimension > validationValues.get(1)) {
+          throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+              "The provided dimension value '%s' is not within the supported numeric range",
+              userVectorDimension);
+        }
+      }
+      case OPTIONS -> {
+        if (!validationValues.contains(userVectorDimension)) {
+          throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+              "The provided dimension value '%s' is not within the supported options",
+              userVectorDimension);
+        }
+      }
+    }
+    // should not go here
     return userVectorDimension;
   }
 }
