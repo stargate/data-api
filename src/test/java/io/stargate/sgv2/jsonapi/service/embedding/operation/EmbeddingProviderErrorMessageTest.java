@@ -28,7 +28,8 @@ public class EmbeddingProviderErrorMessageTest {
     public void test429() throws Exception {
       Throwable exception =
           new NvidiaEmbeddingClient(
-                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, Optional.empty(), Optional.empty()),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
@@ -51,7 +52,8 @@ public class EmbeddingProviderErrorMessageTest {
     public void test4xx() throws Exception {
       Throwable exception =
           new NvidiaEmbeddingClient(
-                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, Optional.empty(), Optional.empty()),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
@@ -74,7 +76,8 @@ public class EmbeddingProviderErrorMessageTest {
     public void test5xx() throws Exception {
       Throwable exception =
           new NvidiaEmbeddingClient(
-                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, Optional.empty(), Optional.empty()),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
@@ -97,7 +100,8 @@ public class EmbeddingProviderErrorMessageTest {
     public void testRetryError() throws Exception {
       Throwable exception =
           new NvidiaEmbeddingClient(
-                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, Optional.empty(), Optional.empty()),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
@@ -118,7 +122,8 @@ public class EmbeddingProviderErrorMessageTest {
     public void testCorrectHeaderAndBody() {
       List<float[]> result =
           new NvidiaEmbeddingClient(
-                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, Optional.empty(), Optional.empty()),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
@@ -138,7 +143,8 @@ public class EmbeddingProviderErrorMessageTest {
     public void testIncorrectContentType() {
       Throwable exception =
           new NvidiaEmbeddingClient(
-                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, Optional.empty(), Optional.empty()),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
@@ -163,7 +169,8 @@ public class EmbeddingProviderErrorMessageTest {
     public void testNoJsonResponse() {
       Throwable exception =
           new NvidiaEmbeddingClient(
-                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, Optional.empty(), Optional.empty()),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
@@ -188,7 +195,8 @@ public class EmbeddingProviderErrorMessageTest {
     public void testEmptyJsonResponse() {
       List<float[]> result =
           new NvidiaEmbeddingClient(
-                  EmbeddingProviderConfigStore.RequestProperties.of(2, 100, 3000),
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, Optional.empty(), Optional.empty()),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
