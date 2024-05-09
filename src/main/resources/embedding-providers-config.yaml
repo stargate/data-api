@@ -183,7 +183,7 @@ stargate:
               vector-dimension: 4096
         nvidia:
           display-name: Nvidia
-          enabled: false
+          enabled: true
           url: https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/091a03bb-7364-4087-8090-bd71e9277520
           supported-authentications:
             NONE:
