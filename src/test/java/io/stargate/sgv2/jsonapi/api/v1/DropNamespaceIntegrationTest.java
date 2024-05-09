@@ -28,7 +28,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
     @Test
     public final void happyPath() {
       String json =
-          """
+              """
           {
             "dropNamespace": {
               "name": "%s"
@@ -73,7 +73,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
       String collection = "c%s".formatted(RandomStringUtils.randomAlphanumeric(8)).toLowerCase();
 
       String createNamespace =
-          """
+              """
               {
                 "createNamespace": {
                   "name": "%s"
@@ -82,7 +82,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
               """
               .formatted(keyspace);
       String createCollection =
-          """
+              """
               {
                 "createCollection": {
                   "name": "%s"
@@ -111,7 +111,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .body("status.ok", is(1));
 
       String json =
-          """
+              """
           {
             "dropNamespace": {
               "name": "%s"

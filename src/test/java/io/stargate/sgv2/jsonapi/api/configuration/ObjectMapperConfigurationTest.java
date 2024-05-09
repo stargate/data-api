@@ -281,7 +281,7 @@ class ObjectMapperConfigurationTest {
     public void failForTooLongNumbers() {
       String tooLongNumStr = "1234567890".repeat(11);
       String json =
-          """
+              """
                           {
                             "insertOne": {
                               "document": {

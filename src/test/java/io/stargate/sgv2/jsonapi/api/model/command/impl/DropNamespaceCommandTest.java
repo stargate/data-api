@@ -47,7 +47,7 @@ class DropNamespaceCommandTest {
     @Test
     public void nameTooLong() throws Exception {
       String json =
-          """
+              """
           {
             "dropNamespace": {
               "name": "%s"

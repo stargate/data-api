@@ -214,6 +214,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
               ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
                   + ": $inc requires numeric parameter, got: STRING");
     }
+
     // Not legal to try to modify doc id (immutable):
     @Test
     public void testIncOnDocumentId() {
@@ -237,7 +238,8 @@ public class IncOperationTest extends UpdateOperationTestBase {
                     """);
       UpdateOperation oper =
           UpdateOperator.INC.resolveOperation(
-              objectFromJson("""
+              objectFromJson(
+                  """
                     { "prop" : 57 }
                     """));
       Exception e =

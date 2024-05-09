@@ -46,10 +46,11 @@ public class DocValueHasher {
       case STRING -> stringValue(value.textValue()).hash();
 
       default -> // case BINARY, MISSING, POJO
-      throw new JsonApiException(
-          ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE,
-          String.format(
-              "%s: %s", ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE.getMessage(), value.getNodeType()));
+          throw new JsonApiException(
+              ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE,
+              String.format(
+                  "%s: %s",
+                  ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE.getMessage(), value.getNodeType()));
     };
   }
 

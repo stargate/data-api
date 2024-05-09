@@ -10,10 +10,14 @@ import java.util.function.Predicate;
 /** Interface for matching a CQL column name and type. */
 public interface CqlColumnMatcher extends Predicate<ColumnMetadata> {
 
-  /** @return Column name for the matcher. */
+  /**
+   * @return Column name for the matcher.
+   */
   CqlIdentifier name();
 
-  /** @return If column type is matching. */
+  /**
+   * @return If column type is matching.
+   */
   boolean typeMatches(ColumnMetadata columnSpec);
 
   default boolean test(ColumnMetadata columnSpec) {

@@ -47,7 +47,7 @@ class CreateNamespaceCommandTest {
     @Test
     public void nameTooLong() throws Exception {
       String json =
-          """
+              """
           {
             "createNamespace": {
               "name": "%s"
