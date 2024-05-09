@@ -271,7 +271,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private void validateAuthentication(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
-    // Get all the accepted key in auth
+    // Get all the accepted keys in auth
     List<String> acceptedKeys =
         providerConfig.supportedAuthentications().values().stream()
             .filter(config -> config.enabled() && config.tokens() != null)
@@ -282,10 +282,11 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     // If the user hasn't provided authentication details, verify that the 'NONE' authentication
     // type is enabled.
     if (userConfig.authentication() == null) {
-      if (!providerConfig
-          .supportedAuthentications()
-          .get(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE)
-          .enabled()) {
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig noneAuthConfig =
+          providerConfig
+              .supportedAuthentications()
+              .get(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE);
+      if (noneAuthConfig == null || !noneAuthConfig.enabled()) {
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "Service provider '%s' does not support '%s' authentication",
             userConfig.provider(),
