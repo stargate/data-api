@@ -180,7 +180,7 @@ public enum ErrorCode {
   SERVER_FAILURE("Driver failed"),
   SERVER_UNHANDLED_ERROR("Server failed"),
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
-  EBG_NOT_AVAILABLE("Embedding Gateway is not available");
+  SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available");
 
   private final String message;
 
