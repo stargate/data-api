@@ -167,6 +167,7 @@ public interface ReadOperation extends Operation {
   }
 
   byte true_byte = (byte) 1;
+
   /**
    * This method reads upto system fixed limit
    *
@@ -360,6 +361,7 @@ public interface ReadOperation extends Operation {
     }
     return null;
   }
+
   /**
    * Default implementation to run count query and parse the result set, this approach counts by key
    * field

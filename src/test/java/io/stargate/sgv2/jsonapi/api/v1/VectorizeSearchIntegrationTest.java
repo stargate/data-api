@@ -442,7 +442,8 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
   }
 
   public void insertVectorDocuments() {
-    String json = """
+    String json =
+        """
       {
         "deleteMany": {
         }

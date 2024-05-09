@@ -209,8 +209,9 @@ public class QueryBuilder {
         condition.jsonTerm.addToCqlValues(values);
         sb.append(" ").append(condition.predicate.toString()).append(" ?");
       }
-      default -> throw new IllegalArgumentException(
-          String.format("Unsupported expression type %s", outerExpression.getExprType()));
+      default ->
+          throw new IllegalArgumentException(
+              String.format("Unsupported expression type %s", outerExpression.getExprType()));
     }
   }
 
@@ -261,15 +262,18 @@ public class QueryBuilder {
   public QueryBuilder similarityFunction(
       String columnName, CollectionSettings.SimilarityFunction similarityFunction) {
     switch (similarityFunction) {
-      case COSINE, UNDEFINED -> functionCalls.add(
-          FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_COSINE"));
-      case EUCLIDEAN -> functionCalls.add(
-          FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_EUCLIDEAN"));
-      case DOT_PRODUCT -> functionCalls.add(
-          FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_DOT_PRODUCT"));
-      default -> throw new JsonApiException(
-          ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
-          ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
+      case COSINE, UNDEFINED ->
+          functionCalls.add(FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_COSINE"));
+      case EUCLIDEAN ->
+          functionCalls.add(
+              FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_EUCLIDEAN"));
+      case DOT_PRODUCT ->
+          functionCalls.add(
+              FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_DOT_PRODUCT"));
+      default ->
+          throw new JsonApiException(
+              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
+              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
     }
     return this;
   }

@@ -280,7 +280,8 @@ public class FindCommandResolverTest {
 
     @Test
     public void noFilterCondition() throws Exception {
-      String json = """
+      String json =
+          """
           {
             "find": {
             }

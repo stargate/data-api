@@ -89,7 +89,8 @@ public class MeteredCommandProcessorTest {
 
     @Test
     public void errorMetricsWithNoErrorCode() throws Exception {
-      String json = """
+      String json =
+          """
         {
           "find": {
 

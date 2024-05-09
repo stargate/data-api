@@ -58,7 +58,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
             }
                       """;
       String denyOneIndexingCollectionSetting =
-          """
+              """
               {
                 "name": "%s",
                 "options" : {
@@ -74,7 +74,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
               """
               .formatted(denyOneIndexingCollection);
       String denyManyIndexingCollectionSetting =
-          """
+              """
               {
                 "name": "%s",
                 "options" : {
@@ -90,7 +90,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
               """
               .formatted(denyManyIndexingCollection);
       String denyAllIndexingCollectionSetting =
-          """
+              """
               {
                 "name": "%s",
                 "options" : {
@@ -106,7 +106,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
               """
               .formatted(denyAllIndexingCollection);
       String allowOneIndexingCollectionSetting =
-          """
+              """
               {
                 "name": "%s",
                 "options" : {
@@ -122,7 +122,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
               """
               .formatted(allowOneIndexingCollection);
       String allowManyIndexingCollectionSetting =
-          """
+              """
               {
                 "name": "%s",
                 "options" : {

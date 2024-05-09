@@ -25,6 +25,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
   // use the interface rather than MatchRule class so the streaming works.
   private final List<BiFunction<CommandContext, T, Optional<LogicalExpression>>> matchRules =
       new ArrayList<>();
+
   /**
    * Adds a rule that will result in the specified resolveFunction being called.
    *

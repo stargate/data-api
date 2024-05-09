@@ -339,7 +339,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
     public void withUpsertNewId() {
       final String newId = "new-id-1234";
       String json =
-          """
+              """
                 {
                   "findOneAndReplace": {
                     "filter" : {},
@@ -724,7 +724,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
-              """
+                  """
                         {
                           "find": {
                             "filter" : {"_id" : "%s"}
@@ -762,7 +762,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
       // Max number length: 100; use 110
       String tooLongNumStr = "1234567890".repeat(11);
       String json =
-          """
+              """
                 {
                   "findOneAndReplace": {
                     "filter" : {"_id" : "tooLongNumber1"},

@@ -198,6 +198,7 @@ public class MulOperationTest extends UpdateOperationTestBase {
               ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
                   + ": $mul requires numeric parameter, got: STRING");
     }
+
     // Not legal to try to modify doc id (immutable):
     @Test
     public void testMulOnDocumentId() {

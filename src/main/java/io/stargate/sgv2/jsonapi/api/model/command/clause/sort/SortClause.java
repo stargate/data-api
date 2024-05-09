@@ -21,7 +21,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(
     type = SchemaType.OBJECT,
     implementation = Map.class,
-    example = """
+    example =
+        """
               {"user.age" : -1, "user.name" : 1}
               """)
 public record SortClause(@Valid List<SortExpression> sortExpressions) {

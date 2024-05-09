@@ -23,6 +23,7 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
   public List<A> actions() {
     return actions;
   }
+
   /**
    * Method called to apply operation to given document.
    *

@@ -73,7 +73,9 @@ public final class JsonPath implements Comparable<JsonPath> {
     return new Builder(null);
   }
 
-  /** @return Whether path points to an array element or not */
+  /**
+   * @return Whether path points to an array element or not
+   */
   public boolean isArrayElement() {
     return arrayElement;
   }

@@ -19,6 +19,7 @@ public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
    * TenantAwareDriverContext
    */
   public static final String TENANT_ID_PROPERTY_KEY = "TENANT_ID";
+
   /** Tenant ID that will be passed to the CQLSession via TenantAwareDriverContext */
   private final String tenantId;
 

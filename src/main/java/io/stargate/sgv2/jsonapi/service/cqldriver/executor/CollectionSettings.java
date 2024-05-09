@@ -176,9 +176,10 @@ public record CollectionSettings(
         case "cosine" -> COSINE;
         case "euclidean" -> EUCLIDEAN;
         case "dot_product" -> DOT_PRODUCT;
-        default -> throw new JsonApiException(
-            ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
-            ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
+        default ->
+            throw new JsonApiException(
+                ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
+                ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
       };
     }
   }
@@ -226,8 +227,9 @@ public record CollectionSettings(
         case "none" -> NONE;
         case "header" -> HEADER;
         case "shared_secret" -> SHARED_SECRET;
-        default -> throw ErrorCode.VECTORIZE_INVALID_AUTHENTICATION_TYPE.toApiException(
-            "'%s'", authenticationType);
+        default ->
+            throw ErrorCode.VECTORIZE_INVALID_AUTHENTICATION_TYPE.toApiException(
+                "'%s'", authenticationType);
       };
     }
   }
