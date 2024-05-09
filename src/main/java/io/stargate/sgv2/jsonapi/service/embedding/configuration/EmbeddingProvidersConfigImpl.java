@@ -9,6 +9,7 @@ public record EmbeddingProvidersConfigImpl(
     implements EmbeddingProvidersConfig {
 
   public record EmbeddingProviderConfigImpl(
+      String displayName,
       boolean enabled,
       String url,
       Map<AuthenticationType, AuthenticationConfig> supportedAuthentications,

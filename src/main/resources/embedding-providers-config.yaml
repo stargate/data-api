@@ -5,6 +5,7 @@ stargate:
       providers:
         openai:
           #see https://platform.openai.com/docs/api-reference/embeddings/create
+          display-name: OpenAI
           enabled: true
           url: https://api.openai.com/v1/
           supported-authentications:
@@ -41,9 +42,9 @@ stargate:
                   help: "Vector dimension to use in the database and when calling OpenAI."
             - name: text-embedding-ada-002
               vector-dimension: 1536
-
         azureOpenAI:
           # see https://learn.microsoft.com/en-us/azure/ai-services/openai/reference
+          display-name: Azure OpenAI
           enabled: true
           url: https://{resourceName}.openai.azure.com/openai/deployments/{deploymentId}/embeddings?api-version={apiVersion}
           supported-authentications:
@@ -96,9 +97,9 @@ stargate:
                   help: "Vector dimension to use in the database and when calling Azure OpenAI."
             - name: text-embedding-ada-002
               vector-dimension: 1536
-
         huggingface:
           # see https://huggingface.co/blog/getting-started-with-embeddings
+          display-name: Hugging Face
           enabled: true
           url: https://api-inference.huggingface.co/pipeline/feature-extraction/
           supported-authentications:
@@ -117,10 +118,10 @@ stargate:
           models:
             - name: sentence-transformers/all-MiniLM-L6-v2
               vector-dimension: 384
-
         # OUT OF SCOPE FOR INITIAL PREVIEW
         vertexai:
           # see https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#get_text_embeddings_for_a_snippet_of_text
+          display-name: Google Vertex AI
           enabled: false
           url: "https://us-central1-aiplatform.googleapis.com/v1/projects/{projectId}/locations/us-central1/publishers/google/models"
           supported-authentications:
@@ -159,7 +160,8 @@ stargate:
                   help: "If set to false, text that exceeds the token limit causes the request to fail. The default value is true."
         # OUT OF SCOPE FOR INITIAL PREVIEW
         cohere:
-          enabled: true
+          display-name: Cohere
+          enabled: false
           url: https://api.cohere.ai/v1/
           supported-authentications:
             NONE:
@@ -180,6 +182,7 @@ stargate:
             - name: embed-english-v2.0
               vector-dimension: 4096
         nvidia:
+          display-name: Nvidia
           enabled: false
           url: https://api.nvcf.nvidia.com/v2/nvcf/pexec/functions/091a03bb-7364-4087-8090-bd71e9277520
           supported-authentications:
@@ -202,6 +205,7 @@ stargate:
                 max-tokens: 512
         jinaAI:
           #see https://jina.ai/embeddings/#apiform
+          display-name: Jina AI
           enabled: true
           url: https://api.jina.ai/v1/embeddings
           supported-authentications:
@@ -231,6 +235,7 @@ stargate:
         voyageAI:
           # see https://docs.voyageai.com/reference/embeddings-api
           # see https://docs.voyageai.com/docs/embeddings
+          display-name: Voyage AI
           enabled: true
           url: https://api.voyageai.com/v1/embeddings
           supported-authentications:
@@ -269,6 +274,7 @@ stargate:
               vector-dimension: 1024
         mistral:
           # see https://docs.mistral.ai/api/#operation/createEmbedding
+          display-name: Mistral AI
           enabled: true
           url: https://api.mistral.ai/v1/embeddings
           supported-authentications:
@@ -289,7 +295,6 @@ stargate:
           models:
             - name: mistral-embed
               vector-dimension: 1024
-
         # NOTE: UpstageAI have a model for storing and a diff one for reading: this is different
         #  from everyone else.
         #  Holding on the config / implementation until we confirm if this can change
@@ -297,6 +302,7 @@ stargate:
         upstageAI:
           # see https://developers.upstage.ai/docs/apis/embeddings
           # NOT enabled until
+          display-name: Upstage AI
           enabled: false
           url: https://api.upstage.ai/v1/solar/embeddings
           supported-authentications:
