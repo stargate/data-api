@@ -1,74 +1,59 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
 import io.quarkus.grpc.GrpcClient;
-import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.infrastructure.Infrastructure;
-import io.smallrye.mutiny.unchecked.Unchecked;
+import io.quarkus.runtime.Startup;
 import io.stargate.embedding.gateway.EmbeddingGateway;
-import io.stargate.embedding.gateway.EmbeddingService;
+import io.stargate.embedding.gateway.EmbeddingServiceGrpc;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
-import jakarta.inject.Inject;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.eclipse.microprofile.faulttolerance.Retry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ApplicationScoped
 public class EmbeddingProvidersConfigProducer {
 
   private static final Logger LOG = LoggerFactory.getLogger(EmbeddingProvidersConfigProducer.class);
 
-  @Inject OperationsConfig operationsConfig;
-
-  @Inject EmbeddingProvidersConfig.CustomConfig customConfig;
-
-  @GrpcClient("embedding")
-  EmbeddingService embeddingService;
-
   @Produces
-  EmbeddingProvidersConfig produce(DefaultEmbeddingProviderConfig defaultEmbeddingProviderConfig) {
+  @ApplicationScoped
+  @Startup
+  @Retry(
+      maxRetries = 3,
+      delay = 8,
+      delayUnit = ChronoUnit.SECONDS,
+      maxDuration = 50,
+      durationUnit = ChronoUnit.SECONDS)
+  EmbeddingProvidersConfig produce(
+      DefaultEmbeddingProviderConfig defaultEmbeddingProviderConfig,
+      OperationsConfig operationsConfig,
+      EmbeddingProvidersConfig.CustomConfig customConfig,
+      @GrpcClient("embedding") EmbeddingServiceGrpc.EmbeddingServiceBlockingStub embeddingService) {
     EmbeddingProvidersConfig defaultConfig =
         new EmbeddingProvidersConfigImpl(defaultEmbeddingProviderConfig.providers(), customConfig);
     // defaultEmbeddingProviderConfig is what we mapped from embedding-providers-config.yaml
     // and will be used if embedding-gateway is not enabled
     if (!operationsConfig.enableEmbeddingGateway()) {
-      LOG.trace("embedding gateway disabled, use default config");
+      LOG.info("embedding gateway disabled, use default config");
       return defaultConfig;
     }
-    LOG.trace("embedding gateway enabled, fetch supported providers from embedding gateway");
+    LOG.info("embedding gateway enabled, fetch supported providers from embedding gateway");
     final EmbeddingGateway.GetSupportedProvidersRequest getSupportedProvidersRequest =
         EmbeddingGateway.GetSupportedProvidersRequest.newBuilder().build();
-    final Uni<EmbeddingGateway.GetSupportedProvidersResponse> getSupportedProvidersResponseUni =
-        embeddingService.getSupportedProviders(getSupportedProvidersRequest);
-    EmbeddingGateway.GetSupportedProvidersResponse getSupportedProvidersResponse = null;
     try {
-      getSupportedProvidersResponse =
-          getSupportedProvidersResponseUni
-              .onItem()
-              .transform(
-                  Unchecked.function(
-                      resp -> {
-                        if (resp.hasError()) {
-                          throw new JsonApiException(
-                              ErrorCode.valueOf(resp.getError().getErrorCode()),
-                              resp.getError().getErrorMessage());
-                        }
-                        return resp;
-                      }))
-              .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
-              .subscribeAsCompletionStage()
-              .get();
+      EmbeddingGateway.GetSupportedProvidersResponse supportedProvidersResponse =
+          embeddingService.getSupportedProviders(getSupportedProvidersRequest);
+      return grpcResponseToConfig(supportedProvidersResponse, customConfig);
     } catch (Exception e) {
       throw ErrorCode.EBG_NOT_AVAILABLE.toApiException();
     }
-    return grpcResponseToConfig(getSupportedProvidersResponse);
   }
 
   /**
@@ -77,7 +62,8 @@ public class EmbeddingProvidersConfigProducer {
    *     supportedProviders To EmbeddingProvidersConfig
    */
   private EmbeddingProvidersConfig grpcResponseToConfig(
-      EmbeddingGateway.GetSupportedProvidersResponse getSupportedProvidersResponse) {
+      EmbeddingGateway.GetSupportedProvidersResponse getSupportedProvidersResponse,
+      EmbeddingProvidersConfig.CustomConfig customConfig) {
     Map<String, EmbeddingProvidersConfig.EmbeddingProviderConfig> providerMap = new HashMap<>();
 
     // traverse ProviderConfig in Grpc GetSupportedProvidersResponse
