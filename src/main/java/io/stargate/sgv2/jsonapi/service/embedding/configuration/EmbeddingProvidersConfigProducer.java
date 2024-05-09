@@ -26,10 +26,10 @@ public class EmbeddingProvidersConfigProducer {
   @ApplicationScoped
   @Startup
   @Retry(
-      maxRetries = 30,
+      maxRetries = 1,
       delay = 6,
       delayUnit = ChronoUnit.SECONDS,
-      maxDuration = 180,
+      maxDuration = 10,
       durationUnit = ChronoUnit.SECONDS)
   EmbeddingProvidersConfig produce(
       DefaultEmbeddingProviderConfig defaultEmbeddingProviderConfig,
@@ -52,7 +52,7 @@ public class EmbeddingProvidersConfigProducer {
           embeddingService.getSupportedProviders(getSupportedProvidersRequest);
       return grpcResponseToConfig(supportedProvidersResponse, customConfig);
     } catch (Exception e) {
-      throw ErrorCode.EBG_NOT_AVAILABLE.toApiException();
+      throw ErrorCode.SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE.toApiException();
     }
   }
 
