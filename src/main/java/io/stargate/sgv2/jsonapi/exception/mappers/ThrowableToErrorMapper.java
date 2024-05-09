@@ -27,6 +27,9 @@ public final class ThrowableToErrorMapper {
       (throwable, message) -> {
         // if our own exception, shortcut
         if (throwable instanceof JsonApiException jae) {
+          if (jae.getErrorCode().equals(ErrorCode.SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE)) {
+            return jae.getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+          }
           return jae.getCommandResultError(message, Response.Status.OK);
         }
 
