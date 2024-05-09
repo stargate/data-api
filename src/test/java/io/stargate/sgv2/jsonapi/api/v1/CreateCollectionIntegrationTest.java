@@ -616,6 +616,191 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
+    public void happyCreateCollectionWithEmbeddingServiceWithNoneAuth() {
+      // create a collection without providing authentication
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 1024,
+                                    "service": {
+                                        "provider": "nvidia",
+                                        "modelName": "NV-Embed-QA"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                        """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceNotExistAuthKey() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 1024,
+                                    "service": {
+                                        "provider": "nvidia",
+                                        "modelName": "NV-Embed-QA",
+                                        "authentication": {
+                                            "providerKey": "shared_creds.providerKey"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Service provider 'nvidia' does not support authentication key 'providerKey'"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceNoneDisabled() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 1536,
+                                            "service": {
+                                                "provider": "openai",
+                                                "modelName": "text-embedding-ada-002"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Service provider 'openai' does not support 'NONE' authentication"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failCreateCollectionWithEmbeddingServiceInvalidAuthKey() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 1536,
+                                            "service": {
+                                                "provider": "openai",
+                                                "modelName": "text-embedding-ada-002",
+                                                "authentication": {
+                                                    "providerKey": "shared_creds.providerKey"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Service provider 'openai' does not support authentication key 'providerKey'"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void happyCreateCollectionWithEmbeddingServiceValidAuthKey() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 1536,
+                                            "service": {
+                                                "provider": "openai",
+                                                "modelName": "text-embedding-ada-002",
+                                                "authentication": {
+                                                    "x-embedding-api-key": "api_key"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+    }
+
+    @Test
     public void happyCreateCollectionWithEmbeddingServiceAutoPopulateDimension() {
       final String createCollectionWithoutDimension =
           """

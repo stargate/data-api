@@ -261,25 +261,48 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     return providerConfig;
   }
 
-  // TODO: 1. remove the first if statement when fully support validateAuthentication
-  //  2. Check if user authentication type is support
-  //  3. Check if required token is provided
-  //  4. Check if token is valid
+  /**
+   * Validates user authentication for creating a collection using the specified configurations.
+   *
+   * @param userConfig The vectorize configuration provided by the user.
+   * @param providerConfig The embedding provider configuration.
+   * @throws ApiException If the user authentication is invalid.
+   */
   private void validateAuthentication(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
+    // Get all the accepted keys in auth
+    List<String> acceptedKeys =
+        providerConfig.supportedAuthentications().values().stream()
+            .filter(config -> config.enabled() && config.tokens() != null)
+            .flatMap(config -> config.tokens().stream())
+            .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.TokenConfig::accepted)
+            .toList();
+
+    // If the user hasn't provided authentication details, verify that the 'NONE' authentication
+    // type is enabled.
     if (userConfig.authentication() == null) {
-      return;
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig noneAuthConfig =
+          providerConfig
+              .supportedAuthentications()
+              .get(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE);
+      if (noneAuthConfig == null || !noneAuthConfig.enabled()) {
+        throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+            "Service provider '%s' does not support '%s' authentication",
+            userConfig.provider(),
+            EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE);
+      }
+    } else {
+      // User has provided authentication details. Validate each key against the provider's accepted
+      // list.
+      for (String userAuthKey : userConfig.authentication().keySet()) {
+        if (!acceptedKeys.contains(userAuthKey)) {
+          throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+              "Service provider '%s' does not support authentication key '%s'",
+              userConfig.provider(), userAuthKey);
+        }
+      }
     }
-    // Check if user authentication type is support
-    //    userConfig.vectorizeServiceAuthentication().type().stream()
-    //        .filter(type -> !providerConfig.supportedAuthentication().contains(type))
-    //        .findFirst()
-    //        .ifPresent(
-    //            type -> {
-    //              throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-    //                  "Authentication type '%s' is not supported", type);
-    //            });
   }
 
   private void validateUserParameters(
