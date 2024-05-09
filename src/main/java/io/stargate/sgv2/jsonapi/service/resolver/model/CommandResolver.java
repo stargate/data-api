@@ -27,7 +27,9 @@ import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
  */
 public interface CommandResolver<C extends Command> {
 
-  /** @return Returns class of the command the resolver is able to process. */
+  /**
+   * @return Returns class of the command the resolver is able to process.
+   */
   Class<C> getCommandClass();
 
   /**

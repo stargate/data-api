@@ -117,7 +117,8 @@ public class SetOperationTest extends UpdateOperationTestBase {
     public void testSimpleSetWithoutChange() {
       UpdateOperation oper =
           UpdateOperator.SET.resolveOperation(
-              objectFromJson("""
+              objectFromJson(
+                  """
                     { "c" : true }
                     """));
       assertThat(oper).isInstanceOf(SetOperation.class);
@@ -327,7 +328,8 @@ public class SetOperationTest extends UpdateOperationTestBase {
       ObjectNode expected = doc.deepCopy();
       UpdateOperation oper =
           UpdateOperator.SET.resolveOperation(
-              objectFromJson("""
+              objectFromJson(
+                  """
             { "people" :  { "name":"Bob", "age":42 } }
       """));
       // No actual change
@@ -348,7 +350,8 @@ public class SetOperationTest extends UpdateOperationTestBase {
       """);
       UpdateOperation oper =
           UpdateOperator.SET.resolveOperation(
-              objectFromJson("""
+              objectFromJson(
+                  """
             { "people":  { "age":42, "name":"Bob" } }
       """));
       ObjectNode expected =
@@ -393,18 +396,22 @@ public class SetOperationTest extends UpdateOperationTestBase {
     public void testReplaceDocIdWithSetOnInsert() {
       UpdateOperation oper =
           UpdateOperator.SET_ON_INSERT.resolveOperation(
-              objectFromJson("""
+              objectFromJson(
+                  """
                       { "_id": 1 }
                       """));
       assertThat(oper).isInstanceOf(SetOperation.class);
       // Should indicate document being modified
       ObjectNode doc =
-          objectFromJson("""
+          objectFromJson(
+              """
                       { "_id": 0, "a": 1 }
                       """);
       assertThat(oper.updateDocument(doc)).isTrue();
       assertThat(doc)
-          .isEqualTo(fromJson("""
+          .isEqualTo(
+              fromJson(
+                  """
                   { "_id": 1, "a": 1 }
                   """));
     }

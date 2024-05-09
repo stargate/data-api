@@ -225,7 +225,7 @@ public class ShredderTest {
     public void shredDocWithDateTimeColumn() {
       final long testTimestamp = defaultTestDate().getTime();
       final String inputJson =
-          """
+              """
               {
                 "_id" : 123,
                 "name" : "Bob",
@@ -418,7 +418,7 @@ public class ShredderTest {
       Arrays.fill(arr, 'A');
       String str = new String(arr);
       final String inputJson =
-          """
+              """
                               { "_id" : 123,
                                 "name" : "Bob",
                                 "values" : [ 1, 2 ],
@@ -649,7 +649,7 @@ public class ShredderTest {
     public void shredWithHugeNonIndexedString() throws Exception {
       final String hugeString = "abcd".repeat(240_000); // about 960K, close to max doc of 1M
       final String inputJson =
-          """
+              """
               { "_id": 1,
                 "name": "Mo",
                 "blob": "%s"

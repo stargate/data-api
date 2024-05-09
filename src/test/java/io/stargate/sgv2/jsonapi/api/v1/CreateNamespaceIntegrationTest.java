@@ -31,7 +31,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
   @AfterEach
   public void deleteKeyspace() {
     String json =
-        """
+            """
         {
           "dropNamespace": {
             "name": "%s"
@@ -57,7 +57,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
     @Test
     public final void happyPath() {
       String json =
-          """
+              """
           {
             "createNamespace": {
               "name": "%s"
@@ -80,7 +80,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
     @Test
     public final void alreadyExists() {
       String json =
-          """
+              """
           {
             "createNamespace": {
               "name": "%s"
@@ -103,7 +103,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
     @Test
     public final void withReplicationFactor() {
       String json =
-          """
+              """
           {
             "createNamespace": {
               "name": "%s",

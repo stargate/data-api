@@ -68,7 +68,7 @@ class DeleteCollectionCommandTest {
     public void nameTooLong() throws Exception {
       String name = RandomStringUtils.randomAlphabetic(49);
       String json =
-          """
+              """
           {
             "deleteCollection": {
               "name": "%s"
