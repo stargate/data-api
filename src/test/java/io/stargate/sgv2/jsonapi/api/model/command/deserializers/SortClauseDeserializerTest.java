@@ -45,7 +45,8 @@ class SortClauseDeserializerTest {
 
     @Test
     public void happyPathVectorSearch() throws Exception {
-      String json = """
+      String json =
+          """
         {
          "$vector" : [0.11, 0.22, 0.33]
         }
@@ -62,7 +63,8 @@ class SortClauseDeserializerTest {
 
     @Test
     public void vectorSearchEmpty() {
-      String json = """
+      String json =
+          """
         {
          "$vector" : []
         }
@@ -76,7 +78,8 @@ class SortClauseDeserializerTest {
 
     @Test
     public void vectorSearchNonArray() {
-      String json = """
+      String json =
+          """
         {
          "$vector" : 0.55
         }
@@ -90,7 +93,8 @@ class SortClauseDeserializerTest {
 
     @Test
     public void vectorSearchNonArrayObject() {
-      String json = """
+      String json =
+          """
         {
          "$vector" : {}
         }
@@ -103,7 +107,8 @@ class SortClauseDeserializerTest {
     }
 
     public void vectorSearchInvalidData() {
-      String json = """
+      String json =
+          """
         {
          "$vector" : [0.11, "abc", true]
         }
@@ -133,7 +138,8 @@ class SortClauseDeserializerTest {
 
     @Test
     public void happyPathVectorizeSearch() throws Exception {
-      String json = """
+      String json =
+          """
         {
          "$vectorize" : "test data"
         }
@@ -149,7 +155,8 @@ class SortClauseDeserializerTest {
 
     @Test
     public void vectorizeSearchNonText() {
-      String json = """
+      String json =
+          """
         {
          "$vectorize" : 0.55
         }
@@ -164,7 +171,8 @@ class SortClauseDeserializerTest {
 
     @Test
     public void vectorizeSearchObject() {
-      String json = """
+      String json =
+          """
         {
          "$vectorize" : {}
         }
@@ -196,7 +204,8 @@ class SortClauseDeserializerTest {
 
     @Test
     public void mustTrimPath() throws Exception {
-      String json = """
+      String json =
+          """
               {"some.path " : 1}
           """;
 
@@ -219,7 +228,8 @@ class SortClauseDeserializerTest {
 
     @Test
     public void mustBeObject() {
-      String json = """
+      String json =
+          """
                     ["primitive"]
                     """;
 
@@ -230,7 +240,8 @@ class SortClauseDeserializerTest {
 
     @Test
     public void mustBeCorrectContainerNode() {
-      String json = """
+      String json =
+          """
                     {"path": "value"}
                     """;
 
@@ -241,7 +252,8 @@ class SortClauseDeserializerTest {
 
     @Test
     public void mustNotContainBlankString() {
-      String json = """
+      String json =
+          """
               {" " : 1}
           """;
 
@@ -252,7 +264,8 @@ class SortClauseDeserializerTest {
 
     @Test
     public void mustNotContainEmptyString() {
-      String json = """
+      String json =
+          """
               {"": 1}
           """;
 
@@ -263,7 +276,8 @@ class SortClauseDeserializerTest {
 
     @Test
     public void invalidPathName() {
-      String json = """
+      String json =
+          """
               {"$gt": 1}
           """;
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));

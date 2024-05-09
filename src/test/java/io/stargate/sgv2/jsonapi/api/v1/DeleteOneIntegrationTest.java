@@ -427,7 +427,8 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
 
     @RepeatedTest(10)
     public void concurrentDeletes() throws Exception {
-      String document = """
+      String document =
+          """
           {
             "_id": "concurrent"
           }

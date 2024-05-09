@@ -27,7 +27,7 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
     public void setUp() {
       for (int i = 0; i < documentAmount; i++) {
         insert(
-            """
+                """
                               {
                                 "insertOne": {
                                   "document": {
@@ -78,7 +78,7 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
               .path("data.nextPageState");
 
       String json1 =
-          """
+              """
                             {
                               "find": {
                                         "options":{
@@ -107,7 +107,7 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
     @Order(3)
     public void pageLimitCheck() {
       String json =
-          """
+              """
                             {
                               "find": {
                                         "options": {

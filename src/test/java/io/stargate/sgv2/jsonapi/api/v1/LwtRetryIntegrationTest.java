@@ -97,7 +97,8 @@ public class LwtRetryIntegrationTest extends AbstractCollectionIntegrationTestBa
     latch.await();
 
     // ensure there's nothing left
-    String json = """
+    String json =
+        """
         {
           "find": {
           }

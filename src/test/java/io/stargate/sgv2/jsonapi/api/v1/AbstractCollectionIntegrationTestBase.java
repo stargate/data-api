@@ -33,7 +33,7 @@ public abstract class AbstractCollectionIntegrationTestBase
         .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
-            """
+                """
               {
                 "createCollection": {
                   "name": "%s"
@@ -53,7 +53,7 @@ public abstract class AbstractCollectionIntegrationTestBase
         .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
-            """
+                """
                       {
                         "createCollection": %s
                       }
@@ -67,7 +67,8 @@ public abstract class AbstractCollectionIntegrationTestBase
 
   /** Utility to delete all documents from the test collection. */
   protected void deleteAllDocuments() {
-    String json = """
+    String json =
+        """
         {
           "deleteMany": {
           }
@@ -97,7 +98,7 @@ public abstract class AbstractCollectionIntegrationTestBase
   /** Utility to insert a doc to the test collection. */
   protected void insertDoc(String docJson) {
     String doc =
-        """
+            """
         {
           "insertOne": {
             "document": %s
@@ -120,7 +121,7 @@ public abstract class AbstractCollectionIntegrationTestBase
 
   protected void insertDoc(String collection, String docJson) {
     String doc =
-        """
+            """
             {
               "insertOne": {
                 "document": %s
@@ -144,7 +145,7 @@ public abstract class AbstractCollectionIntegrationTestBase
   /** Utility to insert many docs to the test collection. */
   protected void insertManyDocs(String docsJson, int docsAmount) {
     String doc =
-        """
+            """
                 {
                   "insertMany": {
                     "documents": %s

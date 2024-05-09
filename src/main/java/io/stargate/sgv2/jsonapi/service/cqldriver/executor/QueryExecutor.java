@@ -96,6 +96,7 @@ public class QueryExecutor {
 
     return cqlSessionCache.getSession(dataApiRequestInfo).executeAsync(simpleStatement);
   }
+
   /**
    * Execute vector search query with bound statement.
    *

@@ -100,7 +100,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
-              """
+                  """
             {
               "createCollection": {
                 "name" : "TooBigVectorCollection",
@@ -260,7 +260,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       // And finally search for it (with different vector)
       final String vectorSearchStr = buildVectorElements(3, BIG_VECTOR_SIZE);
       final String findRequest =
-          """
+              """
                       {
                         "find": {
                           "sort" : {"$vector" : [%s]},
@@ -1200,7 +1200,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       // then set the vector
       final String vectorStr = buildVectorElements(7, BIG_VECTOR_SIZE);
       String json =
-          """
+              """
                       {
                         "findOneAndUpdate": {
                           "filter" : {"_id": "bigVectorForSet"},
@@ -1425,7 +1425,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       // then set the vector
       final String vectorStr = buildVectorElements(2, BIG_VECTOR_SIZE);
       String json =
-          """
+              """
                     {
                       "findOneAndReplace": {
                         "filter" : {"_id" : "bigVectorForFindReplace"},
@@ -1561,7 +1561,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       // Insert data with $vector array size less than vector index defined size.
       final String vectorStrCount3 = buildVectorElements(0, 3);
       String jsonVectorStrCount3 =
-          """
+              """
                       {
                          "insertOne": {
                             "document": {
@@ -1589,7 +1589,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       // Insert data with $vector array size greater than vector index defined size.
       final String vectorStrCount7 = buildVectorElements(0, 7);
       String jsonVectorStrCount7 =
-          """
+              """
                       {
                          "insertOne": {
                             "document": {
@@ -1621,7 +1621,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       // Sort clause with $vector array size greater than vector index defined size.
       final String vectorStrCount3 = buildVectorElements(0, 3);
       String jsonVectorStrCount3 =
-          """
+              """
                        {
                           "find": {
                             "sort" : {"$vector" : [ %s ]},
@@ -1647,7 +1647,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
       // Insert data with $vector array size greater than vector index defined size.
       final String vectorStrCount7 = buildVectorElements(0, 7);
       String jsonVectorStrCount7 =
-          """
+              """
                        {
                           "find": {
                             "sort" : {"$vector" : [ %s ]},
@@ -1742,7 +1742,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
-            """
+                """
                             {
                               "createCollection": {
                                 "name" : "%s",
@@ -1765,7 +1765,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
 
   private void insertBigVectorDoc(String id, String name, String description, String vectorStr) {
     final String vectorDoc =
-        """
+            """
                     {
                         "_id": "%s",
                         "name": "%s",
@@ -1782,7 +1782,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
         .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
-            """
+                """
                             {
                                "insertOne": {
                                   "document": %s

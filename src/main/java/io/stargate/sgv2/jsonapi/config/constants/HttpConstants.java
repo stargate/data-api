@@ -15,7 +15,9 @@ public interface HttpConstants {
   /** JSON API Embedding serive Authentication token header name. */
   String EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME = "x-embedding-api-key";
 
-  /** @return Embedding service header name <code>20</code>. */
+  /**
+   * @return Embedding service header name <code>20</code>.
+   */
   @WithDefault(EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME)
   String embeddingApiKey();
 }

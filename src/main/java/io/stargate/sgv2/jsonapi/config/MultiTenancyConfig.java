@@ -27,11 +27,15 @@ import java.util.OptionalInt;
 @ConfigMapping(prefix = "stargate.multi-tenancy")
 public interface MultiTenancyConfig {
 
-  /** @return If multi-tenancy is enabled. */
+  /**
+   * @return If multi-tenancy is enabled.
+   */
   @WithDefault("false")
   boolean enabled();
 
-  /** @return Tenant resolver in case the multi-tenancy is active. */
+  /**
+   * @return Tenant resolver in case the multi-tenancy is active.
+   */
   @Valid
   TenantResolverConfig tenantResolver();
 
@@ -55,26 +59,36 @@ public interface MultiTenancyConfig {
      */
     Optional<@Pattern(regexp = "subdomain|fixed|custom") String> type();
 
-    /** @return Specific settings for the <code>fixed</code> tenant resolver type. */
+    /**
+     * @return Specific settings for the <code>fixed</code> tenant resolver type.
+     */
     @Valid
     FixedTenantResolverConfig fixed();
 
-    /** @return Specific settings for the <code>subdomain</code> tenant resolver type. */
+    /**
+     * @return Specific settings for the <code>subdomain</code> tenant resolver type.
+     */
     @Valid
     SubdomainTenantResolverConfig subdomain();
 
     interface FixedTenantResolverConfig {
 
-      /** @return Tenant ID value. */
+      /**
+       * @return Tenant ID value.
+       */
       Optional<String> tenantId();
     }
 
     interface SubdomainTenantResolverConfig {
 
-      /** @return Maximum characters to pull from the subdomain. */
+      /**
+       * @return Maximum characters to pull from the subdomain.
+       */
       OptionalInt maxChars();
 
-      /** @return The regex to validate the resolved tenant against. */
+      /**
+       * @return The regex to validate the resolved tenant against.
+       */
       Optional<String> regex();
     }
   }
