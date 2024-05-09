@@ -1400,7 +1400,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided dimension value '1' is not within the supported numeric range"))
+                  "The provided options are invalid: The provided dimension value (1) is not within the supported numeric range [2, 1536]"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
@@ -1438,7 +1438,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided dimension value '2000' is not within the supported numeric range"))
+                  "The provided options are invalid: The provided dimension value (2000) is not within the supported numeric range [2, 1536]"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }

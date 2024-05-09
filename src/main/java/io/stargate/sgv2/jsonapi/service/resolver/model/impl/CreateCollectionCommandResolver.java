@@ -462,15 +462,18 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         if (userVectorDimension < validationValues.get(0)
             || userVectorDimension > validationValues.get(1)) {
           throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-              "The provided dimension value '%s' is not within the supported numeric range",
-              userVectorDimension);
+              "The provided dimension value (%d) is not within the supported numeric range [%d, %d]",
+              userVectorDimension, validationValues.get(0), validationValues.get(1));
         }
       }
       case OPTIONS -> {
         if (!validationValues.contains(userVectorDimension)) {
+          String validatedValuesStr =
+              String.join(
+                  ", ", validationValues.stream().map(Object::toString).toArray(String[]::new));
           throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-              "The provided dimension value '%s' is not within the supported options",
-              userVectorDimension);
+              "The provided dimension value '%s' is not within the supported options [%s]",
+              userVectorDimension, validatedValuesStr);
         }
       }
     }
