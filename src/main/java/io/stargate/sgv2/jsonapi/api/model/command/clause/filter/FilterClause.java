@@ -16,7 +16,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(
     type = SchemaType.OBJECT,
     implementation = Object.class,
-    example = """
+    example =
+        """
              {"name": "Aaron", "country": "US"}
               """)
 public record FilterClause(LogicalExpression logicalExpression) {
