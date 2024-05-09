@@ -52,7 +52,8 @@ public class UpdateClauseDeserializerTest {
 
     @Test
     public void mustHandleEmpty() throws Exception {
-      String json = """
+      String json =
+          """
                     {}
                     """;
 
@@ -75,7 +76,8 @@ public class UpdateClauseDeserializerTest {
 
     @Test
     public void mustHandleNumber() throws Exception {
-      String json = """
+      String json =
+          """
                     {"$set" : {"numberType": 40}}
                     """;
       final UpdateOperation operation =
@@ -87,7 +89,8 @@ public class UpdateClauseDeserializerTest {
 
     @Test
     public void mustHandleBoolean() throws Exception {
-      String json = """
+      String json =
+          """
                     {"$set" : {"boolType": true}}
                     """;
       final UpdateOperation operation =
@@ -99,7 +102,8 @@ public class UpdateClauseDeserializerTest {
 
     @Test
     public void mustHandleArray() throws Exception {
-      String json = """
+      String json =
+          """
                     {"$set" : {"arrayType": ["a"]}}
                     """;
 

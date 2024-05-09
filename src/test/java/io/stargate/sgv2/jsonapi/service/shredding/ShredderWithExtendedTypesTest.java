@@ -52,7 +52,7 @@ public class ShredderWithExtendedTypesTest {
       final String idUUID = defaultTestUUID().toString();
       final String valueUUID = defaultTestUUID2().toString();
       final String inputJson =
-          """
+              """
                       { "_id" : {"$uuid": "%s"},
                         "name" : "Bob",
                         "extraId" : {"$uuid": "%s"}
@@ -104,7 +104,7 @@ public class ShredderWithExtendedTypesTest {
       final String idObjectId = defaultTestObjectId().toString();
       final String valueObjectId = defaultTestObjectId2().toString();
       final String inputJson =
-          """
+              """
                           { "_id" : {"$objectId": "%s"},
                             "name" : "Bob",
                             "objectId2" : {"$objectId": "%s"}

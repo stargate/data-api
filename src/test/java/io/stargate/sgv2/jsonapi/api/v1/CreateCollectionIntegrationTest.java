@@ -75,7 +75,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void happyPath() {
       final String collectionName = "col" + RandomStringUtils.randomNumeric(16);
       String json =
-          """
+              """
           {
             "createCollection": {
               "name": "%s"
@@ -1239,7 +1239,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
         .headers(getHeaders())
         .contentType(ContentType.JSON)
         .body(
-            """
+                """
                 {
                   "deleteCollection": {
                     "name": "%s"

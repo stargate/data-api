@@ -234,7 +234,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("errors", is(nullValue()));
 
       // ensure find does not find the documents
-      json = """
+      json =
+          """
           {
             "find": {
             }
@@ -283,7 +284,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("errors", is(nullValue()));
 
       // ensure find does not find the documents
-      json = """
+      json =
+          """
           {
             "find": {
             }
@@ -330,7 +332,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           .body("errors", is(nullValue()));
 
       // ensure only 20 are really deleted
-      json = """
+      json =
+          """
           {
             "find": {
             }

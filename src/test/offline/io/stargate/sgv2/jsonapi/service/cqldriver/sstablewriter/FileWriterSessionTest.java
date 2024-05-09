@@ -34,7 +34,10 @@ public class FileWriterSessionTest {
 
   @Test
   public void testInit()
-      throws IOException, NoSuchFieldException, IllegalAccessException, NoSuchMethodException,
+      throws IOException,
+          NoSuchFieldException,
+          IllegalAccessException,
+          NoSuchMethodException,
           InvocationTargetException {
     CQLSessionCache cqlSessionCache = mock(CQLSessionCache.class);
     CQLSessionCache.SessionCacheKey cacheKey = null;

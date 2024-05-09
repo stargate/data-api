@@ -650,6 +650,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       return false;
     }
   }
+
   /** Filter for document where array matches (data in same order) as the array in request */
   public static class ArrayEqualsFilter extends MapFilterBase<String> {
     private final List<Object> arrayValue;
@@ -700,6 +701,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       return true;
     }
   }
+
   /**
    * Return JsonNode for a filter conditions value, used to set in new document created for upsert.
    *

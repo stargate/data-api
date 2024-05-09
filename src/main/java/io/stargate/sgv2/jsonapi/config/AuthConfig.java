@@ -28,14 +28,18 @@ import java.util.Optional;
 @ConfigMapping(prefix = "stargate.auth")
 public interface AuthConfig {
 
-  /** @return Header based authentication setup. */
+  /**
+   * @return Header based authentication setup.
+   */
   @Valid
   HeaderBasedAuthConfig headerBased();
 
   /** Configuration for the header based authentication. */
   interface HeaderBasedAuthConfig {
 
-    /** @return If the header based auth is enabled. */
+    /**
+     * @return If the header based auth is enabled.
+     */
     @WithDefault("true")
     boolean enabled();
 
@@ -47,12 +51,16 @@ public interface AuthConfig {
     @WithDefault(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME)
     String headerName();
 
-    /** @return If the customization of the challenge sending should be done. */
+    /**
+     * @return If the customization of the challenge sending should be done.
+     */
     @WithDefault("${stargate.exception-mappers.enabled:true}")
     boolean customChallengeEnabled();
   }
 
-  /** @return Configuration for the cassandra token resolver. */
+  /**
+   * @return Configuration for the cassandra token resolver.
+   */
   @Valid
   TokenResolverConfig tokenResolver();
 
@@ -80,7 +88,9 @@ public interface AuthConfig {
     @WithDefault("principal")
     Optional<@Pattern(regexp = "header|principal|fixed|custom") String> type();
 
-    /** @return Specific settings for the <code>header</code> token resolver type. */
+    /**
+     * @return Specific settings for the <code>header</code> token resolver type.
+     */
     @Valid
     HeaderTokenResolverConfig header();
 
@@ -95,13 +105,17 @@ public interface AuthConfig {
       String headerName();
     }
 
-    /** @return Specific settings for the <code>fixed</code> token resolver type. */
+    /**
+     * @return Specific settings for the <code>fixed</code> token resolver type.
+     */
     @Valid
     FixedTokenResolverConfig fixed();
 
     interface FixedTokenResolverConfig {
 
-      /** @return Token value. */
+      /**
+       * @return Token value.
+       */
       Optional<String> token();
     }
   }

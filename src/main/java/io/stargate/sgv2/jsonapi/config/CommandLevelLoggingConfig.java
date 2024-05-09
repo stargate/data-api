@@ -28,15 +28,21 @@ import java.util.Set;
 @ConfigMapping(prefix = "stargate.jsonapi.logging")
 public interface CommandLevelLoggingConfig {
 
-  /** @return If request info logging is enabled. */
+  /**
+   * @return If request info logging is enabled.
+   */
   @WithDefault("false")
   boolean enabled();
 
-  /** @return If only requests with errors should be logged. */
+  /**
+   * @return If only requests with errors should be logged.
+   */
   @WithDefault("true")
   boolean onlyResultsWithErrors();
 
-  /** @return Set of tenants for which the request info should be logged. */
+  /**
+   * @return Set of tenants for which the request info should be logged.
+   */
   @WithDefault(ALL_TENANTS)
   Optional<Set<String>> enabledTenants();
 }

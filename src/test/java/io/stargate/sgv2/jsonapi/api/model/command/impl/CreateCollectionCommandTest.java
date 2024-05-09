@@ -68,7 +68,7 @@ class CreateCollectionCommandTest {
     public void nameTooLong() throws Exception {
       String name = RandomStringUtils.randomAlphabetic(49);
       String json =
-          """
+              """
           {
             "createCollection": {
               "name": "%s"
