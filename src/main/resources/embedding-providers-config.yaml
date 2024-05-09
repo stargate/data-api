@@ -201,7 +201,7 @@ stargate:
               properties:
                 max-tokens: 512
         jinaAI:
-          #see https://api.jina.ai/redoc#tag/embeddings
+          #see https://jina.ai/embeddings/#apiform
           enabled: true
           url: https://api.jina.ai/v1/embeddings
           supported-authentications:
@@ -218,14 +218,16 @@ stargate:
                 - accepted: providerKey
                   forwarded: Authorization
           models:
-            - name: jina-embedding-t-en-v1
-              vector-dimension: 312
-            - name: jina-embedding-s-en-v1
-              vector-dimension: 512
-            - name: jina-embedding-b-en-v1
+            - name: jina-embeddings-v2-base-en
               vector-dimension: 768
-            - name: jina-embedding-l-en-v1
-              vector-dimension: 1024
+            - name: jina-embeddings-v2-base-de
+              vector-dimension: 768
+            - name: jina-embeddings-v2-base-es
+              vector-dimension: 768
+            - name: jina-embeddings-v2-base-code
+              vector-dimension: 768
+            - name: jina-embeddings-v2-base-zh
+              vector-dimension: 768
         voyageAI:
           # see https://docs.voyageai.com/reference/embeddings-api
           # see https://docs.voyageai.com/docs/embeddings
