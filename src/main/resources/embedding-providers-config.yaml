@@ -297,8 +297,8 @@ stargate:
               vector-dimension: 1024
         # NOTE: UpstageAI have a model for storing and a diff one for reading: this is different
         #  from everyone else.
-        #  Holding on the config / implementation until we confirm if this can change
-        # NOTE: no free tier available, CC required
+        #  In addition, provider accepts only a single input String at a time, not an Array.
+        #  Holding on the config / implementation until we can get changes or re-design our model
         upstageAI:
           # see https://developers.upstage.ai/docs/apis/embeddings
           # NOT enabled until
