@@ -33,6 +33,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private final OperationsConfig operationsConfig;
   private final EmbeddingProvidersConfig embeddingProvidersConfig;
 
+  private final ValidateCredentials validateCredentials;
+
   @Inject
   public CreateCollectionCommandResolver(
       ObjectMapper objectMapper,
@@ -41,7 +43,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       DocumentLimitsConfig documentLimitsConfig,
       DatabaseLimitsConfig dbLimitsConfig,
       OperationsConfig operationsConfig,
-      EmbeddingProvidersConfig embeddingProvidersConfig) {
+      EmbeddingProvidersConfig embeddingProvidersConfig,
+      ValidateCredentials validateCredentials) {
     this.objectMapper = objectMapper;
     this.cqlSessionCache = cqlSessionCache;
     this.dataStoreConfig = dataStoreConfig;
@@ -49,10 +52,11 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     this.dbLimitsConfig = dbLimitsConfig;
     this.operationsConfig = operationsConfig;
     this.embeddingProvidersConfig = embeddingProvidersConfig;
+    this.validateCredentials = validateCredentials;
   }
 
   public CreateCollectionCommandResolver() {
-    this(null, null, null, null, null, null, null);
+    this(null, null, null, null, null, null, null, null);
   }
 
   @Override
@@ -295,11 +299,14 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     } else {
       // User has provided authentication details. Validate each key against the provider's accepted
       // list.
-      for (String userAuthKey : userConfig.authentication().keySet()) {
-        if (!acceptedKeys.contains(userAuthKey)) {
+      for (Map.Entry<String, String> userAuth : userConfig.authentication().entrySet()) {
+        if (!acceptedKeys.contains(userAuth.getKey())) {
           throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
               "Service provider '%s' does not support authentication key '%s'",
-              userConfig.provider(), userAuthKey);
+              userConfig.provider(), userAuth.getKey());
+        } else {
+          if (operationsConfig.enableEmbeddingGateway())
+            validateCredentials.validate(userConfig.provider(), userAuth.getValue());
         }
       }
     }
