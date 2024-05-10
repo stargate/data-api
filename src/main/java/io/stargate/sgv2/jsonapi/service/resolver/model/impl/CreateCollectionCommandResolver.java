@@ -261,25 +261,48 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     return providerConfig;
   }
 
-  // TODO: 1. remove the first if statement when fully support validateAuthentication
-  //  2. Check if user authentication type is support
-  //  3. Check if required token is provided
-  //  4. Check if token is valid
+  /**
+   * Validates user authentication for creating a collection using the specified configurations.
+   *
+   * @param userConfig The vectorize configuration provided by the user.
+   * @param providerConfig The embedding provider configuration.
+   * @throws ApiException If the user authentication is invalid.
+   */
   private void validateAuthentication(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
+    // Get all the accepted keys in auth
+    List<String> acceptedKeys =
+        providerConfig.supportedAuthentications().values().stream()
+            .filter(config -> config.enabled() && config.tokens() != null)
+            .flatMap(config -> config.tokens().stream())
+            .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.TokenConfig::accepted)
+            .toList();
+
+    // If the user hasn't provided authentication details, verify that the 'NONE' authentication
+    // type is enabled.
     if (userConfig.authentication() == null) {
-      return;
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig noneAuthConfig =
+          providerConfig
+              .supportedAuthentications()
+              .get(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE);
+      if (noneAuthConfig == null || !noneAuthConfig.enabled()) {
+        throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+            "Service provider '%s' does not support '%s' authentication",
+            userConfig.provider(),
+            EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE);
+      }
+    } else {
+      // User has provided authentication details. Validate each key against the provider's accepted
+      // list.
+      for (String userAuthKey : userConfig.authentication().keySet()) {
+        if (!acceptedKeys.contains(userAuthKey)) {
+          throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+              "Service provider '%s' does not support authentication key '%s'",
+              userConfig.provider(), userAuthKey);
+        }
+      }
     }
-    // Check if user authentication type is support
-    //    userConfig.vectorizeServiceAuthentication().type().stream()
-    //        .filter(type -> !providerConfig.supportedAuthentication().contains(type))
-    //        .findFirst()
-    //        .ifPresent(
-    //            type -> {
-    //              throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-    //                  "Authentication type '%s' is not supported", type);
-    //            });
   }
 
   private void validateUserParameters(
@@ -364,12 +387,22 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     }
   }
 
+  /**
+   * Validates the model name and vector dimension provided in the user configuration against the
+   * specified embedding provider configuration.
+   *
+   * @param userConfig the user-specified vectorization configuration
+   * @param providerConfig the configuration of the embedding provider
+   * @param userVectorDimension the vector dimension provided by the user, or null if not provided
+   * @return the validated vector dimension to be used for the model
+   * @throws ApiException if the model name is not found, or if the dimension is invalid
+   */
   // TODO: check model parameters provided by the user, will support in the future
-  // TODO: fix code 396-408
   private Integer validateModelAndDimension(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       Integer userVectorDimension) {
+    // Find the model configuration by matching the model name
     EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model =
         providerConfig.models().stream()
             .filter(m -> m.name().equals(userConfig.modelName()))
@@ -380,18 +413,71 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
                         "Model name '%s' for provider '%s' is not supported",
                         userConfig.modelName(), userConfig.provider()));
 
-    // TODO: is dimension required? do we still auto populate the dimension?
+    // Handle models with a fixed vector dimension
     if (model.vectorDimension().isPresent()) {
       Integer configVectorDimension = model.vectorDimension().get();
       if (userVectorDimension == null) {
-        return configVectorDimension; // Use config dimension if user didn't provide one
+        return configVectorDimension; // Use model's dimension if user hasn't specified any
       } else if (!configVectorDimension.equals(userVectorDimension)) {
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "The provided dimension value '%s' doesn't match the model supports dimension value '%s'",
+            "The provided dimension value '%s' doesn't match the model's supported dimension value '%s'",
             userVectorDimension, configVectorDimension);
       }
       return configVectorDimension;
     }
-    return 0;
+
+    // Handle models with a range of acceptable dimensions
+    return model.parameters().stream()
+        .filter(param -> param.name().equals("vectorDimension"))
+        .findFirst()
+        .map(param -> validateRangeDimension(param, userVectorDimension))
+        .orElse(userVectorDimension); // should not go here
+  }
+
+  /**
+   * Validates the user-provided vector dimension against the dimension parameter's validation
+   * constraints.
+   *
+   * @param param the parameter configuration containing validation constraints
+   * @param userVectorDimension the vector dimension provided by the user
+   * @return the appropriate vector dimension based on parameter configuration
+   * @throws ApiException if the user-provided dimension is not valid
+   */
+  private Integer validateRangeDimension(
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig param,
+      Integer userVectorDimension) {
+    // Use the default value if the user has not provided a dimension
+    if (userVectorDimension == null) {
+      return Integer.valueOf(param.defaultValue().get());
+    }
+
+    // Extract validation type and values for comparison
+    Map.Entry<EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType, List<Integer>>
+        entry = param.validation().entrySet().iterator().next();
+    EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType validationType = entry.getKey();
+    List<Integer> validationValues = entry.getValue();
+
+    // Perform validation based on the validation type
+    switch (validationType) {
+      case NUMERIC_RANGE -> {
+        if (userVectorDimension < validationValues.get(0)
+            || userVectorDimension > validationValues.get(1)) {
+          throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+              "The provided dimension value (%d) is not within the supported numeric range [%d, %d]",
+              userVectorDimension, validationValues.get(0), validationValues.get(1));
+        }
+      }
+      case OPTIONS -> {
+        if (!validationValues.contains(userVectorDimension)) {
+          String validatedValuesStr =
+              String.join(
+                  ", ", validationValues.stream().map(Object::toString).toArray(String[]::new));
+          throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+              "The provided dimension value '%s' is not within the supported options [%s]",
+              userVectorDimension, validatedValuesStr);
+        }
+      }
+    }
+    return userVectorDimension;
   }
 }

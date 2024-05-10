@@ -691,6 +691,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                             "status": {
                                 "embeddingProviders": {
                                     "openai": {
+                                        "displayName": "OpenAI",
                                         "url": "https://api.openai.com/v1/",
                                         "supportedAuthentication": {
                                             "HEADER": {
@@ -698,7 +699,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                                 "tokens": [
                                                     {
                                                         "forwarded": "Authorization",
-                                                        "accepted": "x-embedding-provider-key"
+                                                        "accepted": "x-embedding-api-key"
                                                     }
                                                 ]
                                             },

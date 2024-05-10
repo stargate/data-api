@@ -35,7 +35,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
     @Test
     public void createBaseCollection() {
       String json =
-          """
+              """
                  {
                    "createCollection": {
                      "name": "%s",
@@ -149,7 +149,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
-              """
+                  """
                               {
                                 "insertOne": {
                                   "document": %s
@@ -206,7 +206,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
-              """
+                  """
                     {
                       "findOneAndUpdate": {
                         "filter" : {"_id" : "array_size_big_noindex_doc"},
@@ -237,7 +237,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
-              """
+                  """
                             {
                               "findOneAndUpdate": {
                                 "filter" : {"_id" : "array_size_too_big_doc"},
@@ -277,7 +277,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
             .headers(getHeaders())
             .contentType(ContentType.JSON)
             .body(
-                """
+                    """
                                 {
                                   "findOneAndUpdate": {
                                     "filter" : {"_id" : "object_size_big_noindex_doc"},
@@ -309,7 +309,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
             .headers(getHeaders())
             .contentType(ContentType.JSON)
             .body(
-                """
+                    """
                                 {
                                   "findOneAndUpdate": {
                                     "filter" : {"_id" : "object_size_too_big_doc"},
@@ -341,7 +341,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
-              """
+                  """
                         {
                           "insertOne": {
                             "document": {

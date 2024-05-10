@@ -26,13 +26,16 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
         || !config.providers().get(serviceName).enabled()) {
       throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(serviceName);
     }
+    final var properties = config.providers().get(serviceName).properties();
     return ServiceConfig.provider(
         serviceName,
         serviceName,
         config.providers().get(serviceName).url().toString(),
         RequestProperties.of(
-            config.providers().get(serviceName).properties().maxRetries(),
-            config.providers().get(serviceName).properties().retryDelayMillis(),
-            config.providers().get(serviceName).properties().requestTimeoutMillis()));
+            properties.maxRetries(),
+            properties.retryDelayMillis(),
+            properties.requestTimeoutMillis(),
+            properties.taskTypeRead(),
+            properties.taskTypeStore()));
   }
 }

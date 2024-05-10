@@ -28,7 +28,8 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
       // Remove 2 of 3 properties:
       UpdateOperation oper =
           UpdateOperator.UNSET.resolveOperation(
-              objectFromJson("""
+              objectFromJson(
+                  """
                     { "a" : 1, "b" : 1 }
                     """));
       assertThat(oper).isInstanceOf(UnsetOperation.class);
@@ -37,7 +38,9 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
       assertThat(oper.updateDocument(doc)).isTrue();
       // and be left with just one property
       assertThat(doc)
-          .isEqualTo(fromJson("""
+          .isEqualTo(
+              fromJson(
+                  """
                     { "c" : true }
                     """));
     }
@@ -47,7 +50,8 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
       // Remove 2 of 3 properties:
       UpdateOperation oper =
           UpdateOperator.UNSET.resolveOperation(
-              objectFromJson("""
+              objectFromJson(
+                  """
                     { "$vector" : null }
                     """));
       assertThat(oper).isInstanceOf(UnsetOperation.class);

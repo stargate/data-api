@@ -66,7 +66,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
-              """
+                  """
                 {
                   "createCollection": {
                     "name": "%s"
@@ -102,7 +102,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     @Order(3)
     public void happyPathWithExplain() {
       String json =
-          """
+              """
               {
                 "createCollection": {
                   "name": "%s",
@@ -131,7 +131,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body("status.ok", is(1));
 
       String expected1 =
-          """
+              """
                   {
                     "name": "%s",
                     "options":{}
@@ -139,7 +139,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                     """
               .formatted("collection1");
       String expected2 =
-          """
+              """
               {
                   "name": "%s",
                   "options": {
@@ -223,7 +223,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
       // create namespace first
       String namespace = "nam" + RandomStringUtils.randomNumeric(16);
       String json =
-          """
+              """
           {
             "createNamespace": {
               "name": "%s"
@@ -263,7 +263,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
 
       // cleanup
       json =
-          """
+              """
           {
             "dropNamespace": {
               "name": "%s"
@@ -313,7 +313,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
     @Order(7)
     public void happyPathIndexingWithExplain() {
       String json =
-          """
+              """
                   {
                     "createCollection": {
                       "name": "%s",
@@ -350,10 +350,12 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                     }
                   }
                   """;
-      String expected1 = """
+      String expected1 =
+          """
       {"name":"TableName","options":{}}
       """;
-      String expected2 = """
+      String expected2 =
+          """
               {"name":"collection1", "options":{}}
               """;
       String expected3 =

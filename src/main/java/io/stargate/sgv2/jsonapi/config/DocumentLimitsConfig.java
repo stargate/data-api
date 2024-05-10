@@ -63,7 +63,9 @@ public interface DocumentLimitsConfig {
   @WithDefault("" + DEFAULT_MAX_DOCUMENT_SIZE)
   int maxSize();
 
-  /** @return Defines the maximum document depth (nesting), defaults to {@code 8 levels} */
+  /**
+   * @return Defines the maximum document depth (nesting), defaults to {@code 8 levels}
+   */
   @Positive
   @WithDefault("" + DEFAULT_MAX_DOCUMENT_DEPTH)
   int maxDepth();
@@ -94,22 +96,30 @@ public interface DocumentLimitsConfig {
   @WithDefault("" + DEFAULT_MAX_DOC_PROPERTIES)
   int maxDocumentProperties();
 
-  /** @return Defines the maximum length of a single Number value (in characters). */
+  /**
+   * @return Defines the maximum length of a single Number value (in characters).
+   */
   @Positive
   @WithDefault("" + DEFAULT_MAX_NUMBER_LENGTH)
   int maxNumberLength();
 
-  /** @return Defines the maximum length of a single String value (in bytes). */
+  /**
+   * @return Defines the maximum length of a single String value (in bytes).
+   */
   @Positive
   @WithDefault("" + DEFAULT_MAX_STRING_LENGTH_IN_BYTES)
   int maxStringLengthInBytes();
 
-  /** @return Maximum length of an indexable Array in document (in elements). */
+  /**
+   * @return Maximum length of an indexable Array in document (in elements).
+   */
   @Positive
   @WithDefault("" + DEFAULT_MAX_ARRAY_LENGTH)
   int maxArrayLength();
 
-  /** @return Maximum length of Vector ($vector) array allowed. */
+  /**
+   * @return Maximum length of Vector ($vector) array allowed.
+   */
   @Positive
   @WithDefault("" + DEFAULT_MAX_VECTOR_EMBEDDING_LENGTH)
   int maxVectorEmbeddingLength();

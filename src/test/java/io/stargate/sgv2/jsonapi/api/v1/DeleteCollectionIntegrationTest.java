@@ -29,7 +29,7 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // first create
       String createJson =
-          """
+              """
           {
             "createCollection": {
               "name": "%s"
@@ -50,7 +50,7 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // then delete
       String json =
-          """
+              """
           {
             "deleteCollection": {
               "name": "%s"
@@ -76,7 +76,7 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       // delete not existing
       String json =
-          """
+              """
           {
             "deleteCollection": {
               "name": "%s"

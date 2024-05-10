@@ -192,7 +192,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
     private static final String UUID1 = "123e4567-e89b-12d3-a456-426614174000";
     private static final String OBJECTID1 = "5f3b3e3b3e3b3e3b3e3b3e3b";
     private static final String EXT_DOC1 =
-        """
+            """
                       {
                         "_id": "ext1",
                         "username": "user1",
@@ -250,7 +250,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .body(
               "data.document",
               jsonEquals(
-                  """
+                      """
                                         {
                                           "_id": "ext1",
                                           "uid": { "$uuid": "%s" },

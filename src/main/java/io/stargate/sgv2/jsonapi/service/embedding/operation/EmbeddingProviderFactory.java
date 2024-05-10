@@ -13,12 +13,9 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.Map;
 import java.util.Optional;
-import org.slf4j.Logger;
 
 @ApplicationScoped
 public class EmbeddingProviderFactory {
-
-  private static Logger logger = org.slf4j.LoggerFactory.getLogger(EmbeddingProviderFactory.class);
   @Inject Instance<EmbeddingProviderConfigStore> embeddingProviderConfigStore;
 
   @Inject OperationsConfig config;
@@ -36,31 +33,46 @@ public class EmbeddingProviderFactory {
   }
 
   private static final Map<String, ProviderConstructor> providersMap =
+      // alphabetic order
       Map.ofEntries(
-          Map.entry(ProviderConstants.OPENAI, OpenAIEmbeddingClient::new),
           Map.entry(ProviderConstants.AZURE_OPENAI, AzureOpenAIEmbeddingClient::new),
-          Map.entry(ProviderConstants.HUGGINGFACE, HuggingFaceEmbeddingClient::new),
-          Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingClient::new),
           Map.entry(ProviderConstants.COHERE, CohereEmbeddingClient::new),
-          Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingClient::new));
+          Map.entry(ProviderConstants.HUGGINGFACE, HuggingFaceEmbeddingClient::new),
+          Map.entry(ProviderConstants.JINA_AI, JinaAIEmbeddingClient::new),
+          Map.entry(ProviderConstants.MISTRAL, MistralEmbeddingClient::new),
+          Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingClient::new),
+          Map.entry(ProviderConstants.OPENAI, OpenAIEmbeddingClient::new),
+          Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingClient::new),
+          Map.entry(ProviderConstants.VOYAGE_AI, VoyageAIEmbeddingClient::new));
 
   public EmbeddingProvider getConfiguration(
       Optional<String> tenant,
+      Optional<String> authToken,
       String serviceName,
       String modelName,
       int dimension,
-      Map<String, Object> vectorizeServiceParameter,
+      Map<String, Object> vectorizeServiceParameters,
+      Map<String, String> authentication,
       String commandName) {
     return addService(
-        tenant, serviceName, modelName, dimension, vectorizeServiceParameter, commandName);
+        tenant,
+        authToken,
+        serviceName,
+        modelName,
+        dimension,
+        vectorizeServiceParameters,
+        authentication,
+        commandName);
   }
 
   private synchronized EmbeddingProvider addService(
       Optional<String> tenant,
+      Optional<String> authToken,
       String serviceName,
       String modelName,
       int dimension,
-      Map<String, Object> vectorizeServiceParameter,
+      Map<String, Object> vectorizeServiceParameters,
+      Map<String, String> authentication,
       String commandName) {
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
         embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
@@ -70,10 +82,12 @@ public class EmbeddingProviderFactory {
           configuration.serviceProvider(),
           dimension,
           tenant,
+          authToken,
           configuration.baseUrl(),
           modelName,
           embeddingService,
-          vectorizeServiceParameter,
+          vectorizeServiceParameters,
+          authentication,
           commandName);
     }
 
@@ -105,6 +119,6 @@ public class EmbeddingProviderFactory {
             configuration.baseUrl(),
             modelName,
             dimension,
-            vectorizeServiceParameter);
+            vectorizeServiceParameters);
   }
 }

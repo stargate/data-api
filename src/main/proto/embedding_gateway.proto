@@ -30,6 +30,7 @@ message ProviderEmbedRequest {
     // The command contains vectorize
     string command_name = 6;
 
+
     // The parameter value, used when provided needs user specified parameters
     message ParameterValue {
       oneof ParameterValueOneOf {
@@ -94,13 +95,14 @@ message GetSupportedProvidersResponse {
 
   // ProviderConfig message represents configuration for an embedding provider.
   message ProviderConfig {
-    bool enabled = 1;
-    string url = 2;
+    string displayName = 1;
+    bool enabled = 2;
+    string url = 3;
     // No AuthenticationType Enum, since enum can not be key of map in grpc message
-    map<string, AuthenticationConfig> supported_authentications = 3;
-    repeated ParameterConfig parameters = 4;
-    RequestProperties properties = 5;
-    repeated ModelConfig models = 6;
+    map<string, AuthenticationConfig> supported_authentications = 4;
+    repeated ParameterConfig parameters = 5;
+    RequestProperties properties = 6;
+    repeated ModelConfig models = 7;
 
 
     message AuthenticationConfig{
@@ -168,10 +170,30 @@ message GetSupportedProvidersResponse {
   }
 }
 
+// Request message to validate the credential
+message ValidateCredentialRequest {
+  string                    provider_name = 1;
+  string                    tenant_id = 2;
+  string                    token = 3;
+  string                    credential = 4;
+}
+
+// Response message to validate the credential
+message ValidateCredentialResponse {
+  bool                    validity = 1;
+  Error                    error = 2;
+
+  message Error {
+    string error_code = 1;
+    string error_message = 2;
+  }
+}
+
 
 
 // The embedding gateway gPRC API to generate embeddings
 service EmbeddingService {
   rpc Embed (ProviderEmbedRequest) returns (EmbeddingResponse) {}
   rpc GetSupportedProviders (GetSupportedProvidersRequest) returns (GetSupportedProvidersResponse){}
+  rpc ValidateCredential (ValidateCredentialRequest) returns (ValidateCredentialResponse) {}
 }
