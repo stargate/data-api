@@ -26,17 +26,17 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class UpstageAIEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelName;
+  private String modelNamePrefix;
   private final UpstageAIEmbeddingProvider embeddingProvider;
 
   public UpstageAIEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      String modelNamePrefix,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
-    this.modelName = modelName;
+    this.modelNamePrefix = modelNamePrefix;
 
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
@@ -60,7 +60,8 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
     }
   }
 
-  record EmbeddingRequest(String[] input, String model) {}
+  // NOTE: "input" is a single String, not array of Strings!
+  record EmbeddingRequest(String input, String model) {}
 
   @JsonIgnoreProperties({"object"})
   record EmbeddingResponse(Data[] data, String model, Usage usage) {
@@ -75,8 +76,19 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
-    String[] textArray = new String[texts.size()];
-    EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName);
+    // Oddity: Implementation does not support batching, so we only accept "batches"
+    // of 1 String, fail for others
+    if (texts.size() != 1) {
+      // Temporary fail message: with re-batching will give better information
+      throw ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.toApiException(
+          "UpstageAI only supports vectorization of 1 text at a time, got " + texts.size());
+    }
+    // Another oddity: model name used as prefix
+    final String modelName =
+        modelNamePrefix
+            + ((embeddingRequestType == EmbeddingRequestType.SEARCH) ? "query" : "passage");
+
+    EmbeddingRequest request = new EmbeddingRequest(texts.get(0), modelName);
     Uni<EmbeddingResponse> response =
         embeddingProvider
             .embed("Bearer " + apiKeyOverride.get(), request)
