@@ -94,13 +94,14 @@ message GetSupportedProvidersResponse {
 
   // ProviderConfig message represents configuration for an embedding provider.
   message ProviderConfig {
-    bool enabled = 1;
-    string url = 2;
+    string displayName = 1;
+    bool enabled = 2;
+    string url = 3;
     // No AuthenticationType Enum, since enum can not be key of map in grpc message
-    map<string, AuthenticationConfig> supported_authentications = 3;
-    repeated ParameterConfig parameters = 4;
-    RequestProperties properties = 5;
-    repeated ModelConfig models = 6;
+    map<string, AuthenticationConfig> supported_authentications = 4;
+    repeated ParameterConfig parameters = 5;
+    RequestProperties properties = 6;
+    repeated ModelConfig models = 7;
 
 
     message AuthenticationConfig{

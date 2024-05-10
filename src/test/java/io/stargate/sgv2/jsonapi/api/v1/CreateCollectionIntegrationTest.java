@@ -571,28 +571,30 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void happyEmbeddingService() {
       final String createCollectionRequest =
           """
-                      {
-                          "createCollection": {
-                              "name": "collection_with_vector_service",
-                              "options": {
-                                  "vector": {
-                                      "metric": "cosine",
-                                      "dimension": 768,
-                                      "service": {
-                                          "provider": "vertexai",
-                                          "modelName": "textembedding-gecko@003",
-                                          "authentication": {
-                                              "x-embedding-api-key": "user_key"
-                                          },
-                                          "parameters": {
-                                              "projectId": "test"
-                                          }
-                                      }
-                                  }
-                              }
-                          }
-                      }
-                          """;
+            {
+                "createCollection": {
+                    "name": "collection_with_vector_service",
+                    "options": {
+                        "vector": {
+                            "metric": "cosine",
+                            "dimension": 512,
+                            "service": {
+                                "provider": "azureOpenAI",
+                                "modelName": "text-embedding-3-small",
+                                "authentication": {
+                                    "x-embedding-api-key": "user_key"
+                                },
+                                "parameters": {
+                                    "resourceName" : "vectorize",
+                                    "deploymentId" : "vectorize",
+                                    "apiVersion" : "2024-02-01"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+          """;
 
       // create vector collection with vector service
       given()
@@ -680,13 +682,15 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "metric": "cosine",
                                             "dimension": 768,
                                             "service": {
-                                                "provider": "vertexai",
+                                                "provider": "azureOpenAI",
                                                 "modelName": "testModel",
                                                 "authentication": {
                                                     "x-embedding-api-key": "user_key"
                                                 },
                                                 "parameters": {
-                                                    "projectId": "123"
+                                                    "resourceName" : "vectorize",
+                                                    "deploymentId" : "vectorize",
+                                                    "apiVersion" : "2024-02-01"
                                                 }
                                             }
                                         }
@@ -703,7 +707,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Model name 'testModel' for provider 'vertexai' is not supported"))
+                  "The provided options are invalid: Model name 'testModel' for provider 'azureOpenAI' is not supported"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -723,14 +727,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                       "vector": {
                                           "metric": "cosine",
                                           "service": {
-                                              "provider": "vertexai",
-                                              "modelName": "textembedding-gecko@003",
-                                              "authentication": {
-                                                  "x-embedding-api-key": "user_key"
-                                              },
-                                              "parameters": {
-                                                  "projectId": "test"
-                                              }
+                                              "provider": "nvidia",
+                                              "modelName": "NV-Embed-QA"
                                           }
                                       }
                                   }
@@ -745,16 +743,10 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                   "options": {
                                       "vector": {
                                           "metric": "cosine",
-                                          "dimension": 768,
+                                          "dimension": 1024,
                                           "service": {
-                                              "provider": "vertexai",
-                                              "modelName": "textembedding-gecko@003",
-                                              "authentication": {
-                                                  "x-embedding-api-key": "user_key"
-                                              },
-                                              "parameters": {
-                                                  "projectId": "test"
-                                              }
+                                              "provider": "nvidia",
+                                              "modelName": "NV-Embed-QA"
                                           }
                                       }
                                   }
@@ -859,14 +851,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "metric": "cosine",
                                             "dimension": 123,
                                             "service": {
-                                                "provider": "vertexai",
-                                                "modelName": "textembedding-gecko@003",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                },
-                                                "parameters": {
-                                                    "projectId": "123"
-                                                }
+                                                "provider": "nvidia",
+                                                "modelName": "NV-Embed-QA"
                                             }
                                         }
                                     }
@@ -882,7 +868,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided dimension value '123' doesn't match the model's supported dimension value '768'"))
+                  "The provided options are invalid: The provided dimension value '123' doesn't match the model's supported dimension value '1024'"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -1302,7 +1288,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "metric": "cosine",
                                             "dimension": 768,
                                             "service": {
-                                                "provider": "vertexai",
+                                                "provider": "azureOpenAI",
                                                 "modelName": "text-embedding-3-small",
                                                 "authentication": {
                                                     "x-embedding-api-key": "user_key"
@@ -1322,7 +1308,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Required parameter 'projectId' for the provider 'vertexai' missing"))
+                  "The provided options are invalid: Required parameter 'resourceName' for the provider 'azureOpenAI' missing"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -1343,8 +1329,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "metric": "cosine",
                                             "dimension": 768,
                                             "service": {
-                                                "provider": "vertexai",
-                                                "modelName": "textembedding-gecko@003",
+                                                "provider": "azureOpenAI",
+                                                "modelName": "text-embedding-3-small",
                                                 "authentication": {
                                                     "x-embedding-api-key": "user_key"
                                                 },
@@ -1366,7 +1352,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'vertexai' provided"))
+                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'azureOpenAI' provided"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
@@ -1427,13 +1413,15 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "metric": "cosine",
                                             "dimension": 768,
                                             "service": {
-                                                "provider": "vertexai",
-                                                "modelName": "textembedding-gecko@003",
+                                                "provider": "azureOpenAI",
+                                                "modelName": "text-embedding-3-small",
                                                 "authentication": {
                                                     "x-embedding-api-key": "user_key"
                                                 },
                                                 "parameters": {
-                                                    "projectId": 123
+                                                    "resourceName": 123,
+                                                    "deploymentId": "vectorize",
+                                                    "apiVersion": "2024-02-01"
                                                 }
                                             }
                                         }
@@ -1450,7 +1438,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided parameter 'projectId' type is incorrect. Expected: 'string'"))
+                  "The provided options are invalid: The provided parameter 'resourceName' type is incorrect. Expected: 'string'"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
