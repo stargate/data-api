@@ -414,7 +414,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
                         userConfig.modelName(), userConfig.provider()));
 
     // Handle models with a fixed vector dimension
-    if (model.vectorDimension().isPresent()) {
+    if (model.vectorDimension().isPresent() && model.vectorDimension().get() != 0) {
       Integer configVectorDimension = model.vectorDimension().get();
       if (userVectorDimension == null) {
         return configVectorDimension; // Use model's dimension if user hasn't specified any

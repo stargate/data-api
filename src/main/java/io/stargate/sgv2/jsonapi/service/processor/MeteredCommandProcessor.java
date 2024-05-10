@@ -3,11 +3,7 @@ package io.stargate.sgv2.jsonapi.service.processor;
 import static io.stargate.sgv2.api.common.config.constants.LoggingConstants.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.micrometer.core.instrument.Meter;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.Tag;
-import io.micrometer.core.instrument.Tags;
-import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.smallrye.mutiny.Uni;
@@ -286,8 +282,7 @@ public class MeteredCommandProcessor {
       @Override
       public DistributionStatisticConfig configure(
           Meter.Id id, DistributionStatisticConfig config) {
-        if (id.getName().startsWith(jsonApiMetricsConfig.metricsName())
-            || id.getName().startsWith(HISTOGRAM_METRICS_NAME)
+        if (id.getName().startsWith(HISTOGRAM_METRICS_NAME)
             || id.getName().startsWith(jsonApiMetricsConfig.vectorizeCallDurationMetrics())) {
 
           return DistributionStatisticConfig.builder()
