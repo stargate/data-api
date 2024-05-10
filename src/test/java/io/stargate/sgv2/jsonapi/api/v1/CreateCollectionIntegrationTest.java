@@ -562,33 +562,39 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
+  }
 
+  @Nested
+  @Order(2)
+  class CreateCollectionWithEmbeddingServiceTestModelsAndProviders {
     @Test
-    public void happyCreateCollectionWithEmbeddingService() {
+    public void happyEmbeddingService() {
       final String createCollectionRequest =
           """
-                  {
-                      "createCollection": {
-                          "name": "collection_with_vector_service",
-                          "options": {
-                              "vector": {
-                                  "metric": "cosine",
-                                  "dimension": 768,
-                                  "service": {
-                                      "provider": "vertexai",
-                                      "modelName": "textembedding-gecko@003",
-                                      "authentication": {
-                                          "x-embedding-api-key": "user_key"
-                                      },
-                                      "parameters": {
-                                          "projectId": "test"
-                                      }
-                                  }
-                              }
-                          }
-                      }
-                  }
-                      """;
+            {
+                "createCollection": {
+                    "name": "collection_with_vector_service",
+                    "options": {
+                        "vector": {
+                            "metric": "cosine",
+                            "dimension": 512,
+                            "service": {
+                                "provider": "azureOpenAI",
+                                "modelName": "text-embedding-3-small",
+                                "authentication": {
+                                    "x-embedding-api-key": "user_key"
+                                },
+                                "parameters": {
+                                    "resourceName" : "vectorize",
+                                    "deploymentId" : "vectorize",
+                                    "apiVersion" : "2024-02-01"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+          """;
 
       // create vector collection with vector service
       given()
@@ -616,54 +622,137 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
-    public void happyCreateCollectionWithEmbeddingServiceAutoPopulateDimension() {
+    public void failProviderNotSupport() {
+      // create a collection with embedding service provider not support
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                          {
+                              "createCollection": {
+                                  "name": "collection_with_vector_service",
+                                  "options": {
+                                      "vector": {
+                                          "metric": "cosine",
+                                          "dimension": 768,
+                                          "service": {
+                                              "provider": "test",
+                                              "modelName": "textembedding-gecko@003",
+                                              "authentication": {
+                                                  "x-embedding-api-key": "user_key",
+                                                  "providerKey" : "shared_creds.providerKey"
+                                              },
+                                              "parameters": {
+                                                  "projectId": "test"
+                                              }
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Service provider 'test' is not supported"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failUnsupportedModel() {
+      // create a collection with unsupported model name
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 768,
+                                            "service": {
+                                                "provider": "azureOpenAI",
+                                                "modelName": "testModel",
+                                                "authentication": {
+                                                    "x-embedding-api-key": "user_key"
+                                                },
+                                                "parameters": {
+                                                    "resourceName" : "vectorize",
+                                                    "deploymentId" : "vectorize",
+                                                    "apiVersion" : "2024-02-01"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Model name 'testModel' for provider 'azureOpenAI' is not supported"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+  }
+
+  @Nested
+  @Order(3)
+  class CreateCollectionWithEmbeddingServiceTestDimension {
+    @Test
+    public void happyFixDimensionAutoPopulate() {
       final String createCollectionWithoutDimension =
           """
-                      {
-                          "createCollection": {
-                              "name": "collection_with_vector_service",
-                              "options": {
-                                  "vector": {
-                                      "metric": "cosine",
-                                      "service": {
-                                          "provider": "vertexai",
-                                          "modelName": "textembedding-gecko@003",
-                                          "authentication": {
-                                              "x-embedding-api-key": "user_key"
-                                          },
-                                          "parameters": {
-                                              "projectId": "test"
+                          {
+                              "createCollection": {
+                                  "name": "collection_with_vector_service",
+                                  "options": {
+                                      "vector": {
+                                          "metric": "cosine",
+                                          "service": {
+                                              "provider": "nvidia",
+                                              "modelName": "NV-Embed-QA"
                                           }
                                       }
                                   }
                               }
                           }
-                      }
-                          """;
+                              """;
       final String createCollectionWithDimension =
           """
-                      {
-                          "createCollection": {
-                              "name": "collection_with_vector_service",
-                              "options": {
-                                  "vector": {
-                                      "metric": "cosine",
-                                      "dimension": 768,
-                                      "service": {
-                                          "provider": "vertexai",
-                                          "modelName": "textembedding-gecko@003",
-                                          "authentication": {
-                                              "x-embedding-api-key": "user_key"
-                                          },
-                                          "parameters": {
-                                              "projectId": "test"
+                          {
+                              "createCollection": {
+                                  "name": "collection_with_vector_service",
+                                  "options": {
+                                      "vector": {
+                                          "metric": "cosine",
+                                          "dimension": 1024,
+                                          "service": {
+                                              "provider": "nvidia",
+                                              "modelName": "NV-Embed-QA"
                                           }
                                       }
                                   }
                               }
                           }
-                      }
-                          """;
+                              """;
       // create vector collection with vector service and no dimension
       given()
           .headers(getHeaders())
@@ -714,24 +803,24 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
-    public void failCreateCollectionWithEmbeddingServiceNoDimension() {
+    public void failNoServiceProviderAndNoDimension() {
       // create a collection with no dimension and service
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
-                    {
-                        "createCollection": {
-                            "name": "collection_with_vector_service",
-                            "options": {
-                                "vector": {
-                                    "metric": "cosine"
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine"
+                                        }
+                                    }
                                 }
                             }
-                        }
-                    }
-                    """)
+                            """)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
@@ -747,36 +836,197 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
-    public void failCreateCollectionWithEmbeddingServiceProviderNotSupport() {
-      // create a collection with embedding service provider not support
+    public void failFixDimensionUnmatchedVectorDimension() {
+      // create a collection with unmatched vector dimension
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 123,
+                                            "service": {
+                                                "provider": "nvidia",
+                                                "modelName": "NV-Embed-QA"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: The provided dimension value '123' doesn't match the model's supported dimension value '1024'"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void happyRangeDimensionAutoPopulate() {
+      final String createCollectionWithoutDimension =
+          """
                   {
                       "createCollection": {
                           "name": "collection_with_vector_service",
                           "options": {
                               "vector": {
                                   "metric": "cosine",
-                                  "dimension": 768,
                                   "service": {
-                                      "provider": "test",
-                                      "modelName": "textembedding-gecko@003",
+                                      "provider": "openai",
+                                      "modelName": "text-embedding-3-small",
                                       "authentication": {
-                                          "x-embedding-api-key": "user_key",
-                                          "providerKey" : "shared_creds.providerKey"
-                                      },
-                                      "parameters": {
-                                          "projectId": "test"
+                                          "x-embedding-api-key": "user_key"
                                       }
                                   }
                               }
                           }
                       }
                   }
-                  """)
+                      """;
+      final String createCollectionWithDefaultDimension =
+          """
+                  {
+                      "createCollection": {
+                          "name": "collection_with_vector_service",
+                          "options": {
+                              "vector": {
+                                  "metric": "cosine",
+                                  "dimension": 512,
+                                  "service": {
+                                      "provider": "openai",
+                                      "modelName": "text-embedding-3-small",
+                                      "authentication": {
+                                          "x-embedding-api-key": "user_key"
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  }
+                      """;
+      // create vector collection with vector service and no dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithoutDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // Also: should be idempotent when try creating with correct dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithDefaultDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+
+      // create vector collection with vector service and correct dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithDefaultDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // Also: should be idempotent when try creating with no dimension
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollectionWithoutDimension)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+    }
+
+    @Test
+    public void happyRangeDimensionInRange() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 512,
+                                            "service": {
+                                                "provider": "openai",
+                                                "modelName": "text-embedding-3-small",
+                                                "authentication": {
+                                                    "x-embedding-api-key": "user_key"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+    }
+
+    @Test
+    public void failRangeDimensionNotInRange() {
+      // create a collection with a dimension lower than the min
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 1,
+                                            "service": {
+                                                "provider": "openai",
+                                                "modelName": "text-embedding-3-small",
+                                                "authentication": {
+                                                    "x-embedding-api-key": "user_key"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                                    """)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
@@ -786,38 +1036,269 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Service provider 'test' is not supported"))
+                  "The provided options are invalid: The provided dimension value (1) is not within the supported numeric range [2, 1536]"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+
+      // create a collection with a dimension higher than the min
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 2000,
+                                            "service": {
+                                                "provider": "openai",
+                                                "modelName": "text-embedding-3-small",
+                                                "authentication": {
+                                                    "x-embedding-api-key": "user_key"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: The provided dimension value (2000) is not within the supported numeric range [2, 1536]"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+  }
+
+  @Nested
+  @Order(4)
+  class CreateCollectionWithEmbeddingServiceTestAuth {
+    @Test
+    public void happyWithNoneAuth() {
+      // create a collection without providing authentication
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 1024,
+                                            "service": {
+                                                "provider": "nvidia",
+                                                "modelName": "NV-Embed-QA"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                                """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+    }
+
+    @Test
+    public void failNotExistAuthKey() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 1024,
+                                            "service": {
+                                                "provider": "nvidia",
+                                                "modelName": "NV-Embed-QA",
+                                                "authentication": {
+                                                    "providerKey": "shared_creds.providerKey"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Service provider 'nvidia' does not support authentication key 'providerKey'"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
-    public void failCreateCollectionWithEmbeddingServiceNotProvideRequiredParameters() {
+    public void failNoneDisabled() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                                    {
+                                        "createCollection": {
+                                            "name": "collection_with_vector_service",
+                                            "options": {
+                                                "vector": {
+                                                    "metric": "cosine",
+                                                    "dimension": 1536,
+                                                    "service": {
+                                                        "provider": "openai",
+                                                        "modelName": "text-embedding-ada-002"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Service provider 'openai' does not support 'NONE' authentication"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void failInvalidAuthKey() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                                    {
+                                        "createCollection": {
+                                            "name": "collection_with_vector_service",
+                                            "options": {
+                                                "vector": {
+                                                    "metric": "cosine",
+                                                    "dimension": 1536,
+                                                    "service": {
+                                                        "provider": "openai",
+                                                        "modelName": "text-embedding-ada-002",
+                                                        "authentication": {
+                                                            "providerKey": "shared_creds.providerKey"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Service provider 'openai' does not support authentication key 'providerKey'"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void happyValidAuthKey() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                                    {
+                                        "createCollection": {
+                                            "name": "collection_with_vector_service",
+                                            "options": {
+                                                "vector": {
+                                                    "metric": "cosine",
+                                                    "dimension": 1536,
+                                                    "service": {
+                                                        "provider": "openai",
+                                                        "modelName": "text-embedding-ada-002",
+                                                        "authentication": {
+                                                            "x-embedding-api-key": "api_key"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+    }
+  }
+
+  @Nested
+  @Order(5)
+  class CreateCollectionWithEmbeddingServiceTestParameters {
+    @Test
+    public void failNotProvideRequiredParameters() {
       // create a collection without providing required parameters
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
-                    {
-                        "createCollection": {
-                            "name": "collection_with_vector_service",
-                            "options": {
-                                "vector": {
-                                    "metric": "cosine",
-                                    "dimension": 768,
-                                    "service": {
-                                        "provider": "vertexai",
-                                        "modelName": "text-embedding-3-small",
-                                        "authentication": {
-                                            "x-embedding-api-key": "user_key"
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 768,
+                                            "service": {
+                                                "provider": "azureOpenAI",
+                                                "modelName": "text-embedding-3-small",
+                                                "authentication": {
+                                                    "x-embedding-api-key": "user_key"
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
-                    """)
+                            """)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
@@ -827,41 +1308,41 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Required parameter 'projectId' for the provider 'vertexai' missing"))
+                  "The provided options are invalid: Required parameter 'resourceName' for the provider 'azureOpenAI' missing"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 
     @Test
-    public void failCreateCollectionWithEmbeddingServiceWithUnconfiguredParameters() {
+    public void failWithUnconfiguredParameters() {
       // create a collection with unconfigured parameters
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
-                    {
-                        "createCollection": {
-                            "name": "collection_with_vector_service",
-                            "options": {
-                                "vector": {
-                                    "metric": "cosine",
-                                    "dimension": 768,
-                                    "service": {
-                                        "provider": "vertexai",
-                                        "modelName": "textembedding-gecko@003",
-                                        "authentication": {
-                                            "x-embedding-api-key": "user_key"
-                                        },
-                                        "parameters": {
-                                            "test": "test"
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 768,
+                                            "service": {
+                                                "provider": "azureOpenAI",
+                                                "modelName": "text-embedding-3-small",
+                                                "authentication": {
+                                                    "x-embedding-api-key": "user_key"
+                                                },
+                                                "parameters": {
+                                                    "test": "test"
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
-                            """)
+                                    """)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
@@ -871,7 +1352,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'vertexai' provided"))
+                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'azureOpenAI' provided"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
 
@@ -880,28 +1361,28 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .contentType(ContentType.JSON)
           .body(
               """
-                    {
-                        "createCollection": {
-                            "name": "collection_with_vector_service",
-                            "options": {
-                                "vector": {
-                                    "metric": "cosine",
-                                    "dimension": 768,
-                                    "service": {
-                                        "provider": "openai",
-                                        "modelName": "text-embedding-3-small",
-                                        "authentication": {
-                                            "x-embedding-api-key": "user_key"
-                                        },
-                                        "parameters": {
-                                            "test": "test"
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 768,
+                                            "service": {
+                                                "provider": "openai",
+                                                "modelName": "text-embedding-3-small",
+                                                "authentication": {
+                                                    "x-embedding-api-key": "user_key"
+                                                },
+                                                "parameters": {
+                                                    "test": "test"
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
-                            """)
+                                    """)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
@@ -917,35 +1398,37 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
-    public void failCreateCollectionWithEmbeddingServiceWrongParameterType() {
+    public void failWrongParameterType() {
       // create a collection with wrong parameter type
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
-                    {
-                        "createCollection": {
-                            "name": "collection_with_vector_service",
-                            "options": {
-                                "vector": {
-                                    "metric": "cosine",
-                                    "dimension": 768,
-                                    "service": {
-                                        "provider": "vertexai",
-                                        "modelName": "textembedding-gecko@003",
-                                        "authentication": {
-                                            "x-embedding-api-key": "user_key"
-                                        },
-                                        "parameters": {
-                                            "projectId": 123
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 768,
+                                            "service": {
+                                                "provider": "azureOpenAI",
+                                                "modelName": "text-embedding-3-small",
+                                                "authentication": {
+                                                    "x-embedding-api-key": "user_key"
+                                                },
+                                                "parameters": {
+                                                    "resourceName": 123,
+                                                    "deploymentId": "vectorize",
+                                                    "apiVersion": "2024-02-01"
+                                                }
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    }
-                            """)
+                                    """)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
@@ -955,95 +1438,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided parameter 'projectId' type is incorrect. Expected: 'string'"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    @Test
-    public void failCreateCollectionWithEmbeddingServiceUnsupportedModel() {
-      // create a collection with unsupported model name
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-                    {
-                        "createCollection": {
-                            "name": "collection_with_vector_service",
-                            "options": {
-                                "vector": {
-                                    "metric": "cosine",
-                                    "dimension": 768,
-                                    "service": {
-                                        "provider": "vertexai",
-                                        "modelName": "testModel",
-                                        "authentication": {
-                                            "x-embedding-api-key": "user_key"
-                                        },
-                                        "parameters": {
-                                            "projectId": "123"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                            """)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "The provided options are invalid: Model name 'testModel' for provider 'vertexai' is not supported"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    @Test
-    public void failCreateCollectionWithEmbeddingServiceUnmatchedVectorDimension() {
-      // create a collection with unmatched vector dimension
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-                    {
-                        "createCollection": {
-                            "name": "collection_with_vector_service",
-                            "options": {
-                                "vector": {
-                                    "metric": "cosine",
-                                    "dimension": 123,
-                                    "service": {
-                                        "provider": "vertexai",
-                                        "modelName": "textembedding-gecko@003",
-                                        "authentication": {
-                                            "x-embedding-api-key": "user_key"
-                                        },
-                                        "parameters": {
-                                            "projectId": "123"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                            """)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "The provided options are invalid: The provided dimension value '123' doesn't match the model supports dimension value '768'"))
+                  "The provided options are invalid: The provided parameter 'resourceName' type is incorrect. Expected: 'string'"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }

@@ -18,6 +18,7 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
 
   private static final String DEFAULT_TENANT_ID = "default";
   private static final String API_KEY = "API_KEY";
+  private static final String DATA_API_KEY = "DATA_API_AUTH_KEY";
 
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
 
@@ -26,12 +27,14 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
   private int dimension;
 
   private Optional<String> tenant;
+  private Optional<String> authToken;
 
   private String apiKey;
   private String modelName;
   private String baseUrl;
   private EmbeddingService embeddingService;
   private Map<String, Object> vectorizeServiceParameter;
+  Map<String, String> authentication;
   private String commandName;
 
   /**
@@ -39,6 +42,7 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
    * @param provider - Embedding provider `openai`, `cohere`, etc
    * @param dimension - Dimension of the embedding to be returned
    * @param tenant - Tenant id {aka database id}
+   * @param authToken - Auth token for the tenant
    * @param baseUrl - base url of the embedding client
    * @param modelName - Model name for the embedding provider
    * @param embeddingService - Embedding service client
@@ -49,19 +53,23 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
       String provider,
       int dimension,
       Optional<String> tenant,
+      Optional<String> authToken,
       String baseUrl,
       String modelName,
       EmbeddingService embeddingService,
       Map<String, Object> vectorizeServiceParameter,
+      Map<String, String> authentication,
       String commandName) {
     this.requestProperties = requestProperties;
     this.provider = provider;
     this.dimension = dimension;
     this.tenant = tenant;
+    this.authToken = authToken;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
     this.embeddingService = embeddingService;
     this.vectorizeServiceParameter = vectorizeServiceParameter;
+    this.authentication = authentication;
     this.commandName = commandName;
   }
 
@@ -126,8 +134,12 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
         EmbeddingGateway.ProviderEmbedRequest.ProviderContext.newBuilder()
             .setProviderName(provider)
             .setTenantId(tenant.orElse(DEFAULT_TENANT_ID));
+    builder.putAuthTokens(DATA_API_KEY, authToken.orElse(""));
     if (apiKeyOverride.isPresent()) {
       builder.putAuthTokens(API_KEY, apiKeyOverride.orElse(apiKey));
+    }
+    if (authentication != null) {
+      builder.putAllAuthTokens(authentication);
     }
 
     EmbeddingGateway.ProviderEmbedRequest.ProviderContext providerContext = builder.build();

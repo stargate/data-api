@@ -142,6 +142,7 @@ public class EmbeddingProvidersConfigProducer {
       // construct providerConfig
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig =
           new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
+              grpcProviderConfig.getDisplayName(),
               grpcProviderConfig.getEnabled(),
               grpcProviderConfig.getUrl(),
               supportedAuthenticationsMap,

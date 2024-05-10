@@ -21,6 +21,9 @@ public interface EmbeddingProvidersConfig {
 
   interface EmbeddingProviderConfig {
     @JsonProperty
+    String displayName();
+
+    @JsonProperty
     boolean enabled();
 
     @JsonProperty
