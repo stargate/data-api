@@ -57,6 +57,7 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
    * @param models Model configurations available from the provider.
    */
   private record EmbeddingProviderResponse(
+      String displayName,
       String url,
       Map<
               EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType,
@@ -75,6 +76,7 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
         modelsRemoveProperties.add(returnModel);
       }
       return new EmbeddingProviderResponse(
+          embeddingProviderConfig.displayName(),
           embeddingProviderConfig.url(),
           embeddingProviderConfig.supportedAuthentications(),
           embeddingProviderConfig.parameters(),
