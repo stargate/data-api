@@ -279,18 +279,25 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.TokenConfig::accepted)
             .toList();
 
-    // If the user hasn't provided authentication details, verify that the 'NONE' authentication
-    // type is enabled.
-    if (userConfig.authentication() == null) {
+    // If the user hasn't provided authentication details, verify that either the 'NONE' or 'HEADER'
+    // authentication type is enabled.
+    if (userConfig.authentication() == null || userConfig.authentication().isEmpty()) {
       EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig noneAuthConfig =
           providerConfig
               .supportedAuthentications()
               .get(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE);
-      if (noneAuthConfig == null || !noneAuthConfig.enabled()) {
+      EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig headerAuthConfig =
+          providerConfig
+              .supportedAuthentications()
+              .get(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.HEADER);
+
+      // Check if either 'NONE' or 'HEADER' authentication type is enabled
+      boolean noneEnabled = (noneAuthConfig != null && noneAuthConfig.enabled());
+      boolean headerEnabled = (headerAuthConfig != null && headerAuthConfig.enabled());
+      if (!noneEnabled && !headerEnabled) {
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "Service provider '%s' does not support '%s' authentication",
-            userConfig.provider(),
-            EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE);
+            "Service provider '%s' does not support either 'NONE' or 'HEADER' authentication types.",
+            userConfig.provider());
       }
     } else {
       // User has provided authentication details. Validate each key against the provider's accepted
