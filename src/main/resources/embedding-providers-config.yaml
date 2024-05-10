@@ -194,7 +194,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: true
+              enabled: false
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
