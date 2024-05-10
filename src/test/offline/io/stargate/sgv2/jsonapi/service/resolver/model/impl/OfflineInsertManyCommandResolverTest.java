@@ -21,7 +21,8 @@ public class OfflineInsertManyCommandResolverTest {
     ObjectMapper objectMapper = new ObjectMapper();
     Shredder shredder = new Shredder(objectMapper, null, null);
     OperationsConfig operationsConfig = mock(OperationsConfig.class);
-    OperationsConfig.OfflineModeConfig offlineModeConfig = mock(OperationsConfig.OfflineModeConfig.class);
+    OperationsConfig.OfflineModeConfig offlineModeConfig =
+        mock(OperationsConfig.OfflineModeConfig.class);
     when(offlineModeConfig.maxDocumentInsertCount()).thenReturn(1000);
     when(operationsConfig.offlineModeConfig()).thenReturn(offlineModeConfig);
     OfflineInsertManyCommandResolver offlineInsertManyCommandResolver =
@@ -41,16 +42,20 @@ public class OfflineInsertManyCommandResolverTest {
     ObjectMapper objectMapper = new ObjectMapper();
     Shredder shredder = new Shredder(objectMapper, null, null);
     OperationsConfig operationsConfig = mock(OperationsConfig.class);
-    OperationsConfig.OfflineModeConfig offlineModeConfig = mock(OperationsConfig.OfflineModeConfig.class);
+    OperationsConfig.OfflineModeConfig offlineModeConfig =
+        mock(OperationsConfig.OfflineModeConfig.class);
     when(offlineModeConfig.maxDocumentInsertCount()).thenReturn(1000);
     when(operationsConfig.offlineModeConfig()).thenReturn(offlineModeConfig);
     OfflineInsertManyCommandResolver offlineInsertManyCommandResolver =
-            new OfflineInsertManyCommandResolver(shredder, operationsConfig);
+        new OfflineInsertManyCommandResolver(shredder, operationsConfig);
     String sessionId = UUID.randomUUID().toString();
     List<JsonNode> docs = mock(List.class);
     when(docs.size()).thenReturn(1001);
     OfflineInsertManyCommand offlineInsertManyCommand =
-            new OfflineInsertManyCommand(sessionId, docs);
-    assertThrows(IllegalArgumentException.class, () -> offlineInsertManyCommandResolver.resolveCommand(null, offlineInsertManyCommand), "Exceeded max document insert count");
+        new OfflineInsertManyCommand(sessionId, docs);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> offlineInsertManyCommandResolver.resolveCommand(null, offlineInsertManyCommand),
+        "Exceeded max document insert count");
   }
 }

@@ -45,13 +45,10 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                                     "provider": "custom",
                                     "modelName": "text-embedding-ada-002",
                                     "authentication": {
-                                        "type": [
-                                            "SHARED_SECRET"
-                                        ],
-                                        "secretName": "name_given_by_user"
+                                        "providerKey" : "shared_creds.providerKey"
                                     },
                                     "parameters": {
-                                        "project_id": "test project"
+                                        "projectId": "test project"
                                     }
                                 }
                             }
@@ -82,13 +79,10 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                                         "provider": "custom",
                                         "modelName": "text-embedding-ada-002",
                                         "authentication": {
-                                            "type": [
-                                                "SHARED_SECRET"
-                                            ],
-                                            "secretName": "name_given_by_user"
+                                            "providerKey" : "shared_creds.providerKey"
                                         },
                                         "parameters": {
-                                            "project_id": "test project"
+                                            "projectId": "test project"
                                         }
                                     }
                                 },
@@ -448,7 +442,8 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
   }
 
   public void insertVectorDocuments() {
-    String json = """
+    String json =
+        """
       {
         "deleteMany": {
         }

@@ -26,9 +26,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String apiKey;
   private String modelName;
-
   private String baseUrl;
   private final HuggingFaceEmbeddingProvider embeddingProvider;
   private Map<String, Object> vectorizeServiceParameters;
@@ -36,11 +34,10 @@ public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
   public HuggingFaceEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String apiKey,
       String modelName,
+      int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
-    this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
@@ -79,10 +76,7 @@ public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
       EmbeddingRequestType embeddingRequestType) {
     EmbeddingRequest request = new EmbeddingRequest(texts, new EmbeddingRequest.Options(true));
     return embeddingProvider
-        .embed(
-            "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey),
-            modelName,
-            request)
+        .embed("Bearer " + apiKeyOverride.get(), modelName, request)
         .onFailure(
             throwable -> {
               return (throwable.getCause() != null

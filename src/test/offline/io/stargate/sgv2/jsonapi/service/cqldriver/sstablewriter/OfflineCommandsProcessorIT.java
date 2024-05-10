@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -19,18 +20,19 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class OfflineCommandsProcessorIT {
 
-  private static final String SSTABLES_TEST_DIRECTORY =
-      System.getProperty("java.io.tmpdir") + File.separator + "sstables_test";
+  private static String SSTABLES_TEST_DIRECTORY;
 
   @BeforeAll
-  public static void setup() {
+  public static void setup(@TempDir File tempDir) {
+    SSTABLES_TEST_DIRECTORY = tempDir.getAbsolutePath() + File.separator + "sstables";
     File sstablesTestDirectory = new File(SSTABLES_TEST_DIRECTORY);
     if (!sstablesTestDirectory.exists()) {
       if (!sstablesTestDirectory.mkdirs()) {
@@ -83,7 +85,7 @@ public class OfflineCommandsProcessorIT {
     }
     OfflineCommandsProcessor offlineCommandsProcessor = OfflineCommandsProcessor.getInstance();
     // begin session
-    Pair<BeginOfflineSessionResponse, CommandContext> beginSessionResponse =
+    Triple<BeginOfflineSessionResponse, CommandContext, String> beginSessionResponse =
         beginSession(
             offlineCommandsProcessor,
             namespace,
@@ -97,7 +99,32 @@ public class OfflineCommandsProcessorIT {
       throw new RuntimeException(
           "Error while beginning session : " + beginOfflineSessionResponse.errors());
     }
-    CommandContext commandContext = beginSessionResponse.getRight();
+    CommandContext commandContext = beginSessionResponse.getMiddle();
+    String createTableCQL = beginSessionResponse.getRight();
+    String expectedCreateCQL =
+        """
+                    CREATE TABLE IF NOT EXISTS "test_namespace"."test_collection_false"(
+                     key tuple<tinyint,text>,
+                     tx_id timeuuid,
+                     doc_json text,
+                     exist_keys set<text>,
+                     array_size map<text, int>,
+                     array_contains set<text>,
+                     query_bool_values map<text, tinyint>,
+                     query_dbl_values map<text, decimal>,
+                     query_text_values map<text, text>,
+                     query_timestamp_values map<text, timestamp>,
+                     query_null_values set<text>,
+                     PRIMARY KEY (key))
+                     WITH comment =
+                     '{"collection":{"name":"BeginOfflineSessionCommand","schema_version":1,"options":{"defaultId":{"type":"uuid"}}}}'
+                    """;
+    // assertThat(createTableCQL).isEqualTo(expectedCreateCQL);//TODO-SL fix assertion
+    assertThat(createTableCQL).isNotNull();
+    assertThat(createTableCQL)
+        .startsWith(
+            "CREATE TABLE IF NOT EXISTS \"test_namespace\".\"test_collection"
+                + (isVectorSearch ? "_true" : "_false"));
     String sessionId = beginOfflineSessionResponse.sessionId();
     // load data
     List<JsonNode> jsonNodes = getRecords(isVectorSearch);
@@ -241,7 +268,7 @@ public class OfflineCommandsProcessorIT {
     return offlineCommandsProcessor.loadData(sessionId, commandContext, jsonNodes);
   }
 
-  private Pair<BeginOfflineSessionResponse, CommandContext> beginSession(
+  private Triple<BeginOfflineSessionResponse, CommandContext, String> beginSession(
       OfflineCommandsProcessor offlineCommandsProcessor,
       String namespace,
       String ssTablesOutputDirectory,

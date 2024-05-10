@@ -31,8 +31,8 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
   private String modelName;
   private String baseUrl;
   private EmbeddingService embeddingService;
-
   private Map<String, Object> vectorizeServiceParameter;
+  private String commandName;
 
   /**
    * @param requestProperties
@@ -40,7 +40,6 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
    * @param dimension - Dimension of the embedding to be returned
    * @param tenant - Tenant id {aka database id}
    * @param baseUrl - base url of the embedding client
-   * @param apiKey - Api key for the embedding provider
    * @param modelName - Model name for the embedding provider
    * @param embeddingService - Embedding service client
    * @param vectorizeServiceParameter - Additional parameters for the vectorize service
@@ -51,19 +50,19 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
       int dimension,
       Optional<String> tenant,
       String baseUrl,
-      String apiKey,
       String modelName,
       EmbeddingService embeddingService,
-      Map<String, Object> vectorizeServiceParameter) {
+      Map<String, Object> vectorizeServiceParameter,
+      String commandName) {
     this.requestProperties = requestProperties;
     this.provider = provider;
     this.dimension = dimension;
     this.tenant = tenant;
-    this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
     this.embeddingService = embeddingService;
     this.vectorizeServiceParameter = vectorizeServiceParameter;
+    this.commandName = commandName;
   }
 
   /**
@@ -114,6 +113,7 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
         EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.newBuilder()
             .setModelName(modelName)
             .setDimensions(dimension)
+            .setCommandName(commandName)
             .putAllParameters(grpcVectorizeServiceParameter)
             .setInputType(
                 embeddingRequestType == EmbeddingRequestType.INDEX

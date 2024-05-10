@@ -14,25 +14,36 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.UUID;
 import org.apache.cassandra.io.sstable.CQLSSTableWriter;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class FileWriterSessionTest {
-  @Test
-  public void testInit()
-      throws IOException, NoSuchFieldException, IllegalAccessException, NoSuchMethodException,
-          InvocationTargetException {
-    CQLSessionCache cqlSessionCache = mock(CQLSessionCache.class);
-    CQLSessionCache.SessionCacheKey cacheKey = null;
-    String sessionId = UUID.randomUUID().toString();
-    String keyspaceName = "keyspaceName";
-    String tableName = "tableName";
-    String ssTableOutputDirectory = System.getProperty("java.io.tmpdir") + "/sstables";
+  private static String ssTableOutputDirectory;
+
+  @BeforeAll
+  public static void setup(@TempDir File tempDir) throws IOException {
+    ssTableOutputDirectory = tempDir + File.separator + "sstables";
     if (!new File(ssTableOutputDirectory).exists()) {
       if (!new File(ssTableOutputDirectory).mkdirs()) {
         throw new IOException(
             "Unable to setup test. Failed to create directory: " + ssTableOutputDirectory);
       }
     }
+  }
+
+  @Test
+  public void testInit()
+      throws IOException,
+          NoSuchFieldException,
+          IllegalAccessException,
+          NoSuchMethodException,
+          InvocationTargetException {
+    CQLSessionCache cqlSessionCache = mock(CQLSessionCache.class);
+    CQLSessionCache.SessionCacheKey cacheKey = null;
+    String sessionId = UUID.randomUUID().toString();
+    String keyspaceName = "keyspaceName";
+    String tableName = "tableName";
     FileWriterParams fileWriterParams =
         getFileWriterParams(keyspaceName, tableName, ssTableOutputDirectory);
     FileWriterSession fileWritterSession =

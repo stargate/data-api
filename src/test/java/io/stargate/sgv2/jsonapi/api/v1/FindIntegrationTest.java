@@ -407,7 +407,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
                       }
                       """;
 
-      String expected = """
+      String expected =
+          """
               {"username":"user1"}
               """;
       given()
@@ -1317,7 +1318,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     public void dollarOperatorInSortPathExpression() {
-      String json = """
+      String json =
+          """
               { "find": { "sort" : {"$gt" : 1} } }
               """;
       given()
@@ -1339,7 +1341,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
     @Test
     void emptyPathExpressionInSort() {
-      String json = """
+      String json =
+          """
               { "find": { "sort" : {"" : 1} } }
               """;
       given()

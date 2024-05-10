@@ -43,14 +43,19 @@ public class CQLSessionCache {
    * request
    */
   private static final String DEFAULT_TENANT = "default_tenant";
+
   /** CQL username to be used when the backend is AstraDB */
   private static final String TOKEN = "token";
+
   /** CQLSession cache. */
   private final LoadingCache<SessionCacheKey, CqlSession> sessionCache;
+
   /** Database type Astra */
   public static final String ASTRA = "astra";
+
   /** Database type OSS cassandra */
   public static final String CASSANDRA = "cassandra";
+
   /** Persistence type SSTable Writer */
   public static final String OFFLINE_WRITER = "offline_writer";
 

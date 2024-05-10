@@ -19,14 +19,16 @@ import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class EmbeddingGatewayClientTest {
+
+  public static final String TESTING_COMMAND_NAME = "test_command";
+
   @Test
-  void handleValidResponse() throws ExecutionException, InterruptedException {
+  void handleValidResponse() {
     EmbeddingService embeddingService = mock(EmbeddingService.class);
     final EmbeddingGateway.EmbeddingResponse.Builder builder =
         EmbeddingGateway.EmbeddingResponse.newBuilder();
@@ -45,15 +47,16 @@ public class EmbeddingGatewayClientTest {
     when(embeddingService.embed(any())).thenReturn(Uni.createFrom().item(builder.build()));
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
-            EmbeddingProviderConfigStore.RequestProperties.of(5, 5, 5),
+            EmbeddingProviderConfigStore.RequestProperties.of(
+                5, 5, 5, Optional.empty(), Optional.empty()),
             "openai",
             1536,
             Optional.of("default"),
             "https://api.openai.com/v1/",
-            "api-key",
             "text-embedding-3-small",
             embeddingService,
-            Map.of());
+            Map.of(),
+            TESTING_COMMAND_NAME);
 
     final List<float[]> response =
         embeddingGatewayClient
@@ -73,7 +76,7 @@ public class EmbeddingGatewayClientTest {
   }
 
   @Test
-  void handleError() throws ExecutionException, InterruptedException {
+  void handleError() {
     EmbeddingService embeddingService = mock(EmbeddingService.class);
     final EmbeddingGateway.EmbeddingResponse.Builder builder =
         EmbeddingGateway.EmbeddingResponse.newBuilder();
@@ -89,15 +92,16 @@ public class EmbeddingGatewayClientTest {
     when(embeddingService.embed(any())).thenReturn(Uni.createFrom().item(builder.build()));
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
-            EmbeddingProviderConfigStore.RequestProperties.of(5, 5, 5),
+            EmbeddingProviderConfigStore.RequestProperties.of(
+                5, 5, 5, Optional.empty(), Optional.empty()),
             "openai",
             1536,
             Optional.of("default"),
             "https://api.openai.com/v1/",
-            "api-key",
             "text-embedding-3-small",
             embeddingService,
-            Map.of());
+            Map.of(),
+            TESTING_COMMAND_NAME);
 
     Throwable result =
         embeddingGatewayClient

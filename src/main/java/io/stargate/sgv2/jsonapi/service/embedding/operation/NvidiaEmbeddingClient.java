@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -10,7 +11,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
@@ -24,22 +24,25 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class OpenAiEmbeddingClient implements EmbeddingProvider {
+/**
+ * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
+ * of chosen Nvidia model.
+ */
+public class NvidiaEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String apiKey;
   private String modelName;
   private String baseUrl;
-  private final OpenAiEmbeddingProvider embeddingProvider;
+  private final NvidiaEmbeddingProvider embeddingProvider;
+
   private Map<String, Object> vectorizeServiceParameters;
 
-  public OpenAiEmbeddingClient(
+  public NvidiaEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String apiKey,
       String modelName,
+      int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
-    this.apiKey = apiKey;
     this.modelName = modelName;
     this.baseUrl = baseUrl;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
@@ -47,14 +50,13 @@ public class OpenAiEmbeddingClient implements EmbeddingProvider {
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
             .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
-            .build(OpenAiEmbeddingProvider.class);
+            .build(NvidiaEmbeddingProvider.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface OpenAiEmbeddingProvider {
+  public interface NvidiaEmbeddingProvider {
     @POST
-    @Path("/embeddings")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
@@ -65,13 +67,19 @@ public class OpenAiEmbeddingClient implements EmbeddingProvider {
     }
   }
 
-  private record EmbeddingRequest(String[] input, String model) {}
+  private record EmbeddingRequest(String[] input, String model, String input_type) {}
 
-  private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
-    private record Data(String object, int index, float[] embedding) {}
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  private record EmbeddingResponse(Data[] data, String model, Usage usage) {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record Data(int index, float[] embedding) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record Usage(int prompt_tokens, int total_tokens) {}
   }
+
+  private static final String PASSAGE = "passage";
+  private static final String QUERY = "query";
 
   @Override
   public Uni<List<float[]>> vectorize(
@@ -79,11 +87,13 @@ public class OpenAiEmbeddingClient implements EmbeddingProvider {
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
     String[] textArray = new String[texts.size()];
-    EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName);
+    String input_type = embeddingRequestType == EmbeddingRequestType.INDEX ? PASSAGE : QUERY;
+
+    EmbeddingRequest request =
+        new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
     Uni<EmbeddingResponse> response =
         embeddingProvider
-            .embed(
-                "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey), request)
+            .embed("Bearer " + apiKeyOverride.get(), request)
             .onFailure(
                 throwable -> {
                   return (throwable.getCause() != null
@@ -93,6 +103,7 @@ public class OpenAiEmbeddingClient implements EmbeddingProvider {
             .retry()
             .withBackOff(Duration.ofMillis(requestProperties.retryDelayInMillis()))
             .atMost(requestProperties.maxRetries());
+
     return response
         .onItem()
         .transform(

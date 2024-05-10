@@ -5,19 +5,17 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.embedding.configuration.PropertyBasedEmbeddingProviderConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Operation that list all available vector providers into the {@link
+ * Operation that list all available and enabled vector providers into the {@link
  * CommandStatus#EXISTING_VECTOR_PROVIDERS} command status.
  */
-public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConfig config)
+public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
     implements Operation {
   @Override
   public Uni<Supplier<CommandResult>> execute(
@@ -59,22 +57,28 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
    * @param models Model configurations available from the provider.
    */
   private record EmbeddingProviderResponse(
+      String displayName,
       String url,
-      List<String> supportedAuthentication,
-      List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
+      Map<
+              EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType,
+              EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig>
+          supportedAuthentication,
+      List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters,
       List<ModelConfigResponse> models) {
     private static EmbeddingProviderResponse provider(
-        PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig embeddingProviderConfig) {
+        EmbeddingProvidersConfig.EmbeddingProviderConfig embeddingProviderConfig) {
       ArrayList<ModelConfigResponse> modelsRemoveProperties = new ArrayList<>();
-      for (PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ModelConfig model :
+      for (EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model :
           embeddingProviderConfig.models()) {
         ModelConfigResponse returnModel =
-            new ModelConfigResponse(model.name(), model.vectorDimension(), model.parameters());
+            ModelConfigResponse.returnModelConfigResponse(
+                model.name(), model.vectorDimension(), model.parameters());
         modelsRemoveProperties.add(returnModel);
       }
       return new EmbeddingProviderResponse(
+          embeddingProviderConfig.displayName(),
           embeddingProviderConfig.url(),
-          embeddingProviderConfig.supportedAuthentication(),
+          embeddingProviderConfig.supportedAuthentications(),
           embeddingProviderConfig.parameters(),
           modelsRemoveProperties);
     }
@@ -90,8 +94,64 @@ public record FindEmbeddingProvidersOperation(PropertyBasedEmbeddingProviderConf
    * @param parameters Parameters for customizing the model.
    */
   private record ModelConfigResponse(
+      String name, Optional<Integer> vectorDimension, List<ParameterConfigResponse> parameters) {
+    private static ModelConfigResponse returnModelConfigResponse(
+        String name,
+        Optional<Integer> vectorDimension,
+        List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parameters) {
+      // reconstruct each parameter for lowercase parameter type
+      ArrayList<ParameterConfigResponse> parametersResponse = new ArrayList<>();
+      for (EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig parameter :
+          parameters) {
+        ParameterConfigResponse returnParameter =
+            ParameterConfigResponse.returnParameterConfigResponse(
+                parameter.name(),
+                parameter.type().toString(),
+                parameter.required(),
+                parameter.defaultValue(),
+                parameter.validation(),
+                parameter.help());
+        parametersResponse.add(returnParameter);
+      }
+
+      return new ModelConfigResponse(name, vectorDimension, parametersResponse);
+    }
+  }
+
+  /**
+   * Represents the configuration details for a parameter of a model. This is used to reconstruct
+   * the {@code PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig} body
+   * by not directly using the enum class (uppercase) but instead using the value (lowercase) in the
+   * enum class. It transforms the parameter type and validation fields to lowercase.
+   *
+   * @param name
+   * @param type
+   * @param required
+   * @param defaultValue
+   * @param validation
+   * @param help
+   */
+  private record ParameterConfigResponse(
       String name,
-      Integer vectorDimension,
-      List<PropertyBasedEmbeddingProviderConfig.EmbeddingProviderConfig.ParameterConfig>
-          parameters) {}
+      String type,
+      boolean required,
+      Optional<String> defaultValue,
+      Map<String, List<Integer>> validation,
+      Optional<String> help) {
+    private static ParameterConfigResponse returnParameterConfigResponse(
+        String name,
+        String type,
+        boolean required,
+        Optional<String> defaultValue,
+        Map<EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType, List<Integer>>
+            validation,
+        Optional<String> help) {
+      Map<String, List<Integer>> validationMap = new HashMap<>();
+      for (Map.Entry<EmbeddingProvidersConfig.EmbeddingProviderConfig.ValidationType, List<Integer>>
+          entry : validation.entrySet()) {
+        validationMap.put(entry.getKey().toString(), entry.getValue());
+      }
+      return new ParameterConfigResponse(name, type, required, defaultValue, validationMap, help);
+    }
+  }
 }

@@ -765,7 +765,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     private final String UUID_X = "BB3F3A87-98B7-4B85-B1D1-706A9FBC6807";
 
     private final String DOC1 =
-        """
+            """
                     {
                       "_id": {"$objectId": "%s"},
                       "value": 1,
@@ -777,7 +777,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
             .formatted(OBJECTID_ID1);
 
     private final String DOC2 =
-        """
+            """
                     {
                       "_id": {"$uuid": "%s"},
                       "value": 2,
@@ -788,7 +788,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
                     """
             .formatted(UUID_ID1);
     private final String DOC3 =
-        """
+            """
                     {
                       "_id": "id3",
                       "value": 3,
@@ -799,7 +799,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
                     """
             .formatted(OBJECTID_LEAF);
     private final String DOC4 =
-        """
+            """
                     {
                       "_id": "id4",
                       "value": 4,
@@ -823,7 +823,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     @Order(2)
     public void inConditionForObjectIdId() {
       final String request =
-          """
+              """
             {
               "findOne": {
                 "filter" : {"_id" : {"$in": [
@@ -854,7 +854,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     @Order(3)
     public void inConditionForUUIDId() {
       final String request =
-          """
+              """
             {
               "findOne": {
                 "filter" : {"_id" : {"$in": [
@@ -885,7 +885,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     @Order(4)
     public void inConditionForObjectIdField() {
       final String request =
-          """
+              """
             {
               "findOne": {
                 "filter" : {"stuff.id" : {"$in": [
@@ -916,7 +916,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     @Order(5)
     public void inConditionForUUIDField() {
       final String request =
-          """
+              """
             {
               "findOne": {
                 "filter" : {"stuff.id" : {"$in": [

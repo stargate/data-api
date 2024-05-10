@@ -43,7 +43,9 @@ public interface OperationsConfig {
    */
   public static final int DEFAULT_MAX_DOCUMENT_INSERT_COUNT = 100;
 
-  /** @return Defines the default document page size, defaults to <code>20</code>. */
+  /**
+   * @return Defines the default document page size, defaults to <code>20</code>.
+   */
   @Max(500)
   @Positive
   @WithDefault("20")
@@ -101,7 +103,9 @@ public interface OperationsConfig {
   @WithDefault("" + DEFAULT_MAX_FILTER_SIZE)
   int maxFilterObjectProperties();
 
-  /** @return Maximum size of values array that can be sent in $in/$nin operator */
+  /**
+   * @return Maximum size of values array that can be sent in $in/$nin operator
+   */
   @Max(100)
   @Positive
   @WithDefault("100")
@@ -123,7 +127,9 @@ public interface OperationsConfig {
   @WithDefault("1000")
   int maxCountLimit();
 
-  /** @return Boolean flag to enable astra index guardrail too many indexes rollback */
+  /**
+   * @return Boolean flag to enable astra index guardrail too many indexes rollback
+   */
   @WithDefault("true")
   boolean tooManyIndexesRollbackEnabled();
 
@@ -144,7 +150,9 @@ public interface OperationsConfig {
   /** Configuration setup for the Light-weight transactions. */
   interface LwtConfig {
 
-    /** @return Defines the maximum retry for lwt failure <code>3</code>. */
+    /**
+     * @return Defines the maximum retry for lwt failure <code>3</code>.
+     */
     @Max(5)
     @Positive
     @WithDefault("3")
@@ -214,48 +222,67 @@ public interface OperationsConfig {
 
   interface QueriesConfig {
 
-    /** @return Settings for the consistency level. */
+    /**
+     * @return Settings for the consistency level.
+     */
     @Valid
     ConsistencyConfig consistency();
 
-    /** @return Serial Consistency for queries. */
+    /**
+     * @return Serial Consistency for queries.
+     */
     @WithDefault("LOCAL_SERIAL")
     @WithConverter(ConsistencyLevelConverter.class)
     ConsistencyLevel serialConsistency();
 
-    /** @return Settings for the consistency level. */
+    /**
+     * @return Settings for the consistency level.
+     */
     interface ConsistencyConfig {
 
-      /** @return Consistency for queries making schema changes. */
+      /**
+       * @return Consistency for queries making schema changes.
+       */
       @WithDefault("LOCAL_QUORUM")
       @NotNull
       @WithConverter(ConsistencyLevelConverter.class)
       ConsistencyLevel schemaChanges();
 
-      /** @return Consistency for queries writing the data. */
+      /**
+       * @return Consistency for queries writing the data.
+       */
       @WithDefault("LOCAL_QUORUM")
       @NotNull
       @WithConverter(ConsistencyLevelConverter.class)
       ConsistencyLevel writes();
 
-      /** @return Consistency for queries reading the data. */
+      /**
+       * @return Consistency for queries reading the data.
+       */
       @WithDefault("LOCAL_QUORUM")
       @NotNull
       @WithConverter(ConsistencyLevelConverter.class)
       ConsistencyLevel reads();
 
-      /** @return Consistency for vector search queries. */
+      /**
+       * @return Consistency for vector search queries.
+       */
       @WithDefault("LOCAL_ONE")
       @NotNull
       @WithConverter(ConsistencyLevelConverter.class)
       ConsistencyLevel vectorSearch();
     }
   }
-  /** @return Flag to enable server side vectorization. */
+
+  /**
+   * @return Flag to enable server side vectorization.
+   */
   @WithDefault("false")
   boolean vectorizeEnabled();
 
-  /** @return Flag to enable vectorization using embedding-gateway. */
+  /**
+   * @return Flag to enable vectorization using embedding-gateway.
+   */
   @WithDefault("false")
   boolean enableEmbeddingGateway();
 

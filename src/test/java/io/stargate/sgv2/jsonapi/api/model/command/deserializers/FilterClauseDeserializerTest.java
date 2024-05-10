@@ -35,7 +35,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void happyPath() throws Exception {
-      String json = """
+      String json =
+          """
                     {"username": "aaron"}
                     """;
 
@@ -94,7 +95,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustErrorNonNumberAndDateRange() throws Exception {
-      String json = """
+      String json =
+          """
         {"amount": {"$gte" : "ABC"}}
         """;
 
@@ -120,7 +122,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleEmpty() throws Exception {
-      String json = """
+      String json =
+          """
                     {}
                     """;
 
@@ -131,7 +134,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleString() throws Exception {
-      String json = """
+      String json =
+          """
                     {"username": "aaron"}
                     """;
       final ComparisonExpression expectedResult =
@@ -153,7 +157,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleNumber() throws Exception {
-      String json = """
+      String json =
+          """
                     {"numberType": 40}
                     """;
       final ComparisonExpression expectedResult =
@@ -176,7 +181,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleBoolean() throws Exception {
-      String json = """
+      String json =
+          """
                     {"boolType": true}
                     """;
       final ComparisonExpression expectedResult =
@@ -198,7 +204,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleDate() throws Exception {
-      String json = """
+      String json =
+          """
             {"dateType": {"$date": 1672531200000}}
           """;
       final ComparisonExpression expectedResult =
@@ -258,7 +265,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleDateAsEpoch() throws Exception {
-      String json = """
+      String json =
+          """
          {"dateType": {"$date": "2023-01-01"}}
         """;
 
@@ -275,7 +283,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleDateAsEpochAndOr() throws Exception {
-      String json = """
+      String json =
+          """
          { "$or" : [{"dateType": {"$date": "2023-01-01"}}]}
         """;
 
@@ -385,7 +394,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleAllNonArray() throws Exception {
-      String json = """
+      String json =
+          """
           {"allPath" : {"$all": "abc"}}
         """;
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
@@ -399,7 +409,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleAllNonEmptyArray() throws Exception {
-      String json = """
+      String json =
+          """
           {"allPath" : {"$all": []}}
         """;
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
@@ -413,7 +424,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleSize() throws Exception {
-      String json = """
+      String json =
+          """
           {"sizePath" : {"$size": 2}}
         """;
       final ComparisonExpression expectedResult =
@@ -436,7 +448,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleIntegerWithTrailingZeroSize() throws Exception {
-      String json = """
+      String json =
+          """
           {"sizePath" : {"$size": 0.0}}
         """;
       final ComparisonExpression expectedResult =
@@ -456,7 +469,8 @@ public class FilterClauseDeserializerTest {
       assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
           .isEqualTo(expectedResult.getPath());
 
-      String json1 = """
+      String json1 =
+          """
           {"sizePath" : {"$size": 5.0}}
         """;
       final ComparisonExpression expectedResult1 =
@@ -479,7 +493,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleSizeNonNumber() throws Exception {
-      String json = """
+      String json =
+          """
           {"sizePath" : {"$size": "2"}}
         """;
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
@@ -494,7 +509,8 @@ public class FilterClauseDeserializerTest {
     // Notice, 0.0, -0.0, 5.0, etc are still considered as Integer
     @Test
     public void mustHandleSizeNonInteger() throws Exception {
-      String json = """
+      String json =
+          """
           {"sizePath" : {"$size": "1.1"}}
         """;
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
@@ -505,7 +521,8 @@ public class FilterClauseDeserializerTest {
                 assertThat(t.getMessage()).isEqualTo("$size operator must have integer");
               });
 
-      String json1 = """
+      String json1 =
+          """
           {"sizePath" : {"$size": "5.4"}}
         """;
       Throwable throwable1 =
@@ -520,7 +537,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleSizeNegative() throws Exception {
-      String json = """
+      String json =
+          """
           {"sizePath" : {"$size": -2}}
         """;
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
@@ -534,7 +552,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleSubDocEq() throws Exception {
-      String json = """
+      String json =
+          """
          {"sub_doc" : {"col": 2}}
         """;
       Map<String, Object> value = new LinkedHashMap<>();
@@ -558,7 +577,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleArrayNe() throws Exception {
-      String json = """
+      String json =
+          """
          {"col" : {"$ne": ["1","2"]}}
         """;
       final ComparisonExpression expectedResult =
@@ -581,7 +601,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleArrayEq() throws Exception {
-      String json = """
+      String json =
+          """
          {"col" : {"$eq": ["3","4"]}}
         """;
       final ComparisonExpression expectedResult =
@@ -604,7 +625,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleSubDocNe() throws Exception {
-      String json = """
+      String json =
+          """
          {"sub_doc" : {"$ne" : {"col": 2}}}
         """;
       Map<String, Object> value = new LinkedHashMap<>();
@@ -675,7 +697,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleIdFieldIn() throws Exception {
-      String json = """
+      String json =
+          """
                {"_id" : {"$in": ["2", "3"]}}
               """;
       final ComparisonExpression expectedResult =
@@ -700,7 +723,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleNonIdFieldIn() throws Exception {
-      String json = """
+      String json =
+          """
                {"name" : {"$in": ["name1", "name2"]}}
               """;
       final ComparisonExpression expectedResult =
@@ -1412,7 +1436,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleInArrayNonEmpty() throws Exception {
-      String json = """
+      String json =
+          """
                {"_id" : {"$in": []}}
               """;
       final ComparisonExpression expectedResult =
@@ -1434,7 +1459,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleNinArrayNonEmpty() throws Exception {
-      String json = """
+      String json =
+          """
                {"_id" : {"$nin": []}}
               """;
       final ComparisonExpression expectedResult =
@@ -1456,7 +1482,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleInArrayOnly() throws Exception {
-      String json = """
+      String json =
+          """
                {"_id" : {"$in": "aaa"}}
               """;
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
@@ -1470,7 +1497,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustHandleNinArrayOnly() throws Exception {
-      String json = """
+      String json =
+          """
                {"_id" : {"$nin": "random"}}
               """;
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
@@ -1575,7 +1603,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void invalidPathName() throws Exception {
-      String json = """
+      String json =
+          """
               {"$gt" : {"test" : 5}}
           """;
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
@@ -1592,7 +1621,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void valid$vectorPathName() throws Exception {
-      String json = """
+      String json =
+          """
               {"$vector" : {"$exists": true}}
               """;
 
@@ -1614,7 +1644,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void invalid$vectorPathName() throws Exception {
-      String json = """
+      String json =
+          """
               {"$exists" : {"$vector": true}}
               """;
 
@@ -1630,7 +1661,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void invalidPathNameWithValidOperator() {
-      String json = """
+      String json =
+          """
               {"$exists" : {"$exists": true}}
               """;
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
@@ -1651,9 +1683,11 @@ public class FilterClauseDeserializerTest {
     @Test
     public void mustHandleObjectIdAsId() throws Exception {
       final String OBJECT_ID = "5f3e3d1e1e6e6f1e6e6e6f1e";
-      String json = """
+      String json =
+              """
             {"_id": {"$objectId": "%s"}}
-          """.formatted(OBJECT_ID);
+          """
+              .formatted(OBJECT_ID);
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "_id",
@@ -1680,9 +1714,10 @@ public class FilterClauseDeserializerTest {
     public void mustHandleObjectIdAsRegularField() throws Exception {
       final String OBJECT_ID = "5f3e3d1e1e6e6f1e6e6e6f1e";
       String json =
-          """
+              """
             {"nested.path": {"$objectId": "%s"}}
-          """.formatted(OBJECT_ID);
+          """
+              .formatted(OBJECT_ID);
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "nested.path",
@@ -1703,9 +1738,11 @@ public class FilterClauseDeserializerTest {
     @Test
     public void mustHandleUUIDAsId() throws Exception {
       final String UUID = "16725312-0000-0000-0000-000000000000";
-      String json = """
+      String json =
+              """
             {"_id": {"$uuid": "%s"}}
-          """.formatted(UUID);
+          """
+              .formatted(UUID);
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "_id",
@@ -1730,9 +1767,11 @@ public class FilterClauseDeserializerTest {
     @Test
     public void mustHandleUUIDAsRegularField() throws Exception {
       final String UUID = "16725312-0000-0000-0000-000000000000";
-      String json = """
+      String json =
+              """
             {"value": {"$uuid": "%s"}}
-          """.formatted(UUID);
+          """
+              .formatted(UUID);
       final ComparisonExpression expectedResult =
           new ComparisonExpression(
               "value",
@@ -1752,7 +1791,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustFailOnBadUUIDAsId() throws Exception {
-      String json = """
+      String json =
+          """
          {"_id": {"$uuid": "abc"}}
         """;
 
@@ -1769,7 +1809,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustFailOnBadObjectIdAsId() throws Exception {
-      String json = """
+      String json =
+          """
          {"_id": {"$objectId": "xyz"}}
         """;
 
@@ -1786,7 +1827,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustFailOnUnknownOperatorAsId() throws Exception {
-      String json = """
+      String json =
+          """
          {"_id": {"$GUID": "abc"}}
         """;
 
@@ -1801,7 +1843,8 @@ public class FilterClauseDeserializerTest {
 
     @Test
     public void mustFailOnBadUUIDAsField() throws Exception {
-      String json = """
+      String json =
+          """
          {"field": {"$uuid": "abc"}}
         """;
 

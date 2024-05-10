@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -24,41 +25,40 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-/**
- * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
- * of chosen nvidia model.
- */
-public class NVidiaEmbeddingClient implements EmbeddingProvider {
+public class VoyageAIEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String apiKey;
   private String modelName;
-  private String baseUrl;
-  private final NVidiaEmbeddingProvider embeddingProvider;
+  private final VoyageAIEmbeddingProvider embeddingProvider;
 
-  private Map<String, Object> vectorizeServiceParameters;
+  private final String requestTypeQuery, requestTypeIndex;
+  private final Boolean autoTruncate;
 
-  public NVidiaEmbeddingClient(
+  public VoyageAIEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String apiKey,
       String modelName,
+      int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
-    this.apiKey = apiKey;
     this.modelName = modelName;
-    this.baseUrl = baseUrl;
-    this.vectorizeServiceParameters = vectorizeServiceParameters;
+    // use configured input_type if available
+    requestTypeQuery = requestProperties.requestTypeQuery().orElse(null);
+    requestTypeIndex = requestProperties.requestTypeIndex().orElse(null);
+    Object v = vectorizeServiceParameters.get("autoTruncate");
+    autoTruncate = (v instanceof Boolean) ? (Boolean) v : null;
+
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
             .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
-            .build(NVidiaEmbeddingProvider.class);
+            .build(VoyageAIEmbeddingProvider.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface NVidiaEmbeddingProvider {
+  public interface VoyageAIEmbeddingProvider {
     @POST
+    // no path specified, as it is already included in the baseUri
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
@@ -69,34 +69,33 @@ public class NVidiaEmbeddingClient implements EmbeddingProvider {
     }
   }
 
-  private record EmbeddingRequest(String[] input, String model, String input_type) {}
+  record EmbeddingRequest(
+      @JsonInclude(JsonInclude.Include.NON_EMPTY) String input_type,
+      String[] input,
+      String model,
+      @JsonInclude(JsonInclude.Include.NON_NULL) Boolean truncation) {}
 
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  private record EmbeddingResponse(Data[] data, String model, Usage usage) {
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record Data(int index, float[] embedding) {}
+  @JsonIgnoreProperties({"object"})
+  record EmbeddingResponse(Data[] data, String model, Usage usage) {
+    @JsonIgnoreProperties({"object"})
+    record Data(int index, float[] embedding) {}
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private record Usage(int prompt_tokens, int total_tokens) {}
+    record Usage(int total_tokens) {}
   }
-
-  private static final String PASSAGE = "passage";
-  private static final String QUERY = "query";
 
   @Override
   public Uni<List<float[]>> vectorize(
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
+    final String inputType =
+        (embeddingRequestType == EmbeddingRequestType.SEARCH) ? requestTypeQuery : requestTypeIndex;
     String[] textArray = new String[texts.size()];
-    String input_type = embeddingRequestType == EmbeddingRequestType.INDEX ? PASSAGE : QUERY;
-
     EmbeddingRequest request =
-        new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
+        new EmbeddingRequest(inputType, texts.toArray(textArray), modelName, autoTruncate);
     Uni<EmbeddingResponse> response =
         embeddingProvider
-            .embed(
-                "Bearer " + (apiKeyOverride.isPresent() ? apiKeyOverride.get() : apiKey), request)
+            .embed("Bearer " + apiKeyOverride.get(), request)
             .onFailure(
                 throwable -> {
                   return (throwable.getCause() != null
@@ -106,7 +105,6 @@ public class NVidiaEmbeddingClient implements EmbeddingProvider {
             .retry()
             .withBackOff(Duration.ofMillis(requestProperties.retryDelayInMillis()))
             .atMost(requestProperties.maxRetries());
-
     return response
         .onItem()
         .transform(

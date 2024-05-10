@@ -142,7 +142,8 @@ public class DocumentUpdaterTest {
 
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR);
       JsonNode expectedData = objectMapper.readTree(expected);
-      String vectorData = """
+      String vectorData =
+          """
               {"$vector" : [0.25, 0.25, 0.25] }
               """;
       DocumentUpdater documentUpdater =
@@ -242,7 +243,8 @@ public class DocumentUpdaterTest {
   class UpdateDocumentInvalid {
     @Test
     public void invalidUpdateOperator() throws Exception {
-      String updateClause = """
+      String updateClause =
+          """
                    {"location": "New York"},
               """;
       Throwable t =
@@ -259,7 +261,8 @@ public class DocumentUpdaterTest {
 
     @Test
     public void unsupportedUpdateOperator() throws Exception {
-      String updateClause = """
+      String updateClause =
+          """
                    {"$pullAll": { "count" : 5}}
               """;
       Throwable t =

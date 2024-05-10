@@ -100,15 +100,15 @@ class CreateCollectionCommandResolverTest {
                             "metric": "cosine",
                             "dimension": 768,
                             "service": {
-                                "provider": "vertexai",
-                                "modelName": "textembedding-gecko@003",
+                                "provider": "azureOpenAI",
+                                "modelName": "text-embedding-3-small",
                                 "authentication": {
-                                    "type": [
-                                        "HEADER"
-                                    ]
+                                    "x-embedding-api-key": "user_key"
                                 },
                                 "parameters": {
-                                    "PROJECT_ID": "test project"
+                                    "resourceName": "test",
+                                    "deploymentId": "test",
+                                    "apiVersion": "test"
                                 }
                             }
                         }
@@ -131,7 +131,7 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
                 assertThat(op.comment())
                     .isEqualTo(
-                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":%s,\"options\":{\"vector\":{\"dimension\":768,\"metric\":\"cosine\",\"service\":{\"provider\":\"vertexai\",\"modelName\":\"textembedding-gecko@003\",\"authentication\":{\"type\":[\"HEADER\"]},\"parameters\":{\"PROJECT_ID\":\"test project\"}}},\"defaultId\":{\"type\":\"\"}}}}",
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":1,\"options\":{\"vector\":{\"dimension\":768,\"metric\":\"cosine\",\"service\":{\"provider\":\"azureOpenAI\",\"modelName\":\"text-embedding-3-small\",\"authentication\":{\"x-embedding-api-key\":\"user_key\"},\"parameters\":{\"resourceName\":\"test\",\"deploymentId\":\"test\",\"apiVersion\":\"test\"}}},\"defaultId\":{\"type\":\"\"}}}}",
                         TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }

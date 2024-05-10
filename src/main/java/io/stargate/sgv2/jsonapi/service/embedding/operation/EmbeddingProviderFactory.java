@@ -13,41 +13,47 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.Map;
 import java.util.Optional;
-import org.slf4j.Logger;
 
 @ApplicationScoped
 public class EmbeddingProviderFactory {
-
-  private static Logger logger = org.slf4j.LoggerFactory.getLogger(EmbeddingProviderFactory.class);
   @Inject Instance<EmbeddingProviderConfigStore> embeddingProviderConfigStore;
 
   @Inject OperationsConfig config;
-  @GrpcClient EmbeddingService embeddingService;
+
+  @GrpcClient("embedding")
+  EmbeddingService embeddingService;
 
   private interface ProviderConstructor {
     EmbeddingProvider create(
         EmbeddingProviderConfigStore.RequestProperties requestProperties,
         String baseUrl,
-        String apiKey,
         String modelName,
+        int dimension,
         Map<String, Object> vectorizeServiceParameter);
   }
 
   private static final Map<String, ProviderConstructor> providersMap =
+      // alphabetic order
       Map.ofEntries(
-          Map.entry(ProviderConstants.OPENAI, OpenAiEmbeddingClient::new),
-          Map.entry(ProviderConstants.HUGGINGFACE, HuggingFaceEmbeddingClient::new),
-          Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingClient::new),
+          Map.entry(ProviderConstants.AZURE_OPENAI, AzureOpenAIEmbeddingClient::new),
           Map.entry(ProviderConstants.COHERE, CohereEmbeddingClient::new),
-          Map.entry(ProviderConstants.NVIDIA, NVidiaEmbeddingClient::new));
+          Map.entry(ProviderConstants.HUGGINGFACE, HuggingFaceEmbeddingClient::new),
+          Map.entry(ProviderConstants.JINA_AI, JinaAIEmbeddingClient::new),
+          Map.entry(ProviderConstants.MISTRAL, MistralEmbeddingClient::new),
+          Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingClient::new),
+          Map.entry(ProviderConstants.OPENAI, OpenAIEmbeddingClient::new),
+          Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingClient::new),
+          Map.entry(ProviderConstants.VOYAGE_AI, VoyageAIEmbeddingClient::new));
 
   public EmbeddingProvider getConfiguration(
       Optional<String> tenant,
       String serviceName,
       String modelName,
       int dimension,
-      Map<String, Object> vectorizeServiceParameter) {
-    return addService(tenant, serviceName, modelName, dimension, vectorizeServiceParameter);
+      Map<String, Object> vectorizeServiceParameters,
+      String commandName) {
+    return addService(
+        tenant, serviceName, modelName, dimension, vectorizeServiceParameters, commandName);
   }
 
   private synchronized EmbeddingProvider addService(
@@ -55,10 +61,10 @@ public class EmbeddingProviderFactory {
       String serviceName,
       String modelName,
       int dimension,
-      Map<String, Object> vectorizeServiceParameter) {
+      Map<String, Object> vectorizeServiceParameters,
+      String commandName) {
     final EmbeddingProviderConfigStore.ServiceConfig configuration =
         embeddingProviderConfigStore.get().getConfiguration(tenant, serviceName);
-
     if (config.enableEmbeddingGateway()) {
       return new EmbeddingGatewayClient(
           configuration.requestConfiguration(),
@@ -66,10 +72,10 @@ public class EmbeddingProviderFactory {
           dimension,
           tenant,
           configuration.baseUrl(),
-          configuration.apiKey(),
           modelName,
           embeddingService,
-          vectorizeServiceParameter);
+          vectorizeServiceParameters,
+          commandName);
     }
 
     if (configuration.serviceProvider().equals(ProviderConstants.CUSTOM)) {
@@ -98,8 +104,8 @@ public class EmbeddingProviderFactory {
         .create(
             configuration.requestConfiguration(),
             configuration.baseUrl(),
-            configuration.apiKey(),
             modelName,
-            vectorizeServiceParameter);
+            dimension,
+            vectorizeServiceParameters);
   }
 }

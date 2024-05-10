@@ -7,7 +7,6 @@ public interface EmbeddingProviderConfigStore {
   record ServiceConfig(
       String serviceName,
       String serviceProvider,
-      String apiKey,
       String baseUrl,
       // `implementationClass` is the custom class that implements the EmbeddingProvider interface
       Optional<Class<?>> implementationClass,
@@ -16,28 +15,31 @@ public interface EmbeddingProviderConfigStore {
     public static ServiceConfig provider(
         String serviceName,
         String serviceProvider,
-        String apiKey,
         String baseUrl,
         RequestProperties requestConfiguration) {
-      return new ServiceConfig(
-          serviceName, serviceProvider, apiKey, baseUrl, null, requestConfiguration);
+      return new ServiceConfig(serviceName, serviceProvider, baseUrl, null, requestConfiguration);
     }
 
     public static ServiceConfig custom(Optional<Class<?>> implementationClass) {
       return new ServiceConfig(
-          ProviderConstants.CUSTOM,
-          ProviderConstants.CUSTOM,
-          null,
-          null,
-          implementationClass,
-          null);
+          ProviderConstants.CUSTOM, ProviderConstants.CUSTOM, null, implementationClass, null);
     }
   }
 
-  record RequestProperties(int maxRetries, int retryDelayInMillis, int timeoutInMillis) {
+  record RequestProperties(
+      int maxRetries,
+      int retryDelayInMillis,
+      int timeoutInMillis,
+      Optional<String> requestTypeQuery,
+      Optional<String> requestTypeIndex) {
     public static RequestProperties of(
-        int maxRetries, int retryDelayInMillis, int timeoutInMillis) {
-      return new RequestProperties(maxRetries, retryDelayInMillis, timeoutInMillis);
+        int maxRetries,
+        int retryDelayInMillis,
+        int timeoutInMillis,
+        Optional<String> requestTypeQuery,
+        Optional<String> requestTypeIndex) {
+      return new RequestProperties(
+          maxRetries, retryDelayInMillis, timeoutInMillis, requestTypeQuery, requestTypeIndex);
     }
   }
 
