@@ -183,10 +183,12 @@ public class CollectionResource {
                   embeddingProvider =
                       embeddingProviderFactory.getConfiguration(
                           dataApiRequestInfo.getTenantId(),
+                          dataApiRequestInfo.getCassandraToken(),
                           vectorizeConfig.provider(),
                           vectorizeConfig.modelName(),
                           collectionProperty.vectorConfig().vectorSize(),
                           vectorizeConfig.parameters(),
+                          vectorizeConfig.authentication(),
                           command.getClass().getSimpleName());
                 }
 
