@@ -26,10 +26,10 @@ public class EmbeddingProvidersConfigProducer {
   @ApplicationScoped
   @Startup
   @Retry(
-      maxRetries = 1,
+      maxRetries = 30,
       delay = 6,
       delayUnit = ChronoUnit.SECONDS,
-      maxDuration = 10,
+      maxDuration = 180,
       durationUnit = ChronoUnit.SECONDS)
   EmbeddingProvidersConfig produce(
       DefaultEmbeddingProviderConfig defaultEmbeddingProviderConfig,
