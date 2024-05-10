@@ -157,7 +157,7 @@ message GetSupportedProvidersResponse {
     // ModelConfig message represents configuration for a specific model.
     message ModelConfig {
       string name = 1;
-      int32 vector_dimension = 2;
+      optional int32 vector_dimension = 2;
       repeated ParameterConfig parameters = 3;
       map<string, string> properties = 4;
     }
