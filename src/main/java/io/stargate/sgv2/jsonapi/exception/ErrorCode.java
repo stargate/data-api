@@ -152,6 +152,8 @@ public enum ErrorCode {
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
+
+  VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
   VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
