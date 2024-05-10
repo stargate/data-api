@@ -17,7 +17,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -56,7 +56,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: api-key
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: api-key
@@ -111,7 +111,7 @@ stargate:
                   - accepted: x-embedding-api-key
                     forwarded: Authorization
             SHARED_SECRET:
-                enabled: false
+                enabled: true
                 tokens:
                   - accepted: providerKey
                     forwarded: Authorization
@@ -144,7 +144,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -183,7 +183,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -228,7 +228,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -258,7 +258,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -297,7 +297,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -325,7 +325,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
