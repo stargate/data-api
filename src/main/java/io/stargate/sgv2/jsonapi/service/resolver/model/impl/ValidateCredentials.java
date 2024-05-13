@@ -15,9 +15,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @ApplicationScoped
 public class ValidateCredentials {
 
-  private @ConfigProperty(name = "quarkus.grpc.clients.embedding.host") String host;
+  private @ConfigProperty(name = "quarkus.grpc.clients.\"embedding\".host") String host;
 
-  @ConfigProperty(name = "quarkus.grpc.clients.embedding.port")
+  @ConfigProperty(name = "quarkus.grpc.clients.\"embedding\".port")
   private int port;
 
   private ManagedChannel channel = null;
