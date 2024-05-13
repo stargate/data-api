@@ -1157,7 +1157,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
-    public void failNoneDisabled() {
+    public void failNoneAndHeaderDisabled() {
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -1171,8 +1171,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                                     "metric": "cosine",
                                                     "dimension": 1536,
                                                     "service": {
-                                                        "provider": "openai",
-                                                        "modelName": "text-embedding-ada-002"
+                                                        "provider": "huggingface",
+                                                        "modelName": "sentence-transformers/all-MiniLM-L6-v2"
                                                     }
                                                 }
                                             }
@@ -1188,7 +1188,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Service provider 'openai' does not support 'NONE' authentication"))
+                  "The provided options are invalid: Service provider 'huggingface' does not support either 'NONE' or 'HEADER' authentication types."))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -1289,10 +1289,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "dimension": 768,
                                             "service": {
                                                 "provider": "azureOpenAI",
-                                                "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                }
+                                                "modelName": "text-embedding-3-small"
                                             }
                                         }
                                     }
@@ -1331,9 +1328,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "service": {
                                                 "provider": "azureOpenAI",
                                                 "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                },
                                                 "parameters": {
                                                     "test": "test"
                                                 }
@@ -1415,9 +1409,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "service": {
                                                 "provider": "azureOpenAI",
                                                 "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                },
                                                 "parameters": {
                                                     "resourceName": 123,
                                                     "deploymentId": "vectorize",

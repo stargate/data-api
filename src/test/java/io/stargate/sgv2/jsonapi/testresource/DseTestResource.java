@@ -69,6 +69,9 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put(
         "stargate.jsonapi.custom.embedding.clazz",
         "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider");
+    propsBuilder.put(
+        "stargate.jsonapi.embedding.providers.huggingface.supported-authentications.HEADER.enabled",
+        "false");
     if (this.containerNetworkId.isPresent()) {
       String host =
           useCoordinator()
