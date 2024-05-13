@@ -306,15 +306,15 @@ stargate:
           models:
             - name: mistral-embed
               vector-dimension: 1024
-        # NOTE: UpstageAI have a model for storing and a diff one for reading: this is different
-        #  from everyone else.
-        #  In addition, provider accepts only a single input String at a time, not an Array.
-        #  Holding on the config / implementation until we can get changes or re-design our model
+
+        # NOTE: UpstageAI has one model for storing and a diff one for reading: this is different
+        #  from everyone else. For now handling this requires explicit handling by actual
+        #  embedding client implementation: model name here is a prefix for the actual model name.
+        # In addition, implementation only supports 1-entry vectorization.
         upstageAI:
           # see https://developers.upstage.ai/docs/apis/embeddings
-          # NOT enabled until
           display-name: Upstage AI
-          enabled: false
+          enabled: true
           url: https://api.upstage.ai/v1/solar/embeddings
           supported-authentications:
             NONE:
@@ -331,9 +331,8 @@ stargate:
                   forwarded: Authorization
           parameters:
           properties:
-          models: # NOTE: this is where weirdness exists; including model names as example
-            - name: solar-1-mini-embedding-query
+          models:
+            # NOTE: this is where weirdness exists; model name is prefix on which
+            #   either "query" or "passage" is appended to get the actual model name
+            - name: solar-1-mini-embedding-
               vector-dimension: 4096
-            - name: solar-1-mini-embedding-passage
-              vector-dimension: 4096
-
