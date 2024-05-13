@@ -1211,7 +1211,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                                         "provider": "openai",
                                                         "modelName": "text-embedding-ada-002",
                                                         "authentication": {
-                                                            "providerKey": "shared_creds.providerKey"
+                                                            "test": "shared_creds.providerKey"
                                                         }
                                                     }
                                                 }
@@ -1228,7 +1228,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Service provider 'openai' does not support authentication key 'providerKey'"))
+                  "The provided options are invalid: Service provider 'openai' does not support authentication key 'test'"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }

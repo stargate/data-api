@@ -42,6 +42,7 @@ public class EmbeddingProviderFactory {
           Map.entry(ProviderConstants.MISTRAL, MistralEmbeddingClient::new),
           Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingClient::new),
           Map.entry(ProviderConstants.OPENAI, OpenAIEmbeddingClient::new),
+          Map.entry(ProviderConstants.UPSTAGE_AI, UpstageAIEmbeddingClient::new),
           Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingClient::new),
           Map.entry(ProviderConstants.VOYAGE_AI, VoyageAIEmbeddingClient::new));
 
