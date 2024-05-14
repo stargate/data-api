@@ -107,8 +107,7 @@ class CreateCollectionCommandResolverTest {
                                 },
                                 "parameters": {
                                     "resourceName": "test",
-                                    "deploymentId": "test",
-                                    "apiVersion": "test"
+                                    "deploymentId": "test"
                                 }
                             }
                         }

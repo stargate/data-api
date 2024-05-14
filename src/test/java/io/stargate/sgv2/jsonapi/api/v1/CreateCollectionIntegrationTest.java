@@ -586,8 +586,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                 },
                                 "parameters": {
                                     "resourceName" : "vectorize",
-                                    "deploymentId" : "vectorize",
-                                    "apiVersion" : "2024-02-01"
+                                    "deploymentId" : "vectorize"
                                 }
                             }
                         }
@@ -689,8 +688,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                                 },
                                                 "parameters": {
                                                     "resourceName" : "vectorize",
-                                                    "deploymentId" : "vectorize",
-                                                    "apiVersion" : "2024-02-01"
+                                                    "deploymentId" : "vectorize"
                                                 }
                                             }
                                         }
@@ -1411,8 +1409,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                                 "modelName": "text-embedding-3-small",
                                                 "parameters": {
                                                     "resourceName": 123,
-                                                    "deploymentId": "vectorize",
-                                                    "apiVersion": "2024-02-01"
+                                                    "deploymentId": "vectorize"
                                                 }
                                             }
                                         }
