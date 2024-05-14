@@ -343,13 +343,39 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     }
   }
 
+  /**
+   * Validates the parameters provided by the user against the expected parameters from both the
+   * provider and the model configurations. This method ensures that only configured parameters are
+   * provided, all required parameters are included, and no unexpected parameters are passed.
+   *
+   * @param userConfig The vector search configuration provided by the user.
+   * @param providerConfig The configuration of the embedding provider which includes model and
+   *     provider-level parameters.
+   * @throws JsonApiException if any unconfigured parameters are provided, required parameters are
+   *     missing, or if an error occurs due to no parameters being configured but some are provided
+   *     by the user.
+   */
   private void validateUserParameters(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
+    // 0. Combine provider level and model level parameters
+    List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> allParameters =
+        new ArrayList<>();
+    // Add all provider level parameters
+    allParameters.addAll(providerConfig.parameters());
+    // Get all the parameters for the model -- model has been validated in the previous step
+    List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> modelParameters =
+        providerConfig.models().stream()
+            .filter(m -> m.name().equals(userConfig.modelName()))
+            .findFirst()
+            .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig::parameters)
+            .get();
+    // Add all model level parameters
+    allParameters.addAll(modelParameters);
+
     // 1. Error if the user provided unconfigured parameters
-    if (providerConfig.parameters() == null || providerConfig.parameters().isEmpty()) {
-      // If providerConfig.parameters() is null or empty but the user still provides parameters,
-      // it's an error
+    if (allParameters.isEmpty()) {
+      // If allParameters is empty but the user still provides parameters, error out
       if (userConfig.parameters() != null && !userConfig.parameters().isEmpty()) {
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "Parameters provided but the provider '%s' expects none", userConfig.provider());
@@ -357,8 +383,9 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       // Exit early if no parameters are configured
       return;
     }
+    // Two level parameters have unique names, should be fine here
     Set<String> expectedParamNames =
-        providerConfig.parameters().stream()
+        allParameters.stream()
             .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig::name)
             .collect(Collectors.toSet());
 
@@ -380,20 +407,18 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     // Check for missing required parameters and collect them for type validation
     List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> parametersToValidate =
         new ArrayList<>();
-    providerConfig
-        .parameters()
-        .forEach(
-            expectedParamConfig -> {
-              if (expectedParamConfig.required()
-                  && !userParameters.containsKey(expectedParamConfig.name())) {
-                throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                    "Required parameter '%s' for the provider '%s' missing",
-                    expectedParamConfig.name(), userConfig.provider());
-              }
-              if (userParameters.containsKey(expectedParamConfig.name())) {
-                parametersToValidate.add(expectedParamConfig);
-              }
-            });
+    allParameters.forEach(
+        expectedParamConfig -> {
+          if (expectedParamConfig.required()
+              && !userParameters.containsKey(expectedParamConfig.name())) {
+            throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+                "Required parameter '%s' for the provider '%s' missing",
+                expectedParamConfig.name(), userConfig.provider());
+          }
+          if (userParameters.containsKey(expectedParamConfig.name())) {
+            parametersToValidate.add(expectedParamConfig);
+          }
+        });
 
     // 3. Validate parameter types if no errors occurred in previous steps
     parametersToValidate.forEach(
@@ -402,6 +427,17 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
                 expectedParamConfig, userParameters.get(expectedParamConfig.name())));
   }
 
+  /**
+   * Validates the type of parameter provided by the user against the expected type defined in the
+   * provider's configuration. This method checks if the type of the user-provided parameter matches
+   * the expected type, throwing an exception if there is a mismatch.
+   *
+   * @param expectedParamConfig The expected configuration for the parameter which includes its
+   *     expected type.
+   * @param userParamValue The value of the parameter provided by the user.
+   * @throws JsonApiException if the type of the parameter provided by the user does not match the
+   *     expected type.
+   */
   private void validateParameterType(
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig expectedParamConfig,
       Object userParamValue) {
@@ -435,7 +471,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    * @return the validated vector dimension to be used for the model
    * @throws JsonApiException if the model name is not found, or if the dimension is invalid
    */
-  // TODO: check model parameters provided by the user, will support in the future
   private Integer validateModelAndDimension(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
