@@ -33,18 +33,17 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
 
   private static final String PROJECT_ID = "projectId";
 
-  private Map<String, Object> vectorizeServiceParameters;
-
   public VertexAIEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
       int dimension,
-      Map<String, Object> vectorizeServiceParameters) {
+      Map<String, Object> serviceParameters) {
     this.requestProperties = requestProperties;
     this.modelName = modelName;
-    this.vectorizeServiceParameters = vectorizeServiceParameters;
-    baseUrl = baseUrl.replace(PROJECT_ID, vectorizeServiceParameters.get(PROJECT_ID).toString());
+    String projectId =
+        (serviceParameters == null) ? "" : String.valueOf(serviceParameters.get(PROJECT_ID));
+    baseUrl = baseUrl.replace(PROJECT_ID, projectId);
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
