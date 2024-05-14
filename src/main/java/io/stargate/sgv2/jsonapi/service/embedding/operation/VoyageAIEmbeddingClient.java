@@ -38,13 +38,13 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
       String baseUrl,
       String modelName,
       int dimension,
-      Map<String, Object> vectorizeServiceParameters) {
+      Map<String, Object> serviceParameters) {
     this.requestProperties = requestProperties;
     this.modelName = modelName;
     // use configured input_type if available
     requestTypeQuery = requestProperties.requestTypeQuery().orElse(null);
     requestTypeIndex = requestProperties.requestTypeIndex().orElse(null);
-    Object v = vectorizeServiceParameters.get("autoTruncate");
+    Object v = (serviceParameters == null) ? null : serviceParameters.get("autoTruncate");
     autoTruncate = (v instanceof Boolean) ? (Boolean) v : null;
 
     embeddingProvider =

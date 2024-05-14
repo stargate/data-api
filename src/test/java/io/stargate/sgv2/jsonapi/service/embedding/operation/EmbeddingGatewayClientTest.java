@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,6 +27,29 @@ import org.junit.jupiter.api.Test;
 public class EmbeddingGatewayClientTest {
 
   public static final String TESTING_COMMAND_NAME = "test_command";
+
+  // for [data-api#1088] (NPE for VoyageAI provider)
+  @Test
+  void verifyDirectConstructionWithNullServiceParameters() {
+    List<EmbeddingProviderFactory.ProviderConstructor> providerCtors =
+        Arrays.asList(
+            AzureOpenAIEmbeddingClient::new,
+            CohereEmbeddingClient::new,
+            HuggingFaceEmbeddingClient::new,
+            JinaAIEmbeddingClient::new,
+            MistralEmbeddingClient::new,
+            NvidiaEmbeddingClient::new,
+            OpenAIEmbeddingClient::new,
+            UpstageAIEmbeddingClient::new,
+            VertexAIEmbeddingClient::new,
+            VoyageAIEmbeddingClient::new);
+    for (EmbeddingProviderFactory.ProviderConstructor ctor : providerCtors) {
+      EmbeddingProviderConfigStore.RequestProperties requestProperties =
+          EmbeddingProviderConfigStore.RequestProperties.of(
+              3, 5, 5000, Optional.empty(), Optional.empty());
+      assertThat(ctor.create(requestProperties, "baseUrl", "modelName", 5, null)).isNotNull();
+    }
+  }
 
   @Test
   void handleValidResponse() {

@@ -23,7 +23,7 @@ public class EmbeddingProviderFactory {
   @GrpcClient("embedding")
   EmbeddingService embeddingService;
 
-  private interface ProviderConstructor {
+  interface ProviderConstructor {
     EmbeddingProvider create(
         EmbeddingProviderConfigStore.RequestProperties requestProperties,
         String baseUrl,
@@ -55,6 +55,9 @@ public class EmbeddingProviderFactory {
       Map<String, Object> vectorizeServiceParameters,
       Map<String, String> authentication,
       String commandName) {
+    if (vectorizeServiceParameters == null) {
+      vectorizeServiceParameters = Map.of();
+    }
     return addService(
         tenant,
         authToken,
