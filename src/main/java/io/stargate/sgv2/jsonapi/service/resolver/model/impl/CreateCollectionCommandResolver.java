@@ -179,6 +179,18 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     return tableCommentNode.toString();
   }
 
+  /**
+   * Validates the vector search options provided in a create collection command. It checks if
+   * vector search is enabled globally, and validates the specific vectorization service
+   * configuration provided by the user. It also ensures the specified vector dimension complies
+   * with system limits.
+   *
+   * @param vector The vector search configuration provided by the user in the create collection
+   *     command.
+   * @return The validated and potentially modified vector search configuration.
+   * @throws JsonApiException If vector search is disabled globally or the user configuration is
+   *     invalid.
+   */
   private CreateCollectionCommand.Options.VectorSearchConfig validateVectorOptions(
       CreateCollectionCommand.Options.VectorSearchConfig vector) {
     if (!dataStoreConfig.vectorSearchEnabled()) {
@@ -247,13 +259,25 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     // Check secret name for shared secret authentication, if applicable
     validateAuthentication(userConfig, providerConfig);
 
+    // Validate the model and its vector dimension, if userVectorDimension is null, return value
+    // will be the config/default value
+    Integer vectorDimension =
+        validateModelAndDimension(userConfig, providerConfig, userVectorDimension);
+
     // Validate user-provided parameters against internal expectations
     validateUserParameters(userConfig, providerConfig);
 
-    // Validate the model and its vector dimension
-    return validateModelAndDimension(userConfig, providerConfig, userVectorDimension);
+    return vectorDimension;
   }
 
+  /**
+   * Retrieves and validates the provider configuration for vector search based on user input. This
+   * method ensures that the specified service provider is configured and enabled in the system.
+   *
+   * @param userConfig The configuration provided by the user specifying the vector search provider.
+   * @return The configuration for the embedding provider, if valid.
+   * @throws JsonApiException If the provider is not supported or not enabled.
+   */
   private EmbeddingProvidersConfig.EmbeddingProviderConfig getAndValidateProviderConfig(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig) {
     EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig =
@@ -270,7 +294,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    *
    * @param userConfig The vectorize configuration provided by the user.
    * @param providerConfig The embedding provider configuration.
-   * @throws ApiException If the user authentication is invalid.
+   * @throws JsonApiException If the user authentication is invalid.
    */
   private void validateAuthentication(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
@@ -409,7 +433,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    * @param providerConfig the configuration of the embedding provider
    * @param userVectorDimension the vector dimension provided by the user, or null if not provided
    * @return the validated vector dimension to be used for the model
-   * @throws ApiException if the model name is not found, or if the dimension is invalid
+   * @throws JsonApiException if the model name is not found, or if the dimension is invalid
    */
   // TODO: check model parameters provided by the user, will support in the future
   private Integer validateModelAndDimension(
@@ -455,7 +479,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    * @param param the parameter configuration containing validation constraints
    * @param userVectorDimension the vector dimension provided by the user
    * @return the appropriate vector dimension based on parameter configuration
-   * @throws ApiException if the user-provided dimension is not valid
+   * @throws JsonApiException if the user-provided dimension is not valid
    */
   private Integer validateRangeDimension(
       EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig param,
