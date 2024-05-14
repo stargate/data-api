@@ -46,7 +46,7 @@ stargate:
           # see https://learn.microsoft.com/en-us/azure/ai-services/openai/reference
           display-name: Azure OpenAI
           enabled: true
-          url: https://{resourceName}.openai.azure.com/openai/deployments/{deploymentId}/embeddings?api-version={apiVersion}
+          url: https://{resourceName}.openai.azure.com/openai/deployments/{deploymentId}/embeddings?api-version=2024-02-01
           supported-authentications:
             NONE:
               enabled: false
@@ -69,11 +69,6 @@ stargate:
               type: string
               required: true
               help: "The name of your model deployment. You're required to first deploy a model before you can make calls."
-            - name: "apiVersion"
-              type: string
-              required: true
-              default-value: 2024-02-01
-              help: "The API version to use for this operation. This follows the YYYY-MM-DD format."
           properties:
             max-input-length: 16
           models:
