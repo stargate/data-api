@@ -363,12 +363,23 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         new ArrayList<>();
     // Add all provider level parameters
     allParameters.addAll(providerConfig.parameters());
-    // Get all the parameters for the model -- model has been validated in the previous step
+    // Get all the parameters except "vectorDimension" for the model -- model has been validated in
+    // the previous step
     List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> modelParameters =
         providerConfig.models().stream()
             .filter(m -> m.name().equals(userConfig.modelName()))
             .findFirst()
             .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig::parameters)
+            .map(
+                params ->
+                    params.stream()
+                        .filter(
+                            param ->
+                                !param
+                                    .name()
+                                    .equals(
+                                        "vectorDimension")) // Exclude 'vectorDimension' parameter
+                        .collect(Collectors.toList()))
             .get();
     // Add all model level parameters
     allParameters.addAll(modelParameters);
