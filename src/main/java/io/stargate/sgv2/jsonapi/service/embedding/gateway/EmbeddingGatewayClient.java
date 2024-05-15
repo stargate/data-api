@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.lang3.EnumUtils;
 
 /** Grpc client for embedding gateway service */
 public class EmbeddingGatewayClient implements EmbeddingProvider {
@@ -156,9 +157,11 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
         .transform(
             resp -> {
               if (resp.hasError()) {
-                throw new JsonApiException(
-                    ErrorCode.valueOf(resp.getError().getErrorCode()),
-                    resp.getError().getErrorMessage());
+                ErrorCode errorCode =
+                    EnumUtils.isValidEnum(ErrorCode.class, resp.getError().getErrorCode())
+                        ? ErrorCode.valueOf(resp.getError().getErrorCode())
+                        : ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE;
+                throw new JsonApiException(errorCode, resp.getError().getErrorMessage());
               }
               if (resp.getEmbeddingsList() == null) {
                 return Collections.emptyList();
