@@ -23,7 +23,7 @@ public class EmbeddingProviderFactory {
   @GrpcClient("embedding")
   EmbeddingService embeddingService;
 
-  private interface ProviderConstructor {
+  interface ProviderConstructor {
     EmbeddingProvider create(
         EmbeddingProviderConfigStore.RequestProperties requestProperties,
         String baseUrl,
@@ -42,6 +42,7 @@ public class EmbeddingProviderFactory {
           Map.entry(ProviderConstants.MISTRAL, MistralEmbeddingClient::new),
           Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingClient::new),
           Map.entry(ProviderConstants.OPENAI, OpenAIEmbeddingClient::new),
+          Map.entry(ProviderConstants.UPSTAGE_AI, UpstageAIEmbeddingClient::new),
           Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingClient::new),
           Map.entry(ProviderConstants.VOYAGE_AI, VoyageAIEmbeddingClient::new));
 
@@ -54,6 +55,9 @@ public class EmbeddingProviderFactory {
       Map<String, Object> vectorizeServiceParameters,
       Map<String, String> authentication,
       String commandName) {
+    if (vectorizeServiceParameters == null) {
+      vectorizeServiceParameters = Map.of();
+    }
     return addService(
         tenant,
         authToken,

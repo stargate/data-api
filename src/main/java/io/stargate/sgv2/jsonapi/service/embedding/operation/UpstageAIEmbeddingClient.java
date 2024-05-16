@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -13,41 +14,42 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-/**
- * Implementation of client that talks to jina.ai embedding provider. See <a
- * href="https://api.jina.ai/redoc#tag/embeddings">API reference</a> for details of REST API being
- * called.
- */
-public class JinaAIEmbeddingClient implements EmbeddingProvider {
+public class UpstageAIEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelName;
-  private final JinaAIEmbeddingProvider embeddingProvider;
+  private String modelNamePrefix;
+  private final UpstageAIEmbeddingProvider embeddingProvider;
 
-  public JinaAIEmbeddingClient(
+  public UpstageAIEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
-      String modelName,
+      String modelNamePrefix,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
-    this.modelName = modelName;
+    this.modelNamePrefix = modelNamePrefix;
+
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
             .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
-            .build(JinaAIEmbeddingProvider.class);
+            .build(UpstageAIEmbeddingProvider.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface JinaAIEmbeddingProvider {
+  public interface UpstageAIEmbeddingProvider {
     @POST
+    // no path specified, as it is already included in the baseUri
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
@@ -58,13 +60,15 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
     }
   }
 
-  // By default, Jina Text Encoding Format is float
-  private record EmbeddingRequest(List<String> input, String model) {}
+  // NOTE: "input" is a single String, not array of Strings!
+  record EmbeddingRequest(String input, String model) {}
 
-  private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
-    private record Data(String object, int index, float[] embedding) {}
+  @JsonIgnoreProperties({"object"})
+  record EmbeddingResponse(Data[] data, String model, Usage usage) {
+    @JsonIgnoreProperties({"object"})
+    record Data(int index, float[] embedding) {}
 
-    private record Usage(int prompt_tokens, int total_tokens) {}
+    record Usage(int prompt_tokens, int total_tokens) {}
   }
 
   @Override
@@ -72,7 +76,19 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
-    EmbeddingRequest request = new EmbeddingRequest(texts, modelName);
+    // Oddity: Implementation does not support batching, so we only accept "batches"
+    // of 1 String, fail for others
+    if (texts.size() != 1) {
+      // Temporary fail message: with re-batching will give better information
+      throw ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.toApiException(
+          "UpstageAI only supports vectorization of 1 text at a time, got " + texts.size());
+    }
+    // Another oddity: model name used as prefix
+    final String modelName =
+        modelNamePrefix
+            + ((embeddingRequestType == EmbeddingRequestType.SEARCH) ? "query" : "passage");
+
+    EmbeddingRequest request = new EmbeddingRequest(texts.get(0), modelName);
     Uni<EmbeddingResponse> response =
         embeddingProvider
             .embed("Bearer " + apiKeyOverride.get(), request)
@@ -83,11 +99,7 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
                       && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT);
                 })
             .retry()
-            // Jina has intermittent embedding failure, set a longer retry delay to mitigate the
-            // issue
-            .withBackOff(
-                Duration.ofMillis(requestProperties.retryDelayInMillis()),
-                Duration.ofMillis(4L * requestProperties.retryDelayInMillis()))
+            .withBackOff(Duration.ofMillis(requestProperties.retryDelayInMillis()))
             .atMost(requestProperties.maxRetries());
     return response
         .onItem()
@@ -97,7 +109,7 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
                 return Collections.emptyList();
               }
               Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
-              return Arrays.stream(resp.data()).map(EmbeddingResponse.Data::embedding).toList();
+              return Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
             });
   }
 }

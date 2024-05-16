@@ -586,8 +586,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                 },
                                 "parameters": {
                                     "resourceName" : "vectorize",
-                                    "deploymentId" : "vectorize",
-                                    "apiVersion" : "2024-02-01"
+                                    "deploymentId" : "vectorize"
                                 }
                             }
                         }
@@ -689,8 +688,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                                 },
                                                 "parameters": {
                                                     "resourceName" : "vectorize",
-                                                    "deploymentId" : "vectorize",
-                                                    "apiVersion" : "2024-02-01"
+                                                    "deploymentId" : "vectorize"
                                                 }
                                             }
                                         }
@@ -1157,7 +1155,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
-    public void failNoneDisabled() {
+    public void failNoneAndHeaderDisabled() {
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -1171,8 +1169,8 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                                     "metric": "cosine",
                                                     "dimension": 1536,
                                                     "service": {
-                                                        "provider": "openai",
-                                                        "modelName": "text-embedding-ada-002"
+                                                        "provider": "huggingface",
+                                                        "modelName": "sentence-transformers/all-MiniLM-L6-v2"
                                                     }
                                                 }
                                             }
@@ -1188,7 +1186,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Service provider 'openai' does not support 'NONE' authentication"))
+                  "The provided options are invalid: Service provider 'huggingface' does not support either 'NONE' or 'HEADER' authentication types."))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -1211,7 +1209,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                                         "provider": "openai",
                                                         "modelName": "text-embedding-ada-002",
                                                         "authentication": {
-                                                            "providerKey": "shared_creds.providerKey"
+                                                            "test": "shared_creds.providerKey"
                                                         }
                                                     }
                                                 }
@@ -1228,7 +1226,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Service provider 'openai' does not support authentication key 'providerKey'"))
+                  "The provided options are invalid: Service provider 'openai' does not support authentication key 'test'"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -1273,7 +1271,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
   @Order(5)
   class CreateCollectionWithEmbeddingServiceTestParameters {
     @Test
-    public void failNotProvideRequiredParameters() {
+    public void failWithMissingRequiredProviderParameters() {
       // create a collection without providing required parameters
       given()
           .headers(getHeaders())
@@ -1289,10 +1287,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "dimension": 768,
                                             "service": {
                                                 "provider": "azureOpenAI",
-                                                "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                }
+                                                "modelName": "text-embedding-3-small"
                                             }
                                         }
                                     }
@@ -1305,17 +1300,17 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Required parameter 'resourceName' for the provider 'azureOpenAI' missing"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "The provided options are invalid: Required parameter 'resourceName' for the provider 'azureOpenAI' missing"));
     }
 
     @Test
-    public void failWithUnconfiguredParameters() {
-      // create a collection with unconfigured parameters
+    public void failWithUnrecognizedProviderParameters() {
+      // create a collection with unrecognized parameters
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -1331,9 +1326,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "service": {
                                                 "provider": "azureOpenAI",
                                                 "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                },
                                                 "parameters": {
                                                     "test": "test"
                                                 }
@@ -1349,13 +1341,16 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'azureOpenAI' provided"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'azureOpenAI' provided"));
+    }
 
+    @Test
+    public void failWithUnexpectedProviderParameters() {
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -1389,16 +1384,16 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Parameters provided but the provider 'openai' expects none"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'openai' provided"));
     }
 
     @Test
-    public void failWrongParameterType() {
+    public void failWithWrongProviderParameterType() {
       // create a collection with wrong parameter type
       given()
           .headers(getHeaders())
@@ -1415,13 +1410,9 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "service": {
                                                 "provider": "azureOpenAI",
                                                 "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                },
                                                 "parameters": {
                                                     "resourceName": 123,
-                                                    "deploymentId": "vectorize",
-                                                    "apiVersion": "2024-02-01"
+                                                    "deploymentId": "vectorize"
                                                 }
                                             }
                                         }
@@ -1435,12 +1426,137 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided parameter 'resourceName' type is incorrect. Expected: 'string'"))
+                  "The provided options are invalid: The provided parameter 'resourceName' type is incorrect. Expected: 'string'"));
+    }
+
+    @Test
+    public void failWithMissingModelParameters() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 768,
+                                            "service": {
+                                                "provider": "vertexai",
+                                                "modelName": "textembedding-gecko@003",
+                                                "parameters": {
+                                                    "projectId": "test"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Required parameter 'autoTruncate' for the provider 'vertexai' missing"));
+    }
+
+    @Test
+    public void failWithUnexpectedModelParameters() {
+      // create a collection with unrecognized parameters
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 768,
+                                            "service": {
+                                                "provider": "azureOpenAI",
+                                                "modelName": "text-embedding-3-small",
+                                                "parameters": {
+                                                    "resourceName": "vectorize",
+                                                    "deploymentId": "vectorize",
+                                                    "vectorDimension": 512
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Unexpected parameter 'vectorDimension' for the provider 'azureOpenAI' provided"));
+    }
+
+    @Test
+    public void failWithWrongModelParameterType() {
+      // create a collection with wrong parameter type
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                            {
+                                "createCollection": {
+                                    "name": "collection_with_vector_service",
+                                    "options": {
+                                        "vector": {
+                                            "metric": "cosine",
+                                            "dimension": 768,
+                                            "service": {
+                                                "provider": "azureOpenAI",
+                                                "modelName": "text-embedding-3-small",
+                                                "parameters": {
+                                                    "resourceName": "vectorize",
+                                                    "deploymentId": 123
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: The provided parameter 'deploymentId' type is incorrect. Expected: 'string'"));
     }
   }
 

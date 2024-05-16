@@ -69,6 +69,12 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put(
         "stargate.jsonapi.custom.embedding.clazz",
         "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider");
+    propsBuilder.put(
+        "stargate.jsonapi.embedding.providers.huggingface.supported-authentications.HEADER.enabled",
+        "false");
+    propsBuilder.put("stargate.jsonapi.embedding.providers.vertexai.enabled", "true");
+    propsBuilder.put(
+        "stargate.jsonapi.embedding.providers.vertexai.models[0].parameters[0].required", "true");
     if (this.containerNetworkId.isPresent()) {
       String host =
           useCoordinator()
@@ -92,7 +98,11 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put("stargate.data-store.ignore-bridge", "true");
     propsBuilder.put("stargate.debug.enabled", "true");
     // Reduce the delay for ITs
-    propsBuilder.put("stargate.jsonapi.operations.database-config.ddl-delay-millis", "50");
+    if (Boolean.getBoolean("run-create-index-parallel")) {
+      propsBuilder.put("stargate.jsonapi.operations.database-config.ddl-delay-millis", "0");
+    } else {
+      propsBuilder.put("stargate.jsonapi.operations.database-config.ddl-delay-millis", "50");
+    }
     return propsBuilder.build();
   }
 }

@@ -17,7 +17,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -46,7 +46,7 @@ stargate:
           # see https://learn.microsoft.com/en-us/azure/ai-services/openai/reference
           display-name: Azure OpenAI
           enabled: true
-          url: https://{resourceName}.openai.azure.com/openai/deployments/{deploymentId}/embeddings?api-version={apiVersion}
+          url: https://{resourceName}.openai.azure.com/openai/deployments/{deploymentId}/embeddings?api-version=2024-02-01
           supported-authentications:
             NONE:
               enabled: false
@@ -56,7 +56,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: api-key
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: api-key
@@ -69,11 +69,6 @@ stargate:
               type: string
               required: true
               help: "The name of your model deployment. You're required to first deploy a model before you can make calls."
-            - name: "apiVersion"
-              type: string
-              required: true
-              default-value: 2024-02-01
-              help: "The API version to use for this operation. This follows the YYYY-MM-DD format."
           properties:
             max-input-length: 16
           models:
@@ -111,13 +106,24 @@ stargate:
                   - accepted: x-embedding-api-key
                     forwarded: Authorization
             SHARED_SECRET:
-                enabled: false
+                enabled: true
                 tokens:
                   - accepted: providerKey
                     forwarded: Authorization
           models:
             - name: sentence-transformers/all-MiniLM-L6-v2
               vector-dimension: 384
+            - name: intfloat/multilingual-e5-large
+              vector-dimension: 1024
+            - name: intfloat/multilingual-e5-large-instruct
+              vector-dimension: 1024
+            - name: BAAI/bge-small-en-v1.5
+              vector-dimension: 384
+            - name: BAAI/bge-base-en-v1.5
+              vector-dimension: 768
+            - name: BAAI/bge-large-en-v1.5
+              vector-dimension: 1024
+
         # OUT OF SCOPE FOR INITIAL PREVIEW
         vertexai:
           # see https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#get_text_embeddings_for_a_snippet_of_text
@@ -133,7 +139,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -172,7 +178,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -217,7 +223,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -247,7 +253,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -286,7 +292,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -295,15 +301,15 @@ stargate:
           models:
             - name: mistral-embed
               vector-dimension: 1024
-        # NOTE: UpstageAI have a model for storing and a diff one for reading: this is different
-        #  from everyone else.
-        #  In addition, provider accepts only a single input String at a time, not an Array.
-        #  Holding on the config / implementation until we can get changes or re-design our model
+
+        # NOTE: UpstageAI has one model for storing and a diff one for reading: this is different
+        #  from everyone else. For now handling this requires explicit handling by actual
+        #  embedding client implementation: model name here is a prefix for the actual model name.
+        # In addition, implementation only supports 1-entry vectorization.
         upstageAI:
           # see https://developers.upstage.ai/docs/apis/embeddings
-          # NOT enabled until
           display-name: Upstage AI
-          enabled: false
+          enabled: true
           url: https://api.upstage.ai/v1/solar/embeddings
           supported-authentications:
             NONE:
@@ -314,15 +320,14 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: false
+              enabled: true
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
           parameters:
           properties:
-          models: # NOTE: this is where weirdness exists; including model names as example
-            - name: solar-1-mini-embedding-query
+          models:
+            # NOTE: this is where weirdness exists; model name is prefix on which
+            #   either "query" or "passage" is appended to get the actual model name
+            - name: solar-1-mini-embedding-
               vector-dimension: 4096
-            - name: solar-1-mini-embedding-passage
-              vector-dimension: 4096
-
