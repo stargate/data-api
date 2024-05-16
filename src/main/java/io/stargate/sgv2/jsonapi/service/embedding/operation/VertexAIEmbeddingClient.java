@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
+import io.stargate.sgv2.jsonapi.service.embedding.util.EmbeddingUtil;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -31,8 +32,6 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
   private String modelName;
   private final VertexAIEmbeddingProvider embeddingProvider;
 
-  private static final String PROJECT_ID = "projectId";
-
   public VertexAIEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
@@ -41,12 +40,10 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
       Map<String, Object> serviceParameters) {
     this.requestProperties = requestProperties;
     this.modelName = modelName;
-    String projectId =
-        (serviceParameters == null) ? "" : String.valueOf(serviceParameters.get(PROJECT_ID));
-    baseUrl = baseUrl.replace(PROJECT_ID, projectId);
+    String actualUrl = EmbeddingUtil.replaceParameters(baseUrl, serviceParameters);
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(baseUrl))
+            .baseUri(URI.create(actualUrl))
             .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
             .build(VertexAIEmbeddingProvider.class);
   }
