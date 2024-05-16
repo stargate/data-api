@@ -182,4 +182,4 @@ jobs:
         env:
           COORD_IMAGE: ${{ secrets.ECR_REPOSITORY }}/stargateio/coordinator-dse-next
         run: |
-          ./mvnw -B -ntp clean verify -DskipUnitTests -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Dstargate.int-test.coordinator.image=$COORD_IMAGE -Dstargate.jsonapi.operations.database-config.ddl-delay-millis=0 ${{ matrix.profile }}
+          ./mvnw -B -ntp clean verify -DskipUnitTests -Dquarkus.container-image.build=true -Dquarkus.container-image.tag=${{ github.sha }} -Dstargate.int-test.coordinator.image=$COORD_IMAGE -Drun-create-index-parallel=true ${{ matrix.profile }}
