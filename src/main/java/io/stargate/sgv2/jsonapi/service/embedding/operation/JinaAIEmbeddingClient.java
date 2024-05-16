@@ -31,6 +31,9 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
   private final JinaAIEmbeddingProvider embeddingProvider;
   private Map<String, Object> vectorizeServiceParameters;
 
+  // Jina has intermittent embedding failure, set a longer retry delay to mitigate the issue
+  public static int jinaRetryDelayInMillis = 1000;
+
   public JinaAIEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
@@ -86,7 +89,7 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
                       && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT);
                 })
             .retry()
-            .withBackOff(Duration.ofMillis(requestProperties.retryDelayInMillis()))
+            .withBackOff(Duration.ofMillis(jinaRetryDelayInMillis))
             .atMost(requestProperties.maxRetries());
     return response
         .onItem()
