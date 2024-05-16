@@ -1271,7 +1271,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
   @Order(5)
   class CreateCollectionWithEmbeddingServiceTestParameters {
     @Test
-    public void failNotProvideRequiredProviderParameters() {
+    public void failWithMissingRequiredProviderParameters() {
       // create a collection without providing required parameters
       given()
           .headers(getHeaders())
@@ -1300,12 +1300,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Required parameter 'resourceName' for the provider 'azureOpenAI' missing"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "The provided options are invalid: Required parameter 'resourceName' for the provider 'azureOpenAI' missing"));
     }
 
     @Test
@@ -1341,12 +1341,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'azureOpenAI' provided"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'azureOpenAI' provided"));
     }
 
     @Test
@@ -1384,16 +1384,16 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Parameters provided but the provider 'openai' expects none"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "The provided options are invalid: Unexpected parameter 'test' for the provider 'openai' provided"));
     }
 
     @Test
-    public void failWrongProviderParameterType() {
+    public void failWithWrongProviderParameterType() {
       // create a collection with wrong parameter type
       given()
           .headers(getHeaders())
@@ -1426,16 +1426,16 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided parameter 'resourceName' type is incorrect. Expected: 'string'"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "The provided options are invalid: The provided parameter 'resourceName' type is incorrect. Expected: 'string'"));
     }
 
     @Test
-    public void failNotProvideRequiredModelParameters() {
+    public void failWithMissingModelParameters() {
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -1466,12 +1466,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Required parameter 'autoTruncate' for the provider 'vertexai' missing"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "The provided options are invalid: Required parameter 'autoTruncate' for the provider 'vertexai' missing"));
     }
 
     @Test
@@ -1509,16 +1509,16 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: Unexpected parameter 'vectorDimension' for the provider 'azureOpenAI' provided"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "The provided options are invalid: Unexpected parameter 'vectorDimension' for the provider 'azureOpenAI' provided"));
     }
 
     @Test
-    public void failWrongModelParameterType() {
+    public void failWithWrongModelParameterType() {
       // create a collection with wrong parameter type
       given()
           .headers(getHeaders())
@@ -1551,12 +1551,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided parameter 'deploymentId' type is incorrect. Expected: 'string'"))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "The provided options are invalid: The provided parameter 'deploymentId' type is incorrect. Expected: 'string'"));
     }
   }
 

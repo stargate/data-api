@@ -183,11 +183,12 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    * Validates the vector search options provided in a create collection command. It checks if
    * vector search is enabled globally, and validates the specific vectorization service
    * configuration provided by the user. It also ensures the specified vector dimension complies
-   * with system limits.
+   * with config limits.
    *
    * @param vector The vector search configuration provided by the user in the create collection
    *     command.
-   * @return The validated and potentially modified vector search configuration.
+   * @return The validated and potentially modified (adding default vector dimension) vector search
+   *     configuration.
    * @throws JsonApiException If vector search is disabled globally or the user configuration is
    *     invalid.
    */
@@ -385,21 +386,11 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     allParameters.addAll(modelParameters);
 
     // 1. Error if the user provided unconfigured parameters
-    if (allParameters.isEmpty()) {
-      // If allParameters is empty but the user still provides parameters, error out
-      if (userConfig.parameters() != null && !userConfig.parameters().isEmpty()) {
-        throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "Parameters provided but the provider '%s' expects none", userConfig.provider());
-      }
-      // Exit early if no parameters are configured
-      return;
-    }
     // Two level parameters have unique names, should be fine here
     Set<String> expectedParamNames =
         allParameters.stream()
             .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig::name)
             .collect(Collectors.toSet());
-
     Map<String, Object> userParameters =
         (userConfig.parameters() != null) ? userConfig.parameters() : Collections.emptyMap();
     // Check for unconfigured parameters provided by the user
