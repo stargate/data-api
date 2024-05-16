@@ -277,7 +277,7 @@ public interface OperationsConfig {
   /**
    * @return Flag to enable server side vectorization.
    */
-  @WithDefault("true")
+  @WithDefault("false")
   boolean vectorizeEnabled();
 
   /**
