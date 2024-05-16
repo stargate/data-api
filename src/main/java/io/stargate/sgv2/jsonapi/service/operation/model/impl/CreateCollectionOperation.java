@@ -176,6 +176,12 @@ public record CreateCollectionOperation(
                     final List<SimpleStatement> indexStatements =
                         getIndexStatements(commandContext.namespace(), name);
                     Multi<AsyncResultSet> indexResultMulti;
+                    /*
+                    CI will override ddlDelayMillis to 0 using `-Dstargate.jsonapi.operations.database-config.ddl-delay-millis=0`
+                       to speed up the test execution
+                       This is ok because CI is run as single cassandra instance and there is no need to wait for the schema changes to propagate
+                    */
+
                     if (ddlDelayMillis == 0) {
                       indexResultMulti =
                           createIndexParallel(queryExecutor, dataApiRequestInfo, indexStatements);
