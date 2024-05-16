@@ -168,21 +168,29 @@ public record CreateCollectionOperation(
         execute
             .onItem()
             .delayIt()
-            .by(Duration.ofMillis(ddlDelayMillis))
+            .by(Duration.ofMillis(ddlDelayMillis > 0 ? ddlDelayMillis : 100))
             .onItem()
             .transformToUni(
                 res -> {
                   if (res.wasApplied()) {
                     final List<SimpleStatement> indexStatements =
                         getIndexStatements(commandContext.namespace(), name);
-                    return Multi.createFrom()
-                        .items(indexStatements.stream())
-                        .onItem()
-                        .transformToUni(
-                            indexStatement ->
-                                queryExecutor.executeCreateSchemaChange(
-                                    dataApiRequestInfo, indexStatement))
-                        .concatenate()
+                    Multi<AsyncResultSet> indexResultMulti;
+                    /*
+                    CI will override ddlDelayMillis to 0 using `-Dstargate.jsonapi.operations.database-config.ddl-delay-millis=0`
+                       to speed up the test execution
+                       This is ok because CI is run as single cassandra instance and there is no need to wait for the schema changes to propagate
+                    */
+
+                    if (ddlDelayMillis == 0) {
+                      indexResultMulti =
+                          createIndexParallel(queryExecutor, dataApiRequestInfo, indexStatements);
+                    } else {
+                      indexResultMulti =
+                          createIndexOrdered(queryExecutor, dataApiRequestInfo, indexStatements);
+                    }
+
+                    return indexResultMulti
                         .collect()
                         .asList()
                         .onItem()
@@ -234,6 +242,48 @@ public record CreateCollectionOperation(
                               "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
                               name, dbLimitsConfig.indexesNeededPerCollection()));
             });
+  }
+
+  /**
+   * Create indexes for collections in ordered. This is to avoid schema change conflicts.
+   *
+   * @param queryExecutor
+   * @param dataApiRequestInfo
+   * @param indexStatements
+   * @return
+   */
+  private Multi<AsyncResultSet> createIndexOrdered(
+      QueryExecutor queryExecutor,
+      DataApiRequestInfo dataApiRequestInfo,
+      List<SimpleStatement> indexStatements) {
+    return Multi.createFrom()
+        .items(indexStatements.stream())
+        .onItem()
+        .transformToUni(
+            indexStatement ->
+                queryExecutor.executeCreateSchemaChange(dataApiRequestInfo, indexStatement))
+        .concatenate();
+  }
+
+  /**
+   * Create indexes for collections in parallel. TO speed up the CI actions.
+   *
+   * @param queryExecutor
+   * @param dataApiRequestInfo
+   * @param indexStatements
+   * @return
+   */
+  private Multi<AsyncResultSet> createIndexParallel(
+      QueryExecutor queryExecutor,
+      DataApiRequestInfo dataApiRequestInfo,
+      List<SimpleStatement> indexStatements) {
+    return Multi.createFrom()
+        .items(indexStatements.stream())
+        .onItem()
+        .transformToUni(
+            indexStatement ->
+                queryExecutor.executeCreateSchemaChange(dataApiRequestInfo, indexStatement))
+        .merge();
   }
 
   public Uni<JsonApiException> cleanUpCollectionFailedWithTooManyIndex(
