@@ -88,7 +88,9 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
             .retry()
             // Jina has intermittent embedding failure, set a longer retry delay to mitigate the
             // issue
-            .withBackOff(Duration.ofMillis(200), Duration.ofMillis(800))
+            .withBackOff(
+                Duration.ofMillis(requestProperties.retryDelayInMillis()),
+                Duration.ofMillis(4L * requestProperties.retryDelayInMillis()))
             .atMost(requestProperties.maxRetries());
     return response
         .onItem()
