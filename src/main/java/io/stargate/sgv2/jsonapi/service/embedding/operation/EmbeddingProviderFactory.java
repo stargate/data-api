@@ -96,17 +96,14 @@ public class EmbeddingProviderFactory {
     }
 
     if (configuration.serviceProvider().equals(ProviderConstants.CUSTOM)) {
+      Optional<Class<?>> clazz = configuration.implementationClass();
+      if (!clazz.isPresent()) {
+        throw new JsonApiException(
+                ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
+                ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage() + "custom class undefined");
+      }
       try {
-        Optional<Class<?>> clazz = configuration.implementationClass();
-        if (clazz.isPresent()) {
-          final EmbeddingProvider customEmbeddingProvider =
-              (EmbeddingProvider) clazz.get().getConstructor().newInstance();
-          return customEmbeddingProvider;
-        } else {
-          throw new JsonApiException(
-              ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
-              ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage() + "custom class undefined");
-        }
+          return (EmbeddingProvider) clazz.get().getConstructor().newInstance();
       } catch (Exception e) {
         throw new JsonApiException(
             ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
