@@ -27,9 +27,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 public class JinaAIEmbeddingClient implements EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
-  private String baseUrl;
   private final JinaAIEmbeddingProvider embeddingProvider;
-  private Map<String, Object> vectorizeServiceParameters;
 
   public JinaAIEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
@@ -39,7 +37,6 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
       Map<String, Object> vectorizeServiceParameters) {
     this.requestProperties = requestProperties;
     this.modelName = modelName;
-    this.vectorizeServiceParameters = vectorizeServiceParameters;
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
