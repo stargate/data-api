@@ -9,6 +9,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindEmbeddingProvidersCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.inject.Inject;
@@ -19,7 +20,8 @@ import org.junit.jupiter.api.Test;
 @TestProfile(DisableVectorizeProfile.class)
 public class CreateCollectionResolverVectorizeDisabledTest {
   @Inject ObjectMapper objectMapper;
-  @Inject CreateCollectionCommandResolver resolver;
+  @Inject CreateCollectionCommandResolver createCollectionCommandResolver;
+  @Inject FindEmbeddingProvidersCommandResolver findEmbeddingProvidersCommandResolver;
 
   @Nested
   class ResolveCommand {
@@ -48,7 +50,27 @@ public class CreateCollectionResolverVectorizeDisabledTest {
               """;
 
       CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
-      Exception e = catchException(() -> resolver.resolveCommand(commandContext, command));
+      Exception e =
+          catchException(
+              () -> createCollectionCommandResolver.resolveCommand(commandContext, command));
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasMessageStartingWith(ErrorCode.VECTORIZE_FEATURE_NOT_AVAILABLE.getMessage());
+    }
+
+    @Test
+    public void findEmbeddingProvidersWithVectorizeSearchDisabled() throws Exception {
+      String json =
+          """
+                  {
+                      "findEmbeddingProviders": {}
+                  }
+                  """;
+      FindEmbeddingProvidersCommand command =
+          objectMapper.readValue(json, FindEmbeddingProvidersCommand.class);
+      Exception e =
+          catchException(
+              () -> findEmbeddingProvidersCommandResolver.resolveCommand(commandContext, command));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
           .hasMessageStartingWith(ErrorCode.VECTORIZE_FEATURE_NOT_AVAILABLE.getMessage());
