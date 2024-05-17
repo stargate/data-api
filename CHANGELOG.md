@@ -1,5 +1,47 @@
 # Changelog
 
+## [v1.0.8](https://github.com/stargate/data-api/tree/v1.0.8) (2024-05-16)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.7...v1.0.8)
+
+**Closed issues:**
+
+- Cannot create collection for Mistral  [\#1094](https://github.com/stargate/data-api/issues/1094)
+- Remove curly brackets in vertexai's url [\#1092](https://github.com/stargate/data-api/issues/1092)
+- NPE for VoyageAI embedding provider [\#1088](https://github.com/stargate/data-api/issues/1088)
+- Remove apiVersion in azureOpenAI [\#1087](https://github.com/stargate/data-api/issues/1087)
+- Add UpstageAI embedding provider [\#1073](https://github.com/stargate/data-api/issues/1073)
+- Add VoyageAI embedding provider [\#1066](https://github.com/stargate/data-api/issues/1066)
+
+**Merged pull requests:**
+
+- add Jina exponential retry backoff [\#1097](https://github.com/stargate/data-api/pull/1097) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Improve CI workflow [\#1096](https://github.com/stargate/data-api/pull/1096) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix \#1092: problem with VertexAI embedding client [\#1095](https://github.com/stargate/data-api/pull/1095) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#1088: handle `null` valued service params [\#1090](https://github.com/stargate/data-api/pull/1090) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add parameters verification in createCollection [\#1089](https://github.com/stargate/data-api/pull/1089) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Remove apiVersion in azureOpenAI [\#1086](https://github.com/stargate/data-api/pull/1086) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- GRPC propert need to fetched using `"` for service name [\#1085](https://github.com/stargate/data-api/pull/1085) ([maheshrajamani](https://github.com/maheshrajamani))
+- Made the grpc to use Managed channel directly to use it in blocking mode [\#1084](https://github.com/stargate/data-api/pull/1084) ([maheshrajamani](https://github.com/maheshrajamani))
+- Remove the `authentication` in `createCollection` if the auth supports `NONE` or `HEADER` [\#1083](https://github.com/stargate/data-api/pull/1083) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Changes to wire credential validation [\#1082](https://github.com/stargate/data-api/pull/1082) ([maheshrajamani](https://github.com/maheshrajamani))
+- Add condition when embedding gateway return 0 for vector dimension [\#1081](https://github.com/stargate/data-api/pull/1081) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add 5 more HuggingFace model definitions [\#1080](https://github.com/stargate/data-api/pull/1080) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- fix vector-dimension and configProducer retry [\#1079](https://github.com/stargate/data-api/pull/1079) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Add provider display name and disable cohere and vertexai [\#1077](https://github.com/stargate/data-api/pull/1077) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Make getSupportedProviders Grpc call during startup and add retry [\#1076](https://github.com/stargate/data-api/pull/1076) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1073: add embedding client for UpstageAI [\#1075](https://github.com/stargate/data-api/pull/1075) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Use Stargate v2.1.0-BETA-12 [\#1074](https://github.com/stargate/data-api/pull/1074) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Add skeletal metadata for Upstage AI: no implementation due to spec ambiguity [\#1072](https://github.com/stargate/data-api/pull/1072) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add JinaAI embedding provider [\#1071](https://github.com/stargate/data-api/pull/1071) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Add support for dimension range in createCollection [\#1070](https://github.com/stargate/data-api/pull/1070) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add support for Mistral [\#1069](https://github.com/stargate/data-api/pull/1069) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1066: Implement VoyageAI embedding client [\#1068](https://github.com/stargate/data-api/pull/1068) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#1067](https://github.com/stargate/data-api/pull/1067) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Update authentication verification in createCollection [\#1065](https://github.com/stargate/data-api/pull/1065) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Added validate credential service in proto [\#1064](https://github.com/stargate/data-api/pull/1064) ([maheshrajamani](https://github.com/maheshrajamani))
+- Remove histograms from command processor metrics [\#1029](https://github.com/stargate/data-api/pull/1029) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+
 ## [v1.0.7](https://github.com/stargate/data-api/tree/v1.0.7) (2024-05-07)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.6...v1.0.7)
