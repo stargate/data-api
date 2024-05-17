@@ -24,9 +24,10 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
       if (configPath != null && !configPath.isEmpty()) {
         File file = new File(configPath);
         if (!file.exists()) {
-          throw new RuntimeException("Config file does not exist at the path: " + configPath);
+          throw new RuntimeException(
+              "Config file does not exist at the path: " + file.getCanonicalPath());
         }
-        URL fileUrl = new File(configPath).toURI().toURL();
+        URL fileUrl = file.toURI().toURL();
         YamlConfigSource configSource = new YamlConfigSource(fileUrl);
         return Collections.singletonList(configSource);
       }
