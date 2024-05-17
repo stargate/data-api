@@ -4,7 +4,6 @@ import io.quarkus.grpc.GrpcClient;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
@@ -96,33 +95,29 @@ public class EmbeddingProviderFactory {
     }
 
     if (configuration.serviceProvider().equals(ProviderConstants.CUSTOM)) {
+      Optional<Class<?>> clazz = configuration.implementationClass();
+      if (!clazz.isPresent()) {
+        throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException("custom class undefined");
+      }
       try {
-        Optional<Class<?>> clazz = configuration.implementationClass();
-        if (clazz.isPresent()) {
-          final EmbeddingProvider customEmbeddingProvider =
-              (EmbeddingProvider) clazz.get().getConstructor().newInstance();
-          return customEmbeddingProvider;
-        } else {
-          throw new JsonApiException(
-              ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
-              ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage() + "custom class undefined");
-        }
+        return (EmbeddingProvider) clazz.get().getConstructor().newInstance();
       } catch (Exception e) {
-        throw new JsonApiException(
-            ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE,
-            ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.getMessage()
-                + "custom class provided does not resolve to EmbeddingProvider "
-                + configuration.implementationClass().get().getCanonicalName());
+        throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+            "custom class provided ('%s') does not resolve to EmbeddingProvider",
+            clazz.get().getCanonicalName());
       }
     }
 
-    return providersMap
-        .get(configuration.serviceProvider())
-        .create(
-            configuration.requestConfiguration(),
-            configuration.baseUrl(),
-            modelName,
-            dimension,
-            vectorizeServiceParameters);
+    ProviderConstructor ctor = providersMap.get(configuration.serviceProvider());
+    if (ctor == null) {
+      throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+          "unknown service provider '%s'", configuration.serviceProvider());
+    }
+    return ctor.create(
+        configuration.requestConfiguration(),
+        configuration.baseUrl(),
+        modelName,
+        dimension,
+        vectorizeServiceParameters);
   }
 }
