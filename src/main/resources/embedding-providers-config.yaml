@@ -328,6 +328,6 @@ stargate:
           properties:
           models:
             # NOTE: this is where weirdness exists; model name is prefix on which
-            #   either "query" or "passage" is appended to get the actual model name
-            - name: solar-1-mini-embedding-
+            #   either "-query" or "-passage" is appended to get the actual model name
+            - name: solar-1-mini-embedding
               vector-dimension: 4096
