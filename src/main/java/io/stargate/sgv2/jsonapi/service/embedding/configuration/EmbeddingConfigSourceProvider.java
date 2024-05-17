@@ -10,8 +10,8 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 
 /**
- * Loading the YAML configuration file from the resource folder and making the config available to
- * the application.
+ * Loading the YAML configuration file from the resource folder or env variable and making the
+ * config available to the application.
  */
 @StaticInitSafe
 public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
