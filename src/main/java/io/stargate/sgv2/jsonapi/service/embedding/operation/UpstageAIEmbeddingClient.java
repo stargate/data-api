@@ -25,6 +25,9 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class UpstageAIEmbeddingClient implements EmbeddingProvider {
+  private final static String UPSTAGE_MODEL_SUFFIX_QUERY = "-query";
+  private final static String UPSTAGE_MODEL_SUFFIX_PASSAGE = "-passage";
+
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelNamePrefix;
   private final UpstageAIEmbeddingProvider embeddingProvider;
@@ -86,7 +89,8 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
     // Another oddity: model name used as prefix
     final String modelName =
         modelNamePrefix
-            + ((embeddingRequestType == EmbeddingRequestType.SEARCH) ? "query" : "passage");
+            + ((embeddingRequestType == EmbeddingRequestType.SEARCH)
+                ? UPSTAGE_MODEL_SUFFIX_QUERY : UPSTAGE_MODEL_SUFFIX_PASSAGE);
 
     EmbeddingRequest request = new EmbeddingRequest(texts.get(0), modelName);
     Uni<EmbeddingResponse> response =
