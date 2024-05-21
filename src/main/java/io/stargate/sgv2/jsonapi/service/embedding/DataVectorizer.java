@@ -89,7 +89,7 @@ public class DataVectorizer {
           }
 
           String vectorizeData = jsonNode.asText();
-          if (vectorizeData.isEmpty()) {
+          if (vectorizeData.isBlank()) {
             ((ObjectNode) document)
                 .put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
             continue;
@@ -246,29 +246,34 @@ public class DataVectorizer {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
               collectionSettings.collectionName());
         }
-        final Uni<List<float[]>> vectors =
-            embeddingProvider.vectorize(
-                List.of(text), embeddingApiKey, EmbeddingProvider.EmbeddingRequestType.INDEX);
-        return vectors
-            .onItem()
-            .transform(
-                vectorData -> {
-                  float[] vector = vectorData.get(0);
-                  // check if vector have the expected size
-                  if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
-                    throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
-                        "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                        collectionSettings.vectorConfig().vectorizeConfig().provider(),
-                        collectionSettings.vectorConfig().vectorSize(),
-                        vector.length);
-                  }
-                  final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
-                  for (float listValue : vector) {
-                    arrayNode.add(nodeFactory.numberNode(listValue));
-                  }
-                  node.put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, arrayNode);
-                  return true;
-                });
+        if (text.isBlank()) {
+          node.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+        } else {
+          final Uni<List<float[]>> vectors =
+              embeddingProvider.vectorize(
+                  List.of(text), embeddingApiKey, EmbeddingProvider.EmbeddingRequestType.INDEX);
+          return vectors
+              .onItem()
+              .transform(
+                  vectorData -> {
+                    float[] vector = vectorData.get(0);
+                    // check if vector have the expected size
+                    if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
+                      throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
+                          "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
+                          collectionSettings.vectorConfig().vectorizeConfig().provider(),
+                          collectionSettings.vectorConfig().vectorSize(),
+                          vector.length);
+                    }
+                    final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
+                    for (float listValue : vector) {
+                      arrayNode.add(nodeFactory.numberNode(listValue));
+                    }
+                    node.put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, arrayNode);
+                    return true;
+                  });
+        }
+
       } else {
         throw new JsonApiException(
             ErrorCode.SHRED_BAD_VECTORIZE_VALUE, ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage());

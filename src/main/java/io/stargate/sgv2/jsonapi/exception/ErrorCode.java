@@ -86,7 +86,7 @@ public enum ErrorCode {
   SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
 
   SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
-  SHRED_BAD_VECTORIZE_VALUE("$vectorize search clause needs to be text value"),
+  SHRED_BAD_VECTORIZE_VALUE("$vectorize search clause needs to be non blank text value"),
 
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
 

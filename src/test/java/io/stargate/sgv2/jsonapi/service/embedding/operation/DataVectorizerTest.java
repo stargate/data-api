@@ -305,6 +305,33 @@ public class DataVectorizerTest {
     }
 
     @Test
+    public void updateClauseSetBlankValues() throws Exception {
+      String json =
+          """
+            {
+              "findOneAndUpdate": {
+                "filter" : {"_id" : "id"},
+                "update" : {"$set" : {"$vectorize" : "  "}}
+              }
+            }
+            """;
+      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+      UpdateClause updateClause = command.updateClause();
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      try {
+        dataVectorizer.vectorizeUpdateClause(updateClause).subscribe().asCompletionStage().get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      final ObjectNode setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
+      assertThat(setNode.has("$vectorize")).isTrue();
+      assertThat(setNode.has("$vector")).isTrue();
+      assertThat(setNode.get("$vector").isNull()).isTrue();
+    }
+
+    @Test
     public void updateClauseSetBothValues() throws Exception {
       String json =
           """
