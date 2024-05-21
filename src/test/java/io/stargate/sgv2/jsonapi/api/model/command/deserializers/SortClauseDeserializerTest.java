@@ -166,7 +166,7 @@ class SortClauseDeserializerTest {
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
-          .contains("$vectorize search clause needs to be non blank text value");
+          .contains("$vectorize search clause needs to be non-blank text value");
     }
 
     @Test
@@ -182,7 +182,7 @@ class SortClauseDeserializerTest {
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
-          .contains("$vectorize search clause needs to be non blank text value");
+          .contains("$vectorize search clause needs to be non-blank text value");
     }
 
     @Test
@@ -198,7 +198,7 @@ class SortClauseDeserializerTest {
 
       assertThat(throwable).isInstanceOf(JsonApiException.class);
       assertThat(throwable.getMessage())
-          .contains("$vectorize search clause needs to be non blank text value");
+          .contains("$vectorize search clause needs to be non-blank text value");
     }
 
     @Test

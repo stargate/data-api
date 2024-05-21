@@ -610,7 +610,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
-              startsWith("$vectorize search clause needs to be non blank text value"));
+              startsWith("$vectorize search clause needs to be non-blank text value"));
     }
 
     @Test
