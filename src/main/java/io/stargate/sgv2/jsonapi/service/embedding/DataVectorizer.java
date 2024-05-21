@@ -88,7 +88,14 @@ public class DataVectorizer {
                     + (position + 1));
           }
 
-          vectorizeTexts.add(jsonNode.asText());
+          String vectorizeData = jsonNode.asText();
+          if (vectorizeData.isEmpty()) {
+            ((ObjectNode) document)
+                .put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
+            continue;
+          }
+
+          vectorizeTexts.add(vectorizeData);
           vectorizeMap.put(vectorDataPosition, position);
           vectorDataPosition++;
         }

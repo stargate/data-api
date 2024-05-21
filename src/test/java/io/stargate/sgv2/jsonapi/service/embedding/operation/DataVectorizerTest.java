@@ -60,6 +60,40 @@ public class DataVectorizerTest {
     }
 
     @Test
+    public void testEmptyValues() {
+      List<JsonNode> documents = new ArrayList<>();
+      for (int i = 0; i <= 3; i++) {
+        if (i % 2 == 0) {
+          documents.add(objectMapper.createObjectNode().put("$vectorize", ""));
+        } else {
+          documents.add(objectMapper.createObjectNode().put("$vectorize", "test data"));
+        }
+      }
+
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      try {
+        dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      for (int i = 0; i <= 3; i++) {
+        JsonNode document = documents.get(i);
+        if (i % 2 == 0) {
+          assertThat(document.has("$vectorize")).isTrue();
+          assertThat(document.has("$vector")).isTrue();
+          assertThat(document.get("$vector").isNull()).isTrue();
+        } else {
+          assertThat(document.has("$vectorize")).isTrue();
+          assertThat(document.has("$vector")).isTrue();
+          assertThat(document.get("$vector").isArray()).isTrue();
+          assertThat(document.get("$vector").size()).isEqualTo(3);
+        }
+      }
+    }
+
+    @Test
     public void testNonTextValues() {
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {
