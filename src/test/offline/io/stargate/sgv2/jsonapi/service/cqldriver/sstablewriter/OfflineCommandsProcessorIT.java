@@ -85,7 +85,7 @@ public class OfflineCommandsProcessorIT {
     }
     OfflineCommandsProcessor offlineCommandsProcessor = OfflineCommandsProcessor.getInstance();
     // begin session
-    Triple<BeginOfflineSessionResponse, CommandContext, String> beginSessionResponse =
+    Triple<BeginOfflineSessionResponse, CommandContext, SchemaInfo> beginSessionResponse =
         beginSession(
             offlineCommandsProcessor,
             namespace,
@@ -100,7 +100,8 @@ public class OfflineCommandsProcessorIT {
           "Error while beginning session : " + beginOfflineSessionResponse.errors());
     }
     CommandContext commandContext = beginSessionResponse.getMiddle();
-    String createTableCQL = beginSessionResponse.getRight();
+    SchemaInfo schemaInfo = beginSessionResponse.getRight();
+    String createTableCQL = schemaInfo.createTableCQL();
     String expectedCreateCQL =
         """
                     CREATE TABLE IF NOT EXISTS "test_namespace"."test_collection_false"(
@@ -121,10 +122,43 @@ public class OfflineCommandsProcessorIT {
                     """;
     // assertThat(createTableCQL).isEqualTo(expectedCreateCQL);//TODO-SL fix assertion
     assertThat(createTableCQL).isNotNull();
+    String tableName = "test_collection" + (isVectorSearch ? "_true" : "_false");
     assertThat(createTableCQL)
-        .startsWith(
-            "CREATE TABLE IF NOT EXISTS \"test_namespace\".\"test_collection"
-                + (isVectorSearch ? "_true" : "_false"));
+        .startsWith("CREATE TABLE IF NOT EXISTS \"test_namespace\".\"" + tableName);
+    assertThat(schemaInfo.keyspaceName()).isEqualTo("test_namespace");
+    assertThat(schemaInfo.tableName())
+        .isEqualTo("test_collection" + (isVectorSearch ? "_true" : "_false"));
+    List<String> indexCQLs = new ArrayList<>(schemaInfo.indexCQLs());
+    assertThat(indexCQLs.size()).isEqualTo(isVectorSearch ? 9 : 8);
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON \"test_namespace\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON \"test_namespace\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON \"test_namespace\".\"%s\" (array_contains) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON \"test_namespace\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON \"test_namespace\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON \"test_namespace\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_timestamp_values ON \"test_namespace\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON \"test_namespace\".\"%s\" (query_null_values) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    if (isVectorSearch) {
+      indexCQLs.remove(
+          "CREATE CUSTOM INDEX IF NOT EXISTS test_collection_true_query_vector_value ON \"test_namespace\".\"test_collection_true\" (query_vector_value) USING 'StorageAttachedIndex' WITH OPTIONS = { 'similarity_function': 'COSINE'}");
+    }
+    assertThat(indexCQLs.size()).isEqualTo(0);
     String sessionId = beginOfflineSessionResponse.sessionId();
     // load data
     List<JsonNode> jsonNodes = getRecords(isVectorSearch);
@@ -268,7 +302,7 @@ public class OfflineCommandsProcessorIT {
     return offlineCommandsProcessor.loadData(sessionId, commandContext, jsonNodes);
   }
 
-  private Triple<BeginOfflineSessionResponse, CommandContext, String> beginSession(
+  private Triple<BeginOfflineSessionResponse, CommandContext, SchemaInfo> beginSession(
       OfflineCommandsProcessor offlineCommandsProcessor,
       String namespace,
       String ssTablesOutputDirectory,
