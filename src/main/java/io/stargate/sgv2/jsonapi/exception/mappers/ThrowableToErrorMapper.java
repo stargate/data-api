@@ -17,12 +17,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Simple mapper for mapping {@link Throwable}s to {@link CommandResult.Error}, with a default
  * implementation.
  */
 public final class ThrowableToErrorMapper {
+  private static final Logger logger = LoggerFactory.getLogger(ThrowableToErrorMapper.class);
+
   private static final BiFunction<Throwable, String, CommandResult.Error> MAPPER_WITH_MESSAGE =
       (throwable, message) -> {
         // if our own exception, shortcut
@@ -46,6 +50,10 @@ public final class ThrowableToErrorMapper {
         }
 
         // handle all other exceptions
+        logger.error(
+            String.format(
+                "Unrecognized exception caught, mapped to SERVER_UNHANDLED_ERROR: %s", message),
+            throwable);
         return ErrorCode.SERVER_UNHANDLED_ERROR
             .toApiException("root cause: (%s) %s", throwable.getClass().getName(), message)
             .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
@@ -166,6 +174,10 @@ public final class ThrowableToErrorMapper {
       }
     }
     // should not happen
+    logger.error(
+        String.format(
+            "Unrecognized exception caught, mapped to SERVER_UNHANDLED_ERROR: %s", message),
+        throwable);
     return ErrorCode.SERVER_UNHANDLED_ERROR
         .toApiException("root cause: (%s) %s", throwable.getClass().getName(), message)
         .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
