@@ -342,17 +342,17 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             String sharedKeyValue = userAuth.getValue();
             if (sharedKeyValue == null || sharedKeyValue.isEmpty()) {
               throw ErrorCode.VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT.toApiException(
-                  "providerKey value should be formatted as keyName.providerKey");
+                  "missing value");
             }
             int dotIndex = sharedKeyValue.lastIndexOf('.');
-            if (dotIndex <= 0 || dotIndex >= sharedKeyValue.length() - 1) {
+            if (dotIndex <= 0) {
               throw ErrorCode.VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT.toApiException(
-                  "providerKey value should be formatted as keyName.providerKey");
+                  "providerKey value should be formatted as '[keyName].providerKey'");
             }
             String providerKeyString = sharedKeyValue.substring(dotIndex + 1);
             if (!"providerKey".equals(providerKeyString)) {
               throw ErrorCode.VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT.toApiException(
-                  "providerKey value should be formatted as keyName.providerKey");
+                  "providerKey value should be formatted as '[keyName].providerKey'");
             }
           }
           if (operationsConfig.enableEmbeddingGateway())
