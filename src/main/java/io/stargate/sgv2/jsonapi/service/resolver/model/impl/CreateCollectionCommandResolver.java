@@ -349,14 +349,16 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
               throw ErrorCode.VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT.toApiException(
                   "providerKey value should be formatted as '[keyName].providerKey'");
             }
+
             String providerKeyString = sharedKeyValue.substring(dotIndex + 1);
             if (!"providerKey".equals(providerKeyString)) {
               throw ErrorCode.VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT.toApiException(
                   "providerKey value should be formatted as '[keyName].providerKey'");
             }
           }
-          if (operationsConfig.enableEmbeddingGateway())
+          if (operationsConfig.enableEmbeddingGateway()) {
             validateCredentials.validate(userConfig.provider(), userAuth.getValue());
+          }
         }
       }
     }
