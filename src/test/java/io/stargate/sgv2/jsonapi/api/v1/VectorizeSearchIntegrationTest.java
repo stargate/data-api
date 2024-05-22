@@ -68,6 +68,46 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
 
       json =
           """
+                      {
+                          "createCollection": {
+                              "name": "incorrectProviderKeyFormat",
+                              "options": {
+                                  "vector": {
+                                      "metric": "cosine",
+                                      "dimension": 5,
+                                      "service": {
+                                          "provider": "custom",
+                                          "modelName": "text-embedding-ada-002",
+                                          "authentication": {
+                                              "providerKey" : "shared_creds"
+                                          },
+                                          "parameters": {
+                                              "projectId": "test project"
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                      """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body(
+              "errors[0].message",
+              contains("providerKey value should be formatted as keyName.providerKey"))
+          .body("errors[0].errorCode", is("VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+
+      json =
+          """
                     {
                         "createCollection": {
                             "name": "my_collection_vectorize_deny",
