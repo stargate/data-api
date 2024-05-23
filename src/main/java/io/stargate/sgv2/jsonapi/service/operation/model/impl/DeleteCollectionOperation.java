@@ -28,8 +28,10 @@ public record DeleteCollectionOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    schemaCache.evictCollectionSettingCacheEntry(
-        dataApiRequestInfo.getTenantId(), context.namespace(), name);
+    if (schemaCache != null) {
+      schemaCache.evictCollectionSettingCacheEntry(
+          dataApiRequestInfo.getTenantId(), context.namespace(), name);
+    }
     String cql = DROP_TABLE_CQL.formatted(context.namespace(), name);
     SimpleStatement query = SimpleStatement.newInstance(cql);
     // execute
