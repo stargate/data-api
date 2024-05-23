@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
 import java.time.Duration;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 public record CreateCollectionOperation(
     CommandContext commandContext,
+    SchemaCache schemaCache,
     DatabaseLimitsConfig dbLimitsConfig,
     ObjectMapper objectMapper,
     CQLSessionCache cqlSessionCache,
@@ -52,6 +54,7 @@ public record CreateCollectionOperation(
 
   public static CreateCollectionOperation withVectorSearch(
       CommandContext commandContext,
+      SchemaCache schemaCache,
       DatabaseLimitsConfig dbLimitsConfig,
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
@@ -64,6 +67,7 @@ public record CreateCollectionOperation(
       boolean indexingDenyAll) {
     return new CreateCollectionOperation(
         commandContext,
+        schemaCache,
         dbLimitsConfig,
         objectMapper,
         cqlSessionCache,
@@ -79,6 +83,7 @@ public record CreateCollectionOperation(
 
   public static CreateCollectionOperation withoutVectorSearch(
       CommandContext commandContext,
+      SchemaCache schemaCache,
       DatabaseLimitsConfig dbLimitsConfig,
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
@@ -89,6 +94,7 @@ public record CreateCollectionOperation(
       boolean indexingDenyAll) {
     return new CreateCollectionOperation(
         commandContext,
+        schemaCache,
         dbLimitsConfig,
         objectMapper,
         cqlSessionCache,
@@ -289,7 +295,7 @@ public record CreateCollectionOperation(
   public Uni<JsonApiException> cleanUpCollectionFailedWithTooManyIndex(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     DeleteCollectionOperation deleteCollectionOperation =
-        new DeleteCollectionOperation(commandContext, name);
+        new DeleteCollectionOperation(commandContext, name, schemaCache);
     return deleteCollectionOperation
         .execute(dataApiRequestInfo, queryExecutor)
         .onItem()

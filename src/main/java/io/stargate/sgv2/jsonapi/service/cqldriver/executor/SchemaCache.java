@@ -30,6 +30,14 @@ public class SchemaCache {
     return namespaceCache.getCollectionProperties(dataApiRequestInfo, collectionName);
   }
 
+  public void evictCollectionSettingCacheEntry(
+      Optional<String> tenant, String namespace, String collectionName) {
+    final NamespaceCache namespaceCache = schemaCache.getIfPresent(new CacheKey(tenant, namespace));
+    if (namespaceCache != null) {
+      namespaceCache.evictCollectionSettingCacheEntry(collectionName);
+    }
+  }
+
   private NamespaceCache addNamespaceCache(CacheKey cacheKey) {
     return new NamespaceCache(cacheKey.namespace(), queryExecutor, objectMapper);
   }

@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -16,8 +17,10 @@ import org.slf4j.LoggerFactory;
  *
  * @param context Command context, carries namespace of the collection.
  * @param name Collection name.
+ * @param schemaCache
  */
-public record DeleteCollectionOperation(CommandContext context, String name) implements Operation {
+public record DeleteCollectionOperation(
+    CommandContext context, String name, SchemaCache schemaCache) implements Operation {
   private static final Logger logger = LoggerFactory.getLogger(DeleteCollectionOperation.class);
 
   private static final String DROP_TABLE_CQL = "DROP TABLE IF EXISTS \"%s\".\"%s\";";
@@ -25,7 +28,8 @@ public record DeleteCollectionOperation(CommandContext context, String name) imp
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    logger.info("Executing DeleteCollectionOperation for {}", name);
+    schemaCache.evictCollectionSettingCacheEntry(
+        dataApiRequestInfo.getTenantId(), context.namespace(), name);
     String cql = DROP_TABLE_CQL.formatted(context.namespace(), name);
     SimpleStatement query = SimpleStatement.newInstance(cql);
     // execute
