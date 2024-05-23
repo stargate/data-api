@@ -244,10 +244,12 @@ public class FileWriterSession implements CqlSession {
           boundValues.size()
               - 1; // TODO-SL: Need to find a better way to identify the vector column index
       CqlVector<Float> cqlVector = (CqlVector<Float>) boundValues.get(vectorColumnIndex);
-      ByteBuffer encodedVectorData =
-          TypeCodecs.vectorOf(cqlVector.size(), TypeCodecs.FLOAT)
-              .encode(cqlVector, ProtocolVersion.DEFAULT);
-      boundValues.set(vectorColumnIndex, encodedVectorData);
+      if (cqlVector != null) {
+        ByteBuffer encodedVectorData =
+            TypeCodecs.vectorOf(cqlVector.size(), TypeCodecs.FLOAT)
+                .encode(cqlVector, ProtocolVersion.DEFAULT);
+        boundValues.set(vectorColumnIndex, encodedVectorData);
+      }
     }
   }
 
