@@ -21,10 +21,10 @@
     <quarkus.container-image.tag>v${project.version}</quarkus.container-image.tag>
     <quarkus.container-image.additional-tags>v1</quarkus.container-image.additional-tags>
     <skipITs>false</skipITs>
-    <cassandra.version>4.0.11-591d171ac9c9</cassandra.version>
+    <cassandra.version>6.9.0-early-preview</cassandra.version>
     <!-- Integration test props -->
     <!-- When updating please change defaults in the DseTestResource class -->
-    <stargate.int-test.cassandra.image>stargateio/dse-next</stargate.int-test.cassandra.image>
+    <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
     <!-- from Stargate persistence, latest as of 2024-01-24: -->
     <stargate.int-test.cassandra.image-tag>${cassandra.version}</stargate.int-test.cassandra.image-tag>
     <stargate.int-test.coordinator.image>stargateio/coordinator-dse-next</stargate.int-test.coordinator.image>
