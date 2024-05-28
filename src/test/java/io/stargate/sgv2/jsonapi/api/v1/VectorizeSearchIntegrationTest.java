@@ -1056,7 +1056,6 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
 
   @Nested
   @Order(8)
-  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   // When a table is dropped, corresponding schema cache entry should be evicted
   class SchemaCacheEvictionTest {
     @Test
