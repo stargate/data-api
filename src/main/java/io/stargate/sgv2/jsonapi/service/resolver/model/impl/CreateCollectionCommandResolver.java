@@ -70,7 +70,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     if (command.options() == null) {
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
-          schemaCache,
           dbLimitsConfig,
           objectMapper,
           cqlSessionCache,
@@ -112,7 +111,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     if (hasVectorSearch) {
       return CreateCollectionOperation.withVectorSearch(
           ctx,
-          schemaCache,
           dbLimitsConfig,
           objectMapper,
           cqlSessionCache,
@@ -126,7 +124,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     } else {
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,
-          schemaCache,
           dbLimitsConfig,
           objectMapper,
           cqlSessionCache,

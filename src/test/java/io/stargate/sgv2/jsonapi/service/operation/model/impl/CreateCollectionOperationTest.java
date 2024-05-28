@@ -95,7 +95,6 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       CreateCollectionOperation operation =
           CreateCollectionOperation.withoutVectorSearch(
               COMMAND_CONTEXT,
-              schemaCache,
               databaseLimitsConfig,
               objectMapper,
               sessionCache,
@@ -154,7 +153,6 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       CreateCollectionOperation operation =
           CreateCollectionOperation.withVectorSearch(
               COMMAND_CONTEXT,
-              schemaCache,
               databaseLimitsConfig,
               objectMapper,
               sessionCache,
@@ -215,7 +213,6 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       CreateCollectionOperation operation =
           CreateCollectionOperation.withoutVectorSearch(
               COMMAND_CONTEXT,
-              schemaCache,
               databaseLimitsConfig,
               objectMapper,
               sessionCache,
@@ -274,7 +271,6 @@ public class CreateCollectionOperationTest extends OperationTestBase {
       CreateCollectionOperation operation =
           CreateCollectionOperation.withVectorSearch(
               COMMAND_CONTEXT,
-              schemaCache,
               databaseLimitsConfig,
               objectMapper,
               sessionCache,

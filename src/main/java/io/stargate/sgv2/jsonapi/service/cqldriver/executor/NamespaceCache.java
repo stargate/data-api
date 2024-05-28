@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.grpc.StatusRuntimeException;
-import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -116,7 +115,6 @@ public class NamespaceCache {
   }
 
   public void evictCollectionSettingCacheEntry(String collectionName) {
-    Log.error("evict the entry");
     vectorCache.invalidate(collectionName);
   }
 }

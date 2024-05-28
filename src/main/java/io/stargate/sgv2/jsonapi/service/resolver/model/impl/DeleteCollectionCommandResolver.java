@@ -21,6 +21,6 @@ public class DeleteCollectionCommandResolver implements CommandResolver<DeleteCo
 
   @Override
   public Operation resolveCommand(CommandContext ctx, DeleteCollectionCommand command) {
-    return new DeleteCollectionOperation(ctx, command.name(), schemaCache);
+    return new DeleteCollectionOperation(ctx, command.name());
   }
 }
