@@ -106,7 +106,7 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
 
   @Override
   public int batchSize() {
-    return embeddingProvider.batchSize();
+    return embeddingProvider.batchSize() == 0 ? Integer.MAX_VALUE : embeddingProvider.batchSize();
   }
 
   /**
