@@ -183,7 +183,9 @@ public enum ErrorCode {
   SERVER_FAILURE("Driver failed"),
   SERVER_UNHANDLED_ERROR("Server failed"),
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
-  SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available");
+  SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
+  EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
+  EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request");
 
   private final String message;
 
