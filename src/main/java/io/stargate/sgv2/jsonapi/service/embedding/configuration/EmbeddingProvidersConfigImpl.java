@@ -36,7 +36,9 @@ public record EmbeddingProvidersConfigImpl(
           List<ParameterConfig> modelParameterList) {
         this(
             grpcModelConfig.getName(),
-            Optional.ofNullable(grpcModelConfig.getVectorDimension()),
+            grpcModelConfig.hasVectorDimension()
+                ? Optional.of(grpcModelConfig.getVectorDimension())
+                : Optional.empty(),
             modelParameterList,
             grpcModelConfig.getPropertiesMap());
       }
@@ -57,13 +59,13 @@ public record EmbeddingProvidersConfigImpl(
             grpcModelParameter.getName(),
             ParameterType.valueOf(grpcModelParameter.getType().name()),
             grpcModelParameter.getRequired(),
-            Optional.ofNullable(grpcModelParameter.getDefaultValue()),
+            Optional.of(grpcModelParameter.getDefaultValue()),
             grpcModelParameter.getValidationMap().entrySet().stream()
                 .collect(
                     Collectors.toMap(
                         e -> ValidationType.fromString(e.getKey()),
                         e -> new ArrayList<>(e.getValue().getValuesList()))),
-            Optional.ofNullable(grpcModelParameter.getHelp()));
+            Optional.of(grpcModelParameter.getHelp()));
       }
     }
 
