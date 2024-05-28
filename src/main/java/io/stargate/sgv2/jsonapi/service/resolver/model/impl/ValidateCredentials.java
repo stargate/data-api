@@ -46,6 +46,6 @@ public class ValidateCredentials {
   }
 
   void onStop(@Observes ShutdownEvent ev) {
-    channel.shutdown();
+    if (channel != null) channel.shutdown();
   }
 }
