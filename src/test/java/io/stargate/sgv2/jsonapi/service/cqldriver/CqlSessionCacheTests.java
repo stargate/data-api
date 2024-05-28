@@ -6,7 +6,11 @@ import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
@@ -19,8 +23,11 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.inject.Inject;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -232,5 +239,71 @@ public class CqlSessionCacheTests {
             .functionCounter();
     assertThat(cacheLoadMetric).isNotNull();
     assertThat(cacheLoadMetric.count()).isEqualTo(sessionsToCreate);
+  }
+
+  @Test
+  public void testInvalidSession()
+      throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
+    CqlSession cqlSession = mock(CqlSession.class);
+    Metadata metadata = mock(Metadata.class);
+    when(cqlSession.getMetadata()).thenReturn(metadata);
+    when(metadata.getKeyspaces()).thenReturn(Map.of());
+    Node node = mock(Node.class);
+    com.datastax.oss.driver.api.core.servererrors.UnauthorizedException unauthorizedException =
+        new com.datastax.oss.driver.api.core.servererrors.UnauthorizedException(
+            node, "Unauthorized");
+    when(cqlSession.execute("SELECT * FROM system_virtual_schema.tables"))
+        .thenThrow(unauthorizedException);
+    Method isValidMethod =
+        cqlSessionCacheForTest
+            .getClass()
+            .getDeclaredMethod("isAstraSessionValid", CqlSession.class, String.class);
+    isValidMethod.setAccessible(true);
+    boolean isValid =
+        (boolean) isValidMethod.invoke(cqlSessionCacheForTest, cqlSession, TENANT_ID_FOR_TEST);
+    assertThat(isValid).isFalse();
+  }
+
+  @Test
+  public void testAValidSessionWithKeyspaces()
+      throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
+    CqlSession cqlSession = mock(CqlSession.class);
+    Metadata metadata = mock(Metadata.class);
+    when(cqlSession.getMetadata()).thenReturn(metadata);
+    when(metadata.getKeyspaces())
+        .thenReturn(Map.of(CqlIdentifier.fromCql("ks1"), mock(KeyspaceMetadata.class)));
+    Method isValidMethod =
+        cqlSessionCacheForTest
+            .getClass()
+            .getDeclaredMethod("isAstraSessionValid", CqlSession.class, String.class);
+    isValidMethod.setAccessible(true);
+    boolean isValid =
+        (boolean) isValidMethod.invoke(cqlSessionCacheForTest, cqlSession, TENANT_ID_FOR_TEST);
+    assertThat(isValid).isTrue();
+  }
+
+  @Test
+  public void testAValidSessionNoKeyspaces()
+      throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
+    CqlSession cqlSession = mock(CqlSession.class);
+    Metadata metadata = mock(Metadata.class);
+    when(cqlSession.getMetadata()).thenReturn(metadata);
+    when(metadata.getKeyspaces()).thenReturn(Map.of());
+    Node node = mock(Node.class);
+    com.datastax.oss.driver.api.core.servererrors.UnauthorizedException unauthorizedException =
+        new com.datastax.oss.driver.api.core.servererrors.UnauthorizedException(
+            node, "Unauthorized");
+    when(cqlSession.execute("SELECT * FROM system_virtual_schema.tables")).thenReturn(null);
+    Method isValidMethod =
+        cqlSessionCacheForTest
+            .getClass()
+            .getDeclaredMethod("isAstraSessionValid", CqlSession.class, String.class);
+    isValidMethod.setAccessible(true);
+    boolean isValid =
+        (boolean) isValidMethod.invoke(cqlSessionCacheForTest, cqlSession, TENANT_ID_FOR_TEST);
+    assertThat(isValid).isTrue();
   }
 }
