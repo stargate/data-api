@@ -171,15 +171,16 @@ public class CQLSessionCache {
   }
 
   /**
-   * Check if the session is valid for the tenant. If a token is generated for tenant A and if it is
-   * used to access tenant B's data, the cqlsession object still gets created without any error but
-   * it has no metadata or keyspaces information. So, this situation leads to return misleading no
-   * keyspace found error, instead of authorization error.
+   * This method checks if the session is valid for the tenant. If a token is generated for tenant A
+   * and if it is used to access tenant B's data, the cqlsession object still gets created without
+   * any error but it has no metadata or keyspaces information. So, this situation leads to return
+   * misleading no keyspace found error, instead of authorization error.
    *
    * <p>This method checks if the session is valid, first by checking if there are any keyspaces and
    * returns true if there are any keyspaces. If there are no keyspaces, then it tries to execute a
    * query on system_virtual_schema.tables and returns true if the query is successful. Failure to
-   * execute the query will result with an UnauthorizedException means the session is invalid.
+   * execute the query with an UnauthorizedException means the session is invalid i.e. not meant for
+   * the tenant in the request.
    *
    * @param cqlSession CqlSession
    * @param tenantId tenant id
