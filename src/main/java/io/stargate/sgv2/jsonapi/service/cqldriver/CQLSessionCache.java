@@ -162,8 +162,7 @@ public class CQLSessionCache {
               .withConfigLoader(loader)
               .build();
       if (!isAstraSessionValid(cqlSession, cacheKey.tenantId())) {
-        throw new UnauthorizedException(
-            "Unauthorized to access tenant %s's data".formatted(cacheKey.tenantId()));
+        throw new UnauthorizedException("Provided username token and/or password are incorrect");
       }
       return cqlSession;
     }
