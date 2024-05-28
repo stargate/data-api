@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -34,7 +33,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private final OperationsConfig operationsConfig;
   private final EmbeddingProvidersConfig embeddingProvidersConfig;
   private final ValidateCredentials validateCredentials;
-  @Inject private SchemaCache schemaCache;
 
   @Inject
   public CreateCollectionCommandResolver(
