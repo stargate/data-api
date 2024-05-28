@@ -184,7 +184,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
             .getQuery();
     List<String> indexCQLs =
         createCollectionOperation
-            .getIndexStatements(this.namespace, this.createCollection.name())
+            .getIndexStatements(this.namespace, this.createCollection.name(), false)
             .stream()
             .map(SimpleStatement::getQuery)
             .toList();

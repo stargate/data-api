@@ -99,6 +99,7 @@ public enum ErrorCode {
   TOO_MANY_COLLECTIONS("Too many collections"),
 
   TOO_MANY_INDEXES("Too many indexes"),
+  INDEXES_CREATION_FAILED("Index creation failed, check schema"),
 
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
 
