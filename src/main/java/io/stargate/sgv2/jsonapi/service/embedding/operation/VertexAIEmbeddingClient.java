@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
@@ -132,7 +133,8 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
   }
 
   @Override
-  public Uni<List<float[]>> vectorize(
+  public Uni<Pair<Integer, List<float[]>>> vectorize(
+      int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
@@ -156,11 +158,18 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
         .transform(
             response -> {
               if (response.getPredictions() == null) {
-                return Collections.emptyList();
+                return Pair.of(batchId, Collections.emptyList());
               }
-              return response.getPredictions().stream()
-                  .map(prediction -> prediction.getEmbeddings().getValues())
-                  .collect(Collectors.toList());
+              List<float[]> vectors =
+                  response.getPredictions().stream()
+                      .map(prediction -> prediction.getEmbeddings().getValues())
+                      .collect(Collectors.toList());
+              return Pair.of(batchId, vectors);
             });
+  }
+
+  @Override
+  public int batchSize() {
+    return requestProperties.batchSize();
   }
 }

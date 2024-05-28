@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Optional;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -29,13 +30,16 @@ public class EmbeddingProviderErrorMessageTest {
       Throwable exception =
           new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(
-                      2, 100, 3000, Optional.empty(), Optional.empty()),
+                      2, 100, 3000, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
-                  List.of("429"), Optional.of("test"), EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  1,
+                  List.of("429"),
+                  Optional.of("test"),
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -53,13 +57,16 @@ public class EmbeddingProviderErrorMessageTest {
       Throwable exception =
           new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(
-                      2, 100, 3000, Optional.empty(), Optional.empty()),
+                      2, 100, 3000, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
-                  List.of("400"), Optional.of("test"), EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  1,
+                  List.of("400"),
+                  Optional.of("test"),
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -77,13 +84,16 @@ public class EmbeddingProviderErrorMessageTest {
       Throwable exception =
           new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(
-                      2, 100, 3000, Optional.empty(), Optional.empty()),
+                      2, 100, 3000, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
-                  List.of("503"), Optional.of("test"), EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  1,
+                  List.of("503"),
+                  Optional.of("test"),
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -101,13 +111,16 @@ public class EmbeddingProviderErrorMessageTest {
       Throwable exception =
           new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(
-                      2, 100, 3000, Optional.empty(), Optional.empty()),
+                      2, 100, 3000, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
-                  List.of("408"), Optional.of("test"), EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  1,
+                  List.of("408"),
+                  Optional.of("test"),
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -120,15 +133,16 @@ public class EmbeddingProviderErrorMessageTest {
 
     @Test
     public void testCorrectHeaderAndBody() {
-      List<float[]> result =
+      final Pair<Integer, List<float[]>> result =
           new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(
-                      2, 100, 3000, Optional.empty(), Optional.empty()),
+                      2, 100, 3000, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
+                  1,
                   List.of("application/json"),
                   Optional.of("test"),
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -137,6 +151,8 @@ public class EmbeddingProviderErrorMessageTest {
               .awaitItem()
               .getItem();
       assertThat(result).isNotNull();
+      assertThat(result.getLeft()).isEqualTo(1);
+      assertThat(result.getRight()).isNotNull();
     }
 
     @Test
@@ -144,12 +160,13 @@ public class EmbeddingProviderErrorMessageTest {
       Throwable exception =
           new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(
-                      2, 100, 3000, Optional.empty(), Optional.empty()),
+                      2, 100, 3000, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
+                  1,
                   List.of("application/xml"),
                   Optional.of("test"),
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -170,12 +187,13 @@ public class EmbeddingProviderErrorMessageTest {
       Throwable exception =
           new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(
-                      2, 100, 3000, Optional.empty(), Optional.empty()),
+                      2, 100, 3000, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
+                  1,
                   List.of("no json body"),
                   Optional.of("test"),
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -193,15 +211,16 @@ public class EmbeddingProviderErrorMessageTest {
 
     @Test
     public void testEmptyJsonResponse() {
-      List<float[]> result =
+      final Pair<Integer, List<float[]>> result =
           new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(
-                      2, 100, 3000, Optional.empty(), Optional.empty()),
+                      2, 100, 3000, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("nvidia").url(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
+                  1,
                   List.of("empty json body"),
                   Optional.of("test"),
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
@@ -209,7 +228,9 @@ public class EmbeddingProviderErrorMessageTest {
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
-      assertThat(result).isEmpty();
+      assertThat(result).isNotNull();
+      assertThat(result.getLeft()).isEqualTo(1);
+      assertThat(result.getRight()).isNotNull();
     }
   }
 }

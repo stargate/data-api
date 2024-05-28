@@ -21,6 +21,8 @@ stargate:
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
+          properties:
+            batch-size: 2048
           models:
             - name: text-embedding-3-small
               parameters:
@@ -71,6 +73,7 @@ stargate:
               help: "The name of your model deployment. You're required to first deploy a model before you can make calls."
           properties:
             max-input-length: 16
+            batch-size: 2048
           models:
             - name: text-embedding-3-small
               parameters:
@@ -110,6 +113,8 @@ stargate:
                 tokens:
                   - accepted: providerKey
                     forwarded: Authorization
+          properties:
+            batch-size: 64
           models:
             - name: sentence-transformers/all-MiniLM-L6-v2
               vector-dimension: 384
@@ -155,6 +160,7 @@ stargate:
             task-type-store: RETRIEVAL_DOCUMENT # see https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#api_changes_to_models_released_on_or_after_august_2023
             task-type-read: QUESTION_ANSWERING
             max-input-length: 5
+            batch-size: 64
           models:
             - name: textembedding-gecko@003
               vector-dimension: 768
@@ -182,6 +188,8 @@ stargate:
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
+          properties:
+            batch-size: 64
           models:
             - name: embed-english-v3.0
               vector-dimension: 1024
@@ -204,6 +212,8 @@ stargate:
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
+          properties:
+            batch-size: 64
           models:
             - name: NV-Embed-QA
               vector-dimension: 1024
@@ -227,6 +237,8 @@ stargate:
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
+          properties:
+            batch-size: 64
           models:
             - name: jina-embeddings-v2-base-en
               vector-dimension: 768
@@ -267,6 +279,7 @@ stargate:
             max-input-length: 128
             task-type-store: document
             task-type-read: query
+            batch-size: 64
           models:
             - name: voyage-large-2-instruct
               vector-dimension: 1024
@@ -298,6 +311,7 @@ stargate:
                   forwarded: Authorization
           parameters:
           properties:
+            batch-size: 64
           models:
             - name: mistral-embed
               vector-dimension: 1024
@@ -326,6 +340,7 @@ stargate:
                   forwarded: Authorization
           parameters:
           properties:
+            batch-size: 1
           models:
             # NOTE: this is where weirdness exists; model name is prefix on which
             #   either "-query" or "-passage" is appended to get the actual model name

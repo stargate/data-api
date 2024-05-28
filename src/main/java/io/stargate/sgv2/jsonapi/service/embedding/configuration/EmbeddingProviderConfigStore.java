@@ -31,15 +31,22 @@ public interface EmbeddingProviderConfigStore {
       int retryDelayInMillis,
       int timeoutInMillis,
       Optional<String> requestTypeQuery,
-      Optional<String> requestTypeIndex) {
+      Optional<String> requestTypeIndex,
+      int batchSize) {
     public static RequestProperties of(
         int maxRetries,
         int retryDelayInMillis,
         int timeoutInMillis,
         Optional<String> requestTypeQuery,
-        Optional<String> requestTypeIndex) {
+        Optional<String> requestTypeIndex,
+        int batchSize) {
       return new RequestProperties(
-          maxRetries, retryDelayInMillis, timeoutInMillis, requestTypeQuery, requestTypeIndex);
+          maxRetries,
+          retryDelayInMillis,
+          timeoutInMillis,
+          requestTypeQuery,
+          requestTypeIndex,
+          batchSize);
     }
   }
 

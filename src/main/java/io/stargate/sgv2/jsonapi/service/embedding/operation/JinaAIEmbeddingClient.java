@@ -15,6 +15,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
@@ -68,7 +69,8 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
   }
 
   @Override
-  public Uni<List<float[]>> vectorize(
+  public Uni<Pair<Integer, List<float[]>>> vectorize(
+      int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
@@ -94,10 +96,17 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
         .transform(
             resp -> {
               if (resp.data() == null) {
-                return Collections.emptyList();
+                return Pair.of(batchId, Collections.emptyList());
               }
               Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
-              return Arrays.stream(resp.data()).map(EmbeddingResponse.Data::embedding).toList();
+              List<float[]> vectors =
+                  Arrays.stream(resp.data()).map(EmbeddingResponse.Data::embedding).toList();
+              return Pair.of(batchId, vectors);
             });
+  }
+
+  @Override
+  public int batchSize() {
+    return requestProperties.batchSize();
   }
 }

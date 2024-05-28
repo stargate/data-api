@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -46,7 +47,7 @@ public class EmbeddingGatewayClientTest {
     for (EmbeddingProviderFactory.ProviderConstructor ctor : providerCtors) {
       EmbeddingProviderConfigStore.RequestProperties requestProperties =
           EmbeddingProviderConfigStore.RequestProperties.of(
-              3, 5, 5000, Optional.empty(), Optional.empty());
+              3, 5, 5000, Optional.empty(), Optional.empty(), 2048);
       assertThat(ctor.create(requestProperties, "baseUrl", "modelName", 5, null)).isNotNull();
     }
   }
@@ -72,7 +73,7 @@ public class EmbeddingGatewayClientTest {
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
             EmbeddingProviderConfigStore.RequestProperties.of(
-                5, 5, 5, Optional.empty(), Optional.empty()),
+                5, 5, 5, Optional.empty(), Optional.empty(), 2048),
             "openai",
             1536,
             Optional.of("default"),
@@ -84,9 +85,10 @@ public class EmbeddingGatewayClientTest {
             Map.of(),
             TESTING_COMMAND_NAME);
 
-    final List<float[]> response =
+    final Pair<Integer, List<float[]>> response =
         embeddingGatewayClient
             .vectorize(
+                1,
                 List.of("data 1", "data 2"),
                 Optional.empty(),
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
@@ -95,10 +97,12 @@ public class EmbeddingGatewayClientTest {
             .awaitItem()
             .getItem();
 
-    assertThat(response).isNotEmpty();
-    assertThat(response.size()).isEqualTo(2);
-    assertThat(response.get(0).length).isEqualTo(5);
-    assertThat(response.get(1).length).isEqualTo(5);
+    assertThat(response).isNotNull();
+    assertThat(response.getLeft()).isEqualTo(1);
+    assertThat(response.getRight()).isNotEmpty();
+    assertThat(response.getRight().size()).isEqualTo(2);
+    assertThat(response.getRight().get(0).length).isEqualTo(5);
+    assertThat(response.getRight().get(1).length).isEqualTo(5);
   }
 
   @Test
@@ -119,7 +123,7 @@ public class EmbeddingGatewayClientTest {
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
             EmbeddingProviderConfigStore.RequestProperties.of(
-                5, 5, 5, Optional.empty(), Optional.empty()),
+                5, 5, 5, Optional.empty(), Optional.empty(), 2048),
             "openai",
             1536,
             Optional.of("default"),
@@ -134,6 +138,7 @@ public class EmbeddingGatewayClientTest {
     Throwable result =
         embeddingGatewayClient
             .vectorize(
+                1,
                 List.of("data 1", "data 2"),
                 Optional.empty(),
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)

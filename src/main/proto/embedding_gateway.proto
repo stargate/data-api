@@ -152,6 +152,7 @@ message GetSupportedProvidersResponse {
       string max_input_length = 4;
       string task_type_store = 5;
       string task_type_read = 6;
+      int32 batch_size = 7;
     }
 
     // ModelConfig message represents configuration for a specific model.
