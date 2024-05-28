@@ -19,7 +19,7 @@ public class SchemaChangeListener extends SchemaChangeListenerBase {
   }
 
   /**
-   * Add tableDropped event listener for every cqlSession Drop the corresponding collectionSetting
+   * Add tableDropped event listener for every cqlSession, drop the corresponding collectionSetting
    * cache entry to avoid operations using outdated CollectionSetting This should work for both CQL
    * Table drop and Data API deleteCollection
    */
@@ -31,11 +31,20 @@ public class SchemaChangeListener extends SchemaChangeListenerBase {
   }
 
   /**
-   * Add keyspaceDropped event listener for every cqlSession Drop the corresponding namespaceCache
+   * Add keyspaceDropped event listener for every cqlSession, drop the corresponding namespaceCache
    * entry This should work for both CQL keyspace drop and Data API dropNamespace
    */
   @Override
   public void onKeyspaceDropped(@NonNull KeyspaceMetadata keyspace) {
     schemaCache.evictNamespaceCacheEntriesForTenant(tenantId, keyspace.getName().asInternal());
+  }
+
+  /** When table is created, drop the corresponding collectionSetting cache entry if existed */
+  @Override
+  public void onTableCreated(@NonNull TableMetadata table) {
+    schemaCache.evictCollectionSettingCacheEntry(
+        Optional.ofNullable(tenantId),
+        table.getKeyspace().asInternal(),
+        table.getName().asInternal());
   }
 }
