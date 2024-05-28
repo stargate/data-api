@@ -172,7 +172,7 @@ public class CQLSessionCache {
               .withClassLoader(Thread.currentThread().getContextClassLoader())
               .withApplicationName(APPLICATION_NAME)
               .withConfigLoader(loader)
-                  .addSchemaChangeListener(new SchemaChangeListener(schemaCache, cacheKey.tenantId))
+              .addSchemaChangeListener(new SchemaChangeListener(schemaCache, cacheKey.tenantId))
               .build();
       if (!isAstraSessionValid(cqlSession, cacheKey.tenantId())) {
         throw new UnauthorizedException("Provided username token and/or password are incorrect");

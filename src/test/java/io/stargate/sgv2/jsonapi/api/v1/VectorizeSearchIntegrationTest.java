@@ -1060,6 +1060,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
   // When a table is dropped, corresponding schema cache entry should be evicted
   class SchemaCacheEvictionTest {
     @Test
+    @Order(1)
     public void createDropDifferentVectorDimension() {
       String json =
           """
