@@ -163,17 +163,52 @@ public class CQLSessionCache {
       }
       return builder.build();
     } else if (ASTRA.equals(databaseConfig.type())) {
-      return new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
-          .withAuthCredentials(
-              TOKEN, Objects.requireNonNull(((TokenCredentials) cacheKey.credentials()).token()))
-          .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
-          .withClassLoader(Thread.currentThread().getContextClassLoader())
-          .withApplicationName(APPLICATION_NAME)
-          .withConfigLoader(loader)
-          .addSchemaChangeListener(new SchemaChangeListener(schemaCache, cacheKey.tenantId))
-          .build();
+      CqlSession cqlSession =
+          new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
+              .withAuthCredentials(
+                  TOKEN,
+                  Objects.requireNonNull(((TokenCredentials) cacheKey.credentials()).token()))
+              .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+              .withClassLoader(Thread.currentThread().getContextClassLoader())
+              .withApplicationName(APPLICATION_NAME)
+              .withConfigLoader(loader)
+                  .addSchemaChangeListener(new SchemaChangeListener(schemaCache, cacheKey.tenantId))
+              .build();
+      if (!isAstraSessionValid(cqlSession, cacheKey.tenantId())) {
+        throw new UnauthorizedException("Provided username token and/or password are incorrect");
+      }
+      return cqlSession;
     }
     throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
+  }
+
+  /**
+   * This method checks if the session is valid for the tenant. If a token is generated for tenant A
+   * and if it is used to access tenant B's data, the cqlsession object still gets created without
+   * any error but it has no metadata or keyspaces information. So, this situation leads to return
+   * misleading no keyspace found error, instead of authorization error.
+   *
+   * <p>This method checks if the session is valid, first by checking if there are any keyspaces and
+   * returns true if there are any keyspaces. If there are no keyspaces, then it tries to execute a
+   * query on system_virtual_schema.tables and returns true if the query is successful. Failure to
+   * execute the query with an UnauthorizedException means the session is invalid i.e. not meant for
+   * the tenant in the request.
+   *
+   * @param cqlSession CqlSession
+   * @param tenantId tenant id
+   * @return true if the session is valid, false otherwise
+   */
+  private boolean isAstraSessionValid(CqlSession cqlSession, String tenantId) {
+    if (!cqlSession.getMetadata().getKeyspaces().isEmpty()) {
+      return true;
+    }
+    try {
+      cqlSession.execute("SELECT * FROM system_virtual_schema.tables");
+      return true;
+    } catch (com.datastax.oss.driver.api.core.servererrors.UnauthorizedException e) {
+      LOGGER.error("Unauthorized to access tenant %s's data".formatted(tenantId), e);
+      return false;
+    }
   }
 
   /**
