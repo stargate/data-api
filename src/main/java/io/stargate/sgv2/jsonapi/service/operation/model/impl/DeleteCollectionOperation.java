@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
  *
  * @param context Command context, carries namespace of the collection.
  * @param name Collection name.
- * @param schemaCache
  */
 public record DeleteCollectionOperation(CommandContext context, String name) implements Operation {
   private static final Logger logger = LoggerFactory.getLogger(DeleteCollectionOperation.class);

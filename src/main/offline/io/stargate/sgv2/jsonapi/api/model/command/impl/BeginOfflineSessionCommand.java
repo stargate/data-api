@@ -157,7 +157,6 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
             ? CreateCollectionOperation.withVectorSearch(
                 new CommandContext(this.namespace, this.createCollection.name()),
                 null,
-                null,
                 new ObjectMapper(),
                 null,
                 this.createCollection.name(),
@@ -171,7 +170,6 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
                 false)
             : CreateCollectionOperation.withoutVectorSearch(
                 new CommandContext(this.namespace, this.createCollection.name()),
-                null,
                 null,
                 new ObjectMapper(),
                 null,

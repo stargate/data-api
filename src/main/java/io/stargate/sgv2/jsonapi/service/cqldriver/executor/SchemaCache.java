@@ -60,8 +60,8 @@ public class SchemaCache {
   }
 
   /**
-   * When a sessionCache entry expires,evict all corresponding entire NamespaceCaches for the tenant
-   * This is to ensure there is no offset for sessionCache and schemaCache
+   * When a sessionCache entry expires, evict all corresponding entire NamespaceCaches for the
+   * tenant This is to ensure there is no offset for sessionCache and schemaCache
    */
   public void evictNamespaceCacheEntriesForTenant(
       String tenant, Map<CqlIdentifier, KeyspaceMetadata> keyspaces) {
