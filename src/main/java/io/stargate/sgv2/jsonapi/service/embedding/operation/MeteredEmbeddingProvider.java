@@ -1,11 +1,16 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.google.common.collect.Lists;
 import io.micrometer.core.instrument.*;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Provides a metered version of an {@link EmbeddingProvider}, adding metrics collection to the
@@ -44,7 +49,8 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
    * @return a {@link Uni} that will provide the list of vectorized texts, as arrays of floats.
    */
   @Override
-  public Uni<List<float[]>> vectorize(
+  public Uni<Response> vectorize(
+      int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
@@ -55,16 +61,54 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
             .register(meterRegistry);
     texts.stream().mapToInt(String::length).forEach(ds::record);
 
+    // Make batches based on provider batch size
+    final List<List<String>> partitions = Lists.partition(texts, maxBatchSize());
+    List<Pair<Integer, List<String>>> partitionedBatches = new ArrayList<>(partitions.size());
+    for (int i = 0; i < partitions.size(); i++) {
+      partitionedBatches.add(Pair.of(i, partitions.get(i)));
+    }
+
     // timer metrics for vectorize call
     Timer.Sample sample = Timer.start(meterRegistry);
     Tags tags = getCustomTags();
-    return embeddingProvider
-        .vectorize(texts, apiKeyOverride, embeddingRequestType)
+    // create a multi
+    return Multi.createFrom()
+        .items(partitionedBatches.stream())
+        .onItem()
+        .transformToUni(
+            batch -> {
+              // call vectorize by the batch id
+              return embeddingProvider.vectorize(
+                  batch.getLeft(), batch.getRight(), apiKeyOverride, embeddingRequestType);
+            })
+        .merge()
+        .collect()
+        .asList()
+        .onItem()
+        .transform(
+            vectorizedBatches -> {
+              // sort it by batch id, this is required because the merge() run the calls in parallel
+              Collections.sort(
+                  vectorizedBatches, (a, b) -> Integer.compare(a.batchId(), b.batchId()));
+              List<float[]> result = new ArrayList<>();
+              for (Response vectorizedBatch : vectorizedBatches) {
+                // create the final ordered result
+                result.addAll(vectorizedBatch.embeddings());
+              }
+              return Response.of(1, result);
+            })
         .invoke(
             () ->
                 sample.stop(
                     meterRegistry.timer(
                         jsonApiMetricsConfig.vectorizeCallDurationMetrics(), tags)));
+  }
+
+  @Override
+  public int maxBatchSize() {
+    return embeddingProvider.maxBatchSize() == 0
+        ? Integer.MAX_VALUE
+        : embeddingProvider.maxBatchSize();
   }
 
   /**

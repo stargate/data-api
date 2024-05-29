@@ -99,6 +99,7 @@ public enum ErrorCode {
   TOO_MANY_COLLECTIONS("Too many collections"),
 
   TOO_MANY_INDEXES("Too many indexes"),
+  INDEXES_CREATION_FAILED("Index creation failed, check schema"),
 
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
 
@@ -183,7 +184,9 @@ public enum ErrorCode {
   SERVER_FAILURE("Driver failed"),
   SERVER_UNHANDLED_ERROR("Server failed"),
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
-  SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available");
+  SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
+  EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
+  EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request");
 
   private final String message;
 
