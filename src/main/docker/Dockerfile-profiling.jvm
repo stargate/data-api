@@ -3,7 +3,7 @@
 # based on less minimal UBI8 OpenJDK 17 image
 #
 ###
-FROM registry.access.redhat.com/ubi8/openjdk-17:1.17
+FROM registry.access.redhat.com/ubi8/openjdk-17:1.19
 
 ENV LANGUAGE='en_US:en'
 
