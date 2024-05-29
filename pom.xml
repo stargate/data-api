@@ -21,7 +21,7 @@
     <quarkus.container-image.tag>v${project.version}</quarkus.container-image.tag>
     <quarkus.container-image.additional-tags>v1</quarkus.container-image.additional-tags>
     <skipITs>false</skipITs>
-    <cassandra.version>6.9.0-early-preview-java11/cassandra.version>
+    <cassandra.version>6.9.0-early-preview-java11</cassandra.version>
     <!-- Integration test props -->
     <!-- When updating please change defaults in the DseTestResource class -->
     <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
