@@ -110,11 +110,11 @@ jobs:
       matrix:
         type: [ docker, native, dse-it ]
         include:
-          - type: docker
-            profile: ''
           - type: dse-it
             profile: '-Pdse-it'
         exclude:
+          - type: docker
+            profile: ''
           - type: native
             #profile: '-Pnative'
 
