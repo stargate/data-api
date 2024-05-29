@@ -43,7 +43,7 @@ public class TestEmbeddingProvider implements EmbeddingProvider {
   }
 
   @Override
-  public int batchSize() {
+  public int maxBatchSize() {
     return 1;
   }
 }

@@ -62,7 +62,7 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
     texts.stream().mapToInt(String::length).forEach(ds::record);
 
     // Make batches based on provider batch size
-    final List<List<String>> partitions = Lists.partition(texts, batchSize());
+    final List<List<String>> partitions = Lists.partition(texts, maxBatchSize());
     List<Pair<Integer, List<String>>> partitionedBatches = new ArrayList<>(partitions.size());
     for (int i = 0; i < partitions.size(); i++) {
       partitionedBatches.add(Pair.of(i, partitions.get(i)));
