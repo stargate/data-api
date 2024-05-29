@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.util.EmbeddingUtil;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
@@ -61,7 +60,7 @@ public class OpenAIEmbeddingClient implements EmbeddingProvider {
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
-    static RuntimeException mapException(Response response) {
+    static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       return HttpResponseErrorMessageMapper.getDefaultException(response);
     }
   }
@@ -78,7 +77,8 @@ public class OpenAIEmbeddingClient implements EmbeddingProvider {
   }
 
   @Override
-  public Uni<List<float[]>> vectorize(
+  public Uni<Response> vectorize(
+      int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
@@ -101,10 +101,17 @@ public class OpenAIEmbeddingClient implements EmbeddingProvider {
         .transform(
             resp -> {
               if (resp.data() == null) {
-                return Collections.emptyList();
+                return Response.of(batchId, Collections.emptyList());
               }
               Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
-              return Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
+              List<float[]> vectors =
+                  Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
+              return Response.of(batchId, vectors);
             });
+  }
+
+  @Override
+  public int maxBatchSize() {
+    return requestProperties.maxBatchSize();
   }
 }

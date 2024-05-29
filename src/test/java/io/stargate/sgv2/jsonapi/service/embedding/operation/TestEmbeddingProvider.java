@@ -28,10 +28,22 @@ public class TestEmbeddingProvider implements EmbeddingProvider {
           null);
 
   @Override
-  public Uni<List<float[]>> vectorize(
-      List<String> texts, Optional<String> apiKey, EmbeddingRequestType embeddingRequestType) {
+  public Uni<Response> vectorize(
+      int batchId,
+      List<String> texts,
+      Optional<String> apiKey,
+      EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
-    texts.forEach(t -> response.add(new float[] {0.25f, 0.25f, 0.25f}));
-    return Uni.createFrom().item(response);
+    texts.forEach(
+        t -> {
+          if (t.equals("return 1s")) response.add(new float[] {1.0f, 1.0f, 1.0f});
+          else response.add(new float[] {0.25f, 0.25f, 0.25f});
+        });
+    return Uni.createFrom().item(Response.of(batchId, response));
+  }
+
+  @Override
+  public int maxBatchSize() {
+    return 1;
   }
 }

@@ -75,7 +75,8 @@ public record EmbeddingProvidersConfigImpl(
         int requestTimeoutMillis,
         Optional<String> maxInputLength,
         Optional<String> taskTypeStore,
-        Optional<String> taskTypeRead)
+        Optional<String> taskTypeRead,
+        int maxBatchSize)
         implements RequestProperties {
       public RequestPropertiesImpl(
           EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig.RequestProperties
@@ -84,9 +85,10 @@ public record EmbeddingProvidersConfigImpl(
             grpcProviderConfigProperties.getMaxRetries(),
             grpcProviderConfigProperties.getRetryDelayMillis(),
             grpcProviderConfigProperties.getRequestTimeoutMillis(),
-            Optional.of(grpcProviderConfigProperties.getMaxInputLength()),
-            Optional.of(grpcProviderConfigProperties.getTaskTypeStore()),
-            Optional.of(grpcProviderConfigProperties.getTaskTypeRead()));
+            Optional.ofNullable(grpcProviderConfigProperties.getMaxInputLength()),
+            Optional.ofNullable(grpcProviderConfigProperties.getTaskTypeStore()),
+            Optional.ofNullable(grpcProviderConfigProperties.getTaskTypeRead()),
+            grpcProviderConfigProperties.getMaxBatchSize());
       }
     }
   }
