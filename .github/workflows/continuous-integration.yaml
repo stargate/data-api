@@ -114,7 +114,6 @@ jobs:
             profile: '-Pdse-it'
         exclude:
           - type: docker
-            profile: ''
           - type: native
             #profile: '-Pnative'
 
