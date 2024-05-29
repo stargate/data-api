@@ -89,7 +89,7 @@ jobs:
       # Adding -Poffline includes offline mode classes as well for test
       - name: Build & Test
         run: |
-          ./mvnw -B -ntp clean test -Poffline
+          ./mvnw -B -ntp clean test 
   
 
   # runs int tests
@@ -111,9 +111,9 @@ jobs:
         type: [ docker, native, dse-it ]
         include:
           - type: docker
-            profile: '-Poffline'
+            profile: ''
           - type: dse-it
-            profile: '-Pdse-it,offline'
+            profile: '-Pdse-it'
         exclude:
           - type: native
             #profile: '-Pnative'
