@@ -25,6 +25,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               }
             }
             """;
+
     String createVectorCollection =
         """
             {
@@ -91,6 +92,50 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status.ok", is(1));
       deleteCollection(collectionName);
+    }
+
+    @Test
+    public void caseSensitive() {
+      String json =
+              """
+          {
+            "createCollection": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted("testcollection");
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      json =
+              """
+          {
+            "createCollection": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted("testCollection");
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+      deleteCollection("testCollection");
     }
 
     @Test
