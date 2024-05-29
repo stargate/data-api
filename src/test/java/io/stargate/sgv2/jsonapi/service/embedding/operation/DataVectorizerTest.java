@@ -179,7 +179,8 @@ public class DataVectorizerTest {
       TestEmbeddingProvider testProvider =
           new TestEmbeddingProvider() {
             @Override
-            public Uni<List<float[]>> vectorize(
+            public Uni<Response> vectorize(
+                int batchId,
                 List<String> texts,
                 Optional<String> apiKey,
                 EmbeddingRequestType embeddingRequestType) {
@@ -187,7 +188,7 @@ public class DataVectorizerTest {
               texts.forEach(t -> customResponse.add(new float[] {0.5f, 0.5f, 0.5f}));
               // add additional vector
               customResponse.add(new float[] {0.5f, 0.5f, 0.5f});
-              return Uni.createFrom().item(customResponse);
+              return Uni.createFrom().item(Response.of(batchId, customResponse));
             }
           };
       List<JsonNode> documents = new ArrayList<>();

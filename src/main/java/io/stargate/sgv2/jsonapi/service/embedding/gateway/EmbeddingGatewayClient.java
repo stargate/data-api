@@ -82,7 +82,8 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
    * @return
    */
   @Override
-  public Uni<List<float[]>> vectorize(
+  public Uni<Response> vectorize(
+      int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
@@ -161,18 +162,30 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
                     resp.getError().getErrorMessage());
               }
               if (resp.getEmbeddingsList() == null) {
-                return Collections.emptyList();
+                return Response.of(batchId, Collections.emptyList());
               }
-              return resp.getEmbeddingsList().stream()
-                  .map(
-                      data -> {
-                        float[] embedding = new float[data.getEmbeddingCount()];
-                        for (int i = 0; i < data.getEmbeddingCount(); i++) {
-                          embedding[i] = data.getEmbedding(i);
-                        }
-                        return embedding;
-                      })
-                  .toList();
+              final List<float[]> vectors =
+                  resp.getEmbeddingsList().stream()
+                      .map(
+                          data -> {
+                            float[] embedding = new float[data.getEmbeddingCount()];
+                            for (int i = 0; i < data.getEmbeddingCount(); i++) {
+                              embedding[i] = data.getEmbedding(i);
+                            }
+                            return embedding;
+                          })
+                      .toList();
+              return Response.of(batchId, vectors);
             });
+  }
+
+  /**
+   * Return MAX_VALUE because the batching is done inside EGW
+   *
+   * @return
+   */
+  @Override
+  public int maxBatchSize() {
+    return Integer.MAX_VALUE;
   }
 }

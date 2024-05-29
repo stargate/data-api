@@ -668,7 +668,7 @@ public class CommandResolverWithVectorizerTest {
                 {
                   "_id": "2",
                   "location": "New York",
-                  "$vectorize" : "test data"
+                  "$vectorize" : "return 1s"
                 }
               ]
             }
@@ -699,7 +699,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(first.queryVectorValues().length).isEqualTo(3);
                 assertThat(first.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
                 assertThat(second.queryVectorValues().length).isEqualTo(3);
-                assertThat(second.queryVectorValues()).containsExactly(0.25f, 0.25f, 0.25f);
+                assertThat(second.queryVectorValues()).containsExactly(1.0f, 1.0f, 1.0f);
                 assertThat(op.commandContext())
                     .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
                 assertThat(op.ordered()).isFalse();

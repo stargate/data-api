@@ -34,12 +34,13 @@ public class CustomITEmbeddingProvider implements EmbeddingProvider {
   }
 
   @Override
-  public Uni<List<float[]>> vectorize(
+  public Uni<Response> vectorize(
+      int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
-    if (texts.size() == 0) return Uni.createFrom().item(response);
+    if (texts.size() == 0) return Uni.createFrom().item(Response.of(batchId, response));
     if (!apiKeyOverride.isPresent() || !apiKeyOverride.get().equals(TEST_API_KEY))
       return Uni.createFrom().failure(new RuntimeException("Invalid API Key"));
     for (String text : texts) {
@@ -49,6 +50,11 @@ public class CustomITEmbeddingProvider implements EmbeddingProvider {
         response.add(new float[] {0.25f, 0.25f, 0.25f, 0.25f, 0.25f});
       }
     }
-    return Uni.createFrom().item(response);
+    return Uni.createFrom().item(Response.of(batchId, response));
+  }
+
+  @Override
+  public int maxBatchSize() {
+    return 1;
   }
 }

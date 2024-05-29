@@ -36,6 +36,7 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
             properties.retryDelayMillis(),
             properties.requestTimeoutMillis(),
             properties.taskTypeRead(),
-            properties.taskTypeStore()));
+            properties.taskTypeStore(),
+            properties.maxBatchSize()));
   }
 }

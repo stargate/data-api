@@ -220,6 +220,9 @@ public interface EmbeddingProvidersConfig {
 
       @Nullable
       Optional<String> taskTypeRead();
+
+      /** Maximum batch size supported by the provider. */
+      int maxBatchSize();
     }
 
     enum ParameterType {
