@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import jakarta.inject.Inject;
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -133,7 +132,7 @@ public class EmbeddingProviderErrorMessageTest {
 
     @Test
     public void testCorrectHeaderAndBody() {
-      final Pair<Integer, List<float[]>> result =
+      final EmbeddingProvider.Response result =
           new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, Optional.empty(), Optional.empty(), 10),
@@ -151,8 +150,8 @@ public class EmbeddingProviderErrorMessageTest {
               .awaitItem()
               .getItem();
       assertThat(result).isNotNull();
-      assertThat(result.getLeft()).isEqualTo(1);
-      assertThat(result.getRight()).isNotNull();
+      assertThat(result.batchId()).isEqualTo(1);
+      assertThat(result.embeddings()).isNotNull();
     }
 
     @Test
@@ -211,7 +210,7 @@ public class EmbeddingProviderErrorMessageTest {
 
     @Test
     public void testEmptyJsonResponse() {
-      final Pair<Integer, List<float[]>> result =
+      final EmbeddingProvider.Response result =
           new NvidiaEmbeddingClient(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, Optional.empty(), Optional.empty(), 10),
@@ -229,8 +228,8 @@ public class EmbeddingProviderErrorMessageTest {
               .awaitItem()
               .getItem();
       assertThat(result).isNotNull();
-      assertThat(result.getLeft()).isEqualTo(1);
-      assertThat(result.getRight()).isNotNull();
+      assertThat(result.batchId()).isEqualTo(1);
+      assertThat(result.embeddings()).isNotNull();
     }
   }
 }

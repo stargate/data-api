@@ -49,7 +49,7 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
    * @return a {@link Uni} that will provide the list of vectorized texts, as arrays of floats.
    */
   @Override
-  public Uni<Pair<Integer, List<float[]>>> vectorize(
+  public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
@@ -89,13 +89,13 @@ public class MeteredEmbeddingProvider implements EmbeddingProvider {
             vectorizedBatches -> {
               // sort it by batch id, this is required because the merge() run the calls in parallel
               Collections.sort(
-                  vectorizedBatches, (a, b) -> Integer.compare(a.getLeft(), b.getLeft()));
+                  vectorizedBatches, (a, b) -> Integer.compare(a.batchId(), b.batchId()));
               List<float[]> result = new ArrayList<>();
-              for (Pair<Integer, List<float[]>> vectorizedBatch : vectorizedBatches) {
+              for (Response vectorizedBatch : vectorizedBatches) {
                 // create the final ordered result
-                result.addAll(vectorizedBatch.getRight());
+                result.addAll(vectorizedBatch.embeddings());
               }
-              return Pair.of(1, result);
+              return Response.of(1, result);
             })
         .invoke(
             () ->

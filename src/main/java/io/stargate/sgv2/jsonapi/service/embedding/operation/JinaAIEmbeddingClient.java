@@ -10,12 +10,10 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
-import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
@@ -54,7 +52,7 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
-    static RuntimeException mapException(Response response) {
+    static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       return HttpResponseErrorMessageMapper.getDefaultException(response);
     }
   }
@@ -69,7 +67,7 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
   }
 
   @Override
-  public Uni<Pair<Integer, List<float[]>>> vectorize(
+  public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
@@ -96,12 +94,12 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
         .transform(
             resp -> {
               if (resp.data() == null) {
-                return Pair.of(batchId, Collections.emptyList());
+                return Response.of(batchId, Collections.emptyList());
               }
               Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
               List<float[]> vectors =
                   Arrays.stream(resp.data()).map(EmbeddingResponse.Data::embedding).toList();
-              return Pair.of(batchId, vectors);
+              return Response.of(batchId, vectors);
             });
   }
 

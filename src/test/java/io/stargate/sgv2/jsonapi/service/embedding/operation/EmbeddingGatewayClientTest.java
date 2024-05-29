@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -85,7 +84,7 @@ public class EmbeddingGatewayClientTest {
             Map.of(),
             TESTING_COMMAND_NAME);
 
-    final Pair<Integer, List<float[]>> response =
+    final EmbeddingProvider.Response response =
         embeddingGatewayClient
             .vectorize(
                 1,
@@ -98,11 +97,11 @@ public class EmbeddingGatewayClientTest {
             .getItem();
 
     assertThat(response).isNotNull();
-    assertThat(response.getLeft()).isEqualTo(1);
-    assertThat(response.getRight()).isNotEmpty();
-    assertThat(response.getRight().size()).isEqualTo(2);
-    assertThat(response.getRight().get(0).length).isEqualTo(5);
-    assertThat(response.getRight().get(1).length).isEqualTo(5);
+    assertThat(response.batchId()).isEqualTo(1);
+    assertThat(response.embeddings()).isNotEmpty();
+    assertThat(response.embeddings().size()).isEqualTo(2);
+    assertThat(response.embeddings().get(0).length).isEqualTo(5);
+    assertThat(response.embeddings().get(1).length).isEqualTo(5);
   }
 
   @Test

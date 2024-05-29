@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 import io.smallrye.mutiny.Uni;
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
@@ -17,9 +16,9 @@ public interface EmbeddingProvider {
    * @param apiKeyOverride Optional API key to be used for this request. If not provided, the
    *     default API key will be used.
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
-   * @return List of embeddings for the given texts
+   * @return VectorResponse
    */
-  Uni<Pair<Integer, List<float[]>>> vectorize(
+  Uni<Response> vectorize(
       int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
@@ -31,6 +30,18 @@ public interface EmbeddingProvider {
    * @return
    */
   int batchSize();
+
+  /**
+   * Record to hold the batchId and embedding vectors
+   *
+   * @param batchId - Sequence number for the batch to order the vectors.
+   * @param embeddings - Embedding vectors for the given text inputs.
+   */
+  record Response(int batchId, List<float[]> embeddings) {
+    public static Response of(int batchId, List<float[]> embeddings) {
+      return new Response(batchId, embeddings);
+    }
+  }
 
   enum EmbeddingRequestType {
     /** This is used when vectorizing data in write operation for indexing */

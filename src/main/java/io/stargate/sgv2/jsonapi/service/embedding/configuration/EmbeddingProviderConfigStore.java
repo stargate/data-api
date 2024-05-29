@@ -32,21 +32,23 @@ public interface EmbeddingProviderConfigStore {
       int timeoutInMillis,
       Optional<String> requestTypeQuery,
       Optional<String> requestTypeIndex,
-      int batchSize) {
+      // `maxBatchSize` is the maximum number of documents to be sent in a single request to be
+      // embedding provider
+      int maxBatchSize) {
     public static RequestProperties of(
         int maxRetries,
         int retryDelayInMillis,
         int timeoutInMillis,
         Optional<String> requestTypeQuery,
         Optional<String> requestTypeIndex,
-        int batchSize) {
+        int maxBatchSize) {
       return new RequestProperties(
           maxRetries,
           retryDelayInMillis,
           timeoutInMillis,
           requestTypeQuery,
           requestTypeIndex,
-          batchSize);
+          maxBatchSize);
     }
   }
 

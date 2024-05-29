@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseEr
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
-import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
@@ -20,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
@@ -63,7 +61,7 @@ public class CohereEmbeddingClient implements EmbeddingProvider {
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
-    static RuntimeException mapException(Response response) {
+    static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       return HttpResponseErrorMessageMapper.getDefaultException(response);
     }
   }
@@ -91,7 +89,7 @@ public class CohereEmbeddingClient implements EmbeddingProvider {
   private static final String SEARCH_DOCUMENT = "search_document";
 
   @Override
-  public Uni<Pair<Integer, List<float[]>>> vectorize(
+  public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
@@ -119,9 +117,9 @@ public class CohereEmbeddingClient implements EmbeddingProvider {
         .transform(
             resp -> {
               if (resp.getEmbeddings() == null) {
-                return Pair.of(batchId, Collections.emptyList());
+                return Response.of(batchId, Collections.emptyList());
               }
-              return Pair.of(batchId, resp.getEmbeddings());
+              return Response.of(batchId, resp.getEmbeddings());
             });
   }
 

@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class TestEmbeddingProvider implements EmbeddingProvider {
 
@@ -29,7 +28,7 @@ public class TestEmbeddingProvider implements EmbeddingProvider {
           null);
 
   @Override
-  public Uni<Pair<Integer, List<float[]>>> vectorize(
+  public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
       Optional<String> apiKey,
@@ -40,7 +39,7 @@ public class TestEmbeddingProvider implements EmbeddingProvider {
           if (t.equals("return 1s")) response.add(new float[] {1.0f, 1.0f, 1.0f});
           else response.add(new float[] {0.25f, 0.25f, 0.25f});
         });
-    return Uni.createFrom().item(Pair.of(batchId, response));
+    return Uni.createFrom().item(Response.of(batchId, response));
   }
 
   @Override

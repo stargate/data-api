@@ -113,7 +113,7 @@ public class DataVectorizer {
                     vectorizeTexts,
                     embeddingApiKey,
                     EmbeddingProvider.EmbeddingRequestType.INDEX)
-                .map(res -> res.getRight());
+                .map(res -> res.embeddings());
         return vectors
             .onItem()
             .transform(
@@ -180,7 +180,7 @@ public class DataVectorizer {
                     List.of(text),
                     embeddingApiKey,
                     EmbeddingProvider.EmbeddingRequestType.SEARCH)
-                .map(res -> res.getRight());
+                .map(res -> res.embeddings());
         return vectors
             .onItem()
             .transform(
@@ -266,7 +266,7 @@ public class DataVectorizer {
                       List.of(text),
                       embeddingApiKey,
                       EmbeddingProvider.EmbeddingRequestType.INDEX)
-                  .map(res -> res.getRight());
+                  .map(res -> res.embeddings());
           return vectors
               .onItem()
               .transform(

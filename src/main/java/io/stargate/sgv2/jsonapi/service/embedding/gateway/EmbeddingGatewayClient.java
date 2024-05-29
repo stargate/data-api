@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.Pair;
 
 /** Grpc client for embedding gateway service */
 public class EmbeddingGatewayClient implements EmbeddingProvider {
@@ -83,7 +82,7 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
    * @return
    */
   @Override
-  public Uni<Pair<Integer, List<float[]>>> vectorize(
+  public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
@@ -163,7 +162,7 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
                     resp.getError().getErrorMessage());
               }
               if (resp.getEmbeddingsList() == null) {
-                return Pair.of(batchId, Collections.emptyList());
+                return Response.of(batchId, Collections.emptyList());
               }
               final List<float[]> vectors =
                   resp.getEmbeddingsList().stream()
@@ -176,7 +175,7 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
                             return embedding;
                           })
                       .toList();
-              return Pair.of(batchId, vectors);
+              return Response.of(batchId, vectors);
             });
   }
 

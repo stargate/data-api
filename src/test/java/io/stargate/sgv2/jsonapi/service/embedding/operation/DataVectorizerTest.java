@@ -23,7 +23,6 @@ import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -180,7 +179,7 @@ public class DataVectorizerTest {
       TestEmbeddingProvider testProvider =
           new TestEmbeddingProvider() {
             @Override
-            public Uni<Pair<Integer, List<float[]>>> vectorize(
+            public Uni<Response> vectorize(
                 int batchId,
                 List<String> texts,
                 Optional<String> apiKey,
@@ -189,7 +188,7 @@ public class DataVectorizerTest {
               texts.forEach(t -> customResponse.add(new float[] {0.5f, 0.5f, 0.5f}));
               // add additional vector
               customResponse.add(new float[] {0.5f, 0.5f, 0.5f});
-              return Uni.createFrom().item(Pair.of(batchId, customResponse));
+              return Uni.createFrom().item(Response.of(batchId, customResponse));
             }
           };
       List<JsonNode> documents = new ArrayList<>();
