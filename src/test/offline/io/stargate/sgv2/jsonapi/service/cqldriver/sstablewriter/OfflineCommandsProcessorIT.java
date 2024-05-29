@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -20,11 +21,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class OfflineCommandsProcessorIT {
 
@@ -61,19 +65,17 @@ public class OfflineCommandsProcessorIT {
     }
   }
 
-  @Test
-  public void testOfflineCommandsProcessor()
-      throws ExecutionException, InterruptedException, IOException {
-    testOfflineCommandsProcessor(false);
+  public static Stream<Arguments> testScenarios() {
+    return Stream.of(
+        Arguments.of(false, false),
+        Arguments.of(false, true),
+        Arguments.of(true, false),
+        Arguments.of(true, true));
   }
 
-  @Test
-  public void testOfflineCommandsProcessorVector()
-      throws ExecutionException, InterruptedException, IOException {
-    testOfflineCommandsProcessor(true);
-  }
-
-  private void testOfflineCommandsProcessor(boolean isVectorSearch)
+  @ParameterizedTest
+  @MethodSource("testScenarios")
+  public void testOfflineCommandsProcessor(boolean isVectorTable, boolean includeVectorData)
       throws ExecutionException, InterruptedException, IOException {
     String testId = UUID.randomUUID().toString();
     String namespace = "test_namespace";
@@ -85,14 +87,14 @@ public class OfflineCommandsProcessorIT {
     }
     OfflineCommandsProcessor offlineCommandsProcessor = OfflineCommandsProcessor.getInstance();
     // begin session
-    Triple<BeginOfflineSessionResponse, CommandContext, String> beginSessionResponse =
+    Triple<BeginOfflineSessionResponse, CommandContext, SchemaInfo> beginSessionResponse =
         beginSession(
             offlineCommandsProcessor,
             namespace,
             sstablesOutputDirectory,
             fileWriterBufferSizeInMB,
             embeddingProvider,
-            isVectorSearch);
+            isVectorTable);
     BeginOfflineSessionResponse beginOfflineSessionResponse = beginSessionResponse.getLeft();
     if (beginOfflineSessionResponse.errors() != null
         && !beginOfflineSessionResponse.errors().isEmpty()) {
@@ -100,7 +102,8 @@ public class OfflineCommandsProcessorIT {
           "Error while beginning session : " + beginOfflineSessionResponse.errors());
     }
     CommandContext commandContext = beginSessionResponse.getMiddle();
-    String createTableCQL = beginSessionResponse.getRight();
+    SchemaInfo schemaInfo = beginSessionResponse.getRight();
+    String createTableCQL = schemaInfo.createTableCQL();
     String expectedCreateCQL =
         """
                     CREATE TABLE IF NOT EXISTS "test_namespace"."test_collection_false"(
@@ -121,19 +124,62 @@ public class OfflineCommandsProcessorIT {
                     """;
     // assertThat(createTableCQL).isEqualTo(expectedCreateCQL);//TODO-SL fix assertion
     assertThat(createTableCQL).isNotNull();
+    String tableName = "test_collection" + (isVectorTable ? "_true" : "_false");
     assertThat(createTableCQL)
-        .startsWith(
-            "CREATE TABLE IF NOT EXISTS \"test_namespace\".\"test_collection"
-                + (isVectorSearch ? "_true" : "_false"));
+        .startsWith("CREATE TABLE IF NOT EXISTS \"test_namespace\".\"" + tableName);
+    assertThat(schemaInfo.keyspaceName()).isEqualTo("test_namespace");
+    assertThat(schemaInfo.tableName())
+        .isEqualTo("test_collection" + (isVectorTable ? "_true" : "_false"));
+    List<String> indexCQLs = new ArrayList<>(schemaInfo.indexCQLs());
+    assertThat(indexCQLs.size()).isEqualTo(isVectorTable ? 9 : 8);
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON \"test_namespace\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON \"test_namespace\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON \"test_namespace\".\"%s\" (array_contains) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON \"test_namespace\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON \"test_namespace\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON \"test_namespace\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_timestamp_values ON \"test_namespace\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    indexCQLs.remove(
+        "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON \"test_namespace\".\"%s\" (query_null_values) USING 'StorageAttachedIndex'"
+            .formatted(tableName, tableName));
+    if (isVectorTable) {
+      indexCQLs.remove(
+          "CREATE CUSTOM INDEX IF NOT EXISTS test_collection_true_query_vector_value ON \"test_namespace\".\"test_collection_true\" (query_vector_value) USING 'StorageAttachedIndex' WITH OPTIONS = { 'similarity_function': 'COSINE'}");
+    }
+    assertThat(indexCQLs.size()).isEqualTo(0);
     String sessionId = beginOfflineSessionResponse.sessionId();
     // load data
-    List<JsonNode> jsonNodes = getRecords(isVectorSearch);
+    List<JsonNode> jsonNodes = getRecords(includeVectorData);
     OfflineInsertManyResponse offlineInsertManyResponse =
         loadTestData(offlineCommandsProcessor, commandContext, sessionId, jsonNodes);
+    boolean verifyVectorDataForNonVectorTable = !isVectorTable && includeVectorData;
     if (offlineInsertManyResponse.errors() != null
         && !offlineInsertManyResponse.errors().isEmpty()) {
+      if (verifyVectorDataForNonVectorTable) {
+        assertThat(offlineInsertManyResponse.errors().size()).isEqualTo(1);
+        assertThat(offlineInsertManyResponse.errors().get(0).message())
+            .contains("Vector search is not enabled for the collection %s".formatted(tableName));
+        return;
+      }
       throw new RuntimeException(
           "Error while inserting data : " + offlineInsertManyResponse.errors());
+    }
+    if (verifyVectorDataForNonVectorTable) {
+      fail("Should have failed for vector data in non vector table");
     }
     // get statsus
     OfflineGetStatusResponse offlineGetStatusResponse =
@@ -145,7 +191,7 @@ public class OfflineCommandsProcessorIT {
     assertEquals(sessionId, offlineGetStatusResponse.offlineWriterSessionStatus().sessionId());
     assertEquals(namespace, offlineGetStatusResponse.offlineWriterSessionStatus().keyspace());
     assertEquals(
-        "test_collection_" + isVectorSearch,
+        "test_collection_" + isVectorTable,
         offlineGetStatusResponse.offlineWriterSessionStatus().tableName());
     assertEquals(
         sstablesOutputDirectory,
@@ -169,7 +215,7 @@ public class OfflineCommandsProcessorIT {
     assertEquals(sessionId, endOfflineSessionResponse.offlineWriterSessionStatus().sessionId());
     assertEquals(namespace, endOfflineSessionResponse.offlineWriterSessionStatus().keyspace());
     assertEquals(
-        "test_collection_" + isVectorSearch,
+        "test_collection_" + isVectorTable,
         endOfflineSessionResponse.offlineWriterSessionStatus().tableName());
     assertEquals(
         sstablesOutputDirectory,
@@ -268,7 +314,7 @@ public class OfflineCommandsProcessorIT {
     return offlineCommandsProcessor.loadData(sessionId, commandContext, jsonNodes);
   }
 
-  private Triple<BeginOfflineSessionResponse, CommandContext, String> beginSession(
+  private Triple<BeginOfflineSessionResponse, CommandContext, SchemaInfo> beginSession(
       OfflineCommandsProcessor offlineCommandsProcessor,
       String namespace,
       String ssTablesOutputDirectory,
