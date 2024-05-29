@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.InetSocketAddress;
@@ -50,6 +51,9 @@ public class CQLSessionCache {
   /** CQLSession cache. */
   private final LoadingCache<SessionCacheKey, CqlSession> sessionCache;
 
+  /** SchemaCache, used for evict collectionSetting cache and namespace cache. */
+  @Inject private SchemaCache schemaCache;
+
   /** Database type Astra */
   public static final String ASTRA = "astra";
 
@@ -83,6 +87,13 @@ public class CQLSessionCache {
                         if (LOGGER.isTraceEnabled()) {
                           LOGGER.trace(
                               "Removing session for tenant : {}", sessionCacheKey.tenantId());
+                        }
+                        if (session != null) {
+                          // When a sessionCache entry expires
+                          // Evict all corresponding entire NamespaceCaches for the tenant
+                          // This is to ensure there is no offset for sessionCache and schemaCache
+                          schemaCache.evictNamespaceCacheEntriesForTenant(
+                              sessionCacheKey.tenantId(), session.getMetadata().getKeyspaces());
                         }
                       }
                       if (session != null) {
@@ -131,6 +142,7 @@ public class CQLSessionCache {
               .addContactPoints(seeds)
               .withClassLoader(Thread.currentThread().getContextClassLoader())
               .withConfigLoader(loader)
+              .addSchemaChangeListener(new SchemaChangeListener(schemaCache, cacheKey.tenantId))
               .withApplicationName(APPLICATION_NAME);
       // To use username and password, a Base64Encoded text of the credential is passed as token.
       // The text needs to be in format Cassandra:Base64(username):Base64(password)
@@ -160,6 +172,7 @@ public class CQLSessionCache {
               .withClassLoader(Thread.currentThread().getContextClassLoader())
               .withApplicationName(APPLICATION_NAME)
               .withConfigLoader(loader)
+              .addSchemaChangeListener(new SchemaChangeListener(schemaCache, cacheKey.tenantId))
               .build();
       if (!isAstraSessionValid(cqlSession, cacheKey.tenantId())) {
         throw new UnauthorizedException("Provided username token and/or password are incorrect");
