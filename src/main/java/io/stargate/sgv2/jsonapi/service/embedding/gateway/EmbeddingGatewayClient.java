@@ -185,7 +185,7 @@ public class EmbeddingGatewayClient implements EmbeddingProvider {
    * @return
    */
   @Override
-  public int batchSize() {
+  public int maxBatchSize() {
     return Integer.MAX_VALUE;
   }
 }

@@ -25,11 +25,11 @@ public interface EmbeddingProvider {
       EmbeddingRequestType embeddingRequestType);
 
   /**
-   * returns the supported batch size from the provider
+   * returns the maximum batch size supported by the provider
    *
    * @return
    */
-  int batchSize();
+  int maxBatchSize();
 
   /**
    * Record to hold the batchId and embedding vectors

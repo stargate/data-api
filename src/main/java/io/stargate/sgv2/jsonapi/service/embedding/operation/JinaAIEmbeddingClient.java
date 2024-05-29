@@ -104,7 +104,7 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
   }
 
   @Override
-  public int batchSize() {
-    return requestProperties.batchSize();
+  public int maxBatchSize() {
+    return requestProperties.maxBatchSize();
   }
 }
