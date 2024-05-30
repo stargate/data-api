@@ -6,9 +6,9 @@ services:
     platform: linux/amd64
     networks:
       - stargate
-    mem_limit: 2G
+    mem_limit: 4G
     environment:
-      - MAX_HEAP_SIZE=1536M
+      - MAX_HEAP_SIZE=3G
       - CASSANDRA_CLUSTER_NAME=dse-${DSE69TAG}-cluster
       - DS_LICENSE=accept
     healthcheck:
@@ -22,12 +22,16 @@ services:
     platform: linux/amd64
     networks:
       - stargate
-    mem_limit: 2G
+    mem_limit: 4G
+    cap_add:
+      - IPC_LOCK
+    ulimits:
+      memlock: -1
     depends_on:
       dse-1:
         condition: service_healthy
     environment:
-      - MAX_HEAP_SIZE=1536M
+      - MAX_HEAP_SIZE=3G
       - CASSANDRA_SEEDS=dse-1
       - CASSANDRA_CLUSTER_NAME=dse-${DSE69TAG}-cluster
       - DS_LICENSE=accept
