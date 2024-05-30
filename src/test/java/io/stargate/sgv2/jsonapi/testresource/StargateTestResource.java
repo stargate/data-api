@@ -61,6 +61,7 @@ public abstract class StargateTestResource
       } else {
         propsBuilder = this.startWithoutContainerNetwork(reuse);
       }
+
       if (useCoordinator()) {
         Integer authPort = this.stargateContainer.getMappedPort(8081);
         String token = this.getAuthToken(this.stargateContainer.getHost(), authPort);
@@ -159,25 +160,33 @@ public abstract class StargateTestResource
 
   private GenericContainer<?> baseCassandraContainer(boolean reuse) {
     String image = this.getCassandraImage();
+    String startupMessage =
+        this.isDse() ? ".*DSE startup complete.*\\n" : ".*Created default superuser role.*\\n";
     GenericContainer<?> container =
-        new GenericContainer<>(image)
-            .withCopyFileToContainer(
-                MountableFile.forClasspathResource("cassandra.yaml"),
-                "/etc/cassandra/cassandra.yaml")
-            .withEnv("HEAP_NEWSIZE", "512M")
-            .withEnv("MAX_HEAP_SIZE", "2048M")
-            .withEnv("CASSANDRA_CGROUP_MEMORY_LIMIT", "true")
-            .withEnv(
-                "JVM_EXTRA_OPTS",
-                "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8")
-            .withNetworkAliases(new String[] {"cassandra"})
-            .withExposedPorts(new Integer[] {7000, 9042})
-            .withLogConsumer(
-                (new Slf4jLogConsumer(LoggerFactory.getLogger("cassandra-docker")))
-                    .withPrefix("CASSANDRA"))
-            .waitingFor(Wait.forLogMessage(".*Created default superuser role.*\\n", 1))
-            .withStartupTimeout(this.getCassandraStartupTimeout())
-            .withReuse(reuse);
+        this.isDse()
+            ? new GenericContainer<>(image)
+                .withCopyFileToContainer(
+                    MountableFile.forClasspathResource("dse.yaml"),
+                    "/opt/dse/resources/dse/conf/dse.yaml")
+            : new GenericContainer<>(image)
+                .withCopyFileToContainer(
+                    MountableFile.forClasspathResource("cassandra.yaml"),
+                    "/etc/cassandra/cassandra.yaml");
+    container
+        .withEnv("HEAP_NEWSIZE", "512M")
+        .withEnv("MAX_HEAP_SIZE", "2048M")
+        .withEnv("CASSANDRA_CGROUP_MEMORY_LIMIT", "true")
+        .withEnv(
+            "JVM_EXTRA_OPTS",
+            "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8")
+        .withNetworkAliases(new String[] {"cassandra"})
+        .withExposedPorts(new Integer[] {7000, 9042})
+        .withLogConsumer(
+            (new Slf4jLogConsumer(LoggerFactory.getLogger("cassandra-docker")))
+                .withPrefix("CASSANDRA"))
+        .waitingFor(Wait.forLogMessage(startupMessage, 1))
+        .withStartupTimeout(this.getCassandraStartupTimeout())
+        .withReuse(reuse);
     if (this.isDse()) {
       container.withEnv("CLUSTER_NAME", getClusterName()).withEnv("DS_LICENSE", "accept");
     } else {
@@ -243,7 +252,7 @@ public abstract class StargateTestResource
         "testing.containers.cluster-persistence", "persistence-cassandra-4.0");
   }
 
-  private boolean isDse() {
+  protected boolean isDse() {
     String dse =
         System.getProperty(
             "testing.containers.cluster-dse", StargateTestResource.Defaults.CLUSTER_DSE);
