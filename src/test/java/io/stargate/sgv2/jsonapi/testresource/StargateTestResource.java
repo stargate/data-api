@@ -173,10 +173,14 @@ public abstract class StargateTestResource
       container =
           new GenericContainer<>(image)
               .withCopyFileToContainer(
-                  MountableFile.forClasspathResource("cassandra.yaml"),
+                  MountableFile.forClasspathResource("cassandra-hcd.yaml"),
                   "/opt/hcd/resources/cassandra/conf/cassandra.yaml");
     } else {
-      container = new GenericContainer<>(image);
+      container =
+          new GenericContainer<>(image)
+              .withCopyFileToContainer(
+                  MountableFile.forClasspathResource("cassandra.yaml"),
+                  "/etc/cassandra/cassandra.yaml");
     }
     container
         .withEnv("HEAP_NEWSIZE", "512M")
