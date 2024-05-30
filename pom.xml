@@ -32,6 +32,7 @@
     <stargate.int-test.cluster.name>dse-next-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
     <stargate.int-test.cluster.persistence>persistence-dse-next</stargate.int-test.cluster.persistence>
     <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
+    <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
     <stargate.int-test.use-coordinator>true</stargate.int-test.use-coordinator>
   </properties>
@@ -232,6 +233,7 @@
                 <testing.containers.stargate-image>${stargate.int-test.coordinator.image}:${stargate.int-test.coordinator.image-tag}</testing.containers.stargate-image>
                 <testing.containers.cluster-name>${stargate.int-test.cluster.name}</testing.containers.cluster-name>
                 <testing.containers.cluster-dse>${stargate.int-test.cluster.dse}</testing.containers.cluster-dse>
+                <testing.containers.cluster-hcd>${stargate.int-test.cluster.hcd}</testing.containers.cluster-hcd>
                 <testing.package.type>${quarkus.package.type}</testing.package.type>
                 <maven.home>${maven.home}</maven.home>
                 <testing.containers.use-coordinator>${stargate.int-test.use-coordinator}</testing.containers.use-coordinator>
@@ -365,10 +367,10 @@
       </distributionManagement>
     </profile>
     <profile>
-      <id>dse-it</id>
+      <id>dse69-it</id>
       <activation>
         <property>
-          <name>dse-it</name>
+          <name>dse69-it</name>
         </property>
       </activation>
       <properties>
@@ -377,6 +379,21 @@
         <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
+      </properties>
+    </profile>
+    <profile>
+      <id>hcd-it</id>
+      <activation>
+        <property>
+          <name>hcd-it</name>
+        </property>
+      </activation>
+      <properties>
+        <stargate.int-test.cassandra.image>datastax/hcd</stargate.int-test.cassandra.image>
+        <stargate.int-test.cassandra.image-tag>1.0.0-early-preview</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.cluster.name>hcd-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
+        <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
+        <stargate.int-test.cluster.hcd>true</stargate.int-test.cluster.hcd>
       </properties>
     </profile>
   </profiles>
