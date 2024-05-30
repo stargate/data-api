@@ -372,7 +372,11 @@
         </property>
       </activation>
       <properties>
+        <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
+        <stargate.int-test.cassandra.image-tag>6.9.0-early-preview-java11</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
+        <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
       </properties>
     </profile>
   </profiles>
