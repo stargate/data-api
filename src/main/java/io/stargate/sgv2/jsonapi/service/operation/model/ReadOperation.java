@@ -245,7 +245,7 @@ public interface ReadOperation extends Operation {
               int count = documentCounter.addAndGet(remaining);
               if (count == errorLimit) {
                 throw ErrorCode.DATASET_TOO_BIG.toApiException(
-                    "maximum sortable count: %d", count - 1);
+                    "maximum sortable count = %d", errorLimit);
               }
               List<ReadDocument> documents = new ArrayList<>(remaining);
               while (--remaining >= 0 && rowIterator.hasNext()) {
