@@ -160,18 +160,28 @@ public abstract class StargateTestResource
 
   private GenericContainer<?> baseCassandraContainer(boolean reuse) {
     String image = this.getCassandraImage();
-    String startupMessage =
-        this.isDse() ? ".*DSE startup complete.*\\n" : ".*Created default superuser role.*\\n";
-    GenericContainer<?> container =
-        this.isDse()
-            ? new GenericContainer<>(image)
-                .withCopyFileToContainer(
-                    MountableFile.forClasspathResource("dse.yaml"),
-                    "/opt/dse/resources/dse/conf/dse.yaml")
-            : new GenericContainer<>(image)
-                .withCopyFileToContainer(
-                    MountableFile.forClasspathResource("cassandra.yaml"),
-                    "/etc/cassandra/cassandra.yaml");
+    String startupMessage = ".*Created default superuser role.*\\n";
+    GenericContainer<?> container = null;
+    if (this.isDse()) {
+      container =
+          new GenericContainer<>(image)
+              .withCopyFileToContainer(
+                  MountableFile.forClasspathResource("dse.yaml"),
+                  "/opt/dse/resources/dse/conf/dse.yaml");
+      startupMessage = ".*DSE startup complete.*\\n";
+    } else if (this.isHcd()) {
+      container =
+          new GenericContainer<>(image)
+              .withCopyFileToContainer(
+                  MountableFile.forClasspathResource("cassandra-hcd.yaml"),
+                  "/opt/hcd/resources/cassandra/conf/cassandra.yaml");
+    } else {
+      container =
+          new GenericContainer<>(image)
+              .withCopyFileToContainer(
+                  MountableFile.forClasspathResource("cassandra.yaml"),
+                  "/etc/cassandra/cassandra.yaml");
+    }
     container
         .withEnv("HEAP_NEWSIZE", "512M")
         .withEnv("MAX_HEAP_SIZE", "2048M")
@@ -187,7 +197,7 @@ public abstract class StargateTestResource
         .waitingFor(Wait.forLogMessage(startupMessage, 1))
         .withStartupTimeout(this.getCassandraStartupTimeout())
         .withReuse(reuse);
-    if (this.isDse()) {
+    if (this.isDse() || this.isHcd()) {
       container.withEnv("CLUSTER_NAME", getClusterName()).withEnv("DS_LICENSE", "accept");
     } else {
       container.withEnv("CASSANDRA_CLUSTER_NAME", getClusterName());
@@ -259,6 +269,13 @@ public abstract class StargateTestResource
     return "true".equals(dse);
   }
 
+  protected boolean isHcd() {
+    String dse =
+        System.getProperty(
+            "testing.containers.cluster-hcd", StargateTestResource.Defaults.CLUSTER_HCD);
+    return "true".equals(dse);
+  }
+
   /**
    * Returns if coordinator should be started and used.
    *
@@ -269,7 +286,7 @@ public abstract class StargateTestResource
   }
 
   private Duration getCassandraStartupTimeout() {
-    long cassandraStartupTimeout = Long.getLong("testing.containers.cassandra-startup-timeout", 2L);
+    long cassandraStartupTimeout = Long.getLong("testing.containers.cassandra-startup-timeout", 5L);
     return Duration.ofMinutes(cassandraStartupTimeout);
   }
 
@@ -316,6 +333,8 @@ public abstract class StargateTestResource
     String CLUSTER_NAME = "int-test-cluster";
     String PERSISTENCE_MODULE = "persistence-cassandra-4.0";
     String CLUSTER_DSE = null;
+
+    String CLUSTER_HCD = null;
 
     String CQL_HOST = "stargate";
     long CASSANDRA_STARTUP_TIMEOUT = 2L;

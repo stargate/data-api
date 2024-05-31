@@ -95,7 +95,7 @@ public class DseTestResource extends StargateTestResource {
         propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);
       }
     }
-    if (isDse()) {
+    if (isDse() || isHcd()) {
       propsBuilder.put("stargate.jsonapi.operations.database-config.local-datacenter", "dc1");
     }
     propsBuilder.put("stargate.data-store.ignore-bridge", "true");
