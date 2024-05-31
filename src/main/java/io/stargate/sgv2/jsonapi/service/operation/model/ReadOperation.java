@@ -243,7 +243,10 @@ public interface ReadOperation extends Operation {
               Iterator<Row> rowIterator = resultSet.currentPage().iterator();
               int remaining = resultSet.remaining();
               int count = documentCounter.addAndGet(remaining);
-              if (count == errorLimit) throw new JsonApiException(ErrorCode.DATASET_TOO_BIG);
+              if (count == errorLimit) {
+                throw ErrorCode.DATASET_TOO_BIG.toApiException(
+                    "maximum sortable count: %d", count - 1);
+              }
               List<ReadDocument> documents = new ArrayList<>(remaining);
               while (--remaining >= 0 && rowIterator.hasNext()) {
                 ReadDocument document = null;
