@@ -110,6 +110,11 @@ quarkus:
   # adapt path of the open api definitions
   smallrye-openapi:
     path: /api/json/openapi
+
+  # Enable an embedded Swagger UI
+  swagger-ui:
+    always-include: true
+
   native:
     # Adding com.datastax.oss.driver.internal.core.metadata.MetadataManager to the list of classes that are initialized
     # at run time while building the native image. This is for the issue https://github.com/stargate/jsonapi/issues/597
