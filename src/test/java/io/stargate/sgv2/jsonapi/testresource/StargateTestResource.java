@@ -91,6 +91,11 @@ public abstract class StargateTestResource
       propsBuilder.put(
           "stargate.jsonapi.operations.default-count-page-size",
           String.valueOf(getCountPageSize()));
+      Long maxToSort = getMaxDocumentSortCount();
+      if (maxToSort != null) {
+        propsBuilder.put(
+            "stargate.jsonapi.operations.max-document-sort-count", String.valueOf(maxToSort));
+      }
       propsBuilder.put("stargate.jsonapi.operations.vectorize-enabled", "true");
 
       ImmutableMap<String, String> props = propsBuilder.build();
@@ -324,6 +329,8 @@ public abstract class StargateTestResource
   public abstract int getMaxCountLimit();
 
   public abstract int getCountPageSize();
+
+  public abstract Long getMaxDocumentSortCount();
 
   interface Defaults {
     String CASSANDRA_IMAGE = "cassandra";

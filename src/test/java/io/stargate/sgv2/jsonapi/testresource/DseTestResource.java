@@ -60,6 +60,11 @@ public class DseTestResource extends StargateTestResource {
     return 2;
   }
 
+  // Set to 100 from 10,000 for easier testing
+  public Long getMaxDocumentSortCount() {
+    return 100L;
+  }
+
   @Override
   public Map<String, String> start() {
     Map<String, String> env = super.start();
