@@ -133,7 +133,7 @@ authenticator: PasswordAuthenticator
 # All other authorizers, including org.apache.cassandra.auth.{AllowAllAuthorizer,
 # CassandraAuthorizer} are deprecated, and some security features may not work
 # correctly if they are used.
-authorizer: CassandraAuthorizer 
+authorizer: CassandraAuthorizer
 
 # DataStax Enterprise (DSE) provides the DseRoleManager that supports LDAP roles
 # as well as the internal roles supported by CassandraRoleManager. The DseRoleManager
@@ -194,7 +194,7 @@ partitioner: org.apache.cassandra.dht.Murmur3Partitioner
 # the configured compaction strategy.
 # If not set, the default directory is $DSE_HOME/data/data.
 data_file_directories:
-     - /var/lib/cassandra/data
+  - /var/lib/cassandra/data
 
 # Metadata directory that holds information about the cluster, local node and its peers.
 # Currently, only a single subdirectory called 'nodes' will be used.
@@ -391,15 +391,15 @@ commitlog_segment_size_in_mb: 32
 # Any class that implements the SeedProvider interface and has a
 # constructor that takes a Map<String, String> of parameters is valid.
 seed_provider:
-    # Addresses of hosts that are deemed contact points.
-    # Database nodes use this list of hosts to find each other and learn
-    # the topology of the ring. You _must_ change this if you are running
-    # multiple nodes!
-    - class_name: org.apache.cassandra.locator.SimpleSeedProvider
-      parameters:
-          # seeds is actually a comma-delimited list of addresses.
-          # Ex: "<ip1>,<ip2>,<ip3>"
-          - seeds: "localhost"
+  # Addresses of hosts that are deemed contact points.
+  # Database nodes use this list of hosts to find each other and learn
+  # the topology of the ring. You _must_ change this if you are running
+  # multiple nodes!
+  - class_name: org.apache.cassandra.locator.SimpleSeedProvider
+    parameters:
+      # seeds is actually a comma-delimited list of addresses.
+      # Ex: "<ip1>,<ip2>,<ip3>"
+      - seeds: "localhost"
 
 # Maximum memory used for file buffers that are stored in the file cache, also
 # known as the chunk cache. This is used as a cache that holds uncompressed
@@ -770,7 +770,7 @@ sstable_preemptive_open_interval_in_mb: 50
 # Max amount of pending data to be written before pausing outbound streaming: this value is shared among all outbound
 # streaming session, in order to cap the overall memory used by all streaming processes (bootstrap, repair etc). If left
 # unset, its value will be 0, causing the buffer to be configured based on the stream outbound throughput
-# (see stream_throughput_outbound_megabits_per_sec and inter_dc_stream_throughput_outbound_megabits_per_sec), 
+# (see stream_throughput_outbound_megabits_per_sec and inter_dc_stream_throughput_outbound_megabits_per_sec),
 # capped at 128MB.
 #
 # Default is 0. Must be positive. Changing it is not recommended, unless for advanced performance tuning.
@@ -959,56 +959,56 @@ dynamic_snitch_badness_threshold: 0.1
 # and the relevant native binaries installed.
 # For more information see: https://docs.oracle.com/javase/8/docs/technotes/guides/security/p11guide.html
 server_encryption_options:
-    internode_encryption: none
-    keystore: resources/dse/conf/.keystore
-    keystore_password: cassandra
-    truststore: resources/dse/conf/.truststore
-    truststore_password: cassandra
-    # More advanced defaults below:
-    # protocol: TLS
-    # algorithm: SunX509
-    #
-    # Set keystore_type for keystore, valid types can be JKS, JCEKS, PKCS12 or PKCS11
-    # for file based keystores prefer PKCS12
-    # keystore_type: JKS
-    #
-    # Set truststore_type for truststore, valid types can be JKS, JCEKS or PKCS12
-    # for file based truststores prefer PKCS12
-    # truststore_type: JKS
-    #
-    # cipher_suites: [TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA]
-    # require_client_auth: false
-    # require_endpoint_verification: false
+  internode_encryption: none
+  keystore: resources/dse/conf/.keystore
+  keystore_password: cassandra
+  truststore: resources/dse/conf/.truststore
+  truststore_password: cassandra
+  # More advanced defaults below:
+  # protocol: TLS
+  # algorithm: SunX509
+  #
+  # Set keystore_type for keystore, valid types can be JKS, JCEKS, PKCS12 or PKCS11
+  # for file based keystores prefer PKCS12
+  # keystore_type: JKS
+  #
+  # Set truststore_type for truststore, valid types can be JKS, JCEKS or PKCS12
+  # for file based truststores prefer PKCS12
+  # truststore_type: JKS
+  #
+  # cipher_suites: [TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA]
+  # require_client_auth: false
+  # require_endpoint_verification: false
 
 # enable or disable client/server encryption.
 client_encryption_options:
-    enabled: false
-    # If enabled and optional is set to true, encrypted and unencrypted connections over native transport are handled.
-    optional: false
-    keystore: resources/dse/conf/.keystore
-    keystore_password: cassandra
+  enabled: false
+  # If enabled and optional is set to true, encrypted and unencrypted connections over native transport are handled.
+  optional: false
+  keystore: resources/dse/conf/.keystore
+  keystore_password: cassandra
 
-    # Set require_client_auth to true to require two-way host certificate validation
-    # require_client_auth: false
-    #
-    # Set truststore and truststore_password if require_client_auth is true
-    # truststore: resources/dse/conf/.truststore
-    # truststore_password: cassandra
-    #
-    # More advanced defaults below:
-    # default protocol is TLS
-    # protocol: TLS
-    # algorithm: SunX509
-    #
-    # Set keystore_type for keystore, valid types can be JKS, JCEKS, PKCS12 or PKCS11
-    # for file based keystores prefer PKCS12
-    # keystore_type: JKS
-    #
-    # Set truststore_type for truststore, valid types can be JKS, JCEKS or PKCS12
-    # for file based truststores prefer PKCS12
-    # truststore_type: JKS
-    #
-    # cipher_suites: [TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA]
+  # Set require_client_auth to true to require two-way host certificate validation
+  # require_client_auth: false
+  #
+  # Set truststore and truststore_password if require_client_auth is true
+  # truststore: resources/dse/conf/.truststore
+  # truststore_password: cassandra
+  #
+  # More advanced defaults below:
+  # default protocol is TLS
+  # protocol: TLS
+  # algorithm: SunX509
+  #
+  # Set keystore_type for keystore, valid types can be JKS, JCEKS, PKCS12 or PKCS11
+  # for file based keystores prefer PKCS12
+  # keystore_type: JKS
+  #
+  # Set truststore_type for truststore, valid types can be JKS, JCEKS or PKCS12
+  # for file based truststores prefer PKCS12
+  # truststore_type: JKS
+  #
+  # cipher_suites: [TLS_RSA_WITH_AES_128_CBC_SHA,TLS_RSA_WITH_AES_256_CBC_SHA,TLS_DHE_RSA_WITH_AES_128_CBC_SHA,TLS_DHE_RSA_WITH_AES_256_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA]
 
 # internode_compression controls whether traffic between nodes is
 # compressed.
@@ -1091,19 +1091,19 @@ user_function_timeout_policy: die
 # See the DSE installation documentation.
 #
 transparent_data_encryption_options:
-    enabled: false
-    chunk_length_kb: 64
-    cipher: AES/CBC/PKCS5Padding
-    key_alias: testing:1
-    # CBC IV length for AES must be 16 bytes, the default size
-    # iv_length: 16
-    key_provider:
-      - class_name: org.apache.cassandra.security.JKSKeyProvider
-        parameters:
-          - keystore: conf/.keystore
-            keystore_password: cassandra
-            store_type: JCEKS
-            key_password: cassandra
+  enabled: false
+  chunk_length_kb: 64
+  cipher: AES/CBC/PKCS5Padding
+  key_alias: testing:1
+  # CBC IV length for AES must be 16 bytes, the default size
+  # iv_length: 16
+  key_provider:
+    - class_name: org.apache.cassandra.security.JKSKeyProvider
+      parameters:
+        - keystore: conf/.keystore
+          keystore_password: cassandra
+          store_type: JCEKS
+          key_password: cassandra
 
 
 #####################
@@ -1144,60 +1144,60 @@ back_pressure_enabled: false
 # New strategies can be added. Implementors need to implement org.apache.cassandra.net.BackpressureStrategy and
 # provide a public constructor that accepts Map<String, Object>.
 back_pressure_strategy:
-    - class_name: org.apache.cassandra.net.RateBasedBackPressure
-      parameters:
-        - high_ratio: 0.90
-          factor: 5
-          flow: FAST
+  - class_name: org.apache.cassandra.net.RateBasedBackPressure
+    parameters:
+      - high_ratio: 0.90
+        factor: 5
+        flow: FAST
 
-# Coalescing Strategies #
-# Coalescing multiples messages turns out to significantly boost message processing throughput (think doubling or more).
-# On bare metal, the floor for packet processing throughput is high enough that many applications won't notice, but in
-# virtualized environments, the point at which an application can be bound by network packet processing can be
-# surprisingly low compared to the throughput of task processing that is possible inside a VM. It's not that bare metal
-# doesn't benefit from coalescing messages, it's that the number of packets a bare metal network interface can process
-# is sufficient for many applications such that no load starvation is experienced even without coalescing.
-# There are other benefits to coalescing network messages that are harder to isolate with a simple metric like messages
-# per second. By coalescing multiple tasks together, a network thread can process multiple messages for the cost of one
-# trip to read from a socket, and all the task submission work can be done at the same time reducing context switching
-# and increasing cache friendliness of network message processing.
+  # Coalescing Strategies #
+  # Coalescing multiples messages turns out to significantly boost message processing throughput (think doubling or more).
+  # On bare metal, the floor for packet processing throughput is high enough that many applications won't notice, but in
+  # virtualized environments, the point at which an application can be bound by network packet processing can be
+  # surprisingly low compared to the throughput of task processing that is possible inside a VM. It's not that bare metal
+  # doesn't benefit from coalescing messages, it's that the number of packets a bare metal network interface can process
+  # is sufficient for many applications such that no load starvation is experienced even without coalescing.
+  # There are other benefits to coalescing network messages that are harder to isolate with a simple metric like messages
+  # per second. By coalescing multiple tasks together, a network thread can process multiple messages for the cost of one
+  # trip to read from a socket, and all the task submission work can be done at the same time reducing context switching
+  # and increasing cache friendliness of network message processing.
 
-# Strategy to use for coalescing messages.
-# Can be fixed, movingaverage or timehorizon, and is disabled by default; enable if you want to tune for higher
-# throughput, potentially at the expense of latency.
-# You can also specify a subclass of CoalescingStrategies.CoalescingStrategy by name.
-# otc_coalescing_strategy: DISABLED
+  # Strategy to use for coalescing messages.
+  # Can be fixed, movingaverage or timehorizon, and is disabled by default; enable if you want to tune for higher
+  # throughput, potentially at the expense of latency.
+  # You can also specify a subclass of CoalescingStrategies.CoalescingStrategy by name.
+  # otc_coalescing_strategy: DISABLED
 
-# How many microseconds to wait for coalescing. For fixed strategy, this is the amount of time after the first
-# message is received before it will be sent with any accompanying messages. For movingaverage strategy, this is the
-# maximum amount of time that will be waited as well as the interval at which messages must arrive on average
-# for coalescing to be enabled.
-# otc_coalescing_window_us: 100
+  # How many microseconds to wait for coalescing. For fixed strategy, this is the amount of time after the first
+  # message is received before it will be sent with any accompanying messages. For movingaverage strategy, this is the
+  # maximum amount of time that will be waited as well as the interval at which messages must arrive on average
+  # for coalescing to be enabled.
+  # otc_coalescing_window_us: 100
 
-# Do not try to coalesce messages if we already got that many messages. This should be between 1 and 128 (inclusive).
-# otc_coalescing_enough_coalesced_messages: 32
+  # Do not try to coalesce messages if we already got that many messages. This should be between 1 and 128 (inclusive).
+  # otc_coalescing_enough_coalesced_messages: 32
 
-# Size in KB of the direct buffer used to write messages to small/large outbound internode connections. There's one such
-# buffer for every node in the cluster, per connection type. Messages larger than this buffer will require the allocation
-# of a new buffer, so size this accordingly: it should be big enough to accommodate at least the average message size
-# (and possibly more, to allow for batch flushing), but not too large, to avoid running out of memory.
-# otc_small_max_message_buffer_kb: 64
-# otc_large_max_message_buffer_kb: 1024
+  # Size in KB of the direct buffer used to write messages to small/large outbound internode connections. There's one such
+  # buffer for every node in the cluster, per connection type. Messages larger than this buffer will require the allocation
+  # of a new buffer, so size this accordingly: it should be big enough to accommodate at least the average message size
+  # (and possibly more, to allow for batch flushing), but not too large, to avoid running out of memory.
+  # otc_small_max_message_buffer_kb: 64
+  # otc_large_max_message_buffer_kb: 1024
 
-# Emulates DataStax Constellation database-as-a-service defaults.
-#
-# When enabled, some defaults are modified to match those used by DataStax Constellation (DataStax cloud data
-# platform). This includes (but is not limited to) stricter guardrails defaults.
-#
-# This can be used as an convenience to develop and test applications meant to run on DataStax Constellation.
-#
-# Warning: when enabled, the updated defaults reflect those of DataStax Constellation _at the time_ of the currently
-#                 used DSE release. This is a best-effort emulation of said defaults. Further, all nodes must use the same
-#                 config value.
-# emulate_dbaas_defaults: false
+  # Emulates DataStax Constellation database-as-a-service defaults.
+  #
+  # When enabled, some defaults are modified to match those used by DataStax Constellation (DataStax cloud data
+  # platform). This includes (but is not limited to) stricter guardrails defaults.
+  #
+  # This can be used as an convenience to develop and test applications meant to run on DataStax Constellation.
+  #
+  # Warning: when enabled, the updated defaults reflect those of DataStax Constellation _at the time_ of the currently
+  #                 used DSE release. This is a best-effort emulation of said defaults. Further, all nodes must use the same
+  #                 config value.
+  # emulate_dbaas_defaults: false
 
-# Guardrails settings.
-# guardrails:
+  # Guardrails settings.
+  # guardrails:
   # When executing a scan, within or across a partition, we need to keep the
   # tombstones seen in memory so we can return them to the coordinator, which
   # will use them to make sure other replicas also know about the deleted rows.
@@ -1313,9 +1313,9 @@ back_pressure_strategy:
   # Default -1 to disable, may differ if emulate_dbaas_defaults is enabled
   # disk_usage_percentage_failure_threshold: -1
 
-# Enable the backup service
-# The backup service allows scheduling of backups and simplified restore procedures
-# backup_service:
+  # Enable the backup service
+  # The backup service allows scheduling of backups and simplified restore procedures
+  # backup_service:
   # enabled: false
   # Directory used by the backup service to stage files during backup or restore operations.
   # If not set, the default directory is $CASSANDRA_HOME/data/backups_staging.
