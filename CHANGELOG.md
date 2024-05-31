@@ -34,7 +34,6 @@
 - Error out in findEmbeddingProviders when vectorize is disabled [\#1104](https://github.com/stargate/data-api/pull/1104) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
 - Fix \#1102: move hyphen from UpstageAI model base name to suffix \(for better UI exp\) [\#1103](https://github.com/stargate/data-api/pull/1103) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Update config to accept environment variable [\#1101](https://github.com/stargate/data-api/pull/1101) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
-- Bumping version for next data-api release [\#1100](https://github.com/stargate/data-api/pull/1100) ([github-actions[bot]](https://github.com/apps/github-actions))
 - Fix \#1098: prevent NPE for unknown embedding provider id [\#1099](https://github.com/stargate/data-api/pull/1099) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
 ## [v1.0.8](https://github.com/stargate/data-api/tree/v1.0.8) (2024-05-16)
