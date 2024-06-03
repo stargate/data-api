@@ -165,7 +165,6 @@ public abstract class StargateTestResource
 
   private GenericContainer<?> baseCassandraContainer(boolean reuse) {
     String image = this.getCassandraImage();
-    String startupMessage = ".*Created default superuser role.*\\n";
     GenericContainer<?> container = null;
     if (this.isDse()) {
       container =
@@ -173,7 +172,6 @@ public abstract class StargateTestResource
               .withCopyFileToContainer(
                   MountableFile.forClasspathResource("dse.yaml"),
                   "/opt/dse/resources/dse/conf/dse.yaml");
-      startupMessage = ".*DSE startup complete.*\\n";
     } else if (this.isHcd()) {
       container =
           new GenericContainer<>(image)
@@ -199,7 +197,8 @@ public abstract class StargateTestResource
         .withLogConsumer(
             (new Slf4jLogConsumer(LoggerFactory.getLogger("cassandra-docker")))
                 .withPrefix("CASSANDRA"))
-        .waitingFor(Wait.forLogMessage(startupMessage, 1))
+        .waitingFor(
+            Wait.forSuccessfulCommand("cqlsh -u cassandra -p cassandra -e \"describe keyspaces\""))
         .withStartupTimeout(this.getCassandraStartupTimeout())
         .withReuse(reuse);
     if (this.isDse() || this.isHcd()) {
