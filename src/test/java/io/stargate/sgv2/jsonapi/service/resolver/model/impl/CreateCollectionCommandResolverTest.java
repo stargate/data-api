@@ -107,7 +107,7 @@ class CreateCollectionCommandResolverTest {
                                 },
                                 "parameters": {
                                     "resourceName": "test",
-                                    "deploymentId": "test"
+                                    "deploymentName": "test"
                                 }
                             }
                         }
@@ -130,7 +130,7 @@ class CreateCollectionCommandResolverTest {
                 assertThat(op.vectorFunction()).isEqualTo("cosine");
                 assertThat(op.comment())
                     .isEqualTo(
-                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":1,\"options\":{\"vector\":{\"dimension\":768,\"metric\":\"cosine\",\"service\":{\"provider\":\"azureOpenAI\",\"modelName\":\"text-embedding-3-small\",\"authentication\":{\"x-embedding-api-key\":\"user_key\"},\"parameters\":{\"resourceName\":\"test\",\"deploymentId\":\"test\"}}},\"defaultId\":{\"type\":\"\"}}}}",
+                        "{\"collection\":{\"name\":\"my_collection\",\"schema_version\":1,\"options\":{\"vector\":{\"dimension\":768,\"metric\":\"cosine\",\"service\":{\"provider\":\"azureOpenAI\",\"modelName\":\"text-embedding-3-small\",\"authentication\":{\"x-embedding-api-key\":\"user_key\"},\"parameters\":{\"resourceName\":\"test\",\"deploymentName\":\"test\"}}},\"defaultId\":{\"type\":\"\"}}}}",
                         TableCommentConstants.SCHEMA_VERSION_VALUE);
               });
     }
