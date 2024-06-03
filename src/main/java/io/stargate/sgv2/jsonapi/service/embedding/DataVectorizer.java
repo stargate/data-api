@@ -107,8 +107,13 @@ public class DataVectorizer {
               collectionSettings.collectionName());
         }
         Uni<List<float[]>> vectors =
-            embeddingProvider.vectorize(
-                vectorizeTexts, embeddingApiKey, EmbeddingProvider.EmbeddingRequestType.INDEX);
+            embeddingProvider
+                .vectorize(
+                    1,
+                    vectorizeTexts,
+                    embeddingApiKey,
+                    EmbeddingProvider.EmbeddingRequestType.INDEX)
+                .map(res -> res.embeddings());
         return vectors
             .onItem()
             .transform(
@@ -169,8 +174,13 @@ public class DataVectorizer {
               collectionSettings.collectionName());
         }
         Uni<List<float[]>> vectors =
-            embeddingProvider.vectorize(
-                List.of(text), embeddingApiKey, EmbeddingProvider.EmbeddingRequestType.SEARCH);
+            embeddingProvider
+                .vectorize(
+                    1,
+                    List.of(text),
+                    embeddingApiKey,
+                    EmbeddingProvider.EmbeddingRequestType.SEARCH)
+                .map(res -> res.embeddings());
         return vectors
             .onItem()
             .transform(
@@ -250,8 +260,13 @@ public class DataVectorizer {
           node.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
         } else {
           final Uni<List<float[]>> vectors =
-              embeddingProvider.vectorize(
-                  List.of(text), embeddingApiKey, EmbeddingProvider.EmbeddingRequestType.INDEX);
+              embeddingProvider
+                  .vectorize(
+                      1,
+                      List.of(text),
+                      embeddingApiKey,
+                      EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  .map(res -> res.embeddings());
           return vectors
               .onItem()
               .transform(

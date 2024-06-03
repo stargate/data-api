@@ -174,7 +174,7 @@ public record CreateCollectionOperation(
                 res -> {
                   if (res.wasApplied()) {
                     final List<SimpleStatement> indexStatements =
-                        getIndexStatements(commandContext.namespace(), name);
+                        getIndexStatements(commandContext.namespace(), name, collectionExisted);
                     Multi<AsyncResultSet> indexResultMulti;
                     /*
                     CI will override ddlDelayMillis to 0 using `-Dstargate.jsonapi.operations.database-config.ddl-delay-millis=0`
@@ -222,25 +222,39 @@ public record CreateCollectionOperation(
             error ->
                 // InvalidQueryException(DB index limit violation)
                 error instanceof InvalidQueryException
-                    && error
-                        .getMessage()
-                        .matches(
-                            ".*Cannot have more than \\d+ indexes, failed to create index on table.*"))
+                    && (error
+                            .getMessage()
+                            .matches(
+                                ".*Cannot have more than \\d+ indexes, failed to create index on table.*")
+                        || error.getMessage().matches("Index .* already exists")))
         .recoverWithUni(
+            // this block only handles the case where the index creation fails because of index
+            // limit or already exists during create collection
             error -> {
-              // if index creation violates DB index limit and collection not existed before,
-              // and rollback is enabled, then drop the collection
+              // if index creation fails and collection not existed before and rollback is enabled,
+              // then drop the collection
               if (!collectionExisted && tooManyIndexesRollbackEnabled) {
                 return cleanUpCollectionFailedWithTooManyIndex(dataApiRequestInfo, queryExecutor);
               }
-              // if index creation violates DB index limit and collection existed before,
-              // will not drop the collection
-              return Uni.createFrom()
-                  .item(
-                      () ->
-                          ErrorCode.TOO_MANY_INDEXES.toApiException(
-                              "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
-                              name, dbLimitsConfig.indexesNeededPerCollection()));
+
+              if (error.getMessage().matches("Index .* already exists")) {
+                // if index creation fails because index already exists
+                return Uni.createFrom()
+                    .item(
+                        () ->
+                            ErrorCode.INDEXES_CREATION_FAILED.toApiException(
+                                "The index failed to create because an index with the collection name (%s) prefix already exists.",
+                                name));
+              } else {
+                // if index creation violates DB index limit and collection existed before,
+                // will not drop the collection
+                return Uni.createFrom()
+                    .item(
+                        () ->
+                            ErrorCode.TOO_MANY_INDEXES.toApiException(
+                                "Failed to create index for collection '%s': The number of required indexes exceeds the provisioned limit for the database.",
+                                name));
+              }
             });
   }
 
@@ -356,6 +370,7 @@ public record CreateCollectionOperation(
   }
 
   public SimpleStatement getCreateTable(String keyspace, String table) {
+    // The keyspace and table name are quoted to make it case sensitive
     if (vectorSearch) {
       String createTableWithVector =
           "CREATE TABLE IF NOT EXISTS \"%s\".\"%s\" ("
@@ -400,48 +415,65 @@ public record CreateCollectionOperation(
     }
   }
 
-  public List<SimpleStatement> getIndexStatements(String keyspace, String table) {
+  /*
+   * When a createCollection is done on a table that already exist the index are run with IF NOT EXISTS.
+   * For a new table they are run without IF NOT EXISTS.
+   */
+  public List<SimpleStatement> getIndexStatements(
+      String keyspace, String table, boolean collectionExisted) {
     List<SimpleStatement> statements = new ArrayList<>(10);
+    String appender =
+        collectionExisted ? "CREATE CUSTOM INDEX IF NOT EXISTS" : "CREATE CUSTOM INDEX";
+    // All the index names are quoted to make it case sensitive.
     if (!indexingDenyAll()) {
       String existKeys =
-          "CREATE CUSTOM INDEX IF NOT EXISTS %s_exists_keys ON \"%s\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'";
+          appender
+              + " \"%s_exists_keys\" ON \"%s\".\"%s\" (exist_keys) USING 'StorageAttachedIndex'";
 
       statements.add(SimpleStatement.newInstance(String.format(existKeys, table, keyspace, table)));
 
       String arraySize =
-          "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_size ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'";
+          appender
+              + " \"%s_array_size\" ON \"%s\".\"%s\" (entries(array_size)) USING 'StorageAttachedIndex'";
       statements.add(SimpleStatement.newInstance(String.format(arraySize, table, keyspace, table)));
 
       String arrayContains =
-          "CREATE CUSTOM INDEX IF NOT EXISTS %s_array_contains ON \"%s\".\"%s\" (array_contains) USING 'StorageAttachedIndex'";
+          appender
+              + " \"%s_array_contains\" ON \"%s\".\"%s\" (array_contains) USING 'StorageAttachedIndex'";
       statements.add(
           SimpleStatement.newInstance(String.format(arrayContains, table, keyspace, table)));
 
       String boolQuery =
-          "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_bool_values ON \"%s\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex'";
+          appender
+              + " \"%s_query_bool_values\" ON \"%s\".\"%s\" (entries(query_bool_values)) USING 'StorageAttachedIndex'";
       statements.add(SimpleStatement.newInstance(String.format(boolQuery, table, keyspace, table)));
 
       String dblQuery =
-          "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_dbl_values ON \"%s\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex'";
+          appender
+              + " \"%s_query_dbl_values\" ON \"%s\".\"%s\" (entries(query_dbl_values)) USING 'StorageAttachedIndex'";
       statements.add(SimpleStatement.newInstance(String.format(dblQuery, table, keyspace, table)));
 
       String textQuery =
-          "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_text_values ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex'";
+          appender
+              + " \"%s_query_text_values\" ON \"%s\".\"%s\" (entries(query_text_values)) USING 'StorageAttachedIndex'";
       statements.add(SimpleStatement.newInstance(String.format(textQuery, table, keyspace, table)));
 
       String timestampQuery =
-          "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_timestamp_values ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex'";
+          appender
+              + " \"%s_query_timestamp_values\" ON \"%s\".\"%s\" (entries(query_timestamp_values)) USING 'StorageAttachedIndex'";
       statements.add(
           SimpleStatement.newInstance(String.format(timestampQuery, table, keyspace, table)));
 
       String nullQuery =
-          "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_null_values ON \"%s\".\"%s\" (query_null_values) USING 'StorageAttachedIndex'";
+          appender
+              + " \"%s_query_null_values\" ON \"%s\".\"%s\" (query_null_values) USING 'StorageAttachedIndex'";
       statements.add(SimpleStatement.newInstance(String.format(nullQuery, table, keyspace, table)));
     }
 
     if (vectorSearch) {
       String vectorSearch =
-          "CREATE CUSTOM INDEX IF NOT EXISTS %s_query_vector_value ON \"%s\".\"%s\" (query_vector_value) USING 'StorageAttachedIndex' WITH OPTIONS = { 'similarity_function': '"
+          appender
+              + " \"%s_query_vector_value\" ON \"%s\".\"%s\" (query_vector_value) USING 'StorageAttachedIndex' WITH OPTIONS = { 'similarity_function': '"
               + vectorFunction()
               + "'}";
       statements.add(

@@ -100,7 +100,7 @@ public class EmbeddingProviderFactory {
         throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException("custom class undefined");
       }
       try {
-        return (EmbeddingProvider) clazz.get().getConstructor().newInstance();
+        return (EmbeddingProvider) clazz.get().getConstructor(int.class).newInstance(dimension);
       } catch (Exception e) {
         throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
             "custom class provided ('%s') does not resolve to EmbeddingProvider",

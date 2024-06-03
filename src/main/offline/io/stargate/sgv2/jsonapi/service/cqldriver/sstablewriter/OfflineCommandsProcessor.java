@@ -124,7 +124,7 @@ public class OfflineCommandsProcessor {
         >= createNewSessionAfterDataInBytes;
   }
 
-  public Triple<BeginOfflineSessionResponse, CommandContext, String> beginSession(
+  public Triple<BeginOfflineSessionResponse, CommandContext, SchemaInfo> beginSession(
       CreateCollectionCommand createCollectionCommand,
       String namespace,
       String ssTablesOutputDirectory,
@@ -163,7 +163,11 @@ public class OfflineCommandsProcessor {
     return new ImmutableTriple<>(
         beginOfflineSessionResponse,
         commandContext,
-        beginOfflineSessionCommand.getFileWriterParams().createTableCQL());
+        new SchemaInfo(
+            beginOfflineSessionCommand.getFileWriterParams().keyspaceName(),
+            beginOfflineSessionCommand.getFileWriterParams().tableName(),
+            beginOfflineSessionCommand.getFileWriterParams().createTableCQL(),
+            beginOfflineSessionCommand.getFileWriterParams().indexCQLs()));
   }
 
   public OfflineInsertManyResponse loadData(

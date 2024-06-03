@@ -36,7 +36,16 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   securitySchemeName = OpenApiConstants.SecuritySchemes.TOKEN,
                   type = SecuritySchemeType.APIKEY,
                   in = SecuritySchemeIn.HEADER,
-                  apiKeyName = HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME)
+                  apiKeyName = HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+                  description =
+                      """
+                      This value depends on the upstream backend. In the case of
+                      an Apache Cassandra cluster follows the format
+                      `Cassandra:Base64(username):Base64(password)`. For example,
+                      assuming a username of `cassandra` and password of
+                      `cassandra` the `Token` header would be set to
+                      `Cassandra:Y2Fzc2FuZHJhCg==:Y2Fzc2FuZHJhCg==`.
+                      """),
             },
 
             // reusable parameters
@@ -115,7 +124,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                              "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
                              "projection": {"tags":0},
                              "sort" : {"location" : 1},
-                             "options": {"limit" : 1000, "pageState" : "Next page state got from previous page call"}
+                             "options": {"limit" : 1000}
                         }
                       }
                       """),
@@ -126,10 +135,10 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "find": {
-                           "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
-                           "projection": {"tags":0},
-                           "sort" : {"$vector" : [0.25,0.25,0.25,0.25,0.25]},
-                           "options": {"limit" : 1000, "includeSimilarity" : true}
+                            "filter": {"location": "London", "race.competitors" : {"$eq" : 100}},
+                            "projection": {"tags":0},
+                            "sort" : {"$vector" : [0.25,0.25,0.25,0.25,0.25]},
+                            "options": {"limit" : 1000, "includeSimilarity" : true}
                         }
                       }
                     """),
@@ -148,8 +157,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                             },
                             "projection": {"count": 1,"location": 1,"race": 1},
                             "options" : {
-                               "returnDocument" : "before",
-                               "upsert" : true
+                                "returnDocument" : "before",
+                                "upsert" : true
                             }
                         }
                       }
@@ -159,14 +168,14 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`findOneAndDelete` command",
                   value =
                       """
-                        {
-                          "findOneAndDelete": {
-                              "filter": {"location": "London"},
-                              "sort" : {"race.start_date" : 1},
-                              "projection" : {"location": 1}
-                          }
+                      {
+                        "findOneAndDelete": {
+                            "filter": {"location": "London"},
+                            "sort" : {"race.start_date" : 1},
+                            "projection" : {"location": 1}
                         }
-                        """),
+                      }
+                      """),
               @ExampleObject(
                   name = "findOneAndReplace",
                   summary = "`findOneAndReplace` command",
@@ -181,8 +190,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                 "count": 3
                             },
                             "options" : {
-                               "returnDocument" : "before",
-                               "upsert" : true
+                                "returnDocument" : "before",
+                                "upsert" : true
                             },
                             "projection" : {"location": 1}
                         }
@@ -193,35 +202,35 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`estimatedDocumentCount` command",
                   value =
                       """
-                                    {
-                                      "estimatedDocumentCount": {}
-                                    }
-                                  """),
+                      {
+                        "estimatedDocumentCount": {}
+                      }
+                      """),
               @ExampleObject(
                   name = "updateOne",
                   summary = "`updateOne` command",
                   value =
                       """
                       {
-                      "updateOne": {
-                          "filter": {"location": "London"},
-                          "update": {
-                              "$set": {"location": "New York"},
-                              "$push": {"tags": "marathon"}
-                          },
-                          "sort" :  {"race.start_date" : 1},
-                          "options" : {
-                              "upsert" : true
-                          }
+                        "updateOne": {
+                            "filter": {"location": "London"},
+                            "update": {
+                                "$set": {"location": "New York"},
+                                "$push": {"tags": "marathon"}
+                            },
+                            "sort" :  {"race.start_date" : 1},
+                            "options" : {
+                                "upsert" : true
+                            }
+                        }
                       }
-                    }
-                    """),
+                      """),
               @ExampleObject(
                   name = "updateMany",
                   summary = "`updateMany` command",
                   value =
                       """
-                        {
+                      {
                         "updateMany": {
                             "filter": {"location": "London"},
                             "update": {
@@ -239,23 +248,23 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`deleteOne` command",
                   value =
                       """
-                    {
-                      "deleteOne": {
-                          "filter": {"_id": "1"},
-                          "sort" : {"race.start_date" : 1}
+                      {
+                        "deleteOne": {
+                            "filter": {"_id": "1"},
+                            "sort" : {"race.start_date" : 1}
+                        }
                       }
-                    }
-                    """),
+                      """),
               @ExampleObject(
                   name = "deleteMany",
                   summary = "`deleteMany` command",
                   value =
                       """
-                        {
-                          "deleteMany": {
-                              "filter": {"location": "London"}
-                          }
+                      {
+                        "deleteMany": {
+                            "filter": {"location": "London"}
                         }
+                      }
                       """),
               @ExampleObject(
                   name = "insertOne",
@@ -264,16 +273,16 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "insertOne": {
-                          "document": {
-                            "_id": "1",
-                            "location": "London",
-                            "race": {
-                              "competitors": 100,
-                              "start_date": "2022-08-15"
-                            },
-                            "tags": [ ],
-                            "$vector" : [0.25,0.25,0.25,0.25,0.25]
-                          }
+                            "document": {
+                                "_id": "1",
+                                "location": "London",
+                                "race": {
+                                    "competitors": 100,
+                                    "start_date": "2022-08-15"
+                                },
+                                "tags": [ ],
+                                "$vector" : [0.25,0.25,0.25,0.25,0.25]
+                            }
                         }
                       }
                       """),
@@ -282,15 +291,15 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`insertMany` command",
                   value =
                       """
-                        {
-                          "insertMany": {
+                      {
+                        "insertMany": {
                             "documents": [
                                 {
                                   "_id": "1",
                                   "location": "London",
                                   "race": {
-                                    "competitors": 100,
-                                    "start_date": "2022-08-15"
+                                      "competitors": 100,
+                                      "start_date": "2022-08-15"
                                   },
                                   "tags" : [ "eu" ],
                                   "$vector" : [0.35,0.35,0.35,0.35,0.35]
@@ -299,8 +308,8 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                   "_id": "2",
                                   "location": "New York",
                                   "race": {
-                                    "competitors": 150,
-                                    "start_date": "2022-09-15"
+                                      "competitors": 150,
+                                      "start_date": "2022-09-15"
                                   },
                                   "tags": [ "us" ],
                                   "$vector" : [0.45,0.45,0.45,0.45,0.45]
@@ -309,117 +318,115 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                             "options": {
                                 "ordered": true
                             }
-                          }
                         }
+                      }
                       """),
               @ExampleObject(
                   name = "createNamespace",
                   summary = "`CreateNamespace` command",
                   value =
                       """
-                        {
-                            "createNamespace": {
-                              "name": "cycling"
-                            }
+                      {
+                        "createNamespace": {
+                            "name": "cycling"
                         }
+                      }
                       """),
               @ExampleObject(
                   name = "createNamespaceWithReplication",
                   summary = "`CreateNamespace` command with replication",
                   value =
                       """
-                        {
-                            "createNamespace": {
-                              "name": "cycling",
-                              "options": {
+                      {
+                        "createNamespace": {
+                            "name": "cycling",
+                            "options": {
                                 "replication": {
-                                   "class": "SimpleStrategy",
-                                   "replication_factor": 3
+                                    "class": "SimpleStrategy",
+                                    "replication_factor": 3
                                 }
-                              }
                             }
                         }
+                      }
                       """),
               @ExampleObject(
                   name = "findNamespaces",
                   summary = "`FindNamespaces` command",
                   value =
                       """
-                        {
-                            "findNamespaces": {
-                            }
-                        }
+                      {
+                        "findNamespaces": {}
+                      }
                       """),
               @ExampleObject(
                   name = "dropNamespace",
                   summary = "`DropNamespace` command",
                   value =
                       """
-                        {
-                            "dropNamespace": {
-                              "name": "cycling"
-                            }
+                      {
+                        "dropNamespace": {
+                            "name": "cycling"
                         }
+                      }
                       """),
               @ExampleObject(
                   name = "createCollection",
                   summary = "`CreateCollection` command",
                   value =
                       """
-                        {
-                            "createCollection": {
-                              "name": "events"
-                            }
+                      {
+                        "createCollection": {
+                            "name": "events"
                         }
+                      }
                       """),
               @ExampleObject(
                   name = "createCollectionVectorSearch",
                   summary = "`CreateCollection` command with vector search",
                   value =
                       """
-                        {
-                            "createCollection": {
-                              "name": "events_vector",
-                              "options": {
+                      {
+                        "createCollection": {
+                            "name": "events",
+                            "options": {
                                 "vector": {
-                                  "dimension": 2,
-                                  "metric": "cosine"
+                                    "dimension": 5,
+                                    "metric": "cosine"
                                 }
-                              }
                             }
                         }
-                     """),
+                      }
+                      """),
               @ExampleObject(
                   name = "findCollections",
                   summary = "`FindCollections` command",
                   value =
                       """
-                        {
-                            "findCollections": {
-                            }
-                        }
+                      {
+                        "findCollections": {}
+                      }
                       """),
               @ExampleObject(
                   name = "deleteCollection",
                   summary = "`DeleteCollection` command",
                   value =
                       """
-                        {
-                            "deleteCollection": {
-                              "name": "events"
-                            }
+                      {
+                        "deleteCollection": {
+                            "name": "events"
                         }
+                      }
                       """),
               @ExampleObject(
                   name = "resultCount",
                   summary = "`countDocuments` command result",
                   value =
                       """
-                        {
-                          "status": {
+                      {
+                        "status": {
                             "count": 2
-                          }
                         }
+                      }
                       """),
               @ExampleObject(
                   name = "resultFind",
@@ -428,27 +435,26 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "data": {
-                          "documents": [
-                            {
-                               "_id": "1",
-                               "location": "London",
-                               "race": {
-                                 "competitors": 100,
-                                 "start_date": "2022-08-15"
-                               },
-                               "tags": [ "eu" ]
-                            },
-                            {
-                               "_id": "2",
-                               "location": "Barcelona",
-                               "race": {
-                                 "competitors": 125,
-                                 "start_date": "2022-09-26"
-                               },
-                               "tags": [ "us" ]
-                            }
-                          ],
-                          "nextPageState": "jA8qg0AitZ8q28568GybNQ=="
+                            "documents": [
+                                {
+                                  "_id": "1",
+                                  "location": "London",
+                                  "race": {
+                                      "competitors": 100,
+                                      "start_date": "2022-08-15"
+                                  },
+                                  "tags": [ "eu" ]
+                                },
+                                {
+                                  "_id": "2",
+                                  "location": "Barcelona",
+                                  "race": {
+                                      "competitors": 125,
+                                      "start_date": "2022-09-26"
+                                  },
+                                  "tags": [ "us" ]
+                                }
+                            ]
                         }
                       }
                       """),
@@ -459,13 +465,13 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "data": {
-                          "document": {
-                             "location": "London",
-                             "race": {
-                               "start_date": "2022-08-15"
-                             },
-                             "tags": [ "eu" ]
-                          }
+                            "document": {
+                                "location": "London",
+                                "race": {
+                                    "start_date": "2022-08-15"
+                                },
+                                "tags": [ "eu" ]
+                            }
                         }
                       }
                       """),
@@ -476,19 +482,19 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "data": {
-                          "document": {
-                            "_id": "1",
-                            "location": "New York",
-                            "race": {
-                              "competitors": 100,
-                              "start_date": "2022-08-15"
-                            },
-                            "count": 3
-                          }
+                            "document": {
+                              "_id": "1",
+                              "location": "New York",
+                              "race": {
+                                  "competitors": 100,
+                                  "start_date": "2022-08-15"
+                              },
+                              "count": 3
+                            }
                         },
                         "status": {
-                          "matchedCount": 1,
-                          "modifiedCount": 1
+                            "matchedCount": 1,
+                            "modifiedCount": 1
                         }
                       }
                       """),
@@ -497,18 +503,18 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`findOneAndReplace` command result",
                   value =
                       """
-                     {
-                       "data": {
-                         "document": {
-                           "_id": "1",
-                           "location": "New York",
-                           "count": 3
-                         }
-                       },
-                       "status": {
-                         "matchedCount": 1,
-                         "modifiedCount": 1
-                       }
+                      {
+                        "data": {
+                            "document": {
+                              "_id": "1",
+                              "location": "New York",
+                              "count": 3
+                            }
+                        },
+                        "status": {
+                            "matchedCount": 1,
+                            "modifiedCount": 1
+                        }
                      }
                      """),
               @ExampleObject(
@@ -516,19 +522,19 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`findOneAndDetele` command result",
                   value =
                       """
-                       {
-                         "data": {
-                           "document": {
-                             "_id": "1",
-                             "location": "New York",
-                             "count": 3
-                           }
-                         },
-                         "status": {
-                           "deletedCount": 1
-                         }
-                       }
-                       """),
+                      {
+                        "data": {
+                            "document": {
+                                "_id": "1",
+                                "location": "New York",
+                                "count": 3
+                            }
+                        },
+                        "status": {
+                            "deletedCount": 1
+                        }
+                      }
+                      """),
               @ExampleObject(
                   name = "resultFindOneAndUpdateUpsert",
                   summary = "`findOneAndUpdate` command with upsert result",
@@ -536,30 +542,30 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "data": {
-                          "document": {
-                            "_id": "1",
-                            "location": "New York",
-                            "count": 3
-                          }
+                            "document": {
+                                "_id": "1",
+                                "location": "New York",
+                                "count": 3
+                            }
                         },
                         "status": {
-                          "upsertedId": "1",
-                          "matchedCount": 0,
-                          "modifiedCount": 1
+                            "upsertedId": "1",
+                            "matchedCount": 0,
+                            "modifiedCount": 1
                         }
                       }
-                  """),
+                      """),
               @ExampleObject(
                   name = "resultUpdateOne",
                   summary = "`updateOne` command result",
                   value =
                       """
                       {
-                          "status": {
+                        "status": {
                             "matchedCount": 1,
                             "modifiedCount": 1
-                          }
                         }
+                      }
                       """),
               @ExampleObject(
                   name = "resultUpdateOneUpsert",
@@ -567,12 +573,12 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   value =
                       """
                       {
-                          "status": {
+                        "status": {
                             "upsertedId": "1",
                             "matchedCount": 0,
                             "modifiedCount": 1
-                          }
                         }
+                      }
                       """),
               @ExampleObject(
                   name = "resultUpdateMany",
@@ -581,9 +587,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "status": {
-                          "matchedCount": 20,
-                          "modifiedCount": 20,
-                          "moreData": true
+                            "matchedCount": 20,
+                            "modifiedCount": 20,
+                            "moreData": true
                         }
                       }
                   """),
@@ -594,9 +600,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "status": {
-                          "upsertedId": "1",
-                          "matchedCount": 0,
-                          "modifiedCount": 1
+                            "upsertedId": "1",
+                            "matchedCount": 0,
+                            "modifiedCount": 1
                         }
                       }
                   """),
@@ -616,48 +622,48 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`deleteOne` command result",
                   value =
                       """
-                                {
-                                  "status": {
-                                      "deletedCount": 1
-                                  }
-                                }
-                                """),
+                      {
+                        "status": {
+                            "deletedCount": 1
+                        }
+                      }
+                      """),
               @ExampleObject(
                   name = "resultDeleteMany",
                   summary = "`deleteMany` command result",
                   value =
                       """
-                                {
-                                  "status": {
-                                      "deletedCount": 2,
-                                      "moreData" : true
-                                  }
-                                }
-                                """),
+                      {
+                        "status": {
+                            "deletedCount": 2,
+                            "moreData" : true
+                        }
+                      }
+                      """),
               @ExampleObject(
                   name = "resultFindNamespaces",
                   summary = "`findNamespaces` command result",
                   value =
                       """
-                                {
-                                  "status": {
-                                    "namespaces": [
-                                      "cycling"
-                                    ]
-                                  }
-                                }
-                                """),
+                      {
+                        "status": {
+                            "namespaces": [
+                                "cycling"
+                            ]
+                        }
+                      }
+                      """),
               @ExampleObject(
                   name = "resultFindCollections",
                   summary = "`findCollections` command result",
                   value =
                       """
-                                {
-                                  "status": {
-                                      "collections": [ "events" ]
-                                  }
-                                }
-                                """),
+                      {
+                        "status": {
+                            "collections": [ "events" ]
+                        }
+                      }
+                      """),
               @ExampleObject(
                   name = "resultError",
                   summary = "Error result",
@@ -665,9 +671,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       """
                       {
                         "errors": [
-                          {
-                            "message": "The command failed because of some specific reason."
-                          }
+                            {
+                                "message": "The command failed because of some specific reason."
+                            }
                         ]
                       }
                       """),
@@ -687,86 +693,87 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`findEmbeddingProviders` command result",
                   value =
                       """
-                        {
-                            "status": {
-                                "embeddingProviders": {
-                                    "openai": {
-                                        "displayName": "OpenAI",
-                                        "url": "https://api.openai.com/v1/",
-                                        "supportedAuthentication": {
-                                            "HEADER": {
-                                                "enabled": true,
-                                                "tokens": [
-                                                    {
-                                                        "forwarded": "Authorization",
-                                                        "accepted": "x-embedding-api-key"
-                                                    }
-                                                ]
-                                            },
-                                            "SHARED_SECRET": {
-                                                "enabled": false,
-                                                "tokens": [
-                                                    {
-                                                        "forwarded": "Authorization",
-                                                        "accepted": "providerKey"
-                                                    }
-                                                ]
-                                            },
-                                            "NONE": {
-                                                "enabled": false,
-                                                "tokens": []
-                                            }
+                      {
+                        "status": {
+                            "embeddingProviders": {
+                                "openai": {
+                                    "displayName": "OpenAI",
+                                    "url": "https://api.openai.com/v1/",
+                                    "supportedAuthentication": {
+                                        "HEADER": {
+                                            "enabled": true,
+                                            "tokens": [
+                                                {
+                                                    "forwarded": "Authorization",
+                                                    "accepted": "x-embedding-api-key"
+                                                }
+                                            ]
                                         },
-                                        "parameters": [],
-                                        "models": [
-                                            {
-                                                "name": "text-embedding-3-small",
-                                                "vectorDimension": null,
-                                                "parameters": [
-                                                    {
-                                                        "name": "vectorDimension",
-                                                        "type": "number",
-                                                        "required": true,
-                                                        "defaultValue": "512",
-                                                        "validation": {
-                                                            "numericRange": [
-                                                                2,
-                                                                1536
-                                                            ]
-                                                        },
-                                                        "help": "Vector dimension to use in the database and when calling OpenAI."
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "name": "text-embedding-3-large",
-                                                "vectorDimension": null,
-                                                "parameters": [
-                                                    {
-                                                        "name": "vectorDimension",
-                                                        "type": "number",
-                                                        "required": true,
-                                                        "defaultValue": "1024",
-                                                        "validation": {
-                                                            "numericRange": [
-                                                                256,
-                                                                3072
-                                                            ]
-                                                        },
-                                                        "help": "Vector dimension to use in the database and when calling OpenAI."
-                                                    }
-                                                ]
-                                            },
-                                            {
-                                                "name": "text-embedding-ada-002",
-                                                "vectorDimension": 1536,
-                                                "parameters": []
-                                            }
-                                        ]
-                                    }
+                                        "SHARED_SECRET": {
+                                            "enabled": false,
+                                            "tokens": [
+                                                {
+                                                    "forwarded": "Authorization",
+                                                    "accepted": "providerKey"
+                                                }
+                                            ]
+                                        },
+                                        "NONE": {
+                                            "enabled": false,
+                                            "tokens": []
+                                        }
+                                    },
+                                    "parameters": [],
+                                    "models": [
+                                        {
+                                            "name": "text-embedding-3-small",
+                                            "vectorDimension": null,
+                                            "parameters": [
+                                                {
+                                                    "name": "vectorDimension",
+                                                    "type": "number",
+                                                    "required": true,
+                                                    "defaultValue": "512",
+                                                    "validation": {
+                                                        "numericRange": [
+                                                            2,
+                                                            1536
+                                                        ]
+                                                    },
+                                                    "help": "Vector dimension to use in the database and when calling OpenAI."
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "name": "text-embedding-3-large",
+                                            "vectorDimension": null,
+                                            "parameters": [
+                                                {
+                                                    "name": "vectorDimension",
+                                                    "type": "number",
+                                                    "required": true,
+                                                    "defaultValue": "1024",
+                                                    "validation": {
+                                                        "numericRange": [
+                                                            256,
+                                                            3072
+                                                        ]
+                                                    },
+                                                    "help": "Vector dimension to use in the database and when calling OpenAI."
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "name": "text-embedding-ada-002",
+                                            "vectorDimension": 1536,
+                                            "parameters": []
+                                        }
+                                    ]
                                 }
                             }
-                        }                      """)
+                        }
+                      }
+                      """)
             }))
 public class StargateJsonApi extends Application {
   @Produces

@@ -61,6 +61,7 @@ public abstract class StargateTestResource
       } else {
         propsBuilder = this.startWithoutContainerNetwork(reuse);
       }
+
       if (useCoordinator()) {
         Integer authPort = this.stargateContainer.getMappedPort(8081);
         String token = this.getAuthToken(this.stargateContainer.getHost(), authPort);
@@ -90,6 +91,11 @@ public abstract class StargateTestResource
       propsBuilder.put(
           "stargate.jsonapi.operations.default-count-page-size",
           String.valueOf(getCountPageSize()));
+      Long maxToSort = getMaxDocumentSortCount();
+      if (maxToSort != null) {
+        propsBuilder.put(
+            "stargate.jsonapi.operations.max-document-sort-count", String.valueOf(maxToSort));
+      }
       propsBuilder.put("stargate.jsonapi.operations.vectorize-enabled", "true");
 
       ImmutableMap<String, String> props = propsBuilder.build();
@@ -159,31 +165,51 @@ public abstract class StargateTestResource
 
   private GenericContainer<?> baseCassandraContainer(boolean reuse) {
     String image = this.getCassandraImage();
-    GenericContainer<?> container =
-        new GenericContainer<>(image)
-            .withCopyFileToContainer(
-                MountableFile.forClasspathResource("cassandra.yaml"),
-                "/etc/cassandra/cassandra.yaml")
-            .withEnv("HEAP_NEWSIZE", "512M")
-            .withEnv("MAX_HEAP_SIZE", "2048M")
-            .withEnv("CASSANDRA_CGROUP_MEMORY_LIMIT", "true")
-            .withEnv(
-                "JVM_EXTRA_OPTS",
-                "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8")
-            .withNetworkAliases(new String[] {"cassandra"})
-            .withExposedPorts(new Integer[] {7000, 9042})
-            .withLogConsumer(
-                (new Slf4jLogConsumer(LoggerFactory.getLogger("cassandra-docker")))
-                    .withPrefix("CASSANDRA"))
-            .waitingFor(Wait.forLogMessage(".*Created default superuser role.*\\n", 1))
-            .withStartupTimeout(this.getCassandraStartupTimeout())
-            .withReuse(reuse);
+    GenericContainer<?> container = null;
     if (this.isDse()) {
-      container.withEnv("CLUSTER_NAME", getClusterName()).withEnv("DS_LICENSE", "accept");
+      container =
+          new GenericContainer<>(image)
+              .withCopyFileToContainer(
+                  MountableFile.forClasspathResource("dse.yaml"),
+                  "/opt/dse/resources/dse/conf/dse.yaml");
+    } else if (this.isHcd()) {
+      container =
+          new GenericContainer<>(image)
+              .withCopyFileToContainer(
+                  MountableFile.forClasspathResource("cassandra-hcd.yaml"),
+                  "/opt/hcd/resources/cassandra/conf/cassandra.yaml");
     } else {
-      container.withEnv("CASSANDRA_CLUSTER_NAME", getClusterName());
+      container =
+          new GenericContainer<>(image)
+              .withCopyFileToContainer(
+                  MountableFile.forClasspathResource("cassandra.yaml"),
+                  "/etc/cassandra/cassandra.yaml");
     }
-
+    container
+        .withEnv("HEAP_NEWSIZE", "512M")
+        .withEnv("MAX_HEAP_SIZE", "2048M")
+        .withEnv("CASSANDRA_CGROUP_MEMORY_LIMIT", "true")
+        .withEnv(
+            "JVM_EXTRA_OPTS",
+            "-Dcassandra.skip_wait_for_gossip_to_settle=0 -Dcassandra.load_ring_state=false -Dcassandra.initial_token=1 -Dcassandra.sai.max_string_term_size_kb=8")
+        .withNetworkAliases(new String[] {"cassandra"})
+        .withExposedPorts(new Integer[] {7000, 9042})
+        .withLogConsumer(
+            (new Slf4jLogConsumer(LoggerFactory.getLogger("cassandra-docker")))
+                .withPrefix("CASSANDRA"));
+    if (isHcd() || isDse()) {
+      container
+          .waitingFor(
+              Wait.forSuccessfulCommand(
+                  "cqlsh -u cassandra -p cassandra -e \"describe keyspaces\""))
+          .withEnv("CLUSTER_NAME", getClusterName())
+          .withEnv("DS_LICENSE", "accept");
+    } else {
+      container
+          .waitingFor(Wait.forLogMessage(".*Created default superuser role.*\\n", 1))
+          .withEnv("CASSANDRA_CLUSTER_NAME", getClusterName());
+    }
+    container.withStartupTimeout(this.getCassandraStartupTimeout()).withReuse(reuse);
     return container;
   }
 
@@ -243,10 +269,17 @@ public abstract class StargateTestResource
         "testing.containers.cluster-persistence", "persistence-cassandra-4.0");
   }
 
-  private boolean isDse() {
+  protected boolean isDse() {
     String dse =
         System.getProperty(
             "testing.containers.cluster-dse", StargateTestResource.Defaults.CLUSTER_DSE);
+    return "true".equals(dse);
+  }
+
+  protected boolean isHcd() {
+    String dse =
+        System.getProperty(
+            "testing.containers.cluster-hcd", StargateTestResource.Defaults.CLUSTER_HCD);
     return "true".equals(dse);
   }
 
@@ -260,7 +293,7 @@ public abstract class StargateTestResource
   }
 
   private Duration getCassandraStartupTimeout() {
-    long cassandraStartupTimeout = Long.getLong("testing.containers.cassandra-startup-timeout", 2L);
+    long cassandraStartupTimeout = Long.getLong("testing.containers.cassandra-startup-timeout", 5L);
     return Duration.ofMinutes(cassandraStartupTimeout);
   }
 
@@ -299,6 +332,8 @@ public abstract class StargateTestResource
 
   public abstract int getCountPageSize();
 
+  public abstract Long getMaxDocumentSortCount();
+
   interface Defaults {
     String CASSANDRA_IMAGE = "cassandra";
     String CASSANDRA_IMAGE_TAG = "4.0.10";
@@ -307,6 +342,8 @@ public abstract class StargateTestResource
     String CLUSTER_NAME = "int-test-cluster";
     String PERSISTENCE_MODULE = "persistence-cassandra-4.0";
     String CLUSTER_DSE = null;
+
+    String CLUSTER_HCD = null;
 
     String CQL_HOST = "stargate";
     long CASSANDRA_STARTUP_TIMEOUT = 2L;

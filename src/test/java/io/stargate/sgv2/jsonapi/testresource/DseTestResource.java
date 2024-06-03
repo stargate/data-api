@@ -60,6 +60,11 @@ public class DseTestResource extends StargateTestResource {
     return 2;
   }
 
+  // Set to 100 from 10,000 for easier testing
+  public Long getMaxDocumentSortCount() {
+    return 100L;
+  }
+
   @Override
   public Map<String, String> start() {
     Map<String, String> env = super.start();
@@ -94,6 +99,9 @@ public class DseTestResource extends StargateTestResource {
       if (defaultToken != null) {
         propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", defaultToken);
       }
+    }
+    if (isDse() || isHcd()) {
+      propsBuilder.put("stargate.jsonapi.operations.database-config.local-datacenter", "dc1");
     }
     propsBuilder.put("stargate.data-store.ignore-bridge", "true");
     propsBuilder.put("stargate.debug.enabled", "true");

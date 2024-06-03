@@ -32,7 +32,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private final DatabaseLimitsConfig dbLimitsConfig;
   private final OperationsConfig operationsConfig;
   private final EmbeddingProvidersConfig embeddingProvidersConfig;
-
   private final ValidateCredentials validateCredentials;
 
   @Inject

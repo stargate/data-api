@@ -89,7 +89,7 @@ jobs:
       # Adding -Poffline includes offline mode classes as well for test
       - name: Build & Test
         run: |
-          ./mvnw -B -ntp clean test 
+          ./mvnw -B -ntp clean test -Poffline
   
 
   # runs int tests
@@ -108,12 +108,15 @@ jobs:
 
       # matrix props:
       matrix:
-        type: [ docker, native, dse-it ]
+        type: [ docker, native, dse69-it, hcd-it ]
         include:
-          - type: dse-it
-            profile: '-Pdse-it'
-        exclude:
           - type: docker
+            profile: '-Poffline'
+          - type: dse69-it
+            profile: '-Pdse69-it,offline'
+          - type: hcd-it
+            profile: '-Phcd-it,offline'
+        exclude:
           - type: native
             #profile: '-Pnative'
 

@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
@@ -34,7 +35,6 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class FindOperationWithSort {
-    private final ObjectMapper objectMapper = new ObjectMapper();
     // should be static, since UUID should not be generated multiple times across all test methods
     private static final List<Object> testDatas = getDocuments(25);
 
@@ -42,7 +42,7 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
     @Order(1)
     public void setUp() {
       Collections.shuffle(testDatas);
-      insert(testDatas);
+      insert(collectionName, testDatas);
     }
 
     @Test
@@ -50,12 +50,12 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       sortByUserName(testDatas, true);
       String json =
           """
-          {
-            "find": {
-              "sort" : {"username" : 1}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "sort" : {"username" : 1}
+                        }
+                      }
+                      """;
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
       for (int i = 0; i < 20; i++)
@@ -83,13 +83,13 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       sortByUserName(testDatas, true);
       String json =
           """
-          {
-            "find": {
-              "sort" : {"username" : 1},
-              "options" : {"skip": 10, "limit" : 10}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "sort" : {"username" : 1},
+                          "options" : {"skip": 10, "limit" : 10}
+                        }
+                      }
+                      """;
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(10);
@@ -122,12 +122,12 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       sortByUserName(testDatas, false);
       String json =
           """
-          {
-            "find": {
-              "sort" : {"username" : -1}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "sort" : {"username" : -1}
+                        }
+                      }
+                      """;
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
@@ -157,12 +157,12 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       sortByActiveUser(testDatas, true);
       String json =
           """
-          {
-            "find": {
-              "sort" : {"activeUser" : 1}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "sort" : {"activeUser" : 1}
+                        }
+                      }
+                      """;
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
@@ -192,12 +192,12 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       sortByActiveUser(testDatas, false);
       String json =
           """
-          {
-            "find": {
-              "sort" : {"activeUser" : -1}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "sort" : {"activeUser" : -1}
+                        }
+                      }
+                      """;
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
@@ -227,12 +227,12 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       sortByUserId(testDatas, true);
       String json =
           """
-          {
-            "find": {
-              "sort" : {"userId" : 1}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "sort" : {"userId" : 1}
+                        }
+                      }
+                      """;
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
@@ -262,12 +262,12 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       sortByUserId(testDatas, false);
       String json =
           """
-          {
-            "find": {
-              "sort" : {"userId" : -1}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "sort" : {"userId" : -1}
+                        }
+                      }
+                      """;
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
@@ -301,13 +301,13 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       sortByUserId(datas, true);
       String json =
           """
-          {
-            "find": {
-              "filter" : {"activeUser" : true},
-              "sort" : {"userId" : 1}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"activeUser" : true},
+                          "sort" : {"userId" : 1}
+                        }
+                      }
+                      """;
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
@@ -335,12 +335,12 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       sortByUserNameUserId(testDatas, true, true);
       String json =
           """
-          {
-            "find": {
-              "sort" : {"username" : 1, "userId" : 1}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "sort" : {"username" : 1, "userId" : 1}
+                        }
+                      }
+                      """;
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(20);
@@ -374,13 +374,13 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       sortByUserNameUserId(datas, true, false);
       String json =
           """
-          {
-            "find": {
-              "filter" : {"activeUser" : true},
-              "sort" : {"username" : 1, "userId" : -1}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"activeUser" : true},
+                          "sort" : {"username" : 1, "userId" : -1}
+                        }
+                      }
+                      """;
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
@@ -411,13 +411,13 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       sortByDate(datas, true);
       String json =
           """
-          {
-            "find": {
-              "filter" : {"activeUser" : true},
-              "sort" : {"dateValue" : 1}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"activeUser" : true},
+                          "sort" : {"dateValue" : 1}
+                        }
+                      }
+                      """;
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
@@ -448,13 +448,13 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
       sortByDate(datas, false);
       String json =
           """
-          {
-            "find": {
-              "filter" : {"activeUser" : true},
-              "sort" : {"dateValue" : -1}
-            }
-          }
-          """;
+                      {
+                        "find": {
+                          "filter" : {"activeUser" : true},
+                          "sort" : {"dateValue" : -1}
+                        }
+                      }
+                      """;
 
       JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodefactory.arrayNode(datas.size());
@@ -489,15 +489,15 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
 
       String json =
           """
-              {
-                "find": {
-                  "filter":{
-                     "uuid" : {"$exists" : true}
-                   },
-                   "sort" : {"uuid" : 1}
-                }
-              }
-              """;
+                      {
+                        "find": {
+                          "filter":{
+                             "uuid" : {"$exists" : true}
+                           },
+                           "sort" : {"uuid" : 1}
+                        }
+                      }
+                      """;
 
       JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
       final ArrayNode arrayNode = nodeFactory.arrayNode(first20Datas.size());
@@ -632,134 +632,182 @@ public class FindOperationWithSortIntegrationTest extends AbstractCollectionInte
             }
           });
     }
+  }
 
-    private JsonNode getUserNameAsJsonNode(Object data) {
-      if (data instanceof TestData td) {
-        if (td.username() == null) return objectMapper.getNodeFactory().nullNode();
-        return objectMapper.getNodeFactory().textNode(td.username());
-      }
-      if (data instanceof TestDataMissingBoolean td) {
-        return objectMapper.getNodeFactory().textNode(td.username());
-      }
+  @Nested
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+  class FindOperationWithFailingSort {
+    static final String biggerCollectionName =
+        "col_fail_" + RandomStringUtils.randomAlphanumeric(16);
 
-      if (data instanceof TestDataUserIdAsText td) {
-        return objectMapper.getNodeFactory().textNode(td.username());
-      }
+    // Test limit is max 100, create couple more
+    private static final List<Object> testDatas = getDocuments(110);
 
-      return objectMapper.getNodeFactory().missingNode();
+    @Test
+    @Order(1)
+    public void setUp() {
+      createSimpleCollection(biggerCollectionName);
+      Collections.shuffle(testDatas);
+      insert(biggerCollectionName, testDatas);
     }
 
-    private JsonNode getUUIDAsJsonNode(Object data) {
-      if (data instanceof TestData td) {
-        if (td.uuid() == null) return objectMapper.getNodeFactory().nullNode();
-        return objectMapper.getNodeFactory().textNode(td.uuid.$uuid());
-      }
-      return objectMapper.getNodeFactory().missingNode();
+    @Test
+    public void sortFailDueToTooMany() {
+      String json =
+          """
+                      {
+                        "find": {
+                          "sort" : {"username" : 1}
+                        }
+                      }
+                      """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, biggerCollectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("DATASET_TOO_BIG"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Response data set too big to be sorted, add more filters: maximum sortable count = 100"));
+    }
+  }
+
+  private static final ObjectMapper objectMapper = new ObjectMapper();
+
+  private JsonNode getUserNameAsJsonNode(Object data) {
+    if (data instanceof TestData td) {
+      if (td.username() == null) return objectMapper.getNodeFactory().nullNode();
+      return objectMapper.getNodeFactory().textNode(td.username());
+    }
+    if (data instanceof TestDataMissingBoolean td) {
+      return objectMapper.getNodeFactory().textNode(td.username());
     }
 
-    private JsonNode getIDJsonNode(Object data) {
-      if (data instanceof TestData td) {
-        return objectMapper.getNodeFactory().textNode(td._id());
-      }
-      if (data instanceof TestDataMissingBoolean td) {
-        return objectMapper.getNodeFactory().textNode(td._id());
-      }
-
-      if (data instanceof TestDataUserIdAsText td) {
-        return objectMapper.getNodeFactory().textNode(td._id());
-      }
-
-      return objectMapper.getNodeFactory().missingNode();
+    if (data instanceof TestDataUserIdAsText td) {
+      return objectMapper.getNodeFactory().textNode(td.username());
     }
 
-    private JsonNode getUserIdAsJsonNode(Object data) {
-      if (data instanceof TestData td) {
-        return objectMapper.getNodeFactory().numberNode(td.userId());
-      }
-      if (data instanceof TestDataMissingBoolean td) {
-        return objectMapper.getNodeFactory().numberNode(td.userId());
-      }
+    return objectMapper.getNodeFactory().missingNode();
+  }
 
-      if (data instanceof TestDataUserIdAsText td) {
-        return objectMapper.getNodeFactory().textNode(td.userId());
-      }
+  private JsonNode getUUIDAsJsonNode(Object data) {
+    if (data instanceof TestData td) {
+      if (td.uuid() == null) return objectMapper.getNodeFactory().nullNode();
+      return objectMapper.getNodeFactory().textNode(td.uuid.$uuid());
+    }
+    return objectMapper.getNodeFactory().missingNode();
+  }
 
-      return objectMapper.getNodeFactory().missingNode();
+  private JsonNode getIDJsonNode(Object data) {
+    if (data instanceof TestData td) {
+      return objectMapper.getNodeFactory().textNode(td._id());
+    }
+    if (data instanceof TestDataMissingBoolean td) {
+      return objectMapper.getNodeFactory().textNode(td._id());
     }
 
-    private JsonNode getActiveUserAsJsonNode(Object data) {
-      if (data instanceof TestData td) {
-        return objectMapper.getNodeFactory().booleanNode(td.activeUser());
-      }
-      return objectMapper.getNodeFactory().missingNode();
+    if (data instanceof TestDataUserIdAsText td) {
+      return objectMapper.getNodeFactory().textNode(td._id());
     }
 
-    private JsonNode getDateValueAsJsonNode(Object data) {
-      if (data instanceof TestData td) {
-        return objectMapper.getNodeFactory().numberNode(td.dateValue().$date());
-      }
-      return objectMapper.getNodeFactory().missingNode();
+    return objectMapper.getNodeFactory().missingNode();
+  }
+
+  private JsonNode getUserIdAsJsonNode(Object data) {
+    if (data instanceof TestData td) {
+      return objectMapper.getNodeFactory().numberNode(td.userId());
+    }
+    if (data instanceof TestDataMissingBoolean td) {
+      return objectMapper.getNodeFactory().numberNode(td.userId());
     }
 
-    private static List<Object> getDocuments(int countOfDocuments) {
-      List<Object> data = new ArrayList<>(countOfDocuments);
-      for (int docId = 1; docId <= countOfDocuments - 3; docId++) {
-        data.add(
-            new TestData(
-                "doc" + docId,
-                // generate uuid v6
-                new UuidValue(Generators.timeBasedReorderedGenerator().generate().toString()),
-                "user" + docId,
-                docId,
-                docId % 2 == 0,
-                new DateValue(1672531200000L + docId * 1000)));
-      }
+    if (data instanceof TestDataUserIdAsText td) {
+      return objectMapper.getNodeFactory().textNode(td.userId());
+    }
+
+    return objectMapper.getNodeFactory().missingNode();
+  }
+
+  private JsonNode getActiveUserAsJsonNode(Object data) {
+    if (data instanceof TestData td) {
+      return objectMapper.getNodeFactory().booleanNode(td.activeUser());
+    }
+    return objectMapper.getNodeFactory().missingNode();
+  }
+
+  private JsonNode getDateValueAsJsonNode(Object data) {
+    if (data instanceof TestData td) {
+      return objectMapper.getNodeFactory().numberNode(td.dateValue().$date());
+    }
+    return objectMapper.getNodeFactory().missingNode();
+  }
+
+  private static List<Object> getDocuments(int countOfDocuments) {
+    List<Object> data = new ArrayList<>(countOfDocuments);
+    for (int docId = 1; docId <= countOfDocuments - 3; docId++) {
       data.add(
           new TestData(
-              "doc" + (countOfDocuments - 2),
+              "doc" + docId,
+              // generate uuid v6
               new UuidValue(Generators.timeBasedReorderedGenerator().generate().toString()),
-              null,
-              (countOfDocuments - 2),
-              (countOfDocuments - 2) % 2 == 0,
-              new DateValue(1672531200000L + (countOfDocuments - 2) * 1000)));
-      data.add(
-          new TestDataMissingBoolean(
-              "doc" + (countOfDocuments - 1),
-              "user" + (countOfDocuments - 1),
-              (countOfDocuments - 1)));
-      data.add(
-          new TestDataUserIdAsText(
-              "doc" + (countOfDocuments), "user" + (countOfDocuments), "" + 1));
-      return data;
+              "user" + docId,
+              docId,
+              docId % 2 == 0,
+              new DateValue(1672531200000L + docId * 1000)));
     }
-
-    private void insert(List<Object> testDatas) {
-      testDatas.forEach(
-          testData -> {
-            String json = null;
-            try {
-              json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(testData);
-            } catch (JsonProcessingException e) {
-              e.printStackTrace();
-            }
-            insertDoc(json);
-          });
-    }
-
-    record TestData(
-        String _id,
-        UuidValue uuid,
-        String username,
-        int userId,
-        boolean activeUser,
-        DateValue dateValue) {}
-
-    record TestDataMissingBoolean(String _id, String username, int userId) {}
-
-    record TestDataUserIdAsText(String _id, String username, String userId) {}
-
-    record UuidValue(String $uuid) {}
-
-    record DateValue(long $date) {}
+    data.add(
+        new TestData(
+            "doc" + (countOfDocuments - 2),
+            new UuidValue(Generators.timeBasedReorderedGenerator().generate().toString()),
+            null,
+            (countOfDocuments - 2),
+            (countOfDocuments - 2) % 2 == 0,
+            new DateValue(1672531200000L + (countOfDocuments - 2) * 1000)));
+    data.add(
+        new TestDataMissingBoolean(
+            "doc" + (countOfDocuments - 1),
+            "user" + (countOfDocuments - 1),
+            (countOfDocuments - 1)));
+    data.add(
+        new TestDataUserIdAsText("doc" + (countOfDocuments), "user" + (countOfDocuments), "" + 1));
+    return data;
   }
+
+  private void insert(String collectionName, List<Object> testDatas) {
+    testDatas.forEach(
+        testData -> {
+          String json;
+          try {
+            json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(testData);
+          } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+          }
+          insertDoc(collectionName, json);
+        });
+  }
+
+  record TestData(
+      String _id,
+      UuidValue uuid,
+      String username,
+      int userId,
+      boolean activeUser,
+      DateValue dateValue) {}
+
+  record TestDataMissingBoolean(String _id, String username, int userId) {}
+
+  record TestDataUserIdAsText(String _id, String username, String userId) {}
+
+  record UuidValue(String $uuid) {}
+
+  record DateValue(long $date) {}
 }

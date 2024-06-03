@@ -14,7 +14,6 @@ import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
@@ -60,7 +59,7 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
         EmbeddingRequest request);
 
     @ClientExceptionMapper
-    static RuntimeException mapException(Response response) {
+    static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       return HttpResponseErrorMessageMapper.getDefaultException(response);
     }
   }
@@ -132,7 +131,8 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
   }
 
   @Override
-  public Uni<List<float[]>> vectorize(
+  public Uni<Response> vectorize(
+      int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
@@ -156,11 +156,18 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
         .transform(
             response -> {
               if (response.getPredictions() == null) {
-                return Collections.emptyList();
+                return Response.of(batchId, Collections.emptyList());
               }
-              return response.getPredictions().stream()
-                  .map(prediction -> prediction.getEmbeddings().getValues())
-                  .collect(Collectors.toList());
+              List<float[]> vectors =
+                  response.getPredictions().stream()
+                      .map(prediction -> prediction.getEmbeddings().getValues())
+                      .collect(Collectors.toList());
+              return Response.of(batchId, vectors);
             });
+  }
+
+  @Override
+  public int maxBatchSize() {
+    return requestProperties.maxBatchSize();
   }
 }
