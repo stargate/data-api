@@ -31,6 +31,11 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
   @Override
   public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext)
       throws JsonApiException {
+    // Check if the header is null
+    if (responseContext.getHeaders() == null) {
+      throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
+              "No response received from the embedding provider, please try again later.");
+    }
     // Check the Content-Type of the response
     MediaType contentType = responseContext.getMediaType();
     if (contentType == null
