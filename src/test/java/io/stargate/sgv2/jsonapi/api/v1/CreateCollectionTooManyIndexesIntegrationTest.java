@@ -10,8 +10,6 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
@@ -43,38 +41,23 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
     }
   }
 
-  @Nested
-  @Order(1)
-  class TooManyIndexes {
-    @Test
-    public void enforceMaxIndexes() {
-      // Don't use auto-generated namespace that rest of the test uses
-      final String NS = "ns_too_many_indexes";
-      createNamespace(NS);
-      final String createTemplate =
-          """
-              {
-                "createCollection": {
-                  "name": "tooManyIx_%d"
+  @Test
+  public void enforceMaxIndexes() {
+    // Don't use auto-generated namespace that rest of the test uses
+    final String NS = "ns_too_many_indexes";
+    createNamespace(NS);
+    final String createTemplate =
+        """
+                {
+                  "createCollection": {
+                    "name": "tooManyIx_%d"
+                  }
                 }
-              }
-              """;
+                """;
 
-      // First create max collections, should work fine
-      for (int i = 1; i <= COLLECTIONS_TO_CREATE; ++i) {
-        String json = createTemplate.formatted(i);
-        given()
-            .headers(getHeaders())
-            .contentType(ContentType.JSON)
-            .body(json)
-            .when()
-            .post(NamespaceResource.BASE_PATH, NS)
-            .then()
-            .statusCode(200)
-            .body("status.ok", is(1));
-      }
-      // And then failure
-      String json = createTemplate.formatted(99);
+    // First create max collections, should work fine
+    for (int i = 1; i <= COLLECTIONS_TO_CREATE; ++i) {
+      String json = createTemplate.formatted(i);
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -83,26 +66,37 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
           .post(NamespaceResource.BASE_PATH, NS)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body(
-              "errors[0].message",
-              matchesPattern(
-                  "Too many indexes: cannot create a new collection; need \\d+ indexes to create the collection; \\d+ indexes already created in database, maximum \\d+"))
-          .body("errors[0].errorCode", is("TOO_MANY_INDEXES"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-
-      // But then verify that re-creating an existing one should still succeed
-      // (if using same settings)
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createTemplate.formatted(1))
-          .when()
-          .post(NamespaceResource.BASE_PATH, NS)
-          .then()
-          .statusCode(200)
           .body("status.ok", is(1));
     }
+    // And then failure
+    String json = createTemplate.formatted(99);
+    given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(NamespaceResource.BASE_PATH, NS)
+        .then()
+        .statusCode(200)
+        .body("status", is(nullValue()))
+        .body("data", is(nullValue()))
+        .body(
+            "errors[0].message",
+            matchesPattern(
+                "Too many indexes: cannot create a new collection; need \\d+ indexes to create the collection; \\d+ indexes already created in database, maximum \\d+"))
+        .body("errors[0].errorCode", is("TOO_MANY_INDEXES"))
+        .body("errors[0].exceptionClass", is("JsonApiException"));
+
+    // But then verify that re-creating an existing one should still succeed
+    // (if using same settings)
+    given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body(createTemplate.formatted(1))
+        .when()
+        .post(NamespaceResource.BASE_PATH, NS)
+        .then()
+        .statusCode(200)
+        .body("status.ok", is(1));
   }
 }

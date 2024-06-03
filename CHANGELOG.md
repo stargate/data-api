@@ -1,5 +1,42 @@
 # Changelog
 
+## [v1.0.9](https://github.com/stargate/data-api/tree/v1.0.9) (2024-05-29)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.8...v1.0.9)
+
+**Closed issues:**
+
+- Error out when `SHARED\_SECRET` and `HEADER` are disabled but provide the apiKey in createCollection [\#1114](https://github.com/stargate/data-api/issues/1114)
+- Index creation needs to be wrapped with quote [\#1110](https://github.com/stargate/data-api/issues/1110)
+- Data API exception mapper \(`ThrowableToErrorMapper`\) does not log error for unmapped server errors \(`ErrorCode.SERVER\_UNHANDLED\_ERROR`\) [\#1107](https://github.com/stargate/data-api/issues/1107)
+- UpstageAI model name should not end with hyphen: add that in UpstageAI embedding client [\#1102](https://github.com/stargate/data-api/issues/1102)
+- Possible NPE in `EmbeddingProviderFactory` for mismatched/missing embedding provider id [\#1098](https://github.com/stargate/data-api/issues/1098)
+- JinaAI models don't work for the first few minutes  [\#1093](https://github.com/stargate/data-api/issues/1093)
+- Add \(re-\)batching for calls to external embedding providers [\#1078](https://github.com/stargate/data-api/issues/1078)
+- Optimize CI workflow [\#919](https://github.com/stargate/data-api/issues/919)
+- findCollections and createCollection do not show the correct error message when the Astra token is invalid [\#712](https://github.com/stargate/data-api/issues/712)
+
+**Merged pull requests:**
+
+- Update red hat base images for docker, due to Snyk notification [\#1125](https://github.com/stargate/data-api/pull/1125) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Micro batching for embedding clients [\#1122](https://github.com/stargate/data-api/pull/1122) ([maheshrajamani](https://github.com/maheshrajamani))
+- Remove `vectorDimension:0` for range dimension in `findEmbeddingProviders` [\#1121](https://github.com/stargate/data-api/pull/1121) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fix to check if session is valid after creation [\#1119](https://github.com/stargate/data-api/pull/1119) ([kathirsvn](https://github.com/kathirsvn))
+- Error messages that to be sent from embedding gateway [\#1118](https://github.com/stargate/data-api/pull/1118) ([maheshrajamani](https://github.com/maheshrajamani))
+- Create collection mixed casing fix [\#1117](https://github.com/stargate/data-api/pull/1117) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix schema collectionSettings cache issue [\#1116](https://github.com/stargate/data-api/pull/1116) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Offline Mode - Index cql & Vector fixes [\#1115](https://github.com/stargate/data-api/pull/1115) ([kathirsvn](https://github.com/kathirsvn))
+- Minor fix to error message given for invalid providerKey [\#1113](https://github.com/stargate/data-api/pull/1113) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#1107: log unmapped exceptions in addition to mapping [\#1112](https://github.com/stargate/data-api/pull/1112) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Changes to improve CI timing - Fix 2 [\#1109](https://github.com/stargate/data-api/pull/1109) ([maheshrajamani](https://github.com/maheshrajamani))
+- Vectorize validation using String.isBlank\(\)  [\#1108](https://github.com/stargate/data-api/pull/1108) ([maheshrajamani](https://github.com/maheshrajamani))
+- Handle empty string `$vectorize` field [\#1105](https://github.com/stargate/data-api/pull/1105) ([maheshrajamani](https://github.com/maheshrajamani))
+- Error out in findEmbeddingProviders when vectorize is disabled [\#1104](https://github.com/stargate/data-api/pull/1104) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fix \#1102: move hyphen from UpstageAI model base name to suffix \(for better UI exp\) [\#1103](https://github.com/stargate/data-api/pull/1103) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Update config to accept environment variable [\#1101](https://github.com/stargate/data-api/pull/1101) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Bumping version for next data-api release [\#1100](https://github.com/stargate/data-api/pull/1100) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Fix \#1098: prevent NPE for unknown embedding provider id [\#1099](https://github.com/stargate/data-api/pull/1099) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
 ## [v1.0.8](https://github.com/stargate/data-api/tree/v1.0.8) (2024-05-16)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.7...v1.0.8)

@@ -36,7 +36,9 @@ public record EmbeddingProvidersConfigImpl(
           List<ParameterConfig> modelParameterList) {
         this(
             grpcModelConfig.getName(),
-            Optional.ofNullable(grpcModelConfig.getVectorDimension()),
+            grpcModelConfig.hasVectorDimension()
+                ? Optional.of(grpcModelConfig.getVectorDimension())
+                : Optional.empty(),
             modelParameterList,
             grpcModelConfig.getPropertiesMap());
       }
@@ -57,13 +59,13 @@ public record EmbeddingProvidersConfigImpl(
             grpcModelParameter.getName(),
             ParameterType.valueOf(grpcModelParameter.getType().name()),
             grpcModelParameter.getRequired(),
-            Optional.ofNullable(grpcModelParameter.getDefaultValue()),
+            Optional.of(grpcModelParameter.getDefaultValue()),
             grpcModelParameter.getValidationMap().entrySet().stream()
                 .collect(
                     Collectors.toMap(
                         e -> ValidationType.fromString(e.getKey()),
                         e -> new ArrayList<>(e.getValue().getValuesList()))),
-            Optional.ofNullable(grpcModelParameter.getHelp()));
+            Optional.of(grpcModelParameter.getHelp()));
       }
     }
 
@@ -73,7 +75,8 @@ public record EmbeddingProvidersConfigImpl(
         int requestTimeoutMillis,
         Optional<String> maxInputLength,
         Optional<String> taskTypeStore,
-        Optional<String> taskTypeRead)
+        Optional<String> taskTypeRead,
+        int maxBatchSize)
         implements RequestProperties {
       public RequestPropertiesImpl(
           EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig.RequestProperties
@@ -84,7 +87,8 @@ public record EmbeddingProvidersConfigImpl(
             grpcProviderConfigProperties.getRequestTimeoutMillis(),
             Optional.ofNullable(grpcProviderConfigProperties.getMaxInputLength()),
             Optional.ofNullable(grpcProviderConfigProperties.getTaskTypeStore()),
-            Optional.ofNullable(grpcProviderConfigProperties.getTaskTypeRead()));
+            Optional.ofNullable(grpcProviderConfigProperties.getTaskTypeRead()),
+            grpcProviderConfigProperties.getMaxBatchSize());
       }
     }
   }

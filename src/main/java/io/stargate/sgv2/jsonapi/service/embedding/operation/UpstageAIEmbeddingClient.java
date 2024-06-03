@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
-import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
@@ -25,6 +24,9 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class UpstageAIEmbeddingClient implements EmbeddingProvider {
+  private static final String UPSTAGE_MODEL_SUFFIX_QUERY = "-query";
+  private static final String UPSTAGE_MODEL_SUFFIX_PASSAGE = "-passage";
+
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelNamePrefix;
   private final UpstageAIEmbeddingProvider embeddingProvider;
@@ -55,7 +57,7 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
         @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
 
     @ClientExceptionMapper
-    static RuntimeException mapException(Response response) {
+    static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       return HttpResponseErrorMessageMapper.getDefaultException(response);
     }
   }
@@ -72,7 +74,8 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
   }
 
   @Override
-  public Uni<List<float[]>> vectorize(
+  public Uni<Response> vectorize(
+      int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
@@ -86,7 +89,9 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
     // Another oddity: model name used as prefix
     final String modelName =
         modelNamePrefix
-            + ((embeddingRequestType == EmbeddingRequestType.SEARCH) ? "query" : "passage");
+            + ((embeddingRequestType == EmbeddingRequestType.SEARCH)
+                ? UPSTAGE_MODEL_SUFFIX_QUERY
+                : UPSTAGE_MODEL_SUFFIX_PASSAGE);
 
     EmbeddingRequest request = new EmbeddingRequest(texts.get(0), modelName);
     Uni<EmbeddingResponse> response =
@@ -106,10 +111,17 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
         .transform(
             resp -> {
               if (resp.data() == null) {
-                return Collections.emptyList();
+                return Response.of(batchId, Collections.emptyList());
               }
               Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
-              return Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
+              List<float[]> vectors =
+                  Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
+              return Response.of(batchId, vectors);
             });
+  }
+
+  @Override
+  public int maxBatchSize() {
+    return requestProperties.maxBatchSize();
   }
 }

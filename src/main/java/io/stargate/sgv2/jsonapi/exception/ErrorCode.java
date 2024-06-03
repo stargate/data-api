@@ -86,7 +86,7 @@ public enum ErrorCode {
   SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
 
   SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
-  SHRED_BAD_VECTORIZE_VALUE("$vectorize search clause needs to be text value"),
+  SHRED_BAD_VECTORIZE_VALUE("$vectorize search clause needs to be non-blank text value"),
 
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
 
@@ -99,6 +99,7 @@ public enum ErrorCode {
   TOO_MANY_COLLECTIONS("Too many collections"),
 
   TOO_MANY_INDEXES("Too many indexes"),
+  INDEXES_CREATION_FAILED("Index creation failed, check schema"),
 
   UNSUPPORTED_FILTER_DATA_TYPE("Unsupported filter data type"),
 
@@ -150,6 +151,7 @@ public enum ErrorCode {
   VECTORIZE_SERVICE_TYPE_UNSUPPORTED("Vectorize service type unsupported "),
 
   VECTORIZE_SERVICE_TYPE_UNAVAILABLE("Vectorize service unavailable : "),
+  VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT("Invalid authentication value format"),
   VECTORIZE_USAGE_ERROR("Vectorize search can't be used with other sort clause"),
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 
@@ -182,7 +184,9 @@ public enum ErrorCode {
   SERVER_FAILURE("Driver failed"),
   SERVER_UNHANDLED_ERROR("Server failed"),
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
-  SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available");
+  SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
+  EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
+  EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request");
 
   private final String message;
 

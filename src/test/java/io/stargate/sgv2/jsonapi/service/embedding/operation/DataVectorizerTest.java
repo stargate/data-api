@@ -60,6 +60,40 @@ public class DataVectorizerTest {
     }
 
     @Test
+    public void testEmptyValues() {
+      List<JsonNode> documents = new ArrayList<>();
+      for (int i = 0; i <= 3; i++) {
+        if (i % 2 == 0) {
+          documents.add(objectMapper.createObjectNode().put("$vectorize", ""));
+        } else {
+          documents.add(objectMapper.createObjectNode().put("$vectorize", "test data"));
+        }
+      }
+
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      try {
+        dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      for (int i = 0; i <= 3; i++) {
+        JsonNode document = documents.get(i);
+        if (i % 2 == 0) {
+          assertThat(document.has("$vectorize")).isTrue();
+          assertThat(document.has("$vector")).isTrue();
+          assertThat(document.get("$vector").isNull()).isTrue();
+        } else {
+          assertThat(document.has("$vectorize")).isTrue();
+          assertThat(document.has("$vector")).isTrue();
+          assertThat(document.get("$vector").isArray()).isTrue();
+          assertThat(document.get("$vector").size()).isEqualTo(3);
+        }
+      }
+    }
+
+    @Test
     public void testNonTextValues() {
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {
@@ -145,7 +179,8 @@ public class DataVectorizerTest {
       TestEmbeddingProvider testProvider =
           new TestEmbeddingProvider() {
             @Override
-            public Uni<List<float[]>> vectorize(
+            public Uni<Response> vectorize(
+                int batchId,
                 List<String> texts,
                 Optional<String> apiKey,
                 EmbeddingRequestType embeddingRequestType) {
@@ -153,7 +188,7 @@ public class DataVectorizerTest {
               texts.forEach(t -> customResponse.add(new float[] {0.5f, 0.5f, 0.5f}));
               // add additional vector
               customResponse.add(new float[] {0.5f, 0.5f, 0.5f});
-              return Uni.createFrom().item(customResponse);
+              return Uni.createFrom().item(Response.of(batchId, customResponse));
             }
           };
       List<JsonNode> documents = new ArrayList<>();
@@ -268,6 +303,33 @@ public class DataVectorizerTest {
       assertThat(setNode.has("$vector")).isTrue();
       assertThat(setNode.get("$vector").isArray()).isTrue();
       assertThat(setNode.get("$vector").size()).isEqualTo(3);
+    }
+
+    @Test
+    public void updateClauseSetBlankValues() throws Exception {
+      String json =
+          """
+            {
+              "findOneAndUpdate": {
+                "filter" : {"_id" : "id"},
+                "update" : {"$set" : {"$vectorize" : "  "}}
+              }
+            }
+            """;
+      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+      UpdateClause updateClause = command.updateClause();
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      try {
+        dataVectorizer.vectorizeUpdateClause(updateClause).subscribe().asCompletionStage().get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      final ObjectNode setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
+      assertThat(setNode.has("$vectorize")).isTrue();
+      assertThat(setNode.has("$vector")).isTrue();
+      assertThat(setNode.get("$vector").isNull()).isTrue();
     }
 
     @Test

@@ -1,10 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -28,6 +25,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               }
             }
             """;
+
     String createVectorCollection =
         """
             {
@@ -94,6 +92,50 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status.ok", is(1));
       deleteCollection(collectionName);
+    }
+
+    @Test
+    public void caseSensitive() {
+      String json =
+              """
+          {
+            "createCollection": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted("testcollection");
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      json =
+              """
+          {
+            "createCollection": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted("testCollection");
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+      deleteCollection("testCollection");
     }
 
     @Test
@@ -1264,6 +1306,50 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
+    }
+
+    @Test
+    public void failForBadProviderKeyFormat() {
+      String json =
+          """
+              {
+                  "createCollection": {
+                      "name": "incorrectProviderKeyFormat",
+                      "options": {
+                          "vector": {
+                              "metric": "cosine",
+                              "dimension": 5,
+                              "service": {
+                                  "provider": "openai",
+                                  "modelName": "text-embedding-ada-002",
+                                  "authentication": {
+                                      "providerKey" : "shared_creds"
+                                  },
+                                  "parameters": {
+                                      "projectId": "test project"
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+              """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors[0].errorCode", is("VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Invalid authentication value format: providerKey value should be formatted as '[keyName].providerKey'"));
     }
   }
 

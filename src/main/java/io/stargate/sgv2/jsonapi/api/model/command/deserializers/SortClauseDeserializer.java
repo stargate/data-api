@@ -98,7 +98,13 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
               ErrorCode.SHRED_BAD_VECTORIZE_VALUE,
               ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage());
         }
-        SortExpression exp = SortExpression.vectorizeSearch(inner.getValue().textValue());
+        String vectorizeData = inner.getValue().textValue();
+        if (vectorizeData.isBlank()) {
+          throw new JsonApiException(
+              ErrorCode.SHRED_BAD_VECTORIZE_VALUE,
+              ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage());
+        }
+        SortExpression exp = SortExpression.vectorizeSearch(vectorizeData);
         sortExpressions.clear();
         sortExpressions.add(exp);
         break;

@@ -113,4 +113,8 @@ public class NamespaceCache {
               }
             });
   }
+
+  public void evictCollectionSettingCacheEntry(String collectionName) {
+    vectorCache.invalidate(collectionName);
+  }
 }
