@@ -165,7 +165,6 @@ public abstract class StargateTestResource
 
   private GenericContainer<?> baseCassandraContainer(boolean reuse) {
     String image = this.getCassandraImage();
-    String startupMessage = ".*Created default superuser role.*\\n";
     GenericContainer<?> container = null;
     if (this.isDse()) {
       container =
@@ -173,7 +172,6 @@ public abstract class StargateTestResource
               .withCopyFileToContainer(
                   MountableFile.forClasspathResource("dse.yaml"),
                   "/opt/dse/resources/dse/conf/dse.yaml");
-      startupMessage = ".*DSE startup complete.*\\n";
     } else if (this.isHcd()) {
       container =
           new GenericContainer<>(image)
@@ -198,16 +196,20 @@ public abstract class StargateTestResource
         .withExposedPorts(new Integer[] {7000, 9042})
         .withLogConsumer(
             (new Slf4jLogConsumer(LoggerFactory.getLogger("cassandra-docker")))
-                .withPrefix("CASSANDRA"))
-        .waitingFor(Wait.forLogMessage(startupMessage, 1))
-        .withStartupTimeout(this.getCassandraStartupTimeout())
-        .withReuse(reuse);
-    if (this.isDse() || this.isHcd()) {
-      container.withEnv("CLUSTER_NAME", getClusterName()).withEnv("DS_LICENSE", "accept");
+                .withPrefix("CASSANDRA"));
+    if (isHcd() || isDse()) {
+      container
+          .waitingFor(
+              Wait.forSuccessfulCommand(
+                  "cqlsh -u cassandra -p cassandra -e \"describe keyspaces\""))
+          .withEnv("CLUSTER_NAME", getClusterName())
+          .withEnv("DS_LICENSE", "accept");
     } else {
-      container.withEnv("CASSANDRA_CLUSTER_NAME", getClusterName());
+      container
+          .waitingFor(Wait.forLogMessage(".*Created default superuser role.*\\n", 1))
+          .withEnv("CASSANDRA_CLUSTER_NAME", getClusterName());
     }
-
+    container.withStartupTimeout(this.getCassandraStartupTimeout()).withReuse(reuse);
     return container;
   }
 
