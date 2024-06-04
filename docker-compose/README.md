@@ -1,6 +1,6 @@
 # Docker Compose scripts for JSONAPI with DSE-6.9
 
-This directory provides two ways to start the Data API and Stargate coordinator with DSE-6.9 using `docker compose`.
+This directory provides a ways to start the Data API with DSE-6.9 using `docker compose`.
 
 ## Prerequisites
 
@@ -19,9 +19,9 @@ You can control the platform using the `-Dquarkus.docker.buildx.platform=linux/a
 
 Follow instructions under the [Script options](#script-options) section to use the locally built image.
 
-## Stargate Data API with 3-node DSE-6.9 cluster
+## Data API with DSE-6.9 cluster
 
-You can start a simple Stargate configuration with the following command:
+You can start a simple configuration with the following command:
 
 ```
 ./start_dse69.sh
@@ -36,23 +36,6 @@ We recommend doing a `docker compose pull` periodically to ensure you always hav
 
 Once done using the containers, you can stop them using the command `docker compose down`.
 
-## Stargate Data API with embedded DSE-6.9 in coordinator (developer mode)
-
-This alternate configuration runs the Stargate coordinator node in developer mode, so that no separate Cassandra cluster is required.
-This configuration is useful for development and testing since it initializes more quickly, but is not recommended for production deployments. It can be run with the command:
-
-```
-./start_dse69_dev_mode.sh
-``` 
-
-This script supports the same [options](#script-options) as the `start_dse69.sh` script. 
-
-To stop the configuration, use the command:
-
-```
-docker-compose -f docker-compose-dev-mode.yml down
-``` 
-
 ## Script options
 
 Both convenience scripts support the following options:
@@ -65,26 +48,7 @@ Both convenience scripts support the following options:
 
 * You can enable reguest logging for the Data API using `-q`: if so, each request is logged under category `io.quarkus.http.access-log`
 
-* You can specify an image tag (version) of the Stargate coordinator using `-t [VERSION]`.
-
 ## Notes
 
 * The `.env` file defines variables for the docker compose project name (`COMPOSE_PROJECT_NAME`),
- the DSE Docker image tag to use (`DSETAG`), and the Stargate Docker image tag to use (`SGTAG`).
-
-* When using the convenience scripts, the Docker image (`JSONTAG`) is the current (snapshot) version as defined in the top level project `pom.xml` file. It can be overridden with the `-t` option on either script:
-
-  `./start_dse69.sh -t v1.0.0`
-
-* Running more than one of these multi-container environments on one host may require changing the port mapping to be changed to avoid conflicts on the host machine.
-
-## Troubleshooting
-
-If you see an error like:
-```
-Pulling coordinator (stargateio/jsonapi:1.0.0-SNAPSHOT)...
-ERROR: manifest for stargateio/jsonapi:1.0.0-SNAPSHOT not found: manifest unknown: manifest unknown
-```
-
-you are trying to deploy a version that is neither publicly available (official release) nor built locally. You can either build the image locally (see [above](#building-the-local-docker-image)) or use a publicly available version (e.g. `v1.0.0`).
-
+ the DSE Docker image tag to use (`DSETAG`).
