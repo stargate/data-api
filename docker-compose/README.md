@@ -31,7 +31,7 @@ This convenience script verifies your Docker installation meets minimum requirem
 
 The convenience script uses the `-d` and `--wait` options to track the startup progress, so that the compose command exits when all containers have started and reported healthy status within a specified timeout. 
 
-The environment settings in the `.env` file include variables that describe the image tags that will be used by default, typically Data API `v1`, Stargate `v2` and DSE `4.0.7-SHA` (where `SHA` is a unique indicator for commit used to build DSE-6.9). The `start_dse69.sh` script supports [options](#script-options) for overriding which image tags are used, including using a locally generated image as described [above](#building-the-local-docker-image).
+The environment settings in the `.env` file include variables that describe the image tags that will be used by default, typically Data API `v1` and DSE `6.9` (where `SHA` is a unique indicator for commit used to build DSE-6.9). The `start_dse69.sh` script supports [options](#script-options) for overriding which image tags are used, including using a locally generated image as described [above](#building-the-local-docker-image).
 We recommend doing a `docker compose pull` periodically to ensure you always have the latest patch versions of these tags.
 
 Once done using the containers, you can stop them using the command `docker compose down`.
