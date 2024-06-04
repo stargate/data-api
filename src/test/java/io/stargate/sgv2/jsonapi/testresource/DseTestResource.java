@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.testresource;
 
-import io.stargate.sgv2.common.IntegrationTestUtils;
+import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import java.util.Map;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 

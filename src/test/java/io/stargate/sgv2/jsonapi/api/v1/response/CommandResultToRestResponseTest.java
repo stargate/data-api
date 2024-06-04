@@ -3,9 +3,9 @@ package io.stargate.sgv2.jsonapi.api.v1.response;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
