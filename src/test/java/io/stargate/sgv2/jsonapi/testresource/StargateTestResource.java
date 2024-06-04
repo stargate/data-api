@@ -196,17 +196,20 @@ public abstract class StargateTestResource
         .withExposedPorts(new Integer[] {7000, 9042})
         .withLogConsumer(
             (new Slf4jLogConsumer(LoggerFactory.getLogger("cassandra-docker")))
-                .withPrefix("CASSANDRA"))
-        .waitingFor(
-            Wait.forSuccessfulCommand("cqlsh -u cassandra -p cassandra -e \"describe keyspaces\""))
-        .withStartupTimeout(this.getCassandraStartupTimeout())
-        .withReuse(reuse);
-    if (this.isDse() || this.isHcd()) {
-      container.withEnv("CLUSTER_NAME", getClusterName()).withEnv("DS_LICENSE", "accept");
+                .withPrefix("CASSANDRA"));
+    if (isHcd() || isDse()) {
+      container
+          .waitingFor(
+              Wait.forSuccessfulCommand(
+                  "cqlsh -u cassandra -p cassandra -e \"describe keyspaces\""))
+          .withEnv("CLUSTER_NAME", getClusterName())
+          .withEnv("DS_LICENSE", "accept");
     } else {
-      container.withEnv("CASSANDRA_CLUSTER_NAME", getClusterName());
+      container
+          .waitingFor(Wait.forLogMessage(".*Created default superuser role.*\\n", 1))
+          .withEnv("CASSANDRA_CLUSTER_NAME", getClusterName());
     }
-
+    container.withStartupTimeout(this.getCassandraStartupTimeout()).withReuse(reuse);
     return container;
   }
 
