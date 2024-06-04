@@ -15,8 +15,9 @@ DSETAG="$(../mvnw -f .. help:evaluate -Pdse69-it -Dexpression=stargate.int-test.
 # Default to latest released version
 DATAAPITAG="v1"
 DATAAPIIMAGE="stargateio/data-api"
+DSEONLY="false"
 
-while getopts "lqnr:j:" opt; do
+while getopts "dlqnr:j:" opt; do
   case $opt in
     l)
       DATAAPITAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
@@ -28,10 +29,13 @@ while getopts "lqnr:j:" opt; do
       DATAAPIIMAGE="stargateio/data-api-native"
       ;;
     q)
-      REQUESTLOG=true
+      REQUESTLOG="true"
       ;;
     r)
       LOGLEVEL=$OPTARG
+      ;;
+    d)
+      DSEONLY=true
       ;;
     \?)
       echo "Valid options:"
@@ -54,4 +58,9 @@ export DATAAPIIMAGE
 
 echo "Running with DSE $DSETAG, Data API $DATAAPIIMAGE:$DATAAPITAG"
 
-docker compose up -d --wait
+if [ "$DSEONLY" = "true" ]; then
+  docker compose up -d --wait dse
+  exit 0
+else
+  docker compose up -d --wait
+fi

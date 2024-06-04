@@ -48,6 +48,8 @@ Both convenience scripts support the following options:
 
 * You can enable reguest logging for the Data API using `-q`: if so, each request is logged under category `io.quarkus.http.access-log`
 
+* You can specify start only dse node using `-d` option. This is useful when you want to start Data API locally for development.
+
 ## Notes
 
 * The `.env` file defines variables for the docker compose project name (`COMPOSE_PROJECT_NAME`),
