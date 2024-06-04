@@ -1,26 +1,24 @@
 version: '2'
 
 services:
-  coordinator:
-    image: stargateio/coordinator-dse-next:${SGTAG}
+  dse:
+    image: datastax/dse-server:${DSETAG}
     networks:
       - stargate
-    ports:
-      - "9042:9042"
-      - "8081:8081"
     mem_limit: 2G
     environment:
-      - JAVA_OPTS="-Xmx1536M"
+      - MAX_HEAP_SIZE=1536M
       - CLUSTER_NAME=dse-${DSETAG}-cluster
-      - RACK_NAME=rack1
-      - DATACENTER_NAME=datacenter1
-      - ENABLE_AUTH=true
-      - DEVELOPER_MODE=true
+      - DS_LICENSE=accept
+    volumes:
+      - ${PWD}/dse.yaml:/opt/dse/resources/dse/conf/dse.yaml
+    ports:
+      - "9042:9042"
     healthcheck:
-      test: curl -f http://localhost:8084/checker/readiness || exit 1
+      test: [ "CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'describe keyspaces'" ]
       interval: 15s
       timeout: 10s
-      retries: 10
+      retries: 20
 #
 #  data-api:
 #    image: ${DATAAPIIMAGE}:${DATAAPITAG}

@@ -10,14 +10,13 @@ fi
 LOGLEVEL=INFO
 
 # Default to images used in project integration tests
-DSETAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.cassandra.image-tag -q -DforceStdout)"
-SGTAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
+DSETAG="$(../mvnw -f .. help:evaluate -Pdse69-it -Dexpression=stargate.int-test.cassandra.image-tag -q -DforceStdout)"
 
 # Default to latest released version
 DATAAPITAG="v1"
 DATAAPIIMAGE="stargateio/data-api"
 
-while getopts "lqnr:t:j:" opt; do
+while getopts "lqnr:j:" opt; do
   case $opt in
     l)
       DATAAPITAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
@@ -33,9 +32,6 @@ while getopts "lqnr:t:j:" opt; do
       ;;
     r)
       LOGLEVEL=$OPTARG
-      ;;
-    t)
-      SGTAG=$OPTARG
       ;;
     \?)
       echo "Valid options:"
@@ -53,10 +49,9 @@ done
 export LOGLEVEL
 export REQUESTLOG
 export DSETAG
-export SGTAG
 export DATAAPITAG
 export DATAAPIIMAGE
 
-echo "Running with DSE $DSETAG, Stargate $SGTAG, Data API $DATAAPIIMAGE:$DATAAPITAG"
+echo "Running with DSE $DSETAG, Data API $DATAAPIIMAGE:$DATAAPITAG"
 
 docker compose -f docker-compose-dev-mode.yml up -d --wait
