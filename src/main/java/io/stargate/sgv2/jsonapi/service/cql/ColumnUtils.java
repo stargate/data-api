@@ -15,7 +15,6 @@
  */
 package io.stargate.sgv2.jsonapi.service.cql;
 
-import io.stargate.sgv2.api.common.cql.ReservedKeywords;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
