@@ -239,6 +239,8 @@ stargate:
                   forwarded: Authorization
           properties:
             max-batch-size: 32
+            request-timeout-millis: 15000
+            retry-delay-millis: 500
           models:
             - name: jina-embeddings-v2-base-en
               vector-dimension: 768
