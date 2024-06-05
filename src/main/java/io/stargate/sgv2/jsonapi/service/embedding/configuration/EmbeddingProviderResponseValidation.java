@@ -31,7 +31,8 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
   @Override
   public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext)
       throws JsonApiException {
-    // If the status is 0, it means something went wrong (maybe a timeout). Directly return and pass the error to the client
+    // If the status is 0, it means something went wrong (maybe a timeout). Directly return and pass
+    // the error to the client
     if (responseContext.getStatus() == 0) {
       return;
     }
