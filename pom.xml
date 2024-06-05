@@ -156,14 +156,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.stargate</groupId>
-      <artifactId>sgv2-quarkus-common</artifactId>
-      <version>${stargate.version}</version>
-      <classifier>tests</classifier>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit5-mockito</artifactId>
       <scope>test</scope>
