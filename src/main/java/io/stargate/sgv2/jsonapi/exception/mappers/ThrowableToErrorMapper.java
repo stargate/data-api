@@ -8,13 +8,13 @@ import com.datastax.oss.driver.api.core.auth.AuthenticationException;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.*;
-import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.slf4j.Logger;
@@ -41,7 +41,14 @@ public final class ThrowableToErrorMapper {
         if (throwable instanceof UnauthorizedException) {
           return ErrorCode.UNAUTHENTICATED_REQUEST
               .toApiException()
-              .getCommandResultError(message, Response.Status.UNAUTHORIZED);
+              .getCommandResultError(message, Response.Status.OK);
+        }
+
+        // TimeoutException from quarkus
+        if (throwable instanceof TimeoutException) {
+          return ErrorCode.SERVER_EMBEDDING_PROVIDER_TIMEOUT
+              .toApiException()
+              .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
         }
 
         // handle all driver exceptions

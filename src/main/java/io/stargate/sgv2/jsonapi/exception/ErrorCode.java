@@ -183,6 +183,7 @@ public enum ErrorCode {
   SERVER_COORDINATOR_FAILURE("Coordinator failed"),
   SERVER_FAILURE("Driver failed"),
   SERVER_UNHANDLED_ERROR("Server failed"),
+  SERVER_EMBEDDING_PROVIDER_TIMEOUT("Embedding provider timed out, please try again later"),
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
   SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
   EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
