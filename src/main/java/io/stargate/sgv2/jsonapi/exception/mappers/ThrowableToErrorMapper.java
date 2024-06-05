@@ -41,14 +41,14 @@ public final class ThrowableToErrorMapper {
         if (throwable instanceof UnauthorizedException) {
           return ErrorCode.UNAUTHENTICATED_REQUEST
               .toApiException()
-              .getCommandResultError(message, Response.Status.OK);
+              .getCommandResultError(message, Response.Status.UNAUTHORIZED);
         }
 
         // TimeoutException from quarkus
         if (throwable instanceof TimeoutException) {
           return ErrorCode.SERVER_EMBEDDING_PROVIDER_TIMEOUT
               .toApiException()
-              .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
+              .getCommandResultError(Response.Status.OK);
         }
 
         // handle all driver exceptions
