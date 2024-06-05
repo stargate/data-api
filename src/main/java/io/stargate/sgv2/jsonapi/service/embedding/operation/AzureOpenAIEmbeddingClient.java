@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
@@ -95,9 +96,10 @@ public class AzureOpenAIEmbeddingClient implements EmbeddingProvider {
             .embed(apiKeyOverride.get(), request)
             .onFailure(
                 throwable -> {
-                  return (throwable.getCause() != null
-                      && throwable.getCause() instanceof JsonApiException jae
-                      && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT);
+                  return ((throwable.getCause() != null
+                          && throwable.getCause() instanceof JsonApiException jae
+                          && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
+                      || throwable instanceof TimeoutException);
                 })
             .retry()
             .withBackOff(Duration.ofMillis(requestProperties.retryDelayInMillis()))
