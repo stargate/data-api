@@ -165,7 +165,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
               {
                 "findOne": {
                   "options": {
-                    "includeSortVector": true,
+                    "includeSortVector": true
                   }
                 }
               }
@@ -181,7 +181,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .statusCode(200)
           .body("data.document", is(not(nullValue())))
           .body("status", is(notNullValue()))
-          .body("status.sortVector", is(null))
+          .body("status.sortVector", nullValue())
           .body("errors", is(nullValue()));
     }
 
