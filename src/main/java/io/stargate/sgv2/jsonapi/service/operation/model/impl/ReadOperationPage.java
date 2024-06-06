@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -40,7 +41,8 @@ public record ReadOperationPage(
       Map<CommandStatus, Object> status = null;
       if (includeSortVector) {
         // add sort vector to the response
-        status = Map.of(CommandStatus.SORT_VECTOR, vector);
+        status = new HashMap<>();
+        status.put(CommandStatus.SORT_VECTOR, vector);
       }
       return new CommandResult(new CommandResult.MultiResponseData(jsonNodes, pageState), status);
     }
