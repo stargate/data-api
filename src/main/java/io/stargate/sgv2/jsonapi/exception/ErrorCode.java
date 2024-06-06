@@ -31,8 +31,6 @@ public enum ErrorCode {
       "The configured Embedding Provider for this collection encountered an error processing the request"),
   EMBEDDING_PROVIDER_RATE_LIMITED(
       "The configured Embedding Provider for this collection is rate limiting your requests"),
-
-  EMBEDDING_PROVIDER_TIMEOUT("The configured Embedding Provider timed out."),
   EMBEDDING_PROVIDER_UNAVAILBLE(
       "The configured Embedding Provider for this collection could not be contacted."),
 
@@ -183,7 +181,7 @@ public enum ErrorCode {
   SERVER_COORDINATOR_FAILURE("Coordinator failed"),
   SERVER_FAILURE("Driver failed"),
   SERVER_UNHANDLED_ERROR("Server failed"),
-  SERVER_EMBEDDING_PROVIDER_TIMEOUT("Embedding provider timed out, please try again later"),
+  SERVER_EMBEDDING_PROVIDER_TIMEOUT("Embedding provider timed out"),
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
   SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
   EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),

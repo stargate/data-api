@@ -47,7 +47,7 @@ public final class ThrowableToErrorMapper {
 
         // TimeoutException from quarkus
         if (throwable instanceof TimeoutException) {
-          return ErrorCode.SERVER_EMBEDDING_PROVIDER_TIMEOUT
+          return ErrorCode.EMBEDDING_PROVIDER_TIMEOUT
               .toApiException()
               .getCommandResultError(Response.Status.OK);
         }
