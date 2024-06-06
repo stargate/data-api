@@ -61,5 +61,12 @@ public record FindCommand(
               description = "Include similarity function score in response.",
               type = SchemaType.BOOLEAN,
               implementation = Boolean.class)
-          boolean includeSimilarity) {}
+          boolean includeSimilarity,
+
+      // return vector embedding used for ANN sorting
+      @Schema(
+              description = "Return vector embedding used for ANN sorting.",
+              type = SchemaType.BOOLEAN,
+              implementation = Boolean.class)
+          boolean includeSortVector) {}
 }

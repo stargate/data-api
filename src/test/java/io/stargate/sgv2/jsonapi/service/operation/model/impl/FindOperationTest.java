@@ -24,6 +24,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
@@ -136,7 +137,8 @@ public class FindOperationTest extends OperationTestBase {
               20,
               20,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -281,7 +283,8 @@ public class FindOperationTest extends OperationTestBase {
               2,
               2,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -302,6 +305,96 @@ public class FindOperationTest extends OperationTestBase {
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
+      assertThat(result.status()).isNull();
+    }
+
+    @Test
+    public void findnonVsearchWithSortVectorFlag() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" WHERE key = ? LIMIT 2"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String doc1 =
+          """
+                      {
+                        "_id": "doc1",
+                        "username": "user1"
+                      }
+                      """;
+      String doc2 =
+          """
+                      {
+                        "_id": "doc2",
+                        "username": "user2"
+                      }
+                      """;
+
+      SimpleStatement stmt1 =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc1"));
+      List<Row> rows1 = Arrays.asList(resultRow(0, "doc1", UUID.randomUUID(), doc1));
+      SimpleStatement stmt2 =
+          SimpleStatement.newInstance(collectionReadCql, boundKeyForStatement("doc2"));
+      List<Row> rows2 = Arrays.asList(resultRow(0, "doc2", UUID.randomUUID(), doc2));
+      AsyncResultSet results1 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows1, null);
+      AsyncResultSet results2 = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows2, null);
+      final AtomicInteger callCount1 = new AtomicInteger();
+      final AtomicInteger callCount2 = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt1), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount1.incrementAndGet();
+                return Uni.createFrom().item(results1);
+              });
+      when(queryExecutor.executeRead(eq(dataApiRequestInfo), eq(stmt2), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount2.incrementAndGet();
+                return Uni.createFrom().item(results2);
+              });
+
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
+      List<DBFilterBase> filters =
+          List.of(
+              new DBFilterBase.IDFilter(
+                  DBFilterBase.IDFilter.Operator.IN,
+                  List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2"))));
+      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+
+      FindOperation operation =
+          FindOperation.unsorted(
+              COMMAND_CONTEXT,
+              implicitAnd,
+              DocumentProjector.defaultProjector(),
+              null,
+              2,
+              2,
+              ReadType.DOCUMENT,
+              objectMapper,
+              true);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(dataApiRequestInfo, queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      assertThat(callCount1.get()).isEqualTo(1);
+      assertThat(callCount2.get()).isEqualTo(1);
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(2)
+          .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+      assertThat(result.status()).isNotNull();
+      assertThat(result.status().containsKey(CommandStatus.SORT_VECTOR)).isTrue();
+      assertThat(result.status().get(CommandStatus.SORT_VECTOR)).isNull();
     }
 
     @Test
@@ -322,7 +415,8 @@ public class FindOperationTest extends OperationTestBase {
               2,
               2,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -411,7 +505,8 @@ public class FindOperationTest extends OperationTestBase {
               2,
               2,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -494,7 +589,8 @@ public class FindOperationTest extends OperationTestBase {
               1,
               2,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -555,7 +651,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -612,7 +709,8 @@ public class FindOperationTest extends OperationTestBase {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -673,7 +771,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -737,7 +836,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -801,7 +901,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -866,7 +967,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -931,7 +1033,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -995,7 +1098,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1060,7 +1164,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1121,7 +1226,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1183,7 +1289,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1254,7 +1361,8 @@ public class FindOperationTest extends OperationTestBase {
               explicitOr,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1325,7 +1433,8 @@ public class FindOperationTest extends OperationTestBase {
               explicitOr,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1392,7 +1501,8 @@ public class FindOperationTest extends OperationTestBase {
               1,
               1,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1461,7 +1571,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1529,7 +1640,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1596,7 +1708,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1663,7 +1776,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -1721,7 +1835,8 @@ public class FindOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       Throwable failure =
           operation
@@ -1890,7 +2005,8 @@ public class FindOperationTest extends OperationTestBase {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              20);
+              20,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -2089,7 +2205,8 @@ public class FindOperationTest extends OperationTestBase {
               objectMapper,
               List.of(new FindOperation.OrderBy("sort_date", true)),
               0,
-              20);
+              20,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -2269,7 +2386,8 @@ public class FindOperationTest extends OperationTestBase {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               5,
-              20);
+              20,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -2443,7 +2561,8 @@ public class FindOperationTest extends OperationTestBase {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
-              20);
+              20,
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -2572,7 +2691,8 @@ public class FindOperationTest extends OperationTestBase {
             objectMapper,
             List.of(new FindOperation.OrderBy("uuidv6", true)),
             0,
-            20);
+            20,
+            false);
 
     Supplier<CommandResult> execute =
         operation
@@ -2649,7 +2769,8 @@ public class FindOperationTest extends OperationTestBase {
               2,
               ReadType.DOCUMENT,
               objectMapper,
-              new float[] {0.25f, 0.25f, 0.25f, 0.25f});
+              new float[] {0.25f, 0.25f, 0.25f, 0.25f},
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -2669,6 +2790,82 @@ public class FindOperationTest extends OperationTestBase {
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
+      assertThat(result.status()).isNull();
+    }
+
+    @Test
+    public void vectorSearchReturnSortVector() throws Exception {
+      String collectionReadCql =
+          "SELECT key, tx_id, doc_json FROM \"%s\".\"%s\" ORDER BY query_vector_value ANN OF ? LIMIT 2"
+              .formatted(KEYSPACE_NAME, COLLECTION_NAME);
+      String doc1 =
+          """
+                    {
+                      "_id": "doc1",
+                      "username": "user1",
+                      "$vector": [0.25, 0.25, 0.25, 0.25]
+                    }
+                    """;
+      String doc2 =
+          """
+                    {
+                      "_id": "doc2",
+                      "username": "user1",
+                      "$vector": [0.35, 0.35, 0.35, 0.35]
+                    }
+                    """;
+
+      CqlVector<Float> vectorValue = vectorForStatement(0.25f, 0.25f, 0.25f, 0.25f);
+      SimpleStatement stmt = SimpleStatement.newInstance(collectionReadCql, vectorValue);
+      List<Row> rows =
+          Arrays.asList(
+              resultRow(0, "doc1", UUID.randomUUID(), doc1),
+              resultRow(1, "doc2", UUID.randomUUID(), doc2));
+      AsyncResultSet results = new MockAsyncResultSet(KEY_TXID_JSON_COLUMNS, rows, null);
+      final AtomicInteger callCount = new AtomicInteger();
+      QueryExecutor queryExecutor = mock(QueryExecutor.class);
+      when(queryExecutor.executeVectorSearch(eq(dataApiRequestInfo), eq(stmt), any(), anyInt()))
+          .then(
+              invocation -> {
+                callCount.incrementAndGet();
+                return Uni.createFrom().item(results);
+              });
+
+      LogicalExpression implicitAnd = LogicalExpression.and();
+      FindOperation operation =
+          FindOperation.vsearch(
+              VECTOR_COMMAND_CONTEXT,
+              implicitAnd,
+              DocumentProjector.includeAllProjector(),
+              null,
+              2,
+              2,
+              ReadType.DOCUMENT,
+              objectMapper,
+              new float[] {0.25f, 0.25f, 0.25f, 0.25f},
+              true);
+
+      Supplier<CommandResult> execute =
+          operation
+              .execute(dataApiRequestInfo, queryExecutor)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      // assert query execution
+      assertThat(callCount.get()).isEqualTo(1);
+
+      // then result
+      CommandResult result = execute.get();
+      assertThat(result.data().getResponseDocuments())
+          .hasSize(2)
+          .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
+      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.errors()).isNullOrEmpty();
+      assertThat(result.status()).isNotNull();
+      assertThat(result.status().get(CommandStatus.SORT_VECTOR))
+          .isEqualTo(new float[] {0.25f, 0.25f, 0.25f, 0.25f});
     }
 
     @Test
@@ -2714,7 +2911,8 @@ public class FindOperationTest extends OperationTestBase {
               DocumentProjector.includeAllProjector(),
               ReadType.DOCUMENT,
               objectMapper,
-              new float[] {0.25f, 0.25f, 0.25f, 0.25f});
+              new float[] {0.25f, 0.25f, 0.25f, 0.25f},
+              false);
 
       Supplier<CommandResult> execute =
           operation
@@ -2754,7 +2952,8 @@ public class FindOperationTest extends OperationTestBase {
                 implicitAnd1,
                 DocumentProjector.defaultProjector(),
                 ReadType.DOCUMENT,
-                objectMapper);
+                objectMapper,
+                false);
 
         List<Expression<BuiltCondition>> expressions1 =
             ExpressionBuilder.buildExpressions(operation1.logicalExpression(), null);
@@ -2771,7 +2970,8 @@ public class FindOperationTest extends OperationTestBase {
                 implicitAnd2,
                 DocumentProjector.defaultProjector(),
                 ReadType.DOCUMENT,
-                objectMapper);
+                objectMapper,
+                false);
 
         List<Expression<BuiltCondition>> expressions2 =
             ExpressionBuilder.buildExpressions(operation2.logicalExpression(), null);
@@ -2817,7 +3017,8 @@ public class FindOperationTest extends OperationTestBase {
               2,
               ReadType.DOCUMENT,
               objectMapper,
-              new float[] {0.25f, 0.25f, 0.25f, 0.25f});
+              new float[] {0.25f, 0.25f, 0.25f, 0.25f},
+              false);
 
       // Throwable
       Throwable failure =

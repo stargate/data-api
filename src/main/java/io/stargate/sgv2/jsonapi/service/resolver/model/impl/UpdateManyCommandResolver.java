@@ -73,6 +73,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         Integer.MAX_VALUE,
         operationsConfig.defaultPageSize(),
         ReadType.DOCUMENT,
-        objectMapper);
+        objectMapper,
+        false);
   }
 }

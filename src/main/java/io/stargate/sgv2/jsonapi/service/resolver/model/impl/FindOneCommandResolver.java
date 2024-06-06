@@ -46,19 +46,23 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 
+    FindOneCommand.Options options = command.options();
+    boolean includeSimilarity = false;
+    boolean includeSortVector = false;
+    if (options != null) {
+      includeSimilarity = options.includeSimilarity();
+      includeSortVector = options.includeSortVector();
+    }
+
     if (vector != null) {
-      FindOneCommand.Options options = command.options();
-      boolean includeSimilarity = false;
-      if (options != null) {
-        includeSimilarity = options.includeSimilarity();
-      }
       return FindOperation.vsearchSingle(
           commandContext,
           logicalExpression,
           command.buildProjector(includeSimilarity),
           ReadType.DOCUMENT,
           objectMapper,
-          vector);
+          vector,
+          includeSortVector);
     }
 
     List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
@@ -76,14 +80,16 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
           0,
           // For in memory sorting if no limit provided in the request will use
           // documentConfig.defaultPageSize() as limit
-          operationsConfig.maxDocumentSortCount());
+          operationsConfig.maxDocumentSortCount(),
+          includeSortVector);
     } else {
       return FindOperation.unsortedSingle(
           commandContext,
           logicalExpression,
           command.buildProjector(),
           ReadType.DOCUMENT,
-          objectMapper);
+          objectMapper,
+          includeSortVector);
     }
   }
 }

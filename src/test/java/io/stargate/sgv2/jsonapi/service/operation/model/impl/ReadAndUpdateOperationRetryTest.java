@@ -221,7 +221,8 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             implicitAnd,
             DocumentProjector.defaultProjector(),
             ReadType.DOCUMENT,
-            objectMapper);
+            objectMapper,
+            false);
 
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
@@ -364,7 +365,8 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             implicitAnd,
             DocumentProjector.defaultProjector(),
             ReadType.DOCUMENT,
-            objectMapper);
+            objectMapper,
+            false);
 
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
@@ -515,7 +517,8 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             implicitAnd,
             DocumentProjector.defaultProjector(),
             ReadType.DOCUMENT,
-            objectMapper);
+            objectMapper,
+            false);
 
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
@@ -701,7 +704,8 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             3,
             3,
             ReadType.DOCUMENT,
-            objectMapper);
+            objectMapper,
+            false);
 
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
@@ -912,7 +916,8 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             3,
             3,
             ReadType.DOCUMENT,
-            objectMapper);
+            objectMapper,
+            false);
     DocumentUpdater documentUpdater =
         DocumentUpdater.construct(
             DocumentUpdaterUtils.updateClause(

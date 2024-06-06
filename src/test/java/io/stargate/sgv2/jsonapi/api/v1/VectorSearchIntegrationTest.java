@@ -559,16 +559,16 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     public void happyPath() {
       String json =
           """
-                      {
-                        "find": {
-                          "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
-                          "projection" : {"_id" : 1, "$vector" : 1},
-                          "options" : {
-                              "limit" : 5
-                          }
-                        }
-                      }
-                      """;
+        {
+          "find": {
+            "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+            "projection" : {"_id" : 1, "$vector" : 1},
+            "options" : {
+                "limit" : 5
+            }
+          }
+        }
+        """;
 
       given()
           .headers(getHeaders())
@@ -584,7 +584,44 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("data.documents[1].$vector", is(notNullValue()))
           .body("data.documents[2]._id", is("1"))
           .body("data.documents[2].$vector", is(notNullValue()))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("status", is(nullValue()));
+    }
+
+    @Test
+    @Order(2)
+    public void happyPathWithIncludeSortVectorOption() {
+      String json =
+          """
+            {
+              "find": {
+                "sort" : {"$vector" : [0.15, 0.1, 0.1, 0.35, 0.55]},
+                "projection" : {"_id" : 1, "$vector" : 1},
+                "options" : {
+                    "limit" : 5,
+                    "includeSortVectors" : true
+                }
+              }
+            }
+            """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.documents[0]._id", is("3"))
+          .body("data.documents[0].$vector", is(notNullValue()))
+          .body("data.documents[1]._id", is("2"))
+          .body("data.documents[1].$vector", is(notNullValue()))
+          .body("data.documents[2]._id", is("1"))
+          .body("data.documents[2].$vector", is(notNullValue()))
+          .body("errors", is(nullValue()))
+          .body("status", is(notNullValue()))
+          .body("status.sortVectors", is(notNullValue()));
     }
 
     @Test
