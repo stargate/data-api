@@ -599,7 +599,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                 "projection" : {"_id" : 1, "$vector" : 1},
                 "options" : {
                     "limit" : 5,
-                    "includeSortVectors" : true
+                    "includeSortVector" : true
                 }
               }
             }
