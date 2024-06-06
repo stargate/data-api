@@ -27,22 +27,23 @@ public record ReadOperationPage(
     implements Supplier<CommandResult> {
   @Override
   public CommandResult get() {
+    Map<CommandStatus, Object> status = null;
+    if (includeSortVector) {
+      // add sort vector to the response
+      status = new HashMap<>();
+      status.put(CommandStatus.SORT_VECTOR, vector);
+    }
+
     // difference if we have single response target or not
     if (singleResponse) {
       // extract first document from docs with list size check
       JsonNode jsonNode = docs.size() > 0 ? docs.get(0).document() : null;
-      return new CommandResult(new CommandResult.SingleResponseData(jsonNode));
+      return new CommandResult(new CommandResult.SingleResponseData(jsonNode), status);
     } else {
       // transform docs to json nodes
       final List<JsonNode> jsonNodes = new ArrayList<>();
       for (ReadDocument doc : docs) {
         jsonNodes.add(doc.document());
-      }
-      Map<CommandStatus, Object> status = null;
-      if (includeSortVector) {
-        // add sort vector to the response
-        status = new HashMap<>();
-        status.put(CommandStatus.SORT_VECTOR, vector);
       }
       return new CommandResult(new CommandResult.MultiResponseData(jsonNodes, pageState), status);
     }
