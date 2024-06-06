@@ -676,7 +676,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body("errors", is(nullValue()))
           .body("data.document._id", is("1"))
           .body("status", is(notNullValue()))
-          .body("status.sortVector", nullValue());
+          .body("status.sortVector", is(notNullValue()));
     }
 
     @Test
