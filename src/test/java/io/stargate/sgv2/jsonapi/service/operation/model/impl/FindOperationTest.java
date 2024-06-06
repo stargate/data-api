@@ -390,7 +390,7 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.data().getResponseDocuments())
           .hasSize(2)
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
-      assertThat(result.status()).isNullOrEmpty();
+      assertThat(result.status()).isNotNull();
       assertThat(result.errors()).isNullOrEmpty();
       assertThat(result.status()).isNotNull();
       assertThat(result.status().containsKey(CommandStatus.SORT_VECTOR)).isTrue();
@@ -2861,7 +2861,6 @@ public class FindOperationTest extends OperationTestBase {
       assertThat(result.data().getResponseDocuments())
           .hasSize(2)
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
-      assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
       assertThat(result.status()).isNotNull();
       assertThat(result.status().get(CommandStatus.SORT_VECTOR))

@@ -264,7 +264,6 @@ public class FindOneCommandResolverTest {
                     new DBFilterBase.TextFilter(
                         "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
 
-                float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(projector);
@@ -275,7 +274,7 @@ public class FindOneCommandResolverTest {
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isTrue();
-                assertThat(find.vector()).containsExactly(vector);
+                assertThat(find.vector()).isNull();
                 assertThat(
                         find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
                     .isEqualTo(filter);

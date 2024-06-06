@@ -498,14 +498,14 @@ public class FindCommandResolverTest {
     public void vectorSearchWithOptionIncludeSortVector() throws Exception {
       String json =
           """
-                              {
-                                "find": {
-                                  "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]},
-                                  "options": {"includeSortVector": true}
-                                }
-                              }
-                              """;
-      final DocumentProjector projector = DocumentProjector.createFromDefinition(null, true);
+          {
+            "find": {
+              "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]},
+              "options": {"includeSortVector": true}
+            }
+          }
+          """;
+      final DocumentProjector projector = DocumentProjector.createFromDefinition(null, false);
 
       FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
       Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
