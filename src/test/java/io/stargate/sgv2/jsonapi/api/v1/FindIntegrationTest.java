@@ -215,7 +215,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("status", is(notNullValue()))
-          .body("status.sortVector", equalTo(nullValue()))
+          .body("status.sortVector", is(null))
           .body("errors", is(nullValue()))
           .body("data.documents", hasSize(2));
     }

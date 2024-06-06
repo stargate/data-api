@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.given;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -182,7 +181,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .statusCode(200)
           .body("data.document", is(not(nullValue())))
           .body("status", is(notNullValue()))
-          .body("status.sortVector", equalTo(nullValue()))
+          .body("status.sortVector", is(null))
           .body("errors", is(nullValue()));
     }
 
