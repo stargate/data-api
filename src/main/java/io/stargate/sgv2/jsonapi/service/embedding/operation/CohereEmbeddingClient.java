@@ -111,7 +111,10 @@ public class CohereEmbeddingClient implements EmbeddingProvider {
                       || throwable instanceof TimeoutException);
                 })
             .retry()
-            .withBackOff(Duration.ofMillis(requestProperties.initialBackOffMillis()))
+            .withBackOff(
+                Duration.ofMillis(requestProperties.initialBackOffMillis()),
+                Duration.ofMillis(requestProperties.maxBackOffMillis()))
+            .withJitter(requestProperties.jitter())
             .atMost(requestProperties.atMostRetries());
     ;
     return response
