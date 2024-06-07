@@ -43,7 +43,7 @@ public class MistralEmbeddingClient implements EmbeddingProvider {
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(MistralEmbeddingProvider.class);
   }
 
@@ -90,8 +90,8 @@ public class MistralEmbeddingClient implements EmbeddingProvider {
                       || throwable instanceof TimeoutException);
                 })
             .retry()
-            .withBackOff(Duration.ofMillis(requestProperties.retryDelayInMillis()))
-            .atMost(requestProperties.maxRetries());
+            .withBackOff(Duration.ofMillis(requestProperties.initialBackOffMillis()))
+            .atMost(requestProperties.atMostRetries());
     return response
         .onItem()
         .transform(

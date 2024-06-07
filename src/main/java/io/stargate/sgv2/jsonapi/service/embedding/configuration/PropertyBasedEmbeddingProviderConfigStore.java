@@ -32,9 +32,9 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
         serviceName,
         config.providers().get(serviceName).url().toString(),
         RequestProperties.of(
-            properties.maxRetries(),
-            properties.retryDelayMillis(),
-            properties.requestTimeoutMillis(),
+            properties.atMostRetries(),
+            properties.initialBackOffMillis(),
+            properties.readTimeoutMillis(),
             properties.taskTypeRead(),
             properties.taskTypeStore(),
             properties.maxBatchSize()));

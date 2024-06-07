@@ -51,7 +51,7 @@ public class AzureOpenAIEmbeddingClient implements EmbeddingProvider {
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(actualUrl))
-            .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(OpenAIEmbeddingProvider.class);
   }
 
@@ -102,8 +102,8 @@ public class AzureOpenAIEmbeddingClient implements EmbeddingProvider {
                       || throwable instanceof TimeoutException);
                 })
             .retry()
-            .withBackOff(Duration.ofMillis(requestProperties.retryDelayInMillis()))
-            .atMost(requestProperties.maxRetries());
+            .withBackOff(Duration.ofMillis(requestProperties.initialBackOffMillis()))
+            .atMost(requestProperties.atMostRetries());
     return response
         .onItem()
         .transform(

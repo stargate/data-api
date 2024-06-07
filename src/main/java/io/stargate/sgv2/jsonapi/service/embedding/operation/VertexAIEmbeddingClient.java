@@ -44,7 +44,7 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(actualUrl))
-            .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(VertexAIEmbeddingProvider.class);
   }
 
@@ -150,8 +150,8 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
                       || throwable instanceof TimeoutException);
                 })
             .retry()
-            .withBackOff(Duration.ofMillis(requestProperties.retryDelayInMillis()))
-            .atMost(requestProperties.maxRetries());
+            .withBackOff(Duration.ofMillis(requestProperties.initialBackOffMillis()))
+            .atMost(requestProperties.atMostRetries());
     ;
     return serviceResponse
         .onItem()
