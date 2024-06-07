@@ -21,13 +21,13 @@ Follow instructions under the [Script options](#script-options) section to use t
 
 ## Data API with DSE-6.9 cluster
 
-You can start a simple configuration with DSE 6.9 the following command:
+You can start a simple configuration with DSE 6.9 with the following command:
 
 ```
 ./start_dse69.sh
 ``` 
 
-You can start a simple configuration with HCD the following command:
+You can start a simple configuration with HCD with the following command:
 
 ```
 ./start_hcd.sh
