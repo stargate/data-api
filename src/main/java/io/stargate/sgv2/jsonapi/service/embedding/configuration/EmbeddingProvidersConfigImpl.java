@@ -74,7 +74,7 @@ public record EmbeddingProvidersConfigImpl(
         int initialBackOffMillis,
         int readTimeoutMillis,
         int maxBackOffMillis,
-        float jitter,
+        double jitter,
         Optional<String> maxInputLength,
         Optional<String> taskTypeStore,
         Optional<String> taskTypeRead,
