@@ -30,6 +30,8 @@ public interface EmbeddingProviderConfigStore {
       int atMostRetries,
       int initialBackOffMillis,
       int readTimeoutMillis,
+      int maxBackOffMillis,
+      double jitter,
       Optional<String> requestTypeQuery,
       Optional<String> requestTypeIndex,
       // `maxBatchSize` is the maximum number of documents to be sent in a single request to be
@@ -39,6 +41,8 @@ public interface EmbeddingProviderConfigStore {
         int atMostRetries,
         int initialBackOffMillis,
         int readTimeoutMillis,
+        int maxBackOffMillis,
+        double jitter,
         Optional<String> requestTypeQuery,
         Optional<String> requestTypeIndex,
         int maxBatchSize) {
@@ -46,6 +50,8 @@ public interface EmbeddingProviderConfigStore {
           atMostRetries,
           initialBackOffMillis,
           readTimeoutMillis,
+          maxBackOffMillis,
+          jitter,
           requestTypeQuery,
           requestTypeIndex,
           maxBatchSize);

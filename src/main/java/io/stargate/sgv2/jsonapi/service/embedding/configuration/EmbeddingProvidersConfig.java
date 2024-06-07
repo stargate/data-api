@@ -231,7 +231,7 @@ public interface EmbeddingProvidersConfig {
        * @return The jitter factor for backoff time.
        */
       @WithDefault("0.5")
-      float jitter();
+      double jitter();
 
       @Nullable
       Optional<String> maxInputLength();

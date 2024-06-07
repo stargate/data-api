@@ -35,6 +35,8 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
             properties.atMostRetries(),
             properties.initialBackOffMillis(),
             properties.readTimeoutMillis(),
+            properties.maxBackOffMillis(),
+            properties.jitter(),
             properties.taskTypeRead(),
             properties.taskTypeStore(),
             properties.maxBatchSize()));

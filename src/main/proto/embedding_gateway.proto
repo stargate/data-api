@@ -150,7 +150,7 @@ message GetSupportedProvidersResponse {
       int32 initial_back_off_millis = 2;
       int32 read_timeout_millis = 3;
       int32 max_back_off_millis = 4;
-      float jitter = 5;
+      double jitter = 5;
       string max_input_length = 6;
       string task_type_store = 7;
       string task_type_read = 8;

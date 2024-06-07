@@ -235,6 +235,8 @@ stargate:
                 - accepted: providerKey
                   forwarded: Authorization
           properties:
+            initial-back-off-millis: 1000
+            max-back-off-millis: 1000
             max-batch-size: 32
           models:
             - name: jina-embeddings-v2-base-en

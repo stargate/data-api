@@ -89,7 +89,8 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
             // issue
             .withBackOff(
                 Duration.ofMillis(requestProperties.initialBackOffMillis()),
-                Duration.ofMillis(4L * requestProperties.initialBackOffMillis()))
+                Duration.ofMillis(requestProperties.maxBackOffMillis()))
+            .withJitter(requestProperties.jitter())
             .atMost(requestProperties.atMostRetries());
     return response
         .onItem()
