@@ -422,7 +422,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             userParamName -> {
               if (!expectedParamNames.contains(userParamName)) {
                 throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                    "Unexpected parameter '%s' for the provider '%s' provider",
+                    "Unexpected parameter '%s' for the provider '%s' provided",
                     userParamName, userConfig.provider());
               }
             });
