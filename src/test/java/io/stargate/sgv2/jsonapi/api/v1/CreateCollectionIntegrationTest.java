@@ -628,7 +628,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                 },
                                 "parameters": {
                                     "resourceName" : "vectorize",
-                                    "deploymentId" : "vectorize"
+                                    "deploymentName" : "vectorize"
                                 }
                             }
                         }
@@ -730,7 +730,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                                 },
                                                 "parameters": {
                                                     "resourceName" : "vectorize",
-                                                    "deploymentId" : "vectorize"
+                                                    "deploymentName" : "vectorize"
                                                 }
                                             }
                                         }
@@ -1498,7 +1498,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                                 "modelName": "text-embedding-3-small",
                                                 "parameters": {
                                                     "resourceName": 123,
-                                                    "deploymentId": "vectorize"
+                                                    "deploymentName": "vectorize"
                                                 }
                                             }
                                         }
@@ -1580,7 +1580,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                                 "modelName": "text-embedding-3-small",
                                                 "parameters": {
                                                     "resourceName": "vectorize",
-                                                    "deploymentId": "vectorize",
+                                                    "deploymentName": "vectorize",
                                                     "vectorDimension": 512
                                                 }
                                             }
@@ -1623,7 +1623,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                                 "modelName": "text-embedding-3-small",
                                                 "parameters": {
                                                     "resourceName": "vectorize",
-                                                    "deploymentId": 123
+                                                    "deploymentName": 123
                                                 }
                                             }
                                         }
@@ -1642,7 +1642,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: The provided parameter 'deploymentId' type is incorrect. Expected: 'string'"));
+                  "The provided options are invalid: The provided parameter 'deploymentName' type is incorrect. Expected: 'string'"));
     }
   }
 
