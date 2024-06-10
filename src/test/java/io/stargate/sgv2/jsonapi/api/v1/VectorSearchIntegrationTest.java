@@ -621,7 +621,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("data.documents[2].$vector", is(notNullValue()))
           .body("errors", is(nullValue()))
           .body("status", is(notNullValue()))
-          .body("status.sortVector", nullValue());
+          .body("status.sortVector", is(notNullValue()));
     }
 
     @Test
