@@ -146,13 +146,15 @@ message GetSupportedProvidersResponse {
 
     // RequestProperties message represents http properties for requests to the embedding providers.
     message RequestProperties {
-      int32 max_retries = 1;
-      int32 retry_delay_millis = 2;
-      int32 request_timeout_millis = 3;
-      string max_input_length = 4;
-      string task_type_store = 5;
-      string task_type_read = 6;
-      int32 max_batch_size = 7;
+      int32 at_most_retries = 1;
+      int32 initial_back_off_millis = 2;
+      int32 read_timeout_millis = 3;
+      int32 max_back_off_millis = 4;
+      double jitter = 5;
+      string max_input_length = 6;
+      string task_type_store = 7;
+      string task_type_read = 8;
+      int32 max_batch_size = 9;
     }
 
     // ModelConfig message represents configuration for a specific model.

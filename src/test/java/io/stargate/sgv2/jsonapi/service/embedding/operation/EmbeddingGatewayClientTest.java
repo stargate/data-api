@@ -11,11 +11,11 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
-import io.stargate.sgv2.common.testprofiles.NoGlobalResourcesTestProfile;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
+import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +46,7 @@ public class EmbeddingGatewayClientTest {
     for (EmbeddingProviderFactory.ProviderConstructor ctor : providerCtors) {
       EmbeddingProviderConfigStore.RequestProperties requestProperties =
           EmbeddingProviderConfigStore.RequestProperties.of(
-              3, 5, 5000, Optional.empty(), Optional.empty(), 2048);
+              3, 5, 5000, 5, 0.5, Optional.empty(), Optional.empty(), 2048);
       assertThat(ctor.create(requestProperties, "baseUrl", "modelName", 5, null)).isNotNull();
     }
   }
@@ -72,7 +72,7 @@ public class EmbeddingGatewayClientTest {
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
             EmbeddingProviderConfigStore.RequestProperties.of(
-                5, 5, 5, Optional.empty(), Optional.empty(), 2048),
+                5, 5, 5, 5, 0.5, Optional.empty(), Optional.empty(), 2048),
             "openai",
             1536,
             Optional.of("default"),
@@ -122,7 +122,7 @@ public class EmbeddingGatewayClientTest {
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
             EmbeddingProviderConfigStore.RequestProperties.of(
-                5, 5, 5, Optional.empty(), Optional.empty(), 2048),
+                5, 5, 5, 5, 0.5, Optional.empty(), Optional.empty(), 2048),
             "openai",
             1536,
             Optional.of("default"),

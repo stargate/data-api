@@ -27,25 +27,31 @@ public interface EmbeddingProviderConfigStore {
   }
 
   record RequestProperties(
-      int maxRetries,
-      int retryDelayInMillis,
-      int timeoutInMillis,
+      int atMostRetries,
+      int initialBackOffMillis,
+      int readTimeoutMillis,
+      int maxBackOffMillis,
+      double jitter,
       Optional<String> requestTypeQuery,
       Optional<String> requestTypeIndex,
       // `maxBatchSize` is the maximum number of documents to be sent in a single request to be
       // embedding provider
       int maxBatchSize) {
     public static RequestProperties of(
-        int maxRetries,
-        int retryDelayInMillis,
-        int timeoutInMillis,
+        int atMostRetries,
+        int initialBackOffMillis,
+        int readTimeoutMillis,
+        int maxBackOffMillis,
+        double jitter,
         Optional<String> requestTypeQuery,
         Optional<String> requestTypeIndex,
         int maxBatchSize) {
       return new RequestProperties(
-          maxRetries,
-          retryDelayInMillis,
-          timeoutInMillis,
+          atMostRetries,
+          initialBackOffMillis,
+          readTimeoutMillis,
+          maxBackOffMillis,
+          jitter,
           requestTypeQuery,
           requestTypeIndex,
           maxBatchSize);
