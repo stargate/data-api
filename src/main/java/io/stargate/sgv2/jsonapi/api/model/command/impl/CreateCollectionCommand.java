@@ -122,8 +122,7 @@ public record CreateCollectionCommand(
                   implementation = String.class)
               @JsonProperty("provider")
               String provider,
-          @NotNull
-              @Schema(
+          @Schema(
                   description = "Registered Embedding service model",
                   type = SchemaType.STRING,
                   implementation = String.class)

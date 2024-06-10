@@ -37,6 +37,8 @@ public class EmbeddingProviderFactory {
           Map.entry(ProviderConstants.AZURE_OPENAI, AzureOpenAIEmbeddingClient::new),
           Map.entry(ProviderConstants.COHERE, CohereEmbeddingClient::new),
           Map.entry(ProviderConstants.HUGGINGFACE, HuggingFaceEmbeddingClient::new),
+          Map.entry(
+              ProviderConstants.HUGGINGFACE_DEDICATED, HuggingFaceDedicatedEmbeddingClient::new),
           Map.entry(ProviderConstants.JINA_AI, JinaAIEmbeddingClient::new),
           Map.entry(ProviderConstants.MISTRAL, MistralEmbeddingClient::new),
           Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingClient::new),
