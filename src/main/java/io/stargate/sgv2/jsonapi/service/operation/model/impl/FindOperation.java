@@ -138,7 +138,8 @@ public record FindOperation(
    * @param logicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindOperation#projection
    * @param readType type of the read
-   * @param objectMapper object mapper to use * @param vector vector to search * @param
+   * @param objectMapper object mapper to use
+   * @param vector vector to search
    * @param includeSortVector include sort vector in the response
    * @return FindOperation for a multi document unsorted find
    */
