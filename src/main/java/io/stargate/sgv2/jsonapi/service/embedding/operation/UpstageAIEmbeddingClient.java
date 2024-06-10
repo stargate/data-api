@@ -44,7 +44,7 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(UpstageAIEmbeddingProvider.class);
   }
 
@@ -106,8 +106,11 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
                       || throwable instanceof TimeoutException);
                 })
             .retry()
-            .withBackOff(Duration.ofMillis(requestProperties.retryDelayInMillis()))
-            .atMost(requestProperties.maxRetries());
+            .withBackOff(
+                Duration.ofMillis(requestProperties.initialBackOffMillis()),
+                Duration.ofMillis(requestProperties.maxBackOffMillis()))
+            .withJitter(requestProperties.jitter())
+            .atMost(requestProperties.atMostRetries());
     return response
         .onItem()
         .transform(
