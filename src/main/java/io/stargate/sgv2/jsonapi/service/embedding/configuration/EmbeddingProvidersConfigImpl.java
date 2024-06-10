@@ -70,9 +70,11 @@ public record EmbeddingProvidersConfigImpl(
     }
 
     public record RequestPropertiesImpl(
-        int maxRetries,
-        int retryDelayMillis,
-        int requestTimeoutMillis,
+        int atMostRetries,
+        int initialBackOffMillis,
+        int readTimeoutMillis,
+        int maxBackOffMillis,
+        double jitter,
         Optional<String> maxInputLength,
         Optional<String> taskTypeStore,
         Optional<String> taskTypeRead,
@@ -82,9 +84,11 @@ public record EmbeddingProvidersConfigImpl(
           EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig.RequestProperties
               grpcProviderConfigProperties) {
         this(
-            grpcProviderConfigProperties.getMaxRetries(),
-            grpcProviderConfigProperties.getRetryDelayMillis(),
-            grpcProviderConfigProperties.getRequestTimeoutMillis(),
+            grpcProviderConfigProperties.getAtMostRetries(),
+            grpcProviderConfigProperties.getInitialBackOffMillis(),
+            grpcProviderConfigProperties.getReadTimeoutMillis(),
+            grpcProviderConfigProperties.getMaxBackOffMillis(),
+            grpcProviderConfigProperties.getJitter(),
             Optional.ofNullable(grpcProviderConfigProperties.getMaxInputLength()),
             Optional.ofNullable(grpcProviderConfigProperties.getTaskTypeStore()),
             Optional.ofNullable(grpcProviderConfigProperties.getTaskTypeRead()),

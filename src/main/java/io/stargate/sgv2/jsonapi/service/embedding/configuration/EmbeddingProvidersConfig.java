@@ -189,28 +189,49 @@ public interface EmbeddingProvidersConfig {
     interface RequestProperties {
 
       /**
-       * The maximum number of retries to attempt before failing the request.
+       * Specifies the maximum number of attempts before failing. Default is 3 (1 request + 2
+       * retries).
        *
-       * @return The maximum number of retries to attempt before failing the request.
+       * @return The maximum number of attempts before failing.
        */
       @WithDefault("3")
-      int maxRetries();
+      int atMostRetries();
 
       /**
-       * The back off time between retries in milliseconds.
+       * The initial delay between retries in milliseconds. The first retry occurs after the
+       * specified delay (default 100 ms), doubling each time until reaching maxBackOffMillis.
        *
-       * @return The delay between retries in milliseconds.
+       * @return The initial delay between retries in milliseconds.
        */
       @WithDefault("100")
-      int retryDelayMillis();
+      int initialBackOffMillis();
 
       /**
-       * The timeout for the request in milliseconds.
+       * The maximum duration for a request to complete in milliseconds. Default is 5000 ms (5
+       * seconds), ensuring retries are likely within general gateway timeouts.
        *
-       * @return The timeout for the request in milliseconds.
+       * @return The request timeout in milliseconds.
        */
-      @WithDefault("10000")
-      int requestTimeoutMillis();
+      @WithDefault("5000")
+      int readTimeoutMillis();
+
+      /**
+       * The maximum delay between retries in milliseconds.
+       *
+       * @return The maximum delay between retries in milliseconds.
+       */
+      @WithDefault("500")
+      int maxBackOffMillis();
+
+      /**
+       * A random variation added to the delay between retries in an exponential backoff strategy.
+       * For example, with a base delay of 1 second and jitter of 0.2, the actual delay ranges
+       * between 0.8 and 1.2 seconds.
+       *
+       * @return The jitter factor for backoff time.
+       */
+      @WithDefault("0.5")
+      double jitter();
 
       @Nullable
       Optional<String> maxInputLength();

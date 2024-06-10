@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
@@ -49,7 +50,7 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(VoyageAIEmbeddingProvider.class);
   }
 
@@ -98,13 +99,17 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
             .embed("Bearer " + apiKeyOverride.get(), request)
             .onFailure(
                 throwable -> {
-                  return (throwable.getCause() != null
-                      && throwable.getCause() instanceof JsonApiException jae
-                      && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT);
+                  return ((throwable.getCause() != null
+                          && throwable.getCause() instanceof JsonApiException jae
+                          && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
+                      || throwable instanceof TimeoutException);
                 })
             .retry()
-            .withBackOff(Duration.ofMillis(requestProperties.retryDelayInMillis()))
-            .atMost(requestProperties.maxRetries());
+            .withBackOff(
+                Duration.ofMillis(requestProperties.initialBackOffMillis()),
+                Duration.ofMillis(requestProperties.maxBackOffMillis()))
+            .withJitter(requestProperties.jitter())
+            .atMost(requestProperties.atMostRetries());
     return response
         .onItem()
         .transform(

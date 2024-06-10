@@ -1,5 +1,27 @@
 # Changelog
 
+## [v1.0.10](https://github.com/stargate/data-api/tree/v1.0.10) (2024-06-04)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.9...v1.0.10)
+
+**Closed issues:**
+
+- $vectorize: Misleading error when `authentication.providerKey` not set [\#1124](https://github.com/stargate/data-api/issues/1124)
+- Params not passing to EGW [\#1111](https://github.com/stargate/data-api/issues/1111)
+- Data API logs are not collected in github integration-tests [\#1034](https://github.com/stargate/data-api/issues/1034)
+
+**Merged pull requests:**
+
+- Bridge-Removal: Tests file cleanup with necessary profile and resources [\#1141](https://github.com/stargate/data-api/pull/1141) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- rollback cql-session check [\#1138](https://github.com/stargate/data-api/pull/1138) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Check for container start up using cqlsh [\#1136](https://github.com/stargate/data-api/pull/1136) ([maheshrajamani](https://github.com/maheshrajamani))
+- Re-create PR \#1132 to get CI to succeed [\#1135](https://github.com/stargate/data-api/pull/1135) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix DSE 6.9 version tag [\#1134](https://github.com/stargate/data-api/pull/1134) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix c2-3338, add more info on exception message [\#1133](https://github.com/stargate/data-api/pull/1133) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Run CI using HCD image  [\#1130](https://github.com/stargate/data-api/pull/1130) ([maheshrajamani](https://github.com/maheshrajamani))
+- Changes for using dse 6.9  for CI [\#1129](https://github.com/stargate/data-api/pull/1129) ([maheshrajamani](https://github.com/maheshrajamani))
+- Bumping version for next data-api release [\#1127](https://github.com/stargate/data-api/pull/1127) ([github-actions[bot]](https://github.com/apps/github-actions))
+
 ## [v1.0.9](https://github.com/stargate/data-api/tree/v1.0.9) (2024-05-29)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.8...v1.0.9)
