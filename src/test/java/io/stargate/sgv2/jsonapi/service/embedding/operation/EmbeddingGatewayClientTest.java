@@ -46,7 +46,7 @@ public class EmbeddingGatewayClientTest {
     for (EmbeddingProviderFactory.ProviderConstructor ctor : providerCtors) {
       EmbeddingProviderConfigStore.RequestProperties requestProperties =
           EmbeddingProviderConfigStore.RequestProperties.of(
-              3, 5, 5000, Optional.empty(), Optional.empty(), 2048);
+              3, 5, 5000, 5, 0.5, Optional.empty(), Optional.empty(), 2048);
       assertThat(ctor.create(requestProperties, "baseUrl", "modelName", 5, null)).isNotNull();
     }
   }
@@ -72,7 +72,7 @@ public class EmbeddingGatewayClientTest {
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
             EmbeddingProviderConfigStore.RequestProperties.of(
-                5, 5, 5, Optional.empty(), Optional.empty(), 2048),
+                5, 5, 5, 5, 0.5, Optional.empty(), Optional.empty(), 2048),
             "openai",
             1536,
             Optional.of("default"),
@@ -122,7 +122,7 @@ public class EmbeddingGatewayClientTest {
     EmbeddingGatewayClient embeddingGatewayClient =
         new EmbeddingGatewayClient(
             EmbeddingProviderConfigStore.RequestProperties.of(
-                5, 5, 5, Optional.empty(), Optional.empty(), 2048),
+                5, 5, 5, 5, 0.5, Optional.empty(), Optional.empty(), 2048),
             "openai",
             1536,
             Optional.of("default"),

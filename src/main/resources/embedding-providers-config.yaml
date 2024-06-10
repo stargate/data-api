@@ -154,9 +154,6 @@ stargate:
               required: true
               help: "The Google Cloud Project ID to use when calling"
           properties:
-            max-retries: 3
-            request-timeout-millis: 1000
-            retry-delay-millis: 100
             task-type-store: RETRIEVAL_DOCUMENT # see https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#api_changes_to_models_released_on_or_after_august_2023
             task-type-read: QUESTION_ANSWERING
             max-input-length: 5
@@ -238,6 +235,8 @@ stargate:
                 - accepted: providerKey
                   forwarded: Authorization
           properties:
+            initial-back-off-millis: 1000
+            max-back-off-millis: 1000
             max-batch-size: 32
           models:
             - name: jina-embeddings-v2-base-en

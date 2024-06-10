@@ -40,7 +40,7 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
-            .readTimeout(requestProperties.timeoutInMillis(), TimeUnit.MILLISECONDS)
+            .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
             .build(JinaAIEmbeddingProvider.class);
   }
 
@@ -88,9 +88,10 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
             // Jina has intermittent embedding failure, set a longer retry delay to mitigate the
             // issue
             .withBackOff(
-                Duration.ofMillis(requestProperties.retryDelayInMillis()),
-                Duration.ofMillis(4L * requestProperties.retryDelayInMillis()))
-            .atMost(requestProperties.maxRetries());
+                Duration.ofMillis(requestProperties.initialBackOffMillis()),
+                Duration.ofMillis(requestProperties.maxBackOffMillis()))
+            .withJitter(requestProperties.jitter())
+            .atMost(requestProperties.atMostRetries());
     return response
         .onItem()
         .transform(
