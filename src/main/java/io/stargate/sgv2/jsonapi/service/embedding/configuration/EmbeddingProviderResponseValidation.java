@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE;
+import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
 
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.client.ClientRequestContext;
@@ -41,14 +41,14 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
     if (contentType == null
         || !(MediaType.APPLICATION_JSON_TYPE.isCompatible(contentType)
             || MEDIATYPE_TEXT_JSON.isCompatible(contentType))) {
-      throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
+      throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
           "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found '%s'",
           contentType);
     }
 
     // Throw error if there is no response body
     if (!responseContext.hasEntity()) {
-      throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
+      throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
           "No JSON body from the embedding provider");
     }
   }

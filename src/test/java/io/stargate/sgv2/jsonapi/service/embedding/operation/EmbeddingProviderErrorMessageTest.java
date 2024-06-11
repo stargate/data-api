@@ -175,7 +175,8 @@ public class EmbeddingProviderErrorMessageTest {
               .getFailure();
       assertThat(exception.getCause())
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
               "The configured Embedding Provider for this collection return an invalid response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'");
@@ -202,7 +203,8 @@ public class EmbeddingProviderErrorMessageTest {
               .getFailure();
       assertThat(exception.getCause())
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
               "The configured Embedding Provider for this collection return an invalid response: No JSON body from the embedding provider");
