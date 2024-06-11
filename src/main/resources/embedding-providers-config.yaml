@@ -97,7 +97,7 @@ stargate:
               vector-dimension: 1536
         huggingface:
           # see https://huggingface.co/blog/getting-started-with-embeddings
-          display-name: Hugging Face
+          display-name: Hugging Face - Serverless
           enabled: true
           url: https://api-inference.huggingface.co/pipeline/feature-extraction/
           supported-authentications:
@@ -130,7 +130,7 @@ stargate:
               vector-dimension: 1024
         huggingfaceDedicated:
           # see https://huggingface.co/docs/inference-endpoints/en/supported_tasks#sentence-embeddings
-          display-name: Hugging Face (Dedicated)
+          display-name: Hugging Face - Dedicated
           enabled: true
           url: https://{endpointName}.{regionName}.{cloudName}.endpoints.huggingface.cloud/embeddings
           supported-authentications:
