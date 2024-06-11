@@ -132,7 +132,8 @@ public class DeleteOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              false);
 
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
@@ -216,7 +217,8 @@ public class DeleteOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       DeleteOperation operation =
           DeleteOperation.deleteOneAndReturn(
@@ -400,7 +402,8 @@ public class DeleteOperationTest extends OperationTestBase {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              3);
+              3,
+              false);
 
       DeleteOperation operation =
           DeleteOperation.deleteOneAndReturn(
@@ -523,7 +526,8 @@ public class DeleteOperationTest extends OperationTestBase {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
-              3);
+              3,
+              false);
 
       DeleteOperation operation =
           DeleteOperation.deleteOneAndReturn(
@@ -580,7 +584,8 @@ public class DeleteOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              false);
 
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
@@ -660,7 +665,8 @@ public class DeleteOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
 
       Supplier<CommandResult> execute =
@@ -781,7 +787,8 @@ public class DeleteOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
 
       Supplier<CommandResult> execute =
@@ -903,7 +910,8 @@ public class DeleteOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
 
       Supplier<CommandResult> execute =
@@ -1006,7 +1014,8 @@ public class DeleteOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
 
       Supplier<CommandResult> execute =
@@ -1108,7 +1117,8 @@ public class DeleteOperationTest extends OperationTestBase {
               3,
               2,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -1164,7 +1174,8 @@ public class DeleteOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              false);
 
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
 
@@ -1306,7 +1317,8 @@ public class DeleteOperationTest extends OperationTestBase {
               3,
               3,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              false);
 
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
@@ -1501,7 +1513,8 @@ public class DeleteOperationTest extends OperationTestBase {
               3,
               3,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              false);
 
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
@@ -1642,7 +1655,8 @@ public class DeleteOperationTest extends OperationTestBase {
               3,
               1,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 
       Supplier<CommandResult> execute =
@@ -1795,7 +1809,8 @@ public class DeleteOperationTest extends OperationTestBase {
               3,
               1,
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              false);
 
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
 

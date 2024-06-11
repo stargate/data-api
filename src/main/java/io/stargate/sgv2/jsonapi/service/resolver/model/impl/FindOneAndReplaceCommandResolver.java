@@ -87,7 +87,8 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
           DocumentProjector.includeAllProjector(),
           ReadType.DOCUMENT,
           objectMapper,
-          vector);
+          vector,
+          false);
     }
 
     List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
@@ -105,14 +106,16 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
           0,
           // For in memory sorting if no limit provided in the request will use
           // documentConfig.defaultPageSize() as limit
-          operationsConfig.maxDocumentSortCount());
+          operationsConfig.maxDocumentSortCount(),
+          false);
     } else {
       return FindOperation.unsortedSingle(
           commandContext,
           logicalExpression,
           DocumentProjector.includeAllProjector(),
           ReadType.DOCUMENT,
-          objectMapper);
+          objectMapper,
+          false);
     }
   }
 }
