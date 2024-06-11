@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -9,6 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
@@ -65,7 +68,36 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
-      return HttpResponseErrorMessageMapper.getDefaultException(response);
+      String errorMessage = getErrorMessage(response);
+      return HttpResponseErrorMessageMapper.mapToAPIException(
+          ProviderConstants.VOYAGE_AI, response, errorMessage);
+    }
+
+    /**
+     * Extract the error message from the response body. The example response body is:
+     *
+     * <pre>
+     * {"detail":"You have not yet added your payment method in the billing page and will have reduced rate limits of 3 RPM and 10K TPM.  Please add your payment method in the billing page (https://dash.voyageai.com/billing/payment-methods) to unlock our standard rate limits (https://docs.voyageai.com/docs/rate-limits).  Even with payment methods entered, the free tokens (50M tokens per model) will still apply."}
+     *
+     * {"detail":"Provided API key is invalid."}
+     * </pre>
+     *
+     * @param response The response body as a String.
+     * @return The error message extracted from the response body.
+     */
+    private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
+      // should not return null unless voyageAI changes their response format
+      try {
+        String responseBody = response.readEntity(String.class);
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode rootNode = mapper.readTree(responseBody);
+        // Extract the "detail" node
+        JsonNode detailNode = rootNode.path("detail");
+        // Return the text of the "detail" node, or null if it is missing
+        return detailNode.isMissingNode() ? null : detailNode.asText();
+      } catch (Exception e) {
+        return null;
+      }
     }
   }
 
