@@ -58,7 +58,10 @@ public class OpenAIEmbeddingClient implements EmbeddingProvider {
     @Path("/embeddings")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
-        @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
+        @HeaderParam("Authorization") String accessToken,
+        @HeaderParam("OpenAI-Organization") String organizationId,
+        @HeaderParam("OpenAI-Project") String projectId,
+        EmbeddingRequest request);
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
@@ -85,9 +88,11 @@ public class OpenAIEmbeddingClient implements EmbeddingProvider {
       EmbeddingRequestType embeddingRequestType) {
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
+    String organizationId = (String) vectorizeServiceParameters.get("organizationId");
+    String projectId = (String) vectorizeServiceParameters.get("projectId");
     Uni<EmbeddingResponse> response =
         embeddingProvider
-            .embed("Bearer " + apiKeyOverride.get(), request)
+            .embed("Bearer " + apiKeyOverride.get(), organizationId, projectId, request)
             .onFailure(
                 throwable -> {
                   return ((throwable.getCause() != null
