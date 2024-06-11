@@ -21,6 +21,15 @@ stargate:
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
+          parameters:
+            - name: organizationId
+              type: string
+              required: false
+              help: "Optional, OpenAI Organization ID. If provided passed as `OpenAI-Organization` header."
+            - name: projectId
+              type: string
+              required: false
+              help: "Optional, OpenAI Project ID. If provided passed as `OpenAI-Project` header."
           properties:
             max-batch-size: 2048
           models:
