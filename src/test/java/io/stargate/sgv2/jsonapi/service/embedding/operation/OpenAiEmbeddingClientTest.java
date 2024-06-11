@@ -54,6 +54,35 @@ public class OpenAiEmbeddingClientTest {
     }
 
     @Test
+    public void onlyToken() throws Exception {
+      final EmbeddingProvider.Response response =
+          new OpenAIEmbeddingClient(
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
+                  config.providers().get("openai").url(),
+                  "test",
+                  3,
+                  Map.of())
+              .vectorize(
+                  1,
+                  List.of("application/json"),
+                  Optional.of("test"),
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+      assertThat(response)
+          .isInstanceOf(EmbeddingProvider.Response.class)
+          .satisfies(
+              r -> {
+                assertThat(r.embeddings()).isNotNull();
+                assertThat(r.embeddings().size()).isEqualTo(1);
+                assertThat(r.embeddings().get(0).length).isEqualTo(3);
+              });
+    }
+
+    @Test
     public void invalidOrg() throws Exception {
       Throwable exception =
           new OpenAIEmbeddingClient(
