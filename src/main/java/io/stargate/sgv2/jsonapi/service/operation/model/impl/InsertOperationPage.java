@@ -21,12 +21,14 @@ import java.util.function.Supplier;
  * @param failedIds Document IDs that failed to be inserted.
  */
 public record InsertOperationPage(
-    List<DocumentId> insertedIds, Map<DocumentId, Throwable> failedIds)
+    boolean returnDocumentPositions,
+    List<DocumentId> insertedIds,
+    Map<DocumentId, Throwable> failedIds)
     implements Supplier<CommandResult> {
 
   /** No-arg constructor, usually used for aggregation. */
-  public InsertOperationPage() {
-    this(new ArrayList<>(), new HashMap<>());
+  public InsertOperationPage(boolean returnDocumentPositions) {
+    this(returnDocumentPositions, new ArrayList<>(), new HashMap<>());
   }
 
   /** {@inheritDoc} */

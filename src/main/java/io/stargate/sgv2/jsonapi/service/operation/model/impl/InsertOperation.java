@@ -93,7 +93,7 @@ public record InsertOperation(
         // if no failures reduce to the op page
         .collect()
         .in(
-            InsertOperationPage::new,
+            () -> new InsertOperationPage(returnDocumentPositions()),
             (agg, in) -> {
               Throwable failure = in.getItem2();
               agg.aggregate(in.getItem1().id(), failure);
@@ -137,7 +137,9 @@ public record InsertOperation(
 
         // then reduce here
         .collect()
-        .in(InsertOperationPage::new, (agg, in) -> agg.aggregate(in.getItem1().id(), in.getItem2()))
+        .in(
+            () -> new InsertOperationPage(returnDocumentPositions()),
+            (agg, in) -> agg.aggregate(in.getItem1().id(), in.getItem2()))
 
         // use object identity to resolve to Supplier<CommandResult>
         .map(i -> i);
