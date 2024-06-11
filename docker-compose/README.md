@@ -1,4 +1,4 @@
-# Docker Compose scripts for JSONAPI with DSE-next
+# Docker Compose scripts for Data API with DSE-next
 
 This directory provides two ways to start the Data API and Stargate coordinator with DSE-next using `docker compose`.
 
