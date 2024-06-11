@@ -34,8 +34,11 @@ public record InsertOperation(
     implements ModifyOperation {
 
   public InsertOperation(
-      CommandContext commandContext, List<WritableShreddedDocument> documents, boolean ordered) {
-    this(commandContext, documents, ordered, false, false);
+      CommandContext commandContext,
+      List<WritableShreddedDocument> documents,
+      boolean ordered,
+      boolean returnDocumentPositions) {
+    this(commandContext, documents, ordered, false, returnDocumentPositions);
   }
 
   public InsertOperation(CommandContext commandContext, WritableShreddedDocument document) {
