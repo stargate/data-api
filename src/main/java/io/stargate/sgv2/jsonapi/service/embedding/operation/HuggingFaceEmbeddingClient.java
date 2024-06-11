@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -7,6 +9,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
@@ -61,7 +64,38 @@ public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
-      return HttpResponseErrorMessageMapper.getDefaultException(response);
+      String errorMessage = getErrorMessage(response);
+      return HttpResponseErrorMessageMapper.mapToAPIException(
+              ProviderConstants.HUGGINGFACE, response, errorMessage);
+    }
+
+
+    /**
+     * Extracts the error message from the response body. The example response body is:
+     *
+     * <pre>
+     * {
+     *   "error": "Authorization header is correct, but the token seems invalid"
+     * }
+     * </pre>
+     *
+     * @param response The response body as a String.
+     * @return The error message extracted from the response body, or null if the message is not found.
+     */
+    private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
+      String responseBody = response.readEntity(String.class);
+      try {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode rootNode = mapper.readTree(responseBody);
+        // Extract the "error" node
+        JsonNode errorNode = rootNode.path("error");
+        // Return the text of the "message" node, or the whole response body if it is missing
+        return errorNode.isMissingNode() ? responseBody : errorNode.asText();
+      } catch (Exception e) {
+        // should not go here, already check json format in EmbeddingProviderResponseValidation.
+        // if it happens, return the whole response body
+        return responseBody;
+      }
     }
   }
 
