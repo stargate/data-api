@@ -18,12 +18,10 @@ import java.util.List;
 public class InsertManyCommandResolver implements CommandResolver<InsertManyCommand> {
 
   private final Shredder shredder;
-  private final ObjectMapper objectMapper;
 
   @Inject
-  public InsertManyCommandResolver(Shredder shredder, ObjectMapper objectMapper) {
+  public InsertManyCommandResolver(Shredder shredder) {
     this.shredder = shredder;
-    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -40,7 +38,7 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
     // resolve ordered
     InsertManyCommand.Options options = command.options();
 
-    boolean ordered = null != options && Boolean.TRUE.equals(options.ordered());
+    boolean ordered = null != options && options.ordered();
 
     return new InsertOperation(ctx, shreddedDocuments, ordered);
   }

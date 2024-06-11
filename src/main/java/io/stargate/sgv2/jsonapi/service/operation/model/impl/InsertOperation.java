@@ -29,16 +29,17 @@ public record InsertOperation(
     CommandContext commandContext,
     List<WritableShreddedDocument> documents,
     boolean ordered,
-    boolean offlineMode)
+    boolean offlineMode,
+    boolean returnDocumentPositions)
     implements ModifyOperation {
 
   public InsertOperation(
       CommandContext commandContext, List<WritableShreddedDocument> documents, boolean ordered) {
-    this(commandContext, documents, ordered, false);
+    this(commandContext, documents, ordered, false, false);
   }
 
   public InsertOperation(CommandContext commandContext, WritableShreddedDocument document) {
-    this(commandContext, List.of(document), false, false);
+    this(commandContext, List.of(document), false, false, false);
   }
 
   /** {@inheritDoc} */
