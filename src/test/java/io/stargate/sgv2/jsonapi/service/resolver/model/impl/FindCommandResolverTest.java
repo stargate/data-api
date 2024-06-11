@@ -229,6 +229,47 @@ public class FindCommandResolverTest {
                 assertThat(
                         find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
                     .isEqualTo(filter);
+                assertThat(find.includeSortVector()).isFalse();
+              });
+    }
+
+    @Test
+    public void nonVectorIncludeSortVector() throws Exception {
+      String json =
+          """
+                  {
+                    "find": {
+                      "filter" : {"tags" : { "$size" : 0}},
+                      "options" : {"includeSortVector" : true}
+                    }
+                  }
+                  """;
+
+      FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                DBFilterBase filter =
+                    new DBFilterBase.SizeFilter(
+                        "tags", DBFilterBase.MapFilterBase.Operator.MAP_EQUALS, 0);
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
+                assertThat(find.pageState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.orderBy()).isNull();
+                assertThat(
+                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    .isEqualTo(filter);
+                assertThat(find.includeSortVector()).isTrue();
               });
     }
 
@@ -449,6 +490,44 @@ public class FindCommandResolverTest {
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.vector()).containsExactly(vector);
                 assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
+                assertThat(find.includeSortVector()).isFalse();
+              });
+    }
+
+    @Test
+    public void vectorSearchWithOptionIncludeSortVector() throws Exception {
+      String json =
+          """
+          {
+            "find": {
+              "sort" : {"$vector" : [0.11, 0.22, 0.33, 0.44]},
+              "options": {"includeSortVector": true}
+            }
+          }
+          """;
+      final DocumentProjector projector = DocumentProjector.createFromDefinition(null, false);
+
+      FindCommand findOneCommand = objectMapper.readValue(json, FindCommand.class);
+      Operation operation = resolver.resolveCommand(commandContext, findOneCommand);
+
+      assertThat(operation)
+          .isInstanceOfSatisfying(
+              FindOperation.class,
+              find -> {
+                float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
+                assertThat(find.objectMapper()).isEqualTo(objectMapper);
+                assertThat(find.commandContext()).isEqualTo(commandContext);
+                assertThat(find.projection()).isEqualTo(projector);
+                assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
+                assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
+                assertThat(find.pageState()).isNull();
+                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.skip()).isZero();
+                assertThat(find.maxSortReadLimit()).isZero();
+                assertThat(find.singleResponse()).isFalse();
+                assertThat(find.vector()).containsExactly(vector);
+                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
+                assertThat(find.includeSortVector()).isTrue();
               });
     }
 

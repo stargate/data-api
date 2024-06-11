@@ -45,6 +45,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
     int skip = 0;
     String pageState = null;
     boolean includeSimilarity = false;
+    boolean includeSortVector = false;
 
     // update if options provided
     FindCommand.Options options = command.options();
@@ -57,6 +58,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
       }
       pageState = options.pageState();
       includeSimilarity = options.includeSimilarity();
+      includeSortVector = options.includeSortVector();
     }
 
     // resolve sort clause
@@ -83,7 +85,8 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           operationsConfig.defaultPageSize(),
           ReadType.DOCUMENT,
           objectMapper,
-          vector);
+          vector,
+          includeSortVector);
     }
 
     List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
@@ -103,7 +106,8 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           objectMapper,
           orderBy,
           skip,
-          operationsConfig.maxDocumentSortCount());
+          operationsConfig.maxDocumentSortCount(),
+          includeSortVector);
     } else {
       return FindOperation.unsorted(
           commandContext,
@@ -113,7 +117,8 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           limit,
           operationsConfig.defaultPageSize(),
           ReadType.DOCUMENT,
-          objectMapper);
+          objectMapper,
+          includeSortVector);
     }
   }
 }
