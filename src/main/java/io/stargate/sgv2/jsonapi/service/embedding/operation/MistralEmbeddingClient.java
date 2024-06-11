@@ -63,7 +63,7 @@ public class MistralEmbeddingClient implements EmbeddingProvider {
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
       return HttpResponseErrorMessageMapper.mapToAPIException(
-              ProviderConstants.MISTRAL, response, errorMessage);
+          ProviderConstants.MISTRAL, response, errorMessage);
     }
 
     /**
@@ -85,7 +85,8 @@ public class MistralEmbeddingClient implements EmbeddingProvider {
      * </pre>
      *
      * @param response The response body as a String.
-     * @return The error message extracted from the response body, or null if the message is not found.
+     * @return The error message extracted from the response body, or null if the message is not
+     *     found.
      */
     private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
       // should not return null unless mistral changes their response format
