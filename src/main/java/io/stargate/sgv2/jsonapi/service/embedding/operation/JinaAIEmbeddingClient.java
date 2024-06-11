@@ -79,28 +79,30 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
      * @return The error message extracted from the response body.
      */
     private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
-      // should not return null unless jinaAI changes their response format
+      String responseBody = response.readEntity(String.class);
       try {
-        String responseBody = response.readEntity(String.class);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(responseBody);
         // Extract the "detail" node
         JsonNode detailNode = rootNode.path("detail");
-
         // Assuming the error message is within the "msg" part of the detail
         if (!detailNode.isMissingNode()) {
           String detailText = detailNode.asText();
-
           // Use regex to extract the message part from the detail text
           java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("'msg':\\s*'([^']*)'");
           java.util.regex.Matcher matcher = pattern.matcher(detailText);
           if (matcher.find()) {
             return matcher.group(1);
           }
+          // If the regex fails, return the whole detail text
+            return detailText;
         }
-        return detailNode.asText();
+        // Return the whole response body if no "detail" is found
+        return responseBody;
       } catch (Exception e) {
-        return null;
+        // should not go here, already check json format in EmbeddingProviderResponseValidation.
+        // if it happens, return the whole response body
+        return responseBody;
       }
     }
   }

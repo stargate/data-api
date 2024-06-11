@@ -90,9 +90,8 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
      *     found.
      */
     private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
-      // should not return null unless upstageAI changes their response format
+      String responseBody = response.readEntity(String.class);
       try {
-        String responseBody = response.readEntity(String.class);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(responseBody);
         // Check if the root node contains a "message" field
@@ -108,10 +107,12 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
             return errorMessageNode.asText();
           }
         }
-        // Return null if no message is found
-        return null;
+        // Return the whole response body if no message is found
+        return responseBody;
       } catch (Exception e) {
-        return null;
+        // should not go here, already check json format in EmbeddingProviderResponseValidation.
+        // if it happens, return the whole response body
+        return responseBody;
       }
     }
   }

@@ -87,15 +87,17 @@ public class NvidiaEmbeddingClient implements EmbeddingProvider {
      * @return The error message extracted from the response body.
      */
     private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
-      // should not return null unless nemo changes their response format
+      String responseBody = response.readEntity(String.class);
       try {
-        String responseBody = response.readEntity(String.class);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(responseBody);
         JsonNode messageNode = rootNode.path("message");
-        return messageNode.isMissingNode() ? null : messageNode.asText();
+        // Return the text of the "message" node, or the whole response body if it is missing
+        return messageNode.isMissingNode() ? responseBody : messageNode.asText();
       } catch (Exception e) {
-        return null;
+        // should not go here, already check json format in EmbeddingProviderResponseValidation.
+        // if it happens, return the whole response body
+        return responseBody;
       }
     }
   }
