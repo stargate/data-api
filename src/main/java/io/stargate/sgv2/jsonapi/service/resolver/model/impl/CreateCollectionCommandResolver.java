@@ -386,27 +386,25 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     // Add all provider level parameters
     allParameters.addAll(providerConfig.parameters());
     // Get all the parameters except "vectorDimension" for the model -- model has been validated in
-    // the previous step, huggingfaceDedicated does not have model specified
-    if (!userConfig.provider().equals(ProviderConstants.HUGGINGFACE_DEDICATED)) {
-      List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> modelParameters =
-          providerConfig.models().stream()
-              .filter(m -> m.name().equals(userConfig.modelName()))
-              .findFirst()
-              .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig::parameters)
-              .map(
-                  params ->
-                      params.stream()
-                          .filter(
-                              param ->
-                                  !param
-                                      .name()
-                                      .equals(
-                                          "vectorDimension")) // Exclude 'vectorDimension' parameter
-                          .collect(Collectors.toList()))
-              .get();
-      // Add all model level parameters
-      allParameters.addAll(modelParameters);
-    }
+    // the previous step, huggingfaceDedicated uses endpoint-defined-model
+    List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> modelParameters =
+        providerConfig.models().stream()
+            .filter(m -> m.name().equals(userConfig.modelName()))
+            .findFirst()
+            .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig::parameters)
+            .map(
+                params ->
+                    params.stream()
+                        .filter(
+                            param ->
+                                !param
+                                    .name()
+                                    .equals(
+                                        "vectorDimension")) // Exclude 'vectorDimension' parameter
+                        .collect(Collectors.toList()))
+            .get();
+    // Add all model level parameters
+    allParameters.addAll(modelParameters);
     // 1. Error if the user provided un-configured parameters
     // Two level parameters have unique names, should be fine here
     Set<String> expectedParamNames =
@@ -506,14 +504,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "dimension is needed for huggingfaceDedicated provider");
       }
-      // validate the numeric-range for user-input dimension
-      validateRangeDimension(
-          Objects.requireNonNull(providerConfig.parameters()).stream()
-              .filter(param -> param.name().equals("vectorDimension"))
-              .findFirst()
-              .get(),
-          userVectorDimension);
-      return userVectorDimension;
     }
     // 2. other providers do require model
     if (userConfig.modelName() == null) {

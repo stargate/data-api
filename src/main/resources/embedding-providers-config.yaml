@@ -149,6 +149,14 @@ stargate:
           properties:
             max-batch-size: 32
           models:
+            - name: endpoint-defined-model
+              parameters:
+                - name: vectorDimension
+                  type: number
+                  required: true
+                  validation:
+                    numeric-range: [2, 3072]
+                  help: "Vector dimension to use in the database, should be the same as the model used by the endpoint."
           parameters:
             - name: "endpointName"
               type: string
@@ -162,13 +170,6 @@ stargate:
               type: string
               required: true
               help: "The cloud your Hugging Face dedicated endpoint is deployed to, the third part of the Endpoint URL."
-            # This parameter helps to validate user dimension input
-            - name: vectorDimension
-              type: number
-              required: false
-              validation:
-                numeric-range: [2, 3072]
-              help: "Vector dimension to use in the database."
         # OUT OF SCOPE FOR INITIAL PREVIEW
         vertexai:
           # see https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#get_text_embeddings_for_a_snippet_of_text
