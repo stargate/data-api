@@ -219,6 +219,7 @@ stargate:
                   help: "If set to false, text that exceeds the token limit causes the request to fail. The default value is true."
         # OUT OF SCOPE FOR INITIAL PREVIEW
         cohere:
+          # see https://docs.cohere.com/reference/embed
           display-name: Cohere
           enabled: false
           url: https://api.cohere.ai/v1/
