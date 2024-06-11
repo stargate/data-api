@@ -71,30 +71,34 @@ public class OpenAIEmbeddingClient implements EmbeddingProvider {
     }
 
     /**
-     * Extract the error message from the response body. The example response body is: { "error": {
-     * "message": "You exceeded your current quota, please check your plan and billing details. For
-     * more information on this error, read the docs:
-     * https://platform.openai.com/docs/guides/error-codes/api-errors.", "type":
-     * "insufficient_quota", "param": null, "code": "insufficient_quota" } }
+     * Extract the error message from the response body. The example response body is:
      *
-     * @param response
-     * @return
+     * <pre>
+     * {
+     *   "error": {
+     *     "message": "You exceeded your current quota, please check your plan and billing details. For
+     *                 more information on this error, read the docs:
+     *                 https://platform.openai.com/docs/guides/error-codes/api-errors.",
+     *     "type": "insufficient_quota",
+     *     "param": null,
+     *     "code": "insufficient_quota"
+     *   }
+     * }
+     * </pre>
+     *
+     * @param response The response body as a String.
+     * @return The error message extracted from the response body.
      */
-    static String getErrorMessage(jakarta.ws.rs.core.Response response) {
+    private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
       // should not return null unless openai changes their response format
       try {
         String responseBody = response.readEntity(String.class);
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(responseBody);
-        JsonNode errorNode = rootNode.path("error");
-        if (errorNode.isMissingNode()) {
-          return null;
-        }
-        JsonNode messageNode = errorNode.path("message");
-        if (messageNode.isMissingNode()) {
-          return null;
-        }
-        return messageNode.asText();
+        // Extract the "message" node from the "error" node
+        JsonNode messageNode = rootNode.path("error").path("message");
+        // Return the text of the "message" node, or null if it is missing
+        return messageNode.isMissingNode() ? null : messageNode.asText();
       } catch (Exception e) {
         return null;
       }
