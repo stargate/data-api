@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -30,8 +30,7 @@ public record ReadOperationPage(
     Map<CommandStatus, Object> status = null;
     if (includeSortVector) {
       // add sort vector to the response
-      status = new HashMap<>();
-      status.put(CommandStatus.SORT_VECTOR, vector);
+      status = Collections.singletonMap(CommandStatus.SORT_VECTOR, vector);
     }
 
     // difference if we have single response target or not

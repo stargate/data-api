@@ -27,14 +27,12 @@ public record FindOneCommand(
       // include similarity function score
       @Schema(
               description = "Include similarity function score in response.",
-              type = SchemaType.BOOLEAN,
-              implementation = Boolean.class)
+              type = SchemaType.BOOLEAN)
           boolean includeSimilarity,
 
       // return vector embedding used for ANN sorting
       @Schema(
               description = "Return vector embedding used for ANN sorting.",
-              type = SchemaType.BOOLEAN,
-              implementation = Boolean.class)
+              type = SchemaType.BOOLEAN)
           boolean includeSortVector) {}
 }
