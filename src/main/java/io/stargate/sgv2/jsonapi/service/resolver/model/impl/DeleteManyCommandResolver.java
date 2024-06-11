@@ -64,6 +64,7 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
         operationsConfig.maxDocumentDeleteCount() + 1,
         operationsConfig.defaultPageSize(),
         ReadType.KEY,
-        objectMapper);
+        objectMapper,
+        false);
   }
 }
