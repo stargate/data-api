@@ -5,6 +5,7 @@ public final class ProviderConstants {
   public static final String AZURE_OPENAI = "azureOpenAI";
   public static final String HUGGINGFACE = "huggingface";
   public static final String HUGGINGFACE_DEDICATED = "huggingfaceDedicated";
+  public static final String HUGGINGFACE_DEDICATED_DEFINED_MODEL = "endpoint-defined-model";
   public static final String VERTEXAI = "vertexai";
   public static final String COHERE = "cohere";
   public static final String NVIDIA = "nvidia";

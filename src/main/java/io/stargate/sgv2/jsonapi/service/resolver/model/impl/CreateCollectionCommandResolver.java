@@ -502,13 +502,13 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     if (userConfig.provider().equals(ProviderConstants.HUGGINGFACE_DEDICATED)) {
       if (userVectorDimension == null) {
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-            "dimension is needed for huggingfaceDedicated provider");
+            "'dimension' is needed for provider %s", ProviderConstants.HUGGINGFACE_DEDICATED);
       }
     }
     // 2. other providers do require model
     if (userConfig.modelName() == null) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "model can not be null for provider '%s'", userConfig.provider());
+          "'modelName' is needed for provider %s", userConfig.provider());
     }
     EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model =
         providerConfig.models().stream()
