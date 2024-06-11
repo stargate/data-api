@@ -159,6 +159,33 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     }
 
     @Test
+    public void includeSortVectorOptionsAllowed() {
+      String json =
+          """
+              {
+                "findOne": {
+                  "options": {
+                    "includeSortVector": true
+                  }
+                }
+              }
+              """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", is(not(nullValue())))
+          .body("status", is(notNullValue()))
+          .body("status.sortVector", nullValue())
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
     public void noFilterSortAscending() {
       String json =
           """

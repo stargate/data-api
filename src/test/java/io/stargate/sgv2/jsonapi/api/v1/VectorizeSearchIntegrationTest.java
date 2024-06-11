@@ -659,7 +659,8 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           """
         {
           "findOne": {
-            "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"}
+            "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"},
+            "options" : { "includeSortVector" : true }
           }
         }
         """;
@@ -673,7 +674,9 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
-          .body("data.document._id", is("1"));
+          .body("data.document._id", is("1"))
+          .body("status", is(notNullValue()))
+          .body("status.sortVector", is(notNullValue()));
     }
 
     @Test
@@ -698,6 +701,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .then()
           .statusCode(200)
           .body("data.document._id", is("1"))
+          .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
     }
 
