@@ -55,6 +55,10 @@ public enum CommandStatus {
   /** Next page state value that can be used in client side for pagination */
   @JsonProperty("nextPageState")
   PAGE_STATE,
+
+  /** Sort vector value used for the ANN seatch */
+  @JsonProperty("sortVector")
+  SORT_VECTOR,
   /**
    * The element has the document id of newly inserted document part of update, when upserted option
    * is 'true' and no document available in DB for matching condition

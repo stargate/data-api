@@ -166,7 +166,7 @@ public class DocumentProjectorTest {
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
-              "Unsupported projection parameter: path cannot start with '$' (no root-level operators)");
+              "Unsupported projection parameter: '$vector'/'$vectorize' are the only allowed paths that can start with '$'");
     }
   }
 
@@ -222,7 +222,7 @@ public class DocumentProjectorTest {
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
-              "Unsupported projection parameter: path cannot start with '$' (no root-level operators)");
+              "Unsupported projection parameter: '$vector'/'$vectorize' are the only allowed paths that can start with '$'");
     }
 
     @Test

@@ -195,6 +195,32 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
+    public void noFilterWithIncludeSortVectorOptions() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+            {
+              "find": {
+                "options" : {
+                  "limit" : 2,
+                  "includeSortVector" : true
+                }
+              }
+            }
+            """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(notNullValue()))
+          .body("status.sortVector", nullValue())
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(2));
+    }
+
+    @Test
     public void byId() {
       given()
           .headers(getHeaders())
