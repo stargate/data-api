@@ -48,7 +48,10 @@ public record FindOperation(
     int skip,
     int maxSortReadLimit,
     boolean singleResponse,
-    float[] vector)
+    float[] vector,
+
+    /** Whether to include the sort vector in the response. This is used for vector search. */
+    boolean includeSortVector)
     implements ReadOperation {
 
   /**
@@ -59,6 +62,7 @@ public record FindOperation(
    * @param projection projections, see FindOperation#projection
    * @param readType type of the read
    * @param objectMapper object mapper to use
+   * @param includeSortVector include sort vector in the response
    * @return FindOperation for a single document unsorted find
    */
   public static FindOperation unsortedSingle(
@@ -66,7 +70,8 @@ public record FindOperation(
       LogicalExpression logicalExpression,
       DocumentProjector projection,
       ReadType readType,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      boolean includeSortVector) {
 
     return new FindOperation(
         commandContext,
@@ -81,7 +86,8 @@ public record FindOperation(
         0,
         0,
         true,
-        null);
+        null,
+        includeSortVector);
   }
 
   /**
@@ -94,7 +100,8 @@ public record FindOperation(
    * @param limit limit of rows to fetch
    * @param pageSize page size
    * @param readType type of the read
-   * @param objectMapper object mapper to use
+   * @param objectMapper object mapper to use * @param includeSortVector include sort vector in the
+   *     response
    * @return FindOperation for a multi document unsorted find
    */
   public static FindOperation unsorted(
@@ -105,7 +112,8 @@ public record FindOperation(
       int limit,
       int pageSize,
       ReadType readType,
-      ObjectMapper objectMapper) {
+      ObjectMapper objectMapper,
+      boolean includeSortVector) {
     return new FindOperation(
         commandContext,
         logicalExpression,
@@ -119,7 +127,8 @@ public record FindOperation(
         0,
         0,
         false,
-        null);
+        null,
+        includeSortVector);
   }
 
   /**
@@ -130,6 +139,8 @@ public record FindOperation(
    * @param projection projections, see FindOperation#projection
    * @param readType type of the read
    * @param objectMapper object mapper to use
+   * @param vector vector to search
+   * @param includeSortVector include sort vector in the response
    * @return FindOperation for a multi document unsorted find
    */
   public static FindOperation vsearchSingle(
@@ -138,7 +149,8 @@ public record FindOperation(
       DocumentProjector projection,
       ReadType readType,
       ObjectMapper objectMapper,
-      float[] vector) {
+      float[] vector,
+      boolean includeSortVector) {
     return new FindOperation(
         commandContext,
         logicalExpression,
@@ -152,7 +164,8 @@ public record FindOperation(
         0,
         0,
         true,
-        vector);
+        vector,
+        includeSortVector);
   }
 
   /**
@@ -165,7 +178,8 @@ public record FindOperation(
    * @param limit limit of rows to fetch
    * @param pageSize page size
    * @param readType type of the read
-   * @param objectMapper object mapper to use
+   * @param objectMapper object mapper to use * @param vector vector to search * @param
+   * @param includeSortVector include sort vector in the response
    * @return FindOperation for a multi document unsorted find
    */
   public static FindOperation vsearch(
@@ -177,7 +191,8 @@ public record FindOperation(
       int pageSize,
       ReadType readType,
       ObjectMapper objectMapper,
-      float[] vector) {
+      float[] vector,
+      boolean includeSortVector) {
     return new FindOperation(
         commandContext,
         logicalExpression,
@@ -191,7 +206,8 @@ public record FindOperation(
         0,
         0,
         false,
-        vector);
+        vector,
+        includeSortVector);
   }
 
   /**
@@ -205,7 +221,8 @@ public record FindOperation(
    * @param objectMapper object mapper to use
    * @param orderBy order by clause
    * @param skip number of elements to skip
-   * @param maxSortReadLimit sorting limit
+   * @param maxSortReadLimit sorting limit * @param includeSortVector include sort vector in the
+   *     response
    * @return FindOperation for a single document sorted find
    */
   public static FindOperation sortedSingle(
@@ -217,7 +234,8 @@ public record FindOperation(
       ObjectMapper objectMapper,
       List<OrderBy> orderBy,
       int skip,
-      int maxSortReadLimit) {
+      int maxSortReadLimit,
+      boolean includeSortVector) {
     return new FindOperation(
         commandContext,
         logicalExpression,
@@ -231,7 +249,8 @@ public record FindOperation(
         skip,
         maxSortReadLimit,
         true,
-        null);
+        null,
+        includeSortVector);
   }
 
   /**
@@ -248,6 +267,7 @@ public record FindOperation(
    * @param orderBy order by clause
    * @param skip number of elements to skip
    * @param maxSortReadLimit sorting limit
+   * @param includeSortVector include sort vector in the response
    * @return FindOperation for a multi document sorted find
    */
   public static FindOperation sorted(
@@ -261,7 +281,8 @@ public record FindOperation(
       ObjectMapper objectMapper,
       List<OrderBy> orderBy,
       int skip,
-      int maxSortReadLimit) {
+      int maxSortReadLimit,
+      boolean includeSortVector) {
     return new FindOperation(
         commandContext,
         logicalExpression,
@@ -275,7 +296,8 @@ public record FindOperation(
         skip,
         maxSortReadLimit,
         false,
-        null);
+        null,
+        includeSortVector);
   }
 
   @Override
@@ -299,7 +321,8 @@ public record FindOperation(
               commandContext
                   .jsonProcessingMetricsReporter()
                   .reportJsonReadDocsMetrics(commandContext().commandName(), docs.docs().size());
-              return new ReadOperationPage(docs.docs(), docs.pageState(), singleResponse);
+              return new ReadOperationPage(
+                  docs.docs(), docs.pageState(), singleResponse, includeSortVector(), vector());
             });
   }
 
