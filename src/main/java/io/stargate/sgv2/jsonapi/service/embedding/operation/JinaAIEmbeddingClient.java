@@ -95,7 +95,7 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
             return matcher.group(1);
           }
           // If the regex fails, return the whole detail text
-            return detailText;
+          return detailText;
         }
         // Return the whole response body if no "detail" is found
         return responseBody;
