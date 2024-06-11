@@ -41,10 +41,9 @@ public record InsertManyCommand(
           boolean ordered,
       @Schema(
               description =
-                      "When `true`, response will contain 2 additional fields: 'insertedDocuments' and 'failedDocuments'" +
-                      " both arrays of 2-element arrays; inner array containing document index (number) as the first element"+
-                      " and the document id (if known) as the second element. If the document id is not known, the second element will be null.",
+                  "When `true`, response will contain 2 additional fields: 'insertedDocuments' and 'failedDocuments'"
+                      + " both arrays of 2-element arrays; inner array containing document index (number) as the first element"
+                      + " and the document id (if known) as the second element. If the document id is not known, the second element will be null.",
               defaultValue = "false")
-      boolean returnDocumentPositions
-  ) {}
+          boolean returnDocumentPositions) {}
 }

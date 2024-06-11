@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
