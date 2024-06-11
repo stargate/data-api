@@ -106,7 +106,7 @@ stargate:
               vector-dimension: 1536
         huggingface:
           # see https://huggingface.co/blog/getting-started-with-embeddings
-          display-name: Hugging Face
+          display-name: Hugging Face - Serverless
           enabled: true
           url: https://api-inference.huggingface.co/pipeline/feature-extraction/
           supported-authentications:
@@ -137,7 +137,48 @@ stargate:
               vector-dimension: 768
             - name: BAAI/bge-large-en-v1.5
               vector-dimension: 1024
-
+        huggingfaceDedicated:
+          # see https://huggingface.co/docs/inference-endpoints/en/supported_tasks#sentence-embeddings
+          display-name: Hugging Face - Dedicated
+          enabled: true
+          url: https://{endpointName}.{regionName}.{cloudName}.endpoints.huggingface.cloud/embeddings
+          supported-authentications:
+            NONE:
+              enabled: false
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-api-key
+                  forwarded: Authorization
+            SHARED_SECRET:
+              enabled: true
+              tokens:
+                - accepted: providerKey
+                  forwarded: Authorization
+          properties:
+            max-batch-size: 32
+          models:
+            - name: endpoint-defined-model
+              parameters:
+                - name: vectorDimension
+                  type: number
+                  required: true
+                  validation:
+                    numeric-range: [2, 3072]
+                  help: "Vector dimension to use in the database, should be the same as the model used by the endpoint."
+          parameters:
+            - name: "endpointName"
+              type: string
+              required: true
+              help: "The name of your Hugging Face dedicated endpoint, the first part of the Endpoint URL."
+            - name: "regionName"
+              type: string
+              required: true
+              help: "The region your Hugging Face dedicated endpoint is deployed to, the second part of the Endpoint URL."
+            - name: "cloudName"
+              type: string
+              required: true
+              help: "The cloud your Hugging Face dedicated endpoint is deployed to, the third part of the Endpoint URL."
         # OUT OF SCOPE FOR INITIAL PREVIEW
         vertexai:
           # see https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#get_text_embeddings_for_a_snippet_of_text
