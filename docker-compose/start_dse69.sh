@@ -10,14 +10,15 @@ fi
 LOGLEVEL=INFO
 
 # Default to images used in project integration tests
-DSETAG="$(../mvnw -f .. help:evaluate -Pdse69-it -Dexpression=stargate.int-test.cassandra.image-tag -q -DforceStdout)"
+DSETAG="6.9.0-early-preview"
 
 # Default to latest released version
 DATAAPITAG="v1"
 DATAAPIIMAGE="stargateio/data-api"
 DSEONLY="false"
+DSENODES=1
 
-while getopts "dlqnr:j:" opt; do
+while getopts "dlqn:r:j:" opt; do
   case $opt in
     l)
       DATAAPITAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
@@ -26,7 +27,7 @@ while getopts "dlqnr:j:" opt; do
       DATAAPITAG=$OPTARG
       ;;
     n)
-      DATAAPIIMAGE="stargateio/data-api-native"
+      DSENODES=$OPTARG
       ;;
     q)
       REQUESTLOG="true"
@@ -41,7 +42,7 @@ while getopts "dlqnr:j:" opt; do
       echo "Valid options:"
       echo "  -l - use Data API Docker image from local build (see project README for build instructions)"
       echo "  -j <tag> - use Data API Docker image tagged with specified Data API version (will pull images from Docker Hub if needed)"
-      echo "  -n <tag> - use Data API native image instead of default Java-based image"
+      echo "  -n number of dse nodes to use 1,2 or 3"
       echo "  -d - Start only dse container"
       echo "  -q - enable request logging for APIs in 'io.quarkus.http.access-log' (default: disabled)"
       echo "  -r - specify root log level for APIs (defaults to INFO); usually DEBUG, WARN or ERROR"
@@ -55,12 +56,27 @@ export REQUESTLOG
 export DSETAG
 export DATAAPITAG
 export DATAAPIIMAGE
+export DSEONLY
+export DSENODES
+if [ -z "${DSE_PORT}" ]; then
+  export DSE_PORT="9042"
+fi
 
-echo "Running with DSE $DSETAG, Data API $DATAAPIIMAGE:$DATAAPITAG"
+if [ -z "${DSE_FWD_PORT}" ]; then
+  export DSE_FWD_PORT="9042"
+fi
+
+echo "Running with DSE $DSETAG, Data API $DATAAPIIMAGE:$DATAAPITAG" DSE NODES : $DSENODES
 
 if [ "$DSEONLY" = "true" ]; then
-  docker compose up -d --wait dse
+  docker compose up -d --wait dse-1
   exit 0
 else
-  docker compose up -d --wait
+  if [ "$DSENODES" = 1 ]; then
+    docker compose up -d --wait dse-1 data-api
+  elif [ "$DSENODES" = 2 ]; then 
+    docker compose up -d --wait dse-1 dse-2 data-api
+  else
+    docker compose up -d --wait
+  fi
 fi

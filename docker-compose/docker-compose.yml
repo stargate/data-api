@@ -1,7 +1,7 @@
 version: '2'
 
 services:
-  dse:
+  dse-1:
     image: datastax/dse-server:${DSETAG}
     networks:
       - stargate
@@ -13,9 +13,47 @@ services:
     volumes:
       - ${PWD}/dse.yaml:/opt/dse/resources/dse/conf/dse.yaml
     ports:
-      - "9042:9042"
+      - ${DSE_PORT}:${DSE_FWD_PORT} 
     healthcheck:
       test: [ "CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'describe keyspaces'" ]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+
+  dse-2:
+    image: datastax/dse-server:${DSETAG}
+    platform: linux/amd64
+    networks:
+      - stargate
+    depends_on:
+      dse-1:
+        condition: service_healthy
+    environment:
+      - MAX_HEAP_SIZE=1536M
+      - SEEDS=dse-1
+      - CLUSTER_NAME=dse-${DSETAG}-cluster
+      - DS_LICENSE=accept
+    healthcheck:
+      test: [  "CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'describe keyspaces'" ]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+
+  dse-3:
+    image: datastax/dse-server:${DSETAG}
+    platform: linux/amd64
+    networks:
+      - stargate
+    depends_on:
+      dse-1:
+        condition: service_healthy
+    environment:
+      - MAX_HEAP_SIZE=1536M
+      - SEEDS=dse-1
+      - CLUSTER_NAME=dse-${DSETAG}-cluster
+      - DS_LICENSE=accept
+    healthcheck:
+      test: [  "CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'describe keyspaces'" ]
       interval: 15s
       timeout: 10s
       retries: 20
@@ -23,7 +61,7 @@ services:
   data-api:
     image: ${DATAAPIIMAGE}:${DATAAPITAG}
     depends_on:
-      dse:
+      dse-1:
         condition: service_healthy
     networks:
       - stargate
@@ -35,7 +73,7 @@ services:
       - JAVA_INITIAL_MEM_RATIO=50
       - STARGATE_DATA_STORE_IGNORE_BRIDGE=true
       - GC_CONTAINER_OPTIONS=-XX:+UseG1GC
-      - STARGATE_JSONAPI_OPERATIONS_DATABASE_CONFIG_CASSANDRA_END_POINTS=dse
+      - STARGATE_JSONAPI_OPERATIONS_DATABASE_CONFIG_CASSANDRA_END_POINTS=dse-1
       - STARGATE_JSONAPI_OPERATIONS_DATABASE_CONFIG_LOCAL_DATACENTER=dc1
       - QUARKUS_HTTP_ACCESS_LOG_ENABLED=${REQUESTLOG}
       - QUARKUS_LOG_LEVEL=${LOGLEVEL}

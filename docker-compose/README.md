@@ -56,7 +56,11 @@ Both convenience scripts support the following options:
 
 * You can start dse/hcd node only using `-d` option. This is useful when you want to start Data API locally for development.
 
+* You can specify the number of cassandra node required using `-n [NUMBER]`. Default is 1.
+
 ## Notes
 
 * The `.env` file defines variables for the docker compose project name (`COMPOSE_PROJECT_NAME`),
  the DSE Docker image tag to use (`DSETAG`) and the HCD Docker image tag to use (`HCDTAG`).
+
+* You can override forwarding cqlsh port for `DSE` using `DSE_FWD_PORT` environment variable respectively.
