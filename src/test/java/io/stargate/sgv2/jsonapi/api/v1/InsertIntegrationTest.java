@@ -1821,6 +1821,83 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     }
 
     @Test
+    public void unorderedFailOnDuplicateIds() {
+      String json =
+          """
+                  {
+                    "insertMany": {
+                      "documents": [
+                        {
+                          "_id": "doc4",
+                          "username": "user4"
+                        },
+                        {
+                          "_id": "doc4",
+                          "username": "user4_duplicate"
+                        },
+                        {
+                          "_id": "doc5",
+                          "username": "user5"
+                        },
+                        {
+                          "_id": "doc4",
+                          "username": "user4_duplicate_2"
+                        },
+                        {
+                          "_id": "doc5",
+                          "username": "user5_duplicate"
+                        }
+                      ],
+                      "options" : {
+                        "ordered" : false
+                      }
+                    }
+                  }
+                  """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
+          .body("status.insertedIds", hasSize(2))
+          .body("data", is(nullValue()))
+          // NOTE! We only report one error per document id, so only one of the fails for "doc4"
+          // included. Ordering not guaranteed either (since it depends on insert operation order,
+          // which is arbitrary, "unordered")
+          .body("errors", hasSize(2))
+          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].message", startsWith("Failed to insert document with _id"))
+          .body("errors[1].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].message", startsWith("Failed to insert document with _id"));
+
+      json =
+          """
+                  {
+                    "countDocuments": {
+                    }
+                  }
+                  """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.count", is(2))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
     public void orderedFailOnDuplicateDocumentNoNamespace() {
       String json =
           """
