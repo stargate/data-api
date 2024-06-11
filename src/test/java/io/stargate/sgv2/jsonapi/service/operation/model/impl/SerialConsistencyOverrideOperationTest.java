@@ -136,7 +136,8 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.KEY,
-              objectMapper);
+              objectMapper,
+              false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
       Supplier<CommandResult> execute =
           operation
@@ -334,7 +335,8 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(

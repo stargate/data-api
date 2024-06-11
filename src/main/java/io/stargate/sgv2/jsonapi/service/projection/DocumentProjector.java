@@ -284,7 +284,7 @@ public class DocumentProjector {
             throw new JsonApiException(
                 ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
                 ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
-                    + ": path cannot start with '$' (no root-level operators)");
+                    + ": '$vector'/'$vectorize' are the only allowed paths that can start with '$'");
           }
 
           // Second: we only support one operator for now

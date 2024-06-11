@@ -65,7 +65,8 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
           DocumentProjector.includeAllProjector(),
           ReadType.KEY,
           objectMapper,
-          vector);
+          vector,
+          false);
     }
 
     List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
@@ -83,14 +84,16 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
           0,
           // For in memory sorting if no limit provided in the request will use
           // documentConfig.defaultPageSize() as limit
-          operationsConfig.maxDocumentSortCount());
+          operationsConfig.maxDocumentSortCount(),
+          false);
     } else {
       return FindOperation.unsortedSingle(
           commandContext,
           logicalExpression,
           DocumentProjector.includeAllProjector(),
           ReadType.KEY,
-          objectMapper);
+          objectMapper,
+          false);
     }
   }
 }
