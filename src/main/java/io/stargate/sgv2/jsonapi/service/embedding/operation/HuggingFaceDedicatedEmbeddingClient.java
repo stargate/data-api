@@ -57,7 +57,7 @@ public class HuggingFaceDedicatedEmbeddingClient implements EmbeddingProvider {
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
       return HttpResponseErrorMessageMapper.mapToAPIException(
-              ProviderConstants.HUGGINGFACE_DEDICATED, response, errorMessage);
+          ProviderConstants.HUGGINGFACE_DEDICATED, response, errorMessage);
     }
 
     /**

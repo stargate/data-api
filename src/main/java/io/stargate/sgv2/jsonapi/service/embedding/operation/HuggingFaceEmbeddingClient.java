@@ -66,9 +66,8 @@ public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
       return HttpResponseErrorMessageMapper.mapToAPIException(
-              ProviderConstants.HUGGINGFACE, response, errorMessage);
+          ProviderConstants.HUGGINGFACE, response, errorMessage);
     }
-
 
     /**
      * Extracts the error message from the response body. The example response body is:
@@ -80,7 +79,8 @@ public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
      * </pre>
      *
      * @param response The response body as a String.
-     * @return The error message extracted from the response body, or null if the message is not found.
+     * @return The error message extracted from the response body, or null if the message is not
+     *     found.
      */
     private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
       String responseBody = response.readEntity(String.class);
