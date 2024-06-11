@@ -1373,109 +1373,6 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     }
 
     @Test
-    public void orderedDuplicateIds() {
-      String json =
-          """
-          {
-            "insertMany": {
-              "documents": [
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc4",
-                  "username": "user4_duplicate"
-                },
-                {
-                  "_id": "doc5",
-                  "username": "user5"
-                }
-              ],
-              "options" : {
-                "ordered" : true
-              }
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.insertedIds", contains("doc4"))
-          .body("data", is(nullValue()))
-          .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"))
-          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
-
-      json =
-          """
-          {
-            "countDocuments": {
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.count", is(1))
-          .body("errors", is(nullValue()));
-    }
-
-    @Test
-    public void orderedDuplicateDocumentNoNamespace() {
-      String json =
-          """
-          {
-            "insertMany": {
-              "documents": [
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc5",
-                  "username": "user5"
-                }
-              ],
-              "options" : {
-                "ordered" : true
-              }
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, "something_else", collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.insertedIds", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body(
-              "errors[0].message",
-              startsWith("The provided namespace does not exist: something_else"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
-    }
-
-    @Test
     public void unordered() {
       String json =
           """
@@ -1861,6 +1758,113 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   @Order(7)
   class InsertManyFails {
     @Test
+    public void orderedFailOnDuplicateIds() {
+      String json =
+          """
+              {
+                "insertMany": {
+                  "documents": [
+                    {
+                      "_id": "doc4",
+                      "username": "user4"
+                    },
+                    {
+                      "_id": "doc4",
+                      "username": "user4_duplicate"
+                    },
+                    {
+                      "_id": "doc5",
+                      "username": "user5"
+                    }
+                  ],
+                  "options" : {
+                    "ordered" : true
+                  }
+                }
+              }
+              """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds", contains("doc4"))
+          .body("status.insertedIds", hasSize(1))
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"));
+
+      json =
+          """
+              {
+                "countDocuments": {
+                }
+              }
+              """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.count", is(1))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void orderedFailOnDuplicateDocumentNoNamespace() {
+      String json =
+          """
+              {
+                "insertMany": {
+                  "documents": [
+                    {
+                      "_id": "doc4",
+                      "username": "user4"
+                    },
+                    {
+                      "_id": "doc4",
+                      "username": "user4"
+                    },
+                    {
+                      "_id": "doc5",
+                      "username": "user5"
+                    }
+                  ],
+                  "options" : {
+                    "ordered" : true
+                  }
+                }
+              }
+              """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, "something_else", collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              startsWith("The provided namespace does not exist: something_else"));
+    }
+
+    @Test
     public void insertManyWithTooManyDocuments() {
       ArrayNode docs = MAPPER.createArrayNode();
       final int MAX_DOCS = OperationsConfig.DEFAULT_MAX_DOCUMENT_INSERT_COUNT;
@@ -1897,6 +1901,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
