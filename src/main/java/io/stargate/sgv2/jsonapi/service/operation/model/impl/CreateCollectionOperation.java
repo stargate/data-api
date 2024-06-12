@@ -105,7 +105,11 @@ public record CreateCollectionOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    logger.info("Executing CreateCollectionOperation for {}", name);
+    logger.info(
+        "Executing CreateCollectionOperation for {}.{} with property {}",
+        commandContext.namespace(),
+        name,
+        comment);
     // validate Data API collection limit guardrail and get tableMetadata
     Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces =
         cqlSessionCache.getSession(dataApiRequestInfo).getMetadata().getKeyspaces();
