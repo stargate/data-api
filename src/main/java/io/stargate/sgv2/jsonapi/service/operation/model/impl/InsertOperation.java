@@ -33,7 +33,14 @@ public record InsertOperation(
     boolean offlineMode,
     boolean returnDocumentPositions)
     implements ModifyOperation {
-  record WritableDocAndPosition(int pos, WritableShreddedDocument doc) {}
+  public record WritableDocAndPosition(int position, WritableShreddedDocument document)
+      implements Comparable<WritableDocAndPosition> {
+    @Override
+    public int compareTo(InsertOperation.WritableDocAndPosition o) {
+      // Order by position (only), ascending
+      return Integer.compare(position, o.position);
+    }
+  }
 
   public InsertOperation(
       CommandContext commandContext,
@@ -106,7 +113,7 @@ public record InsertOperation(
             () -> new InsertOperationPage(returnDocumentPositions()),
             (agg, in) -> {
               Throwable failure = in.getItem2();
-              agg.aggregate(in.getItem1().doc().id(), failure);
+              agg.aggregate(in.getItem1(), failure);
 
               if (failure != null) {
                 throw new FailFastInsertException(agg, failure);
@@ -152,7 +159,7 @@ public record InsertOperation(
         .collect()
         .in(
             () -> new InsertOperationPage(returnDocumentPositions()),
-            (agg, in) -> agg.aggregate(in.getItem1().doc().id(), in.getItem2()))
+            (agg, in) -> agg.aggregate(in.getItem1(), in.getItem2()))
 
         // use object identity to resolve to Supplier<CommandResult>
         .map(i -> i);
@@ -167,7 +174,7 @@ public record InsertOperation(
       boolean vectorEnabled,
       boolean offlineMode) {
     // bind and execute
-    final WritableShreddedDocument doc = docWithPosition.doc();
+    final WritableShreddedDocument doc = docWithPosition.document();
     SimpleStatement boundStatement = bindInsertValues(query, doc, vectorEnabled, offlineMode);
     return queryExecutor
         .executeWrite(dataApiRequestInfo, boundStatement)

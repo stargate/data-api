@@ -30,6 +30,7 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -1749,8 +1750,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds", contains("doc4"))
-          .body("status.insertedIds", hasSize(1))
+          .body("status.insertedIds", is(Arrays.asList("doc4")))
           .body("data", is(nullValue()))
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
@@ -1795,19 +1795,20 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
-          .body("status.insertedIds", hasSize(2))
+          .body("status.insertedIds", is(Arrays.asList("doc4", "doc5")))
           .body("data", is(nullValue()))
-          // NOTE! We only report one error per document id, so only one of the fails for "doc4"
-          // included. Ordering not guaranteed either (since it depends on insert operation order,
-          // which is arbitrary, "unordered")
-          .body("errors", hasSize(2))
+          // We have 3 failures, reported in order of input documents (even if insertion
+          // order itself is not guaranteed
+          .body("errors", hasSize(3))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", startsWith("Failed to insert document with _id"))
+          .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"))
           .body("errors[1].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].message", startsWith("Failed to insert document with _id"));
+          .body("errors[1].message", startsWith("Failed to insert document with _id 'doc4'"))
+          .body("errors[2].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[2].exceptionClass", is("JsonApiException"))
+          .body("errors[2].message", startsWith("Failed to insert document with _id 'doc5'"));
 
       given()
           .headers(getHeaders())
