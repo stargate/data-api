@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
-import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.api.common.config.DataStoreConfig;
@@ -324,29 +322,46 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private void validateAuthentication(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
-    // Get all the accepted keys in auth
-    List<String> acceptedKeys =
-        providerConfig.supportedAuthentications().values().stream()
-            .filter(config -> config.enabled() && config.tokens() != null)
-            .flatMap(config -> config.tokens().stream())
+    // Get all the accepted keys in SHARED_SECRET
+    Set<String> acceptedKeys =
+        providerConfig.supportedAuthentications().entrySet().stream()
+            .filter(
+                config ->
+                    config
+                        .getKey()
+                        .equals(
+                            EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType
+                                .SHARED_SECRET))
+            .filter(config -> config.getValue().enabled() && config.getValue().tokens() != null)
+            .flatMap(config -> config.getValue().tokens().stream())
             .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.TokenConfig::accepted)
-            .toList();
+            .collect(Collectors.toSet());
 
     // If the user hasn't provided authentication details, verify that either the 'NONE' or 'HEADER'
     // authentication type is enabled.
     if (userConfig.authentication() == null || userConfig.authentication().isEmpty()) {
-      EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig noneAuthConfig =
-          providerConfig
-              .supportedAuthentications()
-              .get(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE);
-      EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig headerAuthConfig =
-          providerConfig
-              .supportedAuthentications()
-              .get(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.HEADER);
+      // Check if 'NONE' authentication type is enabled
+      boolean noneEnabled =
+          Optional.ofNullable(
+                  providerConfig
+                      .supportedAuthentications()
+                      .get(
+                          EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE))
+              .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig::enabled)
+              .orElse(false);
 
-      // Check if either 'NONE' or 'HEADER' authentication type is enabled
-      boolean noneEnabled = (noneAuthConfig != null && noneAuthConfig.enabled());
-      boolean headerEnabled = (headerAuthConfig != null && headerAuthConfig.enabled());
+      // Check if 'HEADER' authentication type is enabled
+      boolean headerEnabled =
+          Optional.ofNullable(
+                  providerConfig
+                      .supportedAuthentications()
+                      .get(
+                          EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType
+                              .HEADER))
+              .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig::enabled)
+              .orElse(false);
+
+      // If neither 'NONE' nor 'HEADER' authentication type is enabled, throw an exception
       if (!noneEnabled && !headerEnabled) {
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "Service provider '%s' does not support either 'NONE' or 'HEADER' authentication types.",
@@ -363,35 +378,30 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
               userConfig.provider(), userAuth.getKey());
         }
 
-        // ignore the header accepted key
-        if (EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME.equals(userAuth.getKey())) {
-          continue;
-        }
-
-        // check shared secret accepted key
-        String credentialName;
+        // Get the full credential name by either appending the key(no dot) to the value or using
+        // the value(has dot)
         String sharedKeyValue = userAuth.getValue();
-        int dotIndex = sharedKeyValue.lastIndexOf('.');
+        String credentialName =
+            sharedKeyValue.lastIndexOf('.') <= 0
+                ? sharedKeyValue + "." + userAuth.getKey()
+                : sharedKeyValue;
 
-        if (dotIndex <= 0) {
-          // If the value does not contain a period character, it assumes the value is the name of
-          // the credential without specifying the key.
-          // The credential name is appended with .<key> and the secret service called to validate
-          credentialName = sharedKeyValue + "." + userAuth.getKey();
-        } else {
-          // If the value does contain a period character, it assumes the first part is the name of
-          // the credential and the second the name of the key within it.
-          // Check if the second part is the key name
-          String keyName = sharedKeyValue.substring(dotIndex + 1);
+        // If the value contains a period character, validate the key name
+        if (sharedKeyValue.lastIndexOf('.') > 0) {
+          String keyName = sharedKeyValue.substring(sharedKeyValue.lastIndexOf('.') + 1);
           if (!keyName.equals(userAuth.getKey())) {
+            // If the key name does not match, throw an exception
             throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                "Unknown credential name '%s'. The format should be '%s' or '%s'.",
-                sharedKeyValue,
-                sharedKeyValue.substring(0, dotIndex),
-                sharedKeyValue.substring(0, dotIndex) + "." + userAuth.getKey());
+                String.format(
+                    "Unexpected credential name '%s'. The format should be '%s' or '%s'.",
+                    sharedKeyValue,
+                    sharedKeyValue.substring(0, sharedKeyValue.lastIndexOf('.')),
+                    sharedKeyValue.substring(0, sharedKeyValue.lastIndexOf('.'))
+                        + "."
+                        + userAuth.getKey()));
           }
-          credentialName = sharedKeyValue;
         }
+
         // Validate the credential name from secret service
         if (operationsConfig.enableEmbeddingGateway()) {
           validateCredentials.validate(userConfig.provider(), credentialName);
