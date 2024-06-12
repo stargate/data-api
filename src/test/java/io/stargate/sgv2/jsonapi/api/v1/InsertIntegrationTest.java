@@ -1726,7 +1726,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   @Order(7)
   class InsertManyFails {
     @Test
-    public void orderedFailOnDuplicateIds() {
+    public void orderedFailOnDups() {
       String json =
           """
               {
@@ -1770,7 +1770,53 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     }
 
     @Test
-    public void unorderedFailOnDuplicateIds() {
+    public void orderedFailOnDupsReturnPositions() {
+      String json =
+          """
+                  {
+                    "insertMany": {
+                      "documents": [
+                        { "_id": "doc1", "username": "userA"  },
+                        { "_id": "doc1", "username": "userB" },
+                        { "_id": "doc2", "username": "userC"
+                        }
+                      ],
+                      "options" : {  "ordered": true, "returnDocumentPositions": true }
+                    }
+                  }
+                  """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].message", startsWith("Failed to insert document with _id 'doc1'"))
+          .body("insertedIds", is(nullValue()))
+          .body("status.insertedDocuments", is(Arrays.asList(Arrays.asList(0, "doc1"))))
+          .body("status.failedDocuments", is(Arrays.asList(Arrays.asList(1, "doc1"))));
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(" { \"countDocuments\": { } }")
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.count", is(1))
+          .body("errors", is(nullValue()));
+    }
+
+    @Test
+    public void unorderedFailOnDups() {
       String json =
           """
                   {
@@ -1783,7 +1829,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                         { "_id": "doc5", "username": "user5_duplicate" },
                         { "_id": "doc4", "username": "user4_duplicate_3" }
                       ],
-                      "options" : { "ordered" : false  }
+                      "options" : { "ordered" : false }
                     }
                   }
                   """;
