@@ -1416,7 +1416,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "Unknown credential name 'shared_creds.test'. The format should be 'shared_creds' or 'shared_creds.providerKey'."));
+                  "The provided options are invalid: Unknown credential name 'shared_creds.test'. The format should be 'shared_creds' or 'shared_creds.providerKey'"));
     }
   }
 

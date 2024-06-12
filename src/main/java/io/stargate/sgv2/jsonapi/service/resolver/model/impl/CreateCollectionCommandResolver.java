@@ -387,8 +387,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
                 "Unknown credential name '%s'. The format should be '%s' or '%s'.",
                 sharedKeyValue,
-                sharedKeyValue.substring(0, dotIndex - 1),
-                sharedKeyValue.substring(0, dotIndex - 1) + "." + userAuth.getKey());
+                sharedKeyValue.substring(0, dotIndex),
+                sharedKeyValue.substring(0, dotIndex) + "." + userAuth.getKey());
           }
           credentialName = sharedKeyValue;
         }
