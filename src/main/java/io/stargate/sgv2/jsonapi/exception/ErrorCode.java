@@ -31,9 +31,6 @@ public enum ErrorCode {
   EMBEDDING_PROVIDER_SERVER_ERROR("The Embedding Provider returned a HTTP server error"),
   EMBEDDING_PROVIDER_RATE_LIMITED("The Embedding Provider rate limited the request"),
   EMBEDDING_PROVIDER_TIMEOUT("The configured Embedding Provider timed out"),
-  // TODO: remove unavailable error
-  EMBEDDING_PROVIDER_UNAVAILBLE(
-      "The configured Embedding Provider for this collection could not be contacted."),
   // TODO: remove invalid request error
   EMBEDDING_PROVIDER_INVALID_REQUEST(
       "The configured Embedding Provider for this collection refused to process the request, response was"),
