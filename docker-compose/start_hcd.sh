@@ -10,14 +10,14 @@ fi
 LOGLEVEL=INFO
 
 # Default to images used in project integration tests
-DSETAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.cassandra.image-tag -q -DforceStdout)"
-SGTAG="$(../mvnw -f .. help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
+HCDTAG="$(../mvnw -f .. help:evaluate -Phcd-it -Dexpression=stargate.int-test.cassandra.image-tag -q -DforceStdout)"
 
 # Default to latest released version
 DATAAPITAG="v1"
 DATAAPIIMAGE="stargateio/data-api"
+HCDONLY="false"
 
-while getopts "lqnr:t:j:" opt; do
+while getopts "dlqnr:j:" opt; do
   case $opt in
     l)
       DATAAPITAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
@@ -29,20 +29,20 @@ while getopts "lqnr:t:j:" opt; do
       DATAAPIIMAGE="stargateio/data-api-native"
       ;;
     q)
-      REQUESTLOG=true
+      REQUESTLOG="true"
       ;;
     r)
       LOGLEVEL=$OPTARG
       ;;
-    t)
-      SGTAG=$OPTARG
+    d)
+      HCDONLY="true"
       ;;
     \?)
       echo "Valid options:"
       echo "  -l - use Data API Docker image from local build (see project README for build instructions)"
       echo "  -j <tag> - use Data API Docker image tagged with specified Data API version (will pull images from Docker Hub if needed)"
       echo "  -n <tag> - use Data API native image instead of default Java-based image"
-      echo "  -t <tag> - use Stargate coordinator Docker image tagged with specified  version (will pull images from Docker Hub if needed)"
+      echo "  -d - Start only HCD container"
       echo "  -q - enable request logging for APIs in 'io.quarkus.http.access-log' (default: disabled)"
       echo "  -r - specify root log level for APIs (defaults to INFO); usually DEBUG, WARN or ERROR"
       exit 1
@@ -52,11 +52,15 @@ done
 
 export LOGLEVEL
 export REQUESTLOG
-export DSETAG
-export SGTAG
+export HCDTAG
 export DATAAPITAG
 export DATAAPIIMAGE
 
-echo "Running with DSE $DSETAG, Stargate $SGTAG, Data API $DATAAPIIMAGE:$DATAAPITAG"
+echo "Running with DSE $DSETAG, Data API $DATAAPIIMAGE:$DATAAPITAG"
 
-docker compose up -d --wait
+if [ "$HCDONLY" = "true" ]; then
+  docker compose -f docker-compose-hcd.yml up -d --wait hcd
+  exit 0
+else
+  docker compose -f docker-compose-hcd.yml up -d --wait
+fi
