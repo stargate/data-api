@@ -623,9 +623,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                             "service": {
                                 "provider": "azureOpenAI",
                                 "modelName": "text-embedding-3-small",
-                                "authentication": {
-                                    "x-embedding-api-key": "user_key"
-                                },
                                 "parameters": {
                                     "resourceName" : "vectorize",
                                     "deploymentId" : "vectorize"
@@ -681,7 +678,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                               "provider": "test",
                                               "modelName": "textembedding-gecko@003",
                                               "authentication": {
-                                                  "x-embedding-api-key": "user_key",
                                                   "providerKey" : "shared_creds.providerKey"
                                               },
                                               "parameters": {
@@ -725,9 +721,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "service": {
                                                 "provider": "azureOpenAI",
                                                 "modelName": "testModel",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                },
                                                 "parameters": {
                                                     "resourceName" : "vectorize",
                                                     "deploymentId" : "vectorize"
@@ -925,10 +918,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                   "metric": "cosine",
                                   "service": {
                                       "provider": "openai",
-                                      "modelName": "text-embedding-3-small",
-                                      "authentication": {
-                                          "x-embedding-api-key": "user_key"
-                                      }
+                                      "modelName": "text-embedding-3-small"
                                   }
                               }
                           }
@@ -946,10 +936,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                   "dimension": 1536,
                                   "service": {
                                       "provider": "openai",
-                                      "modelName": "text-embedding-3-small",
-                                      "authentication": {
-                                          "x-embedding-api-key": "user_key"
-                                      }
+                                      "modelName": "text-embedding-3-small"
                                   }
                               }
                           }
@@ -1021,10 +1008,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "dimension": 512,
                                             "service": {
                                                 "provider": "openai",
-                                                "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                }
+                                                "modelName": "text-embedding-3-small"
                                             }
                                         }
                                     }
@@ -1057,10 +1041,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "dimension": 1,
                                             "service": {
                                                 "provider": "openai",
-                                                "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                }
+                                                "modelName": "text-embedding-3-small"
                                             }
                                         }
                                     }
@@ -1095,10 +1076,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "dimension": 2000,
                                             "service": {
                                                 "provider": "openai",
-                                                "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                }
+                                                "modelName": "text-embedding-3-small"
                                             }
                                         }
                                     }
@@ -1289,10 +1267,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                     "dimension": 1536,
                                     "service": {
                                         "provider": "openai",
-                                        "modelName": "text-embedding-ada-002",
-                                        "authentication": {
-                                            "x-embedding-api-key": "api_key"
-                                        }
+                                        "modelName": "text-embedding-ada-002"
                                     }
                                 }
                             }
@@ -1519,9 +1494,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "service": {
                                                 "provider": "openai",
                                                 "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                },
                                                 "parameters": {
                                                     "test": "test"
                                                 }
