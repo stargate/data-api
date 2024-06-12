@@ -943,7 +943,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                           "options": {
                               "vector": {
                                   "metric": "cosine",
-                                  "dimension": 512,
+                                  "dimension": 1536,
                                   "service": {
                                       "provider": "openai",
                                       "modelName": "text-embedding-3-small",
