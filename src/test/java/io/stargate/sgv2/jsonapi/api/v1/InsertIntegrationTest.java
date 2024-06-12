@@ -1347,20 +1347,22 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
 
     @Test
     public void orderedReturnPositions() {
+      final String UUID_KEY = UUID.randomUUID().toString();
       String json =
-          """
+              """
               {
                 "insertMany": {
                   "documents": [
                     { "_id": "doc1", "username": "user1" },
-                    { "_id": "doc2", "username": "user2" }
+                    { "_id": {"$uuid":"%s"}, "username": "user2" }
                   ],
                   "options" : {
                     "ordered": true, "returnDocumentPositions": true
                   }
                 }
               }
-              """;
+              """
+              .formatted(UUID_KEY);
 
       given()
           .headers(getHeaders())
@@ -1376,7 +1378,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("status.failedDocuments", is(nullValue()))
           .body(
               "status.insertedDocuments",
-              is(Arrays.asList(Arrays.asList(0, "doc1"), Arrays.asList(1, "doc2"))));
+              is(
+                  Arrays.asList(
+                      Arrays.asList(0, "doc1"), Arrays.asList(1, Map.of("$uuid", UUID_KEY)))));
 
       verifyDocCount(2);
     }
