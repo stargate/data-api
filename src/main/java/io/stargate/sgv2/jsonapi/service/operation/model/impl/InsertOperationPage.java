@@ -44,7 +44,8 @@ public record InsertOperationPage(
     // if we have errors, transform
     if (!failedInsertions().isEmpty()) {
       // Also ensure failures are in the input position order
-      Collections.sort(failedInsertions, Comparator.comparing(Tuple2::getItem1));
+      Collections.sort(
+          failedInsertions, Comparator.comparing(tuple -> tuple.getItem1().position()));
       List<CommandResult.Error> errors =
           failedInsertions.stream()
               .map(tuple -> getError(tuple.getItem1().document().id(), tuple.getItem2()))
