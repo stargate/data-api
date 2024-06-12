@@ -1353,16 +1353,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(" { \"countDocuments\": { } }")
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.count", is(2))
-          .body("errors", is(nullValue()));
+      verifyDocCount(2);
     }
 
     @Test
@@ -1397,16 +1388,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(" { \"countDocuments\": { } }")
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.count", is(2))
-          .body("errors", is(nullValue()));
+      verifyDocCount(2);
     }
 
     @Test
@@ -1438,16 +1420,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(" { \"countDocuments\": { } }")
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.count", is(2))
-          .body("errors", is(nullValue()));
+      verifyDocCount(2);
     }
 
     @Test
@@ -1757,16 +1730,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"));
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(" { \"countDocuments\": { } }")
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.count", is(1))
-          .body("errors", is(nullValue()));
+      verifyDocCount(1);
     }
 
     @Test
@@ -1803,16 +1767,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("status.insertedDocuments", is(Arrays.asList(Arrays.asList(0, "doc1"))))
           .body("status.failedDocuments", is(Arrays.asList(Arrays.asList(1, "doc1"))));
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(" { \"countDocuments\": { } }")
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.count", is(1))
-          .body("errors", is(nullValue()));
+      verifyDocCount(1);
     }
 
     @Test
@@ -1865,27 +1820,17 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[3].exceptionClass", is("JsonApiException"))
           .body("errors[3].message", startsWith("Failed to insert document with _id"));
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(" { \"countDocuments\": { } }")
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.count", is(2))
-          .body("errors", is(nullValue()));
+      verifyDocCount(2);
     }
 
     @Test
-    public void orderedFailOnDuplicateDocumentNoNamespace() {
+    public void orderedFailBadNamespace() {
       String json =
           """
               {
                 "insertMany": {
                   "documents": [
                     { "_id": "doc4", "username": "user4" },
-                    {  "_id": "doc4", "username": "user4" },
                     { "_id": "doc5", "username": "user5" }
                   ],
                   "options" : { "ordered" : true  }
@@ -1975,6 +1920,19 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void checkInsertManyMetrics() {
       InsertIntegrationTest.super.checkMetrics("InsertManyCommand");
     }
+  }
+
+  private void verifyDocCount(int expDocs) {
+    given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body(" { \"countDocuments\": { } }")
+        .when()
+        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+        .then()
+        .statusCode(200)
+        .body("status.count", is(expDocs))
+        .body("errors", is(nullValue()));
   }
 
   private JsonNode createBigDoc(String docId, int minDocSize) {
