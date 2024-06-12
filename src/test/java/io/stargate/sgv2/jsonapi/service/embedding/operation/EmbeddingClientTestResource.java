@@ -114,9 +114,61 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
             .withRequestBody(matchingJsonPath("$.input", containing("empty json body")))
             .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody("{}")));
 
+    wireMockServer.stubFor(
+        post(urlEqualTo("/v1/embeddings"))
+            .withHeader("OpenAI-Organization", equalTo("org-id"))
+            .withHeader("OpenAI-Project", equalTo("project-id"))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(
+                        """
+                                    {
+                             "object": "list",
+                             "data": [
+                               {
+                                 "index": 0,
+                                 "embedding": [
+                                   -0.01,
+                                   -0.01,
+                                   0.01
+                                 ],
+                                 "object": "embedding"
+                               }
+                             ],
+                             "model": "text-embedding-ada-002",
+                             "usage": {
+                               "prompt_tokens": 0,
+                               "total_tokens": 0
+                             }
+                           }
+                                    """)));
+
+    wireMockServer.stubFor(
+        post(urlEqualTo("/v1/embeddings"))
+            .withHeader("OpenAI-Organization", equalTo("invalid org"))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"object\": \"list\"}")
+                    .withStatus(401)
+                    .withStatusMessage("Unauthorized")));
+
+    wireMockServer.stubFor(
+        post(urlEqualTo("/v1/embeddings"))
+            .withHeader("OpenAI-Project", equalTo("invalid proj"))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"object\": \"list\"}")
+                    .withStatus(401)
+                    .withStatusMessage("Unauthorized")));
+
     return Map.of(
         "stargate.jsonapi.embedding.providers.nvidia.url",
-        wireMockServer.baseUrl() + "/v1/embeddings");
+        wireMockServer.baseUrl() + "/v1/embeddings",
+        "stargate.jsonapi.embedding.providers.openai.url",
+        wireMockServer.baseUrl() + "/v1/");
   }
 
   @Override

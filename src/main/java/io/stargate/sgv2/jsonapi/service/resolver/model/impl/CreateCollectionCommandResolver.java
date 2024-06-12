@@ -259,8 +259,10 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     // Check secret name for shared secret authentication, if applicable
     validateAuthentication(userConfig, providerConfig);
 
-    // Validate the model and its vector dimension, if userVectorDimension is null, return value
-    // will be the config/default value
+    // Validate the model and its vector dimension:
+    //   huggingFaceDedicated: must have vectorDimension specified
+    //   other providers: must have model specified, and default dimension when dimension not
+    // specified
     Integer vectorDimension =
         validateModelAndDimension(userConfig, providerConfig, userVectorDimension);
 
@@ -384,7 +386,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     // Add all provider level parameters
     allParameters.addAll(providerConfig.parameters());
     // Get all the parameters except "vectorDimension" for the model -- model has been validated in
-    // the previous step
+    // the previous step, huggingfaceDedicated uses endpoint-defined-model
     List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> modelParameters =
         providerConfig.models().stream()
             .filter(m -> m.name().equals(userConfig.modelName()))
@@ -403,8 +405,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             .get();
     // Add all model level parameters
     allParameters.addAll(modelParameters);
-
-    // 1. Error if the user provided unconfigured parameters
+    // 1. Error if the user provided un-configured parameters
     // Two level parameters have unique names, should be fine here
     Set<String> expectedParamNames =
         allParameters.stream()
@@ -497,6 +498,18 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       Integer userVectorDimension) {
     // Find the model configuration by matching the model name
+    // 1. huggingfaceDedicated does not require model, but requires dimension
+    if (userConfig.provider().equals(ProviderConstants.HUGGINGFACE_DEDICATED)) {
+      if (userVectorDimension == null) {
+        throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+            "'dimension' is needed for provider %s", ProviderConstants.HUGGINGFACE_DEDICATED);
+      }
+    }
+    // 2. other providers do require model
+    if (userConfig.modelName() == null) {
+      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "'modelName' is needed for provider %s", userConfig.provider());
+    }
     EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model =
         providerConfig.models().stream()
             .filter(m -> m.name().equals(userConfig.modelName()))
