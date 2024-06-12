@@ -468,9 +468,6 @@ class ObjectMapperConfigurationTest {
                                     "service": {
                                         "provider": "openai",
                                         "modelName": "text-embedding-ada-002",
-                                        "authentication": {
-                                            "x-embedding-api-key": "user_key"
-                                        },
                                         "parameters": {
                                             "projectId": "test project"
                                         }
@@ -491,9 +488,6 @@ class ObjectMapperConfigurationTest {
       Map<String, Object> parameterMap = new HashMap<>();
       parameterMap.put("projectId", "test project");
 
-      Map<String, Object> authenticationMap = new HashMap<>();
-      authenticationMap.put("x-embedding-api-key", "user_key");
-
       assertThat(result)
           .isInstanceOfSatisfying(
               CreateCollectionCommand.class,
@@ -509,10 +503,6 @@ class ObjectMapperConfigurationTest {
                     .isEqualTo("openai");
                 assertThat(createCollection.options().vector().vectorizeConfig().modelName())
                     .isEqualTo("text-embedding-ada-002");
-                assertThat(createCollection.options().vector().vectorizeConfig().authentication())
-                    .isNotNull();
-                assertThat(createCollection.options().vector().vectorizeConfig().authentication())
-                    .isEqualTo(authenticationMap);
                 assertThat(createCollection.options().vector().vectorizeConfig().parameters())
                     .isNotNull();
                 assertThat(createCollection.options().vector().vectorizeConfig().parameters())
