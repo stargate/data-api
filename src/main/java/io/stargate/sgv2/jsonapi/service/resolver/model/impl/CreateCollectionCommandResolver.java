@@ -260,8 +260,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     validateAuthentication(userConfig, providerConfig);
 
     // Validate the model and its vector dimension:
-    //   huggingFaceDedicated: must have vectorDimension specified
-    //   other providers: must have model specified, and default dimension when dimension not
+    // huggingFaceDedicated: must have vectorDimension specified
+    // other providers: must have model specified, and default dimension when dimension not
     // specified
     Integer vectorDimension =
         validateModelAndDimension(userConfig, providerConfig, userVectorDimension);
