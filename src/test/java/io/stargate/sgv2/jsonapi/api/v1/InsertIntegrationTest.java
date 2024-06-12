@@ -4,16 +4,7 @@ import static io.restassured.RestAssured.given;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
-import static org.hamcrest.Matchers.any;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,6 +24,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterEach;
@@ -49,6 +41,9 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase {
   private final ObjectMapper MAPPER = new ObjectMapper();
+
+  private static final Pattern UUID_REGEX =
+      Pattern.compile("[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}");
 
   @AfterEach
   public void cleanUpData() {
@@ -1325,14 +1320,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           {
             "insertMany": {
               "documents": [
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc5",
-                  "username": "user5"
-                }
+                { "_id": "doc4", "username": "user4" },
+                { "_id": "doc5", "username": "user5" }
               ],
               "options" : {
                 "ordered" : true
@@ -1349,9 +1338,86 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds", contains("doc4", "doc5"))
+          .body("status.insertedIds", is(Arrays.asList("doc4", "doc5")))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
+
+      verifyDocCount(2);
+    }
+
+    @Test
+    public void orderedReturnPositions() {
+      String json =
+          """
+              {
+                "insertMany": {
+                  "documents": [
+                    { "_id": "doc1", "username": "user1" },
+                    { "_id": "doc2", "username": "user2" }
+                  ],
+                  "options" : {
+                    "ordered": true, "returnDocumentPositions": true
+                  }
+                }
+              }
+              """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("status.insertedIds", is(nullValue()))
+          .body("status.failedDocuments", is(nullValue()))
+          .body(
+              "status.insertedDocuments",
+              is(Arrays.asList(Arrays.asList(0, "doc1"), Arrays.asList(1, "doc2"))));
+
+      verifyDocCount(2);
+    }
+
+    @Test
+    public void orderedNoDocIdReturnPositions() {
+      String json =
+          """
+                  {
+                    "insertMany": {
+                      "documents": [
+                        { "username": "user1" },
+                        { "username": "user2" }
+                      ],
+                      "options" : {
+                        "ordered": true, "returnDocumentPositions": true
+                      }
+                    }
+                  }
+                  """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("status.insertedIds", is(nullValue()))
+          .body("status.failedDocuments", is(nullValue()))
+          // now tricky part: [0, <UUID>] check
+          .body("status.insertedDocuments", hasSize(2))
+          .body("status.insertedDocuments[0]", hasSize(2))
+          .body("status.insertedDocuments[0][0]", is(0))
+          .body("status.insertedDocuments[0][1]", matchesPattern(UUID_REGEX))
+          .body("status.insertedDocuments[1]", hasSize(2))
+          .body("status.insertedDocuments[1][0]", is(1))
+          .body("status.insertedDocuments[1][1]", matchesPattern(UUID_REGEX));
 
       verifyDocCount(2);
     }
@@ -1363,14 +1429,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           {
             "insertMany": {
               "documents": [
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc5",
-                  "username": "user5"
-                }
+                { "_id": "doc4", "username": "user4" },
+                { "_id": "doc5", "username": "user5" }
               ]
             }
           }
