@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.util.HashSet;
@@ -122,8 +123,7 @@ public record CreateCollectionCommand(
                   implementation = String.class)
               @JsonProperty("provider")
               String provider,
-          @NotNull
-              @Schema(
+          @Schema(
                   description = "Registered Embedding service model",
                   type = SchemaType.STRING,
                   implementation = String.class)
@@ -144,7 +144,25 @@ public record CreateCollectionCommand(
                   type = SchemaType.OBJECT)
               @JsonProperty("parameters")
               @JsonInclude(JsonInclude.Include.NON_NULL)
-              Map<String, Object> parameters) {}
+              Map<String, Object> parameters) {
+
+        public VectorizeConfig(
+            String provider,
+            String modelName,
+            Map<String, String> authentication,
+            Map<String, Object> parameters) {
+          this.provider = provider;
+          // HuggingfaceDedicated does not need user to specify model
+          // use endpoint-defined-model as placeholder
+          if (provider.equals(ProviderConstants.HUGGINGFACE_DEDICATED)) {
+            this.modelName = ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL;
+          } else {
+            this.modelName = modelName;
+          }
+          this.authentication = authentication;
+          this.parameters = parameters;
+        }
+      }
     }
 
     public record IndexingConfig(
