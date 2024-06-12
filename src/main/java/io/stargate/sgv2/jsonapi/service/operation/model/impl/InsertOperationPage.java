@@ -37,25 +37,47 @@ public record InsertOperationPage(
   /** {@inheritDoc} */
   @Override
   public CommandResult get() {
-    // Ensure insertions are in order (wrt unordered insertions)
+    // Ensure insertions are in the input order (wrt unordered insertions themselves)
     Collections.sort(successfulInsertions);
-    List<DocumentId> insertedIds =
-        successfulInsertions.stream().map(docAndPos -> docAndPos.document().id()).toList();
-    // if we have errors, transform
-    if (!failedInsertions().isEmpty()) {
-      // Also ensure failures are in the input position order
+    // Also ensure failures are similarly in the input order
+    List<CommandResult.Error> errors;
+    if (failedInsertions().isEmpty()) {
+      errors = null;
+    } else {
       Collections.sort(
           failedInsertions, Comparator.comparing(tuple -> tuple.getItem1().position()));
-      List<CommandResult.Error> errors =
+      errors =
           failedInsertions.stream()
               .map(tuple -> getError(tuple.getItem1().document().id(), tuple.getItem2()))
               .toList();
-
-      return new CommandResult(null, Map.of(CommandStatus.INSERTED_IDS, insertedIds), errors);
     }
 
-    // id no errors, just inserted ids
-    return new CommandResult(Map.of(CommandStatus.INSERTED_IDS, insertedIds));
+    // Old style, simple ids:
+    if (!returnDocumentPositions()) {
+      List<DocumentId> insertedIds =
+          successfulInsertions.stream().map(docAndPos -> docAndPos.document().id()).toList();
+      return new CommandResult(null, Map.of(CommandStatus.INSERTED_IDS, insertedIds), errors);
+    }
+    // But with positions added
+    List<Object[]> insertedDocs =
+        successfulInsertions.stream().map(InsertOperationPage::positionAndId).toList();
+    if (errors != null) {
+      List<Object[]> failedDocs =
+          failedInsertions.stream().map(tuple -> positionAndId(tuple.getItem1())).toList();
+      return new CommandResult(
+          null,
+          Map.of(
+              CommandStatus.INSERTED_DOCUMENTS,
+              insertedDocs,
+              CommandStatus.FAILED_DOCUMENTS,
+              failedDocs),
+          errors);
+    }
+    return new CommandResult(null, Map.of(CommandStatus.INSERTED_DOCUMENTS, insertedDocs), null);
+  }
+
+  private static Object[] positionAndId(InsertOperation.WritableDocAndPosition docAndPos) {
+    return new Object[] {docAndPos.position(), docAndPos.document().id()};
   }
 
   private static CommandResult.Error getError(DocumentId documentId, Throwable throwable) {

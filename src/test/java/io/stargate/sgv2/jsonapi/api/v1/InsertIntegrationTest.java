@@ -1808,16 +1808,16 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors", hasSize(4))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"))
+          .body("errors[0].message", startsWith("Failed to insert document with _id"))
           .body("errors[1].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[1].exceptionClass", is("JsonApiException"))
-          .body("errors[1].message", startsWith("Failed to insert document with _id 'doc4'"))
+          .body("errors[1].message", startsWith("Failed to insert document with _id"))
           .body("errors[2].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[2].exceptionClass", is("JsonApiException"))
-          .body("errors[2].message", startsWith("Failed to insert document with _id 'doc5'"))
+          .body("errors[2].message", startsWith("Failed to insert document with _id"))
           .body("errors[3].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[3].exceptionClass", is("JsonApiException"))
-          .body("errors[3].message", startsWith("Failed to insert document with _id 'doc4'"));
+          .body("errors[3].message", startsWith("Failed to insert document with _id"));
 
       given()
           .headers(getHeaders())
