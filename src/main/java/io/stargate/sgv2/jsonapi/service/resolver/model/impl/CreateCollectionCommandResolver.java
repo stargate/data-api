@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
+import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.api.common.config.DataStoreConfig;
@@ -294,6 +296,27 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   /**
    * Validates user authentication for creating a collection using the specified configurations.
    *
+   * <ol>
+   *   <li>Validate that all keys (member names) in the authentication stanza (e.g. providerKey) are
+   *       listed in the configuration for the provider as accepted keys.
+   *   <li>For each key-value member of the authentication stanza:
+   *       <ol type="a">
+   *         <li>If the value does not contain the period character "." it assumes the value is the
+   *             name of the credential without specifying the key.
+   *             <ol type="i">
+   *               <li>The credential name is appended with .&lt;key&gt; and the secret service
+   *                   called to validate that a credential with that name exists and it has the
+   *                   named key.
+   *             </ol>
+   *         <li>If the value does contain a period character "." it assumes the first part is the
+   *             name of the credential and the second the name of the key within it.
+   *             <ol type="i">
+   *               <li>The secret service called to validate that a credential with that name exists
+   *                   and it has the named key.
+   *             </ol>
+   *       </ol>
+   * </ol>
+   *
    * @param userConfig The vectorize configuration provided by the user.
    * @param providerConfig The embedding provider configuration.
    * @throws JsonApiException If the user authentication is invalid.
@@ -333,33 +356,45 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       // User has provided authentication details. Validate each key against the provider's accepted
       // list.
       for (Map.Entry<String, String> userAuth : userConfig.authentication().entrySet()) {
+        // Check if the key is accepted by the provider
         if (!acceptedKeys.contains(userAuth.getKey())) {
           throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
               "Service provider '%s' does not support authentication key '%s'",
               userConfig.provider(), userAuth.getKey());
-        } else {
-          if (userAuth.getKey().equals("providerKey")) {
-            // sharedKeyValue must be in the format of "keyName.providerKey"
-            String sharedKeyValue = userAuth.getValue();
-            if (sharedKeyValue == null || sharedKeyValue.isEmpty()) {
-              throw ErrorCode.VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT.toApiException(
-                  "missing value");
-            }
-            int dotIndex = sharedKeyValue.lastIndexOf('.');
-            if (dotIndex <= 0) {
-              throw ErrorCode.VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT.toApiException(
-                  "providerKey value should be formatted as '[keyName].providerKey'");
-            }
+        }
 
-            String providerKeyString = sharedKeyValue.substring(dotIndex + 1);
-            if (!"providerKey".equals(providerKeyString)) {
-              throw ErrorCode.VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT.toApiException(
-                  "providerKey value should be formatted as '[keyName].providerKey'");
-            }
+        // ignore the header accepted key
+        if (EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME.equals(userAuth.getKey())) {
+          continue;
+        }
+
+        // check shared secret accepted key
+        String credentialName;
+        String sharedKeyValue = userAuth.getValue();
+        int dotIndex = sharedKeyValue.lastIndexOf('.');
+
+        if (dotIndex <= 0) {
+          // If the value does not contain a period character, it assumes the value is the name of
+          // the credential without specifying the key.
+          // The credential name is appended with .<key> and the secret service called to validate
+          credentialName = sharedKeyValue + "." + userAuth.getKey();
+        } else {
+          // If the value does contain a period character, it assumes the first part is the name of
+          // the credential and the second the name of the key within it.
+          // Check if the second part is the key name
+          String keyName = sharedKeyValue.substring(dotIndex + 1);
+          if (!keyName.equals(userAuth.getKey())) {
+            throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+                "Unknown credential name '%s'. The format should be '%s' or '%s'.",
+                sharedKeyValue,
+                sharedKeyValue.substring(0, dotIndex - 1),
+                sharedKeyValue.substring(0, dotIndex - 1) + "." + userAuth.getKey());
           }
-          if (operationsConfig.enableEmbeddingGateway()) {
-            validateCredentials.validate(userConfig.provider(), userAuth.getValue());
-          }
+          credentialName = sharedKeyValue;
+        }
+        // Validate the credential name from secret service
+        if (operationsConfig.enableEmbeddingGateway()) {
+          validateCredentials.validate(userConfig.provider(), credentialName);
         }
       }
     }
