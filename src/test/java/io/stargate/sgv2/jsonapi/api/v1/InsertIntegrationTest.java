@@ -1352,18 +1352,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
 
-      json =
-          """
-          {
-            "countDocuments": {
-            }
-          }
-          """;
-
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(" { \"countDocuments\": { } }")
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
@@ -1404,18 +1396,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
 
-      json =
-          """
-          {
-            "countDocuments": {
-            }
-          }
-          """;
-
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(" { \"countDocuments\": { } }")
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
@@ -1431,18 +1415,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           {
             "insertMany": {
               "documents": [
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc5",
-                  "username": "user5"
-                }
+                { "_id": "doc4",  "username": "user4" },
+                { "_id": "doc4", "username": "user4" },
+                { "_id": "doc5", "username": "user5" }
               ],
               "options": { "ordered": false }
             }
@@ -1462,18 +1437,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
 
-      json =
-          """
-          {
-            "countDocuments": {
-            }
-          }
-          """;
-
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(" { \"countDocuments\": { } }")
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
@@ -1764,22 +1731,12 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               {
                 "insertMany": {
                   "documents": [
-                    {
-                      "_id": "doc4",
-                      "username": "user4"
-                    },
-                    {
-                      "_id": "doc4",
-                      "username": "user4_duplicate"
-                    },
-                    {
-                      "_id": "doc5",
-                      "username": "user5"
+                    { "_id": "doc4", "username": "user4"  },
+                    { "_id": "doc4", "username": "user4_duplicate" },
+                    { "_id": "doc5", "username": "user5"
                     }
                   ],
-                  "options" : {
-                    "ordered" : true
-                  }
+                  "options" : {  "ordered" : true }
                 }
               }
               """;
@@ -1800,18 +1757,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"));
 
-      json =
-          """
-              {
-                "countDocuments": {
-                }
-              }
-              """;
-
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(" { \"countDocuments\": { } }")
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
@@ -1827,30 +1776,13 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                   {
                     "insertMany": {
                       "documents": [
-                        {
-                          "_id": "doc4",
-                          "username": "user4"
-                        },
-                        {
-                          "_id": "doc4",
-                          "username": "user4_duplicate"
-                        },
-                        {
-                          "_id": "doc5",
-                          "username": "user5"
-                        },
-                        {
-                          "_id": "doc4",
-                          "username": "user4_duplicate_2"
-                        },
-                        {
-                          "_id": "doc5",
-                          "username": "user5_duplicate"
-                        }
+                        { "_id": "doc4", "username": "user4" },
+                        { "_id": "doc4", "username": "user4_duplicate" },
+                        { "_id": "doc5", "username": "user5" },
+                        { "_id": "doc4", "username": "user4_duplicate_2" },
+                        { "_id": "doc5", "username": "user5_duplicate" }
                       ],
-                      "options" : {
-                        "ordered" : false
-                      }
+                      "options" : { "ordered" : false  }
                     }
                   }
                   """;
@@ -1877,18 +1809,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[1].exceptionClass", is("JsonApiException"))
           .body("errors[1].message", startsWith("Failed to insert document with _id"));
 
-      json =
-          """
-                  {
-                    "countDocuments": {
-                    }
-                  }
-                  """;
-
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(" { \"countDocuments\": { } }")
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
@@ -1904,22 +1828,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               {
                 "insertMany": {
                   "documents": [
-                    {
-                      "_id": "doc4",
-                      "username": "user4"
-                    },
-                    {
-                      "_id": "doc4",
-                      "username": "user4"
-                    },
-                    {
-                      "_id": "doc5",
-                      "username": "user5"
-                    }
+                    { "_id": "doc4", "username": "user4" },
+                    {  "_id": "doc4", "username": "user4" },
+                    { "_id": "doc5", "username": "user5" }
                   ],
-                  "options" : {
-                    "ordered" : true
-                  }
+                  "options" : { "ordered" : true  }
                 }
               }
               """;
