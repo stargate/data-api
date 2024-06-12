@@ -1780,7 +1780,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                         { "_id": "doc4", "username": "user4_duplicate" },
                         { "_id": "doc5", "username": "user5" },
                         { "_id": "doc4", "username": "user4_duplicate_2" },
-                        { "_id": "doc5", "username": "user5_duplicate" }
+                        { "_id": "doc5", "username": "user5_duplicate" },
+                        { "_id": "doc4", "username": "user4_duplicate_3" }
                       ],
                       "options" : { "ordered" : false  }
                     }
@@ -1795,11 +1796,16 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds", is(Arrays.asList("doc4", "doc5")))
+          // Insertions can occur in any order, so we can't predict which is first
+          // within the input list
+          .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
+          .body("status.insertedIds", hasSize(2))
           .body("data", is(nullValue()))
-          // We have 3 failures, reported in order of input documents (even if insertion
-          // order itself is not guaranteed
-          .body("errors", hasSize(3))
+          // We have 4 failures, reported in order of input documents -- but note that
+          // inserts may be executed in different order! This means that the very first
+          // Document to insert may fail as duplicate if it was executed after another
+          // document in the list with that id
+          .body("errors", hasSize(4))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"))
@@ -1808,7 +1814,10 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[1].message", startsWith("Failed to insert document with _id 'doc4'"))
           .body("errors[2].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[2].exceptionClass", is("JsonApiException"))
-          .body("errors[2].message", startsWith("Failed to insert document with _id 'doc5'"));
+          .body("errors[2].message", startsWith("Failed to insert document with _id 'doc5'"))
+          .body("errors[3].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[3].exceptionClass", is("JsonApiException"))
+          .body("errors[3].message", startsWith("Failed to insert document with _id 'doc4'"));
 
       given()
           .headers(getHeaders())
