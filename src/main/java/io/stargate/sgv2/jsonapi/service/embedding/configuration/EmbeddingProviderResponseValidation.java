@@ -8,7 +8,10 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.MediaType;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,8 +48,15 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
     // log the whole error body here
     String responseBody = null;
     try {
-      responseBody = new String(responseContext.getEntityStream().readAllBytes());
+      // Read the entity stream into a byte array
+      InputStream originalEntityStream = responseContext.getEntityStream();
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      originalEntityStream.transferTo(baos);
+      responseBody = baos.toString();
+      // Log the response body
       logger.info(String.format("Error response from embedding provider: %s", responseBody));
+      // Replace the consumed stream with a new ByteArrayInputStream
+      responseContext.setEntityStream(new ByteArrayInputStream(baos.toByteArray()));
     } catch (IOException e) {
       logger.error("Cannot convert the provider's error to string: " + e.getMessage(), e);
     }
