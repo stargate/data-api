@@ -156,6 +156,11 @@ public record DocumentUpdater(
           .subscribeAsCompletionStage()
           .get();
     } catch (Exception e) {
+      if (e instanceof ExecutionException exception) {
+        if (exception.getCause() instanceof JsonApiException jsonApiException) {
+          throw jsonApiException;
+        }
+      }
       throw new RuntimeException(e);
     }
   }

@@ -434,7 +434,7 @@ public class CommandResolverWithVectorizerTest {
 
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
-      // vectorizedCommand only have sortClause and document vectorize
+      // command -> vectorizedCommand, only vectorize sortClause and document vectorize
       // Postpone vectorize replaceDocument at operation level
       // DocumentUpdator in ReadAndUpdateOperation specifically
       final FindOneAndReplaceCommand vectorizedCommand =
@@ -549,7 +549,7 @@ public class CommandResolverWithVectorizerTest {
             """;
 
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      // vectorizedCommand only have sortClause and document vectorize
+      // command -> vectorizedCommand, only vectorize sortClause and document vectorize
       // Postpone vectorize updateClause at operation level
       // DocumentUpdator in ReadAndUpdateOperation specifically
       final FindOneAndUpdateCommand vectorizedCommand =
