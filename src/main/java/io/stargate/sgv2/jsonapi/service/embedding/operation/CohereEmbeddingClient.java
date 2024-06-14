@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -89,27 +89,28 @@ public class CohereEmbeddingClient implements EmbeddingProvider {
      * @return The error message extracted from the response body.
      */
     private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
+      // Get the whole response body
       String responseBody = response.readEntity(String.class);
+      JsonNode rootNode;
       try {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode rootNode = mapper.readTree(responseBody);
-        // Check if the root node contains a "message" field
-        JsonNode messageNode = rootNode.path("message");
-        if (!messageNode.isMissingNode()) {
-          return messageNode.asText();
-        }
-        // Check if the root node contains a "data" field
-        JsonNode dataNode = rootNode.path("data");
-        if (!dataNode.isMissingNode()) {
-          return dataNode.asText();
-        }
-        // Return the whole response body if no message or data field is found
-        return responseBody;
-      } catch (Exception e) {
+        rootNode = OBJECT_MAPPER.readTree(responseBody);
+      } catch (JsonProcessingException e) {
         // should not go here, already check json format in EmbeddingProviderResponseValidation.
         // if it happens, return the whole response body
         return responseBody;
       }
+      // Check if the root node contains a "message" field
+      JsonNode messageNode = rootNode.path("message");
+      if (!messageNode.isMissingNode()) {
+        return messageNode.asText();
+      }
+      // Check if the root node contains a "data" field
+      JsonNode dataNode = rootNode.path("data");
+      if (!dataNode.isMissingNode()) {
+        return dataNode.asText();
+      }
+      // Return the whole response body if no message or data field is found
+      return responseBody;
     }
   }
 

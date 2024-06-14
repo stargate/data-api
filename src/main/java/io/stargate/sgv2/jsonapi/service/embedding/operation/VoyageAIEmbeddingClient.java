@@ -2,8 +2,8 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -86,19 +86,20 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
      * @return The error message extracted from the response body.
      */
     private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
+      // Get the whole response body
       String responseBody = response.readEntity(String.class);
+      JsonNode rootNode;
       try {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode rootNode = mapper.readTree(responseBody);
-        // Extract the "detail" node
-        JsonNode detailNode = rootNode.path("detail");
-        // Return the text of the "detail" node, or the full response body if it is missing
-        return detailNode.isMissingNode() ? responseBody : detailNode.asText();
-      } catch (Exception e) {
+        rootNode = OBJECT_MAPPER.readTree(responseBody);
+      } catch (JsonProcessingException e) {
         // should not go here, already check json format in EmbeddingProviderResponseValidation.
         // if it happens, return the whole response body
         return responseBody;
       }
+      // Extract the "detail" node
+      JsonNode detailNode = rootNode.path("detail");
+      // Return the text of the "detail" node, or the full response body if it is missing
+      return detailNode.isMissingNode() ? responseBody : detailNode.asText();
     }
   }
 

@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -79,31 +79,19 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
      * @return The error message extracted from the response body.
      */
     private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
+      // Get the whole response body
       String responseBody = response.readEntity(String.class);
+      JsonNode rootNode;
       try {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode rootNode = mapper.readTree(responseBody);
-        // Extract the "detail" node
-        JsonNode detailNode = rootNode.path("detail");
-        // Assuming the error message is within the "msg" part of the detail
-        if (!detailNode.isMissingNode()) {
-          String detailText = detailNode.asText();
-          // Use regex to extract the message part from the detail text
-          java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("'msg':\\s*'([^']*)'");
-          java.util.regex.Matcher matcher = pattern.matcher(detailText);
-          if (matcher.find()) {
-            return matcher.group(1);
-          }
-          // If the regex fails, return the whole detail text
-          return detailText;
-        }
-        // Return the whole response body if no "detail" is found
-        return responseBody;
-      } catch (Exception e) {
+        rootNode = OBJECT_MAPPER.readTree(responseBody);
+      } catch (JsonProcessingException e) {
         // should not go here, already check json format in EmbeddingProviderResponseValidation.
         // if it happens, return the whole response body
         return responseBody;
       }
+      // Extract the "detail" node
+      JsonNode detailNode = rootNode.path("detail");
+      return detailNode.isMissingNode() ? responseBody : detailNode.asText();
     }
   }
 

@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
 import java.util.List;
 import java.util.Optional;
@@ -9,6 +10,8 @@ import java.util.Optional;
  * of chosen model.
  */
 public interface EmbeddingProvider {
+  ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
   /**
    * Vectorizes the given list of texts and returns the embeddings.
    *
