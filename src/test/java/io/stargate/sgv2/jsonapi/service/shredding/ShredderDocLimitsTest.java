@@ -423,7 +423,7 @@ public class ShredderDocLimitsTest {
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
-          .hasMessageEndingWith("Document key name constraints violated: empty names not allowed");
+          .hasMessageEndingWith("empty names not allowed");
     }
 
     @ParameterizedTest
@@ -440,9 +440,9 @@ public class ShredderDocLimitsTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
           .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
           .hasMessageEndingWith(
-              "Document key name constraints violated: property name ('"
+              "field name ('"
                   + invalidName
-                  + "') contains character(s) not allowed");
+                  + "') contains invalid character(s), can contain only letters (a-z/A-Z), numbers (0-9), underscores (_), and hyphens (-)");
     }
   }
 
