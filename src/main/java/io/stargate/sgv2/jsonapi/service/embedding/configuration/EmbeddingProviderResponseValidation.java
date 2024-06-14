@@ -45,6 +45,11 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
     if (responseContext.getStatus() == 0) {
       return;
     }
+    // Throw error if there is no response body
+    if (!responseContext.hasEntity()) {
+      throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
+          "No response body from the embedding provider");
+    }
     // log the whole error body here
     String responseBody = null;
     try {
@@ -69,12 +74,6 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
           "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found '%s'. The response body is: '%s'.",
           contentType, responseBody);
-    }
-
-    // Throw error if there is no response body
-    if (!responseContext.hasEntity()) {
-      throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-          "No JSON body from the embedding provider");
     }
   }
 }

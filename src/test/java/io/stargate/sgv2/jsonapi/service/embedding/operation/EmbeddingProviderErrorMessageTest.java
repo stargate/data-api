@@ -181,7 +181,7 @@ public class EmbeddingProviderErrorMessageTest {
               "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned an unexpected response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'");
+              "The Embedding Provider returned an unexpected response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'. The response body is: '<object>list</object>'.");
     }
 
     @Test
@@ -209,7 +209,7 @@ public class EmbeddingProviderErrorMessageTest {
               "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned an unexpected response: No JSON body from the embedding provider");
+              "The Embedding Provider returned an unexpected response: No response body from the embedding provider");
     }
 
     @Test
