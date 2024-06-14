@@ -2,17 +2,29 @@ package io.stargate.sgv2.jsonapi.service.updater;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.*;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
-/** Updates the document read from the database with the updates came as part of the request. */
+/**
+ * Updates the document read from the database with the updates came as part of the request.
+ * DocumentUpdater construct postpone from commandResolver level to operation level, since we want
+ * the vectorize as needed, only vectorize when there are documents found or upsert
+ *
+ * @param updateClause - vectorize it as needed before building update operations
+ * @param replaceDocument - replaceDocument to replace the one read from DB
+ * @param replaceDocumentId - documentId from replaceDocument
+ * @param updateType - UPDATE/REPLACE
+ */
 public record DocumentUpdater(
-    List<UpdateOperation> updateOperations,
+    // buildOperations will be executed when apply to update
+    UpdateClause updateClause,
     ObjectNode replaceDocument,
     JsonNode replaceDocumentId,
     UpdateType updateType) {
@@ -23,7 +35,7 @@ public record DocumentUpdater(
    * @return
    */
   public static DocumentUpdater construct(UpdateClause updateDef) {
-    return new DocumentUpdater(updateDef.buildOperations(), null, null, UpdateType.UPDATE);
+    return new DocumentUpdater(updateDef, null, null, UpdateType.UPDATE);
   }
 
   /**
@@ -62,12 +74,36 @@ public record DocumentUpdater(
    */
   private boolean update(ObjectNode docToUpdate, boolean docInserted) {
     boolean modified = false;
+    List<UpdateOperation> updateOperations = updateClause.buildOperations();
     for (UpdateOperation updateOperation : updateOperations) {
       if (updateOperation.shouldApplyIf(docInserted)) {
         modified |= updateOperation.updateDocument(docToUpdate);
       }
     }
     return modified;
+  }
+
+  /**
+   * vectorize UpdateClause as needed, only when documents are found or upsert will be used by
+   * updateOne, findOneAndUpdate, updateMany
+   *
+   * @param dataVectorizer
+   */
+  public void vectorizeUpdateClause(DataVectorizer dataVectorizer) {
+    try {
+      dataVectorizer
+          .vectorizeUpdateClause(updateClause)
+          .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
+          .subscribeAsCompletionStage()
+          .get();
+    } catch (Exception e) {
+      if (e instanceof ExecutionException exception) {
+        if (exception.getCause() instanceof JsonApiException jsonApiException) {
+          throw jsonApiException;
+        }
+      }
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -105,9 +141,28 @@ public record DocumentUpdater(
     return true;
   }
 
+  /**
+   * vectorize replacementDocument as needed, only when document is found will be used by
+   * findOneAndReplace
+   *
+   * @param dataVectorizer
+   */
+  public void vectorizeTheReplacementDocument(DataVectorizer dataVectorizer) {
+    // TODO: check if $vectorize must be at first level
+    try {
+      dataVectorizer
+          .vectorize(List.of(replaceDocument))
+          .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
+          .subscribeAsCompletionStage()
+          .get();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public record DocumentUpdaterResponse(JsonNode document, boolean modified) {}
 
-  private enum UpdateType {
+  public enum UpdateType {
     UPDATE,
     REPLACE
   }

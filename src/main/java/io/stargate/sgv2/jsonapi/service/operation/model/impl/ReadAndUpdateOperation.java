@@ -10,6 +10,8 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -23,7 +25,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
- * This operation method is used for 3 commands findOneAndUpdate, updateOne and updateMany
+ * This operation method is used for 4 commands findOneAndUpdate, findOneAndReplace, updateOne and
+ * updateMany
  *
  * @param commandContext
  * @param findOperation
@@ -40,6 +43,7 @@ public record ReadAndUpdateOperation(
     CommandContext commandContext,
     FindOperation findOperation,
     DocumentUpdater documentUpdater,
+    DataVectorizerService dataVectorizerService,
     boolean returnDocumentInResponse,
     boolean returnUpdatedDocument,
     boolean upsert,
@@ -68,6 +72,26 @@ public record ReadAndUpdateOperation(
             findResponse -> {
               pageStateReference.set(findResponse.pageState());
               final List<ReadDocument> docs = findResponse.docs();
+              // vectorize the updateClause or ReplacementDocument as needed
+              final DataVectorizer dataVectorizer =
+                  dataVectorizerService.constructDataVectorizer(dataApiRequestInfo, commandContext);
+              // 1. UpdateCommand(updateOne, findOneAndUpdate, updateMany):
+              if (documentUpdater.updateType() == DocumentUpdater.UpdateType.UPDATE) {
+                // if there are documents found, vectorize the updateOperation
+                if (docs.size() != 0) {
+                  documentUpdater.vectorizeUpdateClause(dataVectorizer);
+                  // if there is no document found, but upsert mode, vectorize the updateOperation
+                } else if (upsert() && matchedCount.get() == 0) {
+                  documentUpdater.vectorizeUpdateClause(dataVectorizer);
+                }
+                // 2.replaceCommand(findOneAndReplace)
+              } else if (documentUpdater.updateType() == DocumentUpdater.UpdateType.REPLACE) {
+                // if there is a document found, vectorize it first in documentUpdater
+                if (docs.size() != 0) {
+                  documentUpdater.vectorizeTheReplacementDocument(dataVectorizer);
+                }
+              }
+
               if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
                 return Multi.createFrom().item(findOperation().getNewDocument());
               } else {
@@ -153,12 +177,10 @@ public record ReadAndUpdateOperation(
               // upsert if we have no transaction if before
               boolean upsert = readDocument.txnId() == null;
               JsonNode originalDocument = upsert ? null : readDocument.document();
-
               // apply document updates
               // if no changes return null item
               DocumentUpdater.DocumentUpdaterResponse documentUpdaterResponse =
                   documentUpdater().apply(readDocument.document().deepCopy(), upsert);
-
               // In case no change to document and not an upsert document, short circuit and return
               if (!documentUpdaterResponse.modified() && !upsert) {
                 // If no change return the original document Issue #390

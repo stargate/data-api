@@ -26,7 +26,6 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -43,7 +42,6 @@ import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -291,7 +289,7 @@ public class CommandResolverWithVectorizerTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
+                          assertThat(updater.updateClause().buildOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -436,6 +434,9 @@ public class CommandResolverWithVectorizerTest {
 
       FindOneAndReplaceCommand command =
           objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+      // vectorizedCommand only have sortClause and document vectorize
+      // Postpone vectorize replaceDocument at operation level
+      // DocumentUpdator in ReadAndUpdateOperation specifically
       final FindOneAndReplaceCommand vectorizedCommand =
           (FindOneAndReplaceCommand)
               dataVectorizerService
@@ -450,7 +451,9 @@ public class CommandResolverWithVectorizerTest {
       Operation operation =
           findOneAndReplaceCommandResolver.resolveCommand(
               TestEmbeddingProvider.commandContextWithVectorize, vectorizedCommand);
-      String expected =
+      String expectedBeforeVectorize =
+          "{\"col1\":\"val1\",\"col2\":\"val2\",\"$vectorize\":\"test data\"}";
+      String expectedAfterVectorize =
           "{\"col1\":\"val1\",\"col2\":\"val2\",\"$vectorize\":\"test data\",\"$vector\":[0.25,0.25,0.25]}";
       assertThat(operation)
           .isInstanceOfSatisfying(
@@ -476,9 +479,32 @@ public class CommandResolverWithVectorizerTest {
                           } catch (JsonProcessingException e) {
                             e.printStackTrace();
                           }
-                          assertThat(replacer.replaceDocument().toString()).isEqualTo(expected);
+                          assertThat(replacer.replaceDocument().toString())
+                              .isEqualTo(expectedBeforeVectorize);
                           assertThat(replacer.replaceDocumentId()).isNull();
                         });
+                // vectorize the replacementDocument
+                op.documentUpdater()
+                    .vectorizeTheReplacementDocument(
+                        dataVectorizerService.constructDataVectorizer(
+                            dataApiRequestInfo, TestEmbeddingProvider.commandContextWithVectorize));
+                assertThat(op.documentUpdater())
+                    .isInstanceOfSatisfying(
+                        DocumentUpdater.class,
+                        replacer -> {
+                          try {
+                            ObjectNode replacement =
+                                (ObjectNode)
+                                    objectMapper.readTree(
+                                        "{\"col1\" : \"val1\", \"col2\" : \"val2\"}");
+                          } catch (JsonProcessingException e) {
+                            e.printStackTrace();
+                          }
+                          assertThat(replacer.replaceDocument().toString())
+                              .isEqualTo(expectedAfterVectorize);
+                          assertThat(replacer.replaceDocumentId()).isNull();
+                        });
+
                 assertThat(op.findOperation())
                     .isInstanceOfSatisfying(
                         FindOperation.class,
@@ -493,6 +519,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.pageSize()).isEqualTo(1);
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
+
                           assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
                           assertThat(
                                   find.logicalExpression()
@@ -522,6 +549,9 @@ public class CommandResolverWithVectorizerTest {
             """;
 
       FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
+      // vectorizedCommand only have sortClause and document vectorize
+      // Postpone vectorize updateClause at operation level
+      // DocumentUpdator in ReadAndUpdateOperation specifically
       final FindOneAndUpdateCommand vectorizedCommand =
           (FindOneAndUpdateCommand)
               dataVectorizerService
@@ -536,20 +566,6 @@ public class CommandResolverWithVectorizerTest {
       Operation operation =
           findOneAndUpdateCommandResolver.resolveCommand(
               TestEmbeddingProvider.commandContextWithVectorize, vectorizedCommand);
-      UpdateClause updateClause =
-          DocumentUpdaterUtils.updateClause(
-              UpdateOperator.SET, objectMapper.createObjectNode().put("$vectorize", "test data"));
-
-      new DataVectorizer(
-              TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
-              objectMapper.getNodeFactory(),
-              Optional.empty(),
-              TestEmbeddingProvider.commandContextWithVectorize.collectionSettings())
-          .vectorizeUpdateClause(updateClause)
-          .subscribe()
-          .withSubscriber(UniAssertSubscriber.create())
-          .awaitItem()
-          .getItem();
       assertThat(operation)
           .isInstanceOfSatisfying(
               ReadAndUpdateOperation.class,
@@ -562,12 +578,19 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(op.shredder()).isEqualTo(shredder);
                 assertThat(op.updateLimit()).isEqualTo(1);
                 assertThat(op.retryLimit()).isEqualTo(operationsConfig.lwt().retries());
+                // vectorize the updateClause
+                op.documentUpdater()
+                    .vectorizeUpdateClause(
+                        dataVectorizerService.constructDataVectorizer(
+                            dataApiRequestInfo, TestEmbeddingProvider.commandContextWithVectorize));
                 assertThat(op.documentUpdater())
                     .isInstanceOfSatisfying(
                         DocumentUpdater.class,
                         updater -> {
-                          assertThat(updater.updateOperations())
-                              .isEqualTo(updateClause.buildOperations());
+                          // there will be two set options, one for $vectorize and one for $vector
+                          assertThat(
+                                  updater.updateClause().buildOperations().get(0).actions().size())
+                              .isEqualTo(2);
                         });
                 assertThat(op.findOperation())
                     .isInstanceOfSatisfying(

@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
@@ -24,14 +25,19 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
   private final Shredder shredder;
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
+  private final DataVectorizerService dataVectorizerService;
 
   @Inject
   public UpdateManyCommandResolver(
-      ObjectMapper objectMapper, Shredder shredder, OperationsConfig operationsConfig) {
+      ObjectMapper objectMapper,
+      Shredder shredder,
+      OperationsConfig operationsConfig,
+      DataVectorizerService dataVectorizerService) {
     super();
     this.objectMapper = objectMapper;
     this.shredder = shredder;
     this.operationsConfig = operationsConfig;
+    this.dataVectorizerService = dataVectorizerService;
   }
 
   @Override
@@ -54,6 +60,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         commandContext,
         findOperation,
         documentUpdater,
+        dataVectorizerService,
         false,
         false,
         upsert,

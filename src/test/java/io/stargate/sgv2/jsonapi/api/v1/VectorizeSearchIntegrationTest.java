@@ -842,7 +842,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
   class VectorSearchExtendedCommands {
     @Test
     @Order(1)
-    public void findOneAndUpdate() {
+    public void findOneAndUpdate_sortClause() {
       insertVectorDocuments();
       String json =
           """
@@ -872,7 +872,61 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
 
     @Test
     @Order(2)
-    public void updateOne() {
+    public void findOneAndUpdate_updateClause() {
+      insertVectorDocuments();
+      String json =
+          """
+                  {
+                    "findOneAndUpdate": {
+                      "sort" : {"$vectorize" : "A deep learning display that controls your mood"},
+                      "update" : {"$set" : {"status" : "active","$vectorize":"An AI quilt to help you sleep forever"}},
+                      "options" : {"returnDocument" : "after"}
+                    }
+                  }
+                  """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document._id", is("3"))
+          .body("data.document.status", is("active"))
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("errors", is(nullValue()));
+
+      json =
+          """
+                        {
+                          "findOne": {
+                            "filter" : {"_id" : "3"},
+                            "projection":{
+                                "$vector":true, "$vectorize":true
+                            }
+                          }
+                        }
+                        """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document._id", is("3"))
+          .body("data.document.$vectorize", is("An AI quilt to help you sleep forever"))
+          .body("data.document.$vector", contains(0.45f, 0.09f, 0.01f, 0.2f, 0.11f))
+          .body("data.document.status", is("active"));
+    }
+
+    @Test
+    @Order(3)
+    public void updateOne_sortClause() {
       insertVectorDocuments();
       String json =
           """
@@ -916,7 +970,57 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
     }
 
     @Test
-    @Order(3)
+    @Order(4)
+    public void updateOne_updateClause() {
+      insertVectorDocuments();
+      String json =
+          """
+                {
+                  "updateOne": {
+                    "update" : {"$set" : {"new_col": "new_val", "$vectorize":"ChatGPT upgraded"}},
+                    "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"}
+                  }
+                }
+                """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.matchedCount", is(1))
+          .body("status.modifiedCount", is(1))
+          .body("status.moreData", is(nullValue()))
+          .body("errors", is(nullValue()));
+      json =
+          """
+                        {
+                          "findOne": {
+                            "filter" : {"_id" : "1"},
+                            "projection":{
+                                "$vector":true, "$vectorize":true
+                            }
+                          }
+                        }
+                        """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document._id", is("1"))
+          .body("data.document.$vectorize", is("ChatGPT upgraded"))
+          .body("data.document.$vector", contains(0.1f, 0.16f, 0.31f, 0.22f, 0.15f))
+          .body("data.document.new_col", is("new_val"));
+    }
+
+    @Test
+    @Order(5)
     public void findOneAndReplace() {
       insertVectorDocuments();
       String json =
@@ -924,7 +1028,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           {
             "findOneAndReplace": {
               "projection": { "$vector": 1 },
-              "sort" : {"$vectorize" : "ChatGPT integrated sneakers that talk to you"},
+              "sort" : {"$vectorize" : "ChatGPT upgraded"},
               "replacement" : {"_id" : "1", "username": "user1", "status" : false, "description" : "Updating new data", "$vectorize" : "Updating new data"},
               "options" : {"returnDocument" : "after"}
             }
@@ -949,7 +1053,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
     }
 
     @Test
-    @Order(4)
+    @Order(6)
     public void findOneAndReplaceWithoutVector() {
       insertVectorDocuments();
       String json =
@@ -980,7 +1084,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
     }
 
     @Test
-    @Order(6)
+    @Order(7)
     public void findOneAndDelete() {
       insertVectorDocuments();
       String json =
@@ -1009,7 +1113,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
     }
 
     @Test
-    @Order(7)
+    @Order(8)
     public void deleteOne() {
       insertVectorDocuments();
       String json =
@@ -1058,7 +1162,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
     }
 
     @Test
-    @Order(8)
+    @Order(9)
     public void createDropDifferentVectorDimension() {
       String json =
           """

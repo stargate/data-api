@@ -268,7 +268,9 @@ public class DocumentUpdaterTest {
       Throwable t =
           catchThrowable(
               () -> {
-                DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class));
+                DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class))
+                    .updateClause()
+                    .buildOperations();
               });
       assertThat(t)
           .isNotNull()
@@ -284,9 +286,11 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () -> {
                 DocumentUpdater.construct(
-                    DocumentUpdaterUtils.updateClause(
-                        UpdateOperator.SET,
-                        objectMapper.getNodeFactory().objectNode().put("_id", "xyz")));
+                        DocumentUpdaterUtils.updateClause(
+                            UpdateOperator.SET,
+                            objectMapper.getNodeFactory().objectNode().put("_id", "xyz")))
+                    .updateClause()
+                    .buildOperations();
               });
       assertThat(t)
           .isNotNull()
@@ -302,9 +306,11 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () -> {
                 DocumentUpdater.construct(
-                    DocumentUpdaterUtils.updateClause(
-                        UpdateOperator.UNSET,
-                        objectMapper.getNodeFactory().objectNode().put("_id", "xyz")));
+                        DocumentUpdaterUtils.updateClause(
+                            UpdateOperator.UNSET,
+                            objectMapper.getNodeFactory().objectNode().put("_id", "xyz")))
+                    .updateClause()
+                    .buildOperations();
               });
       assertThat(t)
           .isNotNull()
@@ -320,11 +326,13 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () -> {
                 DocumentUpdater.construct(
-                    DocumentUpdaterUtils.updateClause(
-                        UpdateOperator.SET,
-                        (ObjectNode) objectMapper.readTree("{\"setField\":3, \"common\":true}"),
-                        UpdateOperator.UNSET,
-                        (ObjectNode) objectMapper.readTree("{\"unsetField\":1, \"common\":1}")));
+                        DocumentUpdaterUtils.updateClause(
+                            UpdateOperator.SET,
+                            (ObjectNode) objectMapper.readTree("{\"setField\":3, \"common\":true}"),
+                            UpdateOperator.UNSET,
+                            (ObjectNode) objectMapper.readTree("{\"unsetField\":1, \"common\":1}")))
+                    .updateClause()
+                    .buildOperations();
               });
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
@@ -338,11 +346,14 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () ->
                   DocumentUpdater.construct(
-                      DocumentUpdaterUtils.updateClause(
-                          UpdateOperator.INC,
-                          (ObjectNode) objectMapper.readTree("{\"root.x\":-7, \"root.inc\":-3}"),
-                          UpdateOperator.MUL,
-                          (ObjectNode) objectMapper.readTree("{\"root.mul\":3, \"root.x\":2}"))));
+                          DocumentUpdaterUtils.updateClause(
+                              UpdateOperator.INC,
+                              (ObjectNode)
+                                  objectMapper.readTree("{\"root.x\":-7, \"root.inc\":-3}"),
+                              UpdateOperator.MUL,
+                              (ObjectNode) objectMapper.readTree("{\"root.mul\":3, \"root.x\":2}")))
+                      .updateClause()
+                      .buildOperations());
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
@@ -355,9 +366,11 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () ->
                   DocumentUpdater.construct(
-                      DocumentUpdaterUtils.updateClause(
-                          UpdateOperator.SET,
-                          (ObjectNode) objectMapper.readTree("{\"root.1\":-7, \"root\":[ ]}"))));
+                          DocumentUpdaterUtils.updateClause(
+                              UpdateOperator.SET,
+                              (ObjectNode) objectMapper.readTree("{\"root.1\":-7, \"root\":[ ]}")))
+                      .updateClause()
+                      .buildOperations());
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
@@ -371,11 +384,11 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () ->
                   DocumentUpdater.construct(
-                      DocumentUpdaterUtils.updateClause(
-                          UpdateOperator.SET,
-                          (ObjectNode)
-                              objectMapper.readTree(
-                                  """
+                          DocumentUpdaterUtils.updateClause(
+                              UpdateOperator.SET,
+                              (ObjectNode)
+                                  objectMapper.readTree(
+                                      """
           {
             "root" : 7,
             "x" : 3,
@@ -383,7 +396,9 @@ public class DocumentUpdaterTest {
             "y" : 5,
             "root.a" : 3
           }
-          """))));
+          """)))
+                      .updateClause()
+                      .buildOperations());
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)

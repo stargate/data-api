@@ -74,7 +74,7 @@ public class FindOneAndUpdateCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
+                          assertThat(updater.updateClause().buildOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -139,7 +139,7 @@ public class FindOneAndUpdateCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
+                          assertThat(updater.updateClause().buildOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -207,7 +207,7 @@ public class FindOneAndUpdateCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
+                          assertThat(updater.updateClause().buildOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -274,7 +274,7 @@ public class FindOneAndUpdateCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
+                          assertThat(updater.updateClause().buildOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -340,7 +340,7 @@ public class FindOneAndUpdateCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
+                          assertThat(updater.updateClause().buildOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -412,7 +412,7 @@ public class FindOneAndUpdateCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
+                          assertThat(updater.updateClause().buildOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
