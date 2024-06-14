@@ -1,5 +1,35 @@
 # Changelog
 
+## [v1.0.11](https://github.com/stargate/data-api/tree/v1.0.11) (2024-06-13)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.10...v1.0.11)
+
+**Closed issues:**
+
+- docker-compose changes to consider [\#1158](https://github.com/stargate/data-api/issues/1158)
+- Log selected options on create collection [\#1155](https://github.com/stargate/data-api/issues/1155)
+- Jina AI timeouts when model is cold  [\#1131](https://github.com/stargate/data-api/issues/1131)
+- Support OpenAI Organization and  Project optional headers [\#1128](https://github.com/stargate/data-api/issues/1128)
+- projection {"$vector": 1} does not project out the other fields anymore [\#1106](https://github.com/stargate/data-api/issues/1106)
+- Misleading error message about projection having $fields [\#1038](https://github.com/stargate/data-api/issues/1038)
+- Re-apply default Projection change to exclude `$vector` \(\#1005\) [\#1032](https://github.com/stargate/data-api/issues/1032)
+- Exclude $vector and $vectorize from the default Projection [\#1005](https://github.com/stargate/data-api/issues/1005)
+
+**Merged pull requests:**
+
+- Better handling for multi part credentials in createCollection [\#1164](https://github.com/stargate/data-api/pull/1164) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Log collection setting stored in comment [\#1163](https://github.com/stargate/data-api/pull/1163) ([maheshrajamani](https://github.com/maheshrajamani))
+- Align Open AI text-embedding-3 dimension defaults to LangChain expectations [\#1162](https://github.com/stargate/data-api/pull/1162) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Openai support for organization id and project id in request header [\#1160](https://github.com/stargate/data-api/pull/1160) ([maheshrajamani](https://github.com/maheshrajamani))
+- Add huggingface dedicated provider support [\#1157](https://github.com/stargate/data-api/pull/1157) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1038: improve error message for unknown dollar-starting field [\#1156](https://github.com/stargate/data-api/pull/1156) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Align gateway request properties with Mutiny HTTP client and Defaults [\#1154](https://github.com/stargate/data-api/pull/1154) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Support `includeSortVector` option for `find` and `findOne` command [\#1151](https://github.com/stargate/data-api/pull/1151) ([maheshrajamani](https://github.com/maheshrajamani))
+- Bumping version for next data-api release [\#1150](https://github.com/stargate/data-api/pull/1150) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Docker compose scripts to use  dse 6.9 as backend [\#1147](https://github.com/stargate/data-api/pull/1147) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix null header exception from embedding provider's response [\#1139](https://github.com/stargate/data-api/pull/1139) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- \(for 1.0.11\) Fixes \#1032, re-does \#1005: exclude $vector and $vectorize from default projection [\#1037](https://github.com/stargate/data-api/pull/1037) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
 ## [v1.0.10](https://github.com/stargate/data-api/tree/v1.0.10) (2024-06-04)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.9...v1.0.10)
