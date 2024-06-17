@@ -35,6 +35,10 @@ public record DocumentUpdater(
    * @return
    */
   public static DocumentUpdater construct(UpdateClause updateDef) {
+    // try to build operations but do not save the result
+    // this is for validating the UpdateClause, for example, updator path conflict
+    // error out before update operation's execution
+    updateDef.buildOperations();
     return new DocumentUpdater(updateDef, null, null, UpdateType.UPDATE);
   }
 
@@ -148,7 +152,6 @@ public record DocumentUpdater(
    * @param dataVectorizer
    */
   public void vectorizeTheReplacementDocument(DataVectorizer dataVectorizer) {
-    // TODO: check if $vectorize must be at first level
     try {
       dataVectorizer
           .vectorize(List.of(replaceDocument))
