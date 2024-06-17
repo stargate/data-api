@@ -1357,7 +1357,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                     { "_id": {"$uuid":"%s"}, "username": "user2" }
                   ],
                   "options" : {
-                    "ordered": true, "returnDocumentPositions": true
+                    "ordered": true, "returnDocumentResponses": true
                   }
                 }
               }
@@ -1396,7 +1396,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                         { "username": "user2" }
                       ],
                       "options" : {
-                        "ordered": true, "returnDocumentPositions": true
+                        "ordered": true, "returnDocumentResponses": true
                       }
                     }
                   }
@@ -1809,7 +1809,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                         { "_id": "doc2", "username": "userC"
                         }
                       ],
-                      "options" : {  "ordered": true, "returnDocumentPositions": true }
+                      "options" : {  "ordered": true, "returnDocumentResponses": true }
                     }
                   }
                   """;
