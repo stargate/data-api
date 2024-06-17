@@ -84,7 +84,7 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
       logger.info(String.format("Error response from embedding provider: %s", rootNode.toString()));
-      return rootNode.asText();
+      return rootNode.toString();
     }
   }
 

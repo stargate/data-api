@@ -95,7 +95,7 @@ public class MistralEmbeddingClient implements EmbeddingProvider {
       // Extract the "message" node from the root node
       JsonNode messageNode = rootNode.path("message");
       // Return the text of the "message" node, or the whole response body if it is missing
-      return messageNode.isMissingNode() ? rootNode.asText() : messageNode.asText();
+      return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
     }
   }
 

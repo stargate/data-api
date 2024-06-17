@@ -89,7 +89,7 @@ public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
       // Extract the "error" node
       JsonNode errorNode = rootNode.path("error");
       // Return the text of the "message" node, or the whole response body if it is missing
-      return errorNode.isMissingNode() ? rootNode.asText() : errorNode.asText();
+      return errorNode.isMissingNode() ? rootNode.toString() : errorNode.toString();
     }
   }
 

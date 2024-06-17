@@ -95,15 +95,15 @@ public class CohereEmbeddingClient implements EmbeddingProvider {
       // Check if the root node contains a "message" field
       JsonNode messageNode = rootNode.path("message");
       if (!messageNode.isMissingNode()) {
-        return messageNode.asText();
+        return messageNode.toString();
       }
       // Check if the root node contains a "data" field
       JsonNode dataNode = rootNode.path("data");
       if (!dataNode.isMissingNode()) {
-        return dataNode.asText();
+        return dataNode.toString();
       }
       // Return the whole response body if no message or data field is found
-      return rootNode.asText();
+      return rootNode.toString();
     }
   }
 

@@ -92,7 +92,7 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
       // Extract the "detail" node
       JsonNode detailNode = rootNode.path("detail");
       // Return the text of the "detail" node, or the full response body if it is missing
-      return detailNode.isMissingNode() ? rootNode.asText() : detailNode.asText();
+      return detailNode.isMissingNode() ? rootNode.toString() : detailNode.toString();
     }
   }
 

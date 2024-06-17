@@ -48,7 +48,7 @@ public class EmbeddingProviderErrorMessageTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_RATE_LIMITED)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider rate limited the request: Provider: nvidia; HTTP Status: 429; Error Message: {\"object\": \"list\"}");
+              "The Embedding Provider rate limited the request: Provider: nvidia; HTTP Status: 429; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -75,7 +75,7 @@ public class EmbeddingProviderErrorMessageTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_CLIENT_ERROR)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned a HTTP client error: Provider: nvidia; HTTP Status: 400; Error Message: {\"object\": \"list\"}");
+              "The Embedding Provider returned a HTTP client error: Provider: nvidia; HTTP Status: 400; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -102,7 +102,7 @@ public class EmbeddingProviderErrorMessageTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_SERVER_ERROR)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned a HTTP server error: Provider: nvidia; HTTP Status: 503; Error Message: {\"object\": \"list\"}");
+              "The Embedding Provider returned a HTTP server error: Provider: nvidia; HTTP Status: 503; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -129,7 +129,7 @@ public class EmbeddingProviderErrorMessageTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The configured Embedding Provider timed out: Provider: nvidia; HTTP Status: 408; Error Message: {\"object\": \"list\"}");
+              "The Embedding Provider timed out: Provider: nvidia; HTTP Status: 408; Error Message: {\"object\":\"list\"}");
     }
 
     @Test

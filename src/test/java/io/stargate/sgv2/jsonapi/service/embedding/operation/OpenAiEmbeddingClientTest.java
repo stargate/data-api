@@ -106,7 +106,7 @@ public class OpenAiEmbeddingClientTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_CLIENT_ERROR)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: {\"object\": \"list\"}");
+              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -133,7 +133,7 @@ public class OpenAiEmbeddingClientTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_CLIENT_ERROR)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: {\"object\": \"list\"}");
+              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
     }
   }
 }

@@ -92,7 +92,7 @@ public class NvidiaEmbeddingClient implements EmbeddingProvider {
       logger.info(String.format("Error response from embedding provider: %s", rootNode.toString()));
       JsonNode messageNode = rootNode.path("message");
       // Return the text of the "message" node, or the whole response body if it is missing
-      return messageNode.isMissingNode() ? rootNode.asText() : messageNode.asText();
+      return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
     }
   }
 

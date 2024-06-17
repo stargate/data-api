@@ -104,7 +104,7 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
         return errorMessageNode.asText();
       }
       // Return the whole response body if no message is found
-      return rootNode.asText();
+      return rootNode.toString();
     }
   }
 
