@@ -70,7 +70,7 @@ public enum ErrorCode {
 
   SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
 
-  SHRED_DOC_KEY_NAME_VIOLATION("Document key name constraints violated"),
+  SHRED_DOC_KEY_NAME_VIOLATION("Document field name invalid"),
 
   SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
 
