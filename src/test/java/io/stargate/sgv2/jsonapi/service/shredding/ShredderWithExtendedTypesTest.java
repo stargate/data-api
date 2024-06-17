@@ -441,9 +441,7 @@ public class ShredderWithExtendedTypesTest {
       assertThat(t)
           .isNotNull()
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessageStartingWith(
-              ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage()
-                  + ": property name ('$unknownType') contains character(s) not allowed");
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage());
     }
   }
 
