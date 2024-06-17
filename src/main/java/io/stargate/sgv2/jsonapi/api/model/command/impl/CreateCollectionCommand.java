@@ -155,6 +155,11 @@ public record CreateCollectionCommand(
           // HuggingfaceDedicated does not need user to specify model
           // use endpoint-defined-model as placeholder
           if (provider.equals(ProviderConstants.HUGGINGFACE_DEDICATED)) {
+            if (modelName != null) {
+              throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+                  "'modelName' is not needed for provider %s",
+                  ProviderConstants.HUGGINGFACE_DEDICATED);
+            }
             this.modelName = ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL;
           } else {
             this.modelName = modelName;
