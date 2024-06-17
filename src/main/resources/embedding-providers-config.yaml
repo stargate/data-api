@@ -371,7 +371,7 @@ stargate:
         # In addition, implementation only supports 1-entry vectorization.
         upstageAI:
           # see https://developers.upstage.ai/docs/apis/embeddings
-          display-name: Upstage AI
+          display-name: Upstage
           enabled: true
           url: https://api.upstage.ai/v1/solar/embeddings
           supported-authentications:
