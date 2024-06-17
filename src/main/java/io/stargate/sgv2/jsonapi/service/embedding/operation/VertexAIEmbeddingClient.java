@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -79,8 +80,11 @@ public class VertexAIEmbeddingClient implements EmbeddingProvider {
      * @return The error message extracted from the response body.
      */
     private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
-      String responseBody = response.readEntity(String.class);
-      return responseBody;
+      // Get the whole response body
+      JsonNode rootNode = response.readEntity(JsonNode.class);
+      // Log the response body
+      logger.info(String.format("Error response from embedding provider: %s", rootNode.toString()));
+      return rootNode.asText();
     }
   }
 

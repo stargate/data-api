@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
@@ -91,30 +90,21 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
      */
     private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
       // Get the whole response body
-      String responseBody = response.readEntity(String.class);
-      JsonNode rootNode;
-      try {
-        rootNode = OBJECT_MAPPER.readTree(responseBody);
-      } catch (JsonProcessingException e) {
-        // should not go here, already check json format in EmbeddingProviderResponseValidation.
-        // if it happens, return the whole response body
-        return responseBody;
-      }
+      JsonNode rootNode = response.readEntity(JsonNode.class);
+      // Log the response body
+      logger.info(String.format("Error response from embedding provider: %s", rootNode.toString()));
       // Check if the root node contains a "message" field
       JsonNode messageNode = rootNode.path("message");
       if (!messageNode.isMissingNode()) {
         return messageNode.asText();
       }
       // If the "message" field is not found, check for the nested "error" object
-      JsonNode errorNode = rootNode.path("error");
-      if (!errorNode.isMissingNode()) {
-        JsonNode errorMessageNode = errorNode.path("message");
-        if (!errorMessageNode.isMissingNode()) {
-          return errorMessageNode.asText();
-        }
+      JsonNode errorMessageNode = rootNode.at("/error/message");
+      if (!errorMessageNode.isMissingNode()) {
+        return errorMessageNode.asText();
       }
       // Return the whole response body if no message is found
-      return responseBody;
+      return rootNode.asText();
     }
   }
 

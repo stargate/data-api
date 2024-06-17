@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
@@ -80,18 +79,12 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
      */
     private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
       // Get the whole response body
-      String responseBody = response.readEntity(String.class);
-      JsonNode rootNode;
-      try {
-        rootNode = OBJECT_MAPPER.readTree(responseBody);
-      } catch (JsonProcessingException e) {
-        // should not go here, already check json format in EmbeddingProviderResponseValidation.
-        // if it happens, return the whole response body
-        return responseBody;
-      }
+      JsonNode rootNode = response.readEntity(JsonNode.class);
+      // Log the response body
+      logger.info(String.format("Error response from embedding provider: %s", rootNode.toString()));
       // Extract the "detail" node
       JsonNode detailNode = rootNode.path("detail");
-      return detailNode.isMissingNode() ? responseBody : detailNode.asText();
+      return detailNode.isMissingNode() ? rootNode.asText() : detailNode.asText();
     }
   }
 

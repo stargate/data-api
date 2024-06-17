@@ -8,10 +8,8 @@ import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.MediaType;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,27 +48,20 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
           "No response body from the embedding provider");
     }
-    // log the whole error body here
-    String responseBody = null;
-    try {
-      // Read the entity stream into a byte array
-      InputStream originalEntityStream = responseContext.getEntityStream();
-      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      originalEntityStream.transferTo(baos);
-      responseBody = baos.toString();
-      // Log the response body
-      logger.info(String.format("Error response from embedding provider: %s", responseBody));
-      // Replace the consumed stream with a new ByteArrayInputStream
-      responseContext.setEntityStream(new ByteArrayInputStream(baos.toByteArray()));
-    } catch (IOException e) {
-      logger.error("Cannot convert the provider's error to string: " + e.getMessage(), e);
-    }
 
     // Check the Content-Type of the response
     MediaType contentType = responseContext.getMediaType();
     if (contentType == null
         || !(MediaType.APPLICATION_JSON_TYPE.isCompatible(contentType)
             || MEDIATYPE_TEXT_JSON.isCompatible(contentType))) {
+      String responseBody = null;
+      try {
+        responseBody =
+            new String(responseContext.getEntityStream().readAllBytes(), StandardCharsets.UTF_8);
+      } catch (IOException e) {
+        logger.error(
+            "Cannot convert the provider's error response to string: " + e.getMessage(), e);
+      }
       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
           "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found '%s'. The response body is: '%s'.",
           contentType, responseBody);
