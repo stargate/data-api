@@ -92,7 +92,10 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
       // Get the whole response body
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
-      logger.info(String.format("Error response from embedding provider: %s", rootNode.toString()));
+      logger.info(
+          String.format(
+              "Error response from embedding provider '%s': %s",
+              ProviderConstants.UPSTAGE_AI, rootNode.toString()));
       // Check if the root node contains a "message" field
       JsonNode messageNode = rootNode.path("message");
       if (!messageNode.isMissingNode()) {

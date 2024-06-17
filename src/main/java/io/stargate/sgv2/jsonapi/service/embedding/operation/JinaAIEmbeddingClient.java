@@ -81,7 +81,10 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
       // Get the whole response body
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
-      logger.info(String.format("Error response from embedding provider: %s", rootNode.toString()));
+      logger.info(
+          String.format(
+              "Error response from embedding provider '%s': %s",
+              ProviderConstants.JINA_AI, rootNode.toString()));
       // Extract the "detail" node
       JsonNode detailNode = rootNode.path("detail");
       return detailNode.isMissingNode() ? rootNode.toString() : detailNode.toString();

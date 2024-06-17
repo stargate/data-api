@@ -81,7 +81,10 @@ public class HuggingFaceDedicatedEmbeddingClient implements EmbeddingProvider {
       // Get the whole response body
       JsonNode rootNode = response.readEntity(JsonNode.class);
       // Log the response body
-      logger.info(String.format("Error response from embedding provider: %s", rootNode.toString()));
+      logger.info(
+          String.format(
+              "Error response from embedding provider '%s': %s",
+              ProviderConstants.HUGGINGFACE_DEDICATED, rootNode.toString()));
       // Extract the "message" node
       JsonNode messageNode = rootNode.path("message");
       // Return the text of the "message" node, or the whole response body if it is missing

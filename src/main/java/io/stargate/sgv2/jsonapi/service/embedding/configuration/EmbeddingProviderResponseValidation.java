@@ -3,15 +3,11 @@ package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
 
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.MediaType;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +25,7 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
 
   static final MediaType MEDIATYPE_TEXT_JSON = new MediaType("text", "json");
 
-  Logger logger = LoggerFactory.getLogger(EmbeddingProvider.class);
+  Logger logger = LoggerFactory.getLogger(EmbeddingProviderResponseValidation.class);
 
   /**
    * Filters the client response by validating the Content-Type and JSON body.
@@ -52,20 +48,17 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
           "No response body from the embedding provider");
     }
 
-    // Check the Content-Type of the response
+    // response should always be JSON; if not, error out, include raw response message for
+    // trouble-shooting purposes
     MediaType contentType = responseContext.getMediaType();
     if (contentType == null
         || !(MediaType.APPLICATION_JSON_TYPE.isCompatible(contentType)
             || MEDIATYPE_TEXT_JSON.isCompatible(contentType))) {
       String responseBody = null;
       try {
-        // Read the entity stream into a byte array
-        InputStream originalEntityStream = responseContext.getEntityStream();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        originalEntityStream.transferTo(baos);
-        responseBody = baos.toString(StandardCharsets.UTF_8);
-        // Replace the consumed stream with a new ByteArrayInputStream
-        responseContext.setEntityStream(new ByteArrayInputStream(baos.toByteArray()));
+        // Read the entity stream and convert to string
+        responseBody =
+            new String(responseContext.getEntityStream().readAllBytes(), StandardCharsets.UTF_8);
       } catch (IOException e) {
         logger.error(
             "Cannot convert the provider's error response to string: " + e.getMessage(), e);
