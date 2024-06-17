@@ -165,9 +165,10 @@ public record CreateCollectionCommand(
             Map<String, String> updatedAuth = new HashMap<>();
             for (Map.Entry<String, String> userAuth : authentication.entrySet()) {
               // Determine the full credential name based on the sharedKeyValue pair
-              // If the sharedKeyValue does not contain a dot or the part after the dot does not
-              // match the key, append the key to the sharedKeyValue with a dot. Otherwise, use the
-              // sharedKeyValue as is.
+              // If the sharedKeyValue does not contain a dot (e.g. myKey) or the part after the dot
+              // does not match the key (e.g. myKey.test), append the key to the sharedKeyValue with
+              // a dot (e.g. myKey.providerKey or myKey.test.providerKey). Otherwise, use the
+              // sharedKeyValue (e.g. myKey.providerKey) as is.
               String sharedKeyValue = userAuth.getValue();
               String credentialName =
                   sharedKeyValue.lastIndexOf('.') <= 0
