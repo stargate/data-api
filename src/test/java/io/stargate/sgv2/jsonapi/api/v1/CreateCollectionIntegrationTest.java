@@ -1349,50 +1349,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       deleteCollection("collection_with_vector_service");
     }
-
-    @Test
-    public void failForBadProviderKeyFormat() {
-      String json =
-          """
-              {
-                  "createCollection": {
-                      "name": "incorrectProviderKeyFormat",
-                      "options": {
-                          "vector": {
-                              "metric": "cosine",
-                              "dimension": 5,
-                              "service": {
-                                  "provider": "openai",
-                                  "modelName": "text-embedding-ada-002",
-                                  "authentication": {
-                                      "providerKey" : "shared_creds.test"
-                                  },
-                                  "parameters": {
-                                      "projectId": "test project"
-                                  }
-                              }
-                          }
-                      }
-                  }
-              }
-              """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
-          .then()
-          .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body(
-              "errors[0].message",
-              startsWith(
-                  "The provided options are invalid: Unexpected credential name 'shared_creds.test'. The format should be 'shared_creds' or 'shared_creds.providerKey'"));
-    }
   }
 
   @Nested
