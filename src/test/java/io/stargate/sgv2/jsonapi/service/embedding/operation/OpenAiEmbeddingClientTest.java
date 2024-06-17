@@ -103,10 +103,10 @@ public class OpenAiEmbeddingClientTest {
               .getFailure();
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_REQUEST)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_CLIENT_ERROR)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The configured Embedding Provider for this collection refused to process the request, response was: Error Code : 401 response description : Unauthorized");
+              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -130,10 +130,10 @@ public class OpenAiEmbeddingClientTest {
               .getFailure();
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_REQUEST)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_CLIENT_ERROR)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The configured Embedding Provider for this collection refused to process the request, response was: Error Code : 401 response description : Unauthorized");
+              "The Embedding Provider returned a HTTP client error: Provider: openai; HTTP Status: 401; Error Message: {\"object\":\"list\"}");
     }
   }
 }

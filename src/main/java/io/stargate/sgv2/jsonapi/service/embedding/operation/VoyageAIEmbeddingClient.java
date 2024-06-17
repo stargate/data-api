@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -9,6 +10,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
@@ -65,7 +67,35 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
-      return HttpResponseErrorMessageMapper.getDefaultException(response);
+      String errorMessage = getErrorMessage(response);
+      return HttpResponseErrorMessageMapper.mapToAPIException(
+          ProviderConstants.VOYAGE_AI, response, errorMessage);
+    }
+
+    /**
+     * Extract the error message from the response body. The example response body is:
+     *
+     * <pre>
+     * {"detail":"You have not yet added your payment method in the billing page and will have reduced rate limits of 3 RPM and 10K TPM.  Please add your payment method in the billing page (https://dash.voyageai.com/billing/payment-methods) to unlock our standard rate limits (https://docs.voyageai.com/docs/rate-limits).  Even with payment methods entered, the free tokens (50M tokens per model) will still apply."}
+     *
+     * {"detail":"Provided API key is invalid."}
+     * </pre>
+     *
+     * @param response The response body as a String.
+     * @return The error message extracted from the response body.
+     */
+    private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
+      // Get the whole response body
+      JsonNode rootNode = response.readEntity(JsonNode.class);
+      // Log the response body
+      logger.info(
+          String.format(
+              "Error response from embedding provider '%s': %s",
+              ProviderConstants.VOYAGE_AI, rootNode.toString()));
+      // Extract the "detail" node
+      JsonNode detailNode = rootNode.path("detail");
+      // Return the text of the "detail" node, or the full response body if it is missing
+      return detailNode.isMissingNode() ? rootNode.toString() : detailNode.toString();
     }
   }
 
