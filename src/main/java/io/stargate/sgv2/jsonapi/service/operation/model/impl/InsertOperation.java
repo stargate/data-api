@@ -31,7 +31,7 @@ public record InsertOperation(
     List<WritableShreddedDocument> documents,
     boolean ordered,
     boolean offlineMode,
-    boolean returnDocumentPositions)
+    boolean returnDocumentResponses)
     implements ModifyOperation {
   public record WritableDocAndPosition(int position, WritableShreddedDocument document)
       implements Comparable<WritableDocAndPosition> {
@@ -46,8 +46,8 @@ public record InsertOperation(
       CommandContext commandContext,
       List<WritableShreddedDocument> documents,
       boolean ordered,
-      boolean returnDocumentPositions) {
-    this(commandContext, documents, ordered, false, returnDocumentPositions);
+      boolean returnDocumentResponses) {
+    this(commandContext, documents, ordered, false, returnDocumentResponses);
   }
 
   public InsertOperation(CommandContext commandContext, WritableShreddedDocument document) {
@@ -110,7 +110,7 @@ public record InsertOperation(
         // if no failures reduce to the op page
         .collect()
         .in(
-            () -> new InsertOperationPage(returnDocumentPositions()),
+            () -> new InsertOperationPage(returnDocumentResponses()),
             (agg, in) -> {
               Throwable failure = in.getItem2();
               agg.aggregate(in.getItem1(), failure);
@@ -158,7 +158,7 @@ public record InsertOperation(
         // then reduce here
         .collect()
         .in(
-            () -> new InsertOperationPage(returnDocumentPositions()),
+            () -> new InsertOperationPage(returnDocumentResponses()),
             (agg, in) -> agg.aggregate(in.getItem1(), in.getItem2()))
 
         // use object identity to resolve to Supplier<CommandResult>

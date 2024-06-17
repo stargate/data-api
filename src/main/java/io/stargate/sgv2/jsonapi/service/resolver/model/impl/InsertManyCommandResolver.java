@@ -36,8 +36,8 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
     InsertManyCommand.Options options = command.options();
 
     boolean ordered = null != options && options.ordered();
-    boolean returnDocumentPositions = null != options && options.returnDocumentPositions();
+    boolean returnDocumentResponses = null != options && options.returnDocumentResponses();
 
-    return new InsertOperation(ctx, shreddedDocuments, ordered, false, returnDocumentPositions);
+    return new InsertOperation(ctx, shreddedDocuments, ordered, false, returnDocumentResponses);
   }
 }

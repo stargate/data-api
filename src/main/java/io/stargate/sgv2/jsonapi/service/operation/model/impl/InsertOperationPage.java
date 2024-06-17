@@ -24,14 +24,14 @@ import java.util.function.Supplier;
  * @param failedInsertions Documents that failed to be inserted, along with failure reason.
  */
 public record InsertOperationPage(
-    boolean returnDocumentPositions,
+    boolean returnDocumentResponses,
     List<InsertOperation.WritableDocAndPosition> successfulInsertions,
     List<Tuple2<InsertOperation.WritableDocAndPosition, Throwable>> failedInsertions)
     implements Supplier<CommandResult> {
 
   /** No-arg constructor, usually used for aggregation. */
-  public InsertOperationPage(boolean returnDocumentPositions) {
-    this(returnDocumentPositions, new ArrayList<>(), new ArrayList<>());
+  public InsertOperationPage(boolean returnDocumentResponses) {
+    this(returnDocumentResponses, new ArrayList<>(), new ArrayList<>());
   }
 
   /** {@inheritDoc} */
@@ -53,7 +53,7 @@ public record InsertOperationPage(
     }
 
     // Old style, simple ids:
-    if (!returnDocumentPositions()) {
+    if (!returnDocumentResponses()) {
       List<DocumentId> insertedIds =
           successfulInsertions.stream().map(docAndPos -> docAndPos.document().id()).toList();
       return new CommandResult(null, Map.of(CommandStatus.INSERTED_IDS, insertedIds), errors);

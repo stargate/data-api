@@ -41,8 +41,8 @@ public class OfflineInsertManyCommandResolver implements CommandResolver<Offline
     // Offline insert is always ordered
     final boolean ordered = true;
     // and no need to return document positions
-    final boolean returnDocumentPositions = false;
+    final boolean returnDocumentResponses = false;
 
-    return new InsertOperation(ctx, shreddedDocuments, ordered, true, returnDocumentPositions);
+    return new InsertOperation(ctx, shreddedDocuments, ordered, true, returnDocumentResponses);
   }
 }
