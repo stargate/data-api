@@ -10,10 +10,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -159,7 +156,27 @@ public record CreateCollectionCommand(
           } else {
             this.modelName = modelName;
           }
-          this.authentication = authentication;
+          if (authentication != null && !authentication.isEmpty()) {
+            Map<String, String> updatedAuth = new HashMap<>();
+            for (Map.Entry<String, String> userAuth : authentication.entrySet()) {
+              // Determine the full credential name based on the sharedKeyValue pair
+              // If the sharedKeyValue does not contain a dot or the part after the dot does not
+              // match the key, append the key to the sharedKeyValue with a dot. Otherwise, use the
+              // sharedKeyValue as is.
+              String sharedKeyValue = userAuth.getValue();
+              String credentialName =
+                  sharedKeyValue.lastIndexOf('.') <= 0
+                          || !sharedKeyValue
+                              .substring(sharedKeyValue.lastIndexOf('.') + 1)
+                              .equals(userAuth.getKey())
+                      ? sharedKeyValue + "." + userAuth.getKey()
+                      : sharedKeyValue;
+              updatedAuth.put(userAuth.getKey(), credentialName);
+            }
+            this.authentication = updatedAuth;
+          } else {
+            this.authentication = authentication;
+          }
           this.parameters = parameters;
         }
       }
