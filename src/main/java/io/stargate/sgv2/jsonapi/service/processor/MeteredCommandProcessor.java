@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
-import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
@@ -106,7 +105,6 @@ public class MeteredCommandProcessor {
       MDC.put("collection", commandContext.collection());
     }
     MDC.put("tenantId", dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
-    Log.error("abc");
     // start by resolving the command, get resolver
     return commandProcessor
         .processCommand(dataApiRequestInfo, commandContext, command)
