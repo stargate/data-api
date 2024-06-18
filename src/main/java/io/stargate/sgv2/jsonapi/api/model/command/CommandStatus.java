@@ -20,9 +20,10 @@ public enum CommandStatus {
   @JsonProperty("collections")
   EXISTING_COLLECTIONS,
   /**
-   * List of 2-element arrays of entries, one for each document that failed insertion (by {@code
-   * insertMany} command): first element 0-based position and second element the document id.
-   * Entries are ordered by position.
+   * List of response entries, one for each document we tried to insert with {@code insertMany}
+   * command. Each entry has 2 mandatory fields: {@code _id} (document id), and {@code status} (one
+   * of {@code OK}, {@code ERROR} or {@code SKIP}; {@code ERROR} entries also have {@code errorsIdx}
+   * field that refers to position of the error in the root level {@code errors} List.
    */
   @JsonProperty("documentResponses")
   DOCUMENT_RESPONSES,
