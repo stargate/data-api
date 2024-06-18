@@ -156,8 +156,9 @@ public record CreateCollectionCommand(
             if (modelName != null
                 && !modelName.equals(ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL)) {
               throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                  "'modelName' is not needed for provider %s",
-                  ProviderConstants.HUGGINGFACE_DEDICATED);
+                  "'modelName' is not needed for provider %s explicitly, only '%s' is accepted",
+                  ProviderConstants.HUGGINGFACE_DEDICATED,
+                  ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL);
             }
             this.modelName = ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL;
           } else {
