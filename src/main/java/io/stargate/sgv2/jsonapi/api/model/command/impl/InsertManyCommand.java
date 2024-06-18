@@ -42,7 +42,10 @@ public record InsertManyCommand(
       @Schema(
               description =
                   "When `true`, response will contain an additional field: 'documentResponses'"
-                      + " with is an array of Response Objects.",
+                      + " with is an array of Document Response Objects. Each Document Response Object"
+                      + " contains the `_id` of the document and the `status` of the operation (one of"
+                      + " `OK`, `ERROR` or `SKIPPED`). Additional `errorsIdx` field is present when the"
+                      + " status is `ERROR` and contains the index of the error in the main `errors` array.",
               defaultValue = "false")
           boolean returnDocumentResponses) {}
 }
