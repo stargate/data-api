@@ -378,33 +378,10 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
               userConfig.provider(), userAuth.getKey());
         }
 
-        // Get the full credential name by either appending the key(no dot) to the value or using
-        // the value(has dot)
-        String sharedKeyValue = userAuth.getValue();
-        String credentialName =
-            sharedKeyValue.lastIndexOf('.') <= 0
-                ? sharedKeyValue + "." + userAuth.getKey()
-                : sharedKeyValue;
-
-        // If the value contains a period character, validate the key name
-        if (sharedKeyValue.lastIndexOf('.') > 0) {
-          String keyName = sharedKeyValue.substring(sharedKeyValue.lastIndexOf('.') + 1);
-          if (!keyName.equals(userAuth.getKey())) {
-            // If the key name does not match, throw an exception
-            throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-                String.format(
-                    "Unexpected credential name '%s'. The format should be '%s' or '%s'.",
-                    sharedKeyValue,
-                    sharedKeyValue.substring(0, sharedKeyValue.lastIndexOf('.')),
-                    sharedKeyValue.substring(0, sharedKeyValue.lastIndexOf('.'))
-                        + "."
-                        + userAuth.getKey()));
-          }
-        }
-
         // Validate the credential name from secret service
+        // already append the .providerKey to the value in CreateCollectionCommand
         if (operationsConfig.enableEmbeddingGateway()) {
-          validateCredentials.validate(userConfig.provider(), credentialName);
+          validateCredentials.validate(userConfig.provider(), userAuth.getValue());
         }
       }
     }

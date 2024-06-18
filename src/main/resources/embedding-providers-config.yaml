@@ -219,6 +219,7 @@ stargate:
                   help: "If set to false, text that exceeds the token limit causes the request to fail. The default value is true."
         # OUT OF SCOPE FOR INITIAL PREVIEW
         cohere:
+          # see https://docs.cohere.com/reference/embed
           display-name: Cohere
           enabled: false
           url: https://api.cohere.ai/v1/
@@ -371,7 +372,7 @@ stargate:
         # In addition, implementation only supports 1-entry vectorization.
         upstageAI:
           # see https://developers.upstage.ai/docs/apis/embeddings
-          display-name: Upstage AI
+          display-name: Upstage
           enabled: true
           url: https://api.upstage.ai/v1/solar/embeddings
           supported-authentications:

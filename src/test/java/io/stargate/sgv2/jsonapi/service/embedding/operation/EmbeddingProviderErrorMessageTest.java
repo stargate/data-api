@@ -48,7 +48,7 @@ public class EmbeddingProviderErrorMessageTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_RATE_LIMITED)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The configured Embedding Provider for this collection is rate limiting your requests: Error Code : 429 response description : Too Many Requests");
+              "The Embedding Provider rate limited the request: Provider: nvidia; HTTP Status: 429; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -72,10 +72,10 @@ public class EmbeddingProviderErrorMessageTest {
               .getFailure();
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_REQUEST)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_CLIENT_ERROR)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The configured Embedding Provider for this collection refused to process the request, response was: Error Code : 400 response description : Bad Request");
+              "The Embedding Provider returned a HTTP client error: Provider: nvidia; HTTP Status: 400; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -102,7 +102,7 @@ public class EmbeddingProviderErrorMessageTest {
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_SERVER_ERROR)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The configured Embedding Provider for this collection encountered an error processing the request: Error Code : 503 response description : Service Unavailable");
+              "The Embedding Provider returned a HTTP server error: Provider: nvidia; HTTP Status: 503; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -127,7 +127,9 @@ public class EmbeddingProviderErrorMessageTest {
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
-          .hasFieldOrPropertyWithValue("message", "The configured Embedding Provider timed out.");
+          .hasFieldOrPropertyWithValue(
+              "message",
+              "The Embedding Provider timed out: Provider: nvidia; HTTP Status: 408; Error Message: {\"object\":\"list\"}");
     }
 
     @Test
@@ -175,10 +177,11 @@ public class EmbeddingProviderErrorMessageTest {
               .getFailure();
       assertThat(exception.getCause())
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The configured Embedding Provider for this collection return an invalid response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'");
+              "The Embedding Provider returned an unexpected response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'. The response body is: '<object>list</object>'.");
     }
 
     @Test
@@ -202,10 +205,11 @@ public class EmbeddingProviderErrorMessageTest {
               .getFailure();
       assertThat(exception.getCause())
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The configured Embedding Provider for this collection return an invalid response: No JSON body from the embedding provider");
+              "The Embedding Provider returned an unexpected response: No response body from the embedding provider");
     }
 
     @Test
