@@ -12,6 +12,16 @@
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.11...v1.0.12)
 
+**Highlights:**
+
+- Upstage Embedding provider display name, change from 'Upstage AI' to 'Upstage'
+- logging improvement(add namespace and collection)
+- error messages improvement
+   - improve SHRED_DOC_KEY_NAME_VIOLATION error code message "Document field name invalid"
+   - improve Data API vectorize error messages
+- fix vectorize integration credentials bug regarding the table comment
+
+
 **Closed issues:**
 
 - Better handling for multi part credentials in createCollection [\#1142](https://github.com/stargate/data-api/issues/1142)
