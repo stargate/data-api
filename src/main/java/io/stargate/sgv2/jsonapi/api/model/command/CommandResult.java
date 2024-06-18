@@ -46,7 +46,7 @@ public record CommandResult(
                   nullable = true)
             })
         Map<CommandStatus, Object> status,
-    @Schema(nullable = true) List<Error> errors) {
+    @JsonInclude(JsonInclude.Include.NON_EMPTY) @Schema(nullable = true) List<Error> errors) {
 
   /**
    * Constructor for only specifying the {@link MultiResponseData}.

@@ -4,16 +4,7 @@ import static io.restassured.RestAssured.given;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
-import static org.hamcrest.Matchers.any;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,8 +21,10 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterEach;
@@ -48,6 +41,9 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase {
   private final ObjectMapper MAPPER = new ObjectMapper();
+
+  private static final Pattern UUID_REGEX =
+      Pattern.compile("[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}");
 
   @AfterEach
   public void cleanUpData() {
@@ -1324,14 +1320,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           {
             "insertMany": {
               "documents": [
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc5",
-                  "username": "user5"
-                }
+                { "_id": "doc4", "username": "user4" },
+                { "_id": "doc5", "username": "user5" }
               ],
               "options" : {
                 "ordered" : true
@@ -1348,56 +1338,31 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds", contains("doc4", "doc5"))
+          .body("status.insertedIds", is(Arrays.asList("doc4", "doc5")))
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
 
-      json =
-          """
-          {
-            "countDocuments": {
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.count", is(2))
-          .body("errors", is(nullValue()));
+      verifyDocCount(2);
     }
 
     @Test
-    public void orderedDuplicateIds() {
+    public void orderedReturnResponses() {
+      final String UUID_KEY = UUID.randomUUID().toString();
       String json =
-          """
-          {
-            "insertMany": {
-              "documents": [
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc4",
-                  "username": "user4_duplicate"
-                },
-                {
-                  "_id": "doc5",
-                  "username": "user5"
+              """
+              {
+                "insertMany": {
+                  "documents": [
+                    { "_id": "doc1", "username": "user1" },
+                    { "_id": {"$uuid":"%s"}, "username": "user2" }
+                  ],
+                  "options" : {
+                    "ordered": true, "returnDocumentResponses": true
+                  }
                 }
-              ],
-              "options" : {
-                "ordered" : true
               }
-            }
-          }
-          """;
+              """
+              .formatted(UUID_KEY);
 
       given()
           .headers(getHeaders())
@@ -1407,72 +1372,55 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds", contains("doc4"))
           .body("data", is(nullValue()))
-          .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"))
-          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
-
-      json =
-          """
-          {
-            "countDocuments": {
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.count", is(1))
-          .body("errors", is(nullValue()));
-    }
-
-    @Test
-    public void orderedDuplicateDocumentNoNamespace() {
-      String json =
-          """
-          {
-            "insertMany": {
-              "documents": [
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc5",
-                  "username": "user5"
-                }
-              ],
-              "options" : {
-                "ordered" : true
-              }
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, "something_else", collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.insertedIds", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()))
           .body(
-              "errors[0].message",
-              startsWith("The provided namespace does not exist: something_else"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              "status.documentResponses",
+              is(
+                  Arrays.asList(
+                      Map.of("status", "OK", "_id", "doc1"),
+                      Map.of("status", "OK", "_id", Map.of("$uuid", UUID_KEY)))));
+
+      verifyDocCount(2);
+    }
+
+    @Test
+    public void orderedNoDocIdReturnResponses() {
+      String json =
+          """
+                  {
+                    "insertMany": {
+                      "documents": [
+                        { "username": "user1" },
+                        { "username": "user2" }
+                      ],
+                      "options" : {
+                        "ordered": true, "returnDocumentResponses": true
+                      }
+                    }
+                  }
+                  """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("status.insertedIds", is(nullValue()))
+          .body("status.failedDocuments", is(nullValue()))
+          // now tricky part: [0, <UUID>] check
+          .body("status.documentResponses", hasSize(2))
+          .body("status.documentResponses[0].status", is("OK"))
+          .body("status.documentResponses[0]._id", matchesPattern(UUID_REGEX))
+          .body("status.documentResponses[1].status", is("OK"))
+          .body("status.documentResponses[1]._id", matchesPattern(UUID_REGEX));
+
+      verifyDocCount(2);
     }
 
     @Test
@@ -1482,14 +1430,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           {
             "insertMany": {
               "documents": [
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc5",
-                  "username": "user5"
-                }
+                { "_id": "doc4", "username": "user4" },
+                { "_id": "doc5", "username": "user5" }
               ]
             }
           }
@@ -1507,24 +1449,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()));
 
-      json =
-          """
-          {
-            "countDocuments": {
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.count", is(2))
-          .body("errors", is(nullValue()));
+      verifyDocCount(2);
     }
 
     @Test
@@ -1534,18 +1459,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           {
             "insertMany": {
               "documents": [
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc4",
-                  "username": "user4"
-                },
-                {
-                  "_id": "doc5",
-                  "username": "user5"
-                }
+                { "_id": "doc4",  "username": "user4" },
+                { "_id": "doc4", "username": "user4" },
+                { "_id": "doc5", "username": "user5" }
               ],
               "options": { "ordered": false }
             }
@@ -1565,24 +1481,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
 
-      json =
-          """
-          {
-            "countDocuments": {
-            }
-          }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.count", is(2))
-          .body("errors", is(nullValue()));
+      verifyDocCount(2);
     }
 
     @Test
@@ -1861,6 +1760,167 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   @Order(7)
   class InsertManyFails {
     @Test
+    public void orderedFailOnDups() {
+      String json =
+          """
+              {
+                "insertMany": {
+                  "documents": [
+                    { "_id": "doc4", "username": "user4"  },
+                    { "_id": "doc4", "username": "user4_duplicate" },
+                    { "_id": "doc5", "username": "user5"
+                    }
+                  ],
+                  "options" : {  "ordered" : true }
+                }
+              }
+              """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds", is(Arrays.asList("doc4")))
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"));
+
+      verifyDocCount(1);
+    }
+
+    @Test
+    public void orderedFailOnDupsReturnPositions() {
+      String json =
+          """
+                  {
+                    "insertMany": {
+                      "documents": [
+                        { "_id": "doc1", "username": "userA"  },
+                        { "_id": "doc1", "username": "userB" },
+                        { "_id": "doc2", "username": "userC"
+                        }
+                      ],
+                      "options" : {  "ordered": true, "returnDocumentResponses": true }
+                    }
+                  }
+                  """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].message", is("Document already exists with the given _id"))
+          .body("insertedIds", is(nullValue()))
+          .body("status.documentResponses", hasSize(3))
+          .body("status.documentResponses[0]", is(Map.of("_id", "doc1", "status", "OK")))
+          .body(
+              "status.documentResponses[1]",
+              is(Map.of("_id", "doc1", "status", "ERROR", "errorsIdx", 0)))
+          .body("status.documentResponses[2]", is(Map.of("_id", "doc2", "status", "SKIPPED")));
+
+      verifyDocCount(1);
+    }
+
+    @Test
+    public void unorderedFailOnDups() {
+      String json =
+          """
+                  {
+                    "insertMany": {
+                      "documents": [
+                        { "_id": "doc4", "username": "user4" },
+                        { "_id": "doc4", "username": "user4_duplicate" },
+                        { "_id": "doc5", "username": "user5" },
+                        { "_id": "doc4", "username": "user4_duplicate_2" },
+                        { "_id": "doc5", "username": "user5_duplicate" },
+                        { "_id": "doc4", "username": "user4_duplicate_3" }
+                      ],
+                      "options" : { "ordered" : false }
+                    }
+                  }
+                  """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          // Insertions can occur in any order, so we can't predict which is first
+          // within the input list
+          .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
+          .body("status.insertedIds", hasSize(2))
+          .body("data", is(nullValue()))
+          // We have 4 failures, reported in order of input documents -- but note that
+          // inserts may be executed in different order! This means that the very first
+          // Document to insert may fail as duplicate if it was executed after another
+          // document in the list with that id
+          .body("errors", hasSize(4))
+          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].message", startsWith("Failed to insert document with _id"))
+          .body("errors[1].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[1].exceptionClass", is("JsonApiException"))
+          .body("errors[1].message", startsWith("Failed to insert document with _id"))
+          .body("errors[2].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[2].exceptionClass", is("JsonApiException"))
+          .body("errors[2].message", startsWith("Failed to insert document with _id"))
+          .body("errors[3].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[3].exceptionClass", is("JsonApiException"))
+          .body("errors[3].message", startsWith("Failed to insert document with _id"));
+
+      verifyDocCount(2);
+    }
+
+    @Test
+    public void orderedFailBadNamespace() {
+      String json =
+          """
+              {
+                "insertMany": {
+                  "documents": [
+                    { "_id": "doc4", "username": "user4" },
+                    { "_id": "doc5", "username": "user5" }
+                  ],
+                  "options" : { "ordered" : true  }
+                }
+              }
+              """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, "something_else", collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              startsWith("The provided namespace does not exist: something_else"));
+    }
+
+    @Test
     public void insertManyWithTooManyDocuments() {
       ArrayNode docs = MAPPER.createArrayNode();
       final int MAX_DOCS = OperationsConfig.DEFAULT_MAX_DOCUMENT_INSERT_COUNT;
@@ -1897,6 +1957,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
@@ -1924,6 +1985,19 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     public void checkInsertManyMetrics() {
       InsertIntegrationTest.super.checkMetrics("InsertManyCommand");
     }
+  }
+
+  private void verifyDocCount(int expDocs) {
+    given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body(" { \"countDocuments\": { } }")
+        .when()
+        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+        .then()
+        .statusCode(200)
+        .body("status.count", is(expDocs))
+        .body("errors", is(nullValue()));
   }
 
   private JsonNode createBigDoc(String docId, int minDocSize) {
