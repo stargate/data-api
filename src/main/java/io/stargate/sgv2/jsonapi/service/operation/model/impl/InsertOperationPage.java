@@ -88,16 +88,19 @@ public record InsertOperationPage(
       InsertOperation.WritableDocAndPosition docAndPos = failed.getItem1();
       Throwable throwable = failed.getItem2();
       CommandResult.Error error = getError(throwable);
+
+      // We want to avoid adding the same error multiple times, so we keep track of the index:
+      // either one exists, use it; or if not, add it and use the new index.
       int errorIdx = errors.indexOf(error);
-      if (errorIdx < 0) { // not yet added, add
-        errorIdx = errors.size();
+      if (errorIdx < 0) { // new non-dup error; add it
+        errorIdx = errors.size(); // will be appended at the end
         errors.add(error);
       }
-      int idx = docAndPos.position();
-      results[idx] =
+      results[docAndPos.position()] =
           new InsertionResult(docAndPos.document().id(), InsertionStatus.ERROR, errorIdx);
     }
-    // And third, if any, skipped
+    // And third, if any, skipped insertions; those that were not attempted (f.ex due
+    // to failure for ordered inserts)
     for (int i = 0; i < results.length; i++) {
       if (null == results[i]) {
         results[i] =
