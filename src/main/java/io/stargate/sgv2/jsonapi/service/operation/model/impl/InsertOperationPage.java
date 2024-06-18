@@ -1,16 +1,16 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -25,7 +25,7 @@ import java.util.function.Supplier;
  * @param failedInsertions Documents that failed to be inserted, along with failure reason.
  */
 public record InsertOperationPage(
-    int insertCount,
+    List<InsertOperation.WritableDocAndPosition> allAttemptedInsertions,
     boolean returnDocumentResponses,
     List<InsertOperation.WritableDocAndPosition> successfulInsertions,
     List<Tuple2<InsertOperation.WritableDocAndPosition, Throwable>> failedInsertions)
@@ -37,11 +37,14 @@ public record InsertOperationPage(
   }
 
   @JsonPropertyOrder({"_id", "status", "errorsIdx"})
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   record InsertionResult(DocumentId _id, InsertionStatus status, Integer errorsIdx) {}
 
   /** No-arg constructor, usually used for aggregation. */
-  public InsertOperationPage(int insertCount, boolean returnDocumentResponses) {
-    this(insertCount, returnDocumentResponses, new ArrayList<>(), new ArrayList<>());
+  public InsertOperationPage(
+      List<InsertOperation.WritableDocAndPosition> allAttemptedInsertions,
+      boolean returnDocumentResponses) {
+    this(allAttemptedInsertions, returnDocumentResponses, new ArrayList<>(), new ArrayList<>());
   }
 
   /** {@inheritDoc} */
@@ -71,51 +74,50 @@ public record InsertOperationPage(
       return new CommandResult(null, Map.of(CommandStatus.INSERTED_IDS, insertedIds), errors);
     }
 
-    // New style output
+    // New style output: detailed responses.
+    InsertionResult[] results = new InsertionResult[allAttemptedInsertions().size()];
+    List<CommandResult.Error> errors = new ArrayList<>();
 
-    List<CommandResult.Error> errors;
-    if (failedInsertions().isEmpty()) {
-      errors = null;
-    } else {
-      Collections.sort(
-          failedInsertions, Comparator.comparing(tuple -> tuple.getItem1().position()));
-      errors =
-          failedInsertions.stream()
-              .map(tuple -> getError(tuple.getItem1().document().id(), tuple.getItem2()))
-              .toList();
+    // Results array filled in order: first successful insertions
+    for (InsertOperation.WritableDocAndPosition docAndPos : successfulInsertions) {
+      results[docAndPos.position()] =
+          new InsertionResult(docAndPos.document().id(), InsertionStatus.OK, null);
     }
-    // But with positions added
-    List<Object[]> insertedDocs =
-        successfulInsertions.stream().map(InsertOperationPage::positionAndId).toList();
-    if (errors != null) {
-      List<Object[]> failedDocs =
-          failedInsertions.stream().map(tuple -> positionAndId(tuple.getItem1())).toList();
-      return new CommandResult(
-          null,
-          Map.of(
-              CommandStatus.INSERTED_DOCUMENTS,
-              insertedDocs,
-              CommandStatus.FAILED_DOCUMENTS,
-              failedDocs),
-          errors);
+    // Second: failed insertions
+    for (Tuple2<InsertOperation.WritableDocAndPosition, Throwable> failed : failedInsertions) {
+      InsertOperation.WritableDocAndPosition docAndPos = failed.getItem1();
+      Throwable throwable = failed.getItem2();
+      CommandResult.Error error = getError(throwable);
+      int errorIdx = errors.indexOf(error);
+      if (errorIdx < 0) { // not yet added, add
+        errorIdx = errors.size();
+        errors.add(error);
+      }
+      int idx = docAndPos.position();
+      results[idx] =
+          new InsertionResult(docAndPos.document().id(), InsertionStatus.ERROR, errorIdx);
     }
-    return new CommandResult(null, Map.of(CommandStatus.INSERTED_DOCUMENTS, insertedDocs), null);
-  }
-
-  private static Object[] positionAndId(InsertOperation.WritableDocAndPosition docAndPos) {
-    return new Object[] {docAndPos.position(), docAndPos.document().id()};
+    // And third, if any, skipped
+    for (int i = 0; i < results.length; i++) {
+      if (null == results[i]) {
+        results[i] =
+            new InsertionResult(
+                allAttemptedInsertions.get(i).document().id(), InsertionStatus.SKIPPED, null);
+      }
+    }
+    return new CommandResult(
+        null, Map.of(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results)), errors);
   }
 
   private static CommandResult.Error getError(DocumentId documentId, Throwable throwable) {
     String message =
         "Failed to insert document with _id %s: %s".formatted(documentId, throwable.getMessage());
-
-    Map<String, Object> fields = new HashMap<>();
-    fields.put("exceptionClass", throwable.getClass().getSimpleName());
-    if (throwable instanceof JsonApiException jae) {
-      fields.put("errorCode", jae.getErrorCode().name());
-    }
     return ThrowableToErrorMapper.getMapperWithMessageFunction().apply(throwable, message);
+  }
+
+  private static CommandResult.Error getError(Throwable throwable) {
+    return ThrowableToErrorMapper.getMapperWithMessageFunction()
+        .apply(throwable, throwable.getMessage());
   }
 
   /**

@@ -24,15 +24,8 @@ public enum CommandStatus {
    * insertMany} command): first element 0-based position and second element the document id.
    * Entries are ordered by position.
    */
-  @JsonProperty("failedDocuments")
-  FAILED_DOCUMENTS,
-  /**
-   * List of 2-element arrays of entries, one for each document successfully inserted (by {@code
-   * insertMany} command): first element 0-based position and second element the document id.
-   * Entries are ordered by position.
-   */
-  @JsonProperty("insertedDocuments")
-  INSERTED_DOCUMENTS,
+  @JsonProperty("documentResponses")
+  DOCUMENT_RESPONSES,
   /** The element has the list of inserted ids */
   @JsonProperty("insertedIds")
   INSERTED_IDS,
