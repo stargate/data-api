@@ -1346,7 +1346,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     }
 
     @Test
-    public void orderedReturnPositions() {
+    public void orderedReturnResponses() {
       final String UUID_KEY = UUID.randomUUID().toString();
       String json =
               """
@@ -1374,19 +1374,18 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .statusCode(200)
           .body("data", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("status.insertedIds", is(nullValue()))
-          .body("status.failedDocuments", is(nullValue()))
           .body(
-              "status.insertedDocuments",
+              "status.documentResponses",
               is(
                   Arrays.asList(
-                      Arrays.asList(0, "doc1"), Arrays.asList(1, Map.of("$uuid", UUID_KEY)))));
+                      Map.of("status", "OK", "_id", "doc1"),
+                      Map.of("status", "OK", "_id", Map.of("$uuid", UUID_KEY)))));
 
       verifyDocCount(2);
     }
 
     @Test
-    public void orderedNoDocIdReturnPositions() {
+    public void orderedNoDocIdReturnResponses() {
       String json =
           """
                   {
@@ -1415,13 +1414,11 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("status.insertedIds", is(nullValue()))
           .body("status.failedDocuments", is(nullValue()))
           // now tricky part: [0, <UUID>] check
-          .body("status.insertedDocuments", hasSize(2))
-          .body("status.insertedDocuments[0]", hasSize(2))
-          .body("status.insertedDocuments[0][0]", is(0))
-          .body("status.insertedDocuments[0][1]", matchesPattern(UUID_REGEX))
-          .body("status.insertedDocuments[1]", hasSize(2))
-          .body("status.insertedDocuments[1][0]", is(1))
-          .body("status.insertedDocuments[1][1]", matchesPattern(UUID_REGEX));
+          .body("status.documentResponses", hasSize(2))
+          .body("status.documentResponses[0].status", is("OK"))
+          .body("status.documentResponses[0]._id", matchesPattern(UUID_REGEX))
+          .body("status.documentResponses[1].status", is("OK"))
+          .body("status.documentResponses[1]._id", matchesPattern(UUID_REGEX));
 
       verifyDocCount(2);
     }
