@@ -263,7 +263,7 @@ public class InsertOperationTest extends OperationTestBase {
       CommandContext commandContext =
           createCommandContextWithCommandName("jsonDocsWrittenInsertManyCommand");
       Supplier<CommandResult> execute =
-          new InsertOperation(commandContext, List.of(shredDocument1, shredDocument2), true)
+          new InsertOperation(commandContext, List.of(shredDocument1, shredDocument2), true, false)
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -454,7 +454,7 @@ public class InsertOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertOperation(
-                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), false)
+                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), false, false)
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -531,7 +531,7 @@ public class InsertOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertOperation(
-                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), true)
+                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), true, false)
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -616,7 +616,7 @@ public class InsertOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertOperation(
-                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), true)
+                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), true, false)
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -702,7 +702,7 @@ public class InsertOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertOperation(
-                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), false)
+                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), false, false)
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -790,7 +790,7 @@ public class InsertOperationTest extends OperationTestBase {
 
       Supplier<CommandResult> execute =
           new InsertOperation(
-                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), false)
+                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), false, false)
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
