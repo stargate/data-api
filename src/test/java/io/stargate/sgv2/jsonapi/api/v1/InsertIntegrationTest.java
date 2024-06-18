@@ -1795,7 +1795,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     }
 
     @Test
-    public void orderedFailOnDupsReturnPositions() {
+    public void orderedFailOnDupsReturnDocResponses() {
       String json =
           """
                   {
@@ -1810,6 +1810,47 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
                     }
                   }
                   """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].message", is("Document already exists with the given _id"))
+          .body("insertedIds", is(nullValue()))
+          .body("status.documentResponses", hasSize(3))
+          .body("status.documentResponses[0]", is(Map.of("_id", "doc1", "status", "OK")))
+          .body(
+              "status.documentResponses[1]",
+              is(Map.of("_id", "doc1", "status", "ERROR", "errorsIdx", 0)))
+          .body("status.documentResponses[2]", is(Map.of("_id", "doc2", "status", "SKIPPED")));
+
+      verifyDocCount(1);
+    }
+
+    @Test
+    public void orderedFailOnBadKeyReturnDocResponses() {
+      String json =
+          """
+                      {
+                        "insertMany": {
+                          "documents": [
+                            { "_id": "doc1", "username": "userA"  },
+                            { "_id": "doc2", "username's": "userB" },
+                            { "_id": "doc3", "username": "userC"
+                            }
+                          ],
+                          "options" : {  "ordered": true, "returnDocumentResponses": true }
+                        }
+                      }
+                      """;
 
       given()
           .headers(getHeaders())
