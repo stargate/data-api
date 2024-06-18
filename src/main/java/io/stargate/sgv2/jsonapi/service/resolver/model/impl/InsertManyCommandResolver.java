@@ -32,11 +32,9 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
     final List<WritableShreddedDocument> shreddedDocuments =
         command.documents().stream().map(doc -> shredder.shred(ctx, doc, null)).toList();
 
-    // resolve ordered
     InsertManyCommand.Options options = command.options();
-
-    boolean ordered = null != options && options.ordered();
-    boolean returnDocumentResponses = null != options && options.returnDocumentResponses();
+    boolean ordered = (null != options) && options.ordered();
+    boolean returnDocumentResponses = (null != options) && options.returnDocumentResponses();
 
     return new InsertOperation(ctx, shreddedDocuments, ordered, false, returnDocumentResponses);
   }

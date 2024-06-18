@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.smallrye.mutiny.tuples.Tuple2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
@@ -24,22 +25,54 @@ import java.util.function.Supplier;
  * @param failedInsertions Documents that failed to be inserted, along with failure reason.
  */
 public record InsertOperationPage(
+    int insertCount,
     boolean returnDocumentResponses,
     List<InsertOperation.WritableDocAndPosition> successfulInsertions,
     List<Tuple2<InsertOperation.WritableDocAndPosition, Throwable>> failedInsertions)
     implements Supplier<CommandResult> {
+  enum InsertionStatus {
+    OK,
+    ERROR,
+    SKIPPED
+  }
+
+  @JsonPropertyOrder({"_id", "status", "errorsIdx"})
+  record InsertionResult(DocumentId _id, InsertionStatus status, Integer errorsIdx) {}
 
   /** No-arg constructor, usually used for aggregation. */
-  public InsertOperationPage(boolean returnDocumentResponses) {
-    this(returnDocumentResponses, new ArrayList<>(), new ArrayList<>());
+  public InsertOperationPage(int insertCount, boolean returnDocumentResponses) {
+    this(insertCount, returnDocumentResponses, new ArrayList<>(), new ArrayList<>());
   }
 
   /** {@inheritDoc} */
   @Override
   public CommandResult get() {
-    // Ensure insertions are in the input order (wrt unordered insertions themselves)
+    // Ensure insertions and errors are in the input order (wrt unordered insertions),
+    // regardless of output format
     Collections.sort(successfulInsertions);
-    // Also ensure failures are similarly in the input order
+    if (!failedInsertions().isEmpty()) {
+      Collections.sort(
+          failedInsertions, Comparator.comparing(tuple -> tuple.getItem1().position()));
+    }
+
+    if (!returnDocumentResponses()) { // legacy output, limited to ids, error messages
+      List<CommandResult.Error> errors;
+      if (failedInsertions().isEmpty()) {
+        errors = null;
+      } else {
+        errors =
+            failedInsertions.stream()
+                .map(tuple -> getError(tuple.getItem1().document().id(), tuple.getItem2()))
+                .toList();
+      }
+      // Old style, simple ids:
+      List<DocumentId> insertedIds =
+          successfulInsertions.stream().map(docAndPos -> docAndPos.document().id()).toList();
+      return new CommandResult(null, Map.of(CommandStatus.INSERTED_IDS, insertedIds), errors);
+    }
+
+    // New style output
+
     List<CommandResult.Error> errors;
     if (failedInsertions().isEmpty()) {
       errors = null;
@@ -50,13 +83,6 @@ public record InsertOperationPage(
           failedInsertions.stream()
               .map(tuple -> getError(tuple.getItem1().document().id(), tuple.getItem2()))
               .toList();
-    }
-
-    // Old style, simple ids:
-    if (!returnDocumentResponses()) {
-      List<DocumentId> insertedIds =
-          successfulInsertions.stream().map(docAndPos -> docAndPos.document().id()).toList();
-      return new CommandResult(null, Map.of(CommandStatus.INSERTED_IDS, insertedIds), errors);
     }
     // But with positions added
     List<Object[]> insertedDocs =
