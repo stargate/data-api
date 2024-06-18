@@ -1,8 +1,51 @@
 # Changelog
 
+## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.12...HEAD)
+
+**Closed issues:**
+
+- NullPointerException from the multi credential supports [\#1172](https://github.com/stargate/data-api/issues/1172)
+
+## [v1.0.12](https://github.com/stargate/data-api/tree/v1.0.12) (2024-06-17)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.11...v1.0.12)
+
+**Highlights:**
+
+- Upstage Embedding provider display name, change from 'Upstage AI' to 'Upstage'
+- logging improvement(add namespace and collection)
+- error messages improvement
+   - improve SHRED_DOC_KEY_NAME_VIOLATION error code message "Document field name invalid"
+   - improve Data API vectorize error messages
+- fix vectorize integration credentials bug regarding the table comment
+
+
+**Closed issues:**
+
+- Better handling for multi part credentials in createCollection [\#1142](https://github.com/stargate/data-api/issues/1142)
+
+**Merged pull requests:**
+
+- Add updated auth to table comment [\#1177](https://github.com/stargate/data-api/pull/1177) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add namespace and collection mdc log as needed [\#1176](https://github.com/stargate/data-api/pull/1176) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- upstage displayName and huggingFaceDedicated modelName small fix [\#1175](https://github.com/stargate/data-api/pull/1175) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Improve message for ErrorCode.SHRED\_DOC\_KEY\_NAME\_VIOLATION [\#1171](https://github.com/stargate/data-api/pull/1171) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#1166](https://github.com/stargate/data-api/pull/1166) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Improve Error Messages from Embedding Providers [\#1159](https://github.com/stargate/data-api/pull/1159) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+
 ## [v1.0.11](https://github.com/stargate/data-api/tree/v1.0.11) (2024-06-13)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.10...v1.0.11)
+
+**Highlights:**
+
+- Support includeSortVector option for find and findOne command (API addition)
+- Improvements to vectorize feature
+  - Adds HuggingFace dedicated provider support
+  - Exclude $vector and $vectorize from default projection 
+  - OpenAI provider - support for organization id and project id in request header
 
 **Closed issues:**
 
@@ -34,6 +77,10 @@
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.9...v1.0.10)
 
+**Highlights:**
+
+- Support for running Data API with DSE 6.9 and HCD
+
 **Closed issues:**
 
 - $vectorize: Misleading error when `authentication.providerKey` not set [\#1124](https://github.com/stargate/data-api/issues/1124)
@@ -55,6 +102,10 @@
 ## [v1.0.9](https://github.com/stargate/data-api/tree/v1.0.9) (2024-05-29)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.8...v1.0.9)
+
+**Highlights:**
+
+- Multiple bug fixes and minor improvements to vectorize feature
 
 **Closed issues:**
 
@@ -92,6 +143,16 @@
 ## [v1.0.8](https://github.com/stargate/data-api/tree/v1.0.8) (2024-05-16)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.7...v1.0.8)
+
+**Highlights:**
+
+- Add multiple embedding providers for vectorize feature:
+  - Vertex AI
+  - Jina AI
+  - Mistral
+  - Upstage AI
+  - VoyageAPI
+  - Huggingface
 
 **Closed issues:**
 
@@ -135,6 +196,11 @@
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.6...v1.0.7)
 
+**Highlights:**
+
+- Add Azure OpenAI provider for vectorize feature
+- Various changes to allow Data API code to be reused by other applications (No impact to Astra)
+
 **Closed issues:**
 
 - Querying by string \_id matches ObjectId \_id [\#1045](https://github.com/stargate/data-api/issues/1045)
@@ -175,6 +241,11 @@
 ## [v1.0.6](https://github.com/stargate/data-api/tree/v1.0.6) (2024-04-17)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.5...v1.0.6)
+
+**Highlights:**
+
+- Internal refactoring and minor bug fixes 
+- Various changes to allow Data API code to run without a Stargate coordinator (No impact to Astra)
 
 **Implemented enhancements:**
 
