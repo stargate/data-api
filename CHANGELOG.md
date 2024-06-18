@@ -1,5 +1,40 @@
 # Changelog
 
+## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.12...HEAD)
+
+**Closed issues:**
+
+- NullPointerException from the multi credential supports [\#1172](https://github.com/stargate/data-api/issues/1172)
+
+## [v1.0.12](https://github.com/stargate/data-api/tree/v1.0.12) (2024-06-17)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.11...v1.0.12)
+
+**Highlights:**
+
+- Upstage Embedding provider display name, change from 'Upstage AI' to 'Upstage'
+- logging improvement(add namespace and collection)
+- error messages improvement
+   - improve SHRED_DOC_KEY_NAME_VIOLATION error code message "Document field name invalid"
+   - improve Data API vectorize error messages
+- fix vectorize integration credentials bug regarding the table comment
+
+
+**Closed issues:**
+
+- Better handling for multi part credentials in createCollection [\#1142](https://github.com/stargate/data-api/issues/1142)
+
+**Merged pull requests:**
+
+- Add updated auth to table comment [\#1177](https://github.com/stargate/data-api/pull/1177) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add namespace and collection mdc log as needed [\#1176](https://github.com/stargate/data-api/pull/1176) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- upstage displayName and huggingFaceDedicated modelName small fix [\#1175](https://github.com/stargate/data-api/pull/1175) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Improve message for ErrorCode.SHRED\_DOC\_KEY\_NAME\_VIOLATION [\#1171](https://github.com/stargate/data-api/pull/1171) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#1166](https://github.com/stargate/data-api/pull/1166) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Improve Error Messages from Embedding Providers [\#1159](https://github.com/stargate/data-api/pull/1159) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+
 ## [v1.0.11](https://github.com/stargate/data-api/tree/v1.0.11) (2024-06-13)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.10...v1.0.11)

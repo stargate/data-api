@@ -27,20 +27,11 @@ public enum ErrorCode {
       "The replace document and document resolved using filter have different _id"),
 
   /** Embedding provider service error codes. */
-  EMBEDDING_PROVIDER_SERVER_ERROR(
-      "The configured Embedding Provider for this collection encountered an error processing the request"),
-  EMBEDDING_PROVIDER_RATE_LIMITED(
-      "The configured Embedding Provider for this collection is rate limiting your requests"),
-
-  EMBEDDING_PROVIDER_TIMEOUT("The configured Embedding Provider timed out."),
-  EMBEDDING_PROVIDER_UNAVAILBLE(
-      "The configured Embedding Provider for this collection could not be contacted."),
-
-  EMBEDDING_PROVIDER_INVALID_REQUEST(
-      "The configured Embedding Provider for this collection refused to process the request, response was"),
-
-  EMBEDDING_PROVIDER_INVALID_RESPONSE(
-      "The configured Embedding Provider for this collection return an invalid response"),
+  EMBEDDING_PROVIDER_CLIENT_ERROR("The Embedding Provider returned a HTTP client error"),
+  EMBEDDING_PROVIDER_SERVER_ERROR("The Embedding Provider returned a HTTP server error"),
+  EMBEDDING_PROVIDER_RATE_LIMITED("The Embedding Provider rate limited the request"),
+  EMBEDDING_PROVIDER_TIMEOUT("The Embedding Provider timed out"),
+  EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
 
   FILTER_UNRESOLVABLE("Unable to resolve the filter"),
 

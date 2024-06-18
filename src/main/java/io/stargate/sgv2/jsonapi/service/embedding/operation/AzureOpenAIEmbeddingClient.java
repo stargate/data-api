@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -8,6 +9,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import io.stargate.sgv2.jsonapi.service.embedding.util.EmbeddingUtil;
 import jakarta.ws.rs.HeaderParam;
@@ -67,7 +69,38 @@ public class AzureOpenAIEmbeddingClient implements EmbeddingProvider {
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
-      return HttpResponseErrorMessageMapper.getDefaultException(response);
+      String errorMessage = getErrorMessage(response);
+      return HttpResponseErrorMessageMapper.mapToAPIException(
+          ProviderConstants.AZURE_OPENAI, response, errorMessage);
+    }
+
+    /**
+     * Extract the error message from the response body. The example response body is:
+     *
+     * <pre>
+     * {
+     *   "error": {
+     *     "code": "401",
+     *     "message": "Access denied due to invalid subscription key or wrong API endpoint. Make sure to provide a valid key for an active subscription and use a correct regional API endpoint for your resource."
+     *   }
+     * }
+     * </pre>
+     *
+     * @param response The response body as a String.
+     * @return The error message extracted from the response body.
+     */
+    private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
+      // Get the whole response body
+      JsonNode rootNode = response.readEntity(JsonNode.class);
+      // Log the response body
+      logger.info(
+          String.format(
+              "Error response from embedding provider '%s': %s",
+              ProviderConstants.AZURE_OPENAI, rootNode.toString()));
+      // Extract the "message" node from the "error" node
+      JsonNode messageNode = rootNode.at("/error/message");
+      // Return the text of the "message" node, or the whole response body if it is missing
+      return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
     }
   }
 

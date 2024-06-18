@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -29,16 +30,28 @@ public record InsertOperation(
     CommandContext commandContext,
     List<WritableShreddedDocument> documents,
     boolean ordered,
-    boolean offlineMode)
+    boolean offlineMode,
+    boolean returnDocumentResponses)
     implements ModifyOperation {
+  public record WritableDocAndPosition(int position, WritableShreddedDocument document)
+      implements Comparable<WritableDocAndPosition> {
+    @Override
+    public int compareTo(InsertOperation.WritableDocAndPosition o) {
+      // Order by position (only), ascending
+      return Integer.compare(position, o.position);
+    }
+  }
 
   public InsertOperation(
-      CommandContext commandContext, List<WritableShreddedDocument> documents, boolean ordered) {
-    this(commandContext, documents, ordered, false);
+      CommandContext commandContext,
+      List<WritableShreddedDocument> documents,
+      boolean ordered,
+      boolean returnDocumentResponses) {
+    this(commandContext, documents, ordered, false, returnDocumentResponses);
   }
 
   public InsertOperation(CommandContext commandContext, WritableShreddedDocument document) {
-    this(commandContext, List.of(document), false, false);
+    this(commandContext, List.of(document), false, false, false);
   }
 
   /** {@inheritDoc} */
@@ -57,22 +70,30 @@ public record InsertOperation(
           .jsonProcessingMetricsReporter()
           .reportJsonWrittenDocsMetrics(commandContext().commandName(), documents.size());
     }
+    final List<WritableDocAndPosition> docsWithPositions = new ArrayList<>(documents.size());
+    int pos = 0;
+    for (WritableShreddedDocument doc : documents) {
+      docsWithPositions.add(new WritableDocAndPosition(pos++, doc));
+    }
     if (ordered) {
-      return insertOrdered(dataApiRequestInfo, queryExecutor, vectorEnabled);
+      return insertOrdered(dataApiRequestInfo, queryExecutor, vectorEnabled, docsWithPositions);
     } else {
-      return insertUnordered(dataApiRequestInfo, queryExecutor, vectorEnabled);
+      return insertUnordered(dataApiRequestInfo, queryExecutor, vectorEnabled, docsWithPositions);
     }
   }
 
   // implementation for the ordered insert
   private Uni<Supplier<CommandResult>> insertOrdered(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor, boolean vectorEnabled) {
+      DataApiRequestInfo dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      boolean vectorEnabled,
+      List<WritableDocAndPosition> docsWithPositions) {
 
     // build query once
     final String query = buildInsertQuery(vectorEnabled);
 
     return Multi.createFrom()
-        .iterable(documents)
+        .iterable(docsWithPositions)
 
         // concatenate to respect ordered
         .onItem()
@@ -89,10 +110,10 @@ public record InsertOperation(
         // if no failures reduce to the op page
         .collect()
         .in(
-            InsertOperationPage::new,
+            () -> new InsertOperationPage(docsWithPositions, returnDocumentResponses()),
             (agg, in) -> {
               Throwable failure = in.getItem2();
-              agg.aggregate(in.getItem1().id(), failure);
+              agg.aggregate(in.getItem1(), failure);
 
               if (failure != null) {
                 throw new FailFastInsertException(agg, failure);
@@ -115,11 +136,14 @@ public record InsertOperation(
 
   // implementation for the unordered insert
   private Uni<Supplier<CommandResult>> insertUnordered(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor, boolean vectorEnabled) {
+      DataApiRequestInfo dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      boolean vectorEnabled,
+      List<WritableDocAndPosition> docsWithPositions) {
     // build query once
     String query = buildInsertQuery(vectorEnabled);
     return Multi.createFrom()
-        .iterable(documents)
+        .iterable(docsWithPositions)
 
         // merge to make it parallel
         .onItem()
@@ -133,7 +157,9 @@ public record InsertOperation(
 
         // then reduce here
         .collect()
-        .in(InsertOperationPage::new, (agg, in) -> agg.aggregate(in.getItem1().id(), in.getItem2()))
+        .in(
+            () -> new InsertOperationPage(docsWithPositions, returnDocumentResponses()),
+            (agg, in) -> agg.aggregate(in.getItem1(), in.getItem2()))
 
         // use object identity to resolve to Supplier<CommandResult>
         .map(i -> i);
@@ -144,10 +170,11 @@ public record InsertOperation(
       DataApiRequestInfo dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String query,
-      WritableShreddedDocument doc,
+      WritableDocAndPosition docWithPosition,
       boolean vectorEnabled,
       boolean offlineMode) {
     // bind and execute
+    final WritableShreddedDocument doc = docWithPosition.document();
     SimpleStatement boundStatement = bindInsertValues(query, doc, vectorEnabled, offlineMode);
     return queryExecutor
         .executeWrite(dataApiRequestInfo, boundStatement)

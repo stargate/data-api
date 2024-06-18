@@ -38,5 +38,14 @@ public record InsertManyCommand(
               description =
                   "When `true` the server will insert the documents in sequential order, ensuring each document is successfully inserted before starting the next. Additionally the command will \"fail fast\", failing the first document that fails to insert. When `false` the server is free to re-order the inserts and parallelize them for performance. In this mode more than one document may fail to be inserted (aka \"fail silently\" mode).",
               defaultValue = "false")
-          boolean ordered) {}
+          boolean ordered,
+      @Schema(
+              description =
+                  "When `true`, response will contain an additional field: 'documentResponses'"
+                      + " with is an array of Document Response Objects. Each Document Response Object"
+                      + " contains the `_id` of the document and the `status` of the operation (one of"
+                      + " `OK`, `ERROR` or `SKIPPED`). Additional `errorsIdx` field is present when the"
+                      + " status is `ERROR` and contains the index of the error in the main `errors` array.",
+              defaultValue = "false")
+          boolean returnDocumentResponses) {}
 }
