@@ -259,8 +259,10 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     // Check secret name for shared secret authentication, if applicable
     validateAuthentication(userConfig, providerConfig);
 
-    // Validate the model and its vector dimension, if userVectorDimension is null, return value
-    // will be the config/default value
+    // Validate the model and its vector dimension:
+    // huggingFaceDedicated: must have vectorDimension specified
+    // other providers: must have model specified, and default dimension when dimension not
+    // specified
     Integer vectorDimension =
         validateModelAndDimension(userConfig, providerConfig, userVectorDimension);
 
@@ -292,6 +294,27 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   /**
    * Validates user authentication for creating a collection using the specified configurations.
    *
+   * <ol>
+   *   <li>Validate that all keys (member names) in the authentication stanza (e.g. providerKey) are
+   *       listed in the configuration for the provider as accepted keys.
+   *   <li>For each key-value member of the authentication stanza:
+   *       <ol type="a">
+   *         <li>If the value does not contain the period character "." it assumes the value is the
+   *             name of the credential without specifying the key.
+   *             <ol type="i">
+   *               <li>The credential name is appended with .&lt;key&gt; and the secret service
+   *                   called to validate that a credential with that name exists and it has the
+   *                   named key.
+   *             </ol>
+   *         <li>If the value does contain a period character "." it assumes the first part is the
+   *             name of the credential and the second the name of the key within it.
+   *             <ol type="i">
+   *               <li>The secret service called to validate that a credential with that name exists
+   *                   and it has the named key.
+   *             </ol>
+   *       </ol>
+   * </ol>
+   *
    * @param userConfig The vectorize configuration provided by the user.
    * @param providerConfig The embedding provider configuration.
    * @throws JsonApiException If the user authentication is invalid.
@@ -299,29 +322,46 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private void validateAuthentication(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig userConfig,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig) {
-    // Get all the accepted keys in auth
-    List<String> acceptedKeys =
-        providerConfig.supportedAuthentications().values().stream()
-            .filter(config -> config.enabled() && config.tokens() != null)
-            .flatMap(config -> config.tokens().stream())
+    // Get all the accepted keys in SHARED_SECRET
+    Set<String> acceptedKeys =
+        providerConfig.supportedAuthentications().entrySet().stream()
+            .filter(
+                config ->
+                    config
+                        .getKey()
+                        .equals(
+                            EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType
+                                .SHARED_SECRET))
+            .filter(config -> config.getValue().enabled() && config.getValue().tokens() != null)
+            .flatMap(config -> config.getValue().tokens().stream())
             .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.TokenConfig::accepted)
-            .toList();
+            .collect(Collectors.toSet());
 
     // If the user hasn't provided authentication details, verify that either the 'NONE' or 'HEADER'
     // authentication type is enabled.
     if (userConfig.authentication() == null || userConfig.authentication().isEmpty()) {
-      EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig noneAuthConfig =
-          providerConfig
-              .supportedAuthentications()
-              .get(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE);
-      EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig headerAuthConfig =
-          providerConfig
-              .supportedAuthentications()
-              .get(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.HEADER);
+      // Check if 'NONE' authentication type is enabled
+      boolean noneEnabled =
+          Optional.ofNullable(
+                  providerConfig
+                      .supportedAuthentications()
+                      .get(
+                          EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType.NONE))
+              .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig::enabled)
+              .orElse(false);
 
-      // Check if either 'NONE' or 'HEADER' authentication type is enabled
-      boolean noneEnabled = (noneAuthConfig != null && noneAuthConfig.enabled());
-      boolean headerEnabled = (headerAuthConfig != null && headerAuthConfig.enabled());
+      // Check if 'HEADER' authentication type is enabled
+      boolean headerEnabled =
+          Optional.ofNullable(
+                  providerConfig
+                      .supportedAuthentications()
+                      .get(
+                          EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType
+                              .HEADER))
+              .map(EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig::enabled)
+              .orElse(false);
+
+      // If neither 'NONE' nor 'HEADER' authentication type is enabled, throw an exception
       if (!noneEnabled && !headerEnabled) {
         throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "Service provider '%s' does not support either 'NONE' or 'HEADER' authentication types.",
@@ -331,33 +371,17 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       // User has provided authentication details. Validate each key against the provider's accepted
       // list.
       for (Map.Entry<String, String> userAuth : userConfig.authentication().entrySet()) {
+        // Check if the key is accepted by the provider
         if (!acceptedKeys.contains(userAuth.getKey())) {
           throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
               "Service provider '%s' does not support authentication key '%s'",
               userConfig.provider(), userAuth.getKey());
-        } else {
-          if (userAuth.getKey().equals("providerKey")) {
-            // sharedKeyValue must be in the format of "keyName.providerKey"
-            String sharedKeyValue = userAuth.getValue();
-            if (sharedKeyValue == null || sharedKeyValue.isEmpty()) {
-              throw ErrorCode.VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT.toApiException(
-                  "missing value");
-            }
-            int dotIndex = sharedKeyValue.lastIndexOf('.');
-            if (dotIndex <= 0) {
-              throw ErrorCode.VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT.toApiException(
-                  "providerKey value should be formatted as '[keyName].providerKey'");
-            }
+        }
 
-            String providerKeyString = sharedKeyValue.substring(dotIndex + 1);
-            if (!"providerKey".equals(providerKeyString)) {
-              throw ErrorCode.VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT.toApiException(
-                  "providerKey value should be formatted as '[keyName].providerKey'");
-            }
-          }
-          if (operationsConfig.enableEmbeddingGateway()) {
-            validateCredentials.validate(userConfig.provider(), userAuth.getValue());
-          }
+        // Validate the credential name from secret service
+        // already append the .providerKey to the value in CreateCollectionCommand
+        if (operationsConfig.enableEmbeddingGateway()) {
+          validateCredentials.validate(userConfig.provider(), userAuth.getValue());
         }
       }
     }
@@ -384,7 +408,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     // Add all provider level parameters
     allParameters.addAll(providerConfig.parameters());
     // Get all the parameters except "vectorDimension" for the model -- model has been validated in
-    // the previous step
+    // the previous step, huggingfaceDedicated uses endpoint-defined-model
     List<EmbeddingProvidersConfig.EmbeddingProviderConfig.ParameterConfig> modelParameters =
         providerConfig.models().stream()
             .filter(m -> m.name().equals(userConfig.modelName()))
@@ -403,8 +427,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             .get();
     // Add all model level parameters
     allParameters.addAll(modelParameters);
-
-    // 1. Error if the user provided unconfigured parameters
+    // 1. Error if the user provided un-configured parameters
     // Two level parameters have unique names, should be fine here
     Set<String> expectedParamNames =
         allParameters.stream()
@@ -497,6 +520,18 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       Integer userVectorDimension) {
     // Find the model configuration by matching the model name
+    // 1. huggingfaceDedicated does not require model, but requires dimension
+    if (userConfig.provider().equals(ProviderConstants.HUGGINGFACE_DEDICATED)) {
+      if (userVectorDimension == null) {
+        throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+            "'dimension' is needed for provider %s", ProviderConstants.HUGGINGFACE_DEDICATED);
+      }
+    }
+    // 2. other providers do require model
+    if (userConfig.modelName() == null) {
+      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "'modelName' is needed for provider %s", userConfig.provider());
+    }
     EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model =
         providerConfig.models().stream()
             .filter(m -> m.name().equals(userConfig.modelName()))

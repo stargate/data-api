@@ -303,7 +303,7 @@ public class ShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasMessageStartingWith("Document key name constraints violated")
+          .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION);
     }
   }

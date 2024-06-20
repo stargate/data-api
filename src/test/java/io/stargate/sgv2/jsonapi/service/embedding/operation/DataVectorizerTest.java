@@ -208,10 +208,11 @@ public class DataVectorizerTest {
               .getFailure();
       assertThat(failure)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The configured Embedding Provider for this collection return an invalid response: Embedding provider 'custom' didn't return the expected number of embeddings. Expect: '2'. Actual: '3'");
+              "The Embedding Provider returned an unexpected response: Embedding provider 'custom' didn't return the expected number of embeddings. Expect: '2'. Actual: '3'");
     }
 
     @Test
@@ -245,10 +246,11 @@ public class DataVectorizerTest {
               .getFailure();
       assertThat(failure)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The configured Embedding Provider for this collection return an invalid response: Embedding provider 'custom' did not return expected embedding length. Expect: '4'. Actual: '3'");
+              "The Embedding Provider returned an unexpected response: Embedding provider 'custom' did not return expected embedding length. Expect: '4'. Actual: '3'");
     }
   }
 

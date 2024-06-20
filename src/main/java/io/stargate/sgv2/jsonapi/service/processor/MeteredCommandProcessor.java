@@ -94,6 +94,15 @@ public class MeteredCommandProcessor {
   public <T extends Command> Uni<CommandResult> processCommand(
       DataApiRequestInfo dataApiRequestInfo, CommandContext commandContext, T command) {
     Timer.Sample sample = Timer.start(meterRegistry);
+    // use MDC to populate logs as needed(namespace,collection,tenantId)
+    if (commandContext.namespace() != null) {
+      // CollectionCommand and NamespaceCommand has namespace context
+      MDC.put("namespace", commandContext.namespace());
+    }
+    if (commandContext.collection() != null) {
+      // CollectionCommand has namespace context
+      MDC.put("collection", commandContext.collection());
+    }
     MDC.put("tenantId", dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     // start by resolving the command, get resolver
     return commandProcessor

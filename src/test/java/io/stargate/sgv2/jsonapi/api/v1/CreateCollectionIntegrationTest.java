@@ -623,9 +623,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                             "service": {
                                 "provider": "azureOpenAI",
                                 "modelName": "text-embedding-3-small",
-                                "authentication": {
-                                    "x-embedding-api-key": "user_key"
-                                },
                                 "parameters": {
                                     "resourceName" : "vectorize",
                                     "deploymentId" : "vectorize"
@@ -681,7 +678,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                               "provider": "test",
                                               "modelName": "textembedding-gecko@003",
                                               "authentication": {
-                                                  "x-embedding-api-key": "user_key",
                                                   "providerKey" : "shared_creds.providerKey"
                                               },
                                               "parameters": {
@@ -725,9 +721,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "service": {
                                                 "provider": "azureOpenAI",
                                                 "modelName": "testModel",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                },
                                                 "parameters": {
                                                     "resourceName" : "vectorize",
                                                     "deploymentId" : "vectorize"
@@ -925,10 +918,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                   "metric": "cosine",
                                   "service": {
                                       "provider": "openai",
-                                      "modelName": "text-embedding-3-small",
-                                      "authentication": {
-                                          "x-embedding-api-key": "user_key"
-                                      }
+                                      "modelName": "text-embedding-3-small"
                                   }
                               }
                           }
@@ -943,13 +933,10 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                           "options": {
                               "vector": {
                                   "metric": "cosine",
-                                  "dimension": 512,
+                                  "dimension": 1536,
                                   "service": {
                                       "provider": "openai",
-                                      "modelName": "text-embedding-3-small",
-                                      "authentication": {
-                                          "x-embedding-api-key": "user_key"
-                                      }
+                                      "modelName": "text-embedding-3-small"
                                   }
                               }
                           }
@@ -1021,10 +1008,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "dimension": 512,
                                             "service": {
                                                 "provider": "openai",
-                                                "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                }
+                                                "modelName": "text-embedding-3-small"
                                             }
                                         }
                                     }
@@ -1057,10 +1041,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "dimension": 1,
                                             "service": {
                                                 "provider": "openai",
-                                                "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                }
+                                                "modelName": "text-embedding-3-small"
                                             }
                                         }
                                     }
@@ -1095,10 +1076,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "dimension": 2000,
                                             "service": {
                                                 "provider": "openai",
-                                                "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                }
+                                                "modelName": "text-embedding-3-small"
                                             }
                                         }
                                     }
@@ -1280,25 +1258,22 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .contentType(ContentType.JSON)
           .body(
               """
-                                    {
-                                        "createCollection": {
-                                            "name": "collection_with_vector_service",
-                                            "options": {
-                                                "vector": {
-                                                    "metric": "cosine",
-                                                    "dimension": 1536,
-                                                    "service": {
-                                                        "provider": "openai",
-                                                        "modelName": "text-embedding-ada-002",
-                                                        "authentication": {
-                                                            "x-embedding-api-key": "api_key"
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
+                    {
+                        "createCollection": {
+                            "name": "collection_with_vector_service",
+                            "options": {
+                                "vector": {
+                                    "metric": "cosine",
+                                    "dimension": 1536,
+                                    "service": {
+                                        "provider": "openai",
+                                        "modelName": "text-embedding-ada-002"
                                     }
-                                    """)
+                                }
+                            }
+                        }
+                    }
+                    """)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
@@ -1309,47 +1284,70 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
-    public void failForBadProviderKeyFormat() {
-      String json =
-          """
-              {
-                  "createCollection": {
-                      "name": "incorrectProviderKeyFormat",
-                      "options": {
-                          "vector": {
-                              "metric": "cosine",
-                              "dimension": 5,
-                              "service": {
-                                  "provider": "openai",
-                                  "modelName": "text-embedding-ada-002",
-                                  "authentication": {
-                                      "providerKey" : "shared_creds"
-                                  },
-                                  "parameters": {
-                                      "projectId": "test project"
-                                  }
-                              }
-                          }
-                      }
-                  }
-              }
-              """;
+    public void happyProviderKeyFormat() {
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
-          .body(json)
+          .body(
+              """
+                        {
+                            "createCollection": {
+                                "name": "collection_with_vector_service",
+                                "options": {
+                                    "vector": {
+                                        "metric": "cosine",
+                                        "dimension": 1536,
+                                        "service": {
+                                            "provider": "openai",
+                                            "modelName": "text-embedding-ada-002",
+                                            "authentication": {
+                                                "providerKey" : "shared_creds"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        """)
           .when()
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body("errors[0].errorCode", is("VECTORIZE_INVALID_SHARED_KEY_VALUE_FORMAT"))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
           .body(
-              "errors[0].message",
-              startsWith(
-                  "Invalid authentication value format: providerKey value should be formatted as '[keyName].providerKey'"));
+              """
+                                {
+                                    "createCollection": {
+                                        "name": "collection_with_vector_service",
+                                        "options": {
+                                            "vector": {
+                                                "metric": "cosine",
+                                                "dimension": 1536,
+                                                "service": {
+                                                    "provider": "openai",
+                                                    "modelName": "text-embedding-ada-002",
+                                                    "authentication": {
+                                                        "providerKey" : "shared_creds.providerKey"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      deleteCollection("collection_with_vector_service");
     }
   }
 
@@ -1452,9 +1450,6 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
                                             "service": {
                                                 "provider": "openai",
                                                 "modelName": "text-embedding-3-small",
-                                                "authentication": {
-                                                    "x-embedding-api-key": "user_key"
-                                                },
                                                 "parameters": {
                                                     "test": "test"
                                                 }

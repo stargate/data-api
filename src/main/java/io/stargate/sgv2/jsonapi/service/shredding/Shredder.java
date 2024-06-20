@@ -389,7 +389,8 @@ public class Shredder {
           ;
         } else {
           throw ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
-              "property name ('%s') contains character(s) not allowed", key);
+              "field name ('%s') contains invalid character(s), can contain only letters (a-z/A-Z), numbers (0-9), underscores (_), and hyphens (-)",
+              key);
         }
       }
       int totalPathLength = parentPathLength + key.length();

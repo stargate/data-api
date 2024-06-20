@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -8,6 +9,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
@@ -59,7 +61,53 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
-      return HttpResponseErrorMessageMapper.getDefaultException(response);
+      String errorMessage = getErrorMessage(response);
+      return HttpResponseErrorMessageMapper.mapToAPIException(
+          ProviderConstants.UPSTAGE_AI, response, errorMessage);
+    }
+
+    /**
+     * Extracts the error message from the response body. The example response body is:
+     *
+     * <pre>
+     * {
+     *   "message": "Unauthorized"
+     * }
+     *
+     * {
+     *   "error": {
+     *     "message": "This model's maximum context length is 4000 tokens. however you requested 10969 tokens. Please reduce your prompt.",
+     *     "type": "invalid_request_error",
+     *     "param": null,
+     *     "code": null
+     *   }
+     * }
+     * </pre>
+     *
+     * @param response The response body as a String.
+     * @return The error message extracted from the response body, or null if the message is not
+     *     found.
+     */
+    private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
+      // Get the whole response body
+      JsonNode rootNode = response.readEntity(JsonNode.class);
+      // Log the response body
+      logger.info(
+          String.format(
+              "Error response from embedding provider '%s': %s",
+              ProviderConstants.UPSTAGE_AI, rootNode.toString()));
+      // Check if the root node contains a "message" field
+      JsonNode messageNode = rootNode.path("message");
+      if (!messageNode.isMissingNode()) {
+        return messageNode.asText();
+      }
+      // If the "message" field is not found, check for the nested "error" object
+      JsonNode errorMessageNode = rootNode.at("/error/message");
+      if (!errorMessageNode.isMissingNode()) {
+        return errorMessageNode.asText();
+      }
+      // Return the whole response body if no message is found
+      return rootNode.toString();
     }
   }
 

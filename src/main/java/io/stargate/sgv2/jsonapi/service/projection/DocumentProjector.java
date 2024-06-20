@@ -52,21 +52,11 @@ public class DocumentProjector {
   }
 
   public static DocumentProjector defaultProjector() {
-    /* 16-Apr-2024, tatu: For v1.0.6 need to revert to default being
-         "include all", and then go back to "exclude $vector/$vectorize"
-         for v1.0.7 or later.
-    */
-    // return DefaultProjectorWrapper.defaultProjector();
-    return INCLUDE_ALL_PROJECTOR;
+    return DefaultProjectorWrapper.defaultProjector();
   }
 
   public static DocumentProjector defaultProjectorWithSimilarity() {
-    /* 16-Apr-2024, tatu: For v1.0.6 need to revert to default being
-         "include all", and then go back to "exclude $vector/$vectorize"
-         for v1.0.7 or later.
-    */
-    // return DefaultProjectorWrapper.defaultProjectorWithSimilarity();
-    return INCLUDE_ALL_PROJECTOR_WITH_SIMILARITY;
+    return DefaultProjectorWrapper.defaultProjectorWithSimilarity();
   }
 
   public static DocumentProjector includeAllProjector() {
@@ -294,7 +284,7 @@ public class DocumentProjector {
             throw new JsonApiException(
                 ErrorCode.UNSUPPORTED_PROJECTION_PARAM,
                 ErrorCode.UNSUPPORTED_PROJECTION_PARAM.getMessage()
-                    + ": path cannot start with '$' (no root-level operators)");
+                    + ": '$vector'/'$vectorize' are the only allowed paths that can start with '$'");
           }
 
           // Second: we only support one operator for now

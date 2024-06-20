@@ -193,7 +193,8 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
             new CommandContext(this.namespace, this.createCollection.name()),
             List.of(),
             true,
-            true);
+            true,
+            false);
     String insertStatementCQL = insertOperation.buildInsertQuery(hasVector);
     return new FileWriterParams(
         this.namespace,

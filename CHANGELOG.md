@@ -1,8 +1,85 @@
 # Changelog
 
+## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.12...HEAD)
+
+**Closed issues:**
+
+- NullPointerException from the multi credential supports [\#1172](https://github.com/stargate/data-api/issues/1172)
+
+## [v1.0.12](https://github.com/stargate/data-api/tree/v1.0.12) (2024-06-17)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.11...v1.0.12)
+
+**Highlights:**
+
+- Upstage Embedding provider display name, change from 'Upstage AI' to 'Upstage'
+- logging improvement(add namespace and collection)
+- error messages improvement
+   - improve SHRED_DOC_KEY_NAME_VIOLATION error code message "Document field name invalid"
+   - improve Data API vectorize error messages
+- fix vectorize integration credentials bug regarding the table comment
+
+
+**Closed issues:**
+
+- Better handling for multi part credentials in createCollection [\#1142](https://github.com/stargate/data-api/issues/1142)
+
+**Merged pull requests:**
+
+- Add updated auth to table comment [\#1177](https://github.com/stargate/data-api/pull/1177) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Add namespace and collection mdc log as needed [\#1176](https://github.com/stargate/data-api/pull/1176) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- upstage displayName and huggingFaceDedicated modelName small fix [\#1175](https://github.com/stargate/data-api/pull/1175) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Improve message for ErrorCode.SHRED\_DOC\_KEY\_NAME\_VIOLATION [\#1171](https://github.com/stargate/data-api/pull/1171) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#1166](https://github.com/stargate/data-api/pull/1166) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Improve Error Messages from Embedding Providers [\#1159](https://github.com/stargate/data-api/pull/1159) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+
+## [v1.0.11](https://github.com/stargate/data-api/tree/v1.0.11) (2024-06-13)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.10...v1.0.11)
+
+**Highlights:**
+
+- Support includeSortVector option for find and findOne command (API addition)
+- Improvements to vectorize feature
+  - Adds HuggingFace dedicated provider support
+  - Exclude $vector and $vectorize from default projection 
+  - OpenAI provider - support for organization id and project id in request header
+
+**Closed issues:**
+
+- docker-compose changes to consider [\#1158](https://github.com/stargate/data-api/issues/1158)
+- Log selected options on create collection [\#1155](https://github.com/stargate/data-api/issues/1155)
+- Jina AI timeouts when model is cold  [\#1131](https://github.com/stargate/data-api/issues/1131)
+- Support OpenAI Organization and  Project optional headers [\#1128](https://github.com/stargate/data-api/issues/1128)
+- projection {"$vector": 1} does not project out the other fields anymore [\#1106](https://github.com/stargate/data-api/issues/1106)
+- Misleading error message about projection having $fields [\#1038](https://github.com/stargate/data-api/issues/1038)
+- Re-apply default Projection change to exclude `$vector` \(\#1005\) [\#1032](https://github.com/stargate/data-api/issues/1032)
+- Exclude $vector and $vectorize from the default Projection [\#1005](https://github.com/stargate/data-api/issues/1005)
+
+**Merged pull requests:**
+
+- Better handling for multi part credentials in createCollection [\#1164](https://github.com/stargate/data-api/pull/1164) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Log collection setting stored in comment [\#1163](https://github.com/stargate/data-api/pull/1163) ([maheshrajamani](https://github.com/maheshrajamani))
+- Align Open AI text-embedding-3 dimension defaults to LangChain expectations [\#1162](https://github.com/stargate/data-api/pull/1162) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Openai support for organization id and project id in request header [\#1160](https://github.com/stargate/data-api/pull/1160) ([maheshrajamani](https://github.com/maheshrajamani))
+- Add huggingface dedicated provider support [\#1157](https://github.com/stargate/data-api/pull/1157) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1038: improve error message for unknown dollar-starting field [\#1156](https://github.com/stargate/data-api/pull/1156) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Align gateway request properties with Mutiny HTTP client and Defaults [\#1154](https://github.com/stargate/data-api/pull/1154) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Support `includeSortVector` option for `find` and `findOne` command [\#1151](https://github.com/stargate/data-api/pull/1151) ([maheshrajamani](https://github.com/maheshrajamani))
+- Bumping version for next data-api release [\#1150](https://github.com/stargate/data-api/pull/1150) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Docker compose scripts to use  dse 6.9 as backend [\#1147](https://github.com/stargate/data-api/pull/1147) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix null header exception from embedding provider's response [\#1139](https://github.com/stargate/data-api/pull/1139) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- \(for 1.0.11\) Fixes \#1032, re-does \#1005: exclude $vector and $vectorize from default projection [\#1037](https://github.com/stargate/data-api/pull/1037) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+
 ## [v1.0.10](https://github.com/stargate/data-api/tree/v1.0.10) (2024-06-04)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.9...v1.0.10)
+
+**Highlights:**
+
+- Support for running Data API with DSE 6.9 and HCD
 
 **Closed issues:**
 
@@ -25,6 +102,10 @@
 ## [v1.0.9](https://github.com/stargate/data-api/tree/v1.0.9) (2024-05-29)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.8...v1.0.9)
+
+**Highlights:**
+
+- Multiple bug fixes and minor improvements to vectorize feature
 
 **Closed issues:**
 
@@ -62,6 +143,16 @@
 ## [v1.0.8](https://github.com/stargate/data-api/tree/v1.0.8) (2024-05-16)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.7...v1.0.8)
+
+**Highlights:**
+
+- Add multiple embedding providers for vectorize feature:
+  - Vertex AI
+  - Jina AI
+  - Mistral
+  - Upstage AI
+  - VoyageAPI
+  - Huggingface
 
 **Closed issues:**
 
@@ -105,6 +196,11 @@
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.6...v1.0.7)
 
+**Highlights:**
+
+- Add Azure OpenAI provider for vectorize feature
+- Various changes to allow Data API code to be reused by other applications (No impact to Astra)
+
 **Closed issues:**
 
 - Querying by string \_id matches ObjectId \_id [\#1045](https://github.com/stargate/data-api/issues/1045)
@@ -145,6 +241,11 @@
 ## [v1.0.6](https://github.com/stargate/data-api/tree/v1.0.6) (2024-04-17)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.5...v1.0.6)
+
+**Highlights:**
+
+- Internal refactoring and minor bug fixes 
+- Various changes to allow Data API code to run without a Stargate coordinator (No impact to Astra)
 
 **Implemented enhancements:**
 

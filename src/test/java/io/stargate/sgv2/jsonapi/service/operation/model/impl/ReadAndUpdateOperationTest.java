@@ -218,7 +218,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       // update
       String doc1Updated =
@@ -326,7 +327,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       // update
       String updateClause =
@@ -627,7 +629,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              10000);
+              10000,
+              false);
 
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
@@ -830,7 +833,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       // update
       String doc1Updated =
@@ -938,7 +942,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       // update
       JsonNode jsonNode = objectMapper.readTree(doc1_select_update);
@@ -1118,7 +1123,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
-              10000);
+              10000,
+              false);
 
       String replacement =
           """
@@ -1285,7 +1291,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
-              10000);
+              10000,
+              false);
 
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
@@ -1361,7 +1368,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       // update
       String doc1Updated =
@@ -1458,7 +1466,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       // update
       DocumentUpdater documentUpdater =
@@ -1608,7 +1617,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               21,
               20,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
 
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
@@ -1707,7 +1717,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               21,
               20,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
@@ -1785,7 +1796,8 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               21,
               20,
               ReadType.DOCUMENT,
-              objectMapper);
+              objectMapper,
+              false);
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
