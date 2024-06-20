@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 /** Responds with {@link CommandResult} containing an error on send challenge. */
 @ApplicationScoped
-public class ErrorChallengeSender implements ChallengeSender {
+public class ErrorChallengeSender implements DataApiChallengeSender {
 
   private static final Logger LOG = LoggerFactory.getLogger(ErrorChallengeSender.class);
 

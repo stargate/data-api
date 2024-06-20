@@ -11,4 +11,5 @@ import java.util.function.BiFunction;
  *
  * @see HttpAuthenticationMechanism#sendChallenge(RoutingContext)
  */
-public interface ChallengeSender extends BiFunction<RoutingContext, ChallengeData, Uni<Boolean>> {}
+public interface DataApiChallengeSender
+    extends BiFunction<RoutingContext, ChallengeData, Uni<Boolean>> {}
