@@ -42,16 +42,17 @@ public record InsertOperation(
     }
   }
 
-  public InsertOperation(
+  public static InsertOperation create(
       CommandContext commandContext,
       List<WritableShreddedDocument> documents,
       boolean ordered,
       boolean returnDocumentResponses) {
-    this(commandContext, documents, ordered, false, returnDocumentResponses);
+    return new InsertOperation(commandContext, documents, ordered, false, returnDocumentResponses);
   }
 
-  public InsertOperation(CommandContext commandContext, WritableShreddedDocument document) {
-    this(commandContext, List.of(document), false, false, false);
+  public static InsertOperation create(
+      CommandContext commandContext, WritableShreddedDocument document) {
+    return new InsertOperation(commandContext, List.of(document), false, false, false);
   }
 
   /** {@inheritDoc} */

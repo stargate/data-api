@@ -35,6 +35,6 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
             ctx.indexingProjector(),
             command.getClass().getSimpleName(),
             ctx.collectionSettings());
-    return new InsertOperation(ctx, shreddedDocument);
+    return InsertOperation.create(ctx, shreddedDocument);
   }
 }
