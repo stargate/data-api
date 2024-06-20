@@ -14,12 +14,19 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Responds with {@link CommandResult} containing an error on send challenge. */
+/**
+ * Responds with {@link CommandResult} containing an error on send challenge.
+ * BiFunction<RoutingContext, ChallengeData, Uni<Boolean>> implementation here enables definition of
+ * the custom challenge sender in the application. @see
+ * HttpAuthenticationMechanism#sendChallenge(RoutingContext)
+ */
 @ApplicationScoped
-public class ErrorChallengeSender implements DataApiChallengeSender {
+public class ErrorChallengeSender
+    implements BiFunction<RoutingContext, ChallengeData, Uni<Boolean>> {
 
   private static final Logger LOG = LoggerFactory.getLogger(ErrorChallengeSender.class);
 
