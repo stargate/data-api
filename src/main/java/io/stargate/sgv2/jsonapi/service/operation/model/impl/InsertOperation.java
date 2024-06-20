@@ -46,6 +46,16 @@ public record InsertOperation(
       CommandContext commandContext,
       List<WritableShreddedDocument> documents,
       boolean ordered,
+      boolean offlineMode,
+      boolean returnDocumentResponses) {
+    return new InsertOperation(
+        commandContext, documents, ordered, offlineMode, returnDocumentResponses);
+  }
+
+  public static InsertOperation create(
+      CommandContext commandContext,
+      List<WritableShreddedDocument> documents,
+      boolean ordered,
       boolean returnDocumentResponses) {
     return new InsertOperation(commandContext, documents, ordered, false, returnDocumentResponses);
   }

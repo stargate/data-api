@@ -189,7 +189,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
             .map(SimpleStatement::getQuery)
             .toList();
     InsertOperation insertOperation =
-        new InsertOperation(
+            InsertOperation.create(
             new CommandContext(this.namespace, this.createCollection.name()),
             List.of(),
             true,
