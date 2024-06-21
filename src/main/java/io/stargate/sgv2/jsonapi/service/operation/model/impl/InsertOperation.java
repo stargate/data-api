@@ -28,7 +28,7 @@ import java.util.function.Supplier;
  */
 public record InsertOperation(
     CommandContext commandContext,
-    List<InsertOperationAttempt> insertions,
+    List<InsertAttempt> insertions,
     boolean ordered,
     boolean offlineMode,
     boolean returnDocumentResponses)
@@ -43,11 +43,11 @@ public record InsertOperation(
   }
 
   /**
-   * Container for an insert operation attempt: used to keep track of the original document (if
-   * available), its id (if available), possible processing error and the position of the operation
-   * in input List
+   * Container for an individual Document insertion attempted: used to keep track of the original
+   * document (if available), its id (if available), possible processing error and the position of
+   * the insert attempt in the input List (batch).
    */
-  static class InsertOperationAttempt {
+  static class InsertAttempt {
     public final int position;
 
     public WritableShreddedDocument document;
@@ -55,26 +55,26 @@ public record InsertOperation(
 
     public Throwable failure;
 
-    public InsertOperationAttempt(int position, DocumentId documentId, Throwable failure) {
+    public InsertAttempt(int position, DocumentId documentId, Throwable failure) {
       this.position = position;
       this.document = null;
       this.documentId = documentId;
       this.failure = failure;
     }
 
-    public InsertOperationAttempt(int position, WritableShreddedDocument document) {
+    public InsertAttempt(int position, WritableShreddedDocument document) {
       this.position = position;
       this.document = document;
       this.documentId = document.id();
     }
 
-    public static InsertOperationAttempt from(int position, WritableShreddedDocument document) {
-      return new InsertOperationAttempt(position, document);
+    public static InsertAttempt from(int position, WritableShreddedDocument document) {
+      return new InsertAttempt(position, document);
     }
 
-    public static List<InsertOperationAttempt> from(List<WritableShreddedDocument> documents) {
+    public static List<InsertAttempt> from(List<WritableShreddedDocument> documents) {
       final int count = documents.size();
-      List<InsertOperationAttempt> result = new ArrayList<>(count);
+      List<InsertAttempt> result = new ArrayList<>(count);
       for (int i = 0; i < count; ++i) {
         result.add(from(i, documents.get(i)));
       }
@@ -94,7 +94,7 @@ public record InsertOperation(
       boolean returnDocumentResponses) {
     return new InsertOperation(
         commandContext,
-        InsertOperationAttempt.from(documents),
+        InsertAttempt.from(documents),
         ordered,
         offlineMode,
         returnDocumentResponses);
@@ -106,17 +106,13 @@ public record InsertOperation(
       boolean ordered,
       boolean returnDocumentResponses) {
     return new InsertOperation(
-        commandContext,
-        InsertOperationAttempt.from(documents),
-        ordered,
-        false,
-        returnDocumentResponses);
+        commandContext, InsertAttempt.from(documents), ordered, false, returnDocumentResponses);
   }
 
   public static InsertOperation create(
       CommandContext commandContext, WritableShreddedDocument document) {
     return new InsertOperation(
-        commandContext, List.of(InsertOperationAttempt.from(0, document)), false, false, false);
+        commandContext, List.of(InsertAttempt.from(0, document)), false, false, false);
   }
 
   /** {@inheritDoc} */
@@ -137,7 +133,7 @@ public record InsertOperation(
     }
     final List<WritableDocAndPosition> docsWithPositions = new ArrayList<>(insertions.size());
     int pos = 0;
-    for (InsertOperationAttempt insert : insertions) {
+    for (InsertAttempt insert : insertions) {
       docsWithPositions.add(new WritableDocAndPosition(pos++, insert.document));
     }
     if (ordered) {

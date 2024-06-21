@@ -29,12 +29,12 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
 
   @Override
   public Operation resolveCommand(CommandContext ctx, InsertManyCommand command) {
-    final List<WritableShreddedDocument> shreddedDocuments =
-        command.documents().stream().map(doc -> shredder.shred(ctx, doc, null)).toList();
-
     InsertManyCommand.Options options = command.options();
     boolean ordered = (null != options) && options.ordered();
     boolean returnDocumentResponses = (null != options) && options.returnDocumentResponses();
+
+    final List<WritableShreddedDocument> shreddedDocuments =
+        command.documents().stream().map(doc -> shredder.shred(ctx, doc, null)).toList();
 
     return InsertOperation.create(ctx, shreddedDocuments, ordered, false, returnDocumentResponses);
   }
