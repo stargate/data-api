@@ -23,12 +23,12 @@ import java.util.function.Supplier;
  * Operation that inserts one or more documents.
  *
  * @param commandContext Context that defines namespace and database.
- * @param documents Documents to insert.
- * @param ordered If insert should be ordered.
+ * @param insertions Document insertion attempts to try.
+ * @param ordered If insertions should be attempted sequentially, in order.
  */
 public record InsertOperation(
     CommandContext commandContext,
-    List<WritableShreddedDocument> documents,
+    List<InsertOperationAttempt> insertions,
     boolean ordered,
     boolean offlineMode,
     boolean returnDocumentResponses)
@@ -42,6 +42,50 @@ public record InsertOperation(
     }
   }
 
+  /**
+   * Container for an insert operation attempt: used to keep track of the original document (if
+   * available), its id (if available), possible processing error and the position of the operation
+   * in input List
+   */
+  static class InsertOperationAttempt {
+    public final int position;
+
+    public WritableShreddedDocument document;
+    public DocumentId documentId;
+
+    public Throwable failure;
+
+    public InsertOperationAttempt(int position, DocumentId documentId, Throwable failure) {
+      this.position = position;
+      this.document = null;
+      this.documentId = documentId;
+      this.failure = failure;
+    }
+
+    public InsertOperationAttempt(int position, WritableShreddedDocument document) {
+      this.position = position;
+      this.document = document;
+      this.documentId = document.id();
+    }
+
+    public static InsertOperationAttempt from(int position, WritableShreddedDocument document) {
+      return new InsertOperationAttempt(position, document);
+    }
+
+    public static List<InsertOperationAttempt> from(List<WritableShreddedDocument> documents) {
+      final int count = documents.size();
+      List<InsertOperationAttempt> result = new ArrayList<>(count);
+      for (int i = 0; i < count; ++i) {
+        result.add(from(i, documents.get(i)));
+      }
+      return result;
+    }
+
+    public boolean hasVectorValues() {
+      return (document != null) && (document.queryVectorValues() != null);
+    }
+  }
+
   public static InsertOperation create(
       CommandContext commandContext,
       List<WritableShreddedDocument> documents,
@@ -49,7 +93,11 @@ public record InsertOperation(
       boolean offlineMode,
       boolean returnDocumentResponses) {
     return new InsertOperation(
-        commandContext, documents, ordered, offlineMode, returnDocumentResponses);
+        commandContext,
+        InsertOperationAttempt.from(documents),
+        ordered,
+        offlineMode,
+        returnDocumentResponses);
   }
 
   public static InsertOperation create(
@@ -57,12 +105,18 @@ public record InsertOperation(
       List<WritableShreddedDocument> documents,
       boolean ordered,
       boolean returnDocumentResponses) {
-    return new InsertOperation(commandContext, documents, ordered, false, returnDocumentResponses);
+    return new InsertOperation(
+        commandContext,
+        InsertOperationAttempt.from(documents),
+        ordered,
+        false,
+        returnDocumentResponses);
   }
 
   public static InsertOperation create(
       CommandContext commandContext, WritableShreddedDocument document) {
-    return new InsertOperation(commandContext, List.of(document), false, false, false);
+    return new InsertOperation(
+        commandContext, List.of(InsertOperationAttempt.from(0, document)), false, false, false);
   }
 
   /** {@inheritDoc} */
@@ -70,7 +124,7 @@ public record InsertOperation(
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     final boolean vectorEnabled = commandContext().isVectorEnabled();
-    if (!vectorEnabled && documents.stream().anyMatch(doc -> doc.queryVectorValues() != null)) {
+    if (!vectorEnabled && insertions.stream().anyMatch(doc -> doc.hasVectorValues())) {
       throw new JsonApiException(
           ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED,
           ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage() + commandContext().collection());
@@ -79,12 +133,12 @@ public record InsertOperation(
     if (commandContext.jsonProcessingMetricsReporter() != null) {
       commandContext
           .jsonProcessingMetricsReporter()
-          .reportJsonWrittenDocsMetrics(commandContext().commandName(), documents.size());
+          .reportJsonWrittenDocsMetrics(commandContext().commandName(), insertions.size());
     }
-    final List<WritableDocAndPosition> docsWithPositions = new ArrayList<>(documents.size());
+    final List<WritableDocAndPosition> docsWithPositions = new ArrayList<>(insertions.size());
     int pos = 0;
-    for (WritableShreddedDocument doc : documents) {
-      docsWithPositions.add(new WritableDocAndPosition(pos++, doc));
+    for (InsertOperationAttempt insert : insertions) {
+      docsWithPositions.add(new WritableDocAndPosition(pos++, insert.document));
     }
     if (ordered) {
       return insertOrdered(dataApiRequestInfo, queryExecutor, vectorEnabled, docsWithPositions);

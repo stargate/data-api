@@ -1862,9 +1862,12 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .statusCode(200)
           .body("data", is(nullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", is("Document already exists with the given _id"))
+          .body("errors[0].errorCode", is("SHRED_DOC_KEY_NAME_VIOLATION"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Document field name invalid: field name ('username's') contains invalid character(s)"))
           .body("insertedIds", is(nullValue()))
           .body("status.documentResponses", hasSize(3))
           .body("status.documentResponses[0]", is(Map.of("_id", "doc1", "status", "OK")))

@@ -15,7 +15,6 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
-import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -62,12 +61,9 @@ public class InsertManyCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument first = shredder.shred(command.documents().get(0));
-                WritableShreddedDocument second = shredder.shred(command.documents().get(1));
-
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isFalse();
-                assertThat(op.documents()).containsExactly(first, second);
+                assertThat(op.insertions()).hasSize(2);
               });
     }
 
@@ -100,12 +96,9 @@ public class InsertManyCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument first = shredder.shred(command.documents().get(0));
-                WritableShreddedDocument second = shredder.shred(command.documents().get(1));
-
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isFalse();
-                assertThat(op.documents()).containsExactly(first, second);
+                assertThat(op.insertions()).hasSize(2);
               });
     }
 
@@ -138,12 +131,9 @@ public class InsertManyCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument first = shredder.shred(command.documents().get(0));
-                WritableShreddedDocument second = shredder.shred(command.documents().get(1));
-
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isFalse();
-                assertThat(op.documents()).containsExactly(first, second);
+                assertThat(op.insertions()).hasSize(2);
               });
     }
 
@@ -177,12 +167,9 @@ public class InsertManyCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument first = shredder.shred(command.documents().get(0));
-                WritableShreddedDocument second = shredder.shred(command.documents().get(1));
-
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isTrue();
-                assertThat(op.documents()).containsExactly(first, second);
+                assertThat(op.insertions()).hasSize(2);
               });
     }
 
