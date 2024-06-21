@@ -394,5 +394,5 @@ stargate:
           models:
             # NOTE: this is where weirdness exists; model name is prefix on which
             #   either "-query" or "-passage" is appended to get the actual model name
-            - name: solar-1-mini-embedding
+            - name: solar-embedding-1-large
               vector-dimension: 4096
