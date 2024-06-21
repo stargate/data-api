@@ -35,9 +35,9 @@ public record InsertOperation(
     implements ModifyOperation {
 
   /**
-   * Container for an individual Document insertion attempted: used to keep track of the original
-   * document (if available), its id (if available), possible processing error and the position of
-   * the insert attempt in the input List (batch).
+   * Container for an individual Document insertion attempt: used to keep track of the original
+   * input position; document (if available), its id (if available) and possible processing error.
+   * Information will be needed to build optional detail response (returnDocumentResponses).
    */
   public static class InsertAttempt implements Comparable<InsertAttempt> {
     public final int position;

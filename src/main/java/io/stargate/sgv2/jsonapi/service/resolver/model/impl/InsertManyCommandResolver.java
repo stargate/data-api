@@ -43,6 +43,7 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
         final WritableShreddedDocument shredded = shredder.shred(ctx, inputDocs.get(pos), null);
         insertions.add(new InsertOperation.InsertAttempt(pos, shredded));
       } catch (Exception e) {
+        // !!! TODO: access Document Id (via callback from Shredder)
         insertions.add(new InsertOperation.InsertAttempt(pos, null, e));
       }
     }
