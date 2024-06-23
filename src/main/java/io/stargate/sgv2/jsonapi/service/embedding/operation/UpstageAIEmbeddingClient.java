@@ -26,7 +26,7 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class UpstageAIEmbeddingClient implements EmbeddingProvider {
+public class UpstageAIEmbeddingClient extends EmbeddingProvider {
   private static final String UPSTAGE_MODEL_SUFFIX_QUERY = "-query";
   private static final String UPSTAGE_MODEL_SUFFIX_PASSAGE = "-passage";
 

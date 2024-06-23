@@ -29,7 +29,7 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class VertexAIEmbeddingClient implements EmbeddingProvider {
+public class VertexAIEmbeddingClient extends EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private final VertexAIEmbeddingProvider embeddingProvider;

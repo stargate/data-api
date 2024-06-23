@@ -32,7 +32,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * href="https://learn.microsoft.com/en-us/azure/ai-services/openai/reference">API reference</a> for
  * details of REST API being called.
  */
-public class AzureOpenAIEmbeddingClient implements EmbeddingProvider {
+public class AzureOpenAIEmbeddingClient extends EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private int dimension;

@@ -26,7 +26,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * href="https://api.jina.ai/redoc#tag/embeddings">API reference</a> for details of REST API being
  * called.
  */
-public class JinaAIEmbeddingClient implements EmbeddingProvider {
+public class JinaAIEmbeddingClient extends EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private final JinaAIEmbeddingProvider embeddingProvider;

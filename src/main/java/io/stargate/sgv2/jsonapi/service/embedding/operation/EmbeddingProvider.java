@@ -10,8 +10,9 @@ import org.slf4j.LoggerFactory;
  * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
  * of chosen model.
  */
-public interface EmbeddingProvider {
-  Logger logger = LoggerFactory.getLogger(EmbeddingProvider.class);
+public abstract class EmbeddingProvider {
+  //  protected final String id;
+  protected static final Logger logger = LoggerFactory.getLogger(EmbeddingProvider.class);
 
   /**
    * Vectorizes the given list of texts and returns the embeddings.
@@ -22,7 +23,7 @@ public interface EmbeddingProvider {
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
    * @return VectorResponse
    */
-  Uni<Response> vectorize(
+  public abstract Uni<Response> vectorize(
       int batchId,
       List<String> texts,
       Optional<String> apiKeyOverride,
@@ -33,7 +34,7 @@ public interface EmbeddingProvider {
    *
    * @return
    */
-  int maxBatchSize();
+  protected abstract int maxBatchSize();
 
   /**
    * Record to hold the batchId and embedding vectors
@@ -41,13 +42,13 @@ public interface EmbeddingProvider {
    * @param batchId - Sequence number for the batch to order the vectors.
    * @param embeddings - Embedding vectors for the given text inputs.
    */
-  record Response(int batchId, List<float[]> embeddings) {
+  public record Response(int batchId, List<float[]> embeddings) {
     public static Response of(int batchId, List<float[]> embeddings) {
       return new Response(batchId, embeddings);
     }
   }
 
-  enum EmbeddingRequestType {
+  public enum EmbeddingRequestType {
     /** This is used when vectorizing data in write operation for indexing */
     INDEX,
     /** This is used when vectorizing data for search operation */

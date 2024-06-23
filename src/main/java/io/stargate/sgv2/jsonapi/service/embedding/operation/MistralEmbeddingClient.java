@@ -26,7 +26,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * href="https://docs.mistral.ai/api/#operation/createEmbedding">API reference</a> for details of
  * REST API being called.
  */
-public class MistralEmbeddingClient implements EmbeddingProvider {
+public class MistralEmbeddingClient extends EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private String baseUrl;

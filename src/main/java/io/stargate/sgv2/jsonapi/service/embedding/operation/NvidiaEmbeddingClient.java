@@ -30,7 +30,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
  * of chosen Nvidia model.
  */
-public class NvidiaEmbeddingClient implements EmbeddingProvider {
+public class NvidiaEmbeddingClient extends EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private String baseUrl;

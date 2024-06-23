@@ -28,7 +28,7 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class OpenAIEmbeddingClient implements EmbeddingProvider {
+public class OpenAIEmbeddingClient extends EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private int dimension;
@@ -41,6 +41,7 @@ public class OpenAIEmbeddingClient implements EmbeddingProvider {
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
+    super();
     this.requestProperties = requestProperties;
     this.modelName = modelName;
     // One special case: legacy "ada-002" model does not accept "dimension" parameter

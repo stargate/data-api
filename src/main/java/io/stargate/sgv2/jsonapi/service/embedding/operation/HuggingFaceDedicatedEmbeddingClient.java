@@ -22,7 +22,7 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class HuggingFaceDedicatedEmbeddingClient implements EmbeddingProvider {
+public class HuggingFaceDedicatedEmbeddingClient extends EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private final HuggingFaceDedicatedEmbeddingProvider embeddingProvider;
   private Map<String, Object> vectorizeServiceParameters;

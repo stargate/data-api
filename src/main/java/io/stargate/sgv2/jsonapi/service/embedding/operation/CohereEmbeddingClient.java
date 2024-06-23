@@ -30,7 +30,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
  * of chosen Cohere model.
  */
-public class CohereEmbeddingClient implements EmbeddingProvider {
+public class CohereEmbeddingClient extends EmbeddingProvider {
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private String baseUrl;
