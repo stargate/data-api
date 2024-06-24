@@ -1873,8 +1873,8 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("status.documentResponses[0]", is(Map.of("_id", "doc1", "status", "OK")))
           .body(
               "status.documentResponses[1]",
-              is(Map.of("_id", "doc1", "status", "ERROR", "errorsIdx", 0)))
-          .body("status.documentResponses[2]", is(Map.of("_id", "doc2", "status", "SKIPPED")));
+              is(Map.of("_id", "doc2", "status", "ERROR", "errorsIdx", 0)))
+          .body("status.documentResponses[2]", is(Map.of("_id", "doc3", "status", "SKIPPED")));
 
       verifyDocCount(1);
     }

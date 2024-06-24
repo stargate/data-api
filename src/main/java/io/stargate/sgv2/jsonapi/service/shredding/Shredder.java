@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.bson.types.ObjectId;
 
 /**
@@ -77,11 +78,24 @@ public class Shredder {
         txId,
         IndexingProjector.identityProjector(),
         "testCommand",
-        CollectionSettings.empty());
+        CollectionSettings.empty(),
+        null);
   }
 
   public WritableShreddedDocument shred(CommandContext ctx, JsonNode doc, UUID txId) {
-    return shred(doc, txId, ctx.indexingProjector(), ctx.commandName(), ctx.collectionSettings());
+    return shred(
+        doc, txId, ctx.indexingProjector(), ctx.commandName(), ctx.collectionSettings(), null);
+  }
+
+  public WritableShreddedDocument shred(
+      CommandContext ctx, JsonNode doc, UUID txId, AtomicReference<DocumentId> docIdToReturn) {
+    return shred(
+        doc,
+        txId,
+        ctx.indexingProjector(),
+        ctx.commandName(),
+        ctx.collectionSettings(),
+        docIdToReturn);
   }
 
   public WritableShreddedDocument shred(
@@ -89,7 +103,8 @@ public class Shredder {
       UUID txId,
       IndexingProjector indexProjector,
       String commandName,
-      CollectionSettings collectionSettings) {
+      CollectionSettings collectionSettings,
+      AtomicReference<DocumentId> docIdToReturn) {
     // Although we could otherwise allow non-Object documents, requirement
     // to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
@@ -100,6 +115,10 @@ public class Shredder {
     final ObjectNode docWithId = normalizeDocumentId(collectionSettings, (ObjectNode) doc);
     final DocumentId docId = DocumentId.fromJson(docWithId.get(DocumentConstants.Fields.DOC_ID));
     final String docJson;
+
+    if (docIdToReturn != null) {
+      docIdToReturn.set(docId);
+    }
 
     // Now that we have the traversable document, verify it does not violate
     // structural limits, before serializing.

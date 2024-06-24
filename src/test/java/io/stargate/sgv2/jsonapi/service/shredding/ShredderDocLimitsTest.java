@@ -136,7 +136,8 @@ public class ShredderDocLimitsTest {
       IndexingProjector indexProjector =
           IndexingProjector.createForIndexing(null, Collections.singleton("no_index"));
       assertThat(
-              shredder.shred(doc, null, indexProjector, "testCommand", CollectionSettings.empty()))
+              shredder.shred(
+                  doc, null, indexProjector, "testCommand", CollectionSettings.empty(), null))
           .isNotNull();
     }
 
@@ -216,7 +217,8 @@ public class ShredderDocLimitsTest {
       IndexingProjector indexProjector =
           IndexingProjector.createForIndexing(null, Collections.singleton("no_index"));
       assertThat(
-              shredder.shred(doc, null, indexProjector, "testCommand", CollectionSettings.empty()))
+              shredder.shred(
+                  doc, null, indexProjector, "testCommand", CollectionSettings.empty(), null))
           .isNotNull();
     }
 
