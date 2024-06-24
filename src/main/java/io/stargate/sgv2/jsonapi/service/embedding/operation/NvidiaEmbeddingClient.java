@@ -31,7 +31,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * of chosen Nvidia model.
  */
 public class NvidiaEmbeddingClient extends EmbeddingProvider {
-  private static final String providerId = ProviderConstants.HUGGINGFACE_DEDICATED;
+  private static final String providerId = ProviderConstants.NVIDIA;
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private String baseUrl;
