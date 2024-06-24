@@ -75,6 +75,10 @@ quarkus:
           paths: /v1/*
           policy: authenticated
 
+    # access log format, must be explicitly enabled
+    access-log:
+      pattern: "%h %l %t \"%r\" %s %b"
+
     limits:
       # Let's limit low-level maximum HTTP request size to 20 megs: stricter
       # limit (4 meg per document) is applied at the JSON API level.
