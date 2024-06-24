@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -42,8 +42,8 @@ public record InsertOperation(
   public static class InsertAttempt implements Comparable<InsertAttempt> {
     public final int position;
 
-    public WritableShreddedDocument document;
-    public DocumentId documentId;
+    public final WritableShreddedDocument document;
+    public final DocumentId documentId;
 
     public Throwable failure;
 
@@ -116,7 +116,11 @@ public record InsertOperation(
   public static InsertOperation create(
       CommandContext commandContext, WritableShreddedDocument document) {
     return new InsertOperation(
-        commandContext, Arrays.asList(InsertAttempt.from(0, document)), false, false, false);
+        commandContext,
+        Collections.singletonList(InsertAttempt.from(0, document)),
+        false,
+        false,
+        false);
   }
 
   /** {@inheritDoc} */
