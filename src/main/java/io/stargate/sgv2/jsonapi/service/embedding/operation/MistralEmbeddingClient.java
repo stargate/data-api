@@ -27,6 +27,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * REST API being called.
  */
 public class MistralEmbeddingClient extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.MISTRAL;
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private String baseUrl;
@@ -61,8 +62,7 @@ public class MistralEmbeddingClient extends EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(
-          ProviderConstants.MISTRAL, response, errorMessage);
+      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -93,8 +93,7 @@ public class MistralEmbeddingClient extends EmbeddingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from embedding provider '%s': %s",
-              ProviderConstants.MISTRAL, rootNode.toString()));
+              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
       // Extract the "message" node from the root node
       JsonNode messageNode = rootNode.path("message");
       // Return the text of the "message" node, or the whole response body if it is missing

@@ -27,6 +27,7 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class HuggingFaceEmbeddingClient extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.HUGGINGFACE;
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private String baseUrl;
@@ -64,8 +65,7 @@ public class HuggingFaceEmbeddingClient extends EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(
-          ProviderConstants.HUGGINGFACE, response, errorMessage);
+      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -87,8 +87,7 @@ public class HuggingFaceEmbeddingClient extends EmbeddingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from embedding provider '%s': %s",
-              ProviderConstants.HUGGINGFACE, rootNode.toString()));
+              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
       // Extract the "error" node
       JsonNode errorNode = rootNode.path("error");
       // Return the text of the "message" node, or the whole response body if it is missing

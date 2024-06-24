@@ -27,6 +27,7 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class UpstageAIEmbeddingClient extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.UPSTAGE_AI;
   private static final String UPSTAGE_MODEL_SUFFIX_QUERY = "-query";
   private static final String UPSTAGE_MODEL_SUFFIX_PASSAGE = "-passage";
 
@@ -62,8 +63,7 @@ public class UpstageAIEmbeddingClient extends EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(
-          ProviderConstants.UPSTAGE_AI, response, errorMessage);
+      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -94,8 +94,7 @@ public class UpstageAIEmbeddingClient extends EmbeddingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from embedding provider '%s': %s",
-              ProviderConstants.UPSTAGE_AI, rootNode.toString()));
+              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
       // Check if the root node contains a "message" field
       JsonNode messageNode = rootNode.path("message");
       if (!messageNode.isMissingNode()) {

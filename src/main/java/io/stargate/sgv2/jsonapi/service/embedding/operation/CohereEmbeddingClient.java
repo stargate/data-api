@@ -31,6 +31,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * of chosen Cohere model.
  */
 public class CohereEmbeddingClient extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.COHERE;
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private String baseUrl;
@@ -66,8 +67,7 @@ public class CohereEmbeddingClient extends EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(
-          ProviderConstants.COHERE, response, errorMessage);
+      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -93,8 +93,7 @@ public class CohereEmbeddingClient extends EmbeddingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from embedding provider '%s': %s",
-              ProviderConstants.COHERE, rootNode.toString()));
+              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
       // Check if the root node contains a "message" field
       JsonNode messageNode = rootNode.path("message");
       if (!messageNode.isMissingNode()) {

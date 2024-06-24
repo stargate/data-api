@@ -30,6 +30,7 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class VertexAIEmbeddingClient extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.VERTEXAI;
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private final VertexAIEmbeddingProvider embeddingProvider;
@@ -64,8 +65,7 @@ public class VertexAIEmbeddingClient extends EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(
-          ProviderConstants.VERTEXAI, response, errorMessage);
+      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -85,8 +85,7 @@ public class VertexAIEmbeddingClient extends EmbeddingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from embedding provider '%s': %s",
-              ProviderConstants.VERTEXAI, rootNode.toString()));
+              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
       return rootNode.toString();
     }
   }

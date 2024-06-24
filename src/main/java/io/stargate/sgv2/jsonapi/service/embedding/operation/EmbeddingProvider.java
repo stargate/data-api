@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
  * of chosen model.
  */
 public abstract class EmbeddingProvider {
-  //  protected final String id;
   protected static final Logger logger = LoggerFactory.getLogger(EmbeddingProvider.class);
 
   /**
@@ -34,7 +33,7 @@ public abstract class EmbeddingProvider {
    *
    * @return
    */
-  protected abstract int maxBatchSize();
+  public abstract int maxBatchSize();
 
   /**
    * Record to hold the batchId and embedding vectors

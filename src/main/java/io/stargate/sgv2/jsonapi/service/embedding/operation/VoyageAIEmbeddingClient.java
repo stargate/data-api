@@ -28,6 +28,7 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class VoyageAIEmbeddingClient extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.VOYAGE_AI;
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private final VoyageAIEmbeddingProvider embeddingProvider;
@@ -68,8 +69,7 @@ public class VoyageAIEmbeddingClient extends EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(
-          ProviderConstants.VOYAGE_AI, response, errorMessage);
+      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -90,8 +90,7 @@ public class VoyageAIEmbeddingClient extends EmbeddingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from embedding provider '%s': %s",
-              ProviderConstants.VOYAGE_AI, rootNode.toString()));
+              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
       // Extract the "detail" node
       JsonNode detailNode = rootNode.path("detail");
       // Return the text of the "detail" node, or the full response body if it is missing

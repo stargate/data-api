@@ -27,6 +27,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * called.
  */
 public class JinaAIEmbeddingClient extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.JINA_AI;
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private final JinaAIEmbeddingProvider embeddingProvider;
@@ -57,8 +58,7 @@ public class JinaAIEmbeddingClient extends EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(
-          ProviderConstants.JINA_AI, response, errorMessage);
+      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -83,8 +83,7 @@ public class JinaAIEmbeddingClient extends EmbeddingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from embedding provider '%s': %s",
-              ProviderConstants.JINA_AI, rootNode.toString()));
+              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
       // Extract the "detail" node
       JsonNode detailNode = rootNode.path("detail");
       return detailNode.isMissingNode() ? rootNode.toString() : detailNode.toString();

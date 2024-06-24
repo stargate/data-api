@@ -33,6 +33,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * details of REST API being called.
  */
 public class AzureOpenAIEmbeddingClient extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.AZURE_OPENAI;
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private int dimension;
@@ -70,8 +71,7 @@ public class AzureOpenAIEmbeddingClient extends EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(
-          ProviderConstants.AZURE_OPENAI, response, errorMessage);
+      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -95,8 +95,7 @@ public class AzureOpenAIEmbeddingClient extends EmbeddingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from embedding provider '%s': %s",
-              ProviderConstants.AZURE_OPENAI, rootNode.toString()));
+              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
       // Extract the "message" node from the "error" node
       JsonNode messageNode = rootNode.at("/error/message");
       // Return the text of the "message" node, or the whole response body if it is missing

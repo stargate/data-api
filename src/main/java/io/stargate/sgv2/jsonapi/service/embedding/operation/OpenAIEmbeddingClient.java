@@ -29,6 +29,7 @@ import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class OpenAIEmbeddingClient extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.OPENAI;
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelName;
   private int dimension;
@@ -41,7 +42,6 @@ public class OpenAIEmbeddingClient extends EmbeddingProvider {
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    super();
     this.requestProperties = requestProperties;
     this.modelName = modelName;
     // One special case: legacy "ada-002" model does not accept "dimension" parameter
@@ -69,8 +69,7 @@ public class OpenAIEmbeddingClient extends EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(
-          ProviderConstants.OPENAI, response, errorMessage);
+      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -98,8 +97,7 @@ public class OpenAIEmbeddingClient extends EmbeddingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from embedding provider '%s': %s",
-              ProviderConstants.OPENAI, rootNode.toString()));
+              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
       // Extract the "message" node from the "error" node
       JsonNode messageNode = rootNode.at("/error/message");
       // Return the text of the "message" node, or the whole response body if it is missing
