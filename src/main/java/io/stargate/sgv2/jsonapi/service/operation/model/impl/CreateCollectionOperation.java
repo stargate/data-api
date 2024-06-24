@@ -148,9 +148,8 @@ public record CreateCollectionOperation(
     }
     return Uni.createFrom()
         .failure(
-            ErrorCode.INVALID_COLLECTION_NAME.toApiException(
-                "provided collection ('%s') already exists with different collection options",
-                name));
+            ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.toApiException(
+                "trying to create Collection ('%s') with different settings", name));
   }
 
   /**
