@@ -30,11 +30,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class OpenAIEmbeddingClient extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.OPENAI;
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelName;
-  private int dimension;
   private final OpenAIEmbeddingProvider embeddingProvider;
-  private Map<String, Object> vectorizeServiceParameters;
 
   public OpenAIEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
@@ -42,11 +38,14 @@ public class OpenAIEmbeddingClient extends EmbeddingProvider {
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    this.requestProperties = requestProperties;
-    this.modelName = modelName;
     // One special case: legacy "ada-002" model does not accept "dimension" parameter
-    this.dimension = EmbeddingUtil.acceptsOpenAIDimensions(modelName) ? dimension : 0;
-    this.vectorizeServiceParameters = vectorizeServiceParameters;
+    super(
+        requestProperties,
+        baseUrl,
+        modelName,
+        EmbeddingUtil.acceptsOpenAIDimensions(modelName) ? dimension : 0,
+        vectorizeServiceParameters);
+
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))

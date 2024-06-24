@@ -28,8 +28,6 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  */
 public class JinaAIEmbeddingClient extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.JINA_AI;
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelName;
   private final JinaAIEmbeddingProvider embeddingProvider;
 
   public JinaAIEmbeddingClient(
@@ -38,8 +36,8 @@ public class JinaAIEmbeddingClient extends EmbeddingProvider {
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    this.requestProperties = requestProperties;
-    this.modelName = modelName;
+    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))

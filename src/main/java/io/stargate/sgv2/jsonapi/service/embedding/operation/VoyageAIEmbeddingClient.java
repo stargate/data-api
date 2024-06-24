@@ -29,10 +29,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class VoyageAIEmbeddingClient extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.VOYAGE_AI;
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelName;
   private final VoyageAIEmbeddingProvider embeddingProvider;
-
   private final String requestTypeQuery, requestTypeIndex;
   private final Boolean autoTruncate;
 
@@ -42,8 +39,8 @@ public class VoyageAIEmbeddingClient extends EmbeddingProvider {
       String modelName,
       int dimension,
       Map<String, Object> serviceParameters) {
-    this.requestProperties = requestProperties;
-    this.modelName = modelName;
+    super(requestProperties, baseUrl, modelName, dimension, serviceParameters);
+
     // use configured input_type if available
     requestTypeQuery = requestProperties.requestTypeQuery().orElse(null);
     requestTypeIndex = requestProperties.requestTypeIndex().orElse(null);

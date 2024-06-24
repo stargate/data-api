@@ -24,9 +24,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class HuggingFaceDedicatedEmbeddingClient extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.HUGGINGFACE_DEDICATED;
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private final HuggingFaceDedicatedEmbeddingProvider embeddingProvider;
-  private Map<String, Object> vectorizeServiceParameters;
 
   public HuggingFaceDedicatedEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
@@ -34,8 +32,8 @@ public class HuggingFaceDedicatedEmbeddingClient extends EmbeddingProvider {
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    this.requestProperties = requestProperties;
-    this.vectorizeServiceParameters = vectorizeServiceParameters;
+    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+
     // replace placeholders: endPointName, regionName, cloudName
     String dedicatedApiUrl = EmbeddingUtil.replaceParameters(baseUrl, vectorizeServiceParameters);
     embeddingProvider =

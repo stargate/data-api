@@ -30,8 +30,6 @@ public class UpstageAIEmbeddingClient extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.UPSTAGE_AI;
   private static final String UPSTAGE_MODEL_SUFFIX_QUERY = "-query";
   private static final String UPSTAGE_MODEL_SUFFIX_PASSAGE = "-passage";
-
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
   private String modelNamePrefix;
   private final UpstageAIEmbeddingProvider embeddingProvider;
 
@@ -41,9 +39,9 @@ public class UpstageAIEmbeddingClient extends EmbeddingProvider {
       String modelNamePrefix,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    this.requestProperties = requestProperties;
-    this.modelNamePrefix = modelNamePrefix;
+    super(requestProperties, baseUrl, modelNamePrefix, dimension, vectorizeServiceParameters);
 
+    this.modelNamePrefix = modelNamePrefix;
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))

@@ -28,11 +28,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  */
 public class MistralEmbeddingClient extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.MISTRAL;
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelName;
-  private String baseUrl;
   private final MistralEmbeddingProvider embeddingProvider;
-  private Map<String, Object> vectorizeServiceParameters;
 
   public MistralEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
@@ -40,9 +36,8 @@ public class MistralEmbeddingClient extends EmbeddingProvider {
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    this.requestProperties = requestProperties;
-    this.modelName = modelName;
-    this.vectorizeServiceParameters = vectorizeServiceParameters;
+    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))

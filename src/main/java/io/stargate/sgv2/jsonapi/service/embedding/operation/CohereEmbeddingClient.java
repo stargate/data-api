@@ -32,11 +32,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  */
 public class CohereEmbeddingClient extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.COHERE;
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelName;
-  private String baseUrl;
   private final CohereEmbeddingProvider embeddingProvider;
-  private Map<String, Object> vectorizeServiceParameters;
 
   public CohereEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
@@ -44,10 +40,8 @@ public class CohereEmbeddingClient extends EmbeddingProvider {
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    this.requestProperties = requestProperties;
-    this.modelName = modelName;
-    this.baseUrl = baseUrl;
-    this.vectorizeServiceParameters = vectorizeServiceParameters;
+    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))

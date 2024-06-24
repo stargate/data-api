@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +14,27 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class EmbeddingProvider {
   protected static final Logger logger = LoggerFactory.getLogger(EmbeddingProvider.class);
+  protected EmbeddingProviderConfigStore.RequestProperties requestProperties;
+  protected String baseUrl;
+  protected String modelName;
+  protected int dimension;
+  protected Map<String, Object> vectorizeServiceParameters;
+
+  // default constructor
+  protected EmbeddingProvider() {}
+
+  protected EmbeddingProvider(
+      EmbeddingProviderConfigStore.RequestProperties requestProperties,
+      String baseUrl,
+      String modelName,
+      int dimension,
+      Map<String, Object> vectorizeServiceParameters) {
+    this.requestProperties = requestProperties;
+    this.baseUrl = baseUrl;
+    this.modelName = modelName;
+    this.dimension = dimension;
+    this.vectorizeServiceParameters = vectorizeServiceParameters;
+  }
 
   /**
    * Vectorizes the given list of texts and returns the embeddings.

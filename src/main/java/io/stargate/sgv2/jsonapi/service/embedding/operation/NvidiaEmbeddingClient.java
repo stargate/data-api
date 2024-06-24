@@ -32,12 +32,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  */
 public class NvidiaEmbeddingClient extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.NVIDIA;
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelName;
-  private String baseUrl;
   private final NvidiaEmbeddingProvider embeddingProvider;
-
-  private Map<String, Object> vectorizeServiceParameters;
 
   public NvidiaEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
@@ -45,10 +40,8 @@ public class NvidiaEmbeddingClient extends EmbeddingProvider {
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    this.requestProperties = requestProperties;
-    this.modelName = modelName;
-    this.baseUrl = baseUrl;
-    this.vectorizeServiceParameters = vectorizeServiceParameters;
+    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))

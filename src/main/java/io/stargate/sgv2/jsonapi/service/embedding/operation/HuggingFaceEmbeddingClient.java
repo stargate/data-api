@@ -28,11 +28,7 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class HuggingFaceEmbeddingClient extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.HUGGINGFACE;
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelName;
-  private String baseUrl;
   private final HuggingFaceEmbeddingProvider embeddingProvider;
-  private Map<String, Object> vectorizeServiceParameters;
 
   public HuggingFaceEmbeddingClient(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
@@ -40,10 +36,8 @@ public class HuggingFaceEmbeddingClient extends EmbeddingProvider {
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    this.requestProperties = requestProperties;
-    this.modelName = modelName;
-    this.baseUrl = baseUrl;
-    this.vectorizeServiceParameters = vectorizeServiceParameters;
+    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))

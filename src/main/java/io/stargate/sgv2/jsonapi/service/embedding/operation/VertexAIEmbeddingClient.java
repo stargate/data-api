@@ -31,8 +31,6 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 public class VertexAIEmbeddingClient extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.VERTEXAI;
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelName;
   private final VertexAIEmbeddingProvider embeddingProvider;
 
   public VertexAIEmbeddingClient(
@@ -41,8 +39,8 @@ public class VertexAIEmbeddingClient extends EmbeddingProvider {
       String modelName,
       int dimension,
       Map<String, Object> serviceParameters) {
-    this.requestProperties = requestProperties;
-    this.modelName = modelName;
+    super(requestProperties, baseUrl, modelName, dimension, serviceParameters);
+
     String actualUrl = EmbeddingUtil.replaceParameters(baseUrl, serviceParameters);
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
