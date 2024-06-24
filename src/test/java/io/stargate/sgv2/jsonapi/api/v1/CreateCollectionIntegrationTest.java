@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.*;
@@ -172,11 +173,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .then()
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
           .body(
               "errors[0].message",
-              containsString("provided collection ('simple_collection') already exists with"))
-          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "trying to create Collection ('simple_collection') with different settings"));
 
       deleteCollection("simple_collection");
     }
@@ -213,11 +215,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .then()
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
           .body(
               "errors[0].message",
-              containsString("provided collection ('simple_collection') already exists with"))
-          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "trying to create Collection ('simple_collection') with different settings"));
 
       deleteCollection("simple_collection");
     }
@@ -245,11 +248,13 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
           .body(
               "errors[0].message",
-              containsString("provided collection ('simple_collection') already exists with"))
-          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "trying to create Collection ('simple_collection') with different settings"));
+
       // create another vector collection with the same name but different function setting
       given()
           .headers(getHeaders())
@@ -261,11 +266,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
           .body(
               "errors[0].message",
-              containsString("provided collection ('simple_collection') already exists with"))
-          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "trying to create Collection ('simple_collection') with different settings"));
 
       deleteCollection("simple_collection");
     }

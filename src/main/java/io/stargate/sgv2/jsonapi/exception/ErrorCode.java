@@ -79,11 +79,11 @@ public enum ErrorCode {
   SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
   SHRED_BAD_VECTORIZE_VALUE("$vectorize search clause needs to be non-blank text value"),
 
+  EXISTING_COLLECTION_DIFFERENT_SETTINGS("Collection already exists"),
+
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
-
-  INVALID_COLLECTION_NAME("Invalid collection name"),
 
   INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema: "),
 
