@@ -77,6 +77,9 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put(
         "stargate.jsonapi.embedding.providers.huggingface.supported-authentications.HEADER.enabled",
         "false");
+    propsBuilder.put(
+        "stargate.jsonapi.embedding.providers.openai.supported-authentications.SHARED_SECRET.enabled",
+        "true");
     propsBuilder.put("stargate.jsonapi.embedding.providers.vertexai.enabled", "true");
     propsBuilder.put(
         "stargate.jsonapi.embedding.providers.vertexai.models[0].parameters[0].required", "true");
