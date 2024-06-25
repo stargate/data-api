@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -17,13 +15,11 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import java.net.URI;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -162,23 +158,10 @@ public class VertexAIEmbeddingClient extends EmbeddingProvider {
       EmbeddingRequestType embeddingRequestType) {
     EmbeddingRequest request =
         new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
+
     Uni<EmbeddingResponse> serviceResponse =
-        embeddingProvider
-            .embed("Bearer " + apiKeyOverride.get(), modelName, request)
-            .onFailure(
-                throwable -> {
-                  return ((throwable.getCause() != null
-                          && throwable.getCause() instanceof JsonApiException jae
-                          && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
-                      || throwable instanceof TimeoutException);
-                })
-            .retry()
-            .withBackOff(
-                Duration.ofMillis(requestProperties.initialBackOffMillis()),
-                Duration.ofMillis(requestProperties.maxBackOffMillis()))
-            .withJitter(requestProperties.jitter())
-            .atMost(requestProperties.atMostRetries());
-    ;
+        applyRetry(embeddingProvider.embed("Bearer " + apiKeyOverride.get(), modelName, request));
+
     return serviceResponse
         .onItem()
         .transform(
