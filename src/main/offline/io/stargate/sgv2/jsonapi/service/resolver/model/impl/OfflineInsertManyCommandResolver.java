@@ -43,6 +43,6 @@ public class OfflineInsertManyCommandResolver implements CommandResolver<Offline
     // and no need to return document positions
     final boolean returnDocumentResponses = false;
 
-    return new InsertOperation(ctx, shreddedDocuments, ordered, true, returnDocumentResponses);
+    return InsertOperation.create(ctx, shreddedDocuments, ordered, true, returnDocumentResponses);
   }
 }
