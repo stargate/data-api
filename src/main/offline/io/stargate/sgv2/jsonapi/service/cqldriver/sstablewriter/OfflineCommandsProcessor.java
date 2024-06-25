@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.response.BeginOfflineSessionResponse;
-
 import io.stargate.sgv2.jsonapi.api.response.EndOfflineSessionResponse;
 import io.stargate.sgv2.jsonapi.api.response.OfflineGetStatusResponse;
 import io.stargate.sgv2.jsonapi.api.response.OfflineInsertManyResponse;
