@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
   /** Tracks the index column usage */
-  public IndexUsage indexUsage = new IndexUsage();
+  public final IndexUsage indexUsage = new IndexUsage();
 
   /** Filter condition element path. */
   private final String path;
