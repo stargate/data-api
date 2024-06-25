@@ -5,12 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
-import io.stargate.sgv2.api.common.config.MetricsConfig;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.response.BeginOfflineSessionResponse;
+
 import io.stargate.sgv2.jsonapi.api.response.EndOfflineSessionResponse;
 import io.stargate.sgv2.jsonapi.api.response.OfflineGetStatusResponse;
 import io.stargate.sgv2.jsonapi.api.response.OfflineInsertManyResponse;

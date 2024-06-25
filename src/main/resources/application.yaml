@@ -45,7 +45,6 @@ stargate:
       policy: custom
 
   # metrics properties
-  # see io.stargate.sgv2.api.common.config.MetricsConfig for all config properties and options
   metrics:
     global-tags:
       module: sgv2-jsonapi
