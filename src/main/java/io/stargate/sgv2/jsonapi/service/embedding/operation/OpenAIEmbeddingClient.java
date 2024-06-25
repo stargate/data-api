@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
-import io.stargate.sgv2.jsonapi.service.embedding.util.EmbeddingUtil;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -39,7 +38,7 @@ public class OpenAIEmbeddingClient extends EmbeddingProvider {
         requestProperties,
         baseUrl,
         modelName,
-        EmbeddingUtil.acceptsOpenAIDimensions(modelName) ? dimension : 0,
+        EmbeddingProvider.acceptsOpenAIDimensions(modelName) ? dimension : 0,
         vectorizeServiceParameters);
 
     embeddingProvider =

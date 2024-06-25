@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
-import io.stargate.sgv2.jsonapi.service.embedding.util.EmbeddingUtil;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -37,7 +36,7 @@ public class VertexAIEmbeddingClient extends EmbeddingProvider {
       Map<String, Object> serviceParameters) {
     super(requestProperties, baseUrl, modelName, dimension, serviceParameters);
 
-    String actualUrl = EmbeddingUtil.replaceParameters(baseUrl, serviceParameters);
+    String actualUrl = replaceParameters(baseUrl, serviceParameters);
     embeddingProvider =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(actualUrl))
