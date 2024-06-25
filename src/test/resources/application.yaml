@@ -1,3 +1,7 @@
+stargate:
+  debug:
+    enabled: true
+
 # change test port from 8081 (used by other SG services)
 quarkus:
   http:
