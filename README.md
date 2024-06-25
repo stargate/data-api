@@ -48,7 +48,7 @@ There are two main configuration property prefixes used, `stargate.` and `quarku
 The `quarkus.` properties are defined by the Quarkus framework, and the complete list of available properties can be found on the [All configuration options](https://quarkus.io/guides/all-config) page.
 In addition, the related guide of each [Quarkus extension](#quarkus-extensions) used in the project provides an overview of the available config options.
 
-The `stargate.` properties are defined by this project itself and by the [sgv2-quarkus-common configuration](https://github.com/stargate/stargate/blob/main/apis/sgv2-quarkus-common/CONFIGURATION.md).
+The `stargate.` properties are defined by this project itself.
 The properties are defined by dedicated config classes annotated with the `@ConfigMapping`.
 The list of currently available properties is documented in the [Configuration Guide](CONFIGURATION.md).
 

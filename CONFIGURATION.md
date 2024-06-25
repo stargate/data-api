@@ -1,7 +1,5 @@
 # Configuration Guide
 
-> **IMPORTANT:** Please check the [Stargate Common Configuration](https://github.com/stargate/stargate/blob/main/apis/sgv2-quarkus-common/CONFIGURATION.md) for properties introduced by the `sgv2-quarkus-common` project.
-
 ## Quarkus Configuration
 
 The complete list of Quarkus available properties can be found on [All configuration options](https://quarkus.io/guides/all-config) page.
