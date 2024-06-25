@@ -4,7 +4,6 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
-import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

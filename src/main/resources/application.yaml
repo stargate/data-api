@@ -98,6 +98,10 @@ quarkus:
 
   # built-in micrometer properties
   micrometer:
+    # exports at prometheus default path
+    export:
+      prometheus:
+        path: /metrics
     binder:
       http-server:
         # ignore all non-application uris, as well as the custom set
