@@ -82,6 +82,10 @@ public interface JsonApiMetricsConfig {
   @WithDefault("embedding.provider")
   String embeddingProvider();
 
+  @NotBlank
+  @WithDefault("index.usage.count")
+  String indexUsageCounterMetrics();
+
   /** List of values that can be used as value for metrics sort_type. */
   enum SortType {
     // Uses vertor search sorting for document resolution

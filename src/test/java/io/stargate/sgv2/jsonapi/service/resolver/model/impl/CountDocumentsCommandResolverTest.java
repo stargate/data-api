@@ -3,11 +3,13 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -26,6 +28,7 @@ class CountDocumentsCommandResolverTest {
   @Inject CountDocumentsCommandResolver resolver;
 
   @Inject OperationsConfig operationsConfig;
+  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 
   @Nested
   class ResolveCommand {
