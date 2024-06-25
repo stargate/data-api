@@ -92,7 +92,12 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
     addToMetrics(
-        meterRegistry, dataApiRequestInfo, jsonApiMetricsConfig, command, logicalExpression, false);
+        meterRegistry,
+        dataApiRequestInfo,
+        jsonApiMetricsConfig,
+        command,
+        logicalExpression,
+        vector != null);
     if (vector != null) {
       return FindOperation.vsearchSingle(
           commandContext,
