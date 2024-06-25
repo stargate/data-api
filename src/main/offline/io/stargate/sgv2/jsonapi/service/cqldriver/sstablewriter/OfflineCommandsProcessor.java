@@ -95,8 +95,7 @@ public class OfflineCommandsProcessor {
             .withMapping(OperationsConfig.class)
             .withMapping(MetricsConfig.class)
             .build();
-    MetricsConfig metricsConfig = smallRyeConfig.getConfigMapping(MetricsConfig.class);
-    return new DataVectorizerService(objectMapper, new SimpleMeterRegistry(), null, metricsConfig);
+    return new DataVectorizerService(objectMapper, new SimpleMeterRegistry(), null);
   }
 
   public OfflineGetStatusResponse getStatus(CommandContext commandContext, String sessionId)
