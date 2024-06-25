@@ -189,4 +189,24 @@ public abstract class AbstractNamespaceIntegrationTestBase {
             .toList();
     assertThat(countMetrics.size()).isGreaterThan(0);
   }
+
+  public static void checkIndexUsageMetrics(String commandName, boolean vector) {
+    String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+    List<String> countMetrics =
+        metrics
+            .lines()
+            .filter(
+                line -> {
+                  if (vector)
+                    return line.startsWith("index_usage_count")
+                        && line.contains("command=\"" + commandName + "\"")
+                        && line.contains("query_vector_value=\"true\"");
+                  else
+                    return line.startsWith("index_usage_count")
+                        && line.contains("command=\"" + commandName + "\"")
+                        && line.contains("query_vector_value=\"false\"");
+                })
+            .toList();
+    assertThat(countMetrics.size()).isGreaterThan(0);
+  }
 }
