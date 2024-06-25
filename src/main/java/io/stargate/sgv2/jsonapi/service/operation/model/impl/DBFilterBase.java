@@ -46,7 +46,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
    *
    * @return
    */
-  public String getPath() {
+  protected String getPath() {
     return path;
   }
 
