@@ -49,7 +49,7 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
       try {
         final WritableShreddedDocument shredded =
             shredder.shred(ctx, inputDocs.get(pos), null, idRef);
-        attempt = new InsertOperation.InsertAttempt(pos, shredded);
+        attempt = InsertOperation.InsertAttempt.from(pos, shredded);
       } catch (Exception e) {
         attempt = new InsertOperation.InsertAttempt(pos, idRef.get(), e);
       }

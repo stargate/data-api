@@ -54,7 +54,7 @@ public record InsertOperation(
       this.failure = failure;
     }
 
-    public InsertAttempt(int position, WritableShreddedDocument document) {
+    private InsertAttempt(int position, WritableShreddedDocument document) {
       this.position = position;
       this.document = document;
       this.documentId = document.id();

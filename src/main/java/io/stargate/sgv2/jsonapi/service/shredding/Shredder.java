@@ -87,6 +87,15 @@ public class Shredder {
         doc, txId, ctx.indexingProjector(), ctx.commandName(), ctx.collectionSettings(), null);
   }
 
+  /**
+   * @param ctx Command context for processing, used for accessing Collection settings and indexing
+   *     projector
+   * @param doc Document to shred
+   * @param txId (optional, nullable) transaction id used for avoiding race conditions
+   * @param docIdToReturn (optional, nullable) Reference used for returning Document Id to caller,
+   *     even if exception is thrown (set as soon as id is known)
+   * @return Shredded document
+   */
   public WritableShreddedDocument shred(
       CommandContext ctx, JsonNode doc, UUID txId, AtomicReference<DocumentId> docIdToReturn) {
     return shred(
