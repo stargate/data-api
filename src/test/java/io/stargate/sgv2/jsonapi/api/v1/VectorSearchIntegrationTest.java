@@ -1862,18 +1862,24 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           "FindCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
       VectorSearchIntegrationTest.checkVectorMetrics(
           "FindCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
+      VectorSearchIntegrationTest.checkIndexUsageMetrics("FindCommand", true);
+
       VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
       VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT_WITH_FILTERS.name());
+      VectorSearchIntegrationTest.checkIndexUsageMetrics("FindOneCommand", true);
       VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndUpdateCommand", JsonApiMetricsConfig.SortType.NONE.name());
       VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndUpdateCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
+      VectorSearchIntegrationTest.checkIndexUsageMetrics("FindOneAndUpdateCommand", true);
       VectorSearchIntegrationTest.checkVectorMetrics(
           "FindOneAndDeleteCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
+      VectorSearchIntegrationTest.checkIndexUsageMetrics("FindOneAndDeleteCommand", true);
       VectorSearchIntegrationTest.checkVectorMetrics(
           "UpdateOneCommand", JsonApiMetricsConfig.SortType.SIMILARITY_SORT.name());
+      VectorSearchIntegrationTest.checkIndexUsageMetrics("UpdateOneCommand", true);
     }
   }
 }

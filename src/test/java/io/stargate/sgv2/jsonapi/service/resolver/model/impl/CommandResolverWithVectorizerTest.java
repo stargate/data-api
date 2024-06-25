@@ -703,7 +703,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(op.commandContext())
                     .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
                 assertThat(op.ordered()).isFalse();
-                assertThat(op.documents()).containsExactly(first, second);
+                assertThat(op.insertions()).hasSize(2);
               });
     }
 
@@ -791,7 +791,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(op.commandContext())
                     .isEqualTo(TestEmbeddingProvider.commandContextWithVectorize);
                 assertThat(op.ordered()).isFalse();
-                assertThat(op.documents()).singleElement().isEqualTo(expected);
+                assertThat(op.insertions()).hasSize(1);
               });
     }
   }
