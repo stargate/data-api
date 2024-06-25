@@ -1,10 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,9 +24,10 @@ public abstract class EmbeddingProvider {
   protected int dimension;
   protected Map<String, Object> vectorizeServiceParameters;
 
-  // default constructor
+  /** Default constructor */
   protected EmbeddingProvider() {}
 
+  /** Constructs an EmbeddingProvider with the specified configuration. */
   protected EmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
@@ -34,6 +39,29 @@ public abstract class EmbeddingProvider {
     this.modelName = modelName;
     this.dimension = dimension;
     this.vectorizeServiceParameters = vectorizeServiceParameters;
+  }
+
+  /**
+   * Applies a retry mechanism with backoff and jitter to the Uni returned by the embed() method,
+   * which makes an HTTP request to a third-party service.
+   *
+   * @param <T> The type of the item emitted by the Uni.
+   * @param uni The Uni to which the retry mechanism should be applied.
+   * @return A Uni that will retry on the specified failures with the configured backoff and jitter.
+   */
+  protected <T> Uni<T> applyRetry(Uni<T> uni) {
+    return uni.onFailure(
+            throwable ->
+                (throwable.getCause() != null
+                        && throwable.getCause() instanceof JsonApiException jae
+                        && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
+                    || throwable instanceof TimeoutException)
+        .retry()
+        .withBackOff(
+            Duration.ofMillis(requestProperties.initialBackOffMillis()),
+            Duration.ofMillis(requestProperties.maxBackOffMillis()))
+        .withJitter(requestProperties.jitter())
+        .atMost(requestProperties.atMostRetries());
   }
 
   /**
