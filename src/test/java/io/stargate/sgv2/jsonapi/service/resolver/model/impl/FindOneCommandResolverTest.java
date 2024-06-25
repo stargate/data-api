@@ -3,10 +3,12 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
@@ -24,6 +26,7 @@ import org.junit.jupiter.api.Test;
 public class FindOneCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject FindOneCommandResolver resolver;
+  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 
   @Nested
   class Resolve {
