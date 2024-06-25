@@ -1,10 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -27,14 +30,26 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
   private final Shredder shredder;
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
+  private final MeterRegistry meterRegistry;
+  private final DataApiRequestInfo dataApiRequestInfo;
+  private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   @Inject
   public UpdateOneCommandResolver(
-      ObjectMapper objectMapper, OperationsConfig operationsConfig, Shredder shredder) {
+      ObjectMapper objectMapper,
+      OperationsConfig operationsConfig,
+      Shredder shredder,
+      MeterRegistry meterRegistry,
+      DataApiRequestInfo dataApiRequestInfo,
+      JsonApiMetricsConfig jsonApiMetricsConfig) {
     super();
     this.objectMapper = objectMapper;
     this.shredder = shredder;
     this.operationsConfig = operationsConfig;
+
+    this.meterRegistry = meterRegistry;
+    this.dataApiRequestInfo = dataApiRequestInfo;
+    this.jsonApiMetricsConfig = jsonApiMetricsConfig;
   }
 
   @Override
@@ -76,7 +91,8 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
     }
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
-
+    addToMetrics(
+        meterRegistry, dataApiRequestInfo, jsonApiMetricsConfig, command, logicalExpression, false);
     if (vector != null) {
       return FindOperation.vsearchSingle(
           commandContext,

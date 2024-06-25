@@ -1838,6 +1838,8 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
     public void checkMetrics() {
       FindOneAndUpdateIntegrationTest.super.checkMetrics("FindOneAndUpdateCommand");
       FindOneAndUpdateIntegrationTest.super.checkDriverMetricsTenantId();
+      FindOneAndUpdateIntegrationTest.super.checkIndexUsageMetrics(
+          "FindOneAndUpdateCommand", false);
     }
   }
 }

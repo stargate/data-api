@@ -314,6 +314,8 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
     public void checkMetrics() {
       FindOneAndDeleteIntegrationTest.super.checkMetrics("FindOneAndDeleteCommand");
       FindOneAndDeleteIntegrationTest.super.checkDriverMetricsTenantId();
+      FindOneAndDeleteIntegrationTest.super.checkIndexUsageMetrics(
+          "FindOneAndDeleteCommand", false);
     }
   }
 

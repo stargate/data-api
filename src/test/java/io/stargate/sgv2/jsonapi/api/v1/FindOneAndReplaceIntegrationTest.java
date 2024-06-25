@@ -798,6 +798,8 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
     public void checkMetrics() {
       FindOneAndReplaceIntegrationTest.super.checkMetrics("FindOneAndReplaceCommand");
       FindOneAndReplaceIntegrationTest.super.checkDriverMetricsTenantId();
+      FindOneAndReplaceIntegrationTest.super.checkIndexUsageMetrics(
+          "FindOneAndReplaceCommand", false);
     }
   }
 }

@@ -1084,6 +1084,7 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
     public void checkMetrics() {
       FindOneIntegrationTest.super.checkMetrics("FindOneCommand");
       FindOneIntegrationTest.super.checkDriverMetricsTenantId();
+      FindOneIntegrationTest.super.checkIndexUsageMetrics("FindOneCommand", false);
     }
   }
 }

@@ -2087,6 +2087,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     public void checkMetrics() {
       FindIntegrationTest.super.checkMetrics("FindCommand");
       FindIntegrationTest.super.checkDriverMetricsTenantId();
+      FindIntegrationTest.super.checkIndexUsageMetrics("FindCommand", false);
     }
   }
 }
