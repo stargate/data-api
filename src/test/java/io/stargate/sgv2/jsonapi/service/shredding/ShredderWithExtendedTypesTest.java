@@ -205,7 +205,8 @@ public class ShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSettings.empty().withIdType(CollectionSettings.IdType.UNDEFINED));
+              CollectionSettings.empty().withIdType(CollectionSettings.IdType.UNDEFINED),
+              null);
 
       DocumentId docId = doc.id();
       // Legacy UUID generated as "plain" String id
@@ -244,7 +245,8 @@ public class ShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSettings.empty().withIdType(CollectionSettings.IdType.OBJECT_ID));
+              CollectionSettings.empty().withIdType(CollectionSettings.IdType.OBJECT_ID),
+              null);
 
       DocumentId docId = doc.id();
       assertThat(docId).isInstanceOf(DocumentId.ExtensionTypeId.class);
@@ -299,7 +301,8 @@ public class ShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSettings.empty().withIdType(idType));
+              CollectionSettings.empty().withIdType(idType),
+              null);
 
       DocumentId docId = doc.id();
       assertThat(docId).isInstanceOf(DocumentId.ExtensionTypeId.class);

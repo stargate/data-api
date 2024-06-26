@@ -17,7 +17,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: true
+              enabled: false
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -67,7 +67,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: api-key
             SHARED_SECRET:
-              enabled: true
+              enabled: false
               tokens:
                 - accepted: providerKey
                   forwarded: api-key
@@ -118,7 +118,7 @@ stargate:
                   - accepted: x-embedding-api-key
                     forwarded: Authorization
             SHARED_SECRET:
-                enabled: true
+                enabled: false
                 tokens:
                   - accepted: providerKey
                     forwarded: Authorization
@@ -151,7 +151,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: true
+              enabled: false
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -194,7 +194,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: true
+              enabled: false
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -219,6 +219,7 @@ stargate:
                   help: "If set to false, text that exceeds the token limit causes the request to fail. The default value is true."
         # OUT OF SCOPE FOR INITIAL PREVIEW
         cohere:
+          # see https://docs.cohere.com/reference/embed
           display-name: Cohere
           enabled: false
           url: https://api.cohere.ai/v1/
@@ -231,7 +232,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: true
+              enabled: false
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -280,7 +281,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: true
+              enabled: false
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -314,7 +315,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: true
+              enabled: false
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -354,7 +355,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: true
+              enabled: false
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -371,7 +372,7 @@ stargate:
         # In addition, implementation only supports 1-entry vectorization.
         upstageAI:
           # see https://developers.upstage.ai/docs/apis/embeddings
-          display-name: Upstage AI
+          display-name: Upstage
           enabled: true
           url: https://api.upstage.ai/v1/solar/embeddings
           supported-authentications:
@@ -383,7 +384,7 @@ stargate:
                 - accepted: x-embedding-api-key
                   forwarded: Authorization
             SHARED_SECRET:
-              enabled: true
+              enabled: false
               tokens:
                 - accepted: providerKey
                   forwarded: Authorization
@@ -393,5 +394,5 @@ stargate:
           models:
             # NOTE: this is where weirdness exists; model name is prefix on which
             #   either "-query" or "-passage" is appended to get the actual model name
-            - name: solar-1-mini-embedding
+            - name: solar-embedding-1-large
               vector-dimension: 4096

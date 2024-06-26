@@ -1,4 +1,4 @@
-# Docker Compose scripts for JSONAPI with DSE-6.9
+# Docker Compose scripts for Data API with DSE-6.9
 
 This directory provides two ways to start the Data API with DSE-6.9 or HCD using `docker compose`.
 

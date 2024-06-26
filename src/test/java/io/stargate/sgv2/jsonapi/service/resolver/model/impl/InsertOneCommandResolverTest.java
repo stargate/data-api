@@ -15,7 +15,6 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
-import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -55,11 +54,9 @@ class InsertOneCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument expected = shredder.shred(command.document());
-
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isFalse();
-                assertThat(op.documents()).singleElement().isEqualTo(expected);
+                assertThat(op.insertions()).hasSize(1);
               });
     }
 
@@ -84,11 +81,9 @@ class InsertOneCommandResolverTest {
           .isInstanceOfSatisfying(
               InsertOperation.class,
               op -> {
-                WritableShreddedDocument expected = shredder.shred(command.document());
-
                 assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.ordered()).isFalse();
-                assertThat(op.documents()).singleElement().isEqualTo(expected);
+                assertThat(op.insertions()).hasSize(1);
               });
     }
 

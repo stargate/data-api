@@ -1,9 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -27,11 +30,23 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
 
+  private final MeterRegistry meterRegistry;
+  private final DataApiRequestInfo dataApiRequestInfo;
+  private final JsonApiMetricsConfig jsonApiMetricsConfig;
+
   @Inject
-  public DeleteManyCommandResolver(OperationsConfig operationsConfig, ObjectMapper objectMapper) {
+  public DeleteManyCommandResolver(
+      OperationsConfig operationsConfig,
+      ObjectMapper objectMapper,
+      MeterRegistry meterRegistry,
+      DataApiRequestInfo dataApiRequestInfo,
+      JsonApiMetricsConfig jsonApiMetricsConfig) {
     super();
     this.operationsConfig = operationsConfig;
     this.objectMapper = objectMapper;
+    this.meterRegistry = meterRegistry;
+    this.dataApiRequestInfo = dataApiRequestInfo;
+    this.jsonApiMetricsConfig = jsonApiMetricsConfig;
   }
 
   @Override
@@ -56,6 +71,8 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
   private FindOperation getFindOperation(CommandContext commandContext, DeleteManyCommand command) {
     LogicalExpression logicalExpression = resolve(commandContext, command);
     // Read One extra document than delete limit so return moreData flag
+    addToMetrics(
+        meterRegistry, dataApiRequestInfo, jsonApiMetricsConfig, command, logicalExpression, false);
     return FindOperation.unsorted(
         commandContext,
         logicalExpression,

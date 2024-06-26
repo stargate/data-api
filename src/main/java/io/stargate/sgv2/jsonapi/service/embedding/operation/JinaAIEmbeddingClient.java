@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
@@ -7,6 +8,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
@@ -54,7 +56,38 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
-      return HttpResponseErrorMessageMapper.getDefaultException(response);
+      String errorMessage = getErrorMessage(response);
+      return HttpResponseErrorMessageMapper.mapToAPIException(
+          ProviderConstants.JINA_AI, response, errorMessage);
+    }
+
+    /**
+     * Extract the error message from the response body. The example response body is:
+     *
+     * <pre>
+     * {
+     *    "detail": "ValidationError(model='TextDoc', errors=[{'loc': ('text',), 'msg': 'Single text cannot exceed 8192 tokens. 10454 tokens given.', 'type': 'value_error'}])"
+     * }
+     * </pre>
+     *
+     * <pre>
+     *     {"detail":"Failed to authenticate with the provided api key."}
+     * </pre>
+     *
+     * @param response The response body as a String.
+     * @return The error message extracted from the response body.
+     */
+    private static String getErrorMessage(jakarta.ws.rs.core.Response response) {
+      // Get the whole response body
+      JsonNode rootNode = response.readEntity(JsonNode.class);
+      // Log the response body
+      logger.info(
+          String.format(
+              "Error response from embedding provider '%s': %s",
+              ProviderConstants.JINA_AI, rootNode.toString()));
+      // Extract the "detail" node
+      JsonNode detailNode = rootNode.path("detail");
+      return detailNode.isMissingNode() ? rootNode.toString() : detailNode.toString();
     }
   }
 

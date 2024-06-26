@@ -1,8 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -17,11 +20,21 @@ public class CountDocumentsCommandResolver extends FilterableResolver<CountDocum
     implements CommandResolver<CountDocumentsCommand> {
 
   private final OperationsConfig operationsConfig;
+  private final MeterRegistry meterRegistry;
+  private final DataApiRequestInfo dataApiRequestInfo;
+  private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   @Inject
-  public CountDocumentsCommandResolver(OperationsConfig operationsConfig) {
+  public CountDocumentsCommandResolver(
+      OperationsConfig operationsConfig,
+      MeterRegistry meterRegistry,
+      DataApiRequestInfo dataApiRequestInfo,
+      JsonApiMetricsConfig jsonApiMetricsConfig) {
     super();
     this.operationsConfig = operationsConfig;
+    this.meterRegistry = meterRegistry;
+    this.dataApiRequestInfo = dataApiRequestInfo;
+    this.jsonApiMetricsConfig = jsonApiMetricsConfig;
   }
 
   @Override
@@ -32,6 +45,8 @@ public class CountDocumentsCommandResolver extends FilterableResolver<CountDocum
   @Override
   public Operation resolveCommand(CommandContext ctx, CountDocumentsCommand command) {
     LogicalExpression logicalExpression = resolve(ctx, command);
+    addToMetrics(
+        meterRegistry, dataApiRequestInfo, jsonApiMetricsConfig, command, logicalExpression, false);
     return new CountOperation(
         ctx,
         logicalExpression,

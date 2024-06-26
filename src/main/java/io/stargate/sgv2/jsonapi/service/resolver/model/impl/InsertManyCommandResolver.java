@@ -1,29 +1,29 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
-import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** Resolves the {@link InsertManyCommand}. */
 @ApplicationScoped
 public class InsertManyCommandResolver implements CommandResolver<InsertManyCommand> {
 
   private final Shredder shredder;
-  private final ObjectMapper objectMapper;
 
   @Inject
-  public InsertManyCommandResolver(Shredder shredder, ObjectMapper objectMapper) {
+  public InsertManyCommandResolver(Shredder shredder) {
     this.shredder = shredder;
-    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -33,15 +33,28 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
 
   @Override
   public Operation resolveCommand(CommandContext ctx, InsertManyCommand command) {
-    final IndexingProjector projection = ctx.indexingProjector();
-    final List<WritableShreddedDocument> shreddedDocuments =
-        command.documents().stream().map(doc -> shredder.shred(ctx, doc, null)).toList();
+    final InsertManyCommand.Options options = command.options();
+    final boolean ordered = (null != options) && options.ordered();
+    final boolean returnDocumentResponses = (null != options) && options.returnDocumentResponses();
+    final List<JsonNode> inputDocs = command.documents();
+    final int docCount = inputDocs.size();
 
-    // resolve ordered
-    InsertManyCommand.Options options = command.options();
-
-    boolean ordered = null != options && Boolean.TRUE.equals(options.ordered());
-
-    return new InsertOperation(ctx, shreddedDocuments, ordered);
+    final List<InsertOperation.InsertAttempt> insertions = new ArrayList<>(docCount);
+    for (int pos = 0; pos < docCount; ++pos) {
+      InsertOperation.InsertAttempt attempt;
+      // Since exception thrown will prevent returning anything, need to instead pass a
+      // reference for Shredder to populate with the document id as soon as it knows it
+      // (there is at least one case fail occurs before it knows the id)
+      AtomicReference<DocumentId> idRef = new AtomicReference<>();
+      try {
+        final WritableShreddedDocument shredded =
+            shredder.shred(ctx, inputDocs.get(pos), null, idRef);
+        attempt = InsertOperation.InsertAttempt.from(pos, shredded);
+      } catch (Exception e) {
+        attempt = new InsertOperation.InsertAttempt(pos, idRef.get(), e);
+      }
+      insertions.add(attempt);
+    }
+    return new InsertOperation(ctx, insertions, ordered, false, returnDocumentResponses);
   }
 }

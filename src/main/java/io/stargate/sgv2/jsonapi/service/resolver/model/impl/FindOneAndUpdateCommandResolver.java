@@ -1,10 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -28,6 +31,9 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
   private final Shredder shredder;
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
+  private final MeterRegistry meterRegistry;
+  private final DataApiRequestInfo dataApiRequestInfo;
+  private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   private final DataVectorizerService dataVectorizerService;
 
@@ -36,12 +42,18 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
       ObjectMapper objectMapper,
       OperationsConfig operationsConfig,
       Shredder shredder,
-      DataVectorizerService dataVectorizerService) {
+      DataVectorizerService dataVectorizerService,
+      MeterRegistry meterRegistry,
+      DataApiRequestInfo dataApiRequestInfo,
+      JsonApiMetricsConfig jsonApiMetricsConfig) {
     super();
     this.objectMapper = objectMapper;
     this.shredder = shredder;
     this.operationsConfig = operationsConfig;
     this.dataVectorizerService = dataVectorizerService;
+    this.meterRegistry = meterRegistry;
+    this.dataApiRequestInfo = dataApiRequestInfo;
+    this.jsonApiMetricsConfig = jsonApiMetricsConfig;
   }
 
   @Override
@@ -89,7 +101,13 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
     }
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
-
+    addToMetrics(
+        meterRegistry,
+        dataApiRequestInfo,
+        jsonApiMetricsConfig,
+        command,
+        logicalExpression,
+        vector != null);
     if (vector != null) {
       return FindOperation.vsearchSingle(
           commandContext,

@@ -1,12 +1,16 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_INVALID_RESPONSE;
+import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
 
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A client response filter/interceptor that validates the response from the embedding provider.
@@ -20,6 +24,8 @@ import jakarta.ws.rs.core.MediaType;
 public class EmbeddingProviderResponseValidation implements ClientResponseFilter {
 
   static final MediaType MEDIATYPE_TEXT_JSON = new MediaType("text", "json");
+
+  Logger logger = LoggerFactory.getLogger(EmbeddingProviderResponseValidation.class);
 
   /**
    * Filters the client response by validating the Content-Type and JSON body.
@@ -36,20 +42,30 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
     if (responseContext.getStatus() == 0) {
       return;
     }
-    // Check the Content-Type of the response
+    // Throw error if there is no response body
+    if (!responseContext.hasEntity()) {
+      throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
+          "No response body from the embedding provider");
+    }
+
+    // response should always be JSON; if not, error out, include raw response message for
+    // trouble-shooting purposes
     MediaType contentType = responseContext.getMediaType();
     if (contentType == null
         || !(MediaType.APPLICATION_JSON_TYPE.isCompatible(contentType)
             || MEDIATYPE_TEXT_JSON.isCompatible(contentType))) {
-      throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
-          "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found '%s'",
-          contentType);
-    }
-
-    // Throw error if there is no response body
-    if (!responseContext.hasEntity()) {
-      throw EMBEDDING_PROVIDER_INVALID_RESPONSE.toApiException(
-          "No JSON body from the embedding provider");
+      String responseBody = null;
+      try {
+        // Read the entity stream and convert to string
+        responseBody =
+            new String(responseContext.getEntityStream().readAllBytes(), StandardCharsets.UTF_8);
+      } catch (IOException e) {
+        logger.error(
+            "Cannot convert the provider's error response to string: " + e.getMessage(), e);
+      }
+      throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
+          "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found '%s'. The response body is: '%s'.",
+          contentType, responseBody);
     }
   }
 }

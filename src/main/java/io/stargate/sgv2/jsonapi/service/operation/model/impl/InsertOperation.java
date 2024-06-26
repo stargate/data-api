@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.tuples.Tuple2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -14,6 +13,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -22,23 +23,104 @@ import java.util.function.Supplier;
  * Operation that inserts one or more documents.
  *
  * @param commandContext Context that defines namespace and database.
- * @param documents Documents to insert.
- * @param ordered If insert should be ordered.
+ * @param insertions Document insertion attempts to try.
+ * @param ordered If insertions should be attempted sequentially, in order.
  */
 public record InsertOperation(
     CommandContext commandContext,
-    List<WritableShreddedDocument> documents,
+    List<InsertAttempt> insertions,
     boolean ordered,
-    boolean offlineMode)
+    boolean offlineMode,
+    boolean returnDocumentResponses)
     implements ModifyOperation {
 
-  public InsertOperation(
-      CommandContext commandContext, List<WritableShreddedDocument> documents, boolean ordered) {
-    this(commandContext, documents, ordered, false);
+  /**
+   * Container for an individual Document insertion attempt: used to keep track of the original
+   * input position; document (if available), its id (if available) and possible processing error.
+   * Information will be needed to build optional detail response (returnDocumentResponses).
+   */
+  public static class InsertAttempt implements Comparable<InsertAttempt> {
+    public final int position;
+
+    public final WritableShreddedDocument document;
+    public final DocumentId documentId;
+
+    public Throwable failure;
+
+    public InsertAttempt(int position, DocumentId documentId, Throwable failure) {
+      this.position = position;
+      this.document = null;
+      this.documentId = documentId;
+      this.failure = failure;
+    }
+
+    private InsertAttempt(int position, WritableShreddedDocument document) {
+      this.position = position;
+      this.document = document;
+      this.documentId = document.id();
+    }
+
+    public static InsertAttempt from(int position, WritableShreddedDocument document) {
+      return new InsertAttempt(position, document);
+    }
+
+    public static List<InsertAttempt> from(List<WritableShreddedDocument> documents) {
+      final int count = documents.size();
+      List<InsertAttempt> result = new ArrayList<>(count);
+      for (int i = 0; i < count; ++i) {
+        result.add(from(i, documents.get(i)));
+      }
+      return result;
+    }
+
+    public InsertAttempt addFailure(Throwable failure) {
+      if (failure != null) {
+        this.failure = failure;
+      }
+      return this;
+    }
+
+    public boolean hasVectorValues() {
+      return (document != null) && (document.queryVectorValues() != null);
+    }
+
+    @Override
+    public int compareTo(InsertOperation.InsertAttempt o) {
+      return Integer.compare(position, o.position);
+    }
   }
 
-  public InsertOperation(CommandContext commandContext, WritableShreddedDocument document) {
-    this(commandContext, List.of(document), false, false);
+  public static InsertOperation create(
+      CommandContext commandContext,
+      List<WritableShreddedDocument> documents,
+      boolean ordered,
+      boolean offlineMode,
+      boolean returnDocumentResponses) {
+    return new InsertOperation(
+        commandContext,
+        InsertAttempt.from(documents),
+        ordered,
+        offlineMode,
+        returnDocumentResponses);
+  }
+
+  public static InsertOperation create(
+      CommandContext commandContext,
+      List<WritableShreddedDocument> documents,
+      boolean ordered,
+      boolean returnDocumentResponses) {
+    return new InsertOperation(
+        commandContext, InsertAttempt.from(documents), ordered, false, returnDocumentResponses);
+  }
+
+  public static InsertOperation create(
+      CommandContext commandContext, WritableShreddedDocument document) {
+    return new InsertOperation(
+        commandContext,
+        Collections.singletonList(InsertAttempt.from(0, document)),
+        false,
+        false,
+        false);
   }
 
   /** {@inheritDoc} */
@@ -46,7 +128,7 @@ public record InsertOperation(
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     final boolean vectorEnabled = commandContext().isVectorEnabled();
-    if (!vectorEnabled && documents.stream().anyMatch(doc -> doc.queryVectorValues() != null)) {
+    if (!vectorEnabled && insertions.stream().anyMatch(insertion -> insertion.hasVectorValues())) {
       throw new JsonApiException(
           ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED,
           ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage() + commandContext().collection());
@@ -55,44 +137,52 @@ public record InsertOperation(
     if (commandContext.jsonProcessingMetricsReporter() != null) {
       commandContext
           .jsonProcessingMetricsReporter()
-          .reportJsonWrittenDocsMetrics(commandContext().commandName(), documents.size());
+          .reportJsonWrittenDocsMetrics(commandContext().commandName(), insertions.size());
     }
     if (ordered) {
-      return insertOrdered(dataApiRequestInfo, queryExecutor, vectorEnabled);
+      return insertOrdered(dataApiRequestInfo, queryExecutor, vectorEnabled, insertions);
     } else {
-      return insertUnordered(dataApiRequestInfo, queryExecutor, vectorEnabled);
+      return insertUnordered(dataApiRequestInfo, queryExecutor, vectorEnabled, insertions);
     }
   }
 
   // implementation for the ordered insert
   private Uni<Supplier<CommandResult>> insertOrdered(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor, boolean vectorEnabled) {
+      DataApiRequestInfo dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      boolean vectorEnabled,
+      List<InsertAttempt> insertions) {
 
     // build query once
     final String query = buildInsertQuery(vectorEnabled);
 
     return Multi.createFrom()
-        .iterable(documents)
+        .iterable(insertions)
 
         // concatenate to respect ordered
         .onItem()
         .transformToUni(
-            doc ->
+            insertion ->
                 insertDocument(
-                        dataApiRequestInfo, queryExecutor, query, doc, vectorEnabled, offlineMode)
+                        dataApiRequestInfo,
+                        queryExecutor,
+                        query,
+                        insertion,
+                        vectorEnabled,
+                        offlineMode)
                     // wrap item and failure
                     // the collection can decide how to react on failure
                     .onItemOrFailure()
-                    .transform((id, t) -> Tuple2.of(doc, t)))
+                    .transform((id, t) -> insertion.addFailure(t)))
         .concatenate(false)
 
         // if no failures reduce to the op page
         .collect()
         .in(
-            InsertOperationPage::new,
+            () -> new InsertOperationPage(insertions, returnDocumentResponses()),
             (agg, in) -> {
-              Throwable failure = in.getItem2();
-              agg.aggregate(in.getItem1().id(), failure);
+              Throwable failure = in.failure;
+              agg.aggregate(in);
 
               if (failure != null) {
                 throw new FailFastInsertException(agg, failure);
@@ -115,26 +205,36 @@ public record InsertOperation(
 
   // implementation for the unordered insert
   private Uni<Supplier<CommandResult>> insertUnordered(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor, boolean vectorEnabled) {
+      DataApiRequestInfo dataApiRequestInfo,
+      QueryExecutor queryExecutor,
+      boolean vectorEnabled,
+      List<InsertAttempt> insertions) {
     // build query once
     String query = buildInsertQuery(vectorEnabled);
     return Multi.createFrom()
-        .iterable(documents)
+        .iterable(insertions)
 
         // merge to make it parallel
         .onItem()
         .transformToUniAndMerge(
-            doc ->
+            insertion ->
                 insertDocument(
-                        dataApiRequestInfo, queryExecutor, query, doc, vectorEnabled, offlineMode)
+                        dataApiRequestInfo,
+                        queryExecutor,
+                        query,
+                        insertion,
+                        vectorEnabled,
+                        offlineMode)
                     // handle errors fail silent mode
                     .onItemOrFailure()
-                    .transform((id, t) -> Tuple2.of(doc, t)))
-
+                    .transform((id, t) -> insertion.addFailure(t)))
         // then reduce here
         .collect()
-        .in(InsertOperationPage::new, (agg, in) -> agg.aggregate(in.getItem1().id(), in.getItem2()))
-
+        .in(
+            () -> new InsertOperationPage(insertions, returnDocumentResponses()),
+            (agg, in) -> {
+              agg.aggregate(in);
+            })
         // use object identity to resolve to Supplier<CommandResult>
         .map(i -> i);
   }
@@ -144,10 +244,16 @@ public record InsertOperation(
       DataApiRequestInfo dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String query,
-      WritableShreddedDocument doc,
+      InsertAttempt insertion,
       boolean vectorEnabled,
       boolean offlineMode) {
+    // First things first: did we already fail? If so, propagate
+    if (insertion.failure != null) {
+      return Uni.createFrom().failure(insertion.failure);
+    }
+
     // bind and execute
+    final WritableShreddedDocument doc = insertion.document;
     SimpleStatement boundStatement = bindInsertValues(query, doc, vectorEnabled, offlineMode);
     return queryExecutor
         .executeWrite(dataApiRequestInfo, boundStatement)
