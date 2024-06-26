@@ -33,16 +33,16 @@ public class EmbeddingGatewayClientTest {
   void verifyDirectConstructionWithNullServiceParameters() {
     List<EmbeddingProviderFactory.ProviderConstructor> providerCtors =
         Arrays.asList(
-            AzureOpenAIEmbeddingClient::new,
-            CohereEmbeddingClient::new,
-            HuggingFaceEmbeddingClient::new,
-            JinaAIEmbeddingClient::new,
-            MistralEmbeddingClient::new,
-            NvidiaEmbeddingClient::new,
-            OpenAIEmbeddingClient::new,
-            UpstageAIEmbeddingClient::new,
-            VertexAIEmbeddingClient::new,
-            VoyageAIEmbeddingClient::new);
+            AzureOpenAIEmbeddingProvider::new,
+            CohereEmbeddingProvider::new,
+            HuggingFaceEmbeddingProvider::new,
+            JinaAIEmbeddingProvider::new,
+            MistralEmbeddingProvider::new,
+            NvidiaEmbeddingProvider::new,
+            OpenAIEmbeddingProvider::new,
+            UpstageAIEmbeddingProvider::new,
+            VertexAIEmbeddingProvider::new,
+            VoyageAIEmbeddingProvider::new);
     for (EmbeddingProviderFactory.ProviderConstructor ctor : providerCtors) {
       EmbeddingProviderConfigStore.RequestProperties requestProperties =
           EmbeddingProviderConfigStore.RequestProperties.of(

@@ -22,11 +22,11 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
  * href="https://api.jina.ai/redoc#tag/embeddings">API reference</a> for details of REST API being
  * called.
  */
-public class JinaAIEmbeddingClient extends EmbeddingProvider {
+public class JinaAIEmbeddingProvider extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.JINA_AI;
-  private final JinaAIEmbeddingProvider embeddingProvider;
+  private final JinaAIEmbeddingProviderClient jinaAIEmbeddingProviderClient;
 
-  public JinaAIEmbeddingClient(
+  public JinaAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
@@ -34,16 +34,16 @@ public class JinaAIEmbeddingClient extends EmbeddingProvider {
       Map<String, Object> vectorizeServiceParameters) {
     super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
 
-    embeddingProvider =
+    jinaAIEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
             .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
-            .build(JinaAIEmbeddingProvider.class);
+            .build(JinaAIEmbeddingProviderClient.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface JinaAIEmbeddingProvider {
+  public interface JinaAIEmbeddingProviderClient {
     @POST
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
@@ -102,7 +102,7 @@ public class JinaAIEmbeddingClient extends EmbeddingProvider {
     EmbeddingRequest request = new EmbeddingRequest(texts, modelName);
 
     Uni<EmbeddingResponse> response =
-        applyRetry(embeddingProvider.embed("Bearer " + apiKeyOverride.get(), request));
+        applyRetry(jinaAIEmbeddingProviderClient.embed("Bearer " + apiKeyOverride.get(), request));
 
     return response
         .onItem()

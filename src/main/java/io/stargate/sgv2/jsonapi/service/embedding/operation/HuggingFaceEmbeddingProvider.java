@@ -22,11 +22,11 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class HuggingFaceEmbeddingClient extends EmbeddingProvider {
+public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.HUGGINGFACE;
-  private final HuggingFaceEmbeddingProvider embeddingProvider;
+  private final HuggingFaceEmbeddingProviderClient huggingFaceEmbeddingProviderClient;
 
-  public HuggingFaceEmbeddingClient(
+  public HuggingFaceEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
@@ -34,16 +34,16 @@ public class HuggingFaceEmbeddingClient extends EmbeddingProvider {
       Map<String, Object> vectorizeServiceParameters) {
     super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
 
-    embeddingProvider =
+    huggingFaceEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
             .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
-            .build(HuggingFaceEmbeddingProvider.class);
+            .build(HuggingFaceEmbeddingProviderClient.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface HuggingFaceEmbeddingProvider {
+  public interface HuggingFaceEmbeddingProviderClient {
     @POST
     @Path("/{modelId}")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
@@ -97,7 +97,9 @@ public class HuggingFaceEmbeddingClient extends EmbeddingProvider {
       EmbeddingRequestType embeddingRequestType) {
     EmbeddingRequest request = new EmbeddingRequest(texts, new EmbeddingRequest.Options(true));
 
-    return applyRetry(embeddingProvider.embed("Bearer " + apiKeyOverride.get(), modelName, request))
+    return applyRetry(
+            huggingFaceEmbeddingProviderClient.embed(
+                "Bearer " + apiKeyOverride.get(), modelName, request))
         .onItem()
         .transform(
             resp -> {

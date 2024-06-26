@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstant
 import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseErrorMessageMapper;
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,16 +23,11 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-/**
- * Implementation of client that talks to Azure-deployed OpenAI embedding provider. See <a
- * href="https://learn.microsoft.com/en-us/azure/ai-services/openai/reference">API reference</a> for
- * details of REST API being called.
- */
-public class AzureOpenAIEmbeddingClient extends EmbeddingProvider {
-  private static final String providerId = ProviderConstants.AZURE_OPENAI;
-  private final OpenAIEmbeddingProvider embeddingProvider;
+public class OpenAIEmbeddingProvider extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.OPENAI;
+  private final OpenAIEmbeddingProviderClient openAIEmbeddingProviderClient;
 
-  public AzureOpenAIEmbeddingClient(
+  public OpenAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
@@ -45,23 +41,24 @@ public class AzureOpenAIEmbeddingClient extends EmbeddingProvider {
         acceptsOpenAIDimensions(modelName) ? dimension : 0,
         vectorizeServiceParameters);
 
-    String actualUrl = replaceParameters(baseUrl, vectorizeServiceParameters);
-    embeddingProvider =
+    openAIEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(actualUrl))
+            .baseUri(URI.create(baseUrl))
             .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
-            .build(OpenAIEmbeddingProvider.class);
+            .build(OpenAIEmbeddingProviderClient.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface OpenAIEmbeddingProvider {
+  public interface OpenAIEmbeddingProviderClient {
     @POST
-    // no path specified, as it is already included in the baseUri
+    @Path("/embeddings")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
-        // API keys as "api-key", MS Entra as "Authorization: Bearer [token]
-        @HeaderParam("api-key") String accessToken, EmbeddingRequest request);
+        @HeaderParam("Authorization") String accessToken,
+        @HeaderParam("OpenAI-Organization") String organizationId,
+        @HeaderParam("OpenAI-Project") String projectId,
+        EmbeddingRequest request);
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
@@ -75,8 +72,12 @@ public class AzureOpenAIEmbeddingClient extends EmbeddingProvider {
      * <pre>
      * {
      *   "error": {
-     *     "code": "401",
-     *     "message": "Access denied due to invalid subscription key or wrong API endpoint. Make sure to provide a valid key for an active subscription and use a correct regional API endpoint for your resource."
+     *     "message": "You exceeded your current quota, please check your plan and billing details. For
+     *                 more information on this error, read the docs:
+     *                 https://platform.openai.com/docs/guides/error-codes/api-errors.",
+     *     "type": "insufficient_quota",
+     *     "param": null,
+     *     "code": "insufficient_quota"
      *   }
      * }
      * </pre>
@@ -94,7 +95,7 @@ public class AzureOpenAIEmbeddingClient extends EmbeddingProvider {
       // Extract the "message" node from the "error" node
       JsonNode messageNode = rootNode.at("/error/message");
       // Return the text of the "message" node, or the whole response body if it is missing
-      return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
+      return messageNode.isMissingNode() ? rootNode.toString() : messageNode.asText();
     }
   }
 
@@ -117,10 +118,13 @@ public class AzureOpenAIEmbeddingClient extends EmbeddingProvider {
       EmbeddingRequestType embeddingRequestType) {
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
+    String organizationId = (String) vectorizeServiceParameters.get("organizationId");
+    String projectId = (String) vectorizeServiceParameters.get("projectId");
 
-    // NOTE: NO "Bearer " prefix with API key for Azure OpenAI
     Uni<EmbeddingResponse> response =
-        applyRetry(embeddingProvider.embed(apiKeyOverride.get(), request));
+        applyRetry(
+            openAIEmbeddingProviderClient.embed(
+                "Bearer " + apiKeyOverride.get(), organizationId, projectId, request));
 
     return response
         .onItem()

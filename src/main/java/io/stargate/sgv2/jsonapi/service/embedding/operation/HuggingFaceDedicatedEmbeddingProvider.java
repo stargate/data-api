@@ -17,11 +17,12 @@ import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class HuggingFaceDedicatedEmbeddingClient extends EmbeddingProvider {
+public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
   private static final String providerId = ProviderConstants.HUGGINGFACE_DEDICATED;
-  private final HuggingFaceDedicatedEmbeddingProvider embeddingProvider;
+  private final HuggingFaceDedicatedEmbeddingProviderClient
+      huggingFaceDedicatedEmbeddingProviderClient;
 
-  public HuggingFaceDedicatedEmbeddingClient(
+  public HuggingFaceDedicatedEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
@@ -31,16 +32,16 @@ public class HuggingFaceDedicatedEmbeddingClient extends EmbeddingProvider {
 
     // replace placeholders: endPointName, regionName, cloudName
     String dedicatedApiUrl = replaceParameters(baseUrl, vectorizeServiceParameters);
-    embeddingProvider =
+    huggingFaceDedicatedEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(dedicatedApiUrl))
             .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
-            .build(HuggingFaceDedicatedEmbeddingProvider.class);
+            .build(HuggingFaceDedicatedEmbeddingProviderClient.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface HuggingFaceDedicatedEmbeddingProvider {
+  public interface HuggingFaceDedicatedEmbeddingProviderClient {
     @POST
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
@@ -104,7 +105,9 @@ public class HuggingFaceDedicatedEmbeddingClient extends EmbeddingProvider {
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray));
 
     Uni<EmbeddingResponse> response =
-        applyRetry(embeddingProvider.embed("Bearer " + apiKeyOverride.get(), request));
+        applyRetry(
+            huggingFaceDedicatedEmbeddingProviderClient.embed(
+                "Bearer " + apiKeyOverride.get(), request));
 
     return response
         .onItem()

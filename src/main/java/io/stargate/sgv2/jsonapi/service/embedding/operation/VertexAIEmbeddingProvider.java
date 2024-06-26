@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
@@ -12,47 +12,48 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseEr
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-/**
- * Interface that accepts a list of texts that needs to be vectorized and returns embeddings based
- * of chosen Cohere model.
- */
-public class CohereEmbeddingClient extends EmbeddingProvider {
-  private static final String providerId = ProviderConstants.COHERE;
-  private final CohereEmbeddingProvider embeddingProvider;
+public class VertexAIEmbeddingProvider extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.VERTEXAI;
+  private final VertexAIEmbeddingProviderClient vertexAIEmbeddingProviderClient;
 
-  public CohereEmbeddingClient(
+  public VertexAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
       int dimension,
-      Map<String, Object> vectorizeServiceParameters) {
-    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+      Map<String, Object> serviceParameters) {
+    super(requestProperties, baseUrl, modelName, dimension, serviceParameters);
 
-    embeddingProvider =
+    String actualUrl = replaceParameters(baseUrl, serviceParameters);
+    vertexAIEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(baseUrl))
+            .baseUri(URI.create(actualUrl))
             .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
-            .build(CohereEmbeddingProvider.class);
+            .build(VertexAIEmbeddingProviderClient.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface CohereEmbeddingProvider {
+  public interface VertexAIEmbeddingProviderClient {
     @POST
-    @Path("/embed")
+    @Path("/{modelId}:predict")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
-        @HeaderParam("Authorization") String accessToken, EmbeddingRequest request);
+        @HeaderParam("Authorization") String accessToken,
+        @PathParam("modelId") String modelId,
+        EmbeddingRequest request);
 
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
@@ -61,17 +62,11 @@ public class CohereEmbeddingClient extends EmbeddingProvider {
     }
 
     /**
+     * TODO: Add customized error message extraction logic here. <br>
      * Extract the error message from the response body. The example response body is:
      *
      * <pre>
-     * {
-     *   "message": "invalid api token"
-     * }
      *
-     * 429 response body:
-     * {
-     *   "data": "string"
-     * }
      * </pre>
      *
      * @param response The response body as a String.
@@ -84,42 +79,75 @@ public class CohereEmbeddingClient extends EmbeddingProvider {
       logger.info(
           String.format(
               "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
-      // Check if the root node contains a "message" field
-      JsonNode messageNode = rootNode.path("message");
-      if (!messageNode.isMissingNode()) {
-        return messageNode.toString();
-      }
-      // Check if the root node contains a "data" field
-      JsonNode dataNode = rootNode.path("data");
-      if (!dataNode.isMissingNode()) {
-        return dataNode.toString();
-      }
-      // Return the whole response body if no message or data field is found
       return rootNode.toString();
     }
   }
 
-  private record EmbeddingRequest(String[] texts, String model, String input_type) {}
-
-  @JsonIgnoreProperties({"id", "texts", "meta", "response_type"})
-  private static class EmbeddingResponse {
-
-    protected EmbeddingResponse() {}
-
-    private List<float[]> embeddings;
-
-    public List<float[]> getEmbeddings() {
-      return embeddings;
-    }
-
-    public void setEmbeddings(List<float[]> embeddings) {
-      this.embeddings = embeddings;
-    }
+  private record EmbeddingRequest(List<Content> instances) {
+    public record Content(String content) {}
   }
 
-  // Input type to be used for vector search should "search_query"
-  private static final String SEARCH_QUERY = "search_query";
-  private static final String SEARCH_DOCUMENT = "search_document";
+  private static class EmbeddingResponse {
+    public EmbeddingResponse() {}
+
+    private List<Prediction> predictions;
+
+    @JsonIgnore private Object metadata;
+
+    public List<Prediction> getPredictions() {
+      return predictions;
+    }
+
+    public void setPredictions(List<Prediction> predictions) {
+      this.predictions = predictions;
+    }
+
+    public Object getMetadata() {
+      return metadata;
+    }
+
+    public void setMetadata(Object metadata) {
+      this.metadata = metadata;
+    }
+
+    protected static class Prediction {
+      public Prediction() {}
+
+      private Embeddings embeddings;
+
+      public Embeddings getEmbeddings() {
+        return embeddings;
+      }
+
+      public void setEmbeddings(Embeddings embeddings) {
+        this.embeddings = embeddings;
+      }
+
+      protected static class Embeddings {
+        public Embeddings() {}
+
+        private float[] values;
+
+        @JsonIgnore private Object statistics;
+
+        public float[] getValues() {
+          return values;
+        }
+
+        public void setValues(float[] values) {
+          this.values = values;
+        }
+
+        public Object getStatistics() {
+          return statistics;
+        }
+
+        public void setStatistics(Object statistics) {
+          this.statistics = statistics;
+        }
+      }
+    }
+  }
 
   @Override
   public Uni<Response> vectorize(
@@ -127,23 +155,26 @@ public class CohereEmbeddingClient extends EmbeddingProvider {
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
-    String[] textArray = new String[texts.size()];
-    String input_type =
-        embeddingRequestType == EmbeddingRequestType.INDEX ? SEARCH_DOCUMENT : SEARCH_QUERY;
     EmbeddingRequest request =
-        new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
+        new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
 
-    Uni<EmbeddingResponse> response =
-        applyRetry(embeddingProvider.embed("Bearer " + apiKeyOverride.get(), request));
+    Uni<EmbeddingResponse> serviceResponse =
+        applyRetry(
+            vertexAIEmbeddingProviderClient.embed(
+                "Bearer " + apiKeyOverride.get(), modelName, request));
 
-    return response
+    return serviceResponse
         .onItem()
         .transform(
-            resp -> {
-              if (resp.getEmbeddings() == null) {
+            response -> {
+              if (response.getPredictions() == null) {
                 return Response.of(batchId, Collections.emptyList());
               }
-              return Response.of(batchId, resp.getEmbeddings());
+              List<float[]> vectors =
+                  response.getPredictions().stream()
+                      .map(prediction -> prediction.getEmbeddings().getValues())
+                      .collect(Collectors.toList());
+              return Response.of(batchId, vectors);
             });
   }
 
