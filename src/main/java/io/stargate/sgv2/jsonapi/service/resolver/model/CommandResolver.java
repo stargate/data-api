@@ -1,8 +1,17 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Tags;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.IndexUsage;
 
 /**
  * Resolver looks at a valid {@link Command} and determines the best {@link Operation} to implement
@@ -42,4 +51,44 @@ public interface CommandResolver<C extends Command> {
    * @return Operation, must no be <code>null</code>
    */
   Operation resolveCommand(CommandContext ctx, C command);
+
+  static final String UNKNOWN_VALUE = "unknown";
+  static final String TENANT_TAG = "tenant";
+
+  /** Added count metrics for index column usage */
+  default void addToMetrics(
+      MeterRegistry meterRegistry,
+      DataApiRequestInfo dataApiRequestInfo,
+      JsonApiMetricsConfig jsonApiMetricsConfig,
+      Command command,
+      LogicalExpression logicalExpression,
+      boolean annSort) {
+
+    Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
+    String tenant = dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE);
+    Tag tenantTag = Tag.of("tenant", tenant);
+    Tags tags = Tags.of(commandTag, tenantTag);
+
+    IndexUsage indexUsage = new IndexUsage();
+    if (annSort) indexUsage.vectorIndexTag = true;
+    getIndexUsageTags(logicalExpression, indexUsage);
+    tags = tags.and(indexUsage.getTags());
+
+    meterRegistry.counter(jsonApiMetricsConfig.indexUsageCounterMetrics(), tags).increment();
+  }
+
+  private void getIndexUsageTags(LogicalExpression logicalExpression, IndexUsage indexUsage) {
+    for (ComparisonExpression comparisonExpression : logicalExpression.comparisonExpressions) {
+      getIndexUsageTags(comparisonExpression, indexUsage);
+    }
+    for (LogicalExpression innerLogicalExpression : logicalExpression.logicalExpressions) {
+      getIndexUsageTags(innerLogicalExpression, indexUsage);
+    }
+  }
+
+  private void getIndexUsageTags(ComparisonExpression comparisonExpression, IndexUsage indexUsage) {
+    for (DBFilterBase dbFilterBase : comparisonExpression.getDbFilters()) {
+      indexUsage.merge(dbFilterBase.indexUsage);
+    }
+  }
 }
