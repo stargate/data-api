@@ -85,7 +85,7 @@ quarkus:
       # whereas at higher level we can use regular JSON API error responses
       max-body-size: 20M
 
-    port: 8183
+    port: 8181
 
   # properties for the gRPC clients
   grpc:
