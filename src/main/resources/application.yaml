@@ -55,6 +55,7 @@ quarkus:
   # general app properties
   application:
     name: Stargate DATA API
+    ui-header: ${quarkus.application.name} (powered by DataStax)
 
   # banner for the startup
   banner:
@@ -63,12 +64,23 @@ quarkus:
   log:
     min-level: trace
 
+    console:
+      format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"
+
+    # silent caffeine cache warnings
+    category:
+      'com.github.benmanes.caffeine.cache':
+        level: ERROR
+
   # HTTP settings
   http:
+
 
     # every /v1 path is authenticated by default
     # adapt if changing the authentication mechanism
     auth:
+      # disable basic auth completely
+      basic: false
       proactive: false
       permission:
         default:
@@ -86,6 +98,9 @@ quarkus:
       # whereas at higher level we can use regular JSON API error responses
       max-body-size: 20M
 
+    # non-application path to /stargate, used for readiness and health check
+    non-application-root-path: stargate
+
     port: 8183
 
   # properties for the gRPC clients
@@ -95,6 +110,10 @@ quarkus:
       embedding:
         host: 0.0.0.0
         port: 9000
+
+    # force no grpc server start in dev as we have no grpc service
+    dev-mode:
+      force-server-start: false
 
   # built-in micrometer properties
   micrometer:
