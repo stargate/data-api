@@ -38,7 +38,7 @@ public class OpenAIEmbeddingClient extends EmbeddingProvider {
         requestProperties,
         baseUrl,
         modelName,
-        EmbeddingProvider.acceptsOpenAIDimensions(modelName) ? dimension : 0,
+        acceptsOpenAIDimensions(modelName) ? dimension : 0,
         vectorizeServiceParameters);
 
     embeddingProvider =

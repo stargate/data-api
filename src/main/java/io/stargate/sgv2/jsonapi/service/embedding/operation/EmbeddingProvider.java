@@ -18,14 +18,16 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class EmbeddingProvider {
   protected static final Logger logger = LoggerFactory.getLogger(EmbeddingProvider.class);
-  protected EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  protected String baseUrl;
-  protected String modelName;
-  protected int dimension;
-  protected Map<String, Object> vectorizeServiceParameters;
+  protected final EmbeddingProviderConfigStore.RequestProperties requestProperties;
+  protected final String baseUrl;
+  protected final String modelName;
+  protected final int dimension;
+  protected final Map<String, Object> vectorizeServiceParameters;
 
   /** Default constructor */
-  protected EmbeddingProvider() {}
+  protected EmbeddingProvider() {
+    this(null, null, null, 0, null);
+  }
 
   /** Constructs an EmbeddingProvider with the specified configuration. */
   protected EmbeddingProvider(

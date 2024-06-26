@@ -42,7 +42,7 @@ public class AzureOpenAIEmbeddingClient extends EmbeddingProvider {
         requestProperties,
         baseUrl,
         modelName,
-        EmbeddingProvider.acceptsOpenAIDimensions(modelName) ? dimension : 0,
+        acceptsOpenAIDimensions(modelName) ? dimension : 0,
         vectorizeServiceParameters);
 
     String actualUrl = replaceParameters(baseUrl, vectorizeServiceParameters);
