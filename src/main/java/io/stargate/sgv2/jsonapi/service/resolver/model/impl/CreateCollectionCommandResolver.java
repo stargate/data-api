@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.api.common.config.DataStoreConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
@@ -27,7 +26,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
   private final ObjectMapper objectMapper;
   private final CQLSessionCache cqlSessionCache;
-  private final DataStoreConfig dataStoreConfig;
   private final DocumentLimitsConfig documentLimitsConfig;
   private final DatabaseLimitsConfig dbLimitsConfig;
   private final OperationsConfig operationsConfig;
@@ -38,7 +36,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   public CreateCollectionCommandResolver(
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
-      DataStoreConfig dataStoreConfig,
       DocumentLimitsConfig documentLimitsConfig,
       DatabaseLimitsConfig dbLimitsConfig,
       OperationsConfig operationsConfig,
@@ -46,7 +43,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       ValidateCredentials validateCredentials) {
     this.objectMapper = objectMapper;
     this.cqlSessionCache = cqlSessionCache;
-    this.dataStoreConfig = dataStoreConfig;
     this.documentLimitsConfig = documentLimitsConfig;
     this.dbLimitsConfig = dbLimitsConfig;
     this.operationsConfig = operationsConfig;
@@ -55,7 +51,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   }
 
   public CreateCollectionCommandResolver() {
-    this(null, null, null, null, null, null, null, null);
+    this(null, null, null, null, null, null, null);
   }
 
   @Override
@@ -193,11 +189,6 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
    */
   private CreateCollectionCommand.Options.VectorSearchConfig validateVectorOptions(
       CreateCollectionCommand.Options.VectorSearchConfig vector) {
-    if (!dataStoreConfig.vectorSearchEnabled()) {
-      throw new JsonApiException(
-          ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE,
-          ErrorCode.VECTOR_SEARCH_NOT_AVAILABLE.getMessage());
-    }
 
     if (vector.vectorizeConfig() != null && !operationsConfig.vectorizeEnabled()) {
       throw ErrorCode.VECTORIZE_FEATURE_NOT_AVAILABLE.toApiException();

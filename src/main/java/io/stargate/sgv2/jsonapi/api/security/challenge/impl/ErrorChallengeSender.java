@@ -1,14 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.security.challenge.impl;
 
-// TODO: create Data API ChallengerSender when remove quarkus-common dependency
-// This class is commented out, since there will be two ChallengeSender implemented
-// need to resolve when we actually remove quarkus-common-module dependency
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.api.common.security.challenge.ChallengeSender;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.vertx.ext.web.RoutingContext;
@@ -19,12 +14,19 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Responds with {@link CommandResult} containing an error on send challenge. */
+/**
+ * Responds with {@link CommandResult} containing an error on send challenge.
+ * BiFunction<RoutingContext, ChallengeData, Uni<Boolean>> implementation here enables definition of
+ * the custom challenge sender in the application. @see
+ * HttpAuthenticationMechanism#sendChallenge(RoutingContext)
+ */
 @ApplicationScoped
-public class ErrorChallengeSender implements ChallengeSender {
+public class ErrorChallengeSender
+    implements BiFunction<RoutingContext, ChallengeData, Uni<Boolean>> {
 
   private static final Logger LOG = LoggerFactory.getLogger(ErrorChallengeSender.class);
 

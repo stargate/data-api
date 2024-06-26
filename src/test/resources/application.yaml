@@ -1,8 +1,4 @@
-# by default ignore bridge for data store props in tests
-
 stargate:
-  data-store:
-    ignore-bridge: true
   debug:
     enabled: true
 
