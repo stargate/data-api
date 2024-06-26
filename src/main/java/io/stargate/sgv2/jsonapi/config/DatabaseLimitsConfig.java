@@ -30,7 +30,7 @@ public interface DatabaseLimitsConfig {
    * Default setting for {@link #maxCollections()}}: maximum number of Collections allowed to be
    * created per Database, regardless of whether enough Indexes are available.
    */
-  int DEFAULT_MAX_COLLECTIONS = 5;
+  int DEFAULT_MAX_COLLECTIONS = 10;
 
   /**
    * Default setting for {@link #indexesNeededPerCollection()}: number of SAIs needed to create one
@@ -42,7 +42,7 @@ public interface DatabaseLimitsConfig {
    * Default setting for {@link #indexesAvailablePerDatabase()}: number of SAIs per Database that
    * can be created (and needed for Collection creation)
    */
-  int DEFAULT_INDEXES_AVAILABLE_PER_DATABASE = 50;
+  int DEFAULT_INDEXES_AVAILABLE_PER_DATABASE = 100;
 
   /**
    * @return Defines maximum Collections allowed to be created per Database. Defaults to {@link
