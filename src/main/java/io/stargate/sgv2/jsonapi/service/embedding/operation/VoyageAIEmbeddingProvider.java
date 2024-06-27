@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -15,50 +13,46 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseEr
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import java.net.URI;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class VoyageAIEmbeddingClient implements EmbeddingProvider {
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelName;
-  private final VoyageAIEmbeddingProvider embeddingProvider;
-
+public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.VOYAGE_AI;
+  private final VoyageAIEmbeddingProviderClient voyageAIEmbeddingProviderClient;
   private final String requestTypeQuery, requestTypeIndex;
   private final Boolean autoTruncate;
 
-  public VoyageAIEmbeddingClient(
+  public VoyageAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
       int dimension,
       Map<String, Object> serviceParameters) {
-    this.requestProperties = requestProperties;
-    this.modelName = modelName;
+    super(requestProperties, baseUrl, modelName, dimension, serviceParameters);
+
     // use configured input_type if available
     requestTypeQuery = requestProperties.requestTypeQuery().orElse(null);
     requestTypeIndex = requestProperties.requestTypeIndex().orElse(null);
     Object v = (serviceParameters == null) ? null : serviceParameters.get("autoTruncate");
     autoTruncate = (v instanceof Boolean) ? (Boolean) v : null;
 
-    embeddingProvider =
+    voyageAIEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
             .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
-            .build(VoyageAIEmbeddingProvider.class);
+            .build(VoyageAIEmbeddingProviderClient.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface VoyageAIEmbeddingProvider {
+  public interface VoyageAIEmbeddingProviderClient {
     @POST
     // no path specified, as it is already included in the baseUri
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
@@ -68,8 +62,7 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(
-          ProviderConstants.VOYAGE_AI, response, errorMessage);
+      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -90,8 +83,7 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from embedding provider '%s': %s",
-              ProviderConstants.VOYAGE_AI, rootNode.toString()));
+              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
       // Extract the "detail" node
       JsonNode detailNode = rootNode.path("detail");
       // Return the text of the "detail" node, or the full response body if it is missing
@@ -124,22 +116,11 @@ public class VoyageAIEmbeddingClient implements EmbeddingProvider {
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request =
         new EmbeddingRequest(inputType, texts.toArray(textArray), modelName, autoTruncate);
+
     Uni<EmbeddingResponse> response =
-        embeddingProvider
-            .embed("Bearer " + apiKeyOverride.get(), request)
-            .onFailure(
-                throwable -> {
-                  return ((throwable.getCause() != null
-                          && throwable.getCause() instanceof JsonApiException jae
-                          && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
-                      || throwable instanceof TimeoutException);
-                })
-            .retry()
-            .withBackOff(
-                Duration.ofMillis(requestProperties.initialBackOffMillis()),
-                Duration.ofMillis(requestProperties.maxBackOffMillis()))
-            .withJitter(requestProperties.jitter())
-            .atMost(requestProperties.atMostRetries());
+        applyRetry(
+            voyageAIEmbeddingProviderClient.embed("Bearer " + apiKeyOverride.get(), request));
+
     return response
         .onItem()
         .transform(
