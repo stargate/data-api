@@ -157,7 +157,7 @@ public class EmbeddingProviderErrorMessageTest {
     }
 
     @Test
-    public void testIncorrectContentType() {
+    public void testIncorrectContentTypeXML() {
       Throwable exception =
           new NvidiaEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
@@ -181,7 +181,35 @@ public class EmbeddingProviderErrorMessageTest {
               "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
-              "The Embedding Provider returned an unexpected response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'. The response body is: '<object>list</object>'.");
+              "The Embedding Provider returned an unexpected response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'; HTTP Status: 200; The response body is: '<object>list</object>'.");
+    }
+
+    @Test
+    public void testIncorrectContentTypePlainText() {
+      Throwable exception =
+          new NvidiaEmbeddingProvider(
+                  EmbeddingProviderConfigStore.RequestProperties.of(
+                      2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
+                  config.providers().get("nvidia").url(),
+                  "test",
+                  DEFAULT_DIMENSIONS,
+                  null)
+              .vectorize(
+                  1,
+                  List.of("text/plain;charset=UTF-8"),
+                  Optional.of("test"),
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitFailure()
+              .getFailure();
+      assertThat(exception.getCause())
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
+          .hasFieldOrPropertyWithValue(
+              "message",
+              "The Embedding Provider returned an unexpected response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'text/plain;charset=UTF-8'; HTTP Status: 500; The response body is: 'Not Found'.");
     }
 
     @Test
