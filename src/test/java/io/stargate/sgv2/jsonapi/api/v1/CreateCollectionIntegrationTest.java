@@ -606,7 +606,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: No option \"InDex\" found as createCollectionCommand option (known options: \"defaultId\", \"indexing\", \"vector\")"))
+                  "The provided options are invalid: No option \"InDex\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"vector\")"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
