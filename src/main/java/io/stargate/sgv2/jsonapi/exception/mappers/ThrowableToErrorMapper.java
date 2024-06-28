@@ -40,7 +40,7 @@ public final class ThrowableToErrorMapper {
           return jae.getCommandResultError(message, Response.Status.OK);
         }
 
-        // General Exception by Jackson
+        // General Exception related to JSON handling, thrown by Jackson
         if (throwable instanceof JacksonException jacksonE) {
           return handleJsonProcessingException(jacksonE, message);
         }
@@ -196,7 +196,7 @@ public final class ThrowableToErrorMapper {
           .getCommandResultError(Response.Status.OK);
     }
 
-    // Will need to add more handling
+    // Will need to add more handling but start with above
     return handleUnrecognizedException(e, message);
   }
 
