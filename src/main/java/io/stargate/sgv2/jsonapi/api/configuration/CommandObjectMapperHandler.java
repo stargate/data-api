@@ -41,6 +41,14 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
           "Unrecognized field \"%s\" for `createCollection.options.indexing` (known fields: \"allow\", \"deny\")",
           propertyName);
     }
+    if (deserializer
+        .handledType()
+        .toString()
+        .endsWith("CreateCollectionCommand$Options$VectorConfig")) {
+      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\")",
+          propertyName);
+    }
 
     // false means if not matched by above handle logic, object mapper will
     // FAIL_ON_UNKNOWN_PROPERTIES.
