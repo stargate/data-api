@@ -50,8 +50,10 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_REQUEST_NOT_JSON"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", is("acb"));
-      //         .body("errors[0].message", is(not(blankString())));
+          .body(
+              "errors[0].message",
+              startsWith("Request invalid, cannot parse as JSON: underlying problem:"))
+          .body("errors[0].message", containsString("Unrecognized token 'wrong'"));
     }
 
     @Test
