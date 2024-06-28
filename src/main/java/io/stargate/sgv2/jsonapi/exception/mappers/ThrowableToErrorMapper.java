@@ -58,13 +58,7 @@ public final class ThrowableToErrorMapper {
         }
 
         // handle all other exceptions
-        logger.error(
-            String.format(
-                "Unrecognized exception caught, mapped to SERVER_UNHANDLED_ERROR: %s", message),
-            throwable);
-        return ErrorCode.SERVER_UNHANDLED_ERROR
-            .toApiException("root cause: (%s) %s", throwable.getClass().getName(), message)
-            .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
+        return handleUnrecognizedException(throwable, message);
       };
 
   private static CommandResult.Error handleDriverException(
@@ -181,10 +175,17 @@ public final class ThrowableToErrorMapper {
         }
       }
     }
+
     // should not happen
+    return handleUnrecognizedException(throwable, message);
+  }
+
+  private static CommandResult.Error handleUnrecognizedException(
+      Throwable throwable, String message) {
     logger.error(
         String.format(
-            "Unrecognized exception caught, mapped to SERVER_UNHANDLED_ERROR: %s", message),
+            "Unrecognized Exception (%s) caught, mapped to SERVER_UNHANDLED_ERROR: %s",
+            throwable.getClass().getName(), message),
         throwable);
     return ErrorCode.SERVER_UNHANDLED_ERROR
         .toApiException("root cause: (%s) %s", throwable.getClass().getName(), message)
