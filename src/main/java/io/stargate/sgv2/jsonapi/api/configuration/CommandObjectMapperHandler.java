@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import java.io.IOException;
 
 public class CommandObjectMapperHandler extends DeserializationProblemHandler {
 
@@ -18,9 +17,10 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       JsonParser p,
       JsonDeserializer<?> deserializer,
       Object beanOrClass,
-      String propertyName)
-      throws IOException {
-    final String typeStr = deserializer.handledType().toString();
+      String propertyName) {
+    // First: handle known/observed CreateCollectionCommand mapping discrepancies
+
+    final String typeStr = (deserializer == null) ? "N/A" : deserializer.handledType().toString();
     if (typeStr.endsWith("CreateCollectionCommand$Options")) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "No option \"%s\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"vector\")",
