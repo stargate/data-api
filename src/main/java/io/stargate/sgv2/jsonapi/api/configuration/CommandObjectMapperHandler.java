@@ -20,31 +20,23 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       Object beanOrClass,
       String propertyName)
       throws IOException {
-    if (deserializer.handledType().toString().endsWith("CreateCollectionCommand$Options")) {
+    final String typeStr = deserializer.handledType().toString();
+    if (typeStr.endsWith("CreateCollectionCommand$Options")) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "No option \"%s\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"vector\")",
           propertyName);
     }
-    if (deserializer
-        .handledType()
-        .toString()
-        .endsWith("CreateCollectionCommand$Options$IdConfig")) {
+    if (typeStr.endsWith("CreateCollectionCommand$Options$IdConfig")) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "Unrecognized field \"%s\" for `createCollection.options.defaultId` (known fields: \"type\")",
           propertyName);
     }
-    if (deserializer
-        .handledType()
-        .toString()
-        .endsWith("CreateCollectionCommand$Options$IndexingConfig")) {
+    if (typeStr.endsWith("CreateCollectionCommand$Options$IndexingConfig")) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "Unrecognized field \"%s\" for `createCollection.options.indexing` (known fields: \"allow\", \"deny\")",
           propertyName);
     }
-    if (deserializer
-        .handledType()
-        .toString()
-        .endsWith("CreateCollectionCommand$Options$VectorConfig")) {
+    if (typeStr.endsWith("CreateCollectionCommand$Options$VectorSearchConfig")) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\")",
           propertyName);
