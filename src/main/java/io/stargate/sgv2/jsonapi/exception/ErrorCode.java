@@ -40,7 +40,10 @@ public enum ErrorCode {
 
   FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
 
+  /** note: Only used by EmbeddingGateway */
   INVALID_REQUEST("Request not supported by the data store"),
+
+  INVALID_REQUEST_NOT_JSON("Request invalid, cannot parse as JSON"),
 
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
 

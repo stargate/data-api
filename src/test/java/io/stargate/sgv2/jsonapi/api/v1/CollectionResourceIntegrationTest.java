@@ -42,13 +42,18 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
-          .body("{wrong}")
+          .body("wrong")
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_REQUEST_NOT_JSON"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", is(not(blankString())));
+          .body(
+              "errors[0].message",
+              startsWith("Request invalid, cannot parse as JSON: underlying problem:"))
+          .body("errors[0].message", containsString("Unrecognized token 'wrong'"));
     }
 
     @Test
@@ -69,7 +74,9 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("NO_COMMAND_MATCHED"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               startsWith("No \"unknownCommand\" command found as \"CollectionCommand\""));
@@ -94,6 +101,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, "7_no_leading_number", collectionName)
           .then()
           .statusCode(200)
+          .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
@@ -121,6 +129,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, "7_no_leading_number")
           .then()
           .statusCode(200)
+          .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
@@ -138,6 +147,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
