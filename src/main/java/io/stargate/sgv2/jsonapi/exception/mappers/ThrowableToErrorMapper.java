@@ -8,6 +8,8 @@ import com.datastax.oss.driver.api.core.auth.AuthenticationException;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.*;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonParseException;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -36,6 +38,11 @@ public final class ThrowableToErrorMapper {
             return jae.getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
           }
           return jae.getCommandResultError(message, Response.Status.OK);
+        }
+
+        // General Exception by Jackson
+        if (throwable instanceof JacksonException jacksonE) {
+          return handleJsonProcessingException(jacksonE, message);
         }
 
         // UnauthorizedException from quarkus
@@ -178,6 +185,19 @@ public final class ThrowableToErrorMapper {
 
     // should not happen
     return handleUnrecognizedException(throwable, message);
+  }
+
+  private static CommandResult.Error handleJsonProcessingException(
+      JacksonException e, String message) {
+    // Low-level parsing problem?
+    if (e instanceof JsonParseException) {
+      return ErrorCode.INVALID_REQUEST_NOT_JSON
+          .toApiException("underlying problem: (%s) %s", e.getClass().getName(), message)
+          .getCommandResultError(Response.Status.OK);
+    }
+
+    // Will need to add more handling
+    return handleUnrecognizedException(e, message);
   }
 
   private static CommandResult.Error handleUnrecognizedException(
