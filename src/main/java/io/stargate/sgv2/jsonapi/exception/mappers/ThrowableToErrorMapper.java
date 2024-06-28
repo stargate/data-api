@@ -10,16 +10,21 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.*;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.core.Response;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -193,6 +198,21 @@ public final class ThrowableToErrorMapper {
     if (e instanceof JsonParseException) {
       return ErrorCode.INVALID_REQUEST_NOT_JSON
           .toApiException("underlying problem: (%s) %s", e.getClass().getName(), message)
+          .getCommandResultError(Response.Status.OK);
+    }
+    // Unrecognized property? (note: CommandObjectMapperHandler handles some cases)
+    if (e instanceof UnrecognizedPropertyException upe) {
+      final Collection<Object> knownIds =
+          Optional.ofNullable(upe.getKnownPropertyIds()).orElse(Collections.emptyList());
+      final String knownDesc =
+          knownIds.stream()
+              .map(ob -> String.format("\"%s\"", ob.toString()))
+              .sorted()
+              .collect(Collectors.joining(", "));
+      return ErrorCode.INVALID_REQUEST_UNKNOWN_FIELD
+          .toApiException(
+              "\"%s\" not one of known fields (%s) at '%s'",
+              upe.getPropertyName(), knownDesc, upe.getPathReference())
           .getCommandResultError(Response.Status.OK);
     }
 
