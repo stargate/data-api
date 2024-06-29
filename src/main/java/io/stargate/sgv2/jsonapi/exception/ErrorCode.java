@@ -164,14 +164,16 @@ public enum ErrorCode {
 
   // Driver failure codes
   /** Error codes related to driver exceptions. */
-  SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
-  SERVER_READ_FAILED("Database read failed"),
-  SERVER_TIMEOUT("Driver timeout"),
   SERVER_CLOSED_CONNECTION("Driver request connection is closed"),
+  SERVER_COORDINATOR_FAILURE("Coordinator failed"),
+  /** Driver failure other than timeout. */
+  SERVER_DRIVER_FAILURE("Driver failed"),
+  /** Driver timeout failure. */
+  SERVER_DRIVER_TIMEOUT("Driver timeout"),
+  SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
   SERVER_QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
   SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
-  SERVER_COORDINATOR_FAILURE("Coordinator failed"),
-  SERVER_DRIVER_FAILURE("Driver failed"),
+  SERVER_READ_FAILED("Database read failed"),
   SERVER_UNHANDLED_ERROR("Server failed"),
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
   SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),

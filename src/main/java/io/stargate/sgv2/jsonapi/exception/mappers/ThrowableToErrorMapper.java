@@ -79,7 +79,7 @@ public final class ThrowableToErrorMapper {
     } else if (throwable instanceof CoordinatorException) {
       return handleCoordinatorException((CoordinatorException) throwable, message);
     } else if (throwable instanceof DriverTimeoutException) {
-      return ErrorCode.SERVER_TIMEOUT
+      return ErrorCode.SERVER_DRIVER_TIMEOUT
           .toApiException(message)
           .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
     } else {
@@ -106,9 +106,9 @@ public final class ThrowableToErrorMapper {
       QueryExecutionException throwable, String message) {
     if (throwable instanceof QueryConsistencyException e) {
       if (e instanceof WriteTimeoutException || e instanceof ReadTimeoutException) {
-        return ErrorCode.SERVER_TIMEOUT
-            .toApiException()
-            .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+        return ErrorCode.SERVER_DRIVER_TIMEOUT
+            .toApiException(message)
+            .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
       } else if (e instanceof ReadFailureException) {
         return ErrorCode.SERVER_READ_FAILED
             .toApiException("root cause: (%s) %s", e.getClass().getName(), message)
@@ -182,7 +182,7 @@ public final class ThrowableToErrorMapper {
               .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
         } else if (error instanceof DriverTimeoutException) {
           // [data-api#1205] Need to map DriverTimeoutException as well
-          return ErrorCode.SERVER_DRIVER_FAILURE
+          return ErrorCode.SERVER_DRIVER_TIMEOUT
               .toApiException(message)
               .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
         }
