@@ -74,16 +74,16 @@ public final class ThrowableToErrorMapper {
       return handleAllNodesFailedException((AllNodesFailedException) throwable, message);
     } else if (throwable instanceof ClosedConnectionException) {
       return ErrorCode.SERVER_CLOSED_CONNECTION
-          .toApiException()
-          .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+          .toApiException(message)
+          .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
     } else if (throwable instanceof CoordinatorException) {
       return handleCoordinatorException((CoordinatorException) throwable, message);
     } else if (throwable instanceof DriverTimeoutException) {
       return ErrorCode.SERVER_TIMEOUT
-          .toApiException()
-          .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+          .toApiException(message)
+          .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
     } else {
-      return ErrorCode.SERVER_FAILURE
+      return ErrorCode.SERVER_DRIVER_FAILURE
           .toApiException("root cause: (%s) %s", throwable.getClass().getName(), message)
           .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
     }
@@ -160,7 +160,8 @@ public final class ThrowableToErrorMapper {
                     t ->
                         t instanceof AuthenticationException
                             || t instanceof IllegalArgumentException
-                            || t instanceof NoNodeAvailableException)
+                            || t instanceof NoNodeAvailableException
+                            || t instanceof DriverTimeoutException)
                 .orElse(null);
         // connect to oss cassandra throws AuthenticationException for invalid credentials
         // connect to AstraDB throws IllegalArgumentException for invalid token/credentials
@@ -179,6 +180,11 @@ public final class ThrowableToErrorMapper {
           return ErrorCode.SERVER_NO_NODE_AVAILABLE
               .toApiException()
               .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+        } else if (error instanceof DriverTimeoutException) {
+          // [data-api#1205] Need to map DriverTimeoutException as well
+          return ErrorCode.SERVER_DRIVER_FAILURE
+              .toApiException(message)
+              .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
         }
       }
     }
