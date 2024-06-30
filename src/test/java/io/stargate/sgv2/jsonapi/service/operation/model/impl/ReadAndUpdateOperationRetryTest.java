@@ -23,6 +23,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -54,6 +55,8 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
+
+  @Inject DataVectorizerService dataVectorizerService;
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
@@ -233,6 +236,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             COMMAND_CONTEXT,
             findOperation,
             documentUpdater,
+            dataVectorizerService,
             true,
             false,
             false,
@@ -377,6 +381,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             COMMAND_CONTEXT,
             findOperation,
             documentUpdater,
+            dataVectorizerService,
             true,
             false,
             false,
@@ -529,6 +534,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             COMMAND_CONTEXT,
             findOperation,
             documentUpdater,
+            dataVectorizerService,
             true,
             false,
             true,
@@ -716,6 +722,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             COMMAND_CONTEXT,
             findOperation,
             documentUpdater,
+            dataVectorizerService,
             true,
             false,
             false,
@@ -927,6 +934,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             COMMAND_CONTEXT,
             findOperation,
             documentUpdater,
+            dataVectorizerService,
             true,
             false,
             false,

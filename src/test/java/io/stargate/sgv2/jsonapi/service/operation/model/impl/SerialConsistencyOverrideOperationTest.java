@@ -27,12 +27,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
-// import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
@@ -59,6 +59,8 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
   @Inject ObjectMapper objectMapper;
   @Inject Shredder shredder;
+
+  @Inject DataVectorizerService dataVectorizerService;
 
   public static class SerialConsistencyOverrideProfile implements QuarkusTestProfile {
     @Override
@@ -346,6 +348,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               findOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               false,

@@ -79,7 +79,7 @@ public class UpdateManyCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
+                          assertThat(updater.updateClause().buildOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -141,7 +141,7 @@ public class UpdateManyCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
+                          assertThat(updater.updateClause().buildOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -194,7 +194,7 @@ public class UpdateManyCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
+                          assertThat(updater.updateClause().buildOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -263,7 +263,7 @@ public class UpdateManyCommandResolverTest {
                     .isInstanceOfSatisfying(
                         DocumentUpdater.class,
                         updater -> {
-                          assertThat(updater.updateOperations())
+                          assertThat(updater.updateClause().buildOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -328,7 +328,7 @@ public class UpdateManyCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateOperations())
+                          assertThat(updater.updateClause().buildOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())

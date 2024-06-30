@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
@@ -27,6 +28,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
   private final Shredder shredder;
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
+  private final DataVectorizerService dataVectorizerService;
   private final MeterRegistry meterRegistry;
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
@@ -36,6 +38,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
       ObjectMapper objectMapper,
       Shredder shredder,
       OperationsConfig operationsConfig,
+      DataVectorizerService dataVectorizerService,
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
@@ -43,7 +46,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
     this.objectMapper = objectMapper;
     this.shredder = shredder;
     this.operationsConfig = operationsConfig;
-
+    this.dataVectorizerService = dataVectorizerService;
     this.meterRegistry = meterRegistry;
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
@@ -69,6 +72,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         commandContext,
         findOperation,
         documentUpdater,
+        dataVectorizerService,
         false,
         false,
         upsert,

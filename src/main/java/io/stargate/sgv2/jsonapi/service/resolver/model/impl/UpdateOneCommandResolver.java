@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
@@ -30,6 +31,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
   private final Shredder shredder;
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
+  private final DataVectorizerService dataVectorizerService;
   private final MeterRegistry meterRegistry;
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
@@ -39,6 +41,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
       ObjectMapper objectMapper,
       OperationsConfig operationsConfig,
       Shredder shredder,
+      DataVectorizerService dataVectorizerService,
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
@@ -46,7 +49,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
     this.objectMapper = objectMapper;
     this.shredder = shredder;
     this.operationsConfig = operationsConfig;
-
+    this.dataVectorizerService = dataVectorizerService;
     this.meterRegistry = meterRegistry;
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
@@ -72,6 +75,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
         commandContext,
         findOperation,
         documentUpdater,
+        dataVectorizerService,
         false,
         false,
         upsert,
