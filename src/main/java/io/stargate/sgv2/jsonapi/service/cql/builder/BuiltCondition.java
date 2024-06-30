@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cql.builder;
 
-import io.stargate.sgv2.api.common.cql.ColumnUtils;
+import io.stargate.sgv2.jsonapi.service.cql.ColumnUtils;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.JsonTerm;
 import java.util.Objects;
 
