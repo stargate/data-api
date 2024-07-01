@@ -199,7 +199,7 @@ public final class ThrowableToErrorMapper {
     if (e instanceof JsonParseException) {
       return ErrorCode.INVALID_REQUEST_NOT_JSON
           .toApiException("underlying problem: (%s) %s", e.getClass().getName(), message)
-          .getCommandResultError(Response.Status.OK);
+          .getCommandResultError(Response.Status.BAD_REQUEST);
     }
 
     // Will need to add more handling but start with above
