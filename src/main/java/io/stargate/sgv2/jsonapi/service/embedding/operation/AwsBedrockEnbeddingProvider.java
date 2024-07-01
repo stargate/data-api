@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
+import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -21,6 +22,8 @@ import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 
 /** Provider implementation for AWS Bedrock. To start we support only Titan embedding models. */
 public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
+
+  private static final String providerId = ProviderConstants.BEDROCK;
   private static ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
   private static ObjectReader or = new ObjectMapper().reader();
 

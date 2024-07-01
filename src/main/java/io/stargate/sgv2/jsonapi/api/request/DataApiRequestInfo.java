@@ -38,7 +38,7 @@ public class DataApiRequestInfo {
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
       Instance<DataApiTokenResolver> tokenResolver,
-      Instance<HeaderBasedEmbeddingApiKeysResolver> apiKeysResolver) {
+      Instance<EmbeddingCredentialResolver> apiKeysResolver) {
     final EmbeddingCredential embeddingCredential =
         apiKeysResolver.get().resolveEmbeddingCredential(routingContext);
     this.credentials =

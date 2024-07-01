@@ -108,7 +108,7 @@ stargate:
           # see https://learn.microsoft.com/en-us/azure/ai-services/openai/reference
           display-name: Amazon Bedrock
           enabled: true
-          url: ""
+          url: " "
           supported-authentications:
             NONE:
               enabled: false
@@ -143,6 +143,8 @@ stargate:
                   type: number
                   required: false
                   default-value: 1024
+                  validation:
+                    options: [256, 512, 1024]
                   help: "Vector dimension to use in the database and when calling Amazon Bedrock Titan V2 embedding model."
         huggingface:
           # see https://huggingface.co/blog/getting-started-with-embeddings
