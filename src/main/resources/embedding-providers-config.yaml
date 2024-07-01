@@ -341,6 +341,10 @@ stargate:
               vector-dimension: 1536
             - name: voyage-2
               vector-dimension: 1024
+            - name: voyage-finance-2
+              vector-dimension: 1024
+            - name: voyage-multilingual-2
+              vector-dimension: 1024
         mistral:
           # see https://docs.mistral.ai/api/#operation/createEmbedding
           display-name: Mistral AI
