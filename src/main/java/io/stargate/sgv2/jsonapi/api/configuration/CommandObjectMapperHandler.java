@@ -43,7 +43,7 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
     }
 
     // false means if not matched by above handle logic, object mapper will
-    // FAIL_ON_UNKNOWN_PROPERTIES.
+    // FAIL_ON_UNKNOWN_PROPERTIES -- but may be re-mapped by ThrowableToErrorMapper
     return false;
   }
 

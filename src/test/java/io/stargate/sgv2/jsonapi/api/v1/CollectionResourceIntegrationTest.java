@@ -85,6 +85,35 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
     }
 
     @Test
+    public void unknownCommandField() {
+      String json =
+          """
+              {
+                "findOne": {
+                    "unknown": "value"
+                }
+              }
+              """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_REQUEST_UNKNOWN_FIELD"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].message", startsWith("Request invalid, unrecognized JSON field"))
+          .body("errors[0].message", containsString("\"unknown\" not one of known fields"))
+          .body(
+              "errors[0].message",
+              containsString("(\"filter\", \"options\", \"projection\", \"sort\")"));
+    }
+
+    @Test
     public void invalidNamespaceName() {
       String json =
           """

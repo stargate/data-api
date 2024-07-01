@@ -45,6 +45,8 @@ public enum ErrorCode {
 
   INVALID_REQUEST_NOT_JSON("Request invalid, cannot parse as JSON"),
 
+  INVALID_REQUEST_UNKNOWN_FIELD("Request invalid, unrecognized JSON field"),
+
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
 
   UNINDEXED_FILTER_PATH("Unindexed filter path"),
