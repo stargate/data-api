@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -120,7 +119,7 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
     // Oddity: Implementation does not support batching, so we only accept "batches"
     // of 1 String, fail for others
@@ -140,7 +139,8 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
 
     Uni<EmbeddingResponse> response =
         applyRetry(
-            upstageAIEmbeddingProviderClient.embed("Bearer " + apiKeyOverride.get(), request));
+            upstageAIEmbeddingProviderClient.embed(
+                "Bearer " + credentials.apiKey().get(), request));
 
     return response
         .onItem()

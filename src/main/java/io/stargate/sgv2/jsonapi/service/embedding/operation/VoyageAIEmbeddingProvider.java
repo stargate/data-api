@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -109,7 +108,7 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
     final String inputType =
         (embeddingRequestType == EmbeddingRequestType.SEARCH) ? requestTypeQuery : requestTypeIndex;
@@ -119,7 +118,7 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
 
     Uni<EmbeddingResponse> response =
         applyRetry(
-            voyageAIEmbeddingProviderClient.embed("Bearer " + apiKeyOverride.get(), request));
+            voyageAIEmbeddingProviderClient.embed("Bearer " + credentials.apiKey().get(), request));
 
     return response
         .onItem()
