@@ -10,7 +10,6 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -22,9 +21,6 @@ import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 
 /** Provider implementation for AWS Bedrock. To start we support only Titan embedding models. */
 public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
-  String awsAccessKeyId = "ASIATGGKR3WHQ63MEJ52";
-  String awsSecretAccessKey = "GSEt79IWjLxbpZU5yI1lIw3InGI+J5Irw2zxIjHJ";
-
   private static ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
   private static ObjectReader or = new ObjectMapper().reader();
 
@@ -46,9 +42,14 @@ public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      EmbeddingProvider.Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
-    AwsBasicCredentials awsCreds = AwsBasicCredentials.create(awsAccessKeyId, awsSecretAccessKey);
+    if (!credentials.accessKeyId().isPresent() || !credentials.secretAccessKey().isPresent()) {
+      throw new RuntimeException("AccessId and SecretId are required for AWS Bedrock");
+    }
+    AwsBasicCredentials awsCreds =
+        AwsBasicCredentials.create(
+            credentials.accessKeyId().get(), credentials.secretAccessKey().get());
 
     BedrockRuntimeAsyncClient client =
         BedrockRuntimeAsyncClient.builder()

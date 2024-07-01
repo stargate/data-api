@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -114,7 +113,7 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
@@ -124,7 +123,7 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
     Uni<EmbeddingResponse> response =
         applyRetry(
             openAIEmbeddingProviderClient.embed(
-                "Bearer " + apiKeyOverride.get(), organizationId, projectId, request));
+                "Bearer " + credentials.apiKey().get(), organizationId, projectId, request));
 
     return response
         .onItem()
