@@ -28,6 +28,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -543,7 +544,8 @@ public class CommandResolverWithVectorizerTest {
       new DataVectorizer(
               TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
               objectMapper.getNodeFactory(),
-              Optional.empty(),
+              new EmbeddingProvider.Credentials(
+                  Optional.empty(), Optional.empty(), Optional.empty()),
               TestEmbeddingProvider.commandContextWithVectorize.collectionSettings())
           .vectorizeUpdateClause(updateClause)
           .subscribe()

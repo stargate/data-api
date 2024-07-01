@@ -16,7 +16,6 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -93,13 +92,13 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
     EmbeddingRequest request = new EmbeddingRequest(texts, new EmbeddingRequest.Options(true));
 
     return applyRetry(
             huggingFaceEmbeddingProviderClient.embed(
-                "Bearer " + apiKeyOverride.get(), modelName, request))
+                "Bearer " + credentials.apiKey().get(), modelName, request))
         .onItem()
         .transform(
             resp -> {

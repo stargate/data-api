@@ -17,7 +17,6 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
@@ -153,7 +152,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
     EmbeddingRequest request =
         new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
@@ -161,7 +160,7 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
     Uni<EmbeddingResponse> serviceResponse =
         applyRetry(
             vertexAIEmbeddingProviderClient.embed(
-                "Bearer " + apiKeyOverride.get(), modelName, request));
+                "Bearer " + credentials.apiKey().get(), modelName, request));
 
     return serviceResponse
         .onItem()

@@ -70,16 +70,26 @@ public abstract class EmbeddingProvider {
    * Vectorizes the given list of texts and returns the embeddings.
    *
    * @param texts List of texts to be vectorized
-   * @param apiKeyOverride Optional API key to be used for this request. If not provided, the
-   *     default API key will be used.
+   * @param credentials Credentials required for the provider
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
    * @return VectorResponse
    */
   public abstract Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Credentials credentials,
       EmbeddingRequestType embeddingRequestType);
+
+  /**
+   * Record to hold the credentials required for the provider
+   *
+   * @param apiKey Optional API key for the all providers other than AWS Bedrock. If not provided,
+   *     the default API key will be used.
+   * @param accessKeyId AWS access key id
+   * @param secretAccessKey AWS secret access key
+   */
+  public record Credentials(
+      Optional<String> apiKey, Optional<String> accessKeyId, Optional<String> secretAccessKey) {}
 
   /**
    * returns the maximum batch size supported by the provider

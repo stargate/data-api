@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -244,7 +245,8 @@ public class UpdateManyCommandResolverTest {
       new DataVectorizer(
               TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
               objectMapper.getNodeFactory(),
-              Optional.empty(),
+              new EmbeddingProvider.Credentials(
+                  Optional.empty(), Optional.empty(), Optional.empty()),
               TestEmbeddingProvider.commandContextWithVectorize.collectionSettings())
           .vectorizeUpdateClause(updateClause);
       assertThat(operation)

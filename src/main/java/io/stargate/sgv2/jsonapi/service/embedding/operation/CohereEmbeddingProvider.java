@@ -16,7 +16,6 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -125,7 +124,7 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
     String[] textArray = new String[texts.size()];
     String input_type =
@@ -134,7 +133,8 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
         new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
 
     Uni<EmbeddingResponse> response =
-        applyRetry(cohereEmbeddingProviderClient.embed("Bearer " + apiKeyOverride.get(), request));
+        applyRetry(
+            cohereEmbeddingProviderClient.embed("Bearer " + credentials.apiKey().get(), request));
 
     return response
         .onItem()

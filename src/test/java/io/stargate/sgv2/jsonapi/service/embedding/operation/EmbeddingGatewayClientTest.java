@@ -28,6 +28,9 @@ public class EmbeddingGatewayClientTest {
 
   public static final String TESTING_COMMAND_NAME = "test_command";
 
+  private final EmbeddingProvider.Credentials credentials =
+      new EmbeddingProvider.Credentials(Optional.empty(), Optional.empty(), Optional.empty());
+
   // for [data-api#1088] (NPE for VoyageAI provider)
   @Test
   void verifyDirectConstructionWithNullServiceParameters() {
@@ -89,7 +92,7 @@ public class EmbeddingGatewayClientTest {
             .vectorize(
                 1,
                 List.of("data 1", "data 2"),
-                Optional.empty(),
+                credentials,
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
@@ -139,7 +142,7 @@ public class EmbeddingGatewayClientTest {
             .vectorize(
                 1,
                 List.of("data 1", "data 2"),
-                Optional.empty(),
+                credentials,
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
