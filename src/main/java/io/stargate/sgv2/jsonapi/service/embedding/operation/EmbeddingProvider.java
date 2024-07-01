@@ -88,7 +88,8 @@ public abstract class EmbeddingProvider {
    * @param accessKeyId AWS access key id
    * @param secretAccessKey AWS secret access key
    */
-  public record Credentials(Optional<String> apiKey, String accessKeyId, String secretAccessKey) {}
+  public record Credentials(
+      Optional<String> apiKey, Optional<String> accessKeyId, Optional<String> secretAccessKey) {}
 
   /**
    * returns the maximum batch size supported by the provider

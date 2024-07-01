@@ -22,6 +22,9 @@ public class OpenAiEmbeddingClientTest {
 
   @Inject EmbeddingProvidersConfig config;
 
+  private final EmbeddingProvider.Credentials credentials =
+      new EmbeddingProvider.Credentials(Optional.of("test"), Optional.empty(), Optional.empty());
+
   @Nested
   class OpenAiEmbeddingTest {
     @Test
@@ -37,7 +40,7 @@ public class OpenAiEmbeddingClientTest {
               .vectorize(
                   1,
                   List.of("some data"),
-                  Optional.of("test"),
+                  credentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -66,7 +69,7 @@ public class OpenAiEmbeddingClientTest {
               .vectorize(
                   1,
                   List.of("application/json"),
-                  Optional.of("test"),
+                  credentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -95,7 +98,7 @@ public class OpenAiEmbeddingClientTest {
               .vectorize(
                   1,
                   List.of("some data"),
-                  Optional.of("test"),
+                  credentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -122,7 +125,7 @@ public class OpenAiEmbeddingClientTest {
               .vectorize(
                   1,
                   List.of("some data"),
-                  Optional.of("test"),
+                  credentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())

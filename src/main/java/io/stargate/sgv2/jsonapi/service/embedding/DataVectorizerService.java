@@ -66,7 +66,7 @@ public class DataVectorizerService {
         new DataVectorizer(
             embeddingProvider,
             objectMapper.getNodeFactory(),
-            dataApiRequestInfo.getEmbeddingApiKey(),
+            dataApiRequestInfo.getCredentials(),
             commandContext.collectionSettings());
     return vectorizeSortClause(dataVectorizer, commandContext, command)
         .onItem()
