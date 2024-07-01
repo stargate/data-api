@@ -163,11 +163,15 @@ public class CQLSessionCache {
       }
       return builder.build();
     } else if (ASTRA.equals(databaseConfig.type())) {
+      String token = ((TokenCredentials) cacheKey.credentials()).token();
+      // If we pass empty token (password), would throw IllegalArgumentException so instead:
+      if ((token == null) || token.isBlank()) {
+        throw new UnauthorizedException(
+            "Missing AstraDB token for tenant '" + cacheKey.tenantId + "'");
+      }
       CqlSession cqlSession =
           new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
-              .withAuthCredentials(
-                  TOKEN,
-                  Objects.requireNonNull(((TokenCredentials) cacheKey.credentials()).token()))
+              .withAuthCredentials(TOKEN, token)
               .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
               .withClassLoader(Thread.currentThread().getContextClassLoader())
               .withApplicationName(APPLICATION_NAME)

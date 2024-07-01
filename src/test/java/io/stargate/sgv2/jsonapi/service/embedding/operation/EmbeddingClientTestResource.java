@@ -106,6 +106,15 @@ public class EmbeddingClientTestResource implements QuarkusTestResourceLifecycle
 
     wireMockServer.stubFor(
         post(urlEqualTo("/v1/embeddings"))
+            .withRequestBody(matchingJsonPath("$.input", containing("text/plain;charset=UTF-8")))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "text/plain;charset=UTF-8")
+                    .withBody("Not Found")
+                    .withStatus(500)));
+
+    wireMockServer.stubFor(
+        post(urlEqualTo("/v1/embeddings"))
             .withRequestBody(matchingJsonPath("$.input", containing("no json body")))
             .willReturn(aResponse().withHeader("Content-Type", "application/json")));
 

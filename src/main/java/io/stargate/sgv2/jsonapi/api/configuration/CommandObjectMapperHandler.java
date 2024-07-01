@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import java.io.IOException;
 
 public class CommandObjectMapperHandler extends DeserializationProblemHandler {
 
@@ -18,23 +17,33 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
       JsonParser p,
       JsonDeserializer<?> deserializer,
       Object beanOrClass,
-      String propertyName)
-      throws IOException {
-    if (deserializer.handledType().toString().endsWith("CreateCollectionCommand$Options")) {
+      String propertyName) {
+    // First: handle known/observed CreateCollectionCommand mapping discrepancies
+
+    final String typeStr = (deserializer == null) ? "N/A" : deserializer.handledType().toString();
+    if (typeStr.endsWith("CreateCollectionCommand$Options")) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "No option \"%s\" found as createCollectionCommand option (known options: \"defaultId\", \"indexing\", \"vector\")",
+          "No option \"%s\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"vector\")",
           propertyName);
     }
-    if (deserializer
-        .handledType()
-        .toString()
-        .endsWith("CreateCollectionCommand$Options$IdConfig")) {
+    if (typeStr.endsWith("CreateCollectionCommand$Options$IdConfig")) {
       throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
-          "No option \"%s\" found as createCollectionCommand defaultId option (known options: \"type\")",
+          "Unrecognized field \"%s\" for `createCollection.options.defaultId` (known fields: \"type\")",
           propertyName);
     }
+    if (typeStr.endsWith("CreateCollectionCommand$Options$IndexingConfig")) {
+      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "Unrecognized field \"%s\" for `createCollection.options.indexing` (known fields: \"allow\", \"deny\")",
+          propertyName);
+    }
+    if (typeStr.endsWith("CreateCollectionCommand$Options$VectorSearchConfig")) {
+      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\")",
+          propertyName);
+    }
+
     // false means if not matched by above handle logic, object mapper will
-    // FAIL_ON_UNKNOWN_PROPERTIES.
+    // FAIL_ON_UNKNOWN_PROPERTIES -- but may be re-mapped by ThrowableToErrorMapper
     return false;
   }
 
