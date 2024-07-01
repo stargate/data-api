@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding;
 
-import io.stargate.sgv2.jsonapi.api.request.EmbeddingApiKeyResolver;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentialResolver;
 import io.stargate.sgv2.jsonapi.api.request.HeaderBasedEmbeddingApiKeyResolver;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -9,7 +9,8 @@ import jakarta.inject.Singleton;
 import jakarta.ws.rs.Produces;
 
 /**
- * Simple CDI producer for the {@link EmbeddingApiKeyResolver} to be used in the embedding service
+ * Simple CDI producer for the {@link EmbeddingCredentialResolver} to be used in the embedding
+ * service
  */
 @Singleton
 public class EmbeddingApiKeyResolverProvider {
@@ -17,7 +18,10 @@ public class EmbeddingApiKeyResolverProvider {
 
   @Produces
   @ApplicationScoped
-  EmbeddingApiKeyResolver headerTokenResolver() {
-    return new HeaderBasedEmbeddingApiKeyResolver(httpConstants.embeddingApiKey());
+  EmbeddingCredentialResolver headerTokenResolver() {
+    return new HeaderBasedEmbeddingApiKeyResolver(
+        httpConstants.embeddingApiKey(),
+        httpConstants.embeddingAccessId(),
+        httpConstants.embeddingSecretId());
   }
 }

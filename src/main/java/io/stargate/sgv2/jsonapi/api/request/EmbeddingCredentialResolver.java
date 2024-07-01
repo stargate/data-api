@@ -5,6 +5,6 @@ import java.util.Optional;
 
 /** Functional interface to resolve the embedding api key from the request context. */
 @FunctionalInterface
-public interface EmbeddingApiKeyResolver {
-  Optional<String> resolveApiKey(RoutingContext context);
+public interface EmbeddingCredentialResolver {
+  Optional<EmbeddingCredential> resolveEmbeddingCredential(RoutingContext context);
 }

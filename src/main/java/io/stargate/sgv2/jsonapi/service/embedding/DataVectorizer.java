@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredential;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -30,7 +31,7 @@ import java.util.Optional;
 public class DataVectorizer {
   private final EmbeddingProvider embeddingProvider;
   private final JsonNodeFactory nodeFactory;
-  private final Optional<String> embeddingApiKey;
+  private final Optional<EmbeddingCredential> embeddingCredential;
   private final CollectionSettings collectionSettings;
 
   /**
@@ -39,17 +40,17 @@ public class DataVectorizer {
    * @param embeddingProvider - Service client based on embedding service configuration set for the
    *     table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
-   * @param embeddingApiKey - Optional override embedding api key came in request header
+   * @param embeddingCredential - Optional override embedding api key came in request header
    * @param collectionSettings - The collection setting for vectorize call
    */
   public DataVectorizer(
       EmbeddingProvider embeddingProvider,
       JsonNodeFactory nodeFactory,
-      Optional<String> embeddingApiKey,
+      Optional<EmbeddingCredential> embeddingCredential,
       CollectionSettings collectionSettings) {
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
-    this.embeddingApiKey = embeddingApiKey;
+    this.embeddingCredential = embeddingCredential;
     this.collectionSettings = collectionSettings;
   }
 
@@ -111,7 +112,7 @@ public class DataVectorizer {
                 .vectorize(
                     1,
                     vectorizeTexts,
-                    embeddingApiKey,
+                    embeddingCredential.get().apiKey(),
                     EmbeddingProvider.EmbeddingRequestType.INDEX)
                 .map(res -> res.embeddings());
         return vectors
@@ -178,7 +179,7 @@ public class DataVectorizer {
                 .vectorize(
                     1,
                     List.of(text),
-                    embeddingApiKey,
+                    embeddingCredential.get().apiKey(),
                     EmbeddingProvider.EmbeddingRequestType.SEARCH)
                 .map(res -> res.embeddings());
         return vectors
@@ -264,7 +265,7 @@ public class DataVectorizer {
                   .vectorize(
                       1,
                       List.of(text),
-                      embeddingApiKey,
+                      embeddingCredential.get().apiKey(),
                       EmbeddingProvider.EmbeddingRequestType.INDEX)
                   .map(res -> res.embeddings());
           return vectors

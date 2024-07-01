@@ -15,9 +15,27 @@ public interface HttpConstants {
   /** JSON API Embedding serive Authentication token header name. */
   String EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME = "x-embedding-api-key";
 
+  /** JSON API Embedding serive access id header name. */
+  String EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME = "x-embedding-access-Id";
+
+  /** JSON API Embedding serive secret id header name. */
+  String EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME = "x-embedding-secret-Id";
+
   /**
-   * @return Embedding service header name <code>20</code>.
+   * @return Embedding service header name for token<code>20</code>.
    */
   @WithDefault(EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME)
   String embeddingApiKey();
+
+  /**
+   * @return Embedding service header name for access id <code>20</code>.
+   */
+  @WithDefault(EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME)
+  String embeddingAccessId();
+
+  /**
+   * @return Embedding service header name for secret id<code>20</code>.
+   */
+  @WithDefault(EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME)
+  String embeddingSecretId();
 }

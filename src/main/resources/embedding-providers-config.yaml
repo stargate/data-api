@@ -104,6 +104,46 @@ stargate:
                   help: "Vector dimension to use in the database and when calling Azure OpenAI."
             - name: text-embedding-ada-002
               vector-dimension: 1536
+        bedrock:
+          # see https://learn.microsoft.com/en-us/azure/ai-services/openai/reference
+          display-name: Amazon Bedrock
+          enabled: true
+          url: ""
+          supported-authentications:
+            NONE:
+              enabled: false
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-api-key
+                  forwarded: api-key
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: providerKey
+                  forwarded: api-key
+          parameters:
+            - name: "region"
+              type: string
+              required: true
+              help: "AWS region where the model is hosted."
+          properties:
+            max-batch-size: 1
+          models:
+            - name: amazon.titan-embed-text-v1
+              parameters:
+                - name: vectorDimension
+                  type: number
+                  required: false
+                  default-value: 1024
+                  help: "Vector dimension to use in the database and when calling Amazon Bedrock Titan G1 embedding model."
+            - name: amazon.titan-embed-text-v2:0
+              parameters:
+                - name: vectorDimension
+                  type: number
+                  required: false
+                  default-value: 1024
+                  help: "Vector dimension to use in the database and when calling Amazon Bedrock Titan V2 embedding model."
         huggingface:
           # see https://huggingface.co/blog/getting-started-with-embeddings
           display-name: Hugging Face - Serverless
