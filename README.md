@@ -30,7 +30,7 @@ The quickest way to test out the Data API directly is to start a local copy of t
 cd docker-compose
 ./start_hcd.sh
 # or
-./starat_dse69.sh
+./start_dse69.sh
 ```
 
 This starts an instance of the Data API along with a backend database (HCD or DSE 6.9)
