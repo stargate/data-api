@@ -32,6 +32,9 @@ public class WebApplicationExceptionMapper {
               null);
     }
     CommandResult commandResult = new ThrowableCommandResultSupplier(toReport).get();
+    if (toReport instanceof JsonApiException jae) {
+      return RestResponse.status(jae.getHttpStatus(), commandResult);
+    }
     // Return 405 for method not allowed and 404 for not found
     if (e instanceof NotAllowedException) {
       return RestResponse.status(RestResponse.Status.METHOD_NOT_ALLOWED, commandResult);

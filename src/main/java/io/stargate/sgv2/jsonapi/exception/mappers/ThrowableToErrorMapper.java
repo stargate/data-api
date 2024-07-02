@@ -42,7 +42,7 @@ public final class ThrowableToErrorMapper {
           if (jae.getErrorCode().equals(ErrorCode.SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE)) {
             return jae.getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
           }
-          return jae.getCommandResultError(message, Response.Status.OK);
+          return jae.getCommandResultError(message, jae.getHttpStatus());
         }
 
         // General Exception related to JSON handling, thrown by Jackson
@@ -188,8 +188,8 @@ public final class ThrowableToErrorMapper {
         } else if (error instanceof DriverTimeoutException) {
           // [data-api#1205] Need to map DriverTimeoutException as well
           return ErrorCode.SERVER_DRIVER_TIMEOUT
-              .toApiException(message)
-              .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
+              .toApiException(Response.Status.INTERNAL_SERVER_ERROR, message)
+              .getCommandResultError();
         }
       }
     }
@@ -200,11 +200,15 @@ public final class ThrowableToErrorMapper {
 
   private static CommandResult.Error handleJsonProcessingException(
       JacksonException e, String message) {
-    // Low-level parsing problem?
     if (e instanceof JsonParseException) {
+      // Low-level parsing problem? Actual BAD_REQUEST (400) since we could not process
       return ErrorCode.INVALID_REQUEST_NOT_JSON
-          .toApiException("underlying problem: (%s) %s", e.getClass().getName(), message)
-          .getCommandResultError(Response.Status.BAD_REQUEST);
+          .toApiException(
+              Response.Status.BAD_REQUEST,
+              "underlying problem: (%s) %s",
+              e.getClass().getName(),
+              message)
+          .getCommandResultError();
     }
     // Unrecognized property? (note: CommandObjectMapperHandler handles some cases)
     if (e instanceof UnrecognizedPropertyException upe) {
@@ -219,7 +223,7 @@ public final class ThrowableToErrorMapper {
           .toApiException(
               "\"%s\" not one of known fields (%s) at '%s'",
               upe.getPropertyName(), knownDesc, upe.getPathReference())
-          .getCommandResultError(Response.Status.OK);
+          .getCommandResultError();
     }
 
     // Will need to add more handling but start with above

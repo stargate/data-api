@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import jakarta.ws.rs.core.Response;
+
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCode {
   /** Command error codes. */
@@ -196,7 +198,17 @@ public enum ErrorCode {
     return new JsonApiException(this, message + ": " + String.format(format, args));
   }
 
+  public JsonApiException toApiException(
+      Response.Status httpStatus, String format, Object... args) {
+    return new JsonApiException(
+        this, message + ": " + String.format(format, args), null, httpStatus);
+  }
+
   public JsonApiException toApiException() {
     return new JsonApiException(this, message);
+  }
+
+  public JsonApiException toApiException(Response.Status httpStatus) {
+    return new JsonApiException(this, message, null, httpStatus);
   }
 }
