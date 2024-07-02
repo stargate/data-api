@@ -114,9 +114,9 @@ stargate:
             HEADER:
               enabled: true
               tokens:
-                - accepted: x-embedding-access-Id
+                - accepted: x-embedding-access-id
                   forwarded: aws_access_key_id
-                - accepted: x-embedding-secret-Id
+                - accepted: x-embedding-secret-id
                   forwarded: aws_secret_access_key
             SHARED_SECRET:
               enabled: false
