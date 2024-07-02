@@ -105,7 +105,6 @@ stargate:
             - name: text-embedding-ada-002
               vector-dimension: 1536
         bedrock:
-          # see https://learn.microsoft.com/en-us/azure/ai-services/openai/reference
           display-name: Amazon Bedrock
           enabled: true
           url: " "
