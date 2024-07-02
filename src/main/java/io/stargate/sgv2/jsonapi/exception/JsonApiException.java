@@ -23,6 +23,8 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
 
   private final ErrorCode errorCode;
 
+  private final Response.Status httpStatus;
+
   public JsonApiException(ErrorCode errorCode) {
     this(errorCode, errorCode.getMessage(), null);
   }
@@ -36,8 +38,14 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   }
 
   public JsonApiException(ErrorCode errorCode, String message, Throwable cause) {
+    this(errorCode, message, cause, Response.Status.OK);
+  }
+
+  public JsonApiException(
+      ErrorCode errorCode, String message, Throwable cause, Response.Status httpStatus) {
     super(message, cause);
     this.errorCode = errorCode;
+    this.httpStatus = httpStatus;
   }
 
   /** {@inheritDoc} */
@@ -50,7 +58,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     }
 
     // construct and return
-    CommandResult.Error error = getCommandResultError(message, Response.Status.OK);
+    CommandResult.Error error = getCommandResultError(message, httpStatus);
 
     // handle cause as well
     Throwable cause = getCause();
@@ -86,7 +94,15 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     return getCommandResultError(getMessage(), status);
   }
 
+  public CommandResult.Error getCommandResultError() {
+    return getCommandResultError(getMessage(), httpStatus);
+  }
+
   public ErrorCode getErrorCode() {
     return errorCode;
+  }
+
+  public Response.Status getHttpStatus() {
+    return httpStatus;
   }
 }
