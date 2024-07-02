@@ -59,6 +59,18 @@ Both convenience scripts support the following options:
 
 * You can specify the number of cassandra node required using `-n [NUMBER]`. Default is 1.
 
+## CQLSH
+
+A convenient way to run `cqlsh` to connect locally is to use one of:
+
+```
+# HCD:
+docker exec -it data-api-hcd-1 cqlsh -u cassandra -p cassandra
+
+# DSE 6.9:
+docker exec -it data-api-dse-1 cqlsh -u cassandra -p cassandra
+```
+
 ## Notes
 
 * The `.env` file defines variables for the docker compose project name (`COMPOSE_PROJECT_NAME`),
