@@ -28,13 +28,15 @@ The quickest way to test out the Data API directly is to start a local copy of t
 
 ```shell
 cd docker-compose
-./start_dse_next_dev_mode.sh
+./start_hcd.sh
+# or
+./start_dse69.sh
 ```
 
-This starts an instance of the Data API along with a Stargate coordinator node in "developer mode" (with DataStax Enterprise 6.8 embedded). 
+This starts an instance of the Data API along with a backend database (HCD or DSE 6.9)
 
 > **Warning**
-> Running this script with no options will use the latest `v1` tagged version of Data API and latest `v2` tagged version of the Stargate coordinator. Therefore, if you have these tags already present in your local Docker from other development/testing, those are the images that will be used. See our Docker compose [README](docker-compose/README.md) to see additional options.
+> Running this script with no options will use the latest `v1` tagged version of Data API. Therefore, if you have these tags already present in your local Docker from other development/testing, those are the images that will be used. See our Docker compose [README](docker-compose/README.md) to see additional options.
 
 Once the services are up, you can access the Swagger endpoint at: http://localhost:8181/swagger-ui/
 
@@ -73,7 +75,9 @@ You can run your application in dev mode that enables live coding using:
 ```shell script
 docker run -d --rm -e CLUSTER_NAME=dse-cluster -e CLUSTER_VERSION=6.8 -e ENABLE_AUTH=true -e DEVELOPER_MODE=true -e DS_LICENSE=accept -e DSE=true -p 8081:8081 -p 8091:8091 -p 9042:9042 stargateio/coordinator-dse-next:v2
 
-./mvnw compile quarkus:dev
+./mvnw compile quarkus:dev -Dstargate.data-store.ignore-bridge=true \
+  -Dstargate.jsonapi.operations.vectorize-enabled=true \
+  -Dstargate.jsonapi.operations.database-config.local-datacenter=dc1
 ```
 
 The command above will first spin the single Stargate DSE coordinator in dev that the API would communicate to.
