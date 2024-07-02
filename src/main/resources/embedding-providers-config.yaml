@@ -156,13 +156,17 @@ stargate:
             HEADER:
                 enabled: true
                 tokens:
-                  - accepted: x-embedding-api-key
-                    forwarded: Authorization
+                  - accepted: x-embedding-access-Id
+                    forwarded: aws_access_key_id
+                  - accepted: x-embedding-secret-Id
+                    forwarded: aws_secret_access_key
             SHARED_SECRET:
                 enabled: false
                 tokens:
-                  - accepted: providerKey
-                    forwarded: Authorization
+                  - accepted: accessId
+                    forwarded: aws_access_key_id
+                  - accepted: secretKey
+                    forwarded: aws_secret_access_key
           properties:
             max-batch-size: 32
           models:
