@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,7 +25,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
 
   private static final String providerId = ProviderConstants.BEDROCK;
-  private static ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+  private static ObjectWriter ow = new ObjectMapper().writer();
   private static ObjectReader or = new ObjectMapper().reader();
 
   public AwsBedrockEnbeddingProvider(
@@ -50,7 +49,7 @@ public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
       EmbeddingProvider.Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
     if (!credentials.accessKeyId().isPresent() || !credentials.secretAccessKey().isPresent()) {
-      throw ErrorCode.EMBEDDING_PROVIDER_AUTHENTICATIN_KEYS_NOT_PROVIDED.toApiException();
+      throw ErrorCode.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException();
     }
 
     AwsBasicCredentials awsCreds =
@@ -65,14 +64,12 @@ public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
     final CompletableFuture<InvokeModelResponse> invokeModelResponseCompletableFuture =
         client.invokeModel(
             request -> {
+              final byte[] inputData;
               try {
-                String inputJson =
-                    ow.writeValueAsString(new EmbeddingRequest(texts.get(0), dimension));
-                request.body(SdkBytes.fromUtf8String(inputJson)).modelId(modelName);
+                inputData = ow.writeValueAsBytes(new EmbeddingRequest(texts.get(0), dimension));
+                request.body(SdkBytes.fromByteArray(inputData)).modelId(modelName);
               } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-              } catch (BedrockRuntimeException bedrockRuntimeException) {
-                throw new RuntimeException(bedrockRuntimeException);
+                throw ErrorCode.EMBEDDING_REQUEST_ENCODING_ERROR.toApiException();
               }
             });
 
@@ -85,7 +82,7 @@ public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
                 List<float[]> vectors = List.of(response.embedding);
                 return Response.of(batchId, vectors);
               } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw ErrorCode.EMBEDDING_RESPONSE_DECODING_ERROR.toApiException();
               }
             });
 
@@ -148,7 +145,6 @@ public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
   private record EmbeddingRequest(
       String inputText, @JsonInclude(value = JsonInclude.Include.NON_DEFAULT) int dimensions) {}
 
-  @JsonIgnoreProperties(ignoreUnknown = true)
   private record EmbeddingResponse(float[] embedding, int inputTextTokenCount) {}
 
   @Override
