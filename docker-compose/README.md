@@ -33,7 +33,8 @@ You can start a simple configuration with HCD with the following command:
 ./start_hcd.sh
 ``` 
 
-This convenience script verifies your Docker installation meets minimum requirements and brings up the configuration described in the `docker-compose.yml` file. The configuration includes health criteria for each container that is used to ensure the containers come up in the correct order.
+This convenience script verifies your Docker installation meets minimum requirements and brings up the configuration described in the `docker-compose.yml` (DSE-6.9) or `docker-compose-hcd.yml` (HCD) file.
+The configuration includes health criteria for each container that is used to ensure the containers come up in the correct order.
 
 The convenience script uses the `-d` and `--wait` options to track the startup progress, so that the compose command exits when all containers have started and reported healthy status within a specified timeout. 
 
