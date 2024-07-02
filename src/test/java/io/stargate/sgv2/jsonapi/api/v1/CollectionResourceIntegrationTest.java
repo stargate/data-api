@@ -46,9 +46,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
-          // Unlike most other cases, we do want to give 4xx because we cannot actually
-          // process the request (as JSON is unparseable)
-          .statusCode(400)
+          .statusCode(200)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_REQUEST_NOT_JSON"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
