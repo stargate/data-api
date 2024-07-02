@@ -22,19 +22,19 @@ public interface HttpConstants {
   String EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME = "x-embedding-secret-Id";
 
   /**
-   * @return Embedding service header name for token<code>20</code>.
+   * @return Embedding service header name for token.
    */
   @WithDefault(EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME)
   String embeddingApiKey();
 
   /**
-   * @return Embedding service header name for access id <code>20</code>.
+   * @return Embedding service header name for access id.
    */
   @WithDefault(EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME)
   String embeddingAccessId();
 
   /**
-   * @return Embedding service header name for secret id<code>20</code>.
+   * @return Embedding service header name for secret id.
    */
   @WithDefault(EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME)
   String embeddingSecretId();

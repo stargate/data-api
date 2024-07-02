@@ -50,7 +50,7 @@ public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
       EmbeddingProvider.Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
     if (!credentials.accessKeyId().isPresent() || !credentials.secretAccessKey().isPresent()) {
-      throw new RuntimeException("AccessId and SecretId are required for AWS Bedrock");
+      throw ErrorCode.EMBEDDING_PROVIDER_AUTHENTICATIN_KEYS_NOT_PROVIDED.toApiException();
     }
 
     AwsBasicCredentials awsCreds =

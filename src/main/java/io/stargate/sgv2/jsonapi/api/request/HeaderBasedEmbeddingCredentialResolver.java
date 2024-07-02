@@ -5,12 +5,12 @@ import io.vertx.ext.web.RoutingContext;
 import java.util.Optional;
 
 /** Functional interface to resolve the embedding api key from the request header. */
-public class HeaderBasedEmbeddingApiKeysResolver implements EmbeddingCredentialResolver {
+public class HeaderBasedEmbeddingCredentialResolver implements EmbeddingCredentialResolver {
   private final String tokenHeaderName;
   private final String accessIdHeaderName;
   private final String secretIdHeaderName;
 
-  public HeaderBasedEmbeddingApiKeysResolver(
+  public HeaderBasedEmbeddingCredentialResolver(
       String tokenHeaderName, String accessIdHeaderName, String secretIdHeaderName) {
     this.tokenHeaderName = tokenHeaderName;
     this.accessIdHeaderName = accessIdHeaderName;
