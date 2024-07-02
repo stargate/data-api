@@ -19,18 +19,18 @@ You can control the platform using the `-Dquarkus.docker.buildx.platform=linux/a
 
 Follow instructions under the [Script options](#script-options) section to use the locally built image.
 
-## Data API with DSE-6.9 cluster
-
-You can start a simple configuration with DSE 6.9 with the following command:
-
-```
-./start_dse69.sh
-``` 
+## Data API with HCD or DSE-6.9 cluster
 
 You can start a simple configuration with HCD with the following command:
 
 ```
 ./start_hcd.sh
+``` 
+
+You can start a simple configuration with DSE 6.9 with the following command:
+
+```
+./start_dse69.sh
 ``` 
 
 This convenience script verifies your Docker installation meets minimum requirements and brings up the configuration described in the `docker-compose.yml` (DSE-6.9) or `docker-compose-hcd.yml` (HCD) file.
@@ -42,6 +42,24 @@ The environment settings in the `.env` file include variables that describe the 
 We recommend doing a `docker compose pull` periodically to ensure you always have the latest patch versions of these tags.
 
 Once done using the containers, you can stop them using the command `docker compose down`.
+
+## HCD or DSE-6.9 cluster WITHOUT Data API
+
+To run local non-Docker instance of Data API, use `-d` with the script: it will prevent running of Data API container:
+
+```
+./start_hcd.sh -d
+# OR
+./start_dse69.sh -d
+```
+
+To run locally built Data API in Quarkus Development mode, you will use:
+
+```
+/mvnw compile quarkus:dev -Dstargate.data-store.ignore-bridge=true \
+  -Dstargate.jsonapi.operations.vectorize-enabled=true \
+  -Dstargate.jsonapi.operations.database-config.local-datacenter=dc1
+```
 
 ## Script options
 
@@ -55,7 +73,7 @@ Both convenience scripts support the following options:
 
 * You can enable reguest logging for the Data API using `-q`: if so, each request is logged under category `io.quarkus.http.access-log`
 
-* You can start dse/hcd node only using `-d` option. This is useful when you want to start Data API locally for development.
+* You can start DSE/HCD node only using `-d` option. This is useful when you want to start Data API locally for development.
 
 * You can specify the number of cassandra node required using `-n [NUMBER]`. Default is 1.
 
