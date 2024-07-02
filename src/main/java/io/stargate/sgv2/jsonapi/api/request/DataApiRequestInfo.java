@@ -38,11 +38,14 @@ public class DataApiRequestInfo {
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
       Instance<DataApiTokenResolver> tokenResolver,
-      Instance<EmbeddingApiKeyResolver> apiKeyResolver) {
-    // TODO: replace the null once support accessKeyId and secretAccessKey header
+      Instance<EmbeddingCredentialResolver> apiKeysResolver) {
+    final EmbeddingCredential embeddingCredential =
+        apiKeysResolver.get().resolveEmbeddingCredential(routingContext);
     this.credentials =
         new EmbeddingProvider.Credentials(
-            apiKeyResolver.get().resolveApiKey(routingContext), Optional.empty(), Optional.empty());
+            embeddingCredential.apiKey(),
+            embeddingCredential.accessId(),
+            embeddingCredential.secretId());
     this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
   }
