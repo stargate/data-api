@@ -19,7 +19,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class FindRowIntegrationTest extends AbstractCollectionIntegrationTestBase {
+public class FindRowsIntegrationTest extends AbstractCollectionIntegrationTestBase {
   static final String NAMESPACE_NAME = "system";
 
   static final String COLLECTION_NAME = "local";
