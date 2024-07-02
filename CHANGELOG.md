@@ -1,12 +1,48 @@
 # Changelog
 
-## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
+## [v1.0.13](https://github.com/stargate/data-api/tree/v1.0.13) (2024-07-01)
 
-[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.12...HEAD)
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.12...v1.0.13)
 
 **Closed issues:**
 
+- `SERVER\_UNHANDLED\_ERROR ` from `IllegalArgumentException` from CQL Driver if passing empty token as Astra credential [\#1210](https://github.com/stargate/data-api/issues/1210)
+- `SERVER\_UNHANDLED\_ERROR` from `UnrecognizedPropertyException` [\#1207](https://github.com/stargate/data-api/issues/1207)
+- Unmapped `AllNodesFailedException` \(`SERVER\_UNHANDLED\_ERROR`\): `com.datastax.oss.driver.api.core.DriverTimeoutException` not handled [\#1205](https://github.com/stargate/data-api/issues/1205)
+- Include type of unmapped exception in message by `ThrowableToErrorMapper` [\#1203](https://github.com/stargate/data-api/issues/1203)
+- Enable `StreamReadFeature.INCLUDE\_SOURCE\_IN\_LOCATION` to get JSON source \(snippet\) logged [\#1201](https://github.com/stargate/data-api/issues/1201)
+- Invalid non-JSON request \("Unexpected character"\) results in `SERVER\_UNHANDLED\_ERROR` 500 failure [\#1200](https://github.com/stargate/data-api/issues/1200)
+- Invalid JSON structure throwing `UnrecognizedPropertyException ` results in `SERVER\_UNHANDLED\_ERROR` 500 failure [\#1199](https://github.com/stargate/data-api/issues/1199)
+- Update max-collection/max-indexes-available limits to align with HCD defaults [\#1194](https://github.com/stargate/data-api/issues/1194)
+- Rename misleading `ErrorCode.INVALID\_COLLECTION\_NAME` as `EXISTING\_COLLECTION\_DIFFERENT\_SETTINGS` [\#1185](https://github.com/stargate/data-api/issues/1185)
+- Change `EmbeddingProvider` from interface to abstract class [\#1173](https://github.com/stargate/data-api/issues/1173)
 - NullPointerException from the multi credential supports [\#1172](https://github.com/stargate/data-api/issues/1172)
+- insertMany batch fails completely \(instead of individual doc\) for some constraints violations [\#1167](https://github.com/stargate/data-api/issues/1167)
+- Remove shared secret embedding provider options  [\#1153](https://github.com/stargate/data-api/issues/1153)
+- Refactor Embedding Providers [\#1152](https://github.com/stargate/data-api/issues/1152)
+
+**Merged pull requests:**
+
+- Fixes \#1205: add explicit handling of `DriverTimeoutException` in ThrowableToErrorMapper [\#1214](https://github.com/stargate/data-api/pull/1214) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1199: map `UnrecognizedPropertyException` to INVALID\_REQUEST\_UNKNOWN\_FIELD [\#1213](https://github.com/stargate/data-api/pull/1213) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1200: add handling for invalid JSON requests [\#1212](https://github.com/stargate/data-api/pull/1212) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1210: pre-validate token before passing to Java CQL driver [\#1211](https://github.com/stargate/data-api/pull/1211) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Small fix: Add status code in the error message when provider returning non-JSON content [\#1209](https://github.com/stargate/data-api/pull/1209) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fixes \#1207: handle case of unknown "createCollection.options.indexing" fields [\#1208](https://github.com/stargate/data-api/pull/1208) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1203: add Exception class direcly in logged message [\#1204](https://github.com/stargate/data-api/pull/1204) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1201: enable inclusion of source JSON snippet on parsing failures [\#1202](https://github.com/stargate/data-api/pull/1202) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#1194: change max-collection/max-indexes-available setting \(double up\) [\#1195](https://github.com/stargate/data-api/pull/1195) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add new VoyageAI models [\#1192](https://github.com/stargate/data-api/pull/1192) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Index usage counter metrics by commands [\#1190](https://github.com/stargate/data-api/pull/1190) ([maheshrajamani](https://github.com/maheshrajamani))
+- Refactor embedding providers classes [\#1189](https://github.com/stargate/data-api/pull/1189) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Disable shared secret default [\#1188](https://github.com/stargate/data-api/pull/1188) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fixed \#1185: change `ErrorCode` constant to better reflect semantics [\#1187](https://github.com/stargate/data-api/pull/1187) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Update UpstageAI discontinued model [\#1183](https://github.com/stargate/data-api/pull/1183) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fix modelName constraint for huggingFace Dedicated provider [\#1181](https://github.com/stargate/data-api/pull/1181) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1167: handle shredding failures properly for `insertMany` [\#1180](https://github.com/stargate/data-api/pull/1180) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#1178](https://github.com/stargate/data-api/pull/1178) ([github-actions[bot]](https://github.com/apps/github-actions))
+- adding highlights to changelog [\#1174](https://github.com/stargate/data-api/pull/1174) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Add 'returnDocumentResponses' for "insertMany" [\#1161](https://github.com/stargate/data-api/pull/1161) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
 ## [v1.0.12](https://github.com/stargate/data-api/tree/v1.0.12) (2024-06-17)
 
