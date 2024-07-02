@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindRowsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
@@ -98,6 +99,7 @@ public class CollectionResource {
                         FindOneAndDeleteCommand.class,
                         FindOneAndReplaceCommand.class,
                         FindOneAndUpdateCommand.class,
+                        FindRowsCommand.class,
                         EstimatedDocumentCountCommand.class,
                         InsertOneCommand.class,
                         InsertManyCommand.class,
