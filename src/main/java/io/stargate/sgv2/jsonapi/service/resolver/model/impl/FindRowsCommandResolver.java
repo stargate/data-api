@@ -5,7 +5,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindRowCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindRowsCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -18,10 +18,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
 
-/** Resolves the {@link FindRowCommand} */
+/** Resolves the {@link FindRowsCommand} */
 @ApplicationScoped
-public class FindRowCommandResolver extends FilterableResolver<FindRowCommand>
-    implements CommandResolver<FindRowCommand> {
+public class FindRowsCommandResolver extends FilterableResolver<FindRowsCommand>
+    implements CommandResolver<FindRowsCommand> {
 
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
@@ -30,7 +30,7 @@ public class FindRowCommandResolver extends FilterableResolver<FindRowCommand>
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
   @Inject
-  public FindRowCommandResolver(
+  public FindRowsCommandResolver(
       OperationsConfig operationsConfig,
       ObjectMapper objectMapper,
       MeterRegistry meterRegistry,
@@ -46,12 +46,12 @@ public class FindRowCommandResolver extends FilterableResolver<FindRowCommand>
   }
 
   @Override
-  public Class<FindRowCommand> getCommandClass() {
-    return FindRowCommand.class;
+  public Class<FindRowsCommand> getCommandClass() {
+    return FindRowsCommand.class;
   }
 
   @Override
-  public Operation resolveCommand(CommandContext commandContext, FindRowCommand command) {
+  public Operation resolveCommand(CommandContext commandContext, FindRowsCommand command) {
     final LogicalExpression resolvedLogicalExpression = resolve(commandContext, command);
 
     // update if options provided

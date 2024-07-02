@@ -15,7 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
   @JsonSubTypes.Type(value = FindOneAndDeleteCommand.class),
   @JsonSubTypes.Type(value = FindOneAndReplaceCommand.class),
   @JsonSubTypes.Type(value = FindOneAndUpdateCommand.class),
-  @JsonSubTypes.Type(value = FindRowCommand.class),
+  @JsonSubTypes.Type(value = FindRowsCommand.class),
   @JsonSubTypes.Type(value = EstimatedDocumentCountCommand.class),
   @JsonSubTypes.Type(value = InsertOneCommand.class),
   @JsonSubTypes.Type(value = InsertManyCommand.class),

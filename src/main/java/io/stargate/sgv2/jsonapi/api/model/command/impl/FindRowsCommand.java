@@ -14,8 +14,8 @@ import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that finds zero or more rows from a table.")
-@JsonTypeName("findRow")
-public record FindRowCommand(
+@JsonTypeName("findRows")
+public record FindRowsCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @JsonProperty("projection") JsonNode projectionDefinition,
     @Valid @JsonProperty("sort") SortClause sortClause,

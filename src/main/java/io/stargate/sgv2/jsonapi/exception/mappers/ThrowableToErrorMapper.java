@@ -204,7 +204,7 @@ public final class ThrowableToErrorMapper {
     if (e instanceof JsonParseException) {
       return ErrorCode.INVALID_REQUEST_NOT_JSON
           .toApiException("underlying problem: (%s) %s", e.getClass().getName(), message)
-          .getCommandResultError(Response.Status.BAD_REQUEST);
+          .getCommandResultError(Response.Status.OK);
     }
     // Unrecognized property? (note: CommandObjectMapperHandler handles some cases)
     if (e instanceof UnrecognizedPropertyException upe) {
