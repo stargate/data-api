@@ -27,6 +27,8 @@ public enum ErrorCode {
       "The replace document and document resolved using filter have different _id"),
 
   /** Embedding provider service error codes. */
+  EMBEDDING_PROVIDER_AUTHENTICATIN_KEYS_NOT_PROVIDED(
+      "The Embedding Provider authentication keys not provided"),
   EMBEDDING_PROVIDER_CLIENT_ERROR("The Embedding Provider returned a HTTP client error"),
   EMBEDDING_PROVIDER_SERVER_ERROR("The Embedding Provider returned a HTTP server error"),
   EMBEDDING_PROVIDER_RATE_LIMITED("The Embedding Provider rate limited the request"),

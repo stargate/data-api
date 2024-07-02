@@ -45,7 +45,8 @@ public class EmbeddingProviderFactory {
           Map.entry(ProviderConstants.OPENAI, OpenAIEmbeddingProvider::new),
           Map.entry(ProviderConstants.UPSTAGE_AI, UpstageAIEmbeddingProvider::new),
           Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingProvider::new),
-          Map.entry(ProviderConstants.VOYAGE_AI, VoyageAIEmbeddingProvider::new));
+          Map.entry(ProviderConstants.VOYAGE_AI, VoyageAIEmbeddingProvider::new),
+          Map.entry(ProviderConstants.BEDROCK, AwsBedrockEnbeddingProvider::new));
 
   public EmbeddingProvider getConfiguration(
       Optional<String> tenant,
