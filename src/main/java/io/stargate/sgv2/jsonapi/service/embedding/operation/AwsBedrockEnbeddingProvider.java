@@ -7,17 +7,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
-import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.model.BedrockRuntimeException;
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 
 /** Provider implementation for AWS Bedrock. To start we support only Titan embedding models. */
@@ -50,6 +52,7 @@ public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
     if (!credentials.accessKeyId().isPresent() || !credentials.secretAccessKey().isPresent()) {
       throw new RuntimeException("AccessId and SecretId are required for AWS Bedrock");
     }
+
     AwsBasicCredentials awsCreds =
         AwsBasicCredentials.create(
             credentials.accessKeyId().get(), credentials.secretAccessKey().get());
@@ -66,10 +69,10 @@ public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
                 String inputJson =
                     ow.writeValueAsString(new EmbeddingRequest(texts.get(0), dimension));
                 request.body(SdkBytes.fromUtf8String(inputJson)).modelId(modelName);
-              } catch (SdkClientException e) {
-                throw new RuntimeException(e);
               } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
+              } catch (BedrockRuntimeException bedrockRuntimeException) {
+                throw new RuntimeException(bedrockRuntimeException);
               }
             });
 
@@ -81,12 +84,65 @@ public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
                     or.readValue(res.body().asInputStream(), EmbeddingResponse.class);
                 List<float[]> vectors = List.of(response.embedding);
                 return Response.of(batchId, vectors);
-              } catch (Exception e) {
+              } catch (IOException e) {
                 throw new RuntimeException(e);
               }
             });
 
-    return Uni.createFrom().completionStage(responseCompletableFuture);
+    return Uni.createFrom()
+        .completionStage(responseCompletableFuture)
+        .onFailure(BedrockRuntimeException.class)
+        .transform(
+            error -> {
+              BedrockRuntimeException bedrockRuntimeException = (BedrockRuntimeException) error;
+              // Status code == 408 and 504 for timeout
+              if (bedrockRuntimeException.statusCode()
+                      == jakarta.ws.rs.core.Response.Status.REQUEST_TIMEOUT.getStatusCode()
+                  || bedrockRuntimeException.statusCode()
+                      == jakarta.ws.rs.core.Response.Status.GATEWAY_TIMEOUT.getStatusCode()) {
+                return ErrorCode.EMBEDDING_PROVIDER_TIMEOUT.toApiException(
+                    "Provider: %s; HTTP Status: %s; Error Message: %s",
+                    providerId,
+                    bedrockRuntimeException.statusCode(),
+                    bedrockRuntimeException.getMessage());
+              }
+
+              // Status code == 429
+              if (bedrockRuntimeException.statusCode()
+                  == jakarta.ws.rs.core.Response.Status.TOO_MANY_REQUESTS.getStatusCode()) {
+                return ErrorCode.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
+                    "Provider: %s; HTTP Status: %s; Error Message: %s",
+                    providerId,
+                    bedrockRuntimeException.statusCode(),
+                    bedrockRuntimeException.getMessage());
+              }
+
+              // Status code in 4XX other than 429
+              if (bedrockRuntimeException.statusCode() > 400
+                  && bedrockRuntimeException.statusCode() < 500) {
+                return ErrorCode.EMBEDDING_PROVIDER_CLIENT_ERROR.toApiException(
+                    "Provider: %s; HTTP Status: %s; Error Message: %s",
+                    providerId,
+                    bedrockRuntimeException.statusCode(),
+                    bedrockRuntimeException.getMessage());
+              }
+
+              // Status code in 5XX
+              if (bedrockRuntimeException.statusCode() >= 500) {
+                return ErrorCode.EMBEDDING_PROVIDER_SERVER_ERROR.toApiException(
+                    "Provider: %s; HTTP Status: %s; Error Message: %s",
+                    providerId,
+                    bedrockRuntimeException.statusCode(),
+                    bedrockRuntimeException.getMessage());
+              }
+
+              // All other errors, Should never happen as all errors are covered above
+              return ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
+                  "Provider: %s; HTTP Status: %s; Error Message: %s",
+                  providerId,
+                  bedrockRuntimeException.statusCode(),
+                  bedrockRuntimeException.getMessage());
+            });
   }
 
   private record EmbeddingRequest(
