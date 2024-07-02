@@ -114,13 +114,17 @@ stargate:
             HEADER:
               enabled: true
               tokens:
-                - accepted: x-embedding-api-key
-                  forwarded: api-key
+                - accepted: x-embedding-access-Id
+                  forwarded: aws_access_key_id
+                - accepted: x-embedding-secret-Id
+                  forwarded: aws_secret_access_key
             SHARED_SECRET:
               enabled: false
               tokens:
-                - accepted: providerKey
-                  forwarded: api-key
+                - accepted: accessId
+                  forwarded: aws_access_key_id
+                - accepted: secretKey
+                  forwarded: aws_secret_access_key
           parameters:
             - name: "region"
               type: string
@@ -156,17 +160,13 @@ stargate:
             HEADER:
                 enabled: true
                 tokens:
-                  - accepted: x-embedding-access-Id
-                    forwarded: aws_access_key_id
-                  - accepted: x-embedding-secret-Id
-                    forwarded: aws_secret_access_key
+                  - accepted: x-embedding-api-key
+                    forwarded: Authorization
             SHARED_SECRET:
                 enabled: false
                 tokens:
-                  - accepted: accessId
-                    forwarded: aws_access_key_id
-                  - accepted: secretKey
-                    forwarded: aws_secret_access_key
+                  - accepted: providerKey
+                    forwarded: Authorization
           properties:
             max-batch-size: 32
           models:
