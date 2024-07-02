@@ -19,14 +19,14 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 @EnabledIfEnvironmentVariable(
-    named = AwsBedrockVectorSearchIntegrationTest.AWS_ACCESS_KEY_ID,
+    named = AwsBedrockVectorSearchIntegrationTest.BEDROCK_ACCESS_KEY_ID,
     matches = ".+")
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class AwsBedrockVectorSearchIntegrationTest extends AbstractNamespaceIntegrationTestBase {
-  static final String AWS_ACCESS_KEY_ID = "AWS_ACCESS_KEY_ID";
-  static final String AWS_SECRET_ID = "AWS_SECRET_ID";
+  static final String BEDROCK_ACCESS_KEY_ID = "BEDROCK_ACCESS_KEY_ID";
+  static final String BEDROCK_SECRET_ID = "BEDROCK_SECRET_ID";
 
   @Nested
   @Order(1)
@@ -37,9 +37,9 @@ public class AwsBedrockVectorSearchIntegrationTest extends AbstractNamespaceInte
             HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
             getHeaders().get(HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME),
             HttpConstants.EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME,
-            System.getenv(AWS_ACCESS_KEY_ID),
+            System.getenv(BEDROCK_ACCESS_KEY_ID),
             HttpConstants.EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME,
-            System.getenv(AWS_SECRET_ID));
+            System.getenv(BEDROCK_SECRET_ID));
 
     @Test
     @Order(1)
