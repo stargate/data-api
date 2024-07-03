@@ -68,8 +68,6 @@ public enum ErrorCode {
 
   SHRED_INTERNAL_NO_PATH("Internal: path being built does not point to a property or element"),
 
-  SHRED_NO_MD5("MD5 Hash algorithm not available"),
-
   SHRED_UNRECOGNIZED_NODE_TYPE("Unrecognized JSON node type in input document"),
 
   SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
@@ -198,6 +196,10 @@ public enum ErrorCode {
 
   public JsonApiException toApiException(String format, Object... args) {
     return new JsonApiException(this, message + ": " + String.format(format, args));
+  }
+
+  public JsonApiException toApiException(Throwable cause, String format, Object... args) {
+    return new JsonApiException(this, message + ": " + String.format(format, args), cause);
   }
 
   public JsonApiException toApiException() {
