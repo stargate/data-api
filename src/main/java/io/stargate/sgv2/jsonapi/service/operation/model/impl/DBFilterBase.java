@@ -291,6 +291,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       super(DOC_ID);
       this.operator = operator;
       this.values = values;
+      updateIndexUsage();
     }
 
     @Override
@@ -299,6 +300,27 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       if (o == null || getClass() != o.getClass()) return false;
       IDFilter idFilter = (IDFilter) o;
       return operator == idFilter.operator && Objects.equals(values, idFilter.values);
+    }
+
+    private void updateIndexUsage() {
+      switch (operator) {
+        case EQ:
+          this.indexUsage.primaryKeyTag = true;
+          break;
+        case NE:
+          final DocumentId documentId = (DocumentId) values.get(0);
+          if (documentId.value() instanceof BigDecimal numberId) {
+            this.indexUsage.numberIndexTag = true;
+          } else if (documentId.value() instanceof String strId) {
+            this.indexUsage.textIndexTag = true;
+          }
+          break;
+        case IN:
+          values.forEach(
+              v -> {
+                this.indexUsage.primaryKeyTag = true;
+              });
+      }
     }
 
     @Override
@@ -315,7 +337,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     public List<BuiltCondition> getAll() {
       switch (operator) {
         case EQ:
-          this.indexUsage.primaryKeyTag = true;
           return List.of(
               BuiltCondition.of(
                   BuiltCondition.LHS.column("key"),
@@ -324,14 +345,12 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
         case NE:
           final DocumentId documentId = (DocumentId) values.get(0);
           if (documentId.value() instanceof BigDecimal numberId) {
-            this.indexUsage.numberIndexTag = true;
             return List.of(
                 BuiltCondition.of(
                     BuiltCondition.LHS.mapAccess("query_dbl_values", DOC_ID),
                     Predicate.NEQ,
                     new JsonTerm(DOC_ID, numberId)));
           } else if (documentId.value() instanceof String strId) {
-            this.indexUsage.textIndexTag = true;
             return List.of(
                 BuiltCondition.of(
                     BuiltCondition.LHS.mapAccess("query_text_values", DOC_ID),
@@ -347,7 +366,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
           return values.stream()
               .map(
                   v -> {
-                    this.indexUsage.primaryKeyTag = true;
                     return BuiltCondition.of(
                         BuiltCondition.LHS.column("key"),
                         Predicate.EQ,
@@ -391,6 +409,55 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       return false;
     }
 
+    private void updateIndexUsage() {
+      List<Object> values = arrayValue;
+      switch (operator) {
+        case IN:
+          final ArrayList<BuiltCondition> inResult = new ArrayList<>();
+          for (Object value : values) {
+            if (value instanceof Map) {
+              // array element is sub_doc
+              this.indexUsage.textIndexTag = true;
+            } else if (value instanceof List) {
+              // array element is array
+              this.indexUsage.textIndexTag = true;
+            } else {
+              this.indexUsage.arrayContainsTag = true;
+            }
+          }
+          break;
+        case NIN:
+          if (!this.getPath().equals(DOC_ID)) {
+            final ArrayList<BuiltCondition> ninResults = new ArrayList<>();
+            for (Object value : values) {
+              if (value instanceof Map) {
+                // array element is sub_doc
+                this.indexUsage.textIndexTag = true;
+              } else if (value instanceof List) {
+                // array element is array
+                this.indexUsage.textIndexTag = true;
+              } else {
+                this.indexUsage.arrayContainsTag = true;
+              }
+            }
+          } else {
+            // can not use stream here, since lambda parameter casting is not allowed
+            List<BuiltCondition> conditions = new ArrayList<>();
+            for (Object value : values) {
+              if (value instanceof DocumentId) {
+                Object docIdValue = ((DocumentId) value).value();
+                if (docIdValue instanceof BigDecimal numberId) {
+                  this.indexUsage.numberIndexTag = true;
+                } else if (docIdValue instanceof String strId) {
+                  this.indexUsage.textIndexTag = true;
+                }
+              }
+            }
+            break;
+          }
+      }
+    }
+
     public enum Operator {
       IN,
       NIN,
@@ -400,6 +467,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       super(path);
       this.arrayValue = arrayValue;
       this.operator = operator;
+      updateIndexUsage();
     }
 
     @Override
@@ -429,7 +497,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
           for (Object value : values) {
             if (value instanceof Map) {
               // array element is sub_doc
-              this.indexUsage.textIndexTag = true;
               inResult.add(
                   BuiltCondition.of(
                       BuiltCondition.LHS.mapAccess("query_text_values", this.getPath()),
@@ -437,14 +504,12 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                       new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
             } else if (value instanceof List) {
               // array element is array
-              this.indexUsage.textIndexTag = true;
               inResult.add(
                   BuiltCondition.of(
                       BuiltCondition.LHS.mapAccess("query_text_values", this.getPath()),
                       Predicate.EQ,
                       new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
             } else {
-              this.indexUsage.arrayContainsTag = true;
               inResult.add(
                   BuiltCondition.of(
                       BuiltCondition.LHS.column(DATA_CONTAINS),
@@ -460,7 +525,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
             for (Object value : values) {
               if (value instanceof Map) {
                 // array element is sub_doc
-                this.indexUsage.textIndexTag = true;
                 ninResults.add(
                     BuiltCondition.of(
                         BuiltCondition.LHS.mapAccess("query_text_values", this.getPath()),
@@ -468,14 +532,12 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                         new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
               } else if (value instanceof List) {
                 // array element is array
-                this.indexUsage.textIndexTag = true;
                 ninResults.add(
                     BuiltCondition.of(
                         BuiltCondition.LHS.mapAccess("query_text_values", this.getPath()),
                         Predicate.NEQ,
                         new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
               } else {
-                this.indexUsage.arrayContainsTag = true;
                 ninResults.add(
                     BuiltCondition.of(
                         BuiltCondition.LHS.column(DATA_CONTAINS),
@@ -491,7 +553,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
               if (value instanceof DocumentId) {
                 Object docIdValue = ((DocumentId) value).value();
                 if (docIdValue instanceof BigDecimal numberId) {
-                  this.indexUsage.numberIndexTag = true;
                   BuiltCondition condition =
                       BuiltCondition.of(
                           BuiltCondition.LHS.mapAccess("query_dbl_values", DOC_ID),
@@ -499,7 +560,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
                           new JsonTerm(DOC_ID, numberId));
                   conditions.add(condition);
                 } else if (docIdValue instanceof String strId) {
-                  this.indexUsage.textIndexTag = true;
                   BuiltCondition condition =
                       BuiltCondition.of(
                           BuiltCondition.LHS.mapAccess("query_text_values", DOC_ID),
@@ -627,6 +687,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       super(path);
       this.arrayValue = arrayValue;
       this.negation = negation;
+      this.indexUsage.arrayContainsTag = true;
     }
 
     public boolean isNegation() {
@@ -646,7 +707,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     public List<BuiltCondition> getAll() {
       final ArrayList<BuiltCondition> result = new ArrayList<>();
       for (Object value : arrayValue) {
-        this.indexUsage.arrayContainsTag = true;
         result.add(
             BuiltCondition.of(
                 BuiltCondition.LHS.column(DATA_CONTAINS),
