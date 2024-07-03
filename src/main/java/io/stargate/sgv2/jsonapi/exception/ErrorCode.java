@@ -6,9 +6,8 @@ import jakarta.ws.rs.core.Response;
 public enum ErrorCode {
   /** Command error codes. */
   COUNT_READ_FAILED("Unable to count documents"),
-  COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
+  COMMAND_UNKNOWN("Provided command unknown"),
   INVALID_CREATE_COLLECTION_OPTIONS("The provided options are invalid"),
-  NO_COMMAND_MATCHED("Unable to find the provided command"),
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
 
   /**
@@ -70,8 +69,6 @@ public enum ErrorCode {
   SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
 
   SHRED_INTERNAL_NO_PATH("Internal: path being built does not point to a property or element"),
-
-  SHRED_NO_MD5("MD5 Hash algorithm not available"),
 
   SHRED_UNRECOGNIZED_NODE_TYPE("Unrecognized JSON node type in input document"),
 
@@ -174,6 +171,11 @@ public enum ErrorCode {
   SERVER_DRIVER_FAILURE("Driver failed"),
   /** Driver timeout failure. */
   SERVER_DRIVER_TIMEOUT("Driver timeout"),
+  /**
+   * Error code used for "should never happen" style problems. Suffix part needs to include details
+   * of actual issue.
+   */
+  SERVER_INTERNAL_ERROR("Server internal error"),
   SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
   SERVER_QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
   SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
@@ -202,6 +204,10 @@ public enum ErrorCode {
       Response.Status httpStatus, String format, Object... args) {
     return new JsonApiException(
         this, message + ": " + String.format(format, args), null, httpStatus);
+  }
+
+  public JsonApiException toApiException(Throwable cause, String format, Object... args) {
+    return new JsonApiException(this, message + ": " + String.format(format, args), cause);
   }
 
   public JsonApiException toApiException() {
