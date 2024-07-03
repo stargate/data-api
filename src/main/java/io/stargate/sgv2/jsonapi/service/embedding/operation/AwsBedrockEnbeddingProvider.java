@@ -48,8 +48,16 @@ public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       EmbeddingProvider.Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
-    if (!credentials.accessKeyId().isPresent() || !credentials.secretAccessKey().isPresent()) {
-      throw ErrorCode.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException();
+    if (credentials.accessKeyId().isEmpty() && credentials.secretAccessKey().isEmpty()) {
+      throw ErrorCode.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
+          "Both 'x-embedding-access-id' and 'x-embedding-secret-id' are missing in the header for provider '%s'",
+          providerId);
+    } else if (credentials.accessKeyId().isEmpty()) {
+      throw ErrorCode.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
+          "'x-embedding-access-id' is missing in the header for provider '%s'", providerId);
+    } else if (credentials.secretAccessKey().isEmpty()) {
+      throw ErrorCode.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
+          "'x-embedding-secret-id' is missing in the header for provider '%s'", providerId);
     }
 
     AwsBasicCredentials awsCreds =
