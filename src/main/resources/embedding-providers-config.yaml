@@ -134,12 +134,7 @@ stargate:
             max-batch-size: 1
           models:
             - name: amazon.titan-embed-text-v1
-              parameters:
-                - name: vectorDimension
-                  type: number
-                  required: false
-                  default-value: 1024
-                  help: "Vector dimension to use in the database and when calling Amazon Bedrock Titan G1 embedding model."
+              vector-dimension: 1536
             - name: amazon.titan-embed-text-v2:0
               parameters:
                 - name: vectorDimension
