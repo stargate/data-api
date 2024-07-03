@@ -37,9 +37,8 @@ public class CommandResolverService {
    */
   public <T extends Command> Uni<CommandResolver<T>> resolverForCommand(T command) {
     // try to get from the map of resolvers
-    CommandResolver<T> resolver = (CommandResolver<T>) resolvers.get(command.getClass());
     return Uni.createFrom()
-        .item(resolver)
+        .item((CommandResolver<T>) resolvers.get(command.getClass()))
         // if this results to null, fail here with not implemented
         .onItem()
         .ifNull()
