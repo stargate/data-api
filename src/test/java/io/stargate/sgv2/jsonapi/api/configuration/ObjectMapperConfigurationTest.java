@@ -59,7 +59,8 @@ class ObjectMapperConfigurationTest {
       Exception e = catchException(() -> objectMapper.readValue(json, NamespaceCommand.class));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasMessageStartingWith("No \"notExistedCommand\" command found as \"NamespaceCommand\"");
+          .hasMessageStartingWith(
+              "Provided command unknown: \"notExistedCommand\" not one of \"NamespaceCommand\"s");
     }
 
     @Test
@@ -74,7 +75,8 @@ class ObjectMapperConfigurationTest {
       Exception e = catchException(() -> objectMapper.readValue(json, NamespaceCommand.class));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasMessageStartingWith("No \"find\" command found as \"NamespaceCommand\"");
+          .hasMessageStartingWith(
+              "Provided command unknown: \"find\" not one of \"NamespaceCommand\"s");
     }
 
     @Test
@@ -89,7 +91,8 @@ class ObjectMapperConfigurationTest {
       Exception e = catchException(() -> objectMapper.readValue(json, GeneralCommand.class));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasMessageStartingWith("No \"insertOne\" command found as \"GeneralCommand\"");
+          .hasMessageStartingWith(
+              "Provided command unknown: \"insertOne\" not one of \"GeneralCommand\"s");
     }
 
     @Test
@@ -104,7 +107,8 @@ class ObjectMapperConfigurationTest {
       Exception e = catchException(() -> objectMapper.readValue(json, CollectionCommand.class));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasMessageStartingWith("No \"createNamespace\" command found as \"CollectionCommand\"");
+          .hasMessageStartingWith(
+              "Provided command unknown: \"createNamespace\" not one of \"CollectionCommand\"s");
     }
   }
 
