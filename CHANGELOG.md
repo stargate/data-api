@@ -4,6 +4,13 @@
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.12...v1.0.13)
 
+**Highlights:**
+
+- Error handling improvements
+- Max-collection/max-indexes-available limits aligned with HCD defaults
+- Fixed InsertMany batch failing completely in some scenarios
+- Added two more VoyageAI models voyage-finance-2 and voyage-multilingual-2
+
 **Closed issues:**
 
 - `SERVER\_UNHANDLED\_ERROR ` from `IllegalArgumentException` from CQL Driver if passing empty token as Astra credential [\#1210](https://github.com/stargate/data-api/issues/1210)
