@@ -15,12 +15,12 @@ public class HeaderBasedEmbeddingCredentialResolver implements EmbeddingCredenti
 
   public HeaderBasedEmbeddingCredentialResolver(
       String tokenHeaderName, String accessIdHeaderName, String secretIdHeaderName) {
-    Objects.requireNonNull(tokenHeaderName, "Token header name cannot be null");
-    Objects.requireNonNull(accessIdHeaderName, "Access Id header name cannot be null");
-    Objects.requireNonNull(secretIdHeaderName, "Secret Id header name cannot be null");
-    this.tokenHeaderName = tokenHeaderName;
-    this.accessIdHeaderName = accessIdHeaderName;
-    this.secretIdHeaderName = secretIdHeaderName;
+    this.tokenHeaderName =
+        Objects.requireNonNull(tokenHeaderName, "Token header name cannot be null");
+    this.accessIdHeaderName =
+        Objects.requireNonNull(accessIdHeaderName, "Access Id header name cannot be null");
+    this.secretIdHeaderName =
+        Objects.requireNonNull(secretIdHeaderName, "Secret Id header name cannot be null");
   }
 
   public EmbeddingCredential resolveEmbeddingCredential(RoutingContext context) {
