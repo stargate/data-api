@@ -170,8 +170,8 @@ public enum ErrorCode {
   /** Driver timeout failure. */
   SERVER_DRIVER_TIMEOUT("Driver timeout"),
   /**
-   * Error code used for "should never happen" style problems. Prefix needs to include details of
-   * actual issue
+   * Error code used for "should never happen" style problems. Suffix part needs to include details
+   * of actual issue.
    */
   SERVER_INTERNAL_ERROR("Server internal error"),
   SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
