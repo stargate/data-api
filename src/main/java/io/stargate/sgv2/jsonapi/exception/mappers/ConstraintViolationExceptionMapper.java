@@ -39,8 +39,7 @@ public class ConstraintViolationExceptionMapper {
         violations.stream().map(ConstraintViolationExceptionMapper::getError).distinct().toList();
 
     // return result
-    CommandResult commandResult = new CommandResult(errors);
-    return RestResponse.ok(commandResult);
+    return new CommandResult(errors).map();
   }
 
   private static CommandResult.Error getError(ConstraintViolation<?> violation) {
