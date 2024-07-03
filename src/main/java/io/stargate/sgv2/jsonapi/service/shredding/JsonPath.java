@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.shredding;
 
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.Objects;
 
 /**
@@ -146,7 +145,8 @@ public final class JsonPath implements Comparable<JsonPath> {
     public Builder nestedArrayBuilder() {
       // Must not be called unless we are pointing to a property or element:
       if (childPath == null) {
-        throw new JsonApiException(ErrorCode.SHRED_INTERNAL_NO_PATH);
+        throw ErrorCode.SHRED_INTERNAL_NO_PATH.toApiException(
+            "Shredder path being built does not point to a property or element");
       }
       return new Builder(childPath, true);
     }
@@ -155,7 +155,8 @@ public final class JsonPath implements Comparable<JsonPath> {
     public Builder nestedObjectBuilder() {
       // Must not be called unless we are pointing to a property or element:
       if (childPath == null) {
-        throw new JsonApiException(ErrorCode.SHRED_INTERNAL_NO_PATH);
+        throw ErrorCode.SHRED_INTERNAL_NO_PATH.toApiException(
+            "Shredder path being built does not point to a property or element");
       }
       return new Builder(childPath, false);
     }
