@@ -119,7 +119,7 @@ public abstract class EmbeddingProvider {
    *     false if not.
    */
   protected static boolean acceptsTitanAIDimensions(String modelName) {
-    return !modelName.endsWith("titan-embed-text-v2:0");
+    return modelName.endsWith("titan-embed-text-v2:0");
   }
 
   /**
