@@ -17,8 +17,18 @@ import java.util.Optional;
 public class EmbeddingGatewayClient extends EmbeddingProvider {
 
   private static final String DEFAULT_TENANT_ID = "default";
-  private static final String API_KEY = "API_KEY";
-  private static final String DATA_API_KEY = "DATA_API_AUTH_KEY";
+
+  /** Map to the value of `x-embedding-api-key` in the header */
+  private static final String EMBEDDING_API_KEY = "EMBEDDING_API_KEY";
+
+  /** Map to the value of `x-embedding-access-id` in the header */
+  private static final String EMBEDDING_ACCESS_ID = "EMBEDDING_ACCESS_ID";
+
+  /** Map to the value of `x-embedding-secret-id` in the header */
+  private static final String EMBEDDING_SECRET_ID = "EMBEDDING_SECRET_ID";
+
+  /** Map to the value of `Token` in the header */
+  private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
 
@@ -28,8 +38,6 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
 
   private Optional<String> tenant;
   private Optional<String> authToken;
-
-  private String apiKey;
   private String modelName;
   private String baseUrl;
   private EmbeddingService embeddingService;
@@ -135,10 +143,21 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
         EmbeddingGateway.ProviderEmbedRequest.ProviderContext.newBuilder()
             .setProviderName(provider)
             .setTenantId(tenant.orElse(DEFAULT_TENANT_ID));
-    builder.putAuthTokens(DATA_API_KEY, authToken.orElse(""));
+    // Add the value of `Token` in the header
+    builder.putAuthTokens(DATA_API_TOKEN, authToken.orElse(""));
+    // Add the value of `x-embedding-api-key` in the header
     if (credentials.apiKey().isPresent()) {
-      builder.putAuthTokens(API_KEY, credentials.apiKey().orElse(apiKey));
+      builder.putAuthTokens(EMBEDDING_API_KEY, credentials.apiKey().get());
     }
+    // Add the value of `x-embedding-access-id` in the header
+    if (credentials.accessKeyId().isPresent()) {
+      builder.putAuthTokens(EMBEDDING_ACCESS_ID, credentials.accessKeyId().get());
+    }
+    // Add the value of `x-embedding-secret-id` in the header
+    if (credentials.secretAccessKey().isPresent()) {
+      builder.putAuthTokens(EMBEDDING_SECRET_ID, credentials.secretAccessKey().get());
+    }
+    // Add the `authentication` (sync service key) in the createCollection command
     if (authentication != null) {
       builder.putAllAuthTokens(authentication);
     }
