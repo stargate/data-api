@@ -61,11 +61,10 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
     // CollectionCommand
     //            interface io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand ->
     // GeneralCommand
-    final String rawCommandClassString = baseType.getRawClass().toString();
+    final String rawCommandClassString = baseType.getRawClass().getName();
     final String baseCommand =
         rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);
-    throw new JsonApiException(
-        ErrorCode.NO_COMMAND_MATCHED,
-        String.format("No \"%s\" command found as \"%s\"", subTypeId, baseCommand));
+    throw ErrorCode.COMMAND_UNKNOWN.toApiException(
+        String.format("\"%s\" not one of \"%s\"s", subTypeId, baseCommand));
   }
 }

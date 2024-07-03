@@ -4,9 +4,8 @@ package io.stargate.sgv2.jsonapi.exception;
 public enum ErrorCode {
   /** Command error codes. */
   COUNT_READ_FAILED("Unable to count documents"),
-  COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
+  COMMAND_UNKNOWN("Provided command unknown"),
   INVALID_CREATE_COLLECTION_OPTIONS("The provided options are invalid"),
-  NO_COMMAND_MATCHED("Unable to find the provided command"),
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
 
   /**
@@ -172,6 +171,11 @@ public enum ErrorCode {
   SERVER_DRIVER_FAILURE("Driver failed"),
   /** Driver timeout failure. */
   SERVER_DRIVER_TIMEOUT("Driver timeout"),
+  /**
+   * Error code used for "should never happen" style problems. Prefix needs to include details of
+   * actual issue
+   */
+  SERVER_INTERNAL_ERROR("Server internal error"),
   SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
   SERVER_QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
   SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
