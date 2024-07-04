@@ -65,6 +65,7 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
     final String baseCommand =
         rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);
     throw ErrorCode.COMMAND_UNKNOWN.toApiException(
-        "\"%s\" not one of \"%s\"s", subTypeId, baseCommand);
+        "\"%s\" not one of \"%s\"s: known commands are %s",
+        subTypeId, baseCommand, idResolver.getDescForKnownTypeIds());
   }
 }

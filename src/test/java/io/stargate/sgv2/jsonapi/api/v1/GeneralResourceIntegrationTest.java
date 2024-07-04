@@ -73,11 +73,11 @@ class GeneralResourceIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"GeneralCommand\"s"))
-          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"));
+                  "Provided command unknown: \"unknownCommand\" not one of \"GeneralCommand\"s: known commands are [createNamespace,"));
     }
 
     @Test
