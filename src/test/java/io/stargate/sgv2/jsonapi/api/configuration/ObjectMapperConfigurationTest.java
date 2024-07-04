@@ -278,7 +278,7 @@ class ObjectMapperConfigurationTest {
       assertThat(e)
           .isInstanceOf(JsonMappingException.class)
           .hasMessageStartingWith(
-              ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": InsertOneCommand");
+              ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": `InsertOneCommand`");
     }
 
     @Test
@@ -367,7 +367,7 @@ class ObjectMapperConfigurationTest {
       assertThat(e)
           .isInstanceOf(JsonMappingException.class)
           .hasMessageStartingWith(
-              ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": DeleteOneCommand");
+              ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": `DeleteOneCommand`");
     }
   }
 
