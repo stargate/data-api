@@ -64,18 +64,15 @@ public enum ErrorCode {
 
   SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
 
-  SHRED_UNRECOGNIZED_NODE_TYPE("Unrecognized JSON node type in input document"),
-
-  SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
-
-  SHRED_DOC_KEY_NAME_VIOLATION("Document field name invalid"),
-
   SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
 
   SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
 
   SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
   SHRED_BAD_VECTORIZE_VALUE("$vectorize search clause needs to be non-blank text value"),
+
+  SHRED_DOC_KEY_NAME_VIOLATION("Document field name invalid"),
+  SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
 
   EXISTING_COLLECTION_DIFFERENT_SETTINGS("Collection already exists"),
 

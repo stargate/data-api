@@ -45,12 +45,9 @@ public class DocValueHasher {
       case OBJECT -> objectHash((ObjectNode) value);
       case STRING -> stringValue(value.textValue()).hash();
 
-      default -> // case BINARY, MISSING, POJO
-          throw new JsonApiException(
-              ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE,
-              String.format(
-                  "%s: %s",
-                  ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE.getMessage(), value.getNodeType()));
+      default -> // case BINARY, MISSING, POJO -- should these ever occur?
+          throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+              "Unsupported `JsonNodeType` in input document, `%s`", value.getNodeType());
     };
   }
 
