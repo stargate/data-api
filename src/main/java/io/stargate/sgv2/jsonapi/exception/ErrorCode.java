@@ -148,7 +148,6 @@ public enum ErrorCode {
   INVALID_ID_TYPE("Invalid Id type"),
   INVALID_QUERY("Invalid query"),
   NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
-  UNSUPPORTED_CQL_QUERY_TYPE("Unsupported cql query type"),
   MISSING_VECTOR_VALUE("Missing the vector value when building cql"),
 
   // Driver failure codes
