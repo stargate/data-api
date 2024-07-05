@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -230,7 +231,7 @@ public record DeleteOperation(
             dataApiRequestInfo,
             queryExecutor,
             null,
-            new DBFilterBase.IDFilter(DBFilterBase.IDFilter.Operator.EQ, prevReadDoc.id()))
+            new IDFilter(IDFilter.Operator.EQ, prevReadDoc.id()))
         .onItem()
         .transform(
             response -> {

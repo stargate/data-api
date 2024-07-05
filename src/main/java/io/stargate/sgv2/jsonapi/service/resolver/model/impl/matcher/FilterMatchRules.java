@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

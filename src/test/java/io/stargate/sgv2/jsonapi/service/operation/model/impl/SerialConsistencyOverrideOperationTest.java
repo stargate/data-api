@@ -28,6 +28,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -125,9 +127,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters1 =
-          List.of(
-              new DBFilterBase.IDFilter(
-                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters1);
 
       FindOperation findOperation =
@@ -320,9 +320,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(updateResults);
               });
 
-      DBFilterBase.IDFilter filter =
-          new DBFilterBase.IDFilter(
-              DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      IDFilter filter = new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("doc1"));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));

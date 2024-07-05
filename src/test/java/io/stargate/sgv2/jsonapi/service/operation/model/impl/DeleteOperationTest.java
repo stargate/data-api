@@ -27,6 +27,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -121,9 +125,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.IDFilter(
-                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -204,9 +206,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.IDFilter(
-                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       CommandContext commandContext =
@@ -387,9 +387,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "status", DBFilterBase.MapFilterBase.Operator.EQ, "active"));
+          List.of(new TextFilter("status", MapFilterBase.Operator.EQ, "active"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -511,9 +509,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "status", DBFilterBase.MapFilterBase.Operator.EQ, "active"));
+          List.of(new TextFilter("status", MapFilterBase.Operator.EQ, "active"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -573,9 +569,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.IDFilter(
-                  DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -654,9 +648,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+          List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -776,9 +768,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+          List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -899,9 +889,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+          List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -1003,9 +991,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+          List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -1103,9 +1089,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+          List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -1163,9 +1147,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+          List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -1303,9 +1285,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+          List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -1499,9 +1479,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+          List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -1641,9 +1619,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+          List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -1795,9 +1771,7 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new DBFilterBase.TextFilter(
-                  "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+          List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =

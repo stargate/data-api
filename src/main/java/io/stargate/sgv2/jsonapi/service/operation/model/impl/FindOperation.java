@@ -2,16 +2,13 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.bpodgursky.jbool_expressions.Expression;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -23,6 +20,9 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.ChainedComparator;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.CollectionFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.*;
@@ -340,7 +340,7 @@ public record FindOperation(
       DataApiRequestInfo dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String pageState,
-      DBFilterBase.IDFilter additionalIdFilter) {
+      IDFilter additionalIdFilter) {
 
     // ensure we pass failure down if read type is not DOCUMENT or KEY
     // COUNT is not supported
@@ -395,32 +395,37 @@ public record FindOperation(
    * @return
    */
   public ReadDocument getNewDocument() {
-    ObjectNode rootNode = objectMapper().createObjectNode();
+
+    final var rootNode = objectMapper().createObjectNode();
     DocumentId documentId = null;
-    Stack<LogicalExpression> stack = new Stack<>();
+    final var stack = new Stack<LogicalExpression>();
     stack.push(logicalExpression);
+
     while (!stack.empty()) {
-      LogicalExpression currentLogicalExpression = stack.pop();
+      var currentLogicalExpression = stack.pop();
+
       for (ComparisonExpression currentComparisonExpression :
           currentLogicalExpression.comparisonExpressions) {
         for (DBFilterBase filter : currentComparisonExpression.getDbFilters()) {
-          if (filter instanceof DBFilterBase.IDFilter idFilter && idFilter.canAddField()) {
-            documentId = idFilter.values.get(0);
-            rootNode.putIfAbsent(filter.getPath(), filter.asJson(objectMapper().getNodeFactory()));
+          // every filter must be a collection filter, because we are making a new document and we
+          // only do this for docs
+          if (filter instanceof IDFilter) {
+            IDFilter idFilter = (IDFilter) filter;
+            documentId = idFilter.getSingularDocumentId();
+            idFilter.updateForNewDocument(objectMapper().getNodeFactory())
+                .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
+          } else if (filter instanceof CollectionFilterBase) {
+            CollectionFilterBase f = (CollectionFilterBase) filter;
+            f.updateForNewDocument(objectMapper().getNodeFactory())
+                .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
           } else {
-            if (filter.canAddField()) {
-              JsonNode value = filter.asJson(objectMapper().getNodeFactory());
-              if (value != null) {
-                String filterPath = filter.getPath();
-                SetOperation.constructSet(filterPath, value).updateDocument(rootNode);
-              }
-            }
+            throw new RuntimeException(
+                "Unsupported filter type in getNewDocument: " + filter.getClass().getName());
           }
         }
       }
-      for (LogicalExpression subLogicalExpression : currentLogicalExpression.logicalExpressions) {
-        stack.push(subLogicalExpression);
-      }
+
+      currentLogicalExpression.logicalExpressions.forEach(stack::push);
     }
     return ReadDocument.from(documentId, null, rootNode);
   }
@@ -432,7 +437,7 @@ public record FindOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<SimpleStatement> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
+  private List<SimpleStatement> buildSelectQueries(IDFilter additionalIdFilter) {
     final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing
@@ -496,7 +501,7 @@ public record FindOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<SimpleStatement> buildSortedSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
+  private List<SimpleStatement> buildSortedSelectQueries(IDFilter additionalIdFilter) {
     final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing

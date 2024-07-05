@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.EnumSet;

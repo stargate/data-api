@@ -24,6 +24,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
@@ -210,9 +213,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     LogicalExpression implicitAnd = LogicalExpression.and();
     implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
     List<DBFilterBase> filters =
-        List.of(
-            new DBFilterBase.TextFilter(
-                "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+        List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
     implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
     FindOperation findOperation =
@@ -354,9 +355,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     LogicalExpression implicitAnd = LogicalExpression.and();
     implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
     List<DBFilterBase> filters =
-        List.of(
-            new DBFilterBase.TextFilter(
-                "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+        List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
     implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
     FindOperation findOperation =
@@ -506,9 +505,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     LogicalExpression implicitAnd = LogicalExpression.and();
     implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
     List<DBFilterBase> filters =
-        List.of(
-            new DBFilterBase.TextFilter(
-                "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1"));
+        List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
     implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
     FindOperation findOperation =
@@ -690,9 +687,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     LogicalExpression implicitAnd = LogicalExpression.and();
     implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
     List<DBFilterBase> filters =
-        List.of(
-            new DBFilterBase.TextFilter(
-                "status", DBFilterBase.MapFilterBase.Operator.EQ, "active"));
+        List.of(new TextFilter("status", MapFilterBase.Operator.EQ, "active"));
     implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
     FindOperation findOperation =
@@ -902,9 +897,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     LogicalExpression implicitAnd = LogicalExpression.and();
     implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
     List<DBFilterBase> filters =
-        List.of(
-            new DBFilterBase.TextFilter(
-                "status", DBFilterBase.MapFilterBase.Operator.EQ, "active"));
+        List.of(new TextFilter("status", MapFilterBase.Operator.EQ, "active"));
     implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
     FindOperation findOperation =

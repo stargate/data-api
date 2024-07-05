@@ -31,11 +31,12 @@ import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
@@ -215,9 +216,8 @@ public class CommandResolverWithVectorizerTest {
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {
-                          DBFilterBase.TextFilter filter =
-                              new DBFilterBase.TextFilter(
-                                  "col", DBFilterBase.MapFilterBase.Operator.EQ, "val");
+                          TextFilter filter =
+                              new TextFilter("col", MapFilterBase.Operator.EQ, "val");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext())
@@ -298,9 +298,8 @@ public class CommandResolverWithVectorizerTest {
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {
-                          DBFilterBase.TextFilter filter =
-                              new DBFilterBase.TextFilter(
-                                  "col", DBFilterBase.MapFilterBase.Operator.EQ, "val");
+                          TextFilter filter =
+                              new TextFilter("col", MapFilterBase.Operator.EQ, "val");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext())
@@ -396,9 +395,8 @@ public class CommandResolverWithVectorizerTest {
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {
-                          DBFilterBase.TextFilter filter =
-                              new DBFilterBase.TextFilter(
-                                  "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+                          TextFilter filter =
+                              new TextFilter("status", MapFilterBase.Operator.EQ, "active");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext())
@@ -483,9 +481,8 @@ public class CommandResolverWithVectorizerTest {
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {
-                          DBFilterBase.TextFilter filter =
-                              new DBFilterBase.TextFilter(
-                                  "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+                          TextFilter filter =
+                              new TextFilter("status", MapFilterBase.Operator.EQ, "active");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext())
@@ -573,9 +570,8 @@ public class CommandResolverWithVectorizerTest {
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {
-                          DBFilterBase.TextFilter filter =
-                              new DBFilterBase.TextFilter(
-                                  "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+                          TextFilter filter =
+                              new TextFilter("status", MapFilterBase.Operator.EQ, "active");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext())
@@ -630,9 +626,7 @@ public class CommandResolverWithVectorizerTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                DBFilterBase.TextFilter filter =
-                    new DBFilterBase.TextFilter(
-                        "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+                TextFilter filter = new TextFilter("status", MapFilterBase.Operator.EQ, "active");
 
                 float[] vector = new float[] {0.25f, 0.25f, 0.25f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);

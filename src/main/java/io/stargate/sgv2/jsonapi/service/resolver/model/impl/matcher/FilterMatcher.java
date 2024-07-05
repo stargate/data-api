@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
