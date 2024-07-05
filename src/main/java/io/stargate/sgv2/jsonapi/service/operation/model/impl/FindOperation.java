@@ -23,6 +23,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.ChainedComparator;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.*;
@@ -340,7 +342,7 @@ public record FindOperation(
       DataApiRequestInfo dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String pageState,
-      DBFilterBase.IDFilter additionalIdFilter) {
+      IDFilter additionalIdFilter) {
 
     // ensure we pass failure down if read type is not DOCUMENT or KEY
     // COUNT is not supported
@@ -402,10 +404,9 @@ public record FindOperation(
     stack.push(logicalExpression);
     while (!stack.empty()) {
       LogicalExpression currentLogicalExpression = stack.pop();
-      for (ComparisonExpression currentComparisonExpression :
-          currentLogicalExpression.comparisonExpressions) {
+      for (ComparisonExpression currentComparisonExpression : currentLogicalExpression.comparisonExpressions) {
         for (DBFilterBase filter : currentComparisonExpression.getDbFilters()) {
-          if (filter instanceof DBFilterBase.IDFilter idFilter && idFilter.canAddField()) {
+          if (filter instanceof IDFilter idFilter && idFilter.canAddField()) {
             documentId = idFilter.values.get(0);
             rootNode.putIfAbsent(filter.getPath(), filter.asJson(objectMapper().getNodeFactory()));
           } else {
@@ -433,7 +434,7 @@ public record FindOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<SimpleStatement> buildSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
+  private List<SimpleStatement> buildSelectQueries(IDFilter additionalIdFilter) {
     final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing
@@ -497,7 +498,7 @@ public record FindOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<SimpleStatement> buildSortedSelectQueries(DBFilterBase.IDFilter additionalIdFilter) {
+  private List<SimpleStatement> buildSortedSelectQueries(IDFilter additionalIdFilter) {
     final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing

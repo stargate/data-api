@@ -1,0 +1,126 @@
+package io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cql.builder.BuiltCondition;
+import io.stargate.sgv2.jsonapi.service.cql.builder.Predicate;
+import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.JsonTerm;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DOC_ID;
+
+/**
+ * Filters db documents based on a document id field value
+ */
+public class IDFilter extends DBFilterBase {
+    public enum Operator {
+        EQ,
+        NE,
+        IN
+    }
+    // HACK AARON - referenced from ExpressionBuilder, restrict access
+    public final Operator operator;
+    // HACK AARON - referenced from FindOperation, restict access
+    public final List<DocumentId> values;
+
+    public IDFilter(Operator operator, DocumentId value) {
+        this(operator, List.of(value));
+    }
+
+    public IDFilter(Operator operator, List<DocumentId> values) {
+        super(DOC_ID);
+        this.operator = operator;
+        this.values = values;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        IDFilter idFilter = (IDFilter) o;
+        return operator == idFilter.operator && Objects.equals(values, idFilter.values);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(operator, values);
+    }
+
+    @Override
+    public BuiltCondition get() {
+        // For Id filter we always use getALL() method
+        return null;
+    }
+
+    public List<BuiltCondition> getAll() {
+        switch (operator) {
+            case EQ:
+                this.indexUsage.primaryKeyTag = true;
+                return List.of(
+                        BuiltCondition.of(
+                                BuiltCondition.LHS.column("key"),
+                                Predicate.EQ,
+                                new JsonTerm(CQLBindValues.getDocumentIdValue(values.get(0)))));
+            case NE:
+                final DocumentId documentId = (DocumentId) values.get(0);
+                if (documentId.value() instanceof BigDecimal numberId) {
+                    this.indexUsage.numberIndexTag = true;
+                    return List.of(
+                            BuiltCondition.of(
+                                    BuiltCondition.LHS.mapAccess("query_dbl_values", DOC_ID),
+                                    Predicate.NEQ,
+                                    new JsonTerm(DOC_ID, numberId)));
+                } else if (documentId.value() instanceof String strId) {
+                    this.indexUsage.textIndexTag = true;
+                    return List.of(
+                            BuiltCondition.of(
+                                    BuiltCondition.LHS.mapAccess("query_text_values", DOC_ID),
+                                    Predicate.NEQ,
+                                    new JsonTerm(DOC_ID, strId)));
+                } else {
+                    throw new JsonApiException(
+                            ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
+                            String.format("Unsupported $ne operand value : %s", documentId.value()));
+                }
+            case IN:
+                if (values.isEmpty()) return List.of();
+                return values.stream()
+                        .map(
+                                v -> {
+                                    this.indexUsage.primaryKeyTag = true;
+                                    return BuiltCondition.of(
+                                            BuiltCondition.LHS.column("key"),
+                                            Predicate.EQ,
+                                            new JsonTerm(CQLBindValues.getDocumentIdValue(v)));
+                                })
+                        .collect(Collectors.toList());
+            default:
+                throw new JsonApiException(
+                        ErrorCode.UNSUPPORTED_FILTER_OPERATION,
+                        String.format("Unsupported id column operation %s", operator));
+        }
+    }
+
+    @Override
+    public JsonNode asJson(JsonNodeFactory nodeFactory) {
+        return DBFilterBase.getJsonNode(nodeFactory, values.get(0));
+    }
+
+    @Override
+    public boolean canAddField() {
+        if (operator.equals(Operator.EQ)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}

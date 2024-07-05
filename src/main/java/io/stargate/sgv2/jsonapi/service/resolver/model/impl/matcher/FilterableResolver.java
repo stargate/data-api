@@ -8,7 +8,8 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.*;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -164,13 +165,13 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
       if (captureExpression.marker() == ID_GROUP) {
         filters.add(
-            new DBFilterBase.IDFilter(
-                DBFilterBase.IDFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
+            new IDFilter(
+                IDFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
       }
       if (captureExpression.marker() == ID_GROUP_IN) {
         filters.add(
-            new DBFilterBase.IDFilter(
-                DBFilterBase.IDFilter.Operator.IN,
+            new IDFilter(
+                IDFilter.Operator.IN,
                 (List<DocumentId>) filterOperation.operand().value()));
       }
     }
@@ -188,14 +189,14 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         switch ((ValueComparisonOperator) filterOperation.operator()) {
           case EQ:
             filters.add(
-                new DBFilterBase.IDFilter(
-                    DBFilterBase.IDFilter.Operator.EQ,
+                new IDFilter(
+                    IDFilter.Operator.EQ,
                     (DocumentId) filterOperation.operand().value()));
             break;
           case NE:
             filters.add(
-                new DBFilterBase.IDFilter(
-                    DBFilterBase.IDFilter.Operator.NE,
+                new IDFilter(
+                    IDFilter.Operator.NE,
                     (DocumentId) filterOperation.operand().value()));
             break;
           default:
@@ -209,13 +210,13 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         switch ((ValueComparisonOperator) filterOperation.operator()) {
           case IN:
             filters.add(
-                new DBFilterBase.IDFilter(
-                    DBFilterBase.IDFilter.Operator.IN,
+                new IDFilter(
+                    IDFilter.Operator.IN,
                     (List<DocumentId>) filterOperation.operand().value()));
             break;
           case NIN:
             filters.add(
-                new DBFilterBase.InFilter(
+                new InFilter(
                     getInFilterBaseOperator(filterOperation.operator()),
                     captureExpression.path(),
                     (List<Object>) filterOperation.operand().value()));
@@ -232,14 +233,14 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         final DocumentId value = (DocumentId) filterOperation.operand().value();
         if (value.value() instanceof BigDecimal bdv) {
           filters.add(
-              new DBFilterBase.NumberFilter(
+              new NumberFilter(
                   DocumentConstants.Fields.DOC_ID,
                   getMapFilterBaseOperator(filterOperation.operator()),
                   bdv));
         }
         if (value.value() instanceof Map) {
           filters.add(
-              new DBFilterBase.DateFilter(
+              new DateFilter(
                   DocumentConstants.Fields.DOC_ID,
                   getMapFilterBaseOperator(filterOperation.operator()),
                   JsonUtil.createDateFromDocumentId(value)));
@@ -248,7 +249,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == DYNAMIC_GROUP_IN) {
         filters.add(
-            new DBFilterBase.InFilter(
+            new InFilter(
                 getInFilterBaseOperator(filterOperation.operator()),
                 captureExpression.path(),
                 (List<Object>) filterOperation.operand().value()));
@@ -256,7 +257,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == DYNAMIC_TEXT_GROUP) {
         filters.add(
-            new DBFilterBase.TextFilter(
+            new TextFilter(
                 captureExpression.path(),
                 getMapFilterBaseOperator(filterOperation.operator()),
                 (String) filterOperation.operand().value()));
@@ -264,7 +265,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == DYNAMIC_BOOL_GROUP) {
         filters.add(
-            new DBFilterBase.BoolFilter(
+            new BoolFilter(
                 captureExpression.path(),
                 getMapFilterBaseOperator(filterOperation.operator()),
                 (Boolean) filterOperation.operand().value()));
@@ -272,7 +273,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == DYNAMIC_NUMBER_GROUP) {
         filters.add(
-            new DBFilterBase.NumberFilter(
+            new NumberFilter(
                 captureExpression.path(),
                 getMapFilterBaseOperator(filterOperation.operator()),
                 (BigDecimal) filterOperation.operand().value()));
@@ -280,13 +281,13 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == DYNAMIC_NULL_GROUP) {
         filters.add(
-            new DBFilterBase.IsNullFilter(
+            new IsNullFilter(
                 captureExpression.path(), getSetFilterBaseOperator(filterOperation.operator())));
       }
 
       if (captureExpression.marker() == DYNAMIC_DATE_GROUP) {
         filters.add(
-            new DBFilterBase.DateFilter(
+            new DateFilter(
                 captureExpression.path(),
                 getMapFilterBaseOperator(filterOperation.operator()),
                 (Date) filterOperation.operand().value()));
@@ -294,82 +295,82 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == EXISTS_GROUP) {
         Boolean bool = (Boolean) filterOperation.operand().value();
-        filters.add(new DBFilterBase.ExistsFilter(captureExpression.path(), bool));
+        filters.add(new ExistsFilter(captureExpression.path(), bool));
       }
 
       if (captureExpression.marker() == ALL_GROUP) {
         List<Object> arrayValue = (List<Object>) filterOperation.operand().value();
-        filters.add(new DBFilterBase.AllFilter(captureExpression.path(), arrayValue, false));
+        filters.add(new AllFilter(captureExpression.path(), arrayValue, false));
       }
 
       if (captureExpression.marker() == NOT_ANY_GROUP) {
         List<Object> arrayValue = (List<Object>) filterOperation.operand().value();
-        filters.add(new DBFilterBase.AllFilter(captureExpression.path(), arrayValue, true));
+        filters.add(new AllFilter(captureExpression.path(), arrayValue, true));
       }
 
       if (captureExpression.marker() == SIZE_GROUP) {
         if (filterOperation.operand().value() instanceof Boolean) {
           // This is the special case, e.g. {"$not":{"ages":{"$size":0}}}
           filters.add(
-              new DBFilterBase.SizeFilter(
-                  captureExpression.path(), DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS, 0));
+              new SizeFilter(
+                  captureExpression.path(), MapFilterBase.Operator.MAP_NOT_EQUALS, 0));
         } else {
           BigDecimal bigDecimal = (BigDecimal) filterOperation.operand().value();
           // Flipping size operator will multiply the value by -1
           // Negative means check array_size[?] != ?
           int size = bigDecimal.intValue();
-          DBFilterBase.MapFilterBase.Operator operator;
+          MapFilterBase.Operator operator;
           if (size >= 0) {
-            operator = DBFilterBase.MapFilterBase.Operator.MAP_EQUALS;
+            operator = MapFilterBase.Operator.MAP_EQUALS;
           } else {
-            operator = DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS;
+            operator = MapFilterBase.Operator.MAP_NOT_EQUALS;
           }
           filters.add(
-              new DBFilterBase.SizeFilter(captureExpression.path(), operator, Math.abs(size)));
+              new SizeFilter(captureExpression.path(), operator, Math.abs(size)));
         }
       }
 
       if (captureExpression.marker() == ARRAY_EQUALS) {
         filters.add(
-            new DBFilterBase.ArrayEqualsFilter(
+            new ArrayEqualsFilter(
                 new DocValueHasher(),
                 captureExpression.path(),
                 (List<Object>) filterOperation.operand().value(),
                 filterOperation.operator().equals(ValueComparisonOperator.EQ)
-                    ? DBFilterBase.MapFilterBase.Operator.MAP_EQUALS
-                    : DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS));
+                    ? MapFilterBase.Operator.MAP_EQUALS
+                    : MapFilterBase.Operator.MAP_NOT_EQUALS));
       }
 
       if (captureExpression.marker() == SUB_DOC_EQUALS) {
         filters.add(
-            new DBFilterBase.SubDocEqualsFilter(
+            new SubDocEqualsFilter(
                 new DocValueHasher(),
                 captureExpression.path(),
                 (Map<String, Object>) filterOperation.operand().value(),
                 filterOperation.operator().equals(ValueComparisonOperator.EQ)
-                    ? DBFilterBase.MapFilterBase.Operator.MAP_EQUALS
-                    : DBFilterBase.MapFilterBase.Operator.MAP_NOT_EQUALS));
+                    ? MapFilterBase.Operator.MAP_EQUALS
+                    : MapFilterBase.Operator.MAP_NOT_EQUALS));
       }
     }
 
     return filters;
   }
 
-  private static DBFilterBase.MapFilterBase.Operator getMapFilterBaseOperator(
+  private static MapFilterBase.Operator getMapFilterBaseOperator(
       FilterOperator filterOperator) {
     switch ((ValueComparisonOperator) filterOperator) {
       case EQ:
-        return DBFilterBase.MapFilterBase.Operator.EQ;
+        return MapFilterBase.Operator.EQ;
       case NE:
-        return DBFilterBase.MapFilterBase.Operator.NE;
+        return MapFilterBase.Operator.NE;
       case GT:
-        return DBFilterBase.MapFilterBase.Operator.GT;
+        return MapFilterBase.Operator.GT;
       case GTE:
-        return DBFilterBase.MapFilterBase.Operator.GTE;
+        return MapFilterBase.Operator.GTE;
       case LT:
-        return DBFilterBase.MapFilterBase.Operator.LT;
+        return MapFilterBase.Operator.LT;
       case LTE:
-        return DBFilterBase.MapFilterBase.Operator.LTE;
+        return MapFilterBase.Operator.LTE;
       default:
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
@@ -377,13 +378,13 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     }
   }
 
-  private static DBFilterBase.InFilter.Operator getInFilterBaseOperator(
+  private static InFilter.Operator getInFilterBaseOperator(
       FilterOperator filterOperator) {
     switch ((ValueComparisonOperator) filterOperator) {
       case IN:
-        return DBFilterBase.InFilter.Operator.IN;
+        return InFilter.Operator.IN;
       case NIN:
-        return DBFilterBase.InFilter.Operator.NIN;
+        return InFilter.Operator.NIN;
       default:
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
@@ -391,13 +392,13 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     }
   }
 
-  private static DBFilterBase.SetFilterBase.Operator getSetFilterBaseOperator(
+  private static SetFilterBase.Operator getSetFilterBaseOperator(
       FilterOperator filterOperator) {
     switch ((ValueComparisonOperator) filterOperator) {
       case EQ:
-        return DBFilterBase.SetFilterBase.Operator.CONTAINS;
+        return SetFilterBase.Operator.CONTAINS;
       case NE:
-        return DBFilterBase.SetFilterBase.Operator.NOT_CONTAINS;
+        return SetFilterBase.Operator.NOT_CONTAINS;
       default:
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,

@@ -1,0 +1,36 @@
+package io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
+
+import java.util.Map;
+
+/**
+ * Filter for document where field is subdocument and matches (same subfield in same order) the
+ * filter sub document
+ */
+public class SubDocEqualsFilter extends MapFilterBase<String> {
+    private final Map<String, Object> subDocValue;
+
+    public SubDocEqualsFilter(
+            DocValueHasher hasher,
+            String path,
+            Map<String, Object> subDocData,
+            Operator operator) {
+        super("query_text_values", path, operator, getHash(hasher, subDocData));
+        this.indexUsage.textIndexTag = true;
+        this.subDocValue = subDocData;
+    }
+
+    @Override
+    public JsonNode asJson(JsonNodeFactory nodeFactory) {
+        return DBFilterBase.getJsonNode(nodeFactory, subDocValue);
+    }
+
+    @Override
+    public boolean canAddField() {
+        return true;
+    }
+}

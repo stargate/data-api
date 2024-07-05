@@ -18,6 +18,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextFilter;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
@@ -110,8 +112,8 @@ public class CountOperationTest extends OperationTestBase {
           .get(0)
           .setDBFilters(
               List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user1")));
+                  new TextFilter(
+                      "username", MapFilterBase.Operator.EQ, "user1")));
       CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, -1);
       Supplier<CommandResult> execute =
           countOperation
@@ -160,8 +162,8 @@ public class CountOperationTest extends OperationTestBase {
           .get(0)
           .setDBFilters(
               List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user_all")));
+                  new TextFilter(
+                      "username", MapFilterBase.Operator.EQ, "user_all")));
 
       CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, -1);
       Supplier<CommandResult> execute =
@@ -293,8 +295,8 @@ public class CountOperationTest extends OperationTestBase {
           .get(0)
           .setDBFilters(
               List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user2")));
+                  new TextFilter(
+                      "username", MapFilterBase.Operator.EQ, "user2")));
       CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, 10);
       Supplier<CommandResult> execute =
           countOperation
@@ -342,8 +344,8 @@ public class CountOperationTest extends OperationTestBase {
           .get(0)
           .setDBFilters(
               List.of(
-                  new DBFilterBase.TextFilter(
-                      "username", DBFilterBase.MapFilterBase.Operator.EQ, "user_all")));
+                  new TextFilter(
+                      "username", MapFilterBase.Operator.EQ, "user_all")));
 
       CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, 10);
       Supplier<CommandResult> execute =

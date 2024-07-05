@@ -13,8 +13,8 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase.MapFilterBase.Operator;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapFilterBase.Operator;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextFilter;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -79,8 +79,8 @@ class CountDocumentsCommandResolverTest {
           .isInstanceOfSatisfying(
               CountOperation.class,
               op -> {
-                DBFilterBase.TextFilter expected =
-                    new DBFilterBase.TextFilter("name", Operator.EQ, "Aaron");
+                TextFilter expected =
+                    new TextFilter("name", Operator.EQ, "Aaron");
 
                 assertThat(op.commandContext()).isEqualTo(context);
                 assertThat(
