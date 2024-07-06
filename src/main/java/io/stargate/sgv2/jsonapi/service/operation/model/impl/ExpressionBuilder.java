@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.service.cql.ExpressionUtils;
 import io.stargate.sgv2.jsonapi.service.cql.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.*;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.*;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -55,8 +54,7 @@ public class ExpressionBuilder {
     }
 
     // have an idFilter
-    IDFilter idFilter =
-        additionalIdFilter != null ? additionalIdFilter : idFilters.get(0);
+    IDFilter idFilter = additionalIdFilter != null ? additionalIdFilter : idFilters.get(0);
 
     // _id: {$in: []} should find nothing in the entire query
     // since _id can not work with $or, entire $and should find nothing
@@ -162,8 +160,7 @@ public class ExpressionBuilder {
       conditionExpressions.clear();
       conditionExpressions.add(
           Variable.of(
-              new IsNullFilter(
-                      "something user never use", SetFilterBase.Operator.NOT_CONTAINS)
+              new IsNullFilter("something user never use", SetFilterBase.Operator.NOT_CONTAINS)
                   .get()));
       return ExpressionUtils.buildExpression(
           conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
@@ -178,9 +175,7 @@ public class ExpressionBuilder {
       conditionExpressions.clear();
       conditionExpressions.add(
           Variable.of(
-              new IsNullFilter(
-                      "something user never use", SetFilterBase.Operator.CONTAINS)
-                  .get()));
+              new IsNullFilter("something user never use", SetFilterBase.Operator.CONTAINS).get()));
       return ExpressionUtils.buildExpression(
           conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
     }

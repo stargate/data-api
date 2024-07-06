@@ -2,16 +2,13 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 
 import com.bpodgursky.jbool_expressions.Expression;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -408,18 +405,24 @@ public record FindOperation(
     while (!stack.empty()) {
       var currentLogicalExpression = stack.pop();
 
-      for (ComparisonExpression currentComparisonExpression : currentLogicalExpression.comparisonExpressions) {
+      for (ComparisonExpression currentComparisonExpression :
+          currentLogicalExpression.comparisonExpressions) {
         for (DBFilterBase filter : currentComparisonExpression.getDbFilters()) {
-          // every filter must be a collection filter, because we are making a new document and we only do this for docs
+          // every filter must be a collection filter, because we are making a new document and we
+          // only do this for docs
           switch (filter) {
             case IDFilter idFilter -> {
               documentId = idFilter.getSingularDocumentId();
-              idFilter.updateForNewDocument(objectMapper().getNodeFactory())
-                      .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
+              idFilter
+                  .updateForNewDocument(objectMapper().getNodeFactory())
+                  .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
             }
-            case CollectionFilterBase f -> f.updateForNewDocument(objectMapper().getNodeFactory())
-                .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
-            default -> throw new RuntimeException("Unsupported filter type in getNewDocument: " + filter.getClass().getName());
+            case CollectionFilterBase f ->
+                f.updateForNewDocument(objectMapper().getNodeFactory())
+                    .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
+            default ->
+                throw new RuntimeException(
+                    "Unsupported filter type in getNewDocument: " + filter.getClass().getName());
           }
         }
       }

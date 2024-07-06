@@ -217,8 +217,7 @@ public class CommandResolverWithVectorizerTest {
                         FindOperation.class,
                         find -> {
                           TextFilter filter =
-                              new TextFilter(
-                                  "col", MapFilterBase.Operator.EQ, "val");
+                              new TextFilter("col", MapFilterBase.Operator.EQ, "val");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext())
@@ -300,8 +299,7 @@ public class CommandResolverWithVectorizerTest {
                         FindOperation.class,
                         find -> {
                           TextFilter filter =
-                              new TextFilter(
-                                  "col", MapFilterBase.Operator.EQ, "val");
+                              new TextFilter("col", MapFilterBase.Operator.EQ, "val");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext())
@@ -398,8 +396,7 @@ public class CommandResolverWithVectorizerTest {
                         FindOperation.class,
                         find -> {
                           TextFilter filter =
-                              new TextFilter(
-                                  "status", MapFilterBase.Operator.EQ, "active");
+                              new TextFilter("status", MapFilterBase.Operator.EQ, "active");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext())
@@ -485,8 +482,7 @@ public class CommandResolverWithVectorizerTest {
                         FindOperation.class,
                         find -> {
                           TextFilter filter =
-                              new TextFilter(
-                                  "status", MapFilterBase.Operator.EQ, "active");
+                              new TextFilter("status", MapFilterBase.Operator.EQ, "active");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext())
@@ -575,8 +571,7 @@ public class CommandResolverWithVectorizerTest {
                         FindOperation.class,
                         find -> {
                           TextFilter filter =
-                              new TextFilter(
-                                  "status", MapFilterBase.Operator.EQ, "active");
+                              new TextFilter("status", MapFilterBase.Operator.EQ, "active");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext())
@@ -631,9 +626,7 @@ public class CommandResolverWithVectorizerTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                TextFilter filter =
-                    new TextFilter(
-                        "status", MapFilterBase.Operator.EQ, "active");
+                TextFilter filter = new TextFilter("status", MapFilterBase.Operator.EQ, "active");
 
                 float[] vector = new float[] {0.25f, 0.25f, 0.25f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);

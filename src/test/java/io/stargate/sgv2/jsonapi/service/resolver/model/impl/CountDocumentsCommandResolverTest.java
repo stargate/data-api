@@ -79,8 +79,7 @@ class CountDocumentsCommandResolverTest {
           .isInstanceOfSatisfying(
               CountOperation.class,
               op -> {
-                TextFilter expected =
-                    new TextFilter("name", Operator.EQ, "Aaron");
+                TextFilter expected = new TextFilter("name", Operator.EQ, "Aaron");
 
                 assertThat(op.commandContext()).isEqualTo(context);
                 assertThat(

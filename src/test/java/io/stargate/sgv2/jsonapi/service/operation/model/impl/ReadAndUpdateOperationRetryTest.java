@@ -213,9 +213,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     LogicalExpression implicitAnd = LogicalExpression.and();
     implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
     List<DBFilterBase> filters =
-        List.of(
-            new TextFilter(
-                "username", MapFilterBase.Operator.EQ, "user1"));
+        List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
     implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
     FindOperation findOperation =
@@ -357,9 +355,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     LogicalExpression implicitAnd = LogicalExpression.and();
     implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
     List<DBFilterBase> filters =
-        List.of(
-            new TextFilter(
-                "username", MapFilterBase.Operator.EQ, "user1"));
+        List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
     implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
     FindOperation findOperation =
@@ -509,9 +505,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     LogicalExpression implicitAnd = LogicalExpression.and();
     implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
     List<DBFilterBase> filters =
-        List.of(
-            new TextFilter(
-                "username", MapFilterBase.Operator.EQ, "user1"));
+        List.of(new TextFilter("username", MapFilterBase.Operator.EQ, "user1"));
     implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
     FindOperation findOperation =
@@ -693,9 +687,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     LogicalExpression implicitAnd = LogicalExpression.and();
     implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
     List<DBFilterBase> filters =
-        List.of(
-            new TextFilter(
-                "status", MapFilterBase.Operator.EQ, "active"));
+        List.of(new TextFilter("status", MapFilterBase.Operator.EQ, "active"));
     implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
     FindOperation findOperation =
@@ -905,9 +897,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
     LogicalExpression implicitAnd = LogicalExpression.and();
     implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
     List<DBFilterBase> filters =
-        List.of(
-            new TextFilter(
-                "status", MapFilterBase.Operator.EQ, "active"));
+        List.of(new TextFilter("status", MapFilterBase.Operator.EQ, "active"));
     implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
     FindOperation findOperation =

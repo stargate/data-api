@@ -47,18 +47,16 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
    *
    * @param filterPath the path to set
    * @param value the value to set
-   * @param skipValidation whether to skip validation, used for internl purposes for so _id and others can be updated
+   * @param skipValidation whether to skip validation, used for internl purposes for so _id and
+   *     others can be updated
    */
-  public static SetOperation constructSet(String filterPath, JsonNode value, boolean skipValidation) {
+  public static SetOperation constructSet(
+      String filterPath, JsonNode value, boolean skipValidation) {
     List<Action> additions = new ArrayList<>();
-    String path = skipValidation ?
-            filterPath
-            :
-            validateUpdatePath(UpdateOperator.SET, filterPath);
+    String path = skipValidation ? filterPath : validateUpdatePath(UpdateOperator.SET, filterPath);
     additions.add(new Action(PathMatchLocator.forPath(path), value));
     return new SetOperation(additions, false);
   }
-
 
   /**
    * Factory method for constructing {@code $setOnInsert} update operation with given configuration

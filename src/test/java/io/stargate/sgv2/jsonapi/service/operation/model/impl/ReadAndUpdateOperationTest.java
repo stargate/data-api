@@ -211,9 +211,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new IDFilter(
-                  IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -319,9 +317,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new IDFilter(
-                  IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
       CommandContext commandContext = createCommandContextWithCommandName("ReadNoWriteCommand");
 
@@ -615,9 +611,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new TextFilter(
-                  "filter_me", MapFilterBase.Operator.EQ, "happy"));
+          List.of(new TextFilter("filter_me", MapFilterBase.Operator.EQ, "happy"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
       CommandContext commandContext = createCommandContextWithCommandName("ReadAndWriteCommand");
 
@@ -826,9 +820,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new IDFilter(
-                  IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -935,9 +927,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new IDFilter(
-                  IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -1112,9 +1102,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new TextFilter(
-                  "filter_me", MapFilterBase.Operator.EQ, "happy"));
+          List.of(new TextFilter("filter_me", MapFilterBase.Operator.EQ, "happy"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -1280,9 +1268,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new TextFilter(
-                  "filter_me", MapFilterBase.Operator.EQ, "happy"));
+          List.of(new TextFilter("filter_me", MapFilterBase.Operator.EQ, "happy"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -1361,9 +1347,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new IDFilter(
-                  IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -1459,9 +1443,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new IDFilter(
-                  IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -1608,9 +1590,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new TextFilter(
-                  "status", MapFilterBase.Operator.EQ, "active"));
+          List.of(new TextFilter("status", MapFilterBase.Operator.EQ, "active"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
       FindOperation findOperation =
           FindOperation.unsorted(
@@ -1707,9 +1687,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new IDFilter(
-                  IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -1786,9 +1764,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(
-              new TextFilter(
-                  "status", MapFilterBase.Operator.EQ, "active"));
+          List.of(new TextFilter("status", MapFilterBase.Operator.EQ, "active"));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =

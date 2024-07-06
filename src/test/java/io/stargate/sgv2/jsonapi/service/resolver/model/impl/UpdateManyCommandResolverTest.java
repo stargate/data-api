@@ -89,8 +89,7 @@ public class UpdateManyCommandResolverTest {
                         FindOperation.class,
                         find -> {
                           IDFilter filter =
-                              new IDFilter(
-                                  IDFilter.Operator.EQ, DocumentId.fromString("id"));
+                              new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("id"));
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -204,8 +203,7 @@ public class UpdateManyCommandResolverTest {
                         FindOperation.class,
                         find -> {
                           TextFilter filter =
-                              new TextFilter(
-                                  "col", MapFilterBase.Operator.EQ, "val");
+                              new TextFilter("col", MapFilterBase.Operator.EQ, "val");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -273,8 +271,7 @@ public class UpdateManyCommandResolverTest {
                         FindOperation.class,
                         find -> {
                           TextFilter filter =
-                              new TextFilter(
-                                  "col", MapFilterBase.Operator.EQ, "val");
+                              new TextFilter("col", MapFilterBase.Operator.EQ, "val");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext())

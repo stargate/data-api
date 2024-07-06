@@ -53,9 +53,7 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               op -> {
-                IDFilter filter =
-                    new IDFilter(
-                        IDFilter.Operator.EQ, DocumentId.fromString("id"));
+                IDFilter filter = new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("id"));
 
                 assertThat(op.objectMapper()).isEqualTo(objectMapper);
                 assertThat(op.commandContext()).isEqualTo(commandContext);
@@ -90,9 +88,7 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               op -> {
-                TextFilter filter =
-                    new TextFilter(
-                        "status", MapFilterBase.Operator.EQ, "active");
+                TextFilter filter = new TextFilter("status", MapFilterBase.Operator.EQ, "active");
 
                 assertThat(op.objectMapper()).isEqualTo(objectMapper);
                 assertThat(op.commandContext()).isEqualTo(commandContext);
@@ -132,9 +128,7 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                TextFilter filter =
-                    new TextFilter(
-                        "status", MapFilterBase.Operator.EQ, "active");
+                TextFilter filter = new TextFilter("status", MapFilterBase.Operator.EQ, "active");
 
                 float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
@@ -176,9 +170,7 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                TextFilter filter =
-                    new TextFilter(
-                        "status", MapFilterBase.Operator.EQ, "active");
+                TextFilter filter = new TextFilter("status", MapFilterBase.Operator.EQ, "active");
 
                 float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
@@ -221,9 +213,7 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                TextFilter filter =
-                    new TextFilter(
-                        "status", MapFilterBase.Operator.EQ, "active");
+                TextFilter filter = new TextFilter("status", MapFilterBase.Operator.EQ, "active");
 
                 float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
@@ -265,9 +255,7 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                TextFilter filter =
-                    new TextFilter(
-                        "status", MapFilterBase.Operator.EQ, "active");
+                TextFilter filter = new TextFilter("status", MapFilterBase.Operator.EQ, "active");
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -363,9 +351,7 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               op -> {
-                TextFilter filter =
-                    new TextFilter(
-                        "col", MapFilterBase.Operator.EQ, "val");
+                TextFilter filter = new TextFilter("col", MapFilterBase.Operator.EQ, "val");
 
                 assertThat(op.objectMapper()).isEqualTo(objectMapper);
                 assertThat(op.commandContext()).isEqualTo(commandContext);

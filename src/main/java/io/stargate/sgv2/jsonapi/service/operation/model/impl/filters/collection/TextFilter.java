@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-
 import java.util.Optional;
 
 /** Filters db documents based on a text field value */
@@ -18,6 +17,7 @@ public class TextFilter extends MapFilterBase<String> {
 
   /**
    * Only update if the operation is eq so we know the value
+   *
    * @param nodeFactory
    * @return
    */
@@ -30,12 +30,12 @@ public class TextFilter extends MapFilterBase<String> {
   }
 
   //  @Override
-//  public JsonNode asJson(JsonNodeFactory nodeFactory) {
-//    return nodeFactory.textNode(strValue);
-//  }
-//
-//  @Override
-//  public boolean canAddField() {
-//    return Operator.EQ.equals(operator);
-//  }
+  //  public JsonNode asJson(JsonNodeFactory nodeFactory) {
+  //    return nodeFactory.textNode(strValue);
+  //  }
+  //
+  //  @Override
+  //  public boolean canAddField() {
+  //    return Operator.EQ.equals(operator);
+  //  }
 }

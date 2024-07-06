@@ -10,8 +10,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.IndexUsage;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
 
 /**
  * Resolver looks at a valid {@link Command} and determines the best {@link Operation} to implement
