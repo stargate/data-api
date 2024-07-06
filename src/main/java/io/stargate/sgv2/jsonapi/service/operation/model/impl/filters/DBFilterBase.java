@@ -16,6 +16,8 @@ import java.util.function.Supplier;
  */
 public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
+  // TODO: change the supplier to be a list so the IDFilter does not have a special getAll
+
   /** Tracks the index column usage */
   public final IndexUsage indexUsage = new IndexUsage();
 

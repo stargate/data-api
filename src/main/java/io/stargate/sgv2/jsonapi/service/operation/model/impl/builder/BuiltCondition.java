@@ -1,28 +1,31 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.impl.builder;
 
+// TODO: this is a bit of a mess, it is actually building the query string, prob from the copied old code
 public final class BuiltCondition {
 
   public ConditionLHS lhs;
 
   public BuiltConditionPredicate predicate;
 
-  public JsonTerm jsonTerm;
+  public BuildConditionTerm rhsTerm;
 
-  public BuiltCondition(ConditionLHS lhs, BuiltConditionPredicate predicate, JsonTerm jsonTerm) {
+  public BuiltCondition(ConditionLHS lhs, BuiltConditionPredicate predicate, BuildConditionTerm rhsTerm) {
     this.lhs = lhs;
     this.predicate = predicate;
-    this.jsonTerm = jsonTerm;
+    this.rhsTerm = rhsTerm;
   }
 
-  public static BuiltCondition of(ConditionLHS lhs, BuiltConditionPredicate predicate, JsonTerm jsonTerm) {
-    return new BuiltCondition(lhs, predicate, jsonTerm);
+  public static BuiltCondition of(ConditionLHS lhs, BuiltConditionPredicate predicate, BuildConditionTerm rhsTerm) {
+    return new BuiltCondition(lhs, predicate, rhsTerm);
   }
 
-  public static BuiltCondition of(String columnName, BuiltConditionPredicate predicate, JsonTerm jsonTerm) {
-    return of(ConditionLHS.column(columnName), predicate, jsonTerm);
+  public static BuiltCondition of(String columnName, BuiltConditionPredicate predicate, BuildConditionTerm rhsTerm) {
+    return of(ConditionLHS.column(columnName), predicate, rhsTerm);
   }
 
   @Override
+  // TODO Clarify if this is building the CQL string or just the toString for debugging
+  // I think it is jusr debugging becaus the query is build in the QueryBuilder
   public String toString() {
     StringBuilder builder = new StringBuilder();
     // Append the LHS part of the condition
@@ -38,8 +41,9 @@ public final class BuiltCondition {
       builder.append(" null");
     }
     // Append the JSON term part of the condition
-    if (jsonTerm != null) {
-      builder.append(" ").append(jsonTerm);
+    // TODO: What is happening there, the JSON Term does not have a toString ??? I thought this would just be the "?" for params statements
+    if (rhsTerm != null) {
+      builder.append(" ").append(rhsTerm);
     } else {
       builder.append(" null");
     }
