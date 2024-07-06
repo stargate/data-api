@@ -9,6 +9,7 @@ import com.fasterxml.uuid.StringArgGenerator;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 
@@ -21,6 +22,20 @@ import java.util.Optional;
 public abstract class CollectionFilterBase extends DBFilterBase {
   protected CollectionFilterBase(String path) {
       super(path);
+  }
+
+  /**
+   * @param hasher
+   * @param path Path value is prefixed to the hash value of arrays.
+   * @param arrayValue
+   * @return
+   */
+  protected static String getHashValue(DocValueHasher hasher, String path, Object arrayValue) {
+    return path + " " + getHash(hasher, arrayValue);
+  }
+
+  protected static String getHash(DocValueHasher hasher, Object arrayValue) {
+    return hasher.getHash(arrayValue).hash();
   }
 
   /**

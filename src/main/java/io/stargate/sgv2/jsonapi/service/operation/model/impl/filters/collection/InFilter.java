@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cql.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Predicate;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.JsonTerm;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 

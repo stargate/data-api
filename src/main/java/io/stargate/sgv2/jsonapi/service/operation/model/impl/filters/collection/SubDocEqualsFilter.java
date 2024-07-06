@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 
 import java.util.Map;
