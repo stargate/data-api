@@ -26,70 +26,17 @@ public class LogicalExpression {
     }
   }
 
-  private LogicalOperator logicalRelation;
-  private int totalComparisonExpressionCount;
-  private int totalIdComparisonExpressionCount;
-
-  /** This method will flip the operators and operand if logical operator is not */
-  public void traverseForNot(LogicalExpression parent) {
-    List<LogicalExpression> tempLogicalExpressions = new ArrayList<>(logicalExpressions);
-    for (LogicalExpression logicalExpression : tempLogicalExpressions) {
-      logicalExpression.traverseForNot(this);
-    }
-
-    Iterator<LogicalExpression> iterator = logicalExpressions.iterator();
-    while (iterator.hasNext()) {
-      LogicalExpression logicalExpression = iterator.next();
-      if (logicalExpression.logicalRelation == LogicalOperator.NOT) {
-        iterator.remove();
-        this.totalComparisonExpressionCount =
-            this.totalComparisonExpressionCount - logicalExpression.totalComparisonExpressionCount;
-        this.totalIdComparisonExpressionCount =
-            this.totalIdComparisonExpressionCount
-                - logicalExpression.totalIdComparisonExpressionCount;
-      }
-    }
-
-    if (logicalRelation == LogicalOperator.NOT) {
-      flip();
-      addToParent(parent);
-    }
-  }
-
-  private void addToParent(LogicalExpression parent) {
-    logicalExpressions.stream().forEach(expression -> parent.addLogicalExpression(expression));
-    if (comparisonExpressions.size() > 1) {
-      // Multiple conditions in not, after push down will become or
-      final LogicalExpression orLogic = LogicalExpression.or();
-      comparisonExpressions.stream()
-          .forEach(comparisonExpression -> orLogic.addComparisonExpression(comparisonExpression));
-      parent.addLogicalExpression(orLogic);
-    } else {
-      if (comparisonExpressions.size() == 1) {
-        // Unary not, after push down will become additional condition
-        parent.addComparisonExpression(comparisonExpressions.get(0));
-      }
-    }
-    comparisonExpressions.clear();
-  }
-
-  private void flip() {
-    if (logicalRelation == LogicalOperator.AND) {
-      logicalRelation = LogicalOperator.OR;
-    } else if (logicalRelation == LogicalOperator.OR) {
-      logicalRelation = LogicalOperator.AND;
-    }
-    for (LogicalExpression logicalExpression : logicalExpressions) {
-      logicalExpression.flip();
-    }
-    for (ComparisonExpression comparisonExpression : comparisonExpressions) {
-      comparisonExpression.flip();
-    }
-  }
-
+  // TODO: why are these not final ?
   public List<LogicalExpression> logicalExpressions;
   public List<ComparisonExpression> comparisonExpressions;
 
+  private LogicalOperator logicalRelation;
+  // TODO - there MUST be explaination of why this count is needed, why not just use the size of the list ?
+  // Also, the list is public so anyone can change it and break this count.
+  private int totalComparisonExpressionCount;
+  private int totalIdComparisonExpressionCount;
+
+  // TODO: All the uses of this ctor only pass a different opertor, all other args are the same
   private LogicalExpression(
       LogicalOperator logicalRelation,
       int totalComparisonExpressionCount,
@@ -113,6 +60,39 @@ public class LogicalExpression {
     return new LogicalExpression(LogicalOperator.NOT, 0, new ArrayList<>(), new ArrayList<>());
   }
 
+  /** This method will flip the operators and operand if logical operator is not */
+  // TODO: comment to explain what is going on here
+  public void traverseForNot(LogicalExpression parent) {
+    // TODO: why this is new array needed ? it is used one to traverse the same list ?
+    List<LogicalExpression> tempLogicalExpressions = new ArrayList<>(logicalExpressions);
+
+    for (LogicalExpression logicalExpression : tempLogicalExpressions) {
+      logicalExpression.traverseForNot(this);
+    }
+
+    Iterator<LogicalExpression> iterator = logicalExpressions.iterator();
+    while (iterator.hasNext()) {
+      LogicalExpression logicalExpression = iterator.next();
+      if (logicalExpression.logicalRelation == LogicalOperator.NOT) {
+        // TODO: why are we removing the element from the list ?
+        iterator.remove();
+
+        // TODO wy use this and why not use -=
+        this.totalComparisonExpressionCount =
+            this.totalComparisonExpressionCount - logicalExpression.totalComparisonExpressionCount;
+        this.totalIdComparisonExpressionCount =
+            this.totalIdComparisonExpressionCount
+                - logicalExpression.totalIdComparisonExpressionCount;
+      }
+    }
+
+    // TODO WHY ?
+    if (logicalRelation == LogicalOperator.NOT) {
+      flip();
+      addToParent(parent);
+    }
+  }
+
   public void addLogicalExpression(LogicalExpression logicalExpression) {
     // skip empty logic expression
     if (logicalExpression.isEmpty()) {
@@ -123,6 +103,7 @@ public class LogicalExpression {
     logicalExpressions.add(logicalExpression);
   }
 
+  // TODO: this is the same function as below, this is just code duplication
   public void addComparisonExpression(ComparisonExpression comparisonExpression) {
     // Two counters totalIdComparisonExpressionCount and totalComparisonExpressionCount
     // They are for validating the filters
@@ -169,5 +150,37 @@ public class LogicalExpression {
     sb.append(", comparisonExpressions=").append(comparisonExpressions);
     sb.append("}");
     return sb.toString();
+  }
+
+  private void addToParent(LogicalExpression parent) {
+    logicalExpressions.stream().forEach(expression -> parent.addLogicalExpression(expression));
+    if (comparisonExpressions.size() > 1) {
+      // Multiple conditions in not, after push down will become or
+      final LogicalExpression orLogic = LogicalExpression.or();
+      comparisonExpressions.stream()
+          .forEach(comparisonExpression -> orLogic.addComparisonExpression(comparisonExpression));
+      parent.addLogicalExpression(orLogic);
+    } else {
+      if (comparisonExpressions.size() == 1) {
+        // Unary not, after push down will become additional condition
+        parent.addComparisonExpression(comparisonExpressions.get(0));
+      }
+    }
+    comparisonExpressions.clear();
+  }
+
+  private void flip() {
+    // TODO: Strongly recommend this class to be immutable, changing the nature of the state like this is dangerous
+    if (logicalRelation == LogicalOperator.AND) {
+      logicalRelation = LogicalOperator.OR;
+    } else if (logicalRelation == LogicalOperator.OR) {
+      logicalRelation = LogicalOperator.AND;
+    }
+    for (LogicalExpression logicalExpression : logicalExpressions) {
+      logicalExpression.flip();
+    }
+    for (ComparisonExpression comparisonExpression : comparisonExpressions) {
+      comparisonExpression.flip();
+    }
   }
 }
