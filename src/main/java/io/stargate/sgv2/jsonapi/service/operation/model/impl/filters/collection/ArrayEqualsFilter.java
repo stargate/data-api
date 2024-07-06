@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBas
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Filter for document where array matches (data in same order) as the array in request
@@ -24,12 +25,17 @@ public class ArrayEqualsFilter extends MapFilterBase<String> {
     }
 
     @Override
-    public JsonNode asJson(JsonNodeFactory nodeFactory) {
-        return DBFilterBase.getJsonNode(nodeFactory, arrayValue);
+    protected Optional<JsonNode> jsonNodeForNewDocument(JsonNodeFactory nodeFactory) {
+        return Optional.of(toJsonNode(nodeFactory, arrayValue));
     }
 
-    @Override
-    public boolean canAddField() {
-        return true;
-    }
+    //    @Override
+//    public JsonNode asJson(JsonNodeFactory nodeFactory) {
+//        return DBFilterBase.getJsonNode(nodeFactory, arrayValue);
+//    }
+//
+//    @Override
+//    public boolean canAddField() {
+//        return true;
+//    }
 }

@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ChainedComparator;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.CollectionFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -398,31 +399,32 @@ public record FindOperation(
    * @return
    */
   public ReadDocument getNewDocument() {
-    ObjectNode rootNode = objectMapper().createObjectNode();
+
+    final var rootNode = objectMapper().createObjectNode();
     DocumentId documentId = null;
-    Stack<LogicalExpression> stack = new Stack<>();
+    final var stack = new Stack<LogicalExpression>();
     stack.push(logicalExpression);
+
     while (!stack.empty()) {
-      LogicalExpression currentLogicalExpression = stack.pop();
+      var currentLogicalExpression = stack.pop();
+
       for (ComparisonExpression currentComparisonExpression : currentLogicalExpression.comparisonExpressions) {
         for (DBFilterBase filter : currentComparisonExpression.getDbFilters()) {
-          if (filter instanceof IDFilter idFilter && idFilter.canAddField()) {
-            documentId = idFilter.values.get(0);
-            rootNode.putIfAbsent(filter.getPath(), filter.asJson(objectMapper().getNodeFactory()));
-          } else {
-            if (filter.canAddField()) {
-              JsonNode value = filter.asJson(objectMapper().getNodeFactory());
-              if (value != null) {
-                String filterPath = filter.getPath();
-                SetOperation.constructSet(filterPath, value).updateDocument(rootNode);
-              }
+          // every filter must be a collection filter, because we are making a new document and we only do this for docs
+          switch (filter) {
+            case IDFilter idFilter -> {
+              documentId = idFilter.getSingularDocumentId();
+              idFilter.updateForNewDocument(objectMapper().getNodeFactory())
+                      .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
             }
+            case CollectionFilterBase f -> f.updateForNewDocument(objectMapper().getNodeFactory())
+                .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
+            default -> throw new RuntimeException("Unsupported filter type in getNewDocument: " + filter.getClass().getName());
           }
         }
       }
-      for (LogicalExpression subLogicalExpression : currentLogicalExpression.logicalExpressions) {
-        stack.push(subLogicalExpression);
-      }
+
+      currentLogicalExpression.logicalExpressions.forEach(stack::push);
     }
     return ReadDocument.from(documentId, null, rootNode);
   }

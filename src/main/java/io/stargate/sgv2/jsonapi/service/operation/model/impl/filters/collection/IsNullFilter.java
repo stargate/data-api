@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
 
+import java.util.Optional;
+
 /**
  * Filter for document where a field == null
  *
@@ -16,12 +18,17 @@ public class IsNullFilter extends SetFilterBase<String> {
     }
 
     @Override
-    public JsonNode asJson(JsonNodeFactory nodeFactory) {
-        return DBFilterBase.getJsonNode(nodeFactory, null);
+    protected Optional<JsonNode> jsonNodeForNewDocument(JsonNodeFactory nodeFactory) {
+        return Optional.of(toJsonNode(nodeFactory));
     }
 
-    @Override
-    public boolean canAddField() {
-        return true;
-    }
+    //    @Override
+//    public JsonNode asJson(JsonNodeFactory nodeFactory) {
+//        return DBFilterBase.getJsonNode(nodeFactory, null);
+//    }
+//
+//    @Override
+//    public boolean canAddField() {
+//        return true;
+//    }
 }

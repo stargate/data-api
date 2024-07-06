@@ -12,10 +12,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DATA_CONTAINS;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DOC_ID;
@@ -23,20 +20,31 @@ import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
 /**
  * non_id($in, $nin), _id($nin)
  */
-public class InFilter extends DBFilterBase {
+public class InFilter extends CollectionFilterBase {
     private final List<Object> arrayValue;
     // HACK AARON - REFERENCED from ExpressionBuilder should be private
     public final Operator operator;
 
+    /**
+     * DO not update the new document from an upsert because we are matching on a list of possible values so do not
+     * know which to set the field to
+     * @param nodeFactory
+     * @return
+     */
     @Override
-    public JsonNode asJson(JsonNodeFactory nodeFactory) {
-        return DBFilterBase.getJsonNode(nodeFactory, arrayValue);
+    protected Optional<JsonNode> jsonNodeForNewDocument(JsonNodeFactory nodeFactory) {
+        return Optional.empty();
     }
 
-    @Override
-    public boolean canAddField() {
-        return false;
-    }
+    //    @Override
+//    public JsonNode asJson(JsonNodeFactory nodeFactory) {
+//        return DBFilterBase.getJsonNode(nodeFactory, arrayValue);
+//    }
+//
+//    @Override
+//    public boolean canAddField() {
+//        return false;
+//    }
 
     public enum Operator {
         IN,

@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cql.builder.BuiltCondition;
@@ -14,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DOC_ID;
@@ -21,7 +23,7 @@ import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
 /**
  * Filters db documents based on a document id field value
  */
-public class IDFilter extends DBFilterBase {
+public class IDFilter extends CollectionFilterBase {
     public enum Operator {
         EQ,
         NE,
@@ -29,8 +31,7 @@ public class IDFilter extends DBFilterBase {
     }
     // HACK AARON - referenced from ExpressionBuilder, restrict access
     public final Operator operator;
-    // HACK AARON - referenced from FindOperation, restict access
-    public final List<DocumentId> values;
+    private final List<DocumentId> values;
 
     public IDFilter(Operator operator, DocumentId value) {
         this(operator, List.of(value));
@@ -110,17 +111,29 @@ public class IDFilter extends DBFilterBase {
         }
     }
 
+    public DocumentId getSingularDocumentId() {
+        Preconditions.checkArgument(values.size() == 1, "Expected a single value");
+        return values.get(0);
+    }
     @Override
-    public JsonNode asJson(JsonNodeFactory nodeFactory) {
-        return DBFilterBase.getJsonNode(nodeFactory, values.get(0));
+    protected Optional<JsonNode> jsonNodeForNewDocument(JsonNodeFactory nodeFactory) {
+        if (Operator.EQ.equals(operator)) {
+            return Optional.of(toJsonNode(nodeFactory, values.get(0)));
+        }
+        return Optional.empty();
     }
 
-    @Override
-    public boolean canAddField() {
-        if (operator.equals(Operator.EQ)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
+    //    @Override
+//    public JsonNode asJson(JsonNodeFactory nodeFactory) {
+//        return DBFilterBase.getJsonNode(nodeFactory, values.get(0));
+//    }
+//
+//    @Override
+//    public boolean canAddField() {
+//        if (operator.equals(Operator.EQ)) {
+//            return true;
+//        } else {
+//            return false;
+//        }
+//    }
 }

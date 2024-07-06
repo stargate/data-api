@@ -12,7 +12,7 @@ import java.util.Objects;
 /**
  * DB filter / condition for testing a set value
  */
-public abstract class SetFilterBase<T> extends DBFilterBase {
+public abstract class SetFilterBase<T> extends CollectionFilterBase {
     public enum Operator {
         CONTAINS,
         NOT_CONTAINS;

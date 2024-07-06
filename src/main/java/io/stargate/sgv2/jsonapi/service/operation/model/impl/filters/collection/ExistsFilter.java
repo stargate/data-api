@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
+import java.util.Optional;
+
 /**
  * Filter for document where a field exists or not
  *
@@ -14,13 +16,24 @@ public class ExistsFilter extends SetFilterBase<String> {
         this.indexUsage.existKeysIndexTag = true;
     }
 
+    /**
+     * DO not update the new document from an upsert for the $exists operation, we dont know the value of the field
+     *
+     * @param nodeFactory
+     * @return
+     */
     @Override
-    public JsonNode asJson(JsonNodeFactory nodeFactory) {
-        return null;
+    protected Optional<JsonNode> jsonNodeForNewDocument(JsonNodeFactory nodeFactory) {
+        return Optional.empty();
     }
 
-    @Override
-    public boolean canAddField() {
-        return false;
-    }
+    //    @Override
+//    public JsonNode asJson(JsonNodeFactory nodeFactory) {
+//        return null;
+//    }
+//
+//    @Override
+//    public boolean canAddField() {
+//        return false;
+//    }
 }

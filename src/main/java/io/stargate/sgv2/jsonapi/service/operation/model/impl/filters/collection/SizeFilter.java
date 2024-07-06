@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
+import java.util.Optional;
+
 /**
  * Filter for document where array has specified number of elements
  */
@@ -12,13 +14,23 @@ public class SizeFilter extends MapFilterBase<Integer> {
         this.indexUsage.arraySizeIndexTag = true;
     }
 
+    /**
+     * Do not update, we only know the size not what is meant to be in the array
+     * @param nodeFactory
+     * @return
+     */
     @Override
-    public JsonNode asJson(JsonNodeFactory nodeFactory) {
-        return null;
+    protected Optional<JsonNode> jsonNodeForNewDocument(JsonNodeFactory nodeFactory) {
+        return Optional.empty();
     }
 
-    @Override
-    public boolean canAddField() {
-        return false;
-    }
+    //    @Override
+//    public JsonNode asJson(JsonNodeFactory nodeFactory) {
+//        return null;
+//    }
+//
+//    @Override
+//    public boolean canAddField() {
+//        return false;
+//    }
 }

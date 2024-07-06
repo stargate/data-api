@@ -24,19 +24,11 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   public final IndexUsage indexUsage = new IndexUsage();
 
   /** Filter condition element path. */
-  private final String path;
+  protected final String path;
 
   protected DBFilterBase(String path) {
     this.path = path;
   }
-
-  /**
-   * Get JsonNode for the representing filter condition value.
-   *
-   * @param nodeFactory
-   * @return
-   */
-  public abstract JsonNode asJson(JsonNodeFactory nodeFactory);
 
   /**
    * Returns filter condition element path.
@@ -46,48 +38,6 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   // HACK aaron - referenced from FindOperation, Needs to be fixed
   public String getPath() {
     return path;
-  }
-
-  /**
-   * Returns `true` if the filter condition should be added to upsert row
-   *
-   * @return
-   */
-  public abstract boolean canAddField();
-
-  /**
-   * Return JsonNode for a filter conditions value, used to set in new document created for upsert.
-   *
-   * @param nodeFactory
-   * @param value
-   * @return
-   */
-  protected static JsonNode getJsonNode(JsonNodeFactory nodeFactory, Object value) {
-    if (value == null) return nodeFactory.nullNode();
-    if (value instanceof DocumentId) {
-      return ((DocumentId) value).asJson(nodeFactory);
-    } else if (value instanceof String) {
-      return nodeFactory.textNode((String) value);
-    } else if (value instanceof BigDecimal) {
-      return nodeFactory.numberNode((BigDecimal) value);
-    } else if (value instanceof Boolean) {
-      return nodeFactory.booleanNode((Boolean) value);
-    } else if (value instanceof Date) {
-      return JsonUtil.createEJSonDate(nodeFactory, (Date) value);
-    } else if (value instanceof List) {
-      List<Object> listValues = (List<Object>) value;
-      final ArrayNode arrayNode = nodeFactory.arrayNode(listValues.size());
-      listValues.forEach(listValue -> arrayNode.add(getJsonNode(nodeFactory, listValue)));
-      return arrayNode;
-    } else if (value instanceof Map) {
-      Map<String, Object> mapValues = (Map<String, Object>) value;
-      final ObjectNode objectNode = nodeFactory.objectNode();
-      mapValues
-          .entrySet()
-          .forEach(kv -> objectNode.put(kv.getKey(), getJsonNode(nodeFactory, kv.getValue())));
-      return objectNode;
-    }
-    return nodeFactory.nullNode();
   }
 
   /**

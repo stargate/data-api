@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 /**
  * Filters db documents based on a numeric field value
@@ -18,13 +19,26 @@ public class NumberFilter extends MapFilterBase<BigDecimal> {
         else indexUsage.numberIndexTag = true;
     }
 
+    /**
+     * Only update if the operation is eq
+     * @param nodeFactory
+     * @return
+     */
     @Override
-    public JsonNode asJson(JsonNodeFactory nodeFactory) {
-        return nodeFactory.numberNode(numberValue);
+    protected Optional<JsonNode> jsonNodeForNewDocument(JsonNodeFactory nodeFactory) {
+        if (Operator.EQ.equals(operator)) {
+            return Optional.of(toJsonNode(nodeFactory, numberValue));
+        }
+        return Optional.empty();
     }
 
-    @Override
-    public boolean canAddField() {
-        return Operator.EQ.equals(operator);
-    }
+    //    @Override
+//    public JsonNode asJson(JsonNodeFactory nodeFactory) {
+//        return nodeFactory.numberNode(numberValue);
+//    }
+//
+//    @Override
+//    public boolean canAddField() {
+//        return Operator.EQ.equals(operator);
+//    }
 }

@@ -15,7 +15,7 @@ import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
 /**
  * Filter for the map columns we have in the super shredding table.
  */
-public abstract class MapFilterBase<T> extends DBFilterBase {
+public abstract class MapFilterBase<T> extends CollectionFilterBase {
 
     // NOTE: we can only do eq until SAI indexes are updated , waiting for >, < etc
     public enum Operator {

@@ -10,13 +10,14 @@ import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DATA_CONTAINS;
 
 /**
  * Filter for document where all values exists for an array
  */
-public class AllFilter extends DBFilterBase {
+public class AllFilter extends CollectionFilterBase {
     private final List<Object> arrayValue;
     private final boolean negation;
 
@@ -30,15 +31,25 @@ public class AllFilter extends DBFilterBase {
         return negation;
     }
 
+    /**
+     * DO not update the new document from an upsert for this array operation
+     * @param nodeFactory
+     * @return
+     */
     @Override
-    public JsonNode asJson(JsonNodeFactory nodeFactory) {
-        return DBFilterBase.getJsonNode(nodeFactory, arrayValue);
+    protected Optional<JsonNode> jsonNodeForNewDocument(JsonNodeFactory nodeFactory) {
+        return Optional.empty();
     }
 
-    @Override
-    public boolean canAddField() {
-        return false;
-    }
+//    @Override
+//    public JsonNode asJson(JsonNodeFactory nodeFactory) {
+//        return DBFilterBase.getJsonNode(nodeFactory, arrayValue);
+//    }
+//
+//    @Override
+//    public boolean canAddField() {
+//        return false;
+//    }
 
     public List<BuiltCondition> getAll() {
         final ArrayList<BuiltCondition> result = new ArrayList<>();
