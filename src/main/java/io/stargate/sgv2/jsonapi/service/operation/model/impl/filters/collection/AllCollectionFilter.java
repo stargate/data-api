@@ -4,20 +4,21 @@ import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.stargate.sgv2.jsonapi.service.cql.builder.BuiltCondition;
-import io.stargate.sgv2.jsonapi.service.cql.builder.Predicate;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.JsonTerm;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.ConditionLHS;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltConditionPredicate;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.JsonTerm;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 /** Filter for document where all values exists for an array */
-public class AllFilter extends CollectionFilterBase {
+public class AllCollectionFilter extends CollectionFilter {
   private final List<Object> arrayValue;
   private final boolean negation;
 
-  public AllFilter(String path, List<Object> arrayValue, boolean negation) {
+  public AllCollectionFilter(String path, List<Object> arrayValue, boolean negation) {
     super(path);
     this.arrayValue = arrayValue;
     this.negation = negation;
@@ -54,8 +55,8 @@ public class AllFilter extends CollectionFilterBase {
       this.indexUsage.arrayContainsTag = true;
       result.add(
           BuiltCondition.of(
-              BuiltCondition.LHS.column(DATA_CONTAINS),
-              negation ? Predicate.NOT_CONTAINS : Predicate.CONTAINS,
+              ConditionLHS.column(DATA_CONTAINS),
+              negation ? BuiltConditionPredicate.NOT_CONTAINS : BuiltConditionPredicate.CONTAINS,
               new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
     }
     return result;

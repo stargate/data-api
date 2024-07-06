@@ -9,8 +9,8 @@ import java.util.Optional;
  *
  * <p>NOTE: cannot do != null until we get NOT CONTAINS in the DB for set
  */
-public class IsNullFilter extends SetFilterBase<String> {
-  public IsNullFilter(String path, Operator operator) {
+public class IsNullCollectionFilter extends SetCollectionFilter<String> {
+  public IsNullCollectionFilter(String path, Operator operator) {
     super("query_null_values", path, path, operator);
     this.indexUsage.nullIndexTag = true;
   }

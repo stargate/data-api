@@ -165,12 +165,12 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
       if (captureExpression.marker() == ID_GROUP) {
         filters.add(
-            new IDFilter(IDFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
+            new IDCollectionFilter(IDCollectionFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
       }
       if (captureExpression.marker() == ID_GROUP_IN) {
         filters.add(
-            new IDFilter(
-                IDFilter.Operator.IN, (List<DocumentId>) filterOperation.operand().value()));
+            new IDCollectionFilter(
+                IDCollectionFilter.Operator.IN, (List<DocumentId>) filterOperation.operand().value()));
       }
     }
     return filters;
@@ -187,11 +187,11 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         switch ((ValueComparisonOperator) filterOperation.operator()) {
           case EQ:
             filters.add(
-                new IDFilter(IDFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
+                new IDCollectionFilter(IDCollectionFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
             break;
           case NE:
             filters.add(
-                new IDFilter(IDFilter.Operator.NE, (DocumentId) filterOperation.operand().value()));
+                new IDCollectionFilter(IDCollectionFilter.Operator.NE, (DocumentId) filterOperation.operand().value()));
             break;
           default:
             throw new JsonApiException(
@@ -204,12 +204,12 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         switch ((ValueComparisonOperator) filterOperation.operator()) {
           case IN:
             filters.add(
-                new IDFilter(
-                    IDFilter.Operator.IN, (List<DocumentId>) filterOperation.operand().value()));
+                new IDCollectionFilter(
+                    IDCollectionFilter.Operator.IN, (List<DocumentId>) filterOperation.operand().value()));
             break;
           case NIN:
             filters.add(
-                new InFilter(
+                new InCollectionFilter(
                     getInFilterBaseOperator(filterOperation.operator()),
                     captureExpression.path(),
                     (List<Object>) filterOperation.operand().value()));
@@ -226,14 +226,14 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         final DocumentId value = (DocumentId) filterOperation.operand().value();
         if (value.value() instanceof BigDecimal bdv) {
           filters.add(
-              new NumberFilter(
+              new NumberCollectionFilter(
                   DocumentConstants.Fields.DOC_ID,
                   getMapFilterBaseOperator(filterOperation.operator()),
                   bdv));
         }
         if (value.value() instanceof Map) {
           filters.add(
-              new DateFilter(
+              new DateCollectionFilter(
                   DocumentConstants.Fields.DOC_ID,
                   getMapFilterBaseOperator(filterOperation.operator()),
                   JsonUtil.createDateFromDocumentId(value)));
@@ -242,7 +242,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == DYNAMIC_GROUP_IN) {
         filters.add(
-            new InFilter(
+            new InCollectionFilter(
                 getInFilterBaseOperator(filterOperation.operator()),
                 captureExpression.path(),
                 (List<Object>) filterOperation.operand().value()));
@@ -250,7 +250,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == DYNAMIC_TEXT_GROUP) {
         filters.add(
-            new TextFilter(
+            new TextCollectionFilter(
                 captureExpression.path(),
                 getMapFilterBaseOperator(filterOperation.operator()),
                 (String) filterOperation.operand().value()));
@@ -258,7 +258,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == DYNAMIC_BOOL_GROUP) {
         filters.add(
-            new BoolFilter(
+            new BoolCollectionFilter(
                 captureExpression.path(),
                 getMapFilterBaseOperator(filterOperation.operator()),
                 (Boolean) filterOperation.operand().value()));
@@ -266,7 +266,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == DYNAMIC_NUMBER_GROUP) {
         filters.add(
-            new NumberFilter(
+            new NumberCollectionFilter(
                 captureExpression.path(),
                 getMapFilterBaseOperator(filterOperation.operator()),
                 (BigDecimal) filterOperation.operand().value()));
@@ -274,13 +274,13 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == DYNAMIC_NULL_GROUP) {
         filters.add(
-            new IsNullFilter(
+            new IsNullCollectionFilter(
                 captureExpression.path(), getSetFilterBaseOperator(filterOperation.operator())));
       }
 
       if (captureExpression.marker() == DYNAMIC_DATE_GROUP) {
         filters.add(
-            new DateFilter(
+            new DateCollectionFilter(
                 captureExpression.path(),
                 getMapFilterBaseOperator(filterOperation.operator()),
                 (Date) filterOperation.operand().value()));
@@ -288,79 +288,79 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
 
       if (captureExpression.marker() == EXISTS_GROUP) {
         Boolean bool = (Boolean) filterOperation.operand().value();
-        filters.add(new ExistsFilter(captureExpression.path(), bool));
+        filters.add(new ExistsCollectionFilter(captureExpression.path(), bool));
       }
 
       if (captureExpression.marker() == ALL_GROUP) {
         List<Object> arrayValue = (List<Object>) filterOperation.operand().value();
-        filters.add(new AllFilter(captureExpression.path(), arrayValue, false));
+        filters.add(new AllCollectionFilter(captureExpression.path(), arrayValue, false));
       }
 
       if (captureExpression.marker() == NOT_ANY_GROUP) {
         List<Object> arrayValue = (List<Object>) filterOperation.operand().value();
-        filters.add(new AllFilter(captureExpression.path(), arrayValue, true));
+        filters.add(new AllCollectionFilter(captureExpression.path(), arrayValue, true));
       }
 
       if (captureExpression.marker() == SIZE_GROUP) {
         if (filterOperation.operand().value() instanceof Boolean) {
           // This is the special case, e.g. {"$not":{"ages":{"$size":0}}}
           filters.add(
-              new SizeFilter(captureExpression.path(), MapFilterBase.Operator.MAP_NOT_EQUALS, 0));
+              new SizeCollectionFilter(captureExpression.path(), MapCollectionFilter.Operator.MAP_NOT_EQUALS, 0));
         } else {
           BigDecimal bigDecimal = (BigDecimal) filterOperation.operand().value();
           // Flipping size operator will multiply the value by -1
           // Negative means check array_size[?] != ?
           int size = bigDecimal.intValue();
-          MapFilterBase.Operator operator;
+          MapCollectionFilter.Operator operator;
           if (size >= 0) {
-            operator = MapFilterBase.Operator.MAP_EQUALS;
+            operator = MapCollectionFilter.Operator.MAP_EQUALS;
           } else {
-            operator = MapFilterBase.Operator.MAP_NOT_EQUALS;
+            operator = MapCollectionFilter.Operator.MAP_NOT_EQUALS;
           }
-          filters.add(new SizeFilter(captureExpression.path(), operator, Math.abs(size)));
+          filters.add(new SizeCollectionFilter(captureExpression.path(), operator, Math.abs(size)));
         }
       }
 
       if (captureExpression.marker() == ARRAY_EQUALS) {
         filters.add(
-            new ArrayEqualsFilter(
+            new ArrayEqualsCollectionFilter(
                 new DocValueHasher(),
                 captureExpression.path(),
                 (List<Object>) filterOperation.operand().value(),
                 filterOperation.operator().equals(ValueComparisonOperator.EQ)
-                    ? MapFilterBase.Operator.MAP_EQUALS
-                    : MapFilterBase.Operator.MAP_NOT_EQUALS));
+                    ? MapCollectionFilter.Operator.MAP_EQUALS
+                    : MapCollectionFilter.Operator.MAP_NOT_EQUALS));
       }
 
       if (captureExpression.marker() == SUB_DOC_EQUALS) {
         filters.add(
-            new SubDocEqualsFilter(
+            new SubDocEqualsCollectionFilter(
                 new DocValueHasher(),
                 captureExpression.path(),
                 (Map<String, Object>) filterOperation.operand().value(),
                 filterOperation.operator().equals(ValueComparisonOperator.EQ)
-                    ? MapFilterBase.Operator.MAP_EQUALS
-                    : MapFilterBase.Operator.MAP_NOT_EQUALS));
+                    ? MapCollectionFilter.Operator.MAP_EQUALS
+                    : MapCollectionFilter.Operator.MAP_NOT_EQUALS));
       }
     }
 
     return filters;
   }
 
-  private static MapFilterBase.Operator getMapFilterBaseOperator(FilterOperator filterOperator) {
+  private static MapCollectionFilter.Operator getMapFilterBaseOperator(FilterOperator filterOperator) {
     switch ((ValueComparisonOperator) filterOperator) {
       case EQ:
-        return MapFilterBase.Operator.EQ;
+        return MapCollectionFilter.Operator.EQ;
       case NE:
-        return MapFilterBase.Operator.NE;
+        return MapCollectionFilter.Operator.NE;
       case GT:
-        return MapFilterBase.Operator.GT;
+        return MapCollectionFilter.Operator.GT;
       case GTE:
-        return MapFilterBase.Operator.GTE;
+        return MapCollectionFilter.Operator.GTE;
       case LT:
-        return MapFilterBase.Operator.LT;
+        return MapCollectionFilter.Operator.LT;
       case LTE:
-        return MapFilterBase.Operator.LTE;
+        return MapCollectionFilter.Operator.LTE;
       default:
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
@@ -368,12 +368,12 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     }
   }
 
-  private static InFilter.Operator getInFilterBaseOperator(FilterOperator filterOperator) {
+  private static InCollectionFilter.Operator getInFilterBaseOperator(FilterOperator filterOperator) {
     switch ((ValueComparisonOperator) filterOperator) {
       case IN:
-        return InFilter.Operator.IN;
+        return InCollectionFilter.Operator.IN;
       case NIN:
-        return InFilter.Operator.NIN;
+        return InCollectionFilter.Operator.NIN;
       default:
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
@@ -381,12 +381,12 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     }
   }
 
-  private static SetFilterBase.Operator getSetFilterBaseOperator(FilterOperator filterOperator) {
+  private static SetCollectionFilter.Operator getSetFilterBaseOperator(FilterOperator filterOperator) {
     switch ((ValueComparisonOperator) filterOperator) {
       case EQ:
-        return SetFilterBase.Operator.CONTAINS;
+        return SetCollectionFilter.Operator.CONTAINS;
       case NE:
-        return SetFilterBase.Operator.NOT_CONTAINS;
+        return SetCollectionFilter.Operator.NOT_CONTAINS;
       default:
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,

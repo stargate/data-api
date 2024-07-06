@@ -1,6 +1,6 @@
-package io.stargate.sgv2.jsonapi.service.cql.builder;
+package io.stargate.sgv2.jsonapi.service.operation.model.impl.builder;
 
-public enum Predicate {
+public enum BuiltConditionPredicate {
   EQ("="),
   NEQ("!="),
   LT("<"),
@@ -15,7 +15,7 @@ public enum Predicate {
 
   private final String cql;
 
-  Predicate(String cql) {
+  BuiltConditionPredicate(String cql) {
     this.cql = cql;
   }
 

@@ -7,10 +7,11 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cql.builder.BuiltCondition;
-import io.stargate.sgv2.jsonapi.service.cql.builder.Predicate;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.ConditionLHS;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.JsonTerm;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.JsonTerm;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.List;
@@ -19,7 +20,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /** Filters db documents based on a document id field value */
-public class IDFilter extends CollectionFilterBase {
+public class IDCollectionFilter extends CollectionFilter {
   public enum Operator {
     EQ,
     NE,
@@ -30,11 +31,11 @@ public class IDFilter extends CollectionFilterBase {
   public final Operator operator;
   private final List<DocumentId> values;
 
-  public IDFilter(Operator operator, DocumentId value) {
+  public IDCollectionFilter(Operator operator, DocumentId value) {
     this(operator, List.of(value));
   }
 
-  public IDFilter(Operator operator, List<DocumentId> values) {
+  public IDCollectionFilter(Operator operator, List<DocumentId> values) {
     super(DOC_ID);
     this.operator = operator;
     this.values = values;
@@ -44,7 +45,7 @@ public class IDFilter extends CollectionFilterBase {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    IDFilter idFilter = (IDFilter) o;
+    IDCollectionFilter idFilter = (IDCollectionFilter) o;
     return operator == idFilter.operator && Objects.equals(values, idFilter.values);
   }
 
@@ -65,8 +66,8 @@ public class IDFilter extends CollectionFilterBase {
         this.indexUsage.primaryKeyTag = true;
         return List.of(
             BuiltCondition.of(
-                BuiltCondition.LHS.column("key"),
-                Predicate.EQ,
+                ConditionLHS.column("key"),
+                BuiltConditionPredicate.EQ,
                 new JsonTerm(CQLBindValues.getDocumentIdValue(values.get(0)))));
       case NE:
         final DocumentId documentId = (DocumentId) values.get(0);
@@ -74,15 +75,15 @@ public class IDFilter extends CollectionFilterBase {
           this.indexUsage.numberIndexTag = true;
           return List.of(
               BuiltCondition.of(
-                  BuiltCondition.LHS.mapAccess("query_dbl_values", DOC_ID),
-                  Predicate.NEQ,
+                  ConditionLHS.mapAccess("query_dbl_values", DOC_ID),
+                  BuiltConditionPredicate.NEQ,
                   new JsonTerm(DOC_ID, numberId)));
         } else if (documentId.value() instanceof String strId) {
           this.indexUsage.textIndexTag = true;
           return List.of(
               BuiltCondition.of(
-                  BuiltCondition.LHS.mapAccess("query_text_values", DOC_ID),
-                  Predicate.NEQ,
+                  ConditionLHS.mapAccess("query_text_values", DOC_ID),
+                  BuiltConditionPredicate.NEQ,
                   new JsonTerm(DOC_ID, strId)));
         } else {
           throw new JsonApiException(
@@ -96,8 +97,8 @@ public class IDFilter extends CollectionFilterBase {
                 v -> {
                   this.indexUsage.primaryKeyTag = true;
                   return BuiltCondition.of(
-                      BuiltCondition.LHS.column("key"),
-                      Predicate.EQ,
+                      ConditionLHS.column("key"),
+                      BuiltConditionPredicate.EQ,
                       new JsonTerm(CQLBindValues.getDocumentIdValue(v)));
                 })
             .collect(Collectors.toList());

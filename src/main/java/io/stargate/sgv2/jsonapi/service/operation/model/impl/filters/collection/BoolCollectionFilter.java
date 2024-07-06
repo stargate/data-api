@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.util.Optional;
 
 /** Filters db documents based on a boolean field value */
-public class BoolFilter extends MapFilterBase<Boolean> {
+public class BoolCollectionFilter extends MapCollectionFilter<Boolean> {
   private final boolean boolValue;
 
-  public BoolFilter(String path, Operator operator, Boolean value) {
+  public BoolCollectionFilter(String path, Operator operator, Boolean value) {
     super("query_bool_values", path, operator, value);
     this.boolValue = value;
     if (Operator.EQ == operator || Operator.NE == operator) indexUsage.arrayContainsTag = true;

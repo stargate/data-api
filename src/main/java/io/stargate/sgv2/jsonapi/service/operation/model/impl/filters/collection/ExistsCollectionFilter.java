@@ -9,8 +9,8 @@ import java.util.Optional;
  *
  * <p>NOTE: cannot do != null until we get NOT CONTAINS in the DB for set ?????TODO
  */
-public class ExistsFilter extends SetFilterBase<String> {
-  public ExistsFilter(String path, boolean existFlag) {
+public class ExistsCollectionFilter extends SetCollectionFilter<String> {
+  public ExistsCollectionFilter(String path, boolean existFlag) {
     super("exist_keys", path, path, existFlag ? Operator.CONTAINS : Operator.NOT_CONTAINS);
     this.indexUsage.existKeysIndexTag = true;
   }

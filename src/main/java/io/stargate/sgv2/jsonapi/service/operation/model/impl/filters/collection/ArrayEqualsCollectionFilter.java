@@ -7,12 +7,12 @@ import java.util.List;
 import java.util.Optional;
 
 /** Filter for document where array matches (data in same order) as the array in request */
-public class ArrayEqualsFilter extends MapFilterBase<String> {
+public class ArrayEqualsCollectionFilter extends MapCollectionFilter<String> {
   private final List<Object> arrayValue;
 
-  public ArrayEqualsFilter(
+  public ArrayEqualsCollectionFilter(
       DocValueHasher hasher, String path, List<Object> arrayData, Operator operator) {
-    super("query_text_values", path, operator, CollectionFilterBase.getHash(hasher, arrayData));
+    super("query_text_values", path, operator, CollectionFilter.getHash(hasher, arrayData));
     this.arrayValue = arrayData;
     this.indexUsage.textIndexTag = true;
   }

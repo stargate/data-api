@@ -7,16 +7,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cql.builder.BuiltCondition;
-import io.stargate.sgv2.jsonapi.service.cql.builder.Predicate;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.JsonTerm;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.ConditionLHS;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltConditionPredicate;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.JsonTerm;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.math.BigDecimal;
 import java.util.*;
 
 /** non_id($in, $nin), _id($nin) */
-public class InFilter extends CollectionFilterBase {
+public class InCollectionFilter extends CollectionFilter {
   private final List<Object> arrayValue;
   // HACK AARON - REFERENCED from ExpressionBuilder should be private
   public final Operator operator;
@@ -48,7 +49,7 @@ public class InFilter extends CollectionFilterBase {
     NIN,
   }
 
-  public InFilter(Operator operator, String path, List<Object> arrayValue) {
+  public InCollectionFilter(Operator operator, String path, List<Object> arrayValue) {
     super(path);
     this.arrayValue = arrayValue;
     this.operator = operator;
@@ -58,7 +59,7 @@ public class InFilter extends CollectionFilterBase {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    InFilter inFilter = (InFilter) o;
+    InCollectionFilter inFilter = (InCollectionFilter) o;
     return operator == inFilter.operator && Objects.equals(arrayValue, inFilter.arrayValue);
   }
 
@@ -84,23 +85,23 @@ public class InFilter extends CollectionFilterBase {
             this.indexUsage.textIndexTag = true;
             inResult.add(
                 BuiltCondition.of(
-                    BuiltCondition.LHS.mapAccess("query_text_values", this.getPath()),
-                    Predicate.EQ,
+                    ConditionLHS.mapAccess("query_text_values", this.getPath()),
+                    BuiltConditionPredicate.EQ,
                     new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
           } else if (value instanceof List) {
             // array element is array
             this.indexUsage.textIndexTag = true;
             inResult.add(
                 BuiltCondition.of(
-                    BuiltCondition.LHS.mapAccess("query_text_values", this.getPath()),
-                    Predicate.EQ,
+                    ConditionLHS.mapAccess("query_text_values", this.getPath()),
+                    BuiltConditionPredicate.EQ,
                     new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
           } else {
             this.indexUsage.arrayContainsTag = true;
             inResult.add(
                 BuiltCondition.of(
-                    BuiltCondition.LHS.column(DATA_CONTAINS),
-                    Predicate.CONTAINS,
+                    ConditionLHS.column(DATA_CONTAINS),
+                    BuiltConditionPredicate.CONTAINS,
                     new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
           }
         }
@@ -115,23 +116,23 @@ public class InFilter extends CollectionFilterBase {
               this.indexUsage.textIndexTag = true;
               ninResults.add(
                   BuiltCondition.of(
-                      BuiltCondition.LHS.mapAccess("query_text_values", this.getPath()),
-                      Predicate.NEQ,
+                      ConditionLHS.mapAccess("query_text_values", this.getPath()),
+                      BuiltConditionPredicate.NEQ,
                       new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
             } else if (value instanceof List) {
               // array element is array
               this.indexUsage.textIndexTag = true;
               ninResults.add(
                   BuiltCondition.of(
-                      BuiltCondition.LHS.mapAccess("query_text_values", this.getPath()),
-                      Predicate.NEQ,
+                      ConditionLHS.mapAccess("query_text_values", this.getPath()),
+                      BuiltConditionPredicate.NEQ,
                       new JsonTerm(this.getPath(), getHash(new DocValueHasher(), value))));
             } else {
               this.indexUsage.arrayContainsTag = true;
               ninResults.add(
                   BuiltCondition.of(
-                      BuiltCondition.LHS.column(DATA_CONTAINS),
-                      Predicate.NOT_CONTAINS,
+                      ConditionLHS.column(DATA_CONTAINS),
+                      BuiltConditionPredicate.NOT_CONTAINS,
                       new JsonTerm(getHashValue(new DocValueHasher(), getPath(), value))));
             }
           }
@@ -146,16 +147,16 @@ public class InFilter extends CollectionFilterBase {
                 this.indexUsage.numberIndexTag = true;
                 BuiltCondition condition =
                     BuiltCondition.of(
-                        BuiltCondition.LHS.mapAccess("query_dbl_values", DOC_ID),
-                        Predicate.NEQ,
+                        ConditionLHS.mapAccess("query_dbl_values", DOC_ID),
+                        BuiltConditionPredicate.NEQ,
                         new JsonTerm(DOC_ID, numberId));
                 conditions.add(condition);
               } else if (docIdValue instanceof String strId) {
                 this.indexUsage.textIndexTag = true;
                 BuiltCondition condition =
                     BuiltCondition.of(
-                        BuiltCondition.LHS.mapAccess("query_text_values", DOC_ID),
-                        Predicate.NEQ,
+                        ConditionLHS.mapAccess("query_text_values", DOC_ID),
+                        BuiltConditionPredicate.NEQ,
                         new JsonTerm(DOC_ID, strId));
                 conditions.add(condition);
               } else {

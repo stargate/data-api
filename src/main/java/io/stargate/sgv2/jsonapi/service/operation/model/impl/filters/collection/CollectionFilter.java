@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public abstract class CollectionFilterBase extends DBFilterBase {
-  protected CollectionFilterBase(String path) {
+public abstract class CollectionFilter extends DBFilterBase {
+  protected CollectionFilter(String path) {
     super(path);
   }
 

@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cql.ExpressionUtils;
-import io.stargate.sgv2.jsonapi.service.cql.builder.BuiltCondition;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.*;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.*;
 import java.util.ArrayList;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 public class ExpressionBuilder {
 
   public static List<Expression<BuiltCondition>> buildExpressions(
-      LogicalExpression logicalExpression, IDFilter additionalIdFilter) {
+      LogicalExpression logicalExpression, IDCollectionFilter additionalIdFilter) {
     // an empty filter should find everything
     if (logicalExpression.isEmpty() && additionalIdFilter == null) {
       return Collections.singletonList(null);
@@ -25,7 +25,7 @@ public class ExpressionBuilder {
     // after validate in FilterClauseDeserializer,
     // partition key column key will not be nested under OR operator
     // so we can collect all id_conditions, then do a combination to generate separate queries
-    List<IDFilter> idFilters = new ArrayList<>();
+    List<IDCollectionFilter> idFilters = new ArrayList<>();
     // expressionWithoutId must be a And(if not null)
     // since we have outer implicit and in the filter
     Expression<BuiltCondition> expressionWithoutId =
@@ -37,9 +37,9 @@ public class ExpressionBuilder {
 
   // buildExpressionWithId only handles IDFilter ($eq, $ne, $in)
   private static List<Expression<BuiltCondition>> buildExpressionWithId(
-      IDFilter additionalIdFilter,
+      IDCollectionFilter additionalIdFilter,
       Expression<BuiltCondition> expressionWithoutId,
-      List<IDFilter> idFilters) {
+      List<IDCollectionFilter> idFilters) {
     if (idFilters.size() > 1) {
       throw ErrorCode.FILTER_MULTIPLE_ID_FILTER.toApiException();
     }
@@ -54,11 +54,11 @@ public class ExpressionBuilder {
     }
 
     // have an idFilter
-    IDFilter idFilter = additionalIdFilter != null ? additionalIdFilter : idFilters.get(0);
+    IDCollectionFilter idFilter = additionalIdFilter != null ? additionalIdFilter : idFilters.get(0);
 
     // _id: {$in: []} should find nothing in the entire query
     // since _id can not work with $or, entire $and should find nothing
-    if (idFilter.operator == IDFilter.Operator.IN && idFilter.getAll().isEmpty()) {
+    if (idFilter.operator == IDCollectionFilter.Operator.IN && idFilter.getAll().isEmpty()) {
       return null; // should find nothing
     }
 
@@ -82,8 +82,8 @@ public class ExpressionBuilder {
 
   private static Expression<BuiltCondition> buildExpressionRecursive(
       LogicalExpression logicalExpression,
-      IDFilter additionalIdFilter,
-      List<IDFilter> idConditionExpressions) {
+      IDCollectionFilter additionalIdFilter,
+      List<IDCollectionFilter> idConditionExpressions) {
     List<Expression<BuiltCondition>> conditionExpressions = new ArrayList<>();
     // first for loop, is to iterate all subLogicalExpression
     // each iteration goes into another recursive build
@@ -107,7 +107,7 @@ public class ExpressionBuilder {
     // second for loop, is to iterate all subComparisonExpression
     for (ComparisonExpression comparisonExpression : logicalExpression.comparisonExpressions) {
       for (DBFilterBase dbFilter : comparisonExpression.getDbFilters()) {
-        if (dbFilter instanceof AllFilter allFilter) {
+        if (dbFilter instanceof AllCollectionFilter allFilter) {
           List<BuiltCondition> allFilterConditions = allFilter.getAll();
           List<Variable<BuiltCondition>> allFilterVariables =
               allFilterConditions.stream().map(Variable::of).toList();
@@ -115,18 +115,18 @@ public class ExpressionBuilder {
               allFilter.isNegation()
                   ? ExpressionUtils.orOf(allFilterVariables)
                   : ExpressionUtils.andOf(allFilterVariables));
-        } else if (dbFilter instanceof InFilter inFilter) {
-          if (inFilter.operator.equals(InFilter.Operator.IN)) {
+        } else if (dbFilter instanceof InCollectionFilter inFilter) {
+          if (inFilter.operator.equals(InCollectionFilter.Operator.IN)) {
             hasInFilterThisLevel = true;
-          } else if (inFilter.operator.equals(InFilter.Operator.NIN)) {
+          } else if (inFilter.operator.equals(InCollectionFilter.Operator.NIN)) {
             hasNinFilterThisLevel = true;
           }
           List<BuiltCondition> inFilterConditions = inFilter.getAll();
           if (!inFilterConditions.isEmpty()) {
             // store information of an empty array happens with $in or $nin
-            if (inFilter.operator.equals(InFilter.Operator.IN)) {
+            if (inFilter.operator.equals(InCollectionFilter.Operator.IN)) {
               inFilterThisLevelWithEmptyArray = false;
-            } else if (inFilter.operator.equals(InFilter.Operator.NIN)) {
+            } else if (inFilter.operator.equals(InCollectionFilter.Operator.NIN)) {
               ninFilterThisLevelWithEmptyArray = false;
             }
             List<Variable<BuiltCondition>> inConditionsVariables =
@@ -137,11 +137,11 @@ public class ExpressionBuilder {
             // _id $nin: ["A","B"] -> query_text_values['_id'] != A and query_text_values['_id'] !=
             // B
             conditionExpressions.add(
-                inFilter.operator.equals(InFilter.Operator.IN)
+                inFilter.operator.equals(InCollectionFilter.Operator.IN)
                     ? ExpressionUtils.orOf(inConditionsVariables)
                     : ExpressionUtils.andOf(inConditionsVariables));
           }
-        } else if (dbFilter instanceof IDFilter idFilter) {
+        } else if (dbFilter instanceof IDCollectionFilter idFilter) {
           if (additionalIdFilter == null) {
             idConditionExpressions.add(idFilter);
           }
@@ -160,7 +160,7 @@ public class ExpressionBuilder {
       conditionExpressions.clear();
       conditionExpressions.add(
           Variable.of(
-              new IsNullFilter("something user never use", SetFilterBase.Operator.NOT_CONTAINS)
+              new IsNullCollectionFilter("something user never use", SetCollectionFilter.Operator.NOT_CONTAINS)
                   .get()));
       return ExpressionUtils.buildExpression(
           conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
@@ -175,7 +175,7 @@ public class ExpressionBuilder {
       conditionExpressions.clear();
       conditionExpressions.add(
           Variable.of(
-              new IsNullFilter("something user never use", SetFilterBase.Operator.CONTAINS).get()));
+              new IsNullCollectionFilter("something user never use", SetCollectionFilter.Operator.CONTAINS).get()));
       return ExpressionUtils.buildExpression(
           conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
     }

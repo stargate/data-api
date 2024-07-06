@@ -16,9 +16,9 @@ import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.TruncateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDFilter;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -63,8 +63,8 @@ public class DeleteManyCommandResolverTest {
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {
-                          IDFilter filter =
-                              new IDFilter(IDFilter.Operator.EQ, DocumentId.fromString("id"));
+                          IDCollectionFilter filter =
+                              new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -152,8 +152,8 @@ public class DeleteManyCommandResolverTest {
                     .isInstanceOfSatisfying(
                         FindOperation.class,
                         find -> {
-                          TextFilter filter =
-                              new TextFilter("col", MapFilterBase.Operator.EQ, "val");
+                          TextCollectionFilter filter =
+                              new TextCollectionFilter("col", MapCollectionFilter.Operator.EQ, "val");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);

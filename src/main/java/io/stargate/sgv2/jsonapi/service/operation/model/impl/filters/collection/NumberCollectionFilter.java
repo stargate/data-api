@@ -6,10 +6,10 @@ import java.math.BigDecimal;
 import java.util.Optional;
 
 /** Filters db documents based on a numeric field value */
-public class NumberFilter extends MapFilterBase<BigDecimal> {
+public class NumberCollectionFilter extends MapCollectionFilter<BigDecimal> {
   private final BigDecimal numberValue;
 
-  public NumberFilter(String path, Operator operator, BigDecimal value) {
+  public NumberCollectionFilter(String path, Operator operator, BigDecimal value) {
     super("query_dbl_values", path, operator, value);
     this.numberValue = value;
     if (Operator.EQ == operator || Operator.NE == operator) indexUsage.arrayContainsTag = true;

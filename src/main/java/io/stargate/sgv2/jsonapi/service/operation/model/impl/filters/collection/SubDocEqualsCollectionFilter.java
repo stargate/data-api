@@ -10,10 +10,10 @@ import java.util.Optional;
  * Filter for document where field is subdocument and matches (same subfield in same order) the
  * filter sub document
  */
-public class SubDocEqualsFilter extends MapFilterBase<String> {
+public class SubDocEqualsCollectionFilter extends MapCollectionFilter<String> {
   private final Map<String, Object> subDocValue;
 
-  public SubDocEqualsFilter(
+  public SubDocEqualsCollectionFilter(
       DocValueHasher hasher, String path, Map<String, Object> subDocData, Operator operator) {
     super("query_text_values", path, operator, getHash(hasher, subDocData));
     this.indexUsage.textIndexTag = true;

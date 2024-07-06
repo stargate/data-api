@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.model.impl;
+package io.stargate.sgv2.jsonapi.service.operation.model.impl.builder;
 
 import java.util.List;
 import java.util.Objects;
@@ -11,9 +11,11 @@ import java.util.Objects;
  */
 public class JsonTerm {
   static final String NULL_ERROR_MESSAGE = "Use Values.NULL to bind a null CQL value";
+  // TODO: explain why this is an object and not a string
   private final Object key;
   private final Object value;
 
+  // TODO: the variable name is "value" but this ctor is to set the key !
   public JsonTerm(Object value) {
     this(null, value);
   }
