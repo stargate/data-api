@@ -12,22 +12,26 @@ import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
  * <p>Note, all collection created in this schema version 0, should have UUID as idType
  */
 public class CollectionSettingsV0Reader implements CollectionSettingsReader {
-  public CollectionSettings readCollectionSettings(
+
+  // TODO: Why have  function with the same name as the interface method ?
+  public CollectionSchemaObject readCollectionSettings(
       JsonNode commentConfigNode,
+      String keyspaceName,
       String collectionName,
       boolean vectorEnabled,
       int vectorSize,
-      CollectionSettings.SimilarityFunction function) {
-    CollectionSettings.VectorConfig vectorConfig =
-        new CollectionSettings.VectorConfig(vectorEnabled, vectorSize, function, null);
-    CollectionSettings.IndexingConfig indexingConfig = null;
+      CollectionSchemaObject.SimilarityFunction function) {
+    CollectionSchemaObject.VectorConfig vectorConfig =
+        new CollectionSchemaObject.VectorConfig(vectorEnabled, vectorSize, function, null);
+    CollectionSchemaObject.IndexingConfig indexingConfig = null;
     JsonNode indexing = commentConfigNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
     if (!indexing.isMissingNode()) {
-      indexingConfig = CollectionSettings.IndexingConfig.fromJson(indexing);
+      indexingConfig = CollectionSchemaObject.IndexingConfig.fromJson(indexing);
     }
-    return new CollectionSettings(
+    return new CollectionSchemaObject(
+        keyspaceName,
         collectionName,
-        CollectionSettings.IdConfig.defaultIdConfig(),
+        CollectionSchemaObject.IdConfig.defaultIdConfig(),
         vectorConfig,
         indexingConfig);
   }
@@ -37,8 +41,9 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
    * readCollectionSettings method based on interface method signature
    */
   @Override
-  public CollectionSettings readCollectionSettings(
-      JsonNode jsonNode, String collectionName, ObjectMapper objectMapper) {
+  public CollectionSchemaObject readCollectionSettings(
+      JsonNode jsonNode, String keyspaceName, String collectionName, ObjectMapper objectMapper) {
+    // TODO: this is really confusing, why does this implement the interface and not implement the one method ?
     return null;
   }
 }

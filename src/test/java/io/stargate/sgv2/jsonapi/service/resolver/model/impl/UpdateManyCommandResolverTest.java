@@ -247,7 +247,7 @@ public class UpdateManyCommandResolverTest {
               TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
               objectMapper.getNodeFactory(),
               Optional.empty(),
-              TestEmbeddingProvider.commandContextWithVectorize.collectionSettings())
+              TestEmbeddingProvider.commandContextWithVectorize.schemaObject())
           .vectorizeUpdateClause(updateClause);
       assertThat(operation)
           .isInstanceOfSatisfying(

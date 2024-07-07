@@ -1,28 +1,25 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 
 /**
  * Defines the context in which to execute the command.
  *
- * @param namespace The name of the namespace.
- * @param collection The name of the collection.
- * @param collectionSettings Settings for the collection, if Collection-specific command; if not,
- *     "empty" Settings {see CollectionSettings#empty()}.
+ * @param schemaObject Settings for the collection, if Collection-specific command; if not,
+ *                           "empty" Settings {see CollectionSettings#empty()}.
  */
 public record CommandContext(
-    String namespace,
-    String collection,
-    CollectionSettings collectionSettings,
+    SchemaObject schemaObject,
     EmbeddingProvider embeddingProvider,
     String commandName,
     JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
 
   private static final CommandContext EMPTY =
-      new CommandContext(null, null, CollectionSettings.empty(), null, "testCommand", null);
+      new CommandContext(CollectionSchemaObject.EMPTY, null, "testCommand", null);
 
   /**
    * @return Returns empty command context, having both {@link #namespace} and {@link #collection}
@@ -34,7 +31,7 @@ public record CommandContext(
 
   // TODO: why do we have these public ctors, and a static factor, and this is a record ??
   public CommandContext(String namespace, String collection) {
-    this(namespace, collection, CollectionSettings.empty(), null, null, null);
+    this(CollectionSchemaObject.EMPTY, null, null, null);
   }
 
   public CommandContext(
@@ -43,9 +40,7 @@ public record CommandContext(
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
     this(
-        namespace,
-        collection,
-        CollectionSettings.empty(),
+        CollectionSchemaObject.EMPTY,
         null,
         commandName,
         jsonProcessingMetricsReporter);
@@ -65,24 +60,27 @@ public record CommandContext(
   public static CommandContext from(
       String namespace,
       String collection,
-      CollectionSettings collectionSettings,
+      CollectionSchemaObject collectionSettings,
       EmbeddingProvider embeddingProvider,
       String commandName) {
     return new CommandContext(
-        namespace, collection, collectionSettings, embeddingProvider, commandName, null);
+        collectionSettings, embeddingProvider, commandName, null);
   }
 
-  // TODO: these helpder functions break encapsulation for very little benefit
-  public CollectionSettings.SimilarityFunction similarityFunction() {
-    return collectionSettings.vectorConfig().similarityFunction();
+  // TODO: these helper functions break encapsulation for very little benefit
+  public CollectionSchemaObject.SimilarityFunction similarityFunction() {
+    // HACK AARON - temp cast until I work out if we generic the command context
+    return ((CollectionSchemaObject)schemaObject).vectorConfig().similarityFunction();
   }
 
   public boolean isVectorEnabled() {
-    return collectionSettings.vectorConfig() != null
-        && collectionSettings.vectorConfig().vectorEnabled();
+    // HACK AARON - temp cast until I work out if we generic the command context
+    return ((CollectionSchemaObject)schemaObject).vectorConfig() != null
+        && ((CollectionSchemaObject)schemaObject).vectorConfig().vectorEnabled();
   }
 
   public IndexingProjector indexingProjector() {
-    return collectionSettings.indexingProjector();
+    // HACK AARON - temp cast until I work out if we generic the command context
+    return ((CollectionSchemaObject)schemaObject).indexingProjector();
   }
 }

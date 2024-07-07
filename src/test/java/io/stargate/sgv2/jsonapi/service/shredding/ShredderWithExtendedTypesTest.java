@@ -12,7 +12,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -205,7 +205,7 @@ public class ShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSettings.empty().withIdType(CollectionSettings.IdType.UNDEFINED),
+              CollectionSchemaObject.EMPTY.withIdType(CollectionSchemaObject.IdType.UNDEFINED),
               null);
 
       DocumentId docId = doc.id();
@@ -245,7 +245,7 @@ public class ShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSettings.empty().withIdType(CollectionSettings.IdType.OBJECT_ID),
+              CollectionSchemaObject.EMPTY.withIdType(CollectionSchemaObject.IdType.OBJECT_ID),
               null);
 
       DocumentId docId = doc.id();
@@ -278,20 +278,20 @@ public class ShredderWithExtendedTypesTest {
 
     @Test
     public void shredSimpleWithoutIdGenUUIDv4() throws Exception {
-      _testShredUUIDAutoGeneration(CollectionSettings.IdType.UUID, 4);
+      _testShredUUIDAutoGeneration(CollectionSchemaObject.IdType.UUID, 4);
     }
 
     @Test
     public void shredSimpleWithoutIdGenUUIDv6() throws Exception {
-      _testShredUUIDAutoGeneration(CollectionSettings.IdType.UUID_V6, 6);
+      _testShredUUIDAutoGeneration(CollectionSchemaObject.IdType.UUID_V6, 6);
     }
 
     @Test
     public void shredSimpleWithoutIdGenUUIDv7() throws Exception {
-      _testShredUUIDAutoGeneration(CollectionSettings.IdType.UUID_V7, 7);
+      _testShredUUIDAutoGeneration(CollectionSchemaObject.IdType.UUID_V7, 7);
     }
 
-    private void _testShredUUIDAutoGeneration(CollectionSettings.IdType idType, int uuidVersion)
+    private void _testShredUUIDAutoGeneration(CollectionSchemaObject.IdType idType, int uuidVersion)
         throws Exception {
       final String inputJson = "{\"value\": 42}";
       final JsonNode inputDoc = objectMapper.readTree(inputJson);
@@ -301,7 +301,7 @@ public class ShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSettings.empty().withIdType(idType),
+              CollectionSchemaObject.EMPTY.withIdType(idType),
               null);
 
       DocumentId docId = doc.id();

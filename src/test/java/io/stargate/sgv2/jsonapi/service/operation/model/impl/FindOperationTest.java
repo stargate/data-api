@@ -28,7 +28,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
@@ -77,13 +77,12 @@ public class FindOperationTest extends OperationTestBase {
             KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
     VECTOR_COMMAND_CONTEXT =
         new CommandContext(
-            KEYSPACE_NAME,
-            COLLECTION_NAME,
-            new CollectionSettings(
+            new CollectionSchemaObject(
+                KEYSPACE_NAME,
                 COLLECTION_NAME,
-                CollectionSettings.IdConfig.defaultIdConfig(),
-                new CollectionSettings.VectorConfig(
-                    true, -1, CollectionSettings.SimilarityFunction.COSINE, null),
+                CollectionSchemaObject.IdConfig.defaultIdConfig(),
+                new CollectionSchemaObject.VectorConfig(
+                    true, -1, CollectionSchemaObject.SimilarityFunction.COSINE, null),
                 null),
             null,
             "testCommand",

@@ -16,7 +16,7 @@ import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
@@ -130,14 +130,15 @@ public record CreateCollectionOperation(
       return executeCollectionCreation(dataApiRequestInfo, queryExecutor, false);
     }
     // if table exists, compare existedCollectionSettings and newCollectionSettings
-    CollectionSettings existedCollectionSettings =
-        CollectionSettings.getCollectionSettings(table, objectMapper);
-    CollectionSettings newCollectionSettings =
-        CollectionSettings.getCollectionSettings(
+    CollectionSchemaObject existedCollectionSettings =
+        CollectionSchemaObject.getCollectionSettings(table, objectMapper);
+    CollectionSchemaObject newCollectionSettings =
+        CollectionSchemaObject.getCollectionSettings(
+            currKeyspace.getName().asInternal(),
             name,
             vectorSearch,
             vectorSize,
-            CollectionSettings.SimilarityFunction.fromString(vectorFunction),
+            CollectionSchemaObject.SimilarityFunction.fromString(vectorFunction),
             comment,
             objectMapper);
     // if table exists we have to choices:

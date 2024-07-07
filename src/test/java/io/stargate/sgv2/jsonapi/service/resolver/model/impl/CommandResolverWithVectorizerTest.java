@@ -25,7 +25,7 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
@@ -82,13 +82,12 @@ public class CommandResolverWithVectorizerTest {
     protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
     private final CommandContext VECTOR_COMMAND_CONTEXT =
         new CommandContext(
-            KEYSPACE_NAME,
-            COLLECTION_NAME,
-            new CollectionSettings(
+            new CollectionSchemaObject(
+                KEYSPACE_NAME,
                 COLLECTION_NAME,
-                CollectionSettings.IdConfig.defaultIdConfig(),
-                new CollectionSettings.VectorConfig(
-                    true, -1, CollectionSettings.SimilarityFunction.COSINE, null),
+                CollectionSchemaObject.IdConfig.defaultIdConfig(),
+                new CollectionSchemaObject.VectorConfig(
+                    true, -1, CollectionSchemaObject.SimilarityFunction.COSINE, null),
                 null),
             null,
             null,
@@ -545,7 +544,7 @@ public class CommandResolverWithVectorizerTest {
               TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
               objectMapper.getNodeFactory(),
               Optional.empty(),
-              TestEmbeddingProvider.commandContextWithVectorize.collectionSettings())
+              TestEmbeddingProvider.commandContextWithVectorize.schemaObject())
           .vectorizeUpdateClause(updateClause)
           .subscribe()
           .withSubscriber(UniAssertSubscriber.create())

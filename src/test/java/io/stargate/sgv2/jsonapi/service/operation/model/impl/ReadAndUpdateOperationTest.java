@@ -25,7 +25,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -113,13 +113,12 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
             KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
     COMMAND_VECTOR_CONTEXT =
         new CommandContext(
-            KEYSPACE_NAME,
-            COLLECTION_NAME,
-            new CollectionSettings(
+            new CollectionSchemaObject(
+                KEYSPACE_NAME,
                 COLLECTION_NAME,
-                CollectionSettings.IdConfig.defaultIdConfig(),
-                new CollectionSettings.VectorConfig(
-                    true, -1, CollectionSettings.SimilarityFunction.COSINE, null),
+                CollectionSchemaObject.IdConfig.defaultIdConfig(),
+                new CollectionSchemaObject.VectorConfig(
+                    true, -1, CollectionSchemaObject.SimilarityFunction.COSINE, null),
                 null),
             null,
             "testCommand",

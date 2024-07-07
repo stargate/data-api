@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
@@ -78,13 +78,13 @@ public class Shredder {
         txId,
         IndexingProjector.identityProjector(),
         "testCommand",
-        CollectionSettings.empty(),
+        CollectionSchemaObject.EMPTY,
         null);
   }
 
   public WritableShreddedDocument shred(CommandContext ctx, JsonNode doc, UUID txId) {
     return shred(
-        doc, txId, ctx.indexingProjector(), ctx.commandName(), ctx.collectionSettings(), null);
+        doc, txId, ctx.indexingProjector(), ctx.commandName(), ctx.schemaObject(), null);
   }
 
   /**
@@ -103,7 +103,7 @@ public class Shredder {
         txId,
         ctx.indexingProjector(),
         ctx.commandName(),
-        ctx.collectionSettings(),
+        ctx.schemaObject(),
         docIdToReturn);
   }
 
@@ -112,7 +112,7 @@ public class Shredder {
       UUID txId,
       IndexingProjector indexProjector,
       String commandName,
-      CollectionSettings collectionSettings,
+      CollectionSchemaObject collectionSettings,
       AtomicReference<DocumentId> docIdToReturn) {
     // Although we could otherwise allow non-Object documents, requirement
     // to have the _id (or at least place for it) means we cannot allow that.
@@ -185,7 +185,7 @@ public class Shredder {
    * @param doc Document to use as the base
    * @return Document that has _id as its first property
    */
-  private ObjectNode normalizeDocumentId(CollectionSettings collectionSettings, ObjectNode doc) {
+  private ObjectNode normalizeDocumentId(CollectionSchemaObject collectionSettings, ObjectNode doc) {
     // First: see if we have Object Id present or not
     JsonNode idNode = doc.get(DocumentConstants.Fields.DOC_ID);
 
@@ -202,10 +202,10 @@ public class Shredder {
     return docWithIdAsFirstProperty;
   }
 
-  private JsonNode generateDocumentId(CollectionSettings collectionSettings) {
-    CollectionSettings.IdType idType = collectionSettings.idConfig().idType();
+  private JsonNode generateDocumentId(CollectionSchemaObject collectionSettings) {
+    CollectionSchemaObject.IdType idType = collectionSettings.idConfig().idType();
     if (idType == null) {
-      idType = CollectionSettings.IdType.UNDEFINED;
+      idType = CollectionSchemaObject.IdType.UNDEFINED;
     }
     final JsonNodeFactory jnf = objectMapper.getNodeFactory();
     switch (idType) {

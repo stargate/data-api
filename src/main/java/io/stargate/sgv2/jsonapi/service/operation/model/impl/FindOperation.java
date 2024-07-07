@@ -310,7 +310,7 @@ public record FindOperation(
               new JsonApiException(
                   ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED,
                   ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage()
-                      + commandContext().collection()));
+                      + commandContext().schemaObject().name.name()));
     }
     // get FindResponse
     return getDocuments(dataApiRequestInfo, queryExecutor, pageState(), null)
@@ -454,7 +454,7 @@ public record FindOperation(
                 new QueryBuilder()
                     .select()
                     .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-                    .from(commandContext.namespace(), commandContext.collection())
+                    .from(commandContext.schemaObject().name.keyspace(), commandContext.schemaObject().name.name())
                     .where(expression)
                     .limit(limit)
                     .build();
@@ -479,7 +479,7 @@ public record FindOperation(
           .similarityFunction(
               DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
               commandContext().similarityFunction())
-          .from(commandContext.namespace(), commandContext.collection())
+          .from(commandContext.schemaObject().name.keyspace(), commandContext.schemaObject().name.name())
           .where(expression)
           .limit(limit)
           .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
@@ -488,7 +488,7 @@ public record FindOperation(
       return new QueryBuilder()
           .select()
           .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-          .from(commandContext.namespace(), commandContext.collection())
+          .from(commandContext.schemaObject().name.keyspace(), commandContext.schemaObject().name.name())
           .where(expression)
           .limit(limit)
           .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
@@ -524,7 +524,7 @@ public record FindOperation(
               new QueryBuilder()
                   .select()
                   .column(columnsToAdd)
-                  .from(commandContext.namespace(), commandContext.collection())
+                  .from(commandContext.schemaObject().name.keyspace(), commandContext.schemaObject().name.name())
                   .where(expression)
                   .limit(maxSortReadLimit())
                   .build();

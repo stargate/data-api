@@ -153,7 +153,7 @@ public class NamespaceCacheTest {
                                 new HashMap<>())));
               });
       NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
-      CollectionSettings collectionSettings =
+      CollectionSchemaObject collectionSettings =
           namespaceCache
               .getCollectionProperties(dataApiRequestInfo, "table")
               .subscribe()
@@ -283,7 +283,7 @@ public class NamespaceCacheTest {
                                 new HashMap<>())));
               });
       NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
-      CollectionSettings collectionSettings =
+      CollectionSchemaObject collectionSettings =
           namespaceCache
               .getCollectionProperties(dataApiRequestInfo, "table")
               .subscribe()

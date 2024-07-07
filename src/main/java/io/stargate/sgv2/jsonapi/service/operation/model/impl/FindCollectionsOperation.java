@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
@@ -70,7 +70,7 @@ public record FindCollectionsOperation(
     return Uni.createFrom()
         .item(
             () -> {
-              List<CollectionSettings> properties =
+              List<CollectionSchemaObject> properties =
                   keyspaceMetadata
                       // get all tables
                       .getTables()
@@ -79,7 +79,7 @@ public record FindCollectionsOperation(
                       // filter for valid collections
                       .filter(tableMatcher)
                       // map to name
-                      .map(table -> CollectionSettings.getCollectionSettings(table, objectMapper))
+                      .map(table -> CollectionSchemaObject.getCollectionSettings(table, objectMapper))
                       // get as list
                       .toList();
               // Wrap the properties list into a command result
@@ -88,7 +88,7 @@ public record FindCollectionsOperation(
   }
 
   // simple result wrapper
-  private record Result(boolean explain, List<CollectionSettings> collections)
+  private record Result(boolean explain, List<CollectionSchemaObject> collections)
       implements Supplier<CommandResult> {
 
     @Override
@@ -96,13 +96,13 @@ public record FindCollectionsOperation(
       if (explain) {
         final List<CreateCollectionCommand> createCollectionCommands =
             collections.stream()
-                .map(CollectionSettings::collectionSettingToCreateCollectionCommand)
+                .map(CollectionSchemaObject::collectionSettingToCreateCollectionCommand)
                 .toList();
         Map<CommandStatus, Object> statuses =
             Map.of(CommandStatus.EXISTING_COLLECTIONS, createCollectionCommands);
         return new CommandResult(statuses);
       } else {
-        List<String> tables = collections.stream().map(CollectionSettings::collectionName).toList();
+        List<String> tables = collections.stream().map(CollectionSchemaObject::collectionName).toList();
         Map<CommandStatus, Object> statuses = Map.of(CommandStatus.EXISTING_COLLECTIONS, tables);
         return new CommandResult(statuses);
       }

@@ -22,7 +22,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
@@ -177,7 +177,7 @@ public class CollectionResource {
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
                 EmbeddingProvider embeddingProvider = null;
-                final CollectionSettings.VectorConfig.VectorizeConfig vectorizeConfig =
+                final CollectionSchemaObject.VectorConfig.VectorizeConfig vectorizeConfig =
                     collectionProperty.vectorConfig().vectorizeConfig();
                 if (vectorizeConfig != null) {
                   embeddingProvider =
@@ -194,8 +194,6 @@ public class CollectionResource {
 
                 CommandContext commandContext =
                     new CommandContext(
-                        namespace,
-                        collection,
                         collectionProperty,
                         embeddingProvider,
                         command.getClass().getSimpleName(),

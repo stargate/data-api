@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,7 +31,7 @@ public class DataVectorizer {
   private final EmbeddingProvider embeddingProvider;
   private final JsonNodeFactory nodeFactory;
   private final Optional<String> embeddingApiKey;
-  private final CollectionSettings collectionSettings;
+  private final CollectionSchemaObject collectionSettings;
 
   /**
    * Constructor
@@ -46,7 +46,7 @@ public class DataVectorizer {
       EmbeddingProvider embeddingProvider,
       JsonNodeFactory nodeFactory,
       Optional<String> embeddingApiKey,
-      CollectionSettings collectionSettings) {
+      CollectionSchemaObject collectionSettings) {
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
     this.embeddingApiKey = embeddingApiKey;

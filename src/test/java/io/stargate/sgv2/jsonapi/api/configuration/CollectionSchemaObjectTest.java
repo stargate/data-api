@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
@@ -14,18 +14,19 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-public class CollectionSettingsTest {
+public class CollectionSchemaObjectTest {
   final ObjectMapper objectMapper = new ObjectMapper();
 
   @Test
   public void ensureSingleProjectorCreation() {
-    CollectionSettings.IndexingConfig indexingConfig =
-        new CollectionSettings.IndexingConfig(new HashSet<String>(Arrays.asList("abc")), null);
-    CollectionSettings settings =
-        new CollectionSettings(
+    CollectionSchemaObject.IndexingConfig indexingConfig =
+        new CollectionSchemaObject.IndexingConfig(new HashSet<String>(Arrays.asList("abc")), null);
+    CollectionSchemaObject settings =
+        new CollectionSchemaObject(
+            "namespace",
             "collectionName",
-            CollectionSettings.IdConfig.defaultIdConfig(),
-            CollectionSettings.VectorConfig.notEnabledVectorConfig(),
+            CollectionSchemaObject.IdConfig.defaultIdConfig(),
+            CollectionSchemaObject.VectorConfig.notEnabledVectorConfig(),
             indexingConfig);
     IndexingProjector indexingProj = settings.indexingProjector();
     assertThat(indexingProj)

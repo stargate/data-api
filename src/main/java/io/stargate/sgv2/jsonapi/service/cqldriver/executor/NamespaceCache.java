@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
 import java.time.Duration;
 
 /** Caches the vector enabled status for the namespace */
+// TODO: what is the vector status of a namespace ? vectors are per collection
 public class NamespaceCache {
 
   public final String namespace;
@@ -22,7 +23,7 @@ public class NamespaceCache {
 
   private static final long CACHE_TTL_SECONDS = 300;
   private static final long CACHE_MAX_SIZE = 1000;
-  private final Cache<String, CollectionSettings> vectorCache =
+  private final Cache<String, CollectionSchemaObject> vectorCache =
       Caffeine.newBuilder()
           .expireAfterWrite(Duration.ofSeconds(CACHE_TTL_SECONDS))
           .maximumSize(CACHE_MAX_SIZE)
@@ -34,9 +35,12 @@ public class NamespaceCache {
     this.objectMapper = objectMapper;
   }
 
-  protected Uni<CollectionSettings> getCollectionProperties(
+  protected Uni<CollectionSchemaObject> getCollectionProperties(
       DataApiRequestInfo dataApiRequestInfo, String collectionName) {
-    CollectionSettings collectionProperty = vectorCache.getIfPresent(collectionName);
+
+    // TODO: why is the cache loader not been used  ??
+    CollectionSchemaObject collectionProperty = vectorCache.getIfPresent(collectionName);
+
     if (null != collectionProperty) {
       return Uni.createFrom().item(collectionProperty);
     } else {
@@ -77,10 +81,11 @@ public class NamespaceCache {
                           || sre.getStatus().getCode() == io.grpc.Status.Code.INVALID_ARGUMENT))) {
                     return Uni.createFrom()
                         .item(
-                            new CollectionSettings(
+                            new CollectionSchemaObject(
+                                namespace,
                                 collectionName,
-                                CollectionSettings.IdConfig.defaultIdConfig(),
-                                CollectionSettings.VectorConfig.notEnabledVectorConfig(),
+                                CollectionSchemaObject.IdConfig.defaultIdConfig(),
+                                CollectionSchemaObject.VectorConfig.notEnabledVectorConfig(),
                                 null));
                   }
                   return Uni.createFrom().failure(error);
@@ -92,7 +97,7 @@ public class NamespaceCache {
     }
   }
 
-  private Uni<CollectionSettings> getVectorProperties(
+  private Uni<CollectionSchemaObject> getVectorProperties(
       DataApiRequestInfo dataApiRequestInfo, String collectionName) {
     return queryExecutor
         .getSchema(dataApiRequestInfo, namespace, collectionName)
@@ -106,7 +111,7 @@ public class NamespaceCache {
                       ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA,
                       ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA.getMessage() + collectionName);
                 }
-                return CollectionSettings.getCollectionSettings(table.get(), objectMapper);
+                return CollectionSchemaObject.getCollectionSettings(table.get(), objectMapper);
               } else {
                 throw new RuntimeException(
                     ErrorCode.COLLECTION_NOT_EXIST.getMessage() + collectionName);

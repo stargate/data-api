@@ -26,27 +26,45 @@ import java.util.function.Supplier;
 /**
  * Refactored as seperate class that represent a collection property.*
  *
- * @param collectionName
- * @param vectorConfig
- * @param indexingConfig
+ * TODO: there are a LOT of different ways this is constructed, need to refactor
  */
-public record CollectionSettings(
-    String collectionName,
-    IdConfig idConfig,
-    VectorConfig vectorConfig,
-    IndexingConfig indexingConfig) {
+public final class CollectionSchemaObject extends SchemaObject {
 
-  private static final CollectionSettings EMPTY =
-      new CollectionSettings(
-          "", IdConfig.defaultIdConfig(), VectorConfig.notEnabledVectorConfig(), null);
+  public static final CollectionSchemaObject EMPTY =
+      new CollectionSchemaObject(
+          "", "", IdConfig.defaultIdConfig(), VectorConfig.notEnabledVectorConfig(), null);
 
-  public static CollectionSettings empty() {
-    return EMPTY;
+  private final IdConfig idConfig;
+  private final VectorConfig vectorConfig;
+  private final IndexingConfig indexingConfig;
+
+  /**
+   * @param vectorConfig
+   * @param indexingConfig
+   */
+  public CollectionSchemaObject(
+      String keypaceName,
+      String name,
+      IdConfig idConfig,
+      VectorConfig vectorConfig,
+      IndexingConfig indexingConfig) {
+    this(new SchemaObjectName(keypaceName, name), idConfig, vectorConfig, indexingConfig);
   }
 
-  public CollectionSettings withIdType(IdType idType) {
-    return new CollectionSettings(
-        collectionName, new IdConfig(idType), vectorConfig, indexingConfig);
+  public CollectionSchemaObject(
+      SchemaObjectName name,
+      IdConfig idConfig,
+      VectorConfig vectorConfig,
+      IndexingConfig indexingConfig) {
+    super(name);
+    this.idConfig = idConfig;
+    this.vectorConfig = vectorConfig;
+    this.indexingConfig = indexingConfig;
+  }
+
+
+  public CollectionSchemaObject withIdType(IdType idType) {
+    return new CollectionSchemaObject(name, new IdConfig(idType), vectorConfig, indexingConfig);
   }
 
   public record IdConfig(IdType idType) {
@@ -157,7 +175,8 @@ public record CollectionSettings(
         String provider,
         String modelName,
         Map<String, String> authentication,
-        Map<String, Object> parameters) {}
+        Map<String, Object> parameters) {
+    }
   }
 
   /**
@@ -176,15 +195,16 @@ public record CollectionSettings(
         case "cosine" -> COSINE;
         case "euclidean" -> EUCLIDEAN;
         case "dot_product" -> DOT_PRODUCT;
-        default ->
-            throw new JsonApiException(
-                ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
-                ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
+        default -> throw new JsonApiException(
+            ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
+            ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
       };
     }
   }
 
-  /** Collection Id Type enum, UNDEFINED represents unwrapped id */
+  /**
+   * Collection Id Type enum, UNDEFINED represents unwrapped id
+   */
   public enum IdType {
     OBJECT_ID,
     UUID,
@@ -227,16 +247,16 @@ public record CollectionSettings(
         case "none" -> NONE;
         case "header" -> HEADER;
         case "shared_secret" -> SHARED_SECRET;
-        default ->
-            throw ErrorCode.VECTORIZE_INVALID_AUTHENTICATION_TYPE.toApiException(
-                "'%s'", authenticationType);
+        default -> throw ErrorCode.VECTORIZE_INVALID_AUTHENTICATION_TYPE.toApiException(
+            "'%s'", authenticationType);
       };
     }
   }
 
-  public static CollectionSettings getCollectionSettings(
+  public static CollectionSchemaObject getCollectionSettings(
       TableMetadata table, ObjectMapper objectMapper) {
     // [jsonapi#639]: get internal name to avoid quoting of case-sensitive names
+    String keyspaceName = table.getKeyspace().asInternal();
     String collectionName = table.getName().asInternal();
     // get vector column
     final Optional<ColumnMetadata> vectorColumn =
@@ -255,30 +275,32 @@ public record CollectionSettings(
         }
       }
       // default function
-      CollectionSettings.SimilarityFunction function = CollectionSettings.SimilarityFunction.COSINE;
+      SimilarityFunction function = SimilarityFunction.COSINE;
       if (vectorIndex != null) {
         final String functionName =
             vectorIndex.getOptions().get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME);
         if (functionName != null)
-          function = CollectionSettings.SimilarityFunction.fromString(functionName);
+          function = SimilarityFunction.fromString(functionName);
       }
       final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       return createCollectionSettings(
-          collectionName, true, vectorSize, function, comment, objectMapper);
+          keyspaceName, collectionName, true, vectorSize, function, comment, objectMapper);
     } else { // if not vector collection
       // handling comment so get the indexing config from comment
       final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       return createCollectionSettings(
+          keyspaceName,
           collectionName,
           false,
           0,
-          CollectionSettings.SimilarityFunction.UNDEFINED,
+          SimilarityFunction.UNDEFINED,
           comment,
           objectMapper);
     }
   }
 
-  public static CollectionSettings getCollectionSettings(
+  public static CollectionSchemaObject getCollectionSettings(
+      String keyspaceName,
       String collectionName,
       boolean vectorEnabled,
       int vectorSize,
@@ -286,10 +308,11 @@ public record CollectionSettings(
       String comment,
       ObjectMapper objectMapper) {
     return createCollectionSettings(
-        collectionName, vectorEnabled, vectorSize, similarityFunction, comment, objectMapper);
+        keyspaceName, collectionName, vectorEnabled, vectorSize, similarityFunction, comment, objectMapper);
   }
 
-  private static CollectionSettings createCollectionSettings(
+  private static CollectionSchemaObject createCollectionSettings(
+      String keyspaceName,
       String collectionName,
       boolean vectorEnabled,
       int vectorSize,
@@ -298,13 +321,15 @@ public record CollectionSettings(
       ObjectMapper objectMapper) {
     if (comment == null || comment.isBlank()) {
       if (vectorEnabled) {
-        return new CollectionSettings(
+        return new CollectionSchemaObject(
+            keyspaceName,
             collectionName,
             IdConfig.defaultIdConfig(),
             new VectorConfig(true, vectorSize, function, null),
             null);
       } else {
-        return new CollectionSettings(
+        return new CollectionSchemaObject(
+            keyspaceName,
             collectionName,
             IdConfig.defaultIdConfig(),
             VectorConfig.notEnabledVectorConfig(),
@@ -329,7 +354,7 @@ public record CollectionSettings(
         switch (collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY).asInt()) {
           case 1:
             return new CollectionSettingsV1Reader()
-                .readCollectionSettings(collectionNode, collectionName, objectMapper);
+                .readCollectionSettings(collectionNode, keyspaceName, collectionName, objectMapper);
           default:
             throw ErrorCode.INVALID_SCHEMA_VERSION.toApiException();
         }
@@ -338,13 +363,13 @@ public record CollectionSettings(
         // sample comment : {"indexing":{"deny":["address"]}}}
         return new CollectionSettingsV0Reader()
             .readCollectionSettings(
-                commentConfigNode, collectionName, vectorEnabled, vectorSize, function);
+                commentConfigNode, keyspaceName, collectionName, vectorEnabled, vectorSize, function);
       }
     }
   }
 
   public static CreateCollectionCommand collectionSettingToCreateCollectionCommand(
-      CollectionSettings collectionSetting) {
+      CollectionSchemaObject collectionSetting) {
     CreateCollectionCommand.Options options = null;
     CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig = null;
     CreateCollectionCommand.Options.IndexingConfig indexingConfig = null;
@@ -386,6 +411,44 @@ public record CollectionSettings(
 
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
-    return new CreateCollectionCommand(collectionSetting.collectionName(), options);
+    return new CreateCollectionCommand(collectionSetting.name.name(), options);
   }
+
+  public IdConfig idConfig() {
+    return idConfig;
+  }
+
+  public VectorConfig vectorConfig() {
+    return vectorConfig;
+  }
+
+  public IndexingConfig indexingConfig() {
+    return indexingConfig;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this) return true;
+    if (obj == null || obj.getClass() != this.getClass()) return false;
+    var that = (CollectionSchemaObject) obj;
+    return Objects.equals(this.name, that.name) &&
+        Objects.equals(this.idConfig, that.idConfig) &&
+        Objects.equals(this.vectorConfig, that.vectorConfig) &&
+        Objects.equals(this.indexingConfig, that.indexingConfig);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name , idConfig, vectorConfig, indexingConfig);
+  }
+
+  @Override
+  public String toString() {
+    return "CollectionSettings[" +
+        "name=" + name + ", " +
+        "idConfig=" + idConfig + ", " +
+        "vectorConfig=" + vectorConfig + ", " +
+        "indexingConfig=" + indexingConfig + ']';
+  }
+
 }

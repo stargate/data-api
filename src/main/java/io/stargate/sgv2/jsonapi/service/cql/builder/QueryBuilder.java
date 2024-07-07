@@ -6,7 +6,7 @@ import com.datastax.oss.driver.api.core.data.CqlVector;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cql.ColumnUtils;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
 import java.util.ArrayList;
@@ -264,7 +264,7 @@ public class QueryBuilder {
   }
 
   public QueryBuilder similarityFunction(
-      String columnName, CollectionSettings.SimilarityFunction similarityFunction) {
+      String columnName, CollectionSchemaObject.SimilarityFunction similarityFunction) {
     switch (similarityFunction) {
       case COSINE, UNDEFINED ->
           functionCalls.add(FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_COSINE"));
