@@ -125,7 +125,9 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(
+              new IDCollectionFilter(
+                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =
@@ -206,7 +208,9 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(
+              new IDCollectionFilter(
+                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       CommandContext commandContext =
@@ -569,7 +573,9 @@ public class DeleteOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters =
-          List.of(new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(
+              new IDCollectionFilter(
+                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
 
       FindOperation findOperation =

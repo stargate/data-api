@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.service.cql.ColumnUtils;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -205,8 +204,8 @@ public class QueryBuilder {
           sb.append(")");
         }
       }
-      // TODO OMG MAKE THIS AN ENUM or something more than a string !
-      // there is a public Variable.EXPR_TYPE
+        // TODO OMG MAKE THIS AN ENUM or something more than a string !
+        // there is a public Variable.EXPR_TYPE
       case "variable" -> {
         Variable<BuiltCondition> variable = (Variable) outerExpression;
         BuiltCondition condition = variable.getValue();

@@ -4,15 +4,14 @@ import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondit
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.LiteralTerm;
 
-abstract class ColumnTableFilter<T> extends TableFilter{
+abstract class ColumnTableFilter<T> extends TableFilter {
 
-  /**
-   * The operations that can be performed to filter a column
-   */
+  /** The operations that can be performed to filter a column */
   public enum Operator {
     EQ(BuiltConditionPredicate.EQ);
 
     final BuiltConditionPredicate predicate;
+
     Operator(BuiltConditionPredicate predicate) {
       this.predicate = predicate;
     }
@@ -20,13 +19,13 @@ abstract class ColumnTableFilter<T> extends TableFilter{
 
   protected final Operator operator;
   protected final T columnValue;
-  protected final LiteralTerm<T> columnValueTerm ;
+  protected final LiteralTerm<T> columnValueTerm;
 
   protected ColumnTableFilter(String path, Operator operator, T columnValue) {
-      super(path);
-      this.columnValue = columnValue;
-      this.columnValueTerm = new LiteralTerm<>(columnValue);
-      this.operator = operator;
+    super(path);
+    this.columnValue = columnValue;
+    this.columnValueTerm = new LiteralTerm<>(columnValue);
+    this.operator = operator;
   }
 
   @Override

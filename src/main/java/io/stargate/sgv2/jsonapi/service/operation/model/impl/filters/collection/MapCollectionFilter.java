@@ -5,8 +5,8 @@ import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.ConditionLHS;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltConditionPredicate;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.ConditionLHS;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.JsonTerm;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import java.util.Objects;
@@ -101,22 +101,34 @@ public abstract class MapCollectionFilter<T> extends CollectionFilter {
             new JsonTerm(getHashValue(new DocValueHasher(), key, value)));
       case MAP_EQUALS:
         return BuiltCondition.of(
-            ConditionLHS.mapAccess(columnName, key), BuiltConditionPredicate.EQ, new JsonTerm(key, value));
+            ConditionLHS.mapAccess(columnName, key),
+            BuiltConditionPredicate.EQ,
+            new JsonTerm(key, value));
       case MAP_NOT_EQUALS:
         return BuiltCondition.of(
-            ConditionLHS.mapAccess(columnName, key), BuiltConditionPredicate.NEQ, new JsonTerm(key, value));
+            ConditionLHS.mapAccess(columnName, key),
+            BuiltConditionPredicate.NEQ,
+            new JsonTerm(key, value));
       case GT:
         return BuiltCondition.of(
-            ConditionLHS.mapAccess(columnName, key), BuiltConditionPredicate.GT, new JsonTerm(key, value));
+            ConditionLHS.mapAccess(columnName, key),
+            BuiltConditionPredicate.GT,
+            new JsonTerm(key, value));
       case GTE:
         return BuiltCondition.of(
-            ConditionLHS.mapAccess(columnName, key), BuiltConditionPredicate.GTE, new JsonTerm(key, value));
+            ConditionLHS.mapAccess(columnName, key),
+            BuiltConditionPredicate.GTE,
+            new JsonTerm(key, value));
       case LT:
         return BuiltCondition.of(
-            ConditionLHS.mapAccess(columnName, key), BuiltConditionPredicate.LT, new JsonTerm(key, value));
+            ConditionLHS.mapAccess(columnName, key),
+            BuiltConditionPredicate.LT,
+            new JsonTerm(key, value));
       case LTE:
         return BuiltCondition.of(
-            ConditionLHS.mapAccess(columnName, key), BuiltConditionPredicate.LTE, new JsonTerm(key, value));
+            ConditionLHS.mapAccess(columnName, key),
+            BuiltConditionPredicate.LTE,
+            new JsonTerm(key, value));
       default:
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_OPERATION,

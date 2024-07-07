@@ -59,7 +59,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase filter =
-                    new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
+                    new IDCollectionFilter(
+                        IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -175,7 +176,8 @@ public class FindCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                DBFilterBase filter = new IDCollectionFilter(IDCollectionFilter.Operator.IN, List.of());
+                DBFilterBase filter =
+                    new IDCollectionFilter(IDCollectionFilter.Operator.IN, List.of());
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -212,7 +214,8 @@ public class FindCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                DBFilterBase filter = new SizeCollectionFilter("tags", MapCollectionFilter.Operator.MAP_EQUALS, 0);
+                DBFilterBase filter =
+                    new SizeCollectionFilter("tags", MapCollectionFilter.Operator.MAP_EQUALS, 0);
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
@@ -250,7 +253,8 @@ public class FindCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                DBFilterBase filter = new SizeCollectionFilter("tags", MapCollectionFilter.Operator.MAP_EQUALS, 0);
+                DBFilterBase filter =
+                    new SizeCollectionFilter("tags", MapCollectionFilter.Operator.MAP_EQUALS, 0);
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
@@ -291,7 +295,8 @@ public class FindCommandResolverTest {
                     new IDCollectionFilter(
                         IDCollectionFilter.Operator.IN,
                         List.of(DocumentId.fromString("id1"), DocumentId.fromString("id2")));
-                DBFilterBase filter2 = new TextCollectionFilter("field1", TextCollectionFilter.Operator.EQ, "value1");
+                DBFilterBase filter2 =
+                    new TextCollectionFilter("field1", TextCollectionFilter.Operator.EQ, "value1");
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -545,7 +550,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase filter =
-                    new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
+                    new IDCollectionFilter(
+                        IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
                 float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -655,7 +661,8 @@ public class FindCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                DBFilterBase filter = new TextCollectionFilter("col", MapCollectionFilter.Operator.EQ, "val");
+                DBFilterBase filter =
+                    new TextCollectionFilter("col", MapCollectionFilter.Operator.EQ, "val");
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -696,8 +703,10 @@ public class FindCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                DBFilterBase filter1 = new TextCollectionFilter("name", TextCollectionFilter.Operator.EQ, "testName");
-                DBFilterBase filter2 = new TextCollectionFilter("age", TextCollectionFilter.Operator.EQ, "testAge");
+                DBFilterBase filter1 =
+                    new TextCollectionFilter("name", TextCollectionFilter.Operator.EQ, "testName");
+                DBFilterBase filter2 =
+                    new TextCollectionFilter("age", TextCollectionFilter.Operator.EQ, "testAge");
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
@@ -756,8 +765,10 @@ public class FindCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                DBFilterBase filter1 = new TextCollectionFilter("name", TextCollectionFilter.Operator.EQ, "testName");
-                DBFilterBase filter2 = new TextCollectionFilter("age", TextCollectionFilter.Operator.EQ, "testAge");
+                DBFilterBase filter1 =
+                    new TextCollectionFilter("name", TextCollectionFilter.Operator.EQ, "testName");
+                DBFilterBase filter2 =
+                    new TextCollectionFilter("age", TextCollectionFilter.Operator.EQ, "testAge");
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
@@ -866,12 +877,16 @@ public class FindCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                DBFilterBase filter1 = new TextCollectionFilter("name", TextCollectionFilter.Operator.EQ, "testName");
-                DBFilterBase filter2 = new TextCollectionFilter("age", TextCollectionFilter.Operator.EQ, "testAge");
+                DBFilterBase filter1 =
+                    new TextCollectionFilter("name", TextCollectionFilter.Operator.EQ, "testName");
+                DBFilterBase filter2 =
+                    new TextCollectionFilter("age", TextCollectionFilter.Operator.EQ, "testAge");
                 DBFilterBase filter3 =
-                    new TextCollectionFilter("address", TextCollectionFilter.Operator.EQ, "testAddress");
+                    new TextCollectionFilter(
+                        "address", TextCollectionFilter.Operator.EQ, "testAddress");
                 DBFilterBase filter4 =
-                    new TextCollectionFilter("height", TextCollectionFilter.Operator.EQ, "testHeight");
+                    new TextCollectionFilter(
+                        "height", TextCollectionFilter.Operator.EQ, "testHeight");
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
@@ -1012,7 +1027,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase filter =
-                    new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
+                    new IDCollectionFilter(
+                        IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -1101,7 +1117,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase filter =
-                    new InCollectionFilter(InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new InCollectionFilter(
+                        InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
@@ -1141,9 +1158,11 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase inFilter =
-                    new InCollectionFilter(InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new InCollectionFilter(
+                        InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
                 DBFilterBase idFilter =
-                    new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("id1"));
+                    new IDCollectionFilter(
+                        IDCollectionFilter.Operator.EQ, DocumentId.fromString("id1"));
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
@@ -1184,7 +1203,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase inFilter =
-                    new InCollectionFilter(InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new InCollectionFilter(
+                        InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
                 DBFilterBase idFilter =
                     new IDCollectionFilter(
                         IDCollectionFilter.Operator.IN,
@@ -1231,7 +1251,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase inFilter =
-                    new InCollectionFilter(InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new InCollectionFilter(
+                        InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
                 float[] vector = new float[] {0.15f, 0.1f, 0.1f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -1273,7 +1294,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase inFilter =
-                    new InCollectionFilter(InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new InCollectionFilter(
+                        InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
                 DBFilterBase idFilter =
                     new IDCollectionFilter(
                         IDCollectionFilter.Operator.IN,
@@ -1324,7 +1346,8 @@ public class FindCommandResolverTest {
               find -> {
                 FindOperation.OrderBy orderBy = new FindOperation.OrderBy("name", false);
                 DBFilterBase inFilter =
-                    new InCollectionFilter(InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new InCollectionFilter(
+                        InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
                 assertThat(find.projection()).isEqualTo(DocumentProjector.defaultProjector());
@@ -1369,7 +1392,8 @@ public class FindCommandResolverTest {
               find -> {
                 FindOperation.OrderBy orderBy = new FindOperation.OrderBy("name", true);
                 DBFilterBase inFilter =
-                    new InCollectionFilter(InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
+                    new InCollectionFilter(
+                        InCollectionFilter.Operator.IN, "name", List.of("test1", "test2"));
                 DBFilterBase idFilter =
                     new IDCollectionFilter(
                         IDCollectionFilter.Operator.IN,
@@ -1419,7 +1443,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase filter =
-                    new NumberCollectionFilter("amount", MapCollectionFilter.Operator.GT, new BigDecimal(100));
+                    new NumberCollectionFilter(
+                        "amount", MapCollectionFilter.Operator.GT, new BigDecimal(100));
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -1457,7 +1482,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase filter =
-                    new NumberCollectionFilter("amount", MapCollectionFilter.Operator.GTE, new BigDecimal(100));
+                    new NumberCollectionFilter(
+                        "amount", MapCollectionFilter.Operator.GTE, new BigDecimal(100));
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -1495,7 +1521,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase filter =
-                    new NumberCollectionFilter("amount", MapCollectionFilter.Operator.LT, new BigDecimal(100));
+                    new NumberCollectionFilter(
+                        "amount", MapCollectionFilter.Operator.LT, new BigDecimal(100));
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -1533,7 +1560,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase filter =
-                    new DateCollectionFilter("dob", MapCollectionFilter.Operator.LTE, new Date(1672531200000L));
+                    new DateCollectionFilter(
+                        "dob", MapCollectionFilter.Operator.LTE, new Date(1672531200000L));
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -1571,7 +1599,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase filter =
-                    new NumberCollectionFilter("_id", MapCollectionFilter.Operator.LTE, new BigDecimal(5));
+                    new NumberCollectionFilter(
+                        "_id", MapCollectionFilter.Operator.LTE, new BigDecimal(5));
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -1609,7 +1638,8 @@ public class FindCommandResolverTest {
               FindOperation.class,
               find -> {
                 DBFilterBase filter =
-                    new DateCollectionFilter("_id", MapCollectionFilter.Operator.LTE, new Date(1672531200000L));
+                    new DateCollectionFilter(
+                        "_id", MapCollectionFilter.Operator.LTE, new Date(1672531200000L));
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);

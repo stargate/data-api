@@ -7,5 +7,4 @@ public abstract class TableFilter extends DBFilterBase {
   protected TableFilter(String path) {
     super(path);
   }
-
 }

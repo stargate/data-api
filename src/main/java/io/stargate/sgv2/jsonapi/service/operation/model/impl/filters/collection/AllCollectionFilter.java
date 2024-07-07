@@ -5,8 +5,8 @@ import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.ConditionLHS;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltConditionPredicate;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.ConditionLHS;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.JsonTerm;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import java.util.ArrayList;

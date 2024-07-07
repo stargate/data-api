@@ -110,7 +110,9 @@ public class CountOperationTest extends OperationTestBase {
       implicitAnd
           .comparisonExpressions
           .get(0)
-          .setDBFilters(List.of(new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1")));
+          .setDBFilters(
+              List.of(
+                  new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1")));
       CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, -1);
       Supplier<CommandResult> execute =
           countOperation
@@ -157,7 +159,10 @@ public class CountOperationTest extends OperationTestBase {
       implicitAnd
           .comparisonExpressions
           .get(0)
-          .setDBFilters(List.of(new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user_all")));
+          .setDBFilters(
+              List.of(
+                  new TextCollectionFilter(
+                      "username", MapCollectionFilter.Operator.EQ, "user_all")));
 
       CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, -1);
       Supplier<CommandResult> execute =
@@ -287,7 +292,9 @@ public class CountOperationTest extends OperationTestBase {
       implicitAnd
           .comparisonExpressions
           .get(0)
-          .setDBFilters(List.of(new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user2")));
+          .setDBFilters(
+              List.of(
+                  new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user2")));
       CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, 10);
       Supplier<CommandResult> execute =
           countOperation
@@ -333,7 +340,10 @@ public class CountOperationTest extends OperationTestBase {
       implicitAnd
           .comparisonExpressions
           .get(0)
-          .setDBFilters(List.of(new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user_all")));
+          .setDBFilters(
+              List.of(
+                  new TextCollectionFilter(
+                      "username", MapCollectionFilter.Operator.EQ, "user_all")));
 
       CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, 10);
       Supplier<CommandResult> execute =

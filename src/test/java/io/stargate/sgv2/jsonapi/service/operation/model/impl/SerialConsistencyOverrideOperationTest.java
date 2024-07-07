@@ -127,7 +127,9 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
       List<DBFilterBase> filters1 =
-          List.of(new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
+          List.of(
+              new IDCollectionFilter(
+                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
       implicitAnd.comparisonExpressions.get(0).setDBFilters(filters1);
 
       FindOperation findOperation =
@@ -320,7 +322,8 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(updateResults);
               });
 
-      IDCollectionFilter filter = new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1"));
+      IDCollectionFilter filter =
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1"));
 
       LogicalExpression implicitAnd = LogicalExpression.and();
       implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));

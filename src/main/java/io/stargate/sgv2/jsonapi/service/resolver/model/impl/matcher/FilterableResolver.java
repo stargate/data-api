@@ -165,12 +165,14 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
       if (captureExpression.marker() == ID_GROUP) {
         filters.add(
-            new IDCollectionFilter(IDCollectionFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
+            new IDCollectionFilter(
+                IDCollectionFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
       }
       if (captureExpression.marker() == ID_GROUP_IN) {
         filters.add(
             new IDCollectionFilter(
-                IDCollectionFilter.Operator.IN, (List<DocumentId>) filterOperation.operand().value()));
+                IDCollectionFilter.Operator.IN,
+                (List<DocumentId>) filterOperation.operand().value()));
       }
     }
     return filters;
@@ -187,11 +189,15 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         switch ((ValueComparisonOperator) filterOperation.operator()) {
           case EQ:
             filters.add(
-                new IDCollectionFilter(IDCollectionFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
+                new IDCollectionFilter(
+                    IDCollectionFilter.Operator.EQ,
+                    (DocumentId) filterOperation.operand().value()));
             break;
           case NE:
             filters.add(
-                new IDCollectionFilter(IDCollectionFilter.Operator.NE, (DocumentId) filterOperation.operand().value()));
+                new IDCollectionFilter(
+                    IDCollectionFilter.Operator.NE,
+                    (DocumentId) filterOperation.operand().value()));
             break;
           default:
             throw new JsonApiException(
@@ -205,7 +211,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
           case IN:
             filters.add(
                 new IDCollectionFilter(
-                    IDCollectionFilter.Operator.IN, (List<DocumentId>) filterOperation.operand().value()));
+                    IDCollectionFilter.Operator.IN,
+                    (List<DocumentId>) filterOperation.operand().value()));
             break;
           case NIN:
             filters.add(
@@ -305,7 +312,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
         if (filterOperation.operand().value() instanceof Boolean) {
           // This is the special case, e.g. {"$not":{"ages":{"$size":0}}}
           filters.add(
-              new SizeCollectionFilter(captureExpression.path(), MapCollectionFilter.Operator.MAP_NOT_EQUALS, 0));
+              new SizeCollectionFilter(
+                  captureExpression.path(), MapCollectionFilter.Operator.MAP_NOT_EQUALS, 0));
         } else {
           BigDecimal bigDecimal = (BigDecimal) filterOperation.operand().value();
           // Flipping size operator will multiply the value by -1
@@ -347,7 +355,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     return filters;
   }
 
-  private static MapCollectionFilter.Operator getMapFilterBaseOperator(FilterOperator filterOperator) {
+  private static MapCollectionFilter.Operator getMapFilterBaseOperator(
+      FilterOperator filterOperator) {
     switch ((ValueComparisonOperator) filterOperator) {
       case EQ:
         return MapCollectionFilter.Operator.EQ;
@@ -368,7 +377,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     }
   }
 
-  private static InCollectionFilter.Operator getInFilterBaseOperator(FilterOperator filterOperator) {
+  private static InCollectionFilter.Operator getInFilterBaseOperator(
+      FilterOperator filterOperator) {
     switch ((ValueComparisonOperator) filterOperator) {
       case IN:
         return InCollectionFilter.Operator.IN;
@@ -381,7 +391,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     }
   }
 
-  private static SetCollectionFilter.Operator getSetFilterBaseOperator(FilterOperator filterOperator) {
+  private static SetCollectionFilter.Operator getSetFilterBaseOperator(
+      FilterOperator filterOperator) {
     switch ((ValueComparisonOperator) filterOperator) {
       case EQ:
         return SetCollectionFilter.Operator.CONTAINS;

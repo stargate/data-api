@@ -2,9 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl.builder;
 
 import java.util.List;
 
-/**
- * See @link{BuiltCondition} this is the operand of the condition
- */
+/** See @link{BuiltCondition} this is the operand of the condition */
 public abstract class BuildConditionTerm {
 
   /**

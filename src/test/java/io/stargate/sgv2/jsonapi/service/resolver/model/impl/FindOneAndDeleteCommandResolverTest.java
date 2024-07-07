@@ -64,7 +64,8 @@ public class FindOneAndDeleteCommandResolverTest {
                         FindOperation.class,
                         find -> {
                           IDCollectionFilter filter =
-                              new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
+                              new IDCollectionFilter(
+                                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -110,7 +111,8 @@ public class FindOneAndDeleteCommandResolverTest {
                         FindOperation.class,
                         find -> {
                           TextCollectionFilter filter =
-                              new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
+                              new TextCollectionFilter(
+                                  "status", MapCollectionFilter.Operator.EQ, "active");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -159,7 +161,8 @@ public class FindOneAndDeleteCommandResolverTest {
                         FindOperation.class,
                         find -> {
                           TextCollectionFilter filter =
-                              new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
+                              new TextCollectionFilter(
+                                  "status", MapCollectionFilter.Operator.EQ, "active");
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -210,7 +213,8 @@ public class FindOneAndDeleteCommandResolverTest {
                         FindOperation.class,
                         find -> {
                           IDCollectionFilter filter =
-                              new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
+                              new IDCollectionFilter(
+                                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
 
                           assertThat(find.objectMapper()).isEqualTo(objectMapper);
                           assertThat(find.commandContext()).isEqualTo(commandContext);

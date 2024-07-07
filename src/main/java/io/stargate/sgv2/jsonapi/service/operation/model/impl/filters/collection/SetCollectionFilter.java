@@ -3,8 +3,8 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.ConditionLHS;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltConditionPredicate;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.ConditionLHS;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.JsonTerm;
 import java.util.Objects;
 
@@ -49,7 +49,9 @@ public abstract class SetCollectionFilter<T> extends CollectionFilter {
             ConditionLHS.column(columnName), BuiltConditionPredicate.CONTAINS, new JsonTerm(value));
       case NOT_CONTAINS:
         return BuiltCondition.of(
-            ConditionLHS.column(columnName), BuiltConditionPredicate.NOT_CONTAINS, new JsonTerm(value));
+            ConditionLHS.column(columnName),
+            BuiltConditionPredicate.NOT_CONTAINS,
+            new JsonTerm(value));
       default:
         throw new JsonApiException(
             ErrorCode.UNSUPPORTED_FILTER_OPERATION,

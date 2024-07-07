@@ -54,7 +54,8 @@ public class ExpressionBuilder {
     }
 
     // have an idFilter
-    IDCollectionFilter idFilter = additionalIdFilter != null ? additionalIdFilter : idFilters.get(0);
+    IDCollectionFilter idFilter =
+        additionalIdFilter != null ? additionalIdFilter : idFilters.get(0);
 
     // _id: {$in: []} should find nothing in the entire query
     // since _id can not work with $or, entire $and should find nothing
@@ -160,7 +161,8 @@ public class ExpressionBuilder {
       conditionExpressions.clear();
       conditionExpressions.add(
           Variable.of(
-              new IsNullCollectionFilter("something user never use", SetCollectionFilter.Operator.NOT_CONTAINS)
+              new IsNullCollectionFilter(
+                      "something user never use", SetCollectionFilter.Operator.NOT_CONTAINS)
                   .get()));
       return ExpressionUtils.buildExpression(
           conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
@@ -175,7 +177,9 @@ public class ExpressionBuilder {
       conditionExpressions.clear();
       conditionExpressions.add(
           Variable.of(
-              new IsNullCollectionFilter("something user never use", SetCollectionFilter.Operator.CONTAINS).get()));
+              new IsNullCollectionFilter(
+                      "something user never use", SetCollectionFilter.Operator.CONTAINS)
+                  .get()));
       return ExpressionUtils.buildExpression(
           conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
     }

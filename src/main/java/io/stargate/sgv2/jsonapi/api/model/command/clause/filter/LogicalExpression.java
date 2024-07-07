@@ -31,7 +31,8 @@ public class LogicalExpression {
   public List<ComparisonExpression> comparisonExpressions;
 
   private LogicalOperator logicalRelation;
-  // TODO - there MUST be explaination of why this count is needed, why not just use the size of the list ?
+  // TODO - there MUST be explaination of why this count is needed, why not just use the size of the
+  // list ?
   // Also, the list is public so anyone can change it and break this count.
   private int totalComparisonExpressionCount;
   private int totalIdComparisonExpressionCount;
@@ -170,7 +171,8 @@ public class LogicalExpression {
   }
 
   private void flip() {
-    // TODO: Strongly recommend this class to be immutable, changing the nature of the state like this is dangerous
+    // TODO: Strongly recommend this class to be immutable, changing the nature of the state like
+    // this is dangerous
     if (logicalRelation == LogicalOperator.AND) {
       logicalRelation = LogicalOperator.OR;
     } else if (logicalRelation == LogicalOperator.OR) {
