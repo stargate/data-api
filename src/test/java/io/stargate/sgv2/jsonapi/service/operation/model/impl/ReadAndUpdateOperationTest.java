@@ -29,11 +29,11 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.*;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.IDCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.MapCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
@@ -217,7 +217,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               COMMAND_VECTOR_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -326,7 +326,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               commandContext,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -623,7 +623,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               null,
               1,
               100,
-              ReadType.SORTED_DOCUMENT,
+              CollectionReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
@@ -830,7 +830,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -939,7 +939,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1115,7 +1115,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               100,
-              ReadType.SORTED_DOCUMENT,
+              CollectionReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
@@ -1281,7 +1281,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               100,
-              ReadType.SORTED_DOCUMENT,
+              CollectionReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
@@ -1361,7 +1361,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1459,7 +1459,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1608,7 +1608,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               null,
               21,
               20,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1708,7 +1708,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               null,
               21,
               20,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
       DocumentUpdater documentUpdater =
@@ -1785,7 +1785,7 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
               null,
               21,
               20,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
       DocumentUpdater documentUpdater =

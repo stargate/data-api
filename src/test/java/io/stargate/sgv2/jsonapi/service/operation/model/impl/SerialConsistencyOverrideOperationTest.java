@@ -28,14 +28,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.*;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
-// import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
@@ -136,7 +135,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
@@ -334,7 +333,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
       DocumentUpdater documentUpdater =

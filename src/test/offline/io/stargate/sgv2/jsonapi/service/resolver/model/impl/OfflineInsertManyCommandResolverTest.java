@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineInsertManyCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import java.util.List;
 import java.util.UUID;

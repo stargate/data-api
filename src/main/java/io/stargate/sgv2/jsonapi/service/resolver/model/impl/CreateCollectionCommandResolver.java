@@ -16,7 +16,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

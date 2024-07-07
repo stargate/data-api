@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import io.stargate.sgv2.jsonapi.api.model.command.impl.EndOfflineSessionCommand;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.EndOfflineSessionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.EndOfflineSessionOperation;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 

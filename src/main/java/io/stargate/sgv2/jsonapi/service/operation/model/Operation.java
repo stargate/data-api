@@ -16,13 +16,6 @@ import java.util.function.Supplier;
  * <p>Operations are built with all the data they need to execute, and only know about standard Java
  * types and our shredded document. That is they do not interact with JSON. As well as data they
  * also have all the behavior they need to implement the operation.
- *
- * <p>We execute the operation with consideration for it's costs, e.g. we may want to run pushdown
- * operations in a different pool to non-pushdown. An approach for this is illustrated in the {@link
- * OperationPlan}.
- *
- * <p>Decisions about where and how to execute an operation are made in the {@link
- * OperationExecutor}
  */
 public interface Operation {
   Uni<Supplier<CommandResult>> execute(

@@ -10,13 +10,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.IndexUsage;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.DBFilterBase;
 
 /**
  * Resolver looks at a valid {@link Command} and determines the best {@link Operation} to implement
@@ -116,23 +112,35 @@ public interface CommandResolver<C extends Command> {
   static final String TENANT_TAG = "tenant";
 
   /** Added count metrics for index column usage */
+
+  /**
+   * Call to track metrics for the index usage, this method is called after the command is resolved
+   * and we know the filters we want to run.
+   *
+   * @param meterRegistry
+   * @param dataApiRequestInfo
+   * @param jsonApiMetricsConfig
+   * @param command
+   * @param logicalExpression
+   * @param baseIndexUsage Callers should pass an initial {@link IndexUsage} object that will be
+   *     merged with those from the {@link DBFilterBase} used in the {@link LogicalExpression}. This
+   *     means the caller can set some things the filter may not have, like using ANN in a sort. Use
+   *     {@link SchemaObject#newIndexUsage()} to get the correct type of IndexUsage.
+   */
   default void addToMetrics(
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       Command command,
       LogicalExpression logicalExpression,
-      boolean annSort) {
+      IndexUsage baseIndexUsage) {
 
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
-    String tenant = dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE);
-    Tag tenantTag = Tag.of("tenant", tenant);
+    Tag tenantTag = Tag.of(TENANT_TAG, dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     Tags tags = Tags.of(commandTag, tenantTag);
 
-    IndexUsage indexUsage = new IndexUsage();
-    if (annSort) indexUsage.vectorIndexTag = true;
-    getIndexUsageTags(logicalExpression, indexUsage);
-    tags = tags.and(indexUsage.getTags());
+    getIndexUsageTags(logicalExpression, baseIndexUsage);
+    tags = tags.and(baseIndexUsage.getTags());
 
     meterRegistry.counter(jsonApiMetricsConfig.indexUsageCounterMetrics(), tags).increment();
   }

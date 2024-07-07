@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.EndOfflineSessionCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.EndOfflineSessionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.EndOfflineSessionOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 

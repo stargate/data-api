@@ -27,11 +27,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.*;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.IDCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.MapCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -134,7 +134,7 @@ public class DeleteOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
 
@@ -219,7 +219,7 @@ public class DeleteOperationTest extends OperationTestBase {
               commandContext,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -399,7 +399,7 @@ public class DeleteOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               2,
-              ReadType.SORTED_DOCUMENT,
+              CollectionReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
@@ -521,7 +521,7 @@ public class DeleteOperationTest extends OperationTestBase {
               implicitAnd,
               DocumentProjector.defaultProjector(),
               2,
-              ReadType.SORTED_DOCUMENT,
+              CollectionReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
@@ -582,7 +582,7 @@ public class DeleteOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
 
@@ -661,7 +661,7 @@ public class DeleteOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
@@ -781,7 +781,7 @@ public class DeleteOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
@@ -902,7 +902,7 @@ public class DeleteOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
@@ -1004,7 +1004,7 @@ public class DeleteOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 2);
@@ -1105,7 +1105,7 @@ public class DeleteOperationTest extends OperationTestBase {
               null,
               3,
               2,
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
@@ -1160,7 +1160,7 @@ public class DeleteOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
 
@@ -1301,7 +1301,7 @@ public class DeleteOperationTest extends OperationTestBase {
               null,
               3,
               3,
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
 
@@ -1495,7 +1495,7 @@ public class DeleteOperationTest extends OperationTestBase {
               null,
               3,
               3,
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
 
@@ -1635,7 +1635,7 @@ public class DeleteOperationTest extends OperationTestBase {
               null,
               3,
               1,
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 2, 3);
@@ -1787,7 +1787,7 @@ public class DeleteOperationTest extends OperationTestBase {
               null,
               3,
               1,
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
 

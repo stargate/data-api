@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindCollectionsOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindCollectionsOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

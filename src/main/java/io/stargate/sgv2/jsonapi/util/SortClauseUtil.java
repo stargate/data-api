@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.util;
 
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindOperation;
 import java.util.List;
 import java.util.stream.Collectors;
 

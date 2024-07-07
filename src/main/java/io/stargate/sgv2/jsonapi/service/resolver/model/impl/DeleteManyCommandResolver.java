@@ -10,10 +10,10 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.TruncateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.DeleteOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.TruncateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
@@ -74,7 +74,12 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
     LogicalExpression logicalExpression = resolve(ctx, command);
     // Read One extra document than delete limit so return moreData flag
     addToMetrics(
-        meterRegistry, dataApiRequestInfo, jsonApiMetricsConfig, command, logicalExpression, false);
+        meterRegistry,
+        dataApiRequestInfo,
+        jsonApiMetricsConfig,
+        command,
+        logicalExpression,
+        ctx.schemaObject().newIndexUsage());
     return FindOperation.unsorted(
         ctx,
         logicalExpression,
@@ -82,7 +87,7 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
         null,
         operationsConfig.maxDocumentDeleteCount() + 1,
         operationsConfig.defaultPageSize(),
-        ReadType.KEY,
+        CollectionReadType.KEY,
         objectMapper,
         false);
   }

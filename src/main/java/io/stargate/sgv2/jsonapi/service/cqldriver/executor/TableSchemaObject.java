@@ -19,4 +19,9 @@ public class TableSchemaObject extends SchemaObject {
   public VectorConfig vectorConfig() {
     return VectorConfig.notEnabledVectorConfig();
   }
+
+  @Override
+  public IndexUsage newIndexUsage() {
+    return IndexUsage.NO_OP;
+  }
 }
