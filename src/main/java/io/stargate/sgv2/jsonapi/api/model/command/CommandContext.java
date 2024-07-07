@@ -21,8 +21,34 @@ public record CommandContext(
     String commandName,
     JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
 
+  private static final CommandContext EMPTY =
+      new CommandContext(null, null, CollectionSettings.empty(), null, "testCommand", null);
+
+  /**
+   * @return Returns empty command context, having both {@link #namespace} and {@link #collection}
+   *     as <code>null</code>.
+   */
+  public static CommandContext empty() {
+    return EMPTY;
+  }
+
+  // TODO: why do we have these public ctors, and a static factor, and this is a record ??
   public CommandContext(String namespace, String collection) {
     this(namespace, collection, CollectionSettings.empty(), null, null, null);
+  }
+
+  public CommandContext(
+      String namespace,
+      String collection,
+      String commandName,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+    this(
+        namespace,
+        collection,
+        CollectionSettings.empty(),
+        null,
+        commandName,
+        jsonProcessingMetricsReporter);
   }
 
   /**
@@ -46,31 +72,7 @@ public record CommandContext(
         namespace, collection, collectionSettings, embeddingProvider, commandName, null);
   }
 
-  public CommandContext(
-      String namespace,
-      String collection,
-      String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
-    this(
-        namespace,
-        collection,
-        CollectionSettings.empty(),
-        null,
-        commandName,
-        jsonProcessingMetricsReporter);
-  }
-
-  private static final CommandContext EMPTY =
-      new CommandContext(null, null, CollectionSettings.empty(), null, "testCommand", null);
-
-  /**
-   * @return Returns empty command context, having both {@link #namespace} and {@link #collection}
-   *     as <code>null</code>.
-   */
-  public static CommandContext empty() {
-    return EMPTY;
-  }
-
+  // TODO: these helpder functions break encapsulation for very little benefit
   public CollectionSettings.SimilarityFunction similarityFunction() {
     return collectionSettings.vectorConfig().similarityFunction();
   }
