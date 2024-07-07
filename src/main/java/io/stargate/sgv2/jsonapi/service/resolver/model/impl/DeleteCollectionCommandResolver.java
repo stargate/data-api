@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -16,7 +17,8 @@ public class DeleteCollectionCommandResolver implements CommandResolver<DeleteCo
   }
 
   @Override
-  public Operation resolveCommand(CommandContext ctx, DeleteCollectionCommand command) {
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, DeleteCollectionCommand command) {
     return new DeleteCollectionOperation(ctx, command.name());
   }
 }

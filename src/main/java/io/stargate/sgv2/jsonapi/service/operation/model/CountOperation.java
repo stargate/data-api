@@ -57,7 +57,9 @@ public record CountOperation(
               .select()
               .count()
               .as("count")
-              .from(commandContext.namespace(), commandContext.collection())
+              .from(
+                  commandContext.schemaObject().name.keyspace(),
+                  commandContext.schemaObject().name.table())
               .where(expressions.get(0))
               .build();
     } else {
@@ -65,7 +67,9 @@ public record CountOperation(
           new QueryBuilder()
               .select()
               .column("key")
-              .from(commandContext.namespace(), commandContext.collection())
+              .from(
+                  commandContext.schemaObject().name.keyspace(),
+                  commandContext.schemaObject().name.table())
               .where(expressions.get(0))
               .limit(limit + 1)
               .build();

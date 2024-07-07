@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
@@ -56,8 +56,7 @@ public class FilterMatchRulesTest {
           .capture("TEST1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
-      LogicalExpression response =
-          filterMatchRules.apply(new CommandContext("namespace", "collection"), findOneCommand);
+      LogicalExpression response = filterMatchRules.apply(TestConstants.CONTEXT, findOneCommand);
       assertThat(response).isNotNull();
 
       json =
@@ -70,8 +69,7 @@ public class FilterMatchRulesTest {
           """;
 
       findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
-      response =
-          filterMatchRules.apply(new CommandContext("namespace", "collection"), findOneCommand);
+      response = filterMatchRules.apply(TestConstants.CONTEXT, findOneCommand);
       assertThat(response).isNotNull();
     }
 

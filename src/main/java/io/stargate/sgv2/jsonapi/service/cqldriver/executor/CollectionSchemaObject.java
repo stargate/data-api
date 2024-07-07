@@ -26,13 +26,18 @@ import java.util.function.Supplier;
 /**
  * Refactored as seperate class that represent a collection property.*
  *
- * TODO: there are a LOT of different ways this is constructed, need to refactor
+ * <p>TODO: there are a LOT of different ways this is constructed, need to refactor
  */
 public final class CollectionSchemaObject extends SchemaObject {
 
-  public static final CollectionSchemaObject EMPTY =
+  public static final SchemaObjectType TYPE = SchemaObjectType.COLLECTION;
+
+  public static final CollectionSchemaObject MISSING =
       new CollectionSchemaObject(
-          "", "", IdConfig.defaultIdConfig(), VectorConfig.notEnabledVectorConfig(), null);
+          SchemaObjectName.MISSING,
+          IdConfig.defaultIdConfig(),
+          VectorConfig.notEnabledVectorConfig(),
+          null);
 
   private final IdConfig idConfig;
   private final VectorConfig vectorConfig;
@@ -56,15 +61,19 @@ public final class CollectionSchemaObject extends SchemaObject {
       IdConfig idConfig,
       VectorConfig vectorConfig,
       IndexingConfig indexingConfig) {
-    super(name);
+    super(TYPE, name);
     this.idConfig = idConfig;
     this.vectorConfig = vectorConfig;
     this.indexingConfig = indexingConfig;
   }
 
-
   public CollectionSchemaObject withIdType(IdType idType) {
     return new CollectionSchemaObject(name, new IdConfig(idType), vectorConfig, indexingConfig);
+  }
+
+  @Override
+  public VectorConfig vectorConfig() {
+    return vectorConfig;
   }
 
   public record IdConfig(IdType idType) {
@@ -120,66 +129,6 @@ public final class CollectionSchemaObject extends SchemaObject {
   }
 
   /**
-   * incorporates vectorizeConfig into vectorConfig
-   *
-   * @param vectorEnabled
-   * @param vectorSize
-   * @param similarityFunction
-   * @param vectorizeConfig
-   */
-  public record VectorConfig(
-      boolean vectorEnabled,
-      int vectorSize,
-      SimilarityFunction similarityFunction,
-      VectorizeConfig vectorizeConfig) {
-
-    public static VectorConfig notEnabledVectorConfig() {
-      return new VectorConfig(false, -1, null, null);
-    }
-
-    // convert a vector jsonNode from table comment to vectorConfig
-    public static VectorConfig fromJson(JsonNode jsonNode, ObjectMapper objectMapper) {
-      // dimension, similarityFunction, must exist
-      int dimension = jsonNode.get("dimension").asInt();
-      SimilarityFunction similarityFunction =
-          SimilarityFunction.fromString(jsonNode.get("metric").asText());
-
-      VectorizeConfig vectorizeConfig = null;
-      // construct vectorizeConfig
-      JsonNode vectorizeServiceNode = jsonNode.get("service");
-      if (vectorizeServiceNode != null) {
-        // provider, modelName, must exist
-        String provider = vectorizeServiceNode.get("provider").asText();
-        String modelName = vectorizeServiceNode.get("modelName").asText();
-        // construct VectorizeConfig.authentication, can be null
-        JsonNode vectorizeServiceAuthenticationNode = vectorizeServiceNode.get("authentication");
-        Map<String, String> vectorizeServiceAuthentication =
-            vectorizeServiceAuthenticationNode == null
-                ? null
-                : objectMapper.convertValue(vectorizeServiceAuthenticationNode, Map.class);
-        // construct VectorizeConfig.parameters, can be null
-        JsonNode vectorizeServiceParameterNode = vectorizeServiceNode.get("parameters");
-        Map<String, Object> vectorizeServiceParameter =
-            vectorizeServiceParameterNode == null
-                ? null
-                : objectMapper.convertValue(vectorizeServiceParameterNode, Map.class);
-        vectorizeConfig =
-            new VectorizeConfig(
-                provider, modelName, vectorizeServiceAuthentication, vectorizeServiceParameter);
-      }
-
-      return new VectorConfig(true, dimension, similarityFunction, vectorizeConfig);
-    }
-
-    public record VectorizeConfig(
-        String provider,
-        String modelName,
-        Map<String, String> authentication,
-        Map<String, Object> parameters) {
-    }
-  }
-
-  /**
    * The similarity function used for the vector index. This is only applicable if the vector index
    * is enabled.
    */
@@ -195,16 +144,15 @@ public final class CollectionSchemaObject extends SchemaObject {
         case "cosine" -> COSINE;
         case "euclidean" -> EUCLIDEAN;
         case "dot_product" -> DOT_PRODUCT;
-        default -> throw new JsonApiException(
-            ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
-            ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
+        default ->
+            throw new JsonApiException(
+                ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
+                ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
       };
     }
   }
 
-  /**
-   * Collection Id Type enum, UNDEFINED represents unwrapped id
-   */
+  /** Collection Id Type enum, UNDEFINED represents unwrapped id */
   public enum IdType {
     OBJECT_ID,
     UUID,
@@ -247,8 +195,9 @@ public final class CollectionSchemaObject extends SchemaObject {
         case "none" -> NONE;
         case "header" -> HEADER;
         case "shared_secret" -> SHARED_SECRET;
-        default -> throw ErrorCode.VECTORIZE_INVALID_AUTHENTICATION_TYPE.toApiException(
-            "'%s'", authenticationType);
+        default ->
+            throw ErrorCode.VECTORIZE_INVALID_AUTHENTICATION_TYPE.toApiException(
+                "'%s'", authenticationType);
       };
     }
   }
@@ -279,8 +228,7 @@ public final class CollectionSchemaObject extends SchemaObject {
       if (vectorIndex != null) {
         final String functionName =
             vectorIndex.getOptions().get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME);
-        if (functionName != null)
-          function = SimilarityFunction.fromString(functionName);
+        if (functionName != null) function = SimilarityFunction.fromString(functionName);
       }
       final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       return createCollectionSettings(
@@ -308,7 +256,13 @@ public final class CollectionSchemaObject extends SchemaObject {
       String comment,
       ObjectMapper objectMapper) {
     return createCollectionSettings(
-        keyspaceName, collectionName, vectorEnabled, vectorSize, similarityFunction, comment, objectMapper);
+        keyspaceName,
+        collectionName,
+        vectorEnabled,
+        vectorSize,
+        similarityFunction,
+        comment,
+        objectMapper);
   }
 
   private static CollectionSchemaObject createCollectionSettings(
@@ -363,34 +317,42 @@ public final class CollectionSchemaObject extends SchemaObject {
         // sample comment : {"indexing":{"deny":["address"]}}}
         return new CollectionSettingsV0Reader()
             .readCollectionSettings(
-                commentConfigNode, keyspaceName, collectionName, vectorEnabled, vectorSize, function);
+                commentConfigNode,
+                keyspaceName,
+                collectionName,
+                vectorEnabled,
+                vectorSize,
+                function);
       }
     }
   }
 
   public static CreateCollectionCommand collectionSettingToCreateCollectionCommand(
       CollectionSchemaObject collectionSetting) {
+
+    // TODO: move the vector and vectorize parts to be methods on those schema objects
     CreateCollectionCommand.Options options = null;
     CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig = null;
     CreateCollectionCommand.Options.IndexingConfig indexingConfig = null;
     // populate the vectorSearchConfig
-    if (collectionSetting.vectorConfig.vectorEnabled) {
+    if (collectionSetting.vectorConfig().vectorEnabled()) {
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig vectorizeConfig = null;
-      if (collectionSetting.vectorConfig.vectorizeConfig != null) {
+      if (collectionSetting.vectorConfig().vectorizeConfig() != null) {
         Map<String, String> authentication =
-            collectionSetting.vectorConfig.vectorizeConfig.authentication;
-        Map<String, Object> parameters = collectionSetting.vectorConfig.vectorizeConfig.parameters;
+            collectionSetting.vectorConfig().vectorizeConfig().authentication();
+        Map<String, Object> parameters =
+            collectionSetting.vectorConfig().vectorizeConfig().parameters();
         vectorizeConfig =
             new CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig(
-                collectionSetting.vectorConfig.vectorizeConfig.provider,
-                collectionSetting.vectorConfig.vectorizeConfig.modelName,
+                collectionSetting.vectorConfig().vectorizeConfig().provider(),
+                collectionSetting.vectorConfig().vectorizeConfig().modelName(),
                 authentication == null ? null : Map.copyOf(authentication),
                 parameters == null ? null : Map.copyOf(parameters));
       }
       vectorSearchConfig =
           new CreateCollectionCommand.Options.VectorSearchConfig(
-              collectionSetting.vectorConfig.vectorSize,
-              collectionSetting.vectorConfig.similarityFunction.name().toLowerCase(),
+              collectionSetting.vectorConfig().vectorSize(),
+              collectionSetting.vectorConfig().similarityFunction().name().toLowerCase(),
               vectorizeConfig);
     }
     // populate the indexingConfig
@@ -411,44 +373,58 @@ public final class CollectionSchemaObject extends SchemaObject {
 
     // CreateCollectionCommand object is created for convenience to generate json
     // response. The code is not creating a collection here.
-    return new CreateCollectionCommand(collectionSetting.name.name(), options);
+    return new CreateCollectionCommand(collectionSetting.name.table(), options);
   }
 
   public IdConfig idConfig() {
     return idConfig;
   }
 
-  public VectorConfig vectorConfig() {
-    return vectorConfig;
-  }
-
   public IndexingConfig indexingConfig() {
     return indexingConfig;
   }
 
+  // TODO: these helper functions break encapsulation for very little benefit
+  public CollectionSchemaObject.SimilarityFunction similarityFunction() {
+    return vectorConfig().similarityFunction();
+  }
+
+  public boolean isVectorEnabled() {
+    return vectorConfig() != null && vectorConfig().vectorEnabled();
+  }
+
+  // TODO: the overrides below were auto added when migrating from a record to a class, not sure
+  // they are needed or wanted
   @Override
   public boolean equals(Object obj) {
     if (obj == this) return true;
     if (obj == null || obj.getClass() != this.getClass()) return false;
     var that = (CollectionSchemaObject) obj;
-    return Objects.equals(this.name, that.name) &&
-        Objects.equals(this.idConfig, that.idConfig) &&
-        Objects.equals(this.vectorConfig, that.vectorConfig) &&
-        Objects.equals(this.indexingConfig, that.indexingConfig);
+    return Objects.equals(this.name, that.name)
+        && Objects.equals(this.idConfig, that.idConfig)
+        && Objects.equals(this.vectorConfig, that.vectorConfig)
+        && Objects.equals(this.indexingConfig, that.indexingConfig);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name , idConfig, vectorConfig, indexingConfig);
+    return Objects.hash(name, idConfig, vectorConfig, indexingConfig);
   }
 
   @Override
   public String toString() {
-    return "CollectionSettings[" +
-        "name=" + name + ", " +
-        "idConfig=" + idConfig + ", " +
-        "vectorConfig=" + vectorConfig + ", " +
-        "indexingConfig=" + indexingConfig + ']';
+    return "CollectionSettings["
+        + "name="
+        + name
+        + ", "
+        + "idConfig="
+        + idConfig
+        + ", "
+        + "vectorConfig="
+        + vectorConfig
+        + ", "
+        + "indexingConfig="
+        + indexingConfig
+        + ']';
   }
-
 }

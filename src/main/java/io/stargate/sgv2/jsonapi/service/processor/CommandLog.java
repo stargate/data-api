@@ -12,7 +12,8 @@ public record CommandLog(
     String commandName,
     String tenant,
     String namespaceName,
-    String collectionName,
+    String collectionName, // leave as collectionName for logging analysis
+    String schemaType,
     String documentsReceived,
     String documentsReturned,
     List<CommandResult.Error> errorList) {}

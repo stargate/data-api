@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
@@ -26,7 +27,7 @@ public class CollectionSchemaObjectTest {
             "namespace",
             "collectionName",
             CollectionSchemaObject.IdConfig.defaultIdConfig(),
-            CollectionSchemaObject.VectorConfig.notEnabledVectorConfig(),
+            VectorConfig.notEnabledVectorConfig(),
             indexingConfig);
     IndexingProjector indexingProj = settings.indexingProjector();
     assertThat(indexingProj)

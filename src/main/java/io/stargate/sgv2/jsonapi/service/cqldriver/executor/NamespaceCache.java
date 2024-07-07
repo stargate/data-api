@@ -85,7 +85,7 @@ public class NamespaceCache {
                                 namespace,
                                 collectionName,
                                 CollectionSchemaObject.IdConfig.defaultIdConfig(),
-                                CollectionSchemaObject.VectorConfig.notEnabledVectorConfig(),
+                                VectorConfig.notEnabledVectorConfig(),
                                 null));
                   }
                   return Uni.createFrom().failure(error);

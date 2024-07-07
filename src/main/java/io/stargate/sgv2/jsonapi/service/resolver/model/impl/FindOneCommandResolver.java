@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
@@ -51,12 +52,13 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
   }
 
   @Override
-  public Operation resolveCommand(CommandContext commandContext, FindOneCommand command) {
-    LogicalExpression logicalExpression = resolve(commandContext, command);
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, FindOneCommand command) {
+    LogicalExpression logicalExpression = resolve(ctx, command);
     final SortClause sortClause = command.sortClause();
     // validate sort path
     if (sortClause != null) {
-      sortClause.validate(commandContext);
+      sortClause.validate(ctx);
     }
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
@@ -77,7 +79,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
         vector != null);
     if (vector != null) {
       return FindOperation.vsearchSingle(
-          commandContext,
+          ctx,
           logicalExpression,
           command.buildProjector(includeSimilarity),
           ReadType.DOCUMENT,
@@ -90,7 +92,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
     // If orderBy present
     if (orderBy != null) {
       return FindOperation.sortedSingle(
-          commandContext,
+          ctx,
           logicalExpression,
           command.buildProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
@@ -105,7 +107,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
           includeSortVector);
     } else {
       return FindOperation.unsortedSingle(
-          commandContext,
+          ctx,
           logicalExpression,
           command.buildProjector(),
           ReadType.DOCUMENT,

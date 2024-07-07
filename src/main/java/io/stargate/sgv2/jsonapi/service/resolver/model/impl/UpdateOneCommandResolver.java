@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
@@ -58,8 +59,9 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
   }
 
   @Override
-  public Operation resolveCommand(CommandContext commandContext, UpdateOneCommand command) {
-    FindOperation findOperation = getFindOperation(commandContext, command);
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, UpdateOneCommand command) {
+    FindOperation findOperation = getFindOperation(ctx, command);
 
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
 
@@ -69,7 +71,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
 
     // return op
     return new ReadAndUpdateOperation(
-        commandContext,
+        ctx,
         findOperation,
         documentUpdater,
         false,
@@ -81,13 +83,14 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
         operationsConfig.lwt().retries());
   }
 
-  private FindOperation getFindOperation(CommandContext commandContext, UpdateOneCommand command) {
-    LogicalExpression logicalExpression = resolve(commandContext, command);
+  private FindOperation getFindOperation(
+      CommandContext<CollectionSchemaObject> ctx, UpdateOneCommand command) {
+    LogicalExpression logicalExpression = resolve(ctx, command);
 
     final SortClause sortClause = command.sortClause();
     // validate sort path
     if (sortClause != null) {
-      sortClause.validate(commandContext);
+      sortClause.validate(ctx);
     }
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
@@ -100,7 +103,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
         vector != null);
     if (vector != null) {
       return FindOperation.vsearchSingle(
-          commandContext,
+          ctx,
           logicalExpression,
           DocumentProjector.includeAllProjector(),
           ReadType.DOCUMENT,
@@ -113,7 +116,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
     // If orderBy present
     if (orderBy != null) {
       return FindOperation.sortedSingle(
-          commandContext,
+          ctx,
           logicalExpression,
           DocumentProjector.includeAllProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
@@ -128,7 +131,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
           false);
     } else {
       return FindOperation.unsortedSingle(
-          commandContext,
+          ctx,
           logicalExpression,
           DocumentProjector.includeAllProjector(),
           ReadType.DOCUMENT,

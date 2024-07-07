@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,7 +31,7 @@ public class DataVectorizer {
   private final EmbeddingProvider embeddingProvider;
   private final JsonNodeFactory nodeFactory;
   private final Optional<String> embeddingApiKey;
-  private final CollectionSchemaObject collectionSettings;
+  private final SchemaObject schemaObject;
 
   /**
    * Constructor
@@ -40,17 +40,17 @@ public class DataVectorizer {
    *     table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
    * @param embeddingApiKey - Optional override embedding api key came in request header
-   * @param collectionSettings - The collection setting for vectorize call
+   * @param schemaObject - The collection setting for vectorize call
    */
   public DataVectorizer(
       EmbeddingProvider embeddingProvider,
       JsonNodeFactory nodeFactory,
       Optional<String> embeddingApiKey,
-      CollectionSchemaObject collectionSettings) {
+      SchemaObject schemaObject) {
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
     this.embeddingApiKey = embeddingApiKey;
-    this.collectionSettings = collectionSettings;
+    this.schemaObject = schemaObject;
   }
 
   /**
@@ -104,7 +104,7 @@ public class DataVectorizer {
       if (!vectorizeTexts.isEmpty()) {
         if (embeddingProvider == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              collectionSettings.collectionName());
+              schemaObject.name.table());
         }
         Uni<List<float[]>> vectors =
             embeddingProvider
@@ -122,7 +122,7 @@ public class DataVectorizer {
                   if (vectorData.size() != vectorizeTexts.size()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                         "Embedding provider '%s' didn't return the expected number of embeddings. Expect: '%d'. Actual: '%d'",
-                        collectionSettings.vectorConfig().vectorizeConfig().provider(),
+                        schemaObject.vectorConfig().vectorizeConfig().provider(),
                         vectorizeTexts.size(),
                         vectorData.size());
                   }
@@ -133,11 +133,11 @@ public class DataVectorizer {
                     JsonNode document = documents.get(position);
                     float[] vector = vectorData.get(vectorPosition);
                     // check if all vectors have the expected size
-                    if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
+                    if (vector.length != schemaObject.vectorConfig().vectorSize()) {
                       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                           "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                          collectionSettings.vectorConfig().vectorizeConfig().provider(),
-                          collectionSettings.vectorConfig().vectorSize(),
+                          schemaObject.vectorConfig().vectorizeConfig().provider(),
+                          schemaObject.vectorConfig().vectorSize(),
                           vector.length);
                     }
                     final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
@@ -171,7 +171,7 @@ public class DataVectorizer {
         String text = expression.vectorize();
         if (embeddingProvider == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              collectionSettings.collectionName());
+              schemaObject.name.table());
         }
         Uni<List<float[]>> vectors =
             embeddingProvider
@@ -187,11 +187,11 @@ public class DataVectorizer {
                 vectorData -> {
                   float[] vector = vectorData.get(0);
                   // check if vector have the expected size
-                  if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
+                  if (vector.length != schemaObject.vectorConfig().vectorSize()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                         "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                        collectionSettings.vectorConfig().vectorizeConfig().provider(),
-                        collectionSettings.vectorConfig().vectorSize(),
+                        schemaObject.vectorConfig().vectorizeConfig().provider(),
+                        schemaObject.vectorConfig().vectorSize(),
                         vector.length);
                   }
                   sortExpressions.clear();
@@ -254,7 +254,7 @@ public class DataVectorizer {
         final String text = jsonNode.asText();
         if (embeddingProvider == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              collectionSettings.collectionName());
+              schemaObject.name.table());
         }
         if (text.isBlank()) {
           node.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
@@ -273,11 +273,11 @@ public class DataVectorizer {
                   vectorData -> {
                     float[] vector = vectorData.get(0);
                     // check if vector have the expected size
-                    if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
+                    if (vector.length != schemaObject.vectorConfig().vectorSize()) {
                       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                           "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                          collectionSettings.vectorConfig().vectorizeConfig().provider(),
-                          collectionSettings.vectorConfig().vectorSize(),
+                          schemaObject.vectorConfig().vectorizeConfig().provider(),
+                          schemaObject.vectorConfig().vectorSize(),
                           vector.length);
                     }
                     final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);

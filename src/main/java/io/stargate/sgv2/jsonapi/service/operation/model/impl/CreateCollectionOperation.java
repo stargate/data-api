@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public record CreateCollectionOperation(
-    CommandContext commandContext,
+    CommandContext<CollectionSchemaObject> commandContext,
     DatabaseLimitsConfig dbLimitsConfig,
     ObjectMapper objectMapper,
     CQLSessionCache cqlSessionCache,
@@ -51,7 +51,7 @@ public record CreateCollectionOperation(
   private static final JsonapiTableMatcher COLLECTION_MATCHER = new JsonapiTableMatcher();
 
   public static CreateCollectionOperation withVectorSearch(
-      CommandContext commandContext,
+      CommandContext<CollectionSchemaObject> commandContext,
       DatabaseLimitsConfig dbLimitsConfig,
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
@@ -78,7 +78,7 @@ public record CreateCollectionOperation(
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
-      CommandContext commandContext,
+      CommandContext<CollectionSchemaObject> commandContext,
       DatabaseLimitsConfig dbLimitsConfig,
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
@@ -107,21 +107,21 @@ public record CreateCollectionOperation(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     logger.info(
         "Executing CreateCollectionOperation for {}.{} with property {}",
-        commandContext.namespace(),
+        commandContext.schemaObject().name.keyspace(),
         name,
         comment);
     // validate Data API collection limit guardrail and get tableMetadata
     Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces =
         cqlSessionCache.getSession(dataApiRequestInfo).getMetadata().getKeyspaces();
     KeyspaceMetadata currKeyspace =
-        allKeyspaces.get(CqlIdentifier.fromInternal(commandContext.namespace()));
+        allKeyspaces.get(CqlIdentifier.fromInternal(commandContext.schemaObject().name.keyspace()));
     if (currKeyspace == null) {
       return Uni.createFrom()
           .failure(
               new JsonApiException(
                   ErrorCode.NAMESPACE_DOES_NOT_EXIST,
                   "INVALID_ARGUMENT: Unknown namespace '%s', you must create it first."
-                      .formatted(commandContext.namespace())));
+                      .formatted(commandContext.schemaObject().name.keyspace())));
     }
     TableMetadata table = findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
 
@@ -167,7 +167,8 @@ public record CreateCollectionOperation(
       boolean collectionExisted) {
     final Uni<AsyncResultSet> execute =
         queryExecutor.executeCreateSchemaChange(
-            dataApiRequestInfo, getCreateTable(commandContext.namespace(), name));
+            dataApiRequestInfo,
+            getCreateTable(commandContext.schemaObject().name.keyspace(), name));
     final Uni<Boolean> indexResult =
         execute
             .onItem()
@@ -178,7 +179,8 @@ public record CreateCollectionOperation(
                 res -> {
                   if (res.wasApplied()) {
                     final List<SimpleStatement> indexStatements =
-                        getIndexStatements(commandContext.namespace(), name, collectionExisted);
+                        getIndexStatements(
+                            commandContext.schemaObject().name.keyspace(), name, collectionExisted);
                     Multi<AsyncResultSet> indexResultMulti;
                     /*
                     CI will override ddlDelayMillis to 0 using `-Dstargate.jsonapi.operations.database-config.ddl-delay-millis=0`

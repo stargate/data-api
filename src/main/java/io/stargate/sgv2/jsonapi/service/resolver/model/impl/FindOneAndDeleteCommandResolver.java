@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
@@ -57,12 +58,13 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
   }
 
   @Override
-  public Operation resolveCommand(CommandContext commandContext, FindOneAndDeleteCommand command) {
-    FindOperation findOperation = getFindOperation(commandContext, command);
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, FindOneAndDeleteCommand command) {
+    FindOperation findOperation = getFindOperation(ctx, command);
     final DocumentProjector documentProjector = command.buildProjector();
     // return
     return DeleteOperation.deleteOneAndReturn(
-        commandContext, findOperation, operationsConfig.lwt().retries(), documentProjector);
+        ctx, findOperation, operationsConfig.lwt().retries(), documentProjector);
   }
 
   private FindOperation getFindOperation(

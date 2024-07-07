@@ -73,18 +73,25 @@ public class Shredder {
   }
 
   public WritableShreddedDocument shred(JsonNode doc, UUID txId) {
+    // TODO - why does this have "testCommand" for a command name ? Should it be a constant ?
     return shred(
         doc,
         txId,
         IndexingProjector.identityProjector(),
         "testCommand",
-        CollectionSchemaObject.EMPTY,
+        CollectionSchemaObject.MISSING,
         null);
   }
 
-  public WritableShreddedDocument shred(CommandContext ctx, JsonNode doc, UUID txId) {
+  public WritableShreddedDocument shred(
+      CommandContext<CollectionSchemaObject> ctx, JsonNode doc, UUID txId) {
     return shred(
-        doc, txId, ctx.indexingProjector(), ctx.commandName(), ctx.schemaObject(), null);
+        doc,
+        txId,
+        ctx.schemaObject().indexingProjector(),
+        ctx.commandName(),
+        ctx.schemaObject(),
+        null);
   }
 
   /**
@@ -97,11 +104,14 @@ public class Shredder {
    * @return Shredded document
    */
   public WritableShreddedDocument shred(
-      CommandContext ctx, JsonNode doc, UUID txId, AtomicReference<DocumentId> docIdToReturn) {
+      CommandContext<CollectionSchemaObject> ctx,
+      JsonNode doc,
+      UUID txId,
+      AtomicReference<DocumentId> docIdToReturn) {
     return shred(
         doc,
         txId,
-        ctx.indexingProjector(),
+        ctx.schemaObject().indexingProjector(),
         ctx.commandName(),
         ctx.schemaObject(),
         docIdToReturn);
@@ -185,7 +195,8 @@ public class Shredder {
    * @param doc Document to use as the base
    * @return Document that has _id as its first property
    */
-  private ObjectNode normalizeDocumentId(CollectionSchemaObject collectionSettings, ObjectNode doc) {
+  private ObjectNode normalizeDocumentId(
+      CollectionSchemaObject collectionSettings, ObjectNode doc) {
     // First: see if we have Object Id present or not
     JsonNode idNode = doc.get(DocumentConstants.Fields.DOC_ID);
 

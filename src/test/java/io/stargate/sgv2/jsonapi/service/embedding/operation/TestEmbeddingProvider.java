@@ -1,27 +1,26 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
-
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class TestEmbeddingProvider extends EmbeddingProvider {
 
-  public static CommandContext commandContextWithVectorize =
-      new CommandContext(
+  public static CommandContext<CollectionSchemaObject> commandContextWithVectorize =
+      new CommandContext<>(
           new CollectionSchemaObject(
-              "namespace",
-              "collections",
+              TestConstants.SCHEMA_OBJECT_NAME,
               CollectionSchemaObject.IdConfig.defaultIdConfig(),
-              new CollectionSchemaObject.VectorConfig(
+              new VectorConfig(
                   true,
                   3,
                   CollectionSchemaObject.SimilarityFunction.COSINE,
-                  new CollectionSchemaObject.VectorConfig.VectorizeConfig(
-                      "custom", "custom", null, null)),
+                  new VectorConfig.VectorizeConfig("custom", "custom", null, null)),
               null),
           new TestEmbeddingProvider(),
           "testCommand",

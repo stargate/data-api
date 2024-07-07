@@ -205,7 +205,7 @@ public class ShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSchemaObject.EMPTY.withIdType(CollectionSchemaObject.IdType.UNDEFINED),
+              CollectionSchemaObject.MISSING.withIdType(CollectionSchemaObject.IdType.UNDEFINED),
               null);
 
       DocumentId docId = doc.id();
@@ -245,7 +245,7 @@ public class ShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSchemaObject.EMPTY.withIdType(CollectionSchemaObject.IdType.OBJECT_ID),
+              CollectionSchemaObject.MISSING.withIdType(CollectionSchemaObject.IdType.OBJECT_ID),
               null);
 
       DocumentId docId = doc.id();
@@ -301,7 +301,7 @@ public class ShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSchemaObject.EMPTY.withIdType(idType),
+              CollectionSchemaObject.MISSING.withIdType(idType),
               null);
 
       DocumentId docId = doc.id();

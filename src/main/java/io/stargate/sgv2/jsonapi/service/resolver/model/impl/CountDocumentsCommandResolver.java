@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -43,10 +44,12 @@ public class CountDocumentsCommandResolver extends FilterableResolver<CountDocum
   }
 
   @Override
-  public Operation resolveCommand(CommandContext ctx, CountDocumentsCommand command) {
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, CountDocumentsCommand command) {
     LogicalExpression logicalExpression = resolve(ctx, command);
     addToMetrics(
         meterRegistry, dataApiRequestInfo, jsonApiMetricsConfig, command, logicalExpression, false);
+
     return new CountOperation(
         ctx,
         logicalExpression,

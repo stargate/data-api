@@ -8,11 +8,13 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
@@ -49,7 +51,13 @@ public class MeteredCommandProcessorTest {
 
       CountDocumentsCommand countCommand =
           objectMapper.readValue(json, CountDocumentsCommand.class);
-      CommandContext commandContext = new CommandContext("namespace", "collection");
+      CommandContext<CollectionSchemaObject> commandContext =
+          new CommandContext<>(
+              new CollectionSchemaObject("namespace", "collection", null, null, null),
+              null,
+              "testCommand",
+              null);
+
       CommandResult commandResult = new CommandResult(Collections.emptyList());
       Mockito.when(
               commandProcessor.processCommand(dataApiRequestInfo, commandContext, countCommand))
@@ -99,7 +107,7 @@ public class MeteredCommandProcessorTest {
         """;
 
       FindCommand countCommand = objectMapper.readValue(json, FindCommand.class);
-      CommandContext commandContext = new CommandContext("namespace", "collection");
+      CommandContext<CollectionSchemaObject> commandContext = TestConstants.CONTEXT;
       Map<String, Object> fields = new HashMap<>();
       fields.put("exceptionClass", "TestExceptionClass");
       CommandResult.Error error =
@@ -156,7 +164,7 @@ public class MeteredCommandProcessorTest {
 
       CountDocumentsCommand countCommand =
           objectMapper.readValue(json, CountDocumentsCommand.class);
-      CommandContext commandContext = new CommandContext("namespace", "collection");
+      CommandContext<CollectionSchemaObject> commandContext = TestConstants.CONTEXT;
       Map<String, Object> fields = new HashMap<>();
       fields.put("exceptionClass", "TestExceptionClass");
       fields.put("errorCode", "TestErrorCode");

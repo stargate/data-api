@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -89,7 +90,11 @@ public class NamespaceResource {
           String namespace) {
 
     // create context
-    CommandContext commandContext = new CommandContext(namespace, null);
+    // TODO: Aaron , left here to see what CTOR was used, there was a lot of different onces.
+    //    CommandContext commandContext = new CommandContext(namespace, null);
+    // HACK TODO: The above did not set a command name on the command context, how did that work ?
+    CommandContext<KeyspaceSchemaObject> commandContext =
+        new CommandContext<>(new KeyspaceSchemaObject(namespace), null, "", null);
 
     //     call processor
     return meteredCommandProcessor

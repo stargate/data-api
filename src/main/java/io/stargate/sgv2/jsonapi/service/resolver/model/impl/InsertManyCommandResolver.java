@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -32,7 +33,8 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
   }
 
   @Override
-  public Operation resolveCommand(CommandContext ctx, InsertManyCommand command) {
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, InsertManyCommand command) {
     final InsertManyCommand.Options options = command.options();
     final boolean ordered = (null != options) && options.ordered();
     final boolean returnDocumentResponses = (null != options) && options.returnDocumentResponses();

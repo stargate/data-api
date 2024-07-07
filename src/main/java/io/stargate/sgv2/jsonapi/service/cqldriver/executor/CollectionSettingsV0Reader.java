@@ -21,8 +21,7 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
       boolean vectorEnabled,
       int vectorSize,
       CollectionSchemaObject.SimilarityFunction function) {
-    CollectionSchemaObject.VectorConfig vectorConfig =
-        new CollectionSchemaObject.VectorConfig(vectorEnabled, vectorSize, function, null);
+    VectorConfig vectorConfig = new VectorConfig(vectorEnabled, vectorSize, function, null);
     CollectionSchemaObject.IndexingConfig indexingConfig = null;
     JsonNode indexing = commentConfigNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
     if (!indexing.isMissingNode()) {
@@ -43,7 +42,8 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
   @Override
   public CollectionSchemaObject readCollectionSettings(
       JsonNode jsonNode, String keyspaceName, String collectionName, ObjectMapper objectMapper) {
-    // TODO: this is really confusing, why does this implement the interface and not implement the one method ?
+    // TODO: this is really confusing, why does this implement the interface and not implement the
+    // one method ?
     return null;
   }
 }

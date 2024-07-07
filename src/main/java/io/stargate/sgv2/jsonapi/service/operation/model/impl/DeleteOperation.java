@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
@@ -27,7 +28,7 @@ import java.util.function.Supplier;
  * deleted as LWT based on the id and tx_id.
  */
 public record DeleteOperation(
-    CommandContext commandContext,
+    CommandContext<CollectionSchemaObject> commandContext,
     FindOperation findOperation,
     /**
      * Added parameter to pass number of document to be deleted, this is needed because read
@@ -41,7 +42,7 @@ public record DeleteOperation(
     implements ModifyOperation {
 
   public static DeleteOperation deleteOneAndReturn(
-      CommandContext commandContext,
+      CommandContext<CollectionSchemaObject> commandContext,
       FindOperation findOperation,
       int retryLimit,
       DocumentProjector resultProjection) {
@@ -50,7 +51,10 @@ public record DeleteOperation(
   }
 
   public static DeleteOperation delete(
-      CommandContext commandContext, FindOperation findOperation, int deleteLimit, int retryLimit) {
+      CommandContext<CollectionSchemaObject> commandContext,
+      FindOperation findOperation,
+      int deleteLimit,
+      int retryLimit) {
     return new DeleteOperation(commandContext, findOperation, deleteLimit, retryLimit, false, null);
   }
 
@@ -162,7 +166,10 @@ public record DeleteOperation(
 
   private String buildDeleteQuery() {
     String delete = "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?";
-    return String.format(delete, commandContext.namespace(), commandContext.collection());
+    return String.format(
+        delete,
+        commandContext.schemaObject().name.keyspace(),
+        commandContext.schemaObject().name.table());
   }
 
   /**

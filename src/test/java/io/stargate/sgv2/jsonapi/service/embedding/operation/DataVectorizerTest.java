@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -223,12 +224,11 @@ public class DataVectorizerTest {
               "namespace",
               "collections",
               CollectionSchemaObject.IdConfig.defaultIdConfig(),
-              new CollectionSchemaObject.VectorConfig(
+              new VectorConfig(
                   true,
                   4,
                   CollectionSchemaObject.SimilarityFunction.COSINE,
-                  new CollectionSchemaObject.VectorConfig.VectorizeConfig(
-                      "custom", "custom", null, null)),
+                  new VectorConfig.VectorizeConfig("custom", "custom", null, null)),
               null);
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {

@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -47,9 +48,9 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class InsertOperationTest extends OperationTestBase {
-  private CommandContext COMMAND_CONTEXT_NON_VECTOR;
+  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_NON_VECTOR;
 
-  private CommandContext COMMAND_CONTEXT_VECTOR;
+  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT_VECTOR;
 
   private final ColumnDefinitions COLUMNS_APPLIED =
       buildColumnDefs(TestColumn.ofBoolean("[applied]"));
@@ -74,17 +75,14 @@ public class InsertOperationTest extends OperationTestBase {
 
   @PostConstruct
   public void init() {
-    COMMAND_CONTEXT_NON_VECTOR =
-        new CommandContext(
-            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+    COMMAND_CONTEXT_NON_VECTOR = createCommandContextWithCommandName("testCommand");
+
     COMMAND_CONTEXT_VECTOR =
-        new CommandContext(
+        new CommandContext<>(
             new CollectionSchemaObject(
-                KEYSPACE_NAME,
-                COLLECTION_NAME,
+                SCHEMA_OBJECT_NAME,
                 CollectionSchemaObject.IdConfig.defaultIdConfig(),
-                new CollectionSchemaObject.VectorConfig(
-                    true, -1, CollectionSchemaObject.SimilarityFunction.COSINE, null),
+                new VectorConfig(true, -1, CollectionSchemaObject.SimilarityFunction.COSINE, null),
                 null),
             null,
             "testCommand",

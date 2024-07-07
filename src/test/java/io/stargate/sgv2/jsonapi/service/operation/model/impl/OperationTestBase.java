@@ -19,6 +19,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import jakarta.inject.Inject;
@@ -31,15 +34,29 @@ public class OperationTestBase {
   @Inject JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
   protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  protected final CommandContext CONTEXT = new CommandContext(KEYSPACE_NAME, COLLECTION_NAME);
+  protected final SchemaObjectName SCHEMA_OBJECT_NAME =
+      new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
+  protected final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT =
+      new CollectionSchemaObject(
+          SCHEMA_OBJECT_NAME,
+          CollectionSchemaObject.IdConfig.defaultIdConfig(),
+          VectorConfig.notEnabledVectorConfig(),
+          null);
+  protected final String COMMAND_NAME = "testCommand";
+
+  protected final CommandContext<CollectionSchemaObject> CONTEXT =
+      new CommandContext<>(
+          COLLECTION_SCHEMA_OBJECT, null, COMMAND_NAME, jsonProcessingMetricsReporter);
+
   @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 
   protected static final TupleType DOC_KEY_TYPE =
       DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT);
 
-  protected CommandContext createCommandContextWithCommandName(String commandName) {
-    return new CommandContext(
-        KEYSPACE_NAME, COLLECTION_NAME, commandName, jsonProcessingMetricsReporter);
+  protected CommandContext<CollectionSchemaObject> createCommandContextWithCommandName(
+      String commandName) {
+    return new CommandContext<>(
+        COLLECTION_SCHEMA_OBJECT, null, commandName, jsonProcessingMetricsReporter);
   }
 
   protected ColumnDefinitions buildColumnDefs(TestColumn... columns) {

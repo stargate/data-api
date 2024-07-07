@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
@@ -58,8 +59,9 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
   }
 
   @Override
-  public Operation resolveCommand(CommandContext commandContext, FindOneAndUpdateCommand command) {
-    FindOperation findOperation = getFindOperation(commandContext, command);
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, FindOneAndUpdateCommand command) {
+    FindOperation findOperation = getFindOperation(ctx, command);
 
     final DocumentProjector documentProjector = command.buildProjector();
 
@@ -73,7 +75,7 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
 
     // return
     return new ReadAndUpdateOperation(
-        commandContext,
+        ctx,
         findOperation,
         documentUpdater,
         true,

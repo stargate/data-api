@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.MeteredEmbeddingProvider;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -49,8 +50,8 @@ public class DataVectorizerService {
    * @param command
    * @return
    */
-  public Uni<Command> vectorize(
-      DataApiRequestInfo dataApiRequestInfo, CommandContext commandContext, Command command) {
+  public <T extends SchemaObject> Uni<Command> vectorize(
+      DataApiRequestInfo dataApiRequestInfo, CommandContext<T> commandContext, Command command) {
     EmbeddingProvider embeddingProvider =
         Optional.ofNullable(commandContext.embeddingProvider())
             .map(
@@ -77,24 +78,24 @@ public class DataVectorizerService {
         .transform(flag -> command);
   }
 
-  private Uni<Boolean> vectorizeSortClause(
-      DataVectorizer dataVectorizer, CommandContext commandContext, Command command) {
+  private <T extends SchemaObject> Uni<Boolean> vectorizeSortClause(
+      DataVectorizer dataVectorizer, CommandContext<T> commandContext, Command command) {
     if (command instanceof Sortable sortable) {
       return dataVectorizer.vectorize(sortable.sortClause());
     }
     return Uni.createFrom().item(true);
   }
 
-  private Uni<Boolean> vectorizeUpdateClause(
-      DataVectorizer dataVectorizer, CommandContext commandContext, Command command) {
+  private <T extends SchemaObject> Uni<Boolean> vectorizeUpdateClause(
+      DataVectorizer dataVectorizer, CommandContext<T> commandContext, Command command) {
     if (command instanceof Updatable updatable) {
       return dataVectorizer.vectorizeUpdateClause(updatable.updateClause());
     }
     return Uni.createFrom().item(true);
   }
 
-  private Uni<Boolean> vectorizeDocument(
-      DataVectorizer dataVectorizer, CommandContext commandContext, Command command) {
+  private <T extends SchemaObject> Uni<Boolean> vectorizeDocument(
+      DataVectorizer dataVectorizer, CommandContext<T> commandContext, Command command) {
     if (command instanceof InsertOneCommand insertOneCommand) {
       return dataVectorizer.vectorize(List.of(insertOneCommand.document()));
     } else if (command instanceof InsertManyCommand insertManyCommand) {

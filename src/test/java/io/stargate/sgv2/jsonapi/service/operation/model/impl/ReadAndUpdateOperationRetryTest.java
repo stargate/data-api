@@ -21,6 +21,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -53,7 +54,7 @@ import org.junit.jupiter.api.Test;
 public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
   private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
   private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private CommandContext COMMAND_CONTEXT;
+  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT;
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
@@ -66,9 +67,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
 
   @PostConstruct
   public void init() {
-    COMMAND_CONTEXT =
-        new CommandContext(
-            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+    COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
   }
 
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {

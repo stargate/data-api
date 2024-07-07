@@ -163,7 +163,8 @@ public class QueryBuilderTest {
               .select()
               .column("a", "b")
               .from("ks", "tbl")
-              .similarityFunction(VECTOR_COLUMN, CollectionSchemaObject.SimilarityFunction.EUCLIDEAN)
+              .similarityFunction(
+                  VECTOR_COLUMN, CollectionSchemaObject.SimilarityFunction.EUCLIDEAN)
               .vsearch(VECTOR_COLUMN, TEST_VECTOR)
               .where(expression)
               .limit(10)

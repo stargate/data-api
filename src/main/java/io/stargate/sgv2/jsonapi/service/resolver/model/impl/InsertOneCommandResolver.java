@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -27,12 +28,13 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   }
 
   @Override
-  public Operation resolveCommand(CommandContext ctx, InsertOneCommand command) {
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, InsertOneCommand command) {
     WritableShreddedDocument shreddedDocument =
         shredder.shred(
             command.document(),
             null,
-            ctx.indexingProjector(),
+            ctx.schemaObject().indexingProjector(),
             command.getClass().getSimpleName(),
             ctx.schemaObject(),
             null);

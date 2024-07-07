@@ -12,15 +12,17 @@ import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 public class CollectionSettingsV1Reader implements CollectionSettingsReader {
   @Override
   public CollectionSchemaObject readCollectionSettings(
-      JsonNode collectionNode, String keyspaceName,  String collectionName, ObjectMapper objectMapper) {
+      JsonNode collectionNode,
+      String keyspaceName,
+      String collectionName,
+      ObjectMapper objectMapper) {
 
     JsonNode collectionOptionsNode = collectionNode.get(TableCommentConstants.OPTIONS_KEY);
     // construct collectionSettings VectorConfig
-    CollectionSchemaObject.VectorConfig vectorConfig =
-        CollectionSchemaObject.VectorConfig.notEnabledVectorConfig();
+    VectorConfig vectorConfig = VectorConfig.notEnabledVectorConfig();
     JsonNode vector = collectionOptionsNode.path(TableCommentConstants.COLLECTION_VECTOR_KEY);
     if (!vector.isMissingNode()) {
-      vectorConfig = CollectionSchemaObject.VectorConfig.fromJson(vector, objectMapper);
+      vectorConfig = VectorConfig.fromJson(vector, objectMapper);
     }
     // construct collectionSettings IndexingConfig
     CollectionSchemaObject.IndexingConfig indexingConfig = null;
@@ -40,6 +42,7 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
       idConfig = CollectionSchemaObject.IdConfig.defaultIdConfig();
     }
 
-    return new CollectionSchemaObject(keyspaceName, collectionName, idConfig, vectorConfig, indexingConfig);
+    return new CollectionSchemaObject(
+        keyspaceName, collectionName, idConfig, vectorConfig, indexingConfig);
   }
 }

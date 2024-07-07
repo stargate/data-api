@@ -35,7 +35,7 @@ public record FindCollectionsOperation(
     ObjectMapper objectMapper,
     CQLSessionCache cqlSessionCache,
     JsonapiTableMatcher tableMatcher,
-    CommandContext commandContext)
+    CommandContext<CollectionSchemaObject> commandContext)
     implements Operation {
 
   // shared table matcher instance
@@ -45,7 +45,7 @@ public record FindCollectionsOperation(
       boolean explain,
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
-      CommandContext commandContext) {
+      CommandContext<CollectionSchemaObject> commandContext) {
     this(explain, objectMapper, cqlSessionCache, TABLE_MATCHER, commandContext);
   }
 
@@ -58,14 +58,14 @@ public record FindCollectionsOperation(
             .getSession(dataApiRequestInfo)
             .getMetadata()
             .getKeyspaces()
-            .get(CqlIdentifier.fromInternal(commandContext.namespace()));
+            .get(CqlIdentifier.fromInternal(commandContext.schemaObject().name.keyspace()));
     if (keyspaceMetadata == null) {
       return Uni.createFrom()
           .failure(
               new JsonApiException(
                   ErrorCode.NAMESPACE_DOES_NOT_EXIST,
                   "Unknown namespace %s, you must create it first."
-                      .formatted(commandContext.namespace())));
+                      .formatted(commandContext.schemaObject().name.keyspace())));
     }
     return Uni.createFrom()
         .item(
@@ -79,7 +79,9 @@ public record FindCollectionsOperation(
                       // filter for valid collections
                       .filter(tableMatcher)
                       // map to name
-                      .map(table -> CollectionSchemaObject.getCollectionSettings(table, objectMapper))
+                      .map(
+                          table ->
+                              CollectionSchemaObject.getCollectionSettings(table, objectMapper))
                       // get as list
                       .toList();
               // Wrap the properties list into a command result
@@ -102,7 +104,8 @@ public record FindCollectionsOperation(
             Map.of(CommandStatus.EXISTING_COLLECTIONS, createCollectionCommands);
         return new CommandResult(statuses);
       } else {
-        List<String> tables = collections.stream().map(CollectionSchemaObject::collectionName).toList();
+        List<String> tables =
+            collections.stream().map(schemaObject -> schemaObject.name.table()).toList();
         Map<CommandStatus, Object> statuses = Map.of(CommandStatus.EXISTING_COLLECTIONS, tables);
         return new CommandResult(statuses);
       }
