@@ -15,11 +15,10 @@
  */
 package io.stargate.sgv2.jsonapi.service.cql;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorCode.INVALID_LOGIC_OPERATOR;
-
 import com.bpodgursky.jbool_expressions.And;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Or;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import java.util.List;
 
 /**
@@ -61,7 +60,9 @@ public class ExpressionUtils<K> {
       case "$or" -> {
         return orOf(expressions);
       }
-      default -> throw INVALID_LOGIC_OPERATOR.toApiException();
+      default ->
+          throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+              "Invalid logical operator '%s'", logicOperator);
     }
   }
 
