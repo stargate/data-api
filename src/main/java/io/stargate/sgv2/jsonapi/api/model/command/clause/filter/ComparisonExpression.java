@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import jakarta.validation.Valid;
@@ -139,9 +138,8 @@ public class ComparisonExpression {
     if (value instanceof UUID || value instanceof ObjectId) {
       return new JsonLiteral<>(value.toString(), JsonType.STRING);
     }
-    throw new JsonApiException(
-        ErrorCode.FILTER_UNRESOLVABLE,
-        String.format("Unsupported filter value type %s", value.getClass()));
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "Unsupported filter value type `%s`", value.getClass().getName());
   }
 
   public List<FilterOperation<?>> match(
