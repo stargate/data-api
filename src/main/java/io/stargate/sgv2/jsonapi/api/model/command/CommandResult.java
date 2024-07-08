@@ -194,11 +194,9 @@ public record CommandResult(
    * @return
    */
   public RestResponse map() {
-    if (null != this.errors() && !this.errors().isEmpty()) {
+    if (null != this.errors()) {
       final Optional<Error> first =
-          this.errors().stream()
-              .filter(error -> error.status().getStatusCode() != Response.Status.OK.getStatusCode())
-              .findFirst();
+          this.errors().stream().filter(error -> error.status() != Response.Status.OK).findFirst();
       if (first.isPresent()) {
         return RestResponse.ResponseBuilder.create(first.get().status(), this).build();
       }

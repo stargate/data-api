@@ -75,11 +75,12 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("NO_COMMAND_MATCHED"))
+          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
-              startsWith("No \"unknownCommand\" command found as \"CollectionCommand\""));
+              startsWith(
+                  "Provided command unknown: \"unknownCommand\" not one of \"CollectionCommand\"s: known commands are [countDocuments,"));
     }
 
     @Test
