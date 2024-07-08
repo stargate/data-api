@@ -381,9 +381,9 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("status", is(nullValue()))
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].message", startsWith("Command accepts no options: InsertOneCommand"))
           .body("errors[0].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].message", startsWith("Command accepts no options: `InsertOneCommand`"));
     }
 
     @Test
@@ -1795,7 +1795,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     }
 
     @Test
-    public void orderedFailOnDupsReturnPositions() {
+    public void orderedFailOnDupsReturnDocResponses() {
       String json =
           """
                   {
@@ -1831,6 +1831,52 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
               "status.documentResponses[1]",
               is(Map.of("_id", "doc1", "status", "ERROR", "errorsIdx", 0)))
           .body("status.documentResponses[2]", is(Map.of("_id", "doc2", "status", "SKIPPED")));
+
+      verifyDocCount(1);
+    }
+
+    @Test
+    public void orderedFailOnBadKeyReturnDocResponses() {
+      // First and third are ok; middle one has failure. With ordered, should create first one,
+      // indicate error for second, and mark third one as skipped due to failure.
+      String json =
+          """
+                      {
+                        "insertMany": {
+                          "documents": [
+                            { "_id": "doc1", "username": "userA"  },
+                            { "_id": "doc2", "username's": "userB" },
+                            { "_id": "doc3", "username": "userC"
+                            }
+                          ],
+                          "options" : {  "ordered": true, "returnDocumentResponses": true }
+                        }
+                      }
+                      """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_DOC_KEY_NAME_VIOLATION"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Document field name invalid: field name ('username's') contains invalid character(s)"))
+          .body("insertedIds", is(nullValue()))
+          .body("status.documentResponses", hasSize(3))
+          .body("status.documentResponses[0]", is(Map.of("_id", "doc1", "status", "OK")))
+          .body(
+              "status.documentResponses[1]",
+              is(Map.of("_id", "doc2", "status", "ERROR", "errorsIdx", 0)))
+          .body("status.documentResponses[2]", is(Map.of("_id", "doc3", "status", "SKIPPED")));
 
       verifyDocCount(1);
     }
@@ -1884,6 +1930,53 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[3].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[3].exceptionClass", is("JsonApiException"))
           .body("errors[3].message", startsWith("Failed to insert document with _id"));
+
+      verifyDocCount(2);
+    }
+
+    @Test
+    public void unorderedFailOnBadKeyReturnDocResponses() {
+      // First and third are ok; middle one has failure. With unordered, should create 2,
+      // indicate error for one. Extended responses should be in order of input documents,
+      // regardless of execution order (which is not guaranteed).
+      String json =
+          """
+                          {
+                            "insertMany": {
+                              "documents": [
+                                { "_id": "doc1", "username": "userA"  },
+                                { "_id": "doc2", "username's": "userB" },
+                                { "_id": "doc3", "username": "userC"
+                                }
+                              ],
+                              "options" : {  "ordered": false, "returnDocumentResponses": true }
+                            }
+                          }
+                          """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_DOC_KEY_NAME_VIOLATION"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Document field name invalid: field name ('username's') contains invalid character(s)"))
+          .body("insertedIds", is(nullValue()))
+          .body("status.documentResponses", hasSize(3))
+          .body("status.documentResponses[0]", is(Map.of("_id", "doc1", "status", "OK")))
+          .body(
+              "status.documentResponses[1]",
+              is(Map.of("_id", "doc2", "status", "ERROR", "errorsIdx", 0)))
+          .body("status.documentResponses[2]", is(Map.of("_id", "doc3", "status", "OK")));
 
       verifyDocCount(2);
     }

@@ -209,7 +209,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results);
               });
 
-      InsertOperation operation = new InsertOperation(COMMAND_CONTEXT, shredDocument);
+      InsertOperation operation = InsertOperation.create(COMMAND_CONTEXT, shredDocument);
       Supplier<CommandResult> execute =
           operation
               .execute(dataApiRequestInfo, queryExecutor)

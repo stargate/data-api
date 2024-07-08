@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.*;
@@ -19,67 +20,67 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
   class CreateCollection {
     String createNonVectorCollectionJson =
         """
-            {
-              "createCollection": {
-                "name": "simple_collection"
-              }
-            }
-            """;
+                    {
+                      "createCollection": {
+                        "name": "simple_collection"
+                      }
+                    }
+                    """;
 
     String createVectorCollection =
         """
-            {
-              "createCollection": {
-                "name": "simple_collection",
-                "options" : {
-                  "vector" : {
-                  "size" : 5,
-                    "function" : "cosine"
-                  }
-                }
-              }
-            }
-            """;
-    String createVectorCollectionWithOtherSizeSettings =
-        """
-            {
-              "createCollection": {
-                "name": "simple_collection",
-                "options" : {
-                  "vector" : {
-                  "size" : 6,
-                    "function" : "cosine"
-                  }
-                }
-              }
-            }
-            """;
-    String createVectorCollectionWithOtherFunctionSettings =
-        """
-                {
-                  "createCollection": {
-                    "name": "simple_collection",
-                    "options" : {
-                      "vector" : {
-                      "size" : 5,
-                        "function" : "euclidean"
+                    {
+                      "createCollection": {
+                        "name": "simple_collection",
+                        "options" : {
+                          "vector" : {
+                          "size" : 5,
+                            "function" : "cosine"
+                          }
+                        }
                       }
                     }
-                  }
-                }
-                """;
+                    """;
+    String createVectorCollectionWithOtherSizeSettings =
+        """
+                    {
+                      "createCollection": {
+                        "name": "simple_collection",
+                        "options" : {
+                          "vector" : {
+                          "size" : 6,
+                            "function" : "cosine"
+                          }
+                        }
+                      }
+                    }
+                    """;
+    String createVectorCollectionWithOtherFunctionSettings =
+        """
+                    {
+                      "createCollection": {
+                        "name": "simple_collection",
+                        "options" : {
+                          "vector" : {
+                          "size" : 5,
+                            "function" : "euclidean"
+                          }
+                        }
+                      }
+                    }
+                    """;
 
     @Test
     public void happyPath() {
       final String collectionName = "col" + RandomStringUtils.randomNumeric(16);
       String json =
               """
-          {
-            "createCollection": {
-              "name": "%s"
-            }
-          }
-          """
+                      {
+                        "createCollection": {
+                          "name": "%s"
+                        }
+                      }
+                      """
               .formatted(collectionName);
 
       given()
@@ -98,12 +99,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void caseSensitive() {
       String json =
               """
-          {
-            "createCollection": {
-              "name": "%s"
-            }
-          }
-          """
+                      {
+                        "createCollection": {
+                          "name": "%s"
+                        }
+                      }
+                      """
               .formatted("testcollection");
 
       given()
@@ -118,12 +119,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
 
       json =
               """
-          {
-            "createCollection": {
-              "name": "%s"
-            }
-          }
-          """
+                      {
+                        "createCollection": {
+                          "name": "%s"
+                        }
+                      }
+                      """
               .formatted("testCollection");
 
       given()
@@ -172,11 +173,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .then()
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
           .body(
               "errors[0].message",
-              containsString("provided collection ('simple_collection') already exists with"))
-          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "trying to create Collection ('simple_collection') with different settings"));
 
       deleteCollection("simple_collection");
     }
@@ -213,11 +215,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .then()
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
           .body(
               "errors[0].message",
-              containsString("provided collection ('simple_collection') already exists with"))
-          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "trying to create Collection ('simple_collection') with different settings"));
 
       deleteCollection("simple_collection");
     }
@@ -245,11 +248,13 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
           .body(
               "errors[0].message",
-              containsString("provided collection ('simple_collection') already exists with"))
-          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "trying to create Collection ('simple_collection') with different settings"));
+
       // create another vector collection with the same name but different function setting
       given()
           .headers(getHeaders())
@@ -261,11 +266,12 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
           .body(
               "errors[0].message",
-              containsString("provided collection ('simple_collection') already exists with"))
-          .body("errors[0].errorCode", is("INVALID_COLLECTION_NAME"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              containsString(
+                  "trying to create Collection ('simple_collection') with different settings"));
 
       deleteCollection("simple_collection");
     }
@@ -274,21 +280,21 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     public void happyCreateCollectionWithIndexingAllow() {
       final String createCollectionRequest =
           """
-              {
-                "createCollection": {
-                  "name": "simple_collection_allow_indexing",
-                  "options" : {
-                    "vector" : {
-                      "size" : 5,
-                      "function" : "cosine"
-                    },
-                    "indexing" : {
-                      "allow" : ["field1", "field2", "address.city", "_id", "$vector"]
-                    }
-                  }
-                }
-              }
-              """;
+                      {
+                        "createCollection": {
+                          "name": "simple_collection_allow_indexing",
+                          "options" : {
+                            "vector" : {
+                              "size" : 5,
+                              "function" : "cosine"
+                            },
+                            "indexing" : {
+                              "allow" : ["field1", "field2", "address.city", "_id", "$vector"]
+                            }
+                          }
+                        }
+                      }
+                      """;
 
       // create vector collection with indexing allow option
       given()
@@ -320,21 +326,21 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
       // create vector collection with indexing deny option
       final String createCollectionRequest =
           """
-              {
-                "createCollection": {
-                  "name": "simple_collection_deny_indexing",
-                  "options" : {
-                    "vector" : {
-                      "size" : 5,
-                      "function" : "cosine"
-                    },
-                    "indexing" : {
-                      "deny" : ["field1", "field2", "address.city", "_id"]
-                    }
-                  }
-                }
-              }
-              """;
+                      {
+                        "createCollection": {
+                          "name": "simple_collection_deny_indexing",
+                          "options" : {
+                            "vector" : {
+                              "size" : 5,
+                              "function" : "cosine"
+                            },
+                            "indexing" : {
+                              "deny" : ["field1", "field2", "address.city", "_id"]
+                            }
+                          }
+                        }
+                      }
+                      """;
 
       given()
           .headers(getHeaders())
@@ -440,7 +446,11 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("errors[0].errorCode", is("INVALID_INDEXING_DEFINITION"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
+  }
 
+  @Nested
+  @Order(2)
+  class CreateCollectionFail {
     @Test
     public void failCreateCollectionWithIndexHavingDuplicates() {
       // create vector collection with error indexing option
@@ -576,7 +586,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
     }
 
     @Test
-    public void failWithInvalidOption() {
+    public void failWithInvalidMainLevelOption() {
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -597,17 +607,117 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "The provided options are invalid: No option \"InDex\" found as createCollectionCommand option (known options: \"defaultId\", \"indexing\", \"vector\")"))
+                  "The provided options are invalid: No option \"InDex\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"vector\")"));
+    }
+
+    @Test
+    public void failWithInvalidIdConfigOption() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                                    {
+                                      "createCollection": {
+                                        "name": "collection_with_invalid_idconfig",
+                                        "options" : {
+                                          "defaultId" : {
+                                            "unknown": 3
+                                          }
+                                        }
+                                      }
+                                    }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Unrecognized field \"unknown\" for `createCollection.options.defaultId`"));
+    }
+
+    @Test
+    public void failWithInvalidIndexingConfigOption() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                                    {
+                                      "createCollection": {
+                                        "name": "collection_with_invalid_indexconfig",
+                                        "options" : {
+                                          "indexing" : {
+                                            "unknown": 3
+                                          }
+                                        }
+                                      }
+                                    }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Unrecognized field \"unknown\" for `createCollection.options.indexing` (known fields"));
+    }
+
+    @Test
+    public void failWithInvalidVectorConfigOption() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                                    {
+                                      "createCollection": {
+                                        "name": "collection_with_invalid_vectorconfig",
+                                        "options" : {
+                                          "vector" : {
+                                            "unknown": 3
+                                          }
+                                        }
+                                      }
+                                    }
+                                    """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "The provided options are invalid: Unrecognized field \"unknown\" for `createCollection.options.vector` (known fields"));
     }
   }
 
   @Nested
-  @Order(2)
+  @Order(3)
   class CreateCollectionWithEmbeddingServiceTestModelsAndProviders {
     @Test
     public void happyEmbeddingService() {
@@ -747,7 +857,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
   }
 
   @Nested
-  @Order(3)
+  @Order(4)
   class CreateCollectionWithEmbeddingServiceTestDimension {
     @Test
     public void happyFixDimensionAutoPopulate() {
@@ -1099,7 +1209,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
   }
 
   @Nested
-  @Order(4)
+  @Order(5)
   class CreateCollectionWithEmbeddingServiceTestAuth {
     @Test
     public void happyWithNoneAuth() {
@@ -1352,7 +1462,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
   }
 
   @Nested
-  @Order(5)
+  @Order(6)
   class CreateCollectionWithEmbeddingServiceTestParameters {
     @Test
     public void failWithMissingRequiredProviderParameters() {

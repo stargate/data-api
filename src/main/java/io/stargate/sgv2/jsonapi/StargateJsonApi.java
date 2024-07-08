@@ -44,7 +44,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       `Cassandra:Base64(username):Base64(password)`. For example,
                       assuming a username of `cassandra` and password of
                       `cassandra` the `Token` header would be set to
-                      `Cassandra:Y2Fzc2FuZHJhCg==:Y2Fzc2FuZHJhCg==`.
+                      `Cassandra:Y2Fzc2FuZHJh:Y2Fzc2FuZHJh`.
                       """),
             },
 

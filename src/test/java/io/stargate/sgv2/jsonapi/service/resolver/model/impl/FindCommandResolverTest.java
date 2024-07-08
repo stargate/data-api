@@ -4,11 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -30,6 +32,7 @@ public class FindCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject OperationsConfig operationsConfig;
   @Inject FindCommandResolver resolver;
+  @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 
   @Nested
   class FindCommandResolveCommand {

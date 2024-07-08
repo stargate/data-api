@@ -22,6 +22,10 @@ import java.util.stream.Collectors;
 
 /** Base for the DB filters / conditions that we want to use with queries */
 public abstract class DBFilterBase implements Supplier<BuiltCondition> {
+
+  /** Tracks the index column usage */
+  public final IndexUsage indexUsage = new IndexUsage();
+
   /** Filter condition element path. */
   private final String path;
 
@@ -187,6 +191,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     public TextFilter(String path, Operator operator, String value) {
       super("query_text_values", path, operator, value);
       this.strValue = value;
+      if (Operator.EQ == operator || Operator.NE == operator) indexUsage.arrayContainsTag = true;
+      else indexUsage.textIndexTag = true;
     }
 
     @Override
@@ -207,6 +213,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     public BoolFilter(String path, Operator operator, Boolean value) {
       super("query_bool_values", path, operator, value);
       this.boolValue = value;
+      if (Operator.EQ == operator || Operator.NE == operator) indexUsage.arrayContainsTag = true;
+      else indexUsage.booleanIndexTag = true;
     }
 
     @Override
@@ -227,6 +235,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     public NumberFilter(String path, Operator operator, BigDecimal value) {
       super("query_dbl_values", path, operator, value);
       this.numberValue = value;
+      if (Operator.EQ == operator || Operator.NE == operator) indexUsage.arrayContainsTag = true;
+      else indexUsage.numberIndexTag = true;
     }
 
     @Override
@@ -247,6 +257,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
     public DateFilter(String path, Operator operator, Date value) {
       super("query_timestamp_values", path, operator, Instant.ofEpochMilli(value.getTime()));
       this.dateValue = value;
+      if (Operator.EQ == operator || Operator.NE == operator) indexUsage.arrayContainsTag = true;
+      else indexUsage.timestampIndexTag = true;
     }
 
     @Override
@@ -279,6 +291,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       super(DOC_ID);
       this.operator = operator;
       this.values = values;
+      updateIndexUsage();
     }
 
     @Override
@@ -287,6 +300,27 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       if (o == null || getClass() != o.getClass()) return false;
       IDFilter idFilter = (IDFilter) o;
       return operator == idFilter.operator && Objects.equals(values, idFilter.values);
+    }
+
+    private void updateIndexUsage() {
+      switch (operator) {
+        case EQ:
+          this.indexUsage.primaryKeyTag = true;
+          break;
+        case NE:
+          final DocumentId documentId = (DocumentId) values.get(0);
+          if (documentId.value() instanceof BigDecimal numberId) {
+            this.indexUsage.numberIndexTag = true;
+          } else if (documentId.value() instanceof String strId) {
+            this.indexUsage.textIndexTag = true;
+          }
+          break;
+        case IN:
+          values.forEach(
+              v -> {
+                this.indexUsage.primaryKeyTag = true;
+              });
+      }
     }
 
     @Override
@@ -331,11 +365,12 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
           if (values.isEmpty()) return List.of();
           return values.stream()
               .map(
-                  v ->
-                      BuiltCondition.of(
-                          BuiltCondition.LHS.column("key"),
-                          Predicate.EQ,
-                          new JsonTerm(CQLBindValues.getDocumentIdValue(v))))
+                  v -> {
+                    return BuiltCondition.of(
+                        BuiltCondition.LHS.column("key"),
+                        Predicate.EQ,
+                        new JsonTerm(CQLBindValues.getDocumentIdValue(v)));
+                  })
               .collect(Collectors.toList());
         default:
           throw new JsonApiException(
@@ -374,6 +409,55 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       return false;
     }
 
+    private void updateIndexUsage() {
+      List<Object> values = arrayValue;
+      switch (operator) {
+        case IN:
+          final ArrayList<BuiltCondition> inResult = new ArrayList<>();
+          for (Object value : values) {
+            if (value instanceof Map) {
+              // array element is sub_doc
+              this.indexUsage.textIndexTag = true;
+            } else if (value instanceof List) {
+              // array element is array
+              this.indexUsage.textIndexTag = true;
+            } else {
+              this.indexUsage.arrayContainsTag = true;
+            }
+          }
+          break;
+        case NIN:
+          if (!this.getPath().equals(DOC_ID)) {
+            final ArrayList<BuiltCondition> ninResults = new ArrayList<>();
+            for (Object value : values) {
+              if (value instanceof Map) {
+                // array element is sub_doc
+                this.indexUsage.textIndexTag = true;
+              } else if (value instanceof List) {
+                // array element is array
+                this.indexUsage.textIndexTag = true;
+              } else {
+                this.indexUsage.arrayContainsTag = true;
+              }
+            }
+          } else {
+            // can not use stream here, since lambda parameter casting is not allowed
+            List<BuiltCondition> conditions = new ArrayList<>();
+            for (Object value : values) {
+              if (value instanceof DocumentId) {
+                Object docIdValue = ((DocumentId) value).value();
+                if (docIdValue instanceof BigDecimal numberId) {
+                  this.indexUsage.numberIndexTag = true;
+                } else if (docIdValue instanceof String strId) {
+                  this.indexUsage.textIndexTag = true;
+                }
+              }
+            }
+            break;
+          }
+      }
+    }
+
     public enum Operator {
       IN,
       NIN,
@@ -383,6 +467,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       super(path);
       this.arrayValue = arrayValue;
       this.operator = operator;
+      updateIndexUsage();
     }
 
     @Override
@@ -557,6 +642,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   public static class IsNullFilter extends SetFilterBase<String> {
     public IsNullFilter(String path, SetFilterBase.Operator operator) {
       super("query_null_values", path, path, operator);
+      this.indexUsage.nullIndexTag = true;
     }
 
     @Override
@@ -578,6 +664,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   public static class ExistsFilter extends SetFilterBase<String> {
     public ExistsFilter(String path, boolean existFlag) {
       super("exist_keys", path, path, existFlag ? Operator.CONTAINS : Operator.NOT_CONTAINS);
+      this.indexUsage.existKeysIndexTag = true;
     }
 
     @Override
@@ -600,6 +687,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
       super(path);
       this.arrayValue = arrayValue;
       this.negation = negation;
+      this.indexUsage.arrayContainsTag = true;
     }
 
     public boolean isNegation() {
@@ -638,6 +726,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   public static class SizeFilter extends MapFilterBase<Integer> {
     public SizeFilter(String path, Operator operator, Integer size) {
       super("array_size", path, operator, size);
+      this.indexUsage.arraySizeIndexTag = true;
     }
 
     @Override
@@ -662,6 +751,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
         MapFilterBase.Operator operator) {
       super("query_text_values", path, operator, getHash(hasher, arrayData));
       this.arrayValue = arrayData;
+      this.indexUsage.textIndexTag = true;
     }
 
     @Override
@@ -688,6 +778,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
         Map<String, Object> subDocData,
         MapFilterBase.Operator operator) {
       super("query_text_values", path, operator, getHash(hasher, subDocData));
+      this.indexUsage.textIndexTag = true;
       this.subDocValue = subDocData;
     }
 
