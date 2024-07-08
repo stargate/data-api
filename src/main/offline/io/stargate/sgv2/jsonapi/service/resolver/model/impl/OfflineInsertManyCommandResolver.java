@@ -30,7 +30,8 @@ public class OfflineInsertManyCommandResolver implements CommandResolver<Offline
   }
 
   @Override
-  public Operation resolveCollectionCommand(CommandContext<CollectionSchemaObject> ctx,  OfflineInsertManyCommand command) {
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, OfflineInsertManyCommand command) {
     if (command.documents().size()
         > operationsConfig.offlineModeConfig().maxDocumentInsertCount()) {
       throw new IllegalArgumentException("Exceeded max document insert count");

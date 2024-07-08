@@ -18,7 +18,8 @@ public class BeginOfflineSessionCommandResolver
   }
 
   @Override
-  public Operation resolveCollectionCommand(CommandContext<CollectionSchemaObject> ctx,  BeginOfflineSessionCommand command) {
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, BeginOfflineSessionCommand command) {
     return new BeginOfflineSessionOperation(command.getSessionId(), command.getFileWriterParams());
   }
 }
