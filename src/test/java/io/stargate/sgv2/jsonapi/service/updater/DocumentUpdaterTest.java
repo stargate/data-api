@@ -261,7 +261,8 @@ public class DocumentUpdaterTest {
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION)
-          .hasMessageStartingWith("Invalid update operator 'location' (must start with '$')");
+          .hasMessageStartingWith(
+              "Unsupported update operation: Invalid update operator 'location' (must start with '$')");
     }
 
     @Test
@@ -281,7 +282,8 @@ public class DocumentUpdaterTest {
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION)
-          .hasMessageStartingWith("Unsupported update operator '$pullAll'");
+          .hasMessageStartingWith(
+              "Unsupported update operation: Unsupported update operator '$pullAll'");
     }
 
     /** Test for ensuring it is not legal to "$set" document id (_id) */
