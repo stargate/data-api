@@ -6,7 +6,6 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -14,45 +13,42 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseEr
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import java.net.URI;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class UpstageAIEmbeddingClient implements EmbeddingProvider {
+public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.UPSTAGE_AI;
   private static final String UPSTAGE_MODEL_SUFFIX_QUERY = "-query";
   private static final String UPSTAGE_MODEL_SUFFIX_PASSAGE = "-passage";
+  private final String modelNamePrefix;
+  private final UpstageAIEmbeddingProviderClient upstageAIEmbeddingProviderClient;
 
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelNamePrefix;
-  private final UpstageAIEmbeddingProvider embeddingProvider;
-
-  public UpstageAIEmbeddingClient(
+  public UpstageAIEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelNamePrefix,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    this.requestProperties = requestProperties;
-    this.modelNamePrefix = modelNamePrefix;
+    super(requestProperties, baseUrl, modelNamePrefix, dimension, vectorizeServiceParameters);
 
-    embeddingProvider =
+    this.modelNamePrefix = modelNamePrefix;
+    upstageAIEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
             .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
-            .build(UpstageAIEmbeddingProvider.class);
+            .build(UpstageAIEmbeddingProviderClient.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface UpstageAIEmbeddingProvider {
+  public interface UpstageAIEmbeddingProviderClient {
     @POST
     // no path specified, as it is already included in the baseUri
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
@@ -62,8 +58,7 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(
-          ProviderConstants.UPSTAGE_AI, response, errorMessage);
+      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -94,8 +89,7 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from embedding provider '%s': %s",
-              ProviderConstants.UPSTAGE_AI, rootNode.toString()));
+              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
       // Check if the root node contains a "message" field
       JsonNode messageNode = rootNode.path("message");
       if (!messageNode.isMissingNode()) {
@@ -143,22 +137,11 @@ public class UpstageAIEmbeddingClient implements EmbeddingProvider {
                 : UPSTAGE_MODEL_SUFFIX_PASSAGE);
 
     EmbeddingRequest request = new EmbeddingRequest(texts.get(0), modelName);
+
     Uni<EmbeddingResponse> response =
-        embeddingProvider
-            .embed("Bearer " + apiKeyOverride.get(), request)
-            .onFailure(
-                throwable -> {
-                  return ((throwable.getCause() != null
-                          && throwable.getCause() instanceof JsonApiException jae
-                          && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
-                      || throwable instanceof TimeoutException);
-                })
-            .retry()
-            .withBackOff(
-                Duration.ofMillis(requestProperties.initialBackOffMillis()),
-                Duration.ofMillis(requestProperties.maxBackOffMillis()))
-            .withJitter(requestProperties.jitter())
-            .atMost(requestProperties.atMostRetries());
+        applyRetry(
+            upstageAIEmbeddingProviderClient.embed("Bearer " + apiKeyOverride.get(), request));
+
     return response
         .onItem()
         .transform(
