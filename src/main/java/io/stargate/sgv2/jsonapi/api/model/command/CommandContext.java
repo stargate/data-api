@@ -31,7 +31,54 @@ public record CommandContext<T extends SchemaObject>(
   public static final CommandContext<TableSchemaObject> EMPTY_TABLE =
       new CommandContext<>(TableSchemaObject.MISSING, null, "testCommand", null);
 
-  public static CommandContext<CollectionSchemaObject> collectionCommandContext(
+  /**
+   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
+   * are working with.
+   *
+   * <p>This one handles the super class of {@link SchemaObject}
+   *
+   * @param schemaObject
+   * @param embeddingProvider
+   * @param commandName
+   * @param jsonProcessingMetricsReporter
+   * @return
+   */
+  @SuppressWarnings("unchecked")
+  public static <T extends SchemaObject> CommandContext<T> forSchemaObject(
+      T schemaObject,
+      EmbeddingProvider embeddingProvider,
+      String commandName,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+
+    // TODO: upgrade to use the modern switch statements
+    // TODO: how to remove the unchecked cast ? Had to use unchecked cast to get back to the
+    // CommandContext<T>
+    if (schemaObject instanceof CollectionSchemaObject cso) {
+      return (CommandContext<T>)
+          forSchemaObject(cso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+    }
+    if (schemaObject instanceof TableSchemaObject tso) {
+      return (CommandContext<T>)
+          forSchemaObject(tso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+    }
+    if (schemaObject instanceof KeyspaceSchemaObject kso) {
+      return (CommandContext<T>)
+          forSchemaObject(kso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+    }
+    throw new IllegalArgumentException("Unknown schema object type: " + schemaObject.getClass());
+  }
+
+  /**
+   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
+   * are working with
+   *
+   * @param schemaObject
+   * @param embeddingProvider
+   * @param commandName
+   * @param jsonProcessingMetricsReporter
+   * @return
+   */
+  public static CommandContext<CollectionSchemaObject> forSchemaObject(
       CollectionSchemaObject schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
@@ -40,8 +87,37 @@ public record CommandContext<T extends SchemaObject>(
         schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
   }
 
-  public static CommandContext<TableSchemaObject> tableCommandContext(
+  /**
+   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
+   * are working with
+   *
+   * @param schemaObject
+   * @param embeddingProvider
+   * @param commandName
+   * @param jsonProcessingMetricsReporter
+   * @return
+   */
+  public static CommandContext<TableSchemaObject> forSchemaObject(
       TableSchemaObject schemaObject,
+      EmbeddingProvider embeddingProvider,
+      String commandName,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+    return new CommandContext<>(
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+  }
+
+  /**
+   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
+   * are working with
+   *
+   * @param schemaObject
+   * @param embeddingProvider
+   * @param commandName
+   * @param jsonProcessingMetricsReporter
+   * @return
+   */
+  public static CommandContext<KeyspaceSchemaObject> forSchemaObject(
+      KeyspaceSchemaObject schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
