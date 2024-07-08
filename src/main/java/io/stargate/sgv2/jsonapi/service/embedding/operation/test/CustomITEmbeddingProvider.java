@@ -13,7 +13,7 @@ import java.util.Optional;
  * VectorizeSearchIntegrationTest
  */
 @RegisterForReflection
-public class CustomITEmbeddingProvider implements EmbeddingProvider {
+public class CustomITEmbeddingProvider extends EmbeddingProvider {
 
   public static final String TEST_API_KEY = "test_embedding_service_api_key";
 

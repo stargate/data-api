@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /** Grpc client for embedding gateway service */
-public class EmbeddingGatewayClient implements EmbeddingProvider {
+public class EmbeddingGatewayClient extends EmbeddingProvider {
 
   private static final String DEFAULT_TENANT_ID = "default";
   private static final String API_KEY = "API_KEY";

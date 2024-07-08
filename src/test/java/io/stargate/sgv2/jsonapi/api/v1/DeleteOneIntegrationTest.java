@@ -147,9 +147,9 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .body("status", is(nullValue()))
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].message", is("Command accepts no options: DeleteOneCommand"))
           .body("errors[0].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].message", is("Command accepts no options: `DeleteOneCommand`"));
     }
 
     @Test

@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -13,42 +11,37 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.error.HttpResponseEr
 import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import java.net.URI;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-/**
- * Implementation of client that talks to jina.ai embedding provider. See <a
- * href="https://api.jina.ai/redoc#tag/embeddings">API reference</a> for details of REST API being
- * called.
- */
-public class JinaAIEmbeddingClient implements EmbeddingProvider {
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelName;
-  private final JinaAIEmbeddingProvider embeddingProvider;
+public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.HUGGINGFACE_DEDICATED;
+  private final HuggingFaceDedicatedEmbeddingProviderClient
+      huggingFaceDedicatedEmbeddingProviderClient;
 
-  public JinaAIEmbeddingClient(
+  public HuggingFaceDedicatedEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    this.requestProperties = requestProperties;
-    this.modelName = modelName;
-    embeddingProvider =
+    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+
+    // replace placeholders: endPointName, regionName, cloudName
+    String dedicatedApiUrl = replaceParameters(baseUrl, vectorizeServiceParameters);
+    huggingFaceDedicatedEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
-            .baseUri(URI.create(baseUrl))
+            .baseUri(URI.create(dedicatedApiUrl))
             .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
-            .build(JinaAIEmbeddingProvider.class);
+            .build(HuggingFaceDedicatedEmbeddingProviderClient.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface JinaAIEmbeddingProvider {
+  public interface HuggingFaceDedicatedEmbeddingProviderClient {
     @POST
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
     Uni<EmbeddingResponse> embed(
@@ -57,8 +50,7 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(
-          ProviderConstants.JINA_AI, response, errorMessage);
+      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -66,12 +58,14 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
      *
      * <pre>
      * {
-     *    "detail": "ValidationError(model='TextDoc', errors=[{'loc': ('text',), 'msg': 'Single text cannot exceed 8192 tokens. 10454 tokens given.', 'type': 'value_error'}])"
+     *   "message": "Batch size error",
+     *   "type": "validation"
      * }
-     * </pre>
      *
-     * <pre>
-     *     {"detail":"Failed to authenticate with the provided api key."}
+     * {
+     *   "message": "Model is overloaded",
+     *   "type": "overloaded"
+     * }
      * </pre>
      *
      * @param response The response body as a String.
@@ -83,16 +77,17 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from embedding provider '%s': %s",
-              ProviderConstants.JINA_AI, rootNode.toString()));
-      // Extract the "detail" node
-      JsonNode detailNode = rootNode.path("detail");
-      return detailNode.isMissingNode() ? rootNode.toString() : detailNode.toString();
+              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
+      // Extract the "message" node
+      JsonNode messageNode = rootNode.path("message");
+      // Return the text of the "message" node, or the whole response body if it is missing
+      return messageNode.isMissingNode() ? rootNode.toString() : messageNode.toString();
     }
   }
 
-  // By default, Jina Text Encoding Format is float
-  private record EmbeddingRequest(List<String> input, String model) {}
+  // huggingfaceDedicated, Test Embeddings Inference, openAI compatible route
+  // https://huggingface.github.io/text-embeddings-inference/#/Text%20Embeddings%20Inference/openai_embed
+  private record EmbeddingRequest(String[] input) {}
 
   private record EmbeddingResponse(String object, Data[] data, String model, Usage usage) {
     private record Data(String object, int index, float[] embedding) {}
@@ -106,25 +101,14 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
-    EmbeddingRequest request = new EmbeddingRequest(texts, modelName);
+    String[] textArray = new String[texts.size()];
+    EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray));
+
     Uni<EmbeddingResponse> response =
-        embeddingProvider
-            .embed("Bearer " + apiKeyOverride.get(), request)
-            .onFailure(
-                throwable -> {
-                  return ((throwable.getCause() != null
-                          && throwable.getCause() instanceof JsonApiException jae
-                          && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
-                      || throwable instanceof TimeoutException);
-                })
-            .retry()
-            // Jina has intermittent embedding failure, set a longer retry delay to mitigate the
-            // issue
-            .withBackOff(
-                Duration.ofMillis(requestProperties.initialBackOffMillis()),
-                Duration.ofMillis(requestProperties.maxBackOffMillis()))
-            .withJitter(requestProperties.jitter())
-            .atMost(requestProperties.atMostRetries());
+        applyRetry(
+            huggingFaceDedicatedEmbeddingProviderClient.embed(
+                "Bearer " + apiKeyOverride.get(), request));
+
     return response
         .onItem()
         .transform(
@@ -134,7 +118,7 @@ public class JinaAIEmbeddingClient implements EmbeddingProvider {
               }
               Arrays.sort(resp.data(), (a, b) -> a.index() - b.index());
               List<float[]> vectors =
-                  Arrays.stream(resp.data()).map(EmbeddingResponse.Data::embedding).toList();
+                  Arrays.stream(resp.data()).map(data -> data.embedding()).toList();
               return Response.of(batchId, vectors);
             });
   }

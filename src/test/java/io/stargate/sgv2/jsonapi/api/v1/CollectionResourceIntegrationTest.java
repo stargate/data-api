@@ -40,13 +40,18 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
-          .body("{wrong}")
+          .body("wrong")
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_REQUEST_NOT_JSON"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", is(not(blankString())));
+          .body(
+              "errors[0].message",
+              startsWith("Request invalid, cannot parse as JSON: underlying problem:"))
+          .body("errors[0].message", containsString("Unrecognized token 'wrong'"));
     }
 
     @Test
@@ -67,10 +72,42 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors[0].errorCode", is("NO_COMMAND_MATCHED"))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
-              startsWith("No \"unknownCommand\" command found as \"CollectionCommand\""));
+              startsWith(
+                  "Provided command unknown: \"unknownCommand\" not one of \"CollectionCommand\"s: known commands are [countDocuments,"));
+    }
+
+    @Test
+    public void unknownCommandField() {
+      String json =
+          """
+              {
+                "findOne": {
+                    "unknown": "value"
+                }
+              }
+              """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_REQUEST_UNKNOWN_FIELD"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].message", startsWith("Request invalid, unrecognized JSON field"))
+          .body("errors[0].message", containsString("\"unknown\" not one of known fields"))
+          .body(
+              "errors[0].message",
+              containsString("(\"filter\", \"options\", \"projection\", \"sort\")"));
     }
 
     @Test
@@ -92,6 +129,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, "7_no_leading_number", collectionName)
           .then()
           .statusCode(200)
+          .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
@@ -119,6 +157,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, "7_no_leading_number")
           .then()
           .statusCode(200)
+          .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
@@ -136,6 +175,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(

@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -15,44 +13,37 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import java.net.URI;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
-public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
-  private EmbeddingProviderConfigStore.RequestProperties requestProperties;
-  private String modelName;
-  private String baseUrl;
-  private final HuggingFaceEmbeddingProvider embeddingProvider;
-  private Map<String, Object> vectorizeServiceParameters;
+public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
+  private static final String providerId = ProviderConstants.HUGGINGFACE;
+  private final HuggingFaceEmbeddingProviderClient huggingFaceEmbeddingProviderClient;
 
-  public HuggingFaceEmbeddingClient(
+  public HuggingFaceEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
       int dimension,
       Map<String, Object> vectorizeServiceParameters) {
-    this.requestProperties = requestProperties;
-    this.modelName = modelName;
-    this.baseUrl = baseUrl;
-    this.vectorizeServiceParameters = vectorizeServiceParameters;
-    embeddingProvider =
+    super(requestProperties, baseUrl, modelName, dimension, vectorizeServiceParameters);
+
+    huggingFaceEmbeddingProviderClient =
         QuarkusRestClientBuilder.newBuilder()
             .baseUri(URI.create(baseUrl))
             .readTimeout(requestProperties.readTimeoutMillis(), TimeUnit.MILLISECONDS)
-            .build(HuggingFaceEmbeddingProvider.class);
+            .build(HuggingFaceEmbeddingProviderClient.class);
   }
 
   @RegisterRestClient
   @RegisterProvider(EmbeddingProviderResponseValidation.class)
-  public interface HuggingFaceEmbeddingProvider {
+  public interface HuggingFaceEmbeddingProviderClient {
     @POST
     @Path("/{modelId}")
     @ClientHeaderParam(name = "Content-Type", value = "application/json")
@@ -64,8 +55,7 @@ public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
     @ClientExceptionMapper
     static RuntimeException mapException(jakarta.ws.rs.core.Response response) {
       String errorMessage = getErrorMessage(response);
-      return HttpResponseErrorMessageMapper.mapToAPIException(
-          ProviderConstants.HUGGINGFACE, response, errorMessage);
+      return HttpResponseErrorMessageMapper.mapToAPIException(providerId, response, errorMessage);
     }
 
     /**
@@ -87,8 +77,7 @@ public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
       // Log the response body
       logger.info(
           String.format(
-              "Error response from embedding provider '%s': %s",
-              ProviderConstants.HUGGINGFACE, rootNode.toString()));
+              "Error response from embedding provider '%s': %s", providerId, rootNode.toString()));
       // Extract the "error" node
       JsonNode errorNode = rootNode.path("error");
       // Return the text of the "message" node, or the whole response body if it is missing
@@ -107,21 +96,10 @@ public class HuggingFaceEmbeddingClient implements EmbeddingProvider {
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
     EmbeddingRequest request = new EmbeddingRequest(texts, new EmbeddingRequest.Options(true));
-    return embeddingProvider
-        .embed("Bearer " + apiKeyOverride.get(), modelName, request)
-        .onFailure(
-            throwable -> {
-              return ((throwable.getCause() != null
-                      && throwable.getCause() instanceof JsonApiException jae
-                      && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
-                  || throwable instanceof TimeoutException);
-            })
-        .retry()
-        .withBackOff(
-            Duration.ofMillis(requestProperties.initialBackOffMillis()),
-            Duration.ofMillis(requestProperties.maxBackOffMillis()))
-        .withJitter(requestProperties.jitter())
-        .atMost(requestProperties.atMostRetries())
+
+    return applyRetry(
+            huggingFaceEmbeddingProviderClient.embed(
+                "Bearer " + apiKeyOverride.get(), modelName, request))
         .onItem()
         .transform(
             resp -> {
