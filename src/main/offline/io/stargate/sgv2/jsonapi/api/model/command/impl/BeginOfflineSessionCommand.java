@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.collections.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.collections.InsertOperation;
@@ -153,8 +154,15 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
     boolean hasIndexing = indexingConfig != null;
     boolean hasVector = vectorSearchConfig != null;
 
-    var commandContext =
+    var tableCommandContext =
         CommandContext.forSchemaObject(collectionObject, null, this.createCollection.name(), null);
+
+    var keyspaceCommandContext =
+        CommandContext.forSchemaObject(
+            KeyspaceSchemaObject.fromSchemaObject(collectionObject),
+            null,
+            this.createCollection.name(),
+            null);
 
     String comment =
         CreateCollectionCommandResolver.generateComment(
@@ -168,7 +176,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
     CreateCollectionOperation createCollectionOperation =
         hasVector
             ? CreateCollectionOperation.withVectorSearch(
-                commandContext,
+                keyspaceCommandContext,
                 null,
                 new ObjectMapper(),
                 null,
@@ -182,7 +190,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
                 false,
                 false)
             : CreateCollectionOperation.withoutVectorSearch(
-                commandContext,
+                keyspaceCommandContext,
                 null,
                 new ObjectMapper(),
                 null,
@@ -202,7 +210,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
             .map(SimpleStatement::getQuery)
             .toList();
     InsertOperation insertOperation =
-        InsertOperation.create(commandContext, List.of(), true, true, false);
+        InsertOperation.create(tableCommandContext, List.of(), true, true, false);
     String insertStatementCQL = insertOperation.buildInsertQuery(hasVector);
     return new FileWriterParams(
         this.namespace,

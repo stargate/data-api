@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -36,17 +37,24 @@ public class OperationTestBase {
   protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
   protected final SchemaObjectName SCHEMA_OBJECT_NAME =
       new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME);
+
   protected final CollectionSchemaObject COLLECTION_SCHEMA_OBJECT =
       new CollectionSchemaObject(
           SCHEMA_OBJECT_NAME,
           CollectionSchemaObject.IdConfig.defaultIdConfig(),
           VectorConfig.notEnabledVectorConfig(),
           null);
+  protected final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
+      KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
+
   protected final String COMMAND_NAME = "testCommand";
 
-  protected final CommandContext<CollectionSchemaObject> CONTEXT =
+  protected final CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT =
       new CommandContext<>(
           COLLECTION_SCHEMA_OBJECT, null, COMMAND_NAME, jsonProcessingMetricsReporter);
+  protected final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
+      new CommandContext<>(
+          KEYSPACE_SCHEMA_OBJECT, null, COMMAND_NAME, jsonProcessingMetricsReporter);
 
   @InjectMock protected DataApiRequestInfo dataApiRequestInfo;
 

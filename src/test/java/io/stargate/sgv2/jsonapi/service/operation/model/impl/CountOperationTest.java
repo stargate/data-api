@@ -64,7 +64,8 @@ public class CountOperationTest extends OperationTestBase {
                 return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
               });
 
-      CountOperation countOperation = new CountOperation(CONTEXT, LogicalExpression.and(), 100, -1);
+      CountOperation countOperation =
+          new CountOperation(COLLECTION_CONTEXT, LogicalExpression.and(), 100, -1);
       Supplier<CommandResult> execute =
           countOperation
               .execute(dataApiRequestInfo, queryExecutor)
@@ -113,7 +114,7 @@ public class CountOperationTest extends OperationTestBase {
           .setDBFilters(
               List.of(
                   new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1")));
-      CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, -1);
+      CountOperation countOperation = new CountOperation(COLLECTION_CONTEXT, implicitAnd, 100, -1);
       Supplier<CommandResult> execute =
           countOperation
               .execute(dataApiRequestInfo, queryExecutor)
@@ -164,7 +165,7 @@ public class CountOperationTest extends OperationTestBase {
                   new TextCollectionFilter(
                       "username", MapCollectionFilter.Operator.EQ, "user_all")));
 
-      CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, -1);
+      CountOperation countOperation = new CountOperation(COLLECTION_CONTEXT, implicitAnd, 100, -1);
       Supplier<CommandResult> execute =
           countOperation
               .execute(dataApiRequestInfo, queryExecutor)
@@ -203,7 +204,7 @@ public class CountOperationTest extends OperationTestBase {
               });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, -1);
+      CountOperation countOperation = new CountOperation(COLLECTION_CONTEXT, implicitAnd, 100, -1);
       Throwable result =
           countOperation
               .execute(dataApiRequestInfo, queryExecutor)
@@ -247,7 +248,8 @@ public class CountOperationTest extends OperationTestBase {
                 return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
               });
 
-      CountOperation countOperation = new CountOperation(CONTEXT, LogicalExpression.and(), 100, 10);
+      CountOperation countOperation =
+          new CountOperation(COLLECTION_CONTEXT, LogicalExpression.and(), 100, 10);
       Supplier<CommandResult> execute =
           countOperation
               .execute(dataApiRequestInfo, queryExecutor)
@@ -295,7 +297,7 @@ public class CountOperationTest extends OperationTestBase {
           .setDBFilters(
               List.of(
                   new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user2")));
-      CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, 10);
+      CountOperation countOperation = new CountOperation(COLLECTION_CONTEXT, implicitAnd, 100, 10);
       Supplier<CommandResult> execute =
           countOperation
               .execute(dataApiRequestInfo, queryExecutor)
@@ -345,7 +347,7 @@ public class CountOperationTest extends OperationTestBase {
                   new TextCollectionFilter(
                       "username", MapCollectionFilter.Operator.EQ, "user_all")));
 
-      CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, 10);
+      CountOperation countOperation = new CountOperation(COLLECTION_CONTEXT, implicitAnd, 100, 10);
       Supplier<CommandResult> execute =
           countOperation
               .execute(dataApiRequestInfo, queryExecutor)
@@ -384,7 +386,7 @@ public class CountOperationTest extends OperationTestBase {
               });
 
       LogicalExpression implicitAnd = LogicalExpression.and();
-      CountOperation countOperation = new CountOperation(CONTEXT, implicitAnd, 100, 10);
+      CountOperation countOperation = new CountOperation(COLLECTION_CONTEXT, implicitAnd, 100, 10);
       Throwable result =
           countOperation
               .execute(dataApiRequestInfo, queryExecutor)

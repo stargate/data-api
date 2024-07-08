@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
@@ -31,7 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public record CreateCollectionOperation(
-    CommandContext<CollectionSchemaObject> commandContext,
+    CommandContext<KeyspaceSchemaObject> commandContext,
     DatabaseLimitsConfig dbLimitsConfig,
     ObjectMapper objectMapper,
     CQLSessionCache cqlSessionCache,
@@ -51,7 +52,7 @@ public record CreateCollectionOperation(
   private static final JsonapiTableMatcher COLLECTION_MATCHER = new JsonapiTableMatcher();
 
   public static CreateCollectionOperation withVectorSearch(
-      CommandContext<CollectionSchemaObject> commandContext,
+      CommandContext<KeyspaceSchemaObject> commandContext,
       DatabaseLimitsConfig dbLimitsConfig,
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
@@ -78,7 +79,7 @@ public record CreateCollectionOperation(
   }
 
   public static CreateCollectionOperation withoutVectorSearch(
-      CommandContext<CollectionSchemaObject> commandContext,
+      CommandContext<KeyspaceSchemaObject> commandContext,
       DatabaseLimitsConfig dbLimitsConfig,
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
@@ -308,6 +309,7 @@ public record CreateCollectionOperation(
 
   public Uni<JsonApiException> cleanUpCollectionFailedWithTooManyIndex(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+
     DeleteCollectionOperation deleteCollectionOperation =
         new DeleteCollectionOperation(commandContext, name);
     return deleteCollectionOperation

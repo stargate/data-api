@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
@@ -65,8 +65,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   }
 
   @Override
-  public Operation resolveCollectionCommand(
-      CommandContext<CollectionSchemaObject> ctx, CreateCollectionCommand command) {
+  public Operation resolveKeyspaceCommand(
+      CommandContext<KeyspaceSchemaObject> ctx, CreateCollectionCommand command) {
     if (command.options() == null) {
       return CreateCollectionOperation.withoutVectorSearch(
           ctx,

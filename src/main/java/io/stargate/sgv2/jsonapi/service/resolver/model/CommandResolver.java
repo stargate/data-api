@@ -80,7 +80,7 @@ public interface CommandResolver<C extends Command> {
     // commands are tested well
     throw new UnsupportedOperationException(
         String.format(
-            "%s Command does not support operating on Collectons, target was %s",
+            "%s Command does not support operating on Collections, target was %s",
             command.getClass().getSimpleName(), ctx.schemaObject().name));
   }
   ;
