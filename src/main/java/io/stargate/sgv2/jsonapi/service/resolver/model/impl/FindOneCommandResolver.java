@@ -54,6 +54,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
   @Override
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindOneCommand command) {
+
     LogicalExpression logicalExpression = resolve(ctx, command);
     final SortClause sortClause = command.sortClause();
     // validate sort path

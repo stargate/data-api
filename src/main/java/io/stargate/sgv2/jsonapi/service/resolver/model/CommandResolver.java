@@ -78,7 +78,10 @@ public interface CommandResolver<C extends Command> {
       CommandContext<CollectionSchemaObject> ctx, C command) {
     // there error is a fallback to make sure it is implemented if it should be
     // commands are tested well
-    throw new UnsupportedOperationException("resolveCollectionCommand Not Implemented");
+    throw new UnsupportedOperationException(
+        String.format(
+            "%s Command does not support operating on Collectons, target was %s",
+            command.getClass().getSimpleName(), ctx.schemaObject().name));
   }
   ;
 
@@ -92,7 +95,10 @@ public interface CommandResolver<C extends Command> {
   default Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, C command) {
     // there error is a fallback to make sure it is implemented if it should be
     // commands are tested well
-    throw new UnsupportedOperationException("resolveTableCommand Not Implemented");
+    throw new UnsupportedOperationException(
+        String.format(
+            "%s Command does not support operating on Tables, target was %s",
+            command.getClass().getSimpleName(), ctx.schemaObject().name));
   }
 
   /**
@@ -105,7 +111,10 @@ public interface CommandResolver<C extends Command> {
   default Operation resolveKeyspaceCommand(CommandContext<KeyspaceSchemaObject> ctx, C command) {
     // there error is a fallback to make sure it is implemented if it should be
     // commands are tested well
-    throw new UnsupportedOperationException("resolveKeyspaceCommand Not Implemented");
+    throw new UnsupportedOperationException(
+        String.format(
+            "%s Command does not support operating on Keyspaces, target was %s",
+            command.getClass().getSimpleName(), ctx.schemaObject().name));
   }
 
   static final String UNKNOWN_VALUE = "unknown";
@@ -134,7 +143,9 @@ public interface CommandResolver<C extends Command> {
       Command command,
       LogicalExpression logicalExpression,
       IndexUsage baseIndexUsage) {
-
+    // TODO: this functions hould not be on the CommandResolver interface, it has nothing to do with
+    // that
+    // it's only here because of the use of records and interfaces, move to a base class
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
     Tag tenantTag = Tag.of(TENANT_TAG, dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     Tags tags = Tags.of(commandTag, tenantTag);
