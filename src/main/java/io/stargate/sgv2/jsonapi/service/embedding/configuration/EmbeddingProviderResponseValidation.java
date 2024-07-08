@@ -64,8 +64,8 @@ public class EmbeddingProviderResponseValidation implements ClientResponseFilter
             "Cannot convert the provider's error response to string: " + e.getMessage(), e);
       }
       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-          "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found '%s'. The response body is: '%s'.",
-          contentType, responseBody);
+          "Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found '%s'; HTTP Status: %s; The response body is: '%s'.",
+          contentType, responseContext.getStatus(), responseBody);
     }
   }
 }

@@ -18,7 +18,7 @@ import org.apache.commons.lang3.tuple.Pair;
  * collect and report various metrics, such as the duration of vectorization calls and the size of
  * input texts.
  */
-public class MeteredEmbeddingProvider implements EmbeddingProvider {
+public class MeteredEmbeddingProvider extends EmbeddingProvider {
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
   private final DataApiRequestInfo dataApiRequestInfo;

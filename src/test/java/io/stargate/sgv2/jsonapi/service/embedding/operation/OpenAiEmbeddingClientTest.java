@@ -27,7 +27,7 @@ public class OpenAiEmbeddingClientTest {
     @Test
     public void happyPath() throws Exception {
       final EmbeddingProvider.Response response =
-          new OpenAIEmbeddingClient(
+          new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("openai").url(),
@@ -56,7 +56,7 @@ public class OpenAiEmbeddingClientTest {
     @Test
     public void onlyToken() throws Exception {
       final EmbeddingProvider.Response response =
-          new OpenAIEmbeddingClient(
+          new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("openai").url(),
@@ -85,7 +85,7 @@ public class OpenAiEmbeddingClientTest {
     @Test
     public void invalidOrg() throws Exception {
       Throwable exception =
-          new OpenAIEmbeddingClient(
+          new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("openai").url(),
@@ -112,7 +112,7 @@ public class OpenAiEmbeddingClientTest {
     @Test
     public void invalidProject() throws Exception {
       Throwable exception =
-          new OpenAIEmbeddingClient(
+          new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
                   config.providers().get("openai").url(),

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class TestEmbeddingProvider implements EmbeddingProvider {
+public class TestEmbeddingProvider extends EmbeddingProvider {
 
   public static CommandContext commandContextWithVectorize =
       new CommandContext(

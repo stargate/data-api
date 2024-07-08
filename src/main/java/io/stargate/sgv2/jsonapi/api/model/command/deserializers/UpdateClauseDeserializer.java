@@ -38,15 +38,13 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
       Map.Entry<String, JsonNode> entry = fieldIter.next();
       final String operName = entry.getKey();
       if (!operName.startsWith("$")) {
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION,
-            "Invalid update operator '%s' (must start with '$')".formatted(operName));
+        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION.toApiException(
+            "Invalid update operator '%s' (must start with '$')", operName);
       }
       UpdateOperator oper = UpdateOperator.getUpdateOperator(operName);
       if (oper == null) {
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION,
-            "Unrecognized update operator '%s'".formatted(operName));
+        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION.toApiException(
+            "Unrecognized update operator '%s'", operName);
       }
       JsonNode operationArg = entry.getValue();
       if (!operationArg.isObject()) {

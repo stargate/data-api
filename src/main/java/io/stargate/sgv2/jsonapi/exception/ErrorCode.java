@@ -4,9 +4,8 @@ package io.stargate.sgv2.jsonapi.exception;
 public enum ErrorCode {
   /** Command error codes. */
   COUNT_READ_FAILED("Unable to count documents"),
-  COMMAND_NOT_IMPLEMENTED("The provided command is not implemented."),
+  COMMAND_UNKNOWN("Provided command unknown"),
   INVALID_CREATE_COLLECTION_OPTIONS("The provided options are invalid"),
-  NO_COMMAND_MATCHED("Unable to find the provided command"),
   COMMAND_ACCEPTS_NO_OPTIONS("Command accepts no options"),
 
   /**
@@ -33,14 +32,17 @@ public enum ErrorCode {
   EMBEDDING_PROVIDER_TIMEOUT("The Embedding Provider timed out"),
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
 
-  FILTER_UNRESOLVABLE("Unable to resolve the filter"),
-
   FILTER_MULTIPLE_ID_FILTER(
       "Cannot have more than one _id equals filter clause: use $in operator instead"),
 
   FILTER_FIELDS_LIMIT_VIOLATION("Filter fields size limitation violated"),
 
+  /** note: Only used by EmbeddingGateway */
   INVALID_REQUEST("Request not supported by the data store"),
+
+  INVALID_REQUEST_NOT_JSON("Request invalid, cannot parse as JSON"),
+
+  INVALID_REQUEST_UNKNOWN_FIELD("Request invalid, unrecognized JSON field"),
 
   INVALID_INDEXING_DEFINITION("Invalid indexing definition"),
 
@@ -62,22 +64,15 @@ public enum ErrorCode {
 
   SHRED_BAD_DOCID_EMPTY_STRING("Bad value for '_id' property: empty String not allowed"),
 
-  SHRED_INTERNAL_NO_PATH("Internal: path being built does not point to a property or element"),
-
-  SHRED_NO_MD5("MD5 Hash algorithm not available"),
-
-  SHRED_UNRECOGNIZED_NODE_TYPE("Unrecognized JSON node type in input document"),
-
-  SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
-
-  SHRED_DOC_KEY_NAME_VIOLATION("Document field name invalid"),
-
   SHRED_BAD_EJSON_VALUE("Bad JSON Extension value"),
 
   SHRED_BAD_VECTOR_SIZE("$vector value can't be empty"),
 
   SHRED_BAD_VECTOR_VALUE("$vector value needs to be array of numbers"),
   SHRED_BAD_VECTORIZE_VALUE("$vectorize search clause needs to be non-blank text value"),
+
+  SHRED_DOC_KEY_NAME_VIOLATION("Document field name invalid"),
+  SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
 
   EXISTING_COLLECTION_DIFFERENT_SETTINGS("Collection already exists"),
 
@@ -102,8 +97,6 @@ public enum ErrorCode {
       "Sort ordering value can only be `1` for ascending or `-1` for descending."),
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
-
-  UNSUPPORTED_OPERATION("Unsupported operation class"),
 
   UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
 
@@ -155,20 +148,25 @@ public enum ErrorCode {
   INVALID_ID_TYPE("Invalid Id type"),
   INVALID_QUERY("Invalid query"),
   NO_INDEX_ERROR("Faulty collection (missing indexes). Recommend re-creating the collection"),
-  UNSUPPORTED_CQL_QUERY_TYPE("Unsupported cql query type"),
   MISSING_VECTOR_VALUE("Missing the vector value when building cql"),
-  INVALID_LOGIC_OPERATOR("Invalid logical operator"),
 
   // Driver failure codes
   /** Error codes related to driver exceptions. */
-  SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
-  SERVER_READ_FAILED("Database read failed"),
-  SERVER_TIMEOUT("Driver timeout"),
   SERVER_CLOSED_CONNECTION("Driver request connection is closed"),
+  SERVER_COORDINATOR_FAILURE("Coordinator failed"),
+  /** Driver failure other than timeout. */
+  SERVER_DRIVER_FAILURE("Driver failed"),
+  /** Driver timeout failure. */
+  SERVER_DRIVER_TIMEOUT("Driver timeout"),
+  /**
+   * Error code used for "should never happen" style problems. Suffix part needs to include details
+   * of actual issue.
+   */
+  SERVER_INTERNAL_ERROR("Server internal error"),
+  SERVER_NO_NODE_AVAILABLE("No node was available to execute the query"),
   SERVER_QUERY_CONSISTENCY_FAILURE("Database query consistency failed"),
   SERVER_QUERY_EXECUTION_FAILURE("Database query execution failed"),
-  SERVER_COORDINATOR_FAILURE("Coordinator failed"),
-  SERVER_FAILURE("Driver failed"),
+  SERVER_READ_FAILED("Database read failed"),
   SERVER_UNHANDLED_ERROR("Server failed"),
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
   SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
@@ -187,6 +185,10 @@ public enum ErrorCode {
 
   public JsonApiException toApiException(String format, Object... args) {
     return new JsonApiException(this, message + ": " + String.format(format, args));
+  }
+
+  public JsonApiException toApiException(Throwable cause, String format, Object... args) {
+    return new JsonApiException(this, message + ": " + String.format(format, args), cause);
   }
 
   public JsonApiException toApiException() {

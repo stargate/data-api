@@ -34,23 +34,17 @@ public class ObjectMapperConfiguration {
     // Number token limit handled by lower-level parser factory, need to construct first:
     JsonFactory jsonFactory =
         JsonFactory.builder()
+            // Configure maximum number length (against DoS)
             .streamReadConstraints(
                 StreamReadConstraints.builder().maxNumberLength(maxNumLen).build())
+            // Enable fast(er) floating-point number handling
             .enable(StreamReadFeature.USE_FAST_DOUBLE_PARSER)
             .enable(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER)
             .enable(StreamWriteFeature.USE_FAST_DOUBLE_WRITER)
-            .build();
-    JsonMapper mapper =
-        JsonMapper.builder(jsonFactory)
-            // important for retaining number accuracy!
-            .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
-
-            // case-insensitive enums, so "before" will match to "BEFORE" in an enum
-            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-
             // Verify uniqueness of JSON Object properties
             .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
-
+            // Include source snippet for easier troubleshooting on parse failures:
+            .enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION)
             /* 12-Dec-2023, tatu: Must not force use of Plain notation because
              *  that caused: https://github.com/stargate/jsonapi/issues/726
              *  where we can insert numbers that are not round-trippable
@@ -59,6 +53,14 @@ public class ObjectMapperConfiguration {
              *  Documents.
              */
             .disable(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN)
+            .build();
+    JsonMapper mapper =
+        JsonMapper.builder(jsonFactory)
+            // important for retaining number accuracy!
+            .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+
+            // case-insensitive enums, so "before" will match to "BEFORE" in an enum
+            .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
             .build();
     mapper.addHandler(new CommandObjectMapperHandler());
     return mapper;

@@ -34,18 +34,18 @@ public class EmbeddingProviderFactory {
   private static final Map<String, ProviderConstructor> providersMap =
       // alphabetic order
       Map.ofEntries(
-          Map.entry(ProviderConstants.AZURE_OPENAI, AzureOpenAIEmbeddingClient::new),
-          Map.entry(ProviderConstants.COHERE, CohereEmbeddingClient::new),
-          Map.entry(ProviderConstants.HUGGINGFACE, HuggingFaceEmbeddingClient::new),
+          Map.entry(ProviderConstants.AZURE_OPENAI, AzureOpenAIEmbeddingProvider::new),
+          Map.entry(ProviderConstants.COHERE, CohereEmbeddingProvider::new),
+          Map.entry(ProviderConstants.HUGGINGFACE, HuggingFaceEmbeddingProvider::new),
           Map.entry(
-              ProviderConstants.HUGGINGFACE_DEDICATED, HuggingFaceDedicatedEmbeddingClient::new),
-          Map.entry(ProviderConstants.JINA_AI, JinaAIEmbeddingClient::new),
-          Map.entry(ProviderConstants.MISTRAL, MistralEmbeddingClient::new),
-          Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingClient::new),
-          Map.entry(ProviderConstants.OPENAI, OpenAIEmbeddingClient::new),
-          Map.entry(ProviderConstants.UPSTAGE_AI, UpstageAIEmbeddingClient::new),
-          Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingClient::new),
-          Map.entry(ProviderConstants.VOYAGE_AI, VoyageAIEmbeddingClient::new));
+              ProviderConstants.HUGGINGFACE_DEDICATED, HuggingFaceDedicatedEmbeddingProvider::new),
+          Map.entry(ProviderConstants.JINA_AI, JinaAIEmbeddingProvider::new),
+          Map.entry(ProviderConstants.MISTRAL, MistralEmbeddingProvider::new),
+          Map.entry(ProviderConstants.NVIDIA, NvidiaEmbeddingProvider::new),
+          Map.entry(ProviderConstants.OPENAI, OpenAIEmbeddingProvider::new),
+          Map.entry(ProviderConstants.UPSTAGE_AI, UpstageAIEmbeddingProvider::new),
+          Map.entry(ProviderConstants.VERTEXAI, VertexAIEmbeddingProvider::new),
+          Map.entry(ProviderConstants.VOYAGE_AI, VoyageAIEmbeddingProvider::new));
 
   public EmbeddingProvider getConfiguration(
       Optional<String> tenant,
