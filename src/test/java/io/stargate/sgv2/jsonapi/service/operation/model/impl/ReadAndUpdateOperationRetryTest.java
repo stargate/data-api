@@ -52,8 +52,7 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
-  private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
+
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT;
 
   @Inject Shredder shredder;

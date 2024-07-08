@@ -8,7 +8,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.collections.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.collections.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.CreateCollectionCommandResolver;
@@ -45,7 +46,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
       implementation = Integer.class)
   private final int fileWriterBufferSizeInMB;
 
-  @JsonIgnore private final CollectionSettings collectionSettings;
+  @JsonIgnore private final CollectionSchemaObject collectionSettings;
   @JsonIgnore private final String sessionId;
   @JsonIgnore private final FileWriterParams fileWriterParams;
 
@@ -66,34 +67,40 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
     this.ssTableOutputDirectory = ssTableOutputDirectory;
     this.sessionId = UUID.randomUUID().toString();
     this.fileWriterBufferSizeInMB = fileWriterBufferSizeInMB;
-    this.fileWriterParams = buildFileWriterParams();
     this.collectionSettings = buildCollectionSettings();
+    // AARON : passing the collectionSettings after refactor because I am wrorried about the order
+    // the state is built
+    this.fileWriterParams = buildFileWriterParams(collectionSettings);
+
+    // TODO: move a lot of this logic into the command resovler, the command is meant to be a basic
+    // POJO of state of the
+    // command, it should not have all this behaviour. e.g. things we need to mark as @JSONIGNORE
   }
 
-  private CollectionSettings buildCollectionSettings() {
+  private CollectionSchemaObject buildCollectionSettings() {
     boolean isVectorEnabled =
         this.createCollection.options() != null && this.createCollection.options().vector() != null;
     int vectorSize =
         (isVectorEnabled && this.createCollection.options().vector().dimension() != null)
             ? this.createCollection.options().vector().dimension()
             : 0;
-    CollectionSettings.SimilarityFunction similarityFunction =
+    CollectionSchemaObject.SimilarityFunction similarityFunction =
         isVectorEnabled
-            ? CollectionSettings.SimilarityFunction.fromString(
+            ? CollectionSchemaObject.SimilarityFunction.fromString(
                 this.createCollection.options().vector().metric())
             : null;
-    CollectionSettings.VectorConfig.VectorizeConfig vectorizeConfig =
+    VectorConfig.VectorizeConfig vectorizeConfig =
         isVectorEnabled
             ? toCollectionSettingsVectorizeConfig(
                 this.createCollection.options().vector().vectorizeConfig())
             : null;
-    CollectionSettings.VectorConfig vectorConfig =
+    VectorConfig vectorConfig =
         isVectorEnabled
-            ? new CollectionSettings.VectorConfig(
-                isVectorEnabled, vectorSize, similarityFunction, null)
+            ? new VectorConfig(isVectorEnabled, vectorSize, similarityFunction, null)
             : null;
-    return new CollectionSettings(
-        this.createCollection.name(),
+    return new CollectionSchemaObject(
+        namespace,
+        createCollection.name(),
         toCollectionSettingsIdConfig(
             this.createCollection.options() != null
                 ? this.createCollection.options().idConfig()
@@ -105,35 +112,37 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
                 : null));
   }
 
-  private CollectionSettings.IndexingConfig toCollectionSettingsIndexing(
+  private CollectionSchemaObject.IndexingConfig toCollectionSettingsIndexing(
       CreateCollectionCommand.Options.IndexingConfig indexing) {
     if (indexing == null) {
       return null;
     }
-    return new CollectionSettings.IndexingConfig(
+    return new CollectionSchemaObject.IndexingConfig(
         indexing.allow() != null ? new HashSet<>(indexing.allow()) : null,
         indexing.deny() != null ? new HashSet<>(indexing.deny()) : null);
   }
 
-  private CollectionSettings.IdConfig toCollectionSettingsIdConfig(
+  private CollectionSchemaObject.IdConfig toCollectionSettingsIdConfig(
       CreateCollectionCommand.Options.IdConfig idConfig) {
     if (idConfig == null) return null;
     // TODO-SL: check if idConfig.idType() is null and handle accordingly
-    return new CollectionSettings.IdConfig(CollectionSettings.IdType.fromString(idConfig.idType()));
+    return new CollectionSchemaObject.IdConfig(
+        CollectionSchemaObject.IdType.fromString(idConfig.idType()));
   }
 
-  private CollectionSettings.VectorConfig.VectorizeConfig toCollectionSettingsVectorizeConfig(
+  private VectorConfig.VectorizeConfig toCollectionSettingsVectorizeConfig(
       CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig vectorize) {
     if (vectorize == null) {
       return null;
     }
     String provider = vectorize.provider();
     String model = vectorize.modelName();
-    return new CollectionSettings.VectorConfig.VectorizeConfig(
+    return new VectorConfig.VectorizeConfig(
         provider, model, vectorize.authentication(), vectorize.parameters());
   }
 
-  private FileWriterParams buildFileWriterParams() {
+  private FileWriterParams buildFileWriterParams(CollectionSchemaObject collectionObject) {
+
     CreateCollectionCommand.Options createCollectionOptions = this.createCollection.options();
     CreateCollectionCommand.Options.IndexingConfig indexingConfig =
         createCollectionOptions != null ? createCollectionOptions.indexing() : null;
@@ -143,6 +152,10 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
         createCollectionOptions != null ? createCollectionOptions.idConfig() : null;
     boolean hasIndexing = indexingConfig != null;
     boolean hasVector = vectorSearchConfig != null;
+
+    var commandContext =
+        CommandContext.forSchemaObject(collectionObject, null, this.createCollection.name(), null);
+
     String comment =
         CreateCollectionCommandResolver.generateComment(
             new ObjectMapper(),
@@ -155,7 +168,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
     CreateCollectionOperation createCollectionOperation =
         hasVector
             ? CreateCollectionOperation.withVectorSearch(
-                new CommandContext(this.namespace, this.createCollection.name()),
+                commandContext,
                 null,
                 new ObjectMapper(),
                 null,
@@ -169,7 +182,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
                 false,
                 false)
             : CreateCollectionOperation.withoutVectorSearch(
-                new CommandContext(this.namespace, this.createCollection.name()),
+                commandContext,
                 null,
                 new ObjectMapper(),
                 null,
@@ -189,12 +202,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
             .map(SimpleStatement::getQuery)
             .toList();
     InsertOperation insertOperation =
-        InsertOperation.create(
-            new CommandContext(this.namespace, this.createCollection.name()),
-            List.of(),
-            true,
-            true,
-            false);
+        InsertOperation.create(commandContext, List.of(), true, true, false);
     String insertStatementCQL = insertOperation.buildInsertQuery(hasVector);
     return new FileWriterParams(
         this.namespace,
@@ -207,7 +215,7 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
         hasVector);
   }
 
-  public CollectionSettings getCollectionSettings() {
+  public CollectionSchemaObject getCollectionSchemaObject() {
     return this.collectionSettings;
   }
 

@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineGetStatusCommand;
-import io.stargate.sgv2.jsonapi.service.operation.model.collections.OfflineGetStatusOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.OfflineGetStatusOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;

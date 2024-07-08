@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.api.response.BeginOfflineSessionResponse;
 import io.stargate.sgv2.jsonapi.api.response.EndOfflineSessionResponse;
 import io.stargate.sgv2.jsonapi.api.response.OfflineGetStatusResponse;
 import io.stargate.sgv2.jsonapi.api.response.OfflineInsertManyResponse;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.io.*;
 import java.util.ArrayList;
@@ -87,7 +87,7 @@ public class OfflineCommandsProcessorIT {
     }
     OfflineCommandsProcessor offlineCommandsProcessor = OfflineCommandsProcessor.getInstance();
     // begin session
-    Triple<BeginOfflineSessionResponse, CommandContext, SchemaInfo> beginSessionResponse =
+    Triple<BeginOfflineSessionResponse, CommandContext<?>, SchemaInfo> beginSessionResponse =
         beginSession(
             offlineCommandsProcessor,
             namespace,
@@ -101,7 +101,7 @@ public class OfflineCommandsProcessorIT {
       throw new RuntimeException(
           "Error while beginning session : " + beginOfflineSessionResponse.errors());
     }
-    CommandContext commandContext = beginSessionResponse.getMiddle();
+    CommandContext<?> commandContext = beginSessionResponse.getMiddle();
     SchemaInfo schemaInfo = beginSessionResponse.getRight();
     String createTableCQL = schemaInfo.createTableCQL();
     String expectedCreateCQL =
@@ -273,7 +273,7 @@ public class OfflineCommandsProcessorIT {
 
   private EndOfflineSessionResponse endSession(
       OfflineCommandsProcessor offlineCommandsProcessor,
-      CommandContext commandContext,
+      CommandContext<?> commandContext,
       String sessionId)
       throws ExecutionException, InterruptedException {
     return offlineCommandsProcessor.endSession(sessionId, commandContext);
@@ -281,7 +281,7 @@ public class OfflineCommandsProcessorIT {
 
   private OfflineGetStatusResponse getStatus(
       OfflineCommandsProcessor offlineCommandsProcessor,
-      CommandContext commandContext,
+      CommandContext<?> commandContext,
       String sessionId)
       throws ExecutionException, InterruptedException {
     return offlineCommandsProcessor.getStatus(commandContext, sessionId);
@@ -307,14 +307,14 @@ public class OfflineCommandsProcessorIT {
 
   private OfflineInsertManyResponse loadTestData(
       OfflineCommandsProcessor offlineCommandsProcessor,
-      CommandContext commandContext,
+      CommandContext<?> commandContext,
       String sessionId,
       List<JsonNode> jsonNodes)
       throws ExecutionException, InterruptedException {
     return offlineCommandsProcessor.loadData(sessionId, commandContext, jsonNodes);
   }
 
-  private Triple<BeginOfflineSessionResponse, CommandContext, SchemaInfo> beginSession(
+  private Triple<BeginOfflineSessionResponse, CommandContext<?>, SchemaInfo> beginSession(
       OfflineCommandsProcessor offlineCommandsProcessor,
       String namespace,
       String ssTablesOutputDirectory,
@@ -340,7 +340,7 @@ public class OfflineCommandsProcessorIT {
     CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig =
         includeVectorSearch
             ? new CreateCollectionCommand.Options.VectorSearchConfig(
-                3, CollectionSettings.SimilarityFunction.COSINE.toString(), vectorizeConfig)
+                3, CollectionSchemaObject.SimilarityFunction.COSINE.toString(), vectorizeConfig)
             : null;
     CreateCollectionCommand.Options.IndexingConfig indexingConfig = null;
     CreateCollectionCommand.Options options =

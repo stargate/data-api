@@ -53,7 +53,7 @@ public class MeteredCommandProcessorTest {
           objectMapper.readValue(json, CountDocumentsCommand.class);
       CommandContext<CollectionSchemaObject> commandContext =
           new CommandContext<>(
-              new CollectionSchemaObject("namespace", "collection", null, null, null),
+              CollectionSchemaObject.MISSING,
               null,
               "testCommand",
               null);
