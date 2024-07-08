@@ -10,11 +10,16 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
+import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -532,6 +537,102 @@ public class DocumentUpdaterTest {
                 assertThat(node.document()).isEqualTo(expectedData);
                 assertThat(node.modified()).isEqualTo(true);
               });
+    }
+  }
+
+  @Nested
+  class VectorizeUpdateTest {
+
+    @Test
+    public void updateOne_onlyVectorizeWithDiff_noDiff() throws Exception {
+      String updateVectorizeData =
+          """
+                        {"$vectorize" : "Beijing City"}
+                        """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
+
+      final ReadDocument readDocument =
+          ReadDocument.from(
+              DocumentId.fromString("key1"),
+              UUID.randomUUID(),
+              objectMapper
+                  .createObjectNode()
+                  .put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, "Beijing City"));
+
+      assertThat(documentUpdater.hasVectorizeDiff(List.of(readDocument))).isFalse();
+    }
+
+    @Test
+    public void updateOne_onlyVectorizeWithDiff() throws Exception {
+      String updateVectorizeData =
+          """
+                        {"$vectorize" : "Beijing City"}
+                        """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
+
+      final ReadDocument readDocument =
+          ReadDocument.from(
+              DocumentId.fromString("key1"),
+              UUID.randomUUID(),
+              objectMapper
+                  .createObjectNode()
+                  .put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, "Shanghai City"));
+
+      assertThat(documentUpdater.hasVectorizeDiff(List.of(readDocument))).isTrue();
+    }
+
+    @Test
+    public void updateMany_onlyVectorizeWithDiff() throws Exception {
+      String updateVectorizeData =
+          """
+                        {"$vectorize" : "Beijing City"}
+                        """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
+
+      final ReadDocument readDocument1 =
+          ReadDocument.from(
+              DocumentId.fromString("key1"),
+              UUID.randomUUID(),
+              objectMapper
+                  .createObjectNode()
+                  .put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, "Shanghai City"));
+      final ReadDocument readDocument2 =
+          ReadDocument.from(
+              DocumentId.fromString("key2"),
+              UUID.randomUUID(),
+              objectMapper
+                  .createObjectNode()
+                  .put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, "Beijing City"));
+
+      assertThat(documentUpdater.hasVectorizeDiff(List.of(readDocument1, readDocument2))).isTrue();
+    }
+
+    @Test
+    public void findOneAndReplace_onlyVectorizeWithDiff() throws Exception {
+      ObjectNode replaceNode =
+          objectMapper
+              .createObjectNode()
+              .put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, "Beijing City");
+      DocumentUpdater documentUpdater = DocumentUpdater.construct(replaceNode);
+
+      final ReadDocument readDocument =
+          ReadDocument.from(
+              DocumentId.fromString("key1"),
+              UUID.randomUUID(),
+              objectMapper
+                  .createObjectNode()
+                  .put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, "Shanghai City"));
+
+      assertThat(documentUpdater.hasVectorizeDiff(List.of(readDocument))).isTrue();
     }
   }
 }

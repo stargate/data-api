@@ -68,30 +68,39 @@ public record ReadAndUpdateOperation(
             .getDocuments(dataApiRequestInfo, queryExecutor, findOperation().pageState(), null);
     return docsToUpdate
         .onItem()
-        .transformToMulti(
+        .transformToUni(
             findResponse -> {
               pageStateReference.set(findResponse.pageState());
               final List<ReadDocument> docs = findResponse.docs();
+
               // vectorize the updateClause or ReplacementDocument as needed
+              Uni<Boolean> vectorization = Uni.createFrom().item(false);
               final DataVectorizer dataVectorizer =
                   dataVectorizerService.constructDataVectorizer(dataApiRequestInfo, commandContext);
+
               // 1. UpdateCommand(updateOne, findOneAndUpdate, updateMany):
               if (documentUpdater.updateType() == DocumentUpdater.UpdateType.UPDATE) {
-                // if there are documents found, vectorize the updateOperation
-                if (docs.size() != 0) {
-                  documentUpdater.vectorizeUpdateClause(dataVectorizer);
+                // if there are documents found, and there is $vectorize text diff
+                if (docs.size() != 0 && documentUpdater.hasVectorizeDiff(docs)) {
+                  vectorization = documentUpdater.vectorizeUpdateClause(dataVectorizer);
                   // if there is no document found, but upsert mode, vectorize the updateOperation
                 } else if (upsert() && matchedCount.get() == 0) {
-                  documentUpdater.vectorizeUpdateClause(dataVectorizer);
+                  vectorization = documentUpdater.vectorizeUpdateClause(dataVectorizer);
                 }
                 // 2.replaceCommand(findOneAndReplace)
               } else if (documentUpdater.updateType() == DocumentUpdater.UpdateType.REPLACE) {
-                // if there is a document found, vectorize it first in documentUpdater
-                if (docs.size() != 0) {
-                  documentUpdater.vectorizeTheReplacementDocument(dataVectorizer);
+                // if there is a document found and there is $vectorize text diff
+                if (docs.size() != 0 && documentUpdater.hasVectorizeDiff(docs)) {
+                  vectorization = documentUpdater.vectorizeTheReplacementDocument(dataVectorizer);
                 }
               }
-
+              return vectorization
+                  .onItem()
+                  .transformToUni(vectorized -> Uni.createFrom().item(docs));
+            })
+        .onItem()
+        .transformToMulti(
+            docs -> {
               if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
                 return Multi.createFrom().item(findOperation().getNewDocument());
               } else {

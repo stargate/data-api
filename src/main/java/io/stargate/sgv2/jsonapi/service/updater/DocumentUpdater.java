@@ -2,15 +2,15 @@ package io.stargate.sgv2.jsonapi.service.updater;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.smallrye.mutiny.infrastructure.Infrastructure;
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.*;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 /**
  * Updates the document read from the database with the updates came as part of the request.
@@ -93,21 +93,8 @@ public record DocumentUpdater(
    *
    * @param dataVectorizer
    */
-  public void vectorizeUpdateClause(DataVectorizer dataVectorizer) {
-    try {
-      dataVectorizer
-          .vectorizeUpdateClause(updateClause)
-          .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
-          .subscribeAsCompletionStage()
-          .get();
-    } catch (Exception e) {
-      if (e instanceof ExecutionException exception) {
-        if (exception.getCause() instanceof JsonApiException jsonApiException) {
-          throw jsonApiException;
-        }
-      }
-      throw new RuntimeException(e);
-    }
+  public Uni<Boolean> vectorizeUpdateClause(DataVectorizer dataVectorizer) {
+    return dataVectorizer.vectorizeUpdateClause(updateClause);
   }
 
   /**
@@ -151,21 +138,54 @@ public record DocumentUpdater(
    *
    * @param dataVectorizer
    */
-  public void vectorizeTheReplacementDocument(DataVectorizer dataVectorizer) {
-    try {
-      dataVectorizer
-          .vectorize(List.of(replaceDocument))
-          .runSubscriptionOn(Infrastructure.getDefaultWorkerPool())
-          .subscribeAsCompletionStage()
-          .get();
-    } catch (Exception e) {
-      if (e instanceof ExecutionException exception) {
-        if (exception.getCause() instanceof JsonApiException jsonApiException) {
-          throw jsonApiException;
+  public Uni<Boolean> vectorizeTheReplacementDocument(DataVectorizer dataVectorizer) {
+    return dataVectorizer.vectorize(List.of(replaceDocument));
+  }
+
+  /**
+   * Check if there is any $vectorize diff If there are docs found to update or doc to replace, then
+   * this is a necessary condition to proceed vectorization
+   *
+   * @param foundDocs
+   */
+  public boolean hasVectorizeDiff(List<ReadDocument> foundDocs) {
+    String vectorizeTextUpdate = null;
+    if (updateType().equals(DocumentUpdater.UpdateType.UPDATE)) {
+      // extract $vectorize if updateClause set operator has it
+      final ObjectNode setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
+      if (setNode != null) {
+        final JsonNode updateClauseVectorizeTextJsonNode =
+            setNode.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+        if (updateClauseVectorizeTextJsonNode != null) {
+          vectorizeTextUpdate = updateClauseVectorizeTextJsonNode.asText();
         }
       }
-      throw new RuntimeException(e);
+    } else if (updateType().equals(DocumentUpdater.UpdateType.REPLACE)) {
+      // extract $vectorize if replaceDocument has it
+      final JsonNode replaceDocumentVectorizeTextJsonNode =
+          replaceDocument.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+      if (replaceDocumentVectorizeTextJsonNode != null) {
+        vectorizeTextUpdate = replaceDocumentVectorizeTextJsonNode.asText();
+      }
     }
+
+    // if there is no $vectorize to update or replace, then no diff.
+    if (vectorizeTextUpdate == null) {
+      return false;
+    }
+
+    // iterate foundDocs, see if there is any diff for $vectorize
+    for (ReadDocument foundDoc : foundDocs) {
+      final JsonNode foundDocVectorizeTextJsonNode =
+          foundDoc.document().get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+      if (foundDocVectorizeTextJsonNode != null) {
+        if (!foundDocVectorizeTextJsonNode.asText().equals(vectorizeTextUpdate)) {
+          // There is a diff
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   public record DocumentUpdaterResponse(JsonNode document, boolean modified) {}
