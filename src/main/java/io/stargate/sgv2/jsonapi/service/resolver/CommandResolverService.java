@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
@@ -45,10 +44,9 @@ public class CommandResolverService {
         .ifNull()
         .failWith(
             () -> {
-              String msg =
-                  "The command %s is not implemented."
-                      .formatted(command.getClass().getSimpleName());
-              return new JsonApiException(ErrorCode.COMMAND_NOT_IMPLEMENTED, msg);
+              // Should never happen: all Commands should have matching resolvers
+              return ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+                  "No `CommandResolver` for Command \"%s\"", command.getClass().getName());
             });
   }
 }

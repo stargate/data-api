@@ -379,9 +379,8 @@ public record FindOperation(
       }
       default -> {
         JsonApiException failure =
-            new JsonApiException(
-                ErrorCode.UNSUPPORTED_OPERATION,
-                "Unsupported find operation read type " + readType);
+            ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+                "Unsupported find operation read type `%s`", readType);
         return Uni.createFrom().failure(failure);
       }
     }

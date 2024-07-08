@@ -302,7 +302,8 @@ public class Shredder {
       } else if (value.isNull()) {
         callback.shredNull(path);
       } else {
-        throw ErrorCode.SHRED_UNRECOGNIZED_NODE_TYPE.toApiException(value.getNodeType().toString());
+        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+            "Unsupported `JsonNodeType` in input document, `%s`", value.getNodeType());
       }
     }
   }
