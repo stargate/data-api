@@ -4,7 +4,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.data.TupleValue;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -129,7 +129,7 @@ public interface ReadOperation extends Operation {
                           getDocumentId(row.getTupleValue(0)), // key
                           row.getUuid(1), // tx_id
                           root);
-                } catch (JsonProcessingException e) {
+                } catch (JacksonException e) {
                   throw parsingExceptionToApiException(e);
                 }
                 documents.add(document);
@@ -496,7 +496,7 @@ public interface ReadOperation extends Operation {
     public JsonNode get() {
       try {
         return objectMapper.readTree(docJsonValue);
-      } catch (JsonProcessingException e) {
+      } catch (JacksonException e) {
         // These are data stored in the DB so the error should never happen
         throw parsingExceptionToApiException(e);
       }
@@ -506,10 +506,7 @@ public interface ReadOperation extends Operation {
   /**
    * Helper method to handle details of exactly how much information to include in error message.
    */
-  static JsonApiException parsingExceptionToApiException(JsonProcessingException e) {
-    return new JsonApiException(
-        ErrorCode.DOCUMENT_UNPARSEABLE,
-        String.format(
-            "%s: %s", ErrorCode.DOCUMENT_UNPARSEABLE.getMessage(), e.getOriginalMessage()));
+  static JsonApiException parsingExceptionToApiException(JacksonException e) {
+    return ErrorCode.DOCUMENT_UNPARSEABLE.toApiException("%s", e.getOriginalMessage());
   }
 }

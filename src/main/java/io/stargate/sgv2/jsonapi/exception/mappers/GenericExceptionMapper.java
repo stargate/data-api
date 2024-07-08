@@ -15,6 +15,6 @@ public class GenericExceptionMapper {
   @ServerExceptionMapper({Exception.class, MismatchedInputException.class})
   public RestResponse<CommandResult> genericExceptionMapper(Throwable e) {
     CommandResult commandResult = new ThrowableCommandResultSupplier(e).get();
-    return RestResponse.ok(commandResult);
+    return commandResult.map();
   }
 }

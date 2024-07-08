@@ -20,10 +20,6 @@ public interface NoOptionsCommand {
     if (value.isNull() || (value.isObject() && value.isEmpty())) {
       return;
     }
-    final String msg =
-        String.format(
-            "%s: %s",
-            ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage(), getClass().getSimpleName());
-    throw new JsonApiException(ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS, msg);
+    throw ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.toApiException("`%s`", getClass().getSimpleName());
   }
 }

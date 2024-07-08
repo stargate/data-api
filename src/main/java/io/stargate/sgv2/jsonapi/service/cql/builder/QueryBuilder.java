@@ -114,7 +114,8 @@ public class QueryBuilder {
     if (isSelect) {
       return selectQuery();
     }
-    throw ErrorCode.UNSUPPORTED_CQL_QUERY_TYPE.toApiException();
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "Unsupported cql query type in QueryBuilder (isSelect=false)");
   }
 
   private Query selectQuery() {

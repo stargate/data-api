@@ -66,10 +66,11 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .post(NamespaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
-          .body("errors[0].errorCode", is("NO_COMMAND_MATCHED"))
+          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body(
               "errors[0].message",
-              startsWith("No \"unknownCommand\" command found as \"NamespaceCommand\""));
+              startsWith(
+                  "Provided command unknown: \"unknownCommand\" not one of \"NamespaceCommand\"s: known commands are [createCollection"));
     }
 
     @Test
