@@ -52,11 +52,7 @@ public class MeteredCommandProcessorTest {
       CountDocumentsCommand countCommand =
           objectMapper.readValue(json, CountDocumentsCommand.class);
       CommandContext<CollectionSchemaObject> commandContext =
-          new CommandContext<>(
-              CollectionSchemaObject.MISSING,
-              null,
-              "testCommand",
-              null);
+          new CommandContext<>(CollectionSchemaObject.MISSING, null, "testCommand", null);
 
       CommandResult commandResult = new CommandResult(Collections.emptyList());
       Mockito.when(
