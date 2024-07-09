@@ -94,7 +94,7 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
    */
   @Override
   public Uni<Boolean> sendChallenge(RoutingContext context) {
-    // if we should not custo   mize use default
+    // if we should not customize use default
     if (!customChallengeSender.isResolvable()) {
       return HttpAuthenticationMechanism.super.sendChallenge(context);
     }
