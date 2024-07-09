@@ -2,7 +2,6 @@
 # please keep properties in the alphabetical order
 
 stargate:
-
   # security and authentication configuration
   # see io.stargate.sgv2.jsonapi.config.AuthConfig for all config properties and options
   auth:
@@ -14,11 +13,6 @@ stargate:
     # Cassandra token resolver from principal
     token-resolver:
       type: principal
-
-  # multi tenancy settings
-  # see io.stargate.sgv2.jsonapi.config.MultiTenancyConfig  for all config properties and options
-  multi-tenancy:
-    enabled: false
 
   database:
     limits:
@@ -45,13 +39,16 @@ stargate:
       policy: custom
 
   # metrics properties
-  # see io.stargate.sgv2.api.common.config.MetricsConfig for all config properties and options
   metrics:
     global-tags:
       module: sgv2-jsonapi
 
-quarkus:
+  # multi tenancy settings
+  # see io.stargate.sgv2.jsonapi.config.MultiTenancyConfig  for all config properties and options
+  multi-tenancy:
+    enabled: false
 
+quarkus:
   # general app properties
   application:
     name: Stargate DATA API
@@ -61,21 +58,20 @@ quarkus:
   banner:
     path: banner/banner.txt
 
-  log:
-    min-level: trace
+  # properties for the gRPC clients
+  grpc:
+    # all the clients' setup, only embedding gateway
+    clients:
+      embedding:
+        host: 0.0.0.0
+        port: 9000
 
-    console:
-      format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"
-
-    # silent caffeine cache warnings
-    category:
-      'com.github.benmanes.caffeine.cache':
-        level: ERROR
+    # force no grpc server start in dev as we have no grpc service
+    dev-mode:
+      force-server-start: false
 
   # HTTP settings
   http:
-
-
     # every /v1 path is authenticated by default
     # adapt if changing the authentication mechanism
     auth:
@@ -101,22 +97,25 @@ quarkus:
     # non-application path to /stargate, used for readiness and health check
     non-application-root-path: stargate
 
-    port: 8183
+    port: 8181
 
-  # properties for the gRPC clients
-  grpc:
-    # all the clients' setup, only embedding gateway
-    clients:
-      embedding:
-        host: 0.0.0.0
-        port: 9000
+  log:
+    console:
+      format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"
 
-    # force no grpc server start in dev as we have no grpc service
-    dev-mode:
-      force-server-start: false
+    # silent caffeine cache warnings
+    category:
+      'com.github.benmanes.caffeine.cache':
+        level: ERROR
+
+    min-level: trace
 
   # built-in micrometer properties
   micrometer:
+    # exports at prometheus default path
+    export:
+      prometheus:
+        path: /metrics
     binder:
       http-server:
         # ignore all non-application uris, as well as the custom set
@@ -129,6 +128,11 @@ quarkus:
         match-patterns: |
           /v1/[^/]+=/v1/{namespace},
           /v1/.+/.+=/v1/{namespace}/{collection}
+
+  native:
+    # Adding com.datastax.oss.driver.internal.core.metadata.MetadataManager to the list of classes that are initialized
+    # at run time while building the native image. This is for the issue https://github.com/stargate/jsonapi/issues/597
+    additional-build-args: --initialize-at-run-time=com.datastax.oss.driver.internal.core.metadata.MetadataManager
 
   # adapt path of the open api definitions
   smallrye-openapi:
@@ -161,10 +165,6 @@ quarkus:
         }
       }
 
-  native:
-    # Adding com.datastax.oss.driver.internal.core.metadata.MetadataManager to the list of classes that are initialized
-    # at run time while building the native image. This is for the issue https://github.com/stargate/jsonapi/issues/597
-    additional-build-args: --initialize-at-run-time=com.datastax.oss.driver.internal.core.metadata.MetadataManager
 
 "%dev":
    quarkus:
