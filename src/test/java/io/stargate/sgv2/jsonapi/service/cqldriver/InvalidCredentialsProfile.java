@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
+import com.google.common.collect.ImmutableMap;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import java.util.Map;
-import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 public class InvalidCredentialsProfile implements QuarkusTestProfile {
 
