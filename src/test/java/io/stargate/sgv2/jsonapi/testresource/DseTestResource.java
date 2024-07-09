@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.testresource;
 
+import com.google.common.collect.ImmutableMap;
 import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import java.util.Map;
-import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 public class DseTestResource extends StargateTestResource {
   // set default props if not set, so we launch DSE
