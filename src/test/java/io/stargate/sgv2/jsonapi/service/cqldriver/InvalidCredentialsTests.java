@@ -12,6 +12,7 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -21,14 +22,29 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 @QuarkusTest
-@TestProfile(InvalidCredentialsProfile.class)
+@TestProfile(InvalidCredentialsTests.TestProfile.class)
 public class InvalidCredentialsTests {
+  public static class TestProfile implements QuarkusTestProfile {
+    public boolean disableGlobalTestResources() {
+      return true;
+    }
+
+    @Override
+    public Map<String, String> getConfigOverrides() {
+      return ImmutableMap.<String, String>builder()
+          .put("stargate.jsonapi.operations.database-config.fixed-token", "test-token")
+          .put("stargate.jsonapi.operations.database-config.password", "invalid-password")
+          .build();
+    }
+  }
 
   private static final String TENANT_ID_FOR_TEST = "test_tenant";
 
