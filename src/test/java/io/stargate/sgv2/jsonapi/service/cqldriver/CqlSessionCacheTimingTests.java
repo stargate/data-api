@@ -24,7 +24,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 
 @QuarkusTest
 @TestProfile(CqlSessionCacheTimingTests.TestProfile.class)
@@ -35,10 +34,11 @@ public class CqlSessionCacheTimingTests {
 
     @Override
     public Map<String, String> getConfigOverrides() {
-      return ImmutableMap.<String, String>builder()
-          .put("stargate.jsonapi.operations.database-config.fixed-token", "test-token")
-          .put("stargate.jsonapi.operations.database-config.session-cache-ttl-seconds", "10")
-          .build();
+      return Map.of(
+          "stargate.jsonapi.operations.database-config.fixed-token",
+          "test-token",
+          "stargate.jsonapi.operations.database-config.session-cache-ttl-seconds",
+          "10");
     }
   }
 

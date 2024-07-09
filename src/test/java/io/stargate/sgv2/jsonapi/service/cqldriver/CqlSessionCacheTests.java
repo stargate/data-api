@@ -8,7 +8,6 @@ import static org.mockito.Mockito.when;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
-import com.google.common.collect.ImmutableMap;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -38,9 +37,7 @@ public class CqlSessionCacheTests {
 
     @Override
     public Map<String, String> getConfigOverrides() {
-      return ImmutableMap.<String, String>builder()
-          .put("stargate.jsonapi.operations.database-config.fixed-token", "test-token")
-          .build();
+      return Map.of("stargate.jsonapi.operations.database-config.fixed-token", "test-token");
     }
   }
 
