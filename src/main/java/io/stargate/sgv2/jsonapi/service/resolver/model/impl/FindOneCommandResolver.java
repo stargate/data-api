@@ -10,9 +10,11 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.tables.FindTableOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
@@ -49,6 +51,14 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
   @Override
   public Class<FindOneCommand> getCommandClass() {
     return FindOneCommand.class;
+  }
+
+  @Override
+  public Operation resolveTableCommand(
+      CommandContext<TableSchemaObject> ctx, FindOneCommand command) {
+
+    return new FindTableOperation(
+        ctx, LogicalExpression.and(), new FindTableOperation.FindTableParams(1));
   }
 
   @Override

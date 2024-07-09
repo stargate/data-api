@@ -117,6 +117,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                   JsonNode root = readDocument ? objectMapper.readTree(row.getString(2)) : null;
                   if (root != null) {
                     // create metrics
+                    // TODO Use the column names!
                     jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
                         commandName, row.getString(2).length());
 

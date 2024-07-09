@@ -22,6 +22,9 @@ public record ReadDocument(
     List<JsonNode> sortColumns,
     Supplier<JsonNode> docJsonValue) {
 
+  // TODO: make it so there is only the supplier for the document, dangerous to have both the value
+  // and the supplier which should I use ?
+
   public static ReadDocument from(DocumentId id, UUID txnId, JsonNode document) {
     return new ReadDocument(id, txnId, document, null, null);
   }
