@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.collections.CreateNamespaceOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -28,9 +28,8 @@ public class CreateNamespaceCommandResolver implements CommandResolver<CreateNam
 
   /** {@inheritDoc} */
   @Override
-  public Operation resolveCollectionCommand(
-      CommandContext<CollectionSchemaObject> ctx, CreateNamespaceCommand command) {
-    // TODO:Need a new Schema Object for this !
+  public Operation resolveDatabaseCommand(
+      CommandContext<DatabaseSchemaObject> ctx, CreateNamespaceCommand command) {
     String replicationMap = getReplicationMap(command.options());
     return new CreateNamespaceOperation(command.name(), replicationMap);
   }
