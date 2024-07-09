@@ -30,9 +30,8 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 @TestProfile(CqlSessionCacheTimingTests.TestProfile.class)
 public class CqlSessionCacheTimingTests {
   public static class TestProfile implements QuarkusTestProfile {
-    public boolean disableGlobalTestResources() {
-      return true;
-    }
+    // Alas, we do need actual DB backend so cannot do:
+    // public boolean disableGlobalTestResources() { return true; }
 
     @Override
     public Map<String, String> getConfigOverrides() {

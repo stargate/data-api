@@ -33,9 +33,8 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 @TestProfile(InvalidCredentialsTests.TestProfile.class)
 public class InvalidCredentialsTests {
   public static class TestProfile implements QuarkusTestProfile {
-    public boolean disableGlobalTestResources() {
-      return true;
-    }
+    // Alas, we do need actual DB backend so cannot do:
+    // public boolean disableGlobalTestResources() { return true; }
 
     @Override
     public Map<String, String> getConfigOverrides() {

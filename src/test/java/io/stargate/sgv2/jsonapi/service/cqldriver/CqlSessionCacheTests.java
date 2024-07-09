@@ -33,9 +33,8 @@ import org.junit.jupiter.api.Test;
 @TestProfile(CqlSessionCacheTests.TestProfile.class)
 public class CqlSessionCacheTests {
   public static class TestProfile implements QuarkusTestProfile {
-    public boolean disableGlobalTestResources() {
-      return true;
-    }
+    // Alas, we do need actual DB backend so cannot do:
+    // public boolean disableGlobalTestResources() { return true; }
 
     @Override
     public Map<String, String> getConfigOverrides() {
