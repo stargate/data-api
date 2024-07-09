@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
-import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
@@ -14,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.response.BeginOfflineSessionResponse;
 import io.stargate.sgv2.jsonapi.api.response.EndOfflineSessionResponse;
 import io.stargate.sgv2.jsonapi.api.response.OfflineGetStatusResponse;
 import io.stargate.sgv2.jsonapi.api.response.OfflineInsertManyResponse;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
@@ -95,8 +95,7 @@ public class OfflineCommandsProcessor {
             .withMapping(OperationsConfig.class)
             .withMapping(MetricsConfig.class)
             .build();
-    MetricsConfig metricsConfig = smallRyeConfig.getConfigMapping(MetricsConfig.class);
-    return new DataVectorizerService(objectMapper, new SimpleMeterRegistry(), null, metricsConfig);
+    return new DataVectorizerService(objectMapper, new SimpleMeterRegistry(), null);
   }
 
   public OfflineGetStatusResponse getStatus(CommandContext commandContext, String sessionId)

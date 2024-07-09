@@ -45,7 +45,6 @@ stargate:
       policy: custom
 
   # metrics properties
-  # see io.stargate.sgv2.api.common.config.MetricsConfig for all config properties and options
   metrics:
     global-tags:
       module: sgv2-jsonapi
@@ -103,6 +102,10 @@ quarkus:
 
     port: 8183
 
+    # non-application path to /stargate, used for readiness and health check
+    non-application-root-path: stargate
+
+
   # properties for the gRPC clients
   grpc:
     # all the clients' setup, only embedding gateway
@@ -117,6 +120,10 @@ quarkus:
 
   # built-in micrometer properties
   micrometer:
+    # exports at prometheus default path
+    export:
+      prometheus:
+        path: /metrics
     binder:
       http-server:
         # ignore all non-application uris, as well as the custom set
