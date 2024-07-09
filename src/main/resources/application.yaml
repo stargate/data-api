@@ -2,7 +2,6 @@
 # please keep properties in the alphabetical order
 
 stargate:
-
   # security and authentication configuration
   # see io.stargate.sgv2.jsonapi.config.AuthConfig for all config properties and options
   auth:
@@ -14,11 +13,6 @@ stargate:
     # Cassandra token resolver from principal
     token-resolver:
       type: principal
-
-  # multi tenancy settings
-  # see io.stargate.sgv2.jsonapi.config.MultiTenancyConfig  for all config properties and options
-  multi-tenancy:
-    enabled: false
 
   database:
     limits:
@@ -45,44 +39,24 @@ stargate:
       policy: custom
 
   # metrics properties
-  # see io.stargate.sgv2.api.common.config.MetricsConfig for all config properties and options
   metrics:
     global-tags:
       module: sgv2-jsonapi
 
-quarkus:
+  # multi tenancy settings
+  # see io.stargate.sgv2.jsonapi.config.MultiTenancyConfig  for all config properties and options
+  multi-tenancy:
+    enabled: false
 
+quarkus:
   # general app properties
   application:
     name: Stargate DATA API
+    ui-header: ${quarkus.application.name} (powered by DataStax)
 
   # banner for the startup
   banner:
     path: banner/banner.txt
-
-  log:
-    min-level: trace
-
-  # HTTP settings
-  http:
-
-    # every /v1 path is authenticated by default
-    # adapt if changing the authentication mechanism
-    auth:
-      proactive: false
-      permission:
-        default:
-          paths: /v1/*
-          policy: authenticated
-
-    limits:
-      # Let's limit low-level maximum HTTP request size to 20 megs: stricter
-      # limit (4 meg per document) is applied at the JSON API level.
-      # Low-level limits may result in EPIPE/413 errors
-      # whereas at higher level we can use regular JSON API error responses
-      max-body-size: 20M
-
-    port: 8181
 
   # properties for the gRPC clients
   grpc:
@@ -92,8 +66,56 @@ quarkus:
         host: 0.0.0.0
         port: 9000
 
+    # force no grpc server start in dev as we have no grpc service
+    dev-mode:
+      force-server-start: false
+
+  # HTTP settings
+  http:
+    # every /v1 path is authenticated by default
+    # adapt if changing the authentication mechanism
+    auth:
+      # disable basic auth completely
+      basic: false
+      proactive: false
+      permission:
+        default:
+          paths: /v1/*
+          policy: authenticated
+
+    # access log format, must be explicitly enabled
+    access-log:
+      pattern: "%h %l %t \"%r\" %s %b"
+
+    limits:
+      # Let's limit low-level maximum HTTP request size to 20 megs: stricter
+      # limit (4 meg per document) is applied at the JSON API level.
+      # Low-level limits may result in EPIPE/413 errors
+      # whereas at higher level we can use regular JSON API error responses
+      max-body-size: 20M
+
+    # non-application path to /stargate, used for readiness and health check
+    non-application-root-path: stargate
+
+    port: 8181
+
+  log:
+    console:
+      format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"
+
+    # silent caffeine cache warnings
+    category:
+      'com.github.benmanes.caffeine.cache':
+        level: ERROR
+
+    min-level: trace
+
   # built-in micrometer properties
   micrometer:
+    # exports at prometheus default path
+    export:
+      prometheus:
+        path: /metrics
     binder:
       http-server:
         # ignore all non-application uris, as well as the custom set
@@ -107,18 +129,42 @@ quarkus:
           /v1/[^/]+=/v1/{namespace},
           /v1/.+/.+=/v1/{namespace}/{collection}
 
-  # adapt path of the open api definitions
-  smallrye-openapi:
-    path: /api/json/openapi
-
-  # Enable an embedded Swagger UI
-  swagger-ui:
-    always-include: true
-
   native:
     # Adding com.datastax.oss.driver.internal.core.metadata.MetadataManager to the list of classes that are initialized
     # at run time while building the native image. This is for the issue https://github.com/stargate/jsonapi/issues/597
     additional-build-args: --initialize-at-run-time=com.datastax.oss.driver.internal.core.metadata.MetadataManager
+
+  # adapt path of the open api definitions
+  smallrye-openapi:
+    path: /api/json/openapi
+    info-title: ${quarkus.application.name}
+    info-version: ${quarkus.application.version:}
+    info-description:
+    info-terms-of-service:
+    info-contact-name: Stargate
+    info-contact-url: https://stargate.io
+    info-license-name: Apache 2.0
+    info-license-url: https://www.apache.org/licenses/LICENSE-2.0.html
+
+  # Enable an embedded Swagger UI
+  swagger-ui:
+    path: /swagger-ui
+    always-include: true
+    title: ${quarkus.application.name}
+    # function below enables pre-populating the authentication token in the Swagger UI
+    # it's reading the value of the token from the sg-swagger-token cookie, if existing
+    # cookie extraction copied from: https://stackoverflow.com/questions/10730362/get-cookie-by-name
+    # Swagger configuration reference: https://swagger.io/docs/open-source-tools/swagger-ui/usage/configuration/
+    on-complete: |
+      function() {
+        const value = '; ' + document.cookie;
+        const parts = value.split('; sg-swagger-token=');
+        if (parts.length === 2) { 
+          const token = parts.pop().split(';').shift();
+          ui.preauthorizeApiKey('Token', token);
+        }
+      }
+
 
 "%dev":
    quarkus:

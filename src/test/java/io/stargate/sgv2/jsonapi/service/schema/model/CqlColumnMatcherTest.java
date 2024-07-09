@@ -11,7 +11,6 @@ import com.datastax.oss.driver.internal.core.type.DefaultSetType;
 import com.datastax.oss.driver.internal.core.type.DefaultTupleType;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
 import com.datastax.oss.protocol.internal.ProtocolConstants;
-import io.stargate.bridge.proto.QueryOuterClass.TypeSpec;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
@@ -287,7 +286,6 @@ class CqlColumnMatcherTest {
 
     @Test
     public void notMap() {
-      TypeSpec.Builder type = TypeSpec.newBuilder().setBasic(TypeSpec.Basic.VARCHAR);
       ColumnMetadata spec =
           new DefaultColumnMetadata(
               CqlIdentifier.fromInternal("keyspace"),
