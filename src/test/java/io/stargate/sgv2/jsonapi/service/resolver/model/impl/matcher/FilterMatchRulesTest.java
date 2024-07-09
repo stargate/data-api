@@ -56,7 +56,8 @@ public class FilterMatchRulesTest {
           .capture("TEST1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
-      LogicalExpression response = filterMatchRules.apply(TestConstants.CONTEXT, findOneCommand);
+      LogicalExpression response =
+          filterMatchRules.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
       assertThat(response).isNotNull();
 
       json =
@@ -69,7 +70,7 @@ public class FilterMatchRulesTest {
           """;
 
       findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
-      response = filterMatchRules.apply(TestConstants.CONTEXT, findOneCommand);
+      response = filterMatchRules.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
       assertThat(response).isNotNull();
     }
 

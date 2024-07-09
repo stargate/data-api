@@ -23,7 +23,7 @@ class DropNamespaceCommandResolverTest {
   @Inject ObjectMapper objectMapper;
   @Inject DropNamespaceCommandResolver resolver;
 
-  CommandContext<CollectionSchemaObject> commandContext = TestConstants.CONTEXT;
+  CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
   @Nested
   class ResolveCommand {

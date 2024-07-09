@@ -51,7 +51,7 @@ public class FilterMatchRuleTest {
 
       FilterMatchRule<FindOneCommand> filterMatchRule = new FilterMatchRule(matcher);
       Optional<LogicalExpression> response =
-          filterMatchRule.apply(TestConstants.CONTEXT, findOneCommand);
+          filterMatchRule.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
       assertThat(response).isPresent();
 
       matcher = new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY, resolveFunction);
@@ -59,7 +59,7 @@ public class FilterMatchRuleTest {
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL);
       filterMatchRule = new FilterMatchRule(matcher);
-      response = filterMatchRule.apply(TestConstants.CONTEXT, findOneCommand);
+      response = filterMatchRule.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
       assertThat(response).isEmpty();
     }
 
@@ -87,7 +87,7 @@ public class FilterMatchRuleTest {
           .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
 
       Optional<LogicalExpression> response =
-          filterMatchRule.apply(TestConstants.CONTEXT, findOneCommand);
+          filterMatchRule.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
       assertThat(response).isPresent();
     }
   }

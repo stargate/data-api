@@ -27,7 +27,7 @@ public class CreateCollectionResolverVectorizeDisabledTest {
   @Nested
   class ResolveCommand {
 
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.CONTEXT;
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void vectorizeSearchDisabled() throws Exception {

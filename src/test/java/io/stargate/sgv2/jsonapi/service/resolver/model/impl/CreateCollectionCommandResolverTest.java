@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.collections.CreateCollectionOperation;
 import jakarta.inject.Inject;
@@ -29,7 +29,7 @@ class CreateCollectionCommandResolverTest {
   @Nested
   class ResolveCommand {
 
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.CONTEXT;
+    CommandContext<KeyspaceSchemaObject> commandContext = TestConstants.KEYSPACE_CONTEXT;
 
     @Test
     public void happyPath() throws Exception {
