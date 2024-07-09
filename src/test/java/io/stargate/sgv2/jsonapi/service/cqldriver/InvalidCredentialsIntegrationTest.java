@@ -1,12 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
-import static io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilderTest.TENANT_ID_PROPERTY_KEY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -14,9 +14,12 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,8 +29,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@TestProfile(CqlSessionCacheTimingTests.TestProfile.class)
-public class CqlSessionCacheTimingTests {
+@TestProfile(InvalidCredentialsIntegrationTest.TestProfile.class)
+public class InvalidCredentialsIntegrationTest {
   public static class TestProfile implements QuarkusTestProfile {
     // Alas, we do need actual DB backend so cannot do:
     // public boolean disableGlobalTestResources() { return true; }
@@ -37,10 +40,12 @@ public class CqlSessionCacheTimingTests {
       return Map.of(
           "stargate.jsonapi.operations.database-config.fixed-token",
           "test-token",
-          "stargate.jsonapi.operations.database-config.session-cache-ttl-seconds",
-          "10");
+          "stargate.jsonapi.operations.database-config.password",
+          "invalid-password");
     }
   }
+
+  private static final String TENANT_ID_FOR_TEST = "test_tenant";
 
   @Inject OperationsConfig operationsConfig;
 
@@ -54,7 +59,7 @@ public class CqlSessionCacheTimingTests {
   private List<CqlSession> sessionsCreatedInTests;
 
   @BeforeEach
-  public void setupEachTest() {
+  public void tearUpEachTest() {
     meterRegistry = new SimpleMeterRegistry();
     sessionsCreatedInTests = new ArrayList<>();
   }
@@ -65,24 +70,22 @@ public class CqlSessionCacheTimingTests {
   }
 
   @Test
-  public void testOSSCxCQLSessionCacheTimedEviction() throws InterruptedException {
+  public void testOSSCxCQLSessionCacheWithInvalidCredentials()
+      throws NoSuchFieldException, IllegalAccessException {
+    // set request info
+    DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
+    when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(TENANT_ID_FOR_TEST));
+    when(dataApiRequestInfo.getCassandraToken())
+        .thenReturn(operationsConfig.databaseConfig().fixedToken());
     CQLSessionCache cqlSessionCacheForTest = new CQLSessionCache(operationsConfig, meterRegistry);
-    int sessionsToCreate = operationsConfig.databaseConfig().sessionCacheMaxSize();
-    for (int i = 0; i < sessionsToCreate; i++) {
-      String tenantId = "tenant_timing_test_" + i;
-      DataApiRequestInfo dataApiRequestInfo = mock(DataApiRequestInfo.class);
-      when(dataApiRequestInfo.getTenantId()).thenReturn(Optional.of(tenantId));
-      when(dataApiRequestInfo.getCassandraToken())
-          .thenReturn(operationsConfig.databaseConfig().fixedToken());
-      CqlSession cqlSession = cqlSessionCacheForTest.getSession(dataApiRequestInfo);
-      sessionsCreatedInTests.add(cqlSession);
-      assertThat(
-              ((DefaultDriverContext) cqlSession.getContext())
-                  .getStartupOptions()
-                  .get(TENANT_ID_PROPERTY_KEY))
-          .isEqualTo(tenantId);
-    }
-    Thread.sleep(10000);
+    // Throwable
+    Throwable t = catchThrowable(() -> cqlSessionCacheForTest.getSession(dataApiRequestInfo));
+    assertThat(t).isInstanceOf(AllNodesFailedException.class);
+    CommandResult.Error error =
+        ThrowableToErrorMapper.getMapperWithMessageFunction().apply(t, t.getMessage());
+    assertThat(error).isNotNull();
+    assertThat(error.message()).contains("UNAUTHENTICATED: Invalid token");
+    assertThat(error.status()).isEqualTo(Response.Status.UNAUTHORIZED);
     assertThat(cqlSessionCacheForTest.cacheSize()).isEqualTo(0);
     // metrics test
     Gauge cacheSizeMetric =
@@ -92,14 +95,22 @@ public class CqlSessionCacheTimingTests {
     FunctionCounter cachePutMetric =
         meterRegistry.find("cache.puts").tag("cache", "cql_sessions_cache").functionCounter();
     assertThat(cachePutMetric).isNotNull();
-    assertThat(cachePutMetric.count()).isEqualTo(sessionsToCreate);
-    FunctionCounter cacheLoadMetric =
+    assertThat(cachePutMetric.count()).isEqualTo(1);
+    FunctionCounter cacheLoadSuccessMetric =
         meterRegistry
             .find("cache.load")
             .tag("cache", "cql_sessions_cache")
             .tag("result", "success")
             .functionCounter();
-    assertThat(cacheLoadMetric).isNotNull();
-    assertThat(cacheLoadMetric.count()).isEqualTo(sessionsToCreate);
+    assertThat(cacheLoadSuccessMetric).isNotNull();
+    assertThat(cacheLoadSuccessMetric.count()).isEqualTo(0);
+    FunctionCounter cacheLoadFailureMetric =
+        meterRegistry
+            .find("cache.load")
+            .tag("cache", "cql_sessions_cache")
+            .tag("result", "failure")
+            .functionCounter();
+    assertThat(cacheLoadFailureMetric).isNotNull();
+    assertThat(cacheLoadFailureMetric.count()).isEqualTo(1);
   }
 }
