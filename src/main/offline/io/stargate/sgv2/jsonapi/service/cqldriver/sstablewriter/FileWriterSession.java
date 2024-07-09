@@ -22,7 +22,6 @@ import com.datastax.oss.protocol.internal.response.result.ColumnSpec;
 import com.datastax.oss.protocol.internal.response.result.RawType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import io.smallrye.faulttolerance.core.util.CompletionStages;
 import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import java.io.File;
@@ -270,7 +269,7 @@ public class FileWriterSession implements CqlSession {
       throw new RuntimeException(e);
     }
     cqlSessionCache.removeSession(this.cacheKey);
-    return CompletionStages.completedStage(null);
+    return CompletableFuture.completedFuture(null);
   }
 
   @NonNull
