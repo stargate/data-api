@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
-import static io.stargate.sgv2.api.common.config.constants.LoggingConstants.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.config.MeterFilter;
@@ -19,6 +17,7 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.config.constants.LoggingConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
@@ -188,8 +187,10 @@ public class MeteredCommandProcessor {
       return false;
     }
     Set<String> allowedTenants =
-        commandLevelLoggingConfig.enabledTenants().orElse(Collections.singleton(ALL_TENANTS));
-    if (!allowedTenants.contains(ALL_TENANTS)
+        commandLevelLoggingConfig
+            .enabledTenants()
+            .orElse(Collections.singleton(LoggingConstants.ALL_TENANTS));
+    if (!allowedTenants.contains(LoggingConstants.ALL_TENANTS)
         && !allowedTenants.contains(dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE))) {
       return false;
     }
