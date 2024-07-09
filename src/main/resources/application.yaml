@@ -74,6 +74,7 @@ quarkus:
   # HTTP settings
   http:
 
+
     # every /v1 path is authenticated by default
     # adapt if changing the authentication mechanism
     auth:
@@ -96,7 +97,10 @@ quarkus:
       # whereas at higher level we can use regular JSON API error responses
       max-body-size: 20M
 
-    port: 8181
+    # non-application path to /stargate, used for readiness and health check
+    non-application-root-path: stargate
+
+    port: 8183
 
     # non-application path to /stargate, used for readiness and health check
     non-application-root-path: stargate
