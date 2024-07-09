@@ -32,6 +32,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.cassandra.config.Config;
@@ -213,7 +214,7 @@ public class FileWriterSession implements CqlSession {
       this.cqlsSSTableWriter.addRow(boundValues);
       buffers.add(TypeCodecs.BOOLEAN.encode(Boolean.TRUE, ProtocolVersion.DEFAULT));
       CompletionStage<AsyncResultSet> resultSetCompletionStage =
-          CompletionStages.completedStage(
+          CompletableFuture.completedFuture(
               new FileWriterAsyncResultSet(
                   responseColumnDefinitions,
                   new FileWriterResponseRow(responseColumnDefinitions, 0, buffers)));
