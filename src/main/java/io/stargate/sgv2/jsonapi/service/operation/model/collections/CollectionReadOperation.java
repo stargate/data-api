@@ -113,6 +113,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                 Row row = rowIterator.next();
                 ReadDocument document = null;
                 try {
+                  // TODO: Use the field name, not the ordinal for the field this is too brittle
                   JsonNode root = readDocument ? objectMapper.readTree(row.getString(2)) : null;
                   if (root != null) {
                     // create metrics

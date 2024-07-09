@@ -2,10 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 
 /**
@@ -25,6 +22,7 @@ public record CommandContext<T extends SchemaObject>(
   //  private static final CommandContext EMPTY =
   //      new CommandContext(null, null, CollectionSettings.empty(), null, "testCommand", null);
 
+  // TODO: remove the empty collection and table, if they are only used for test data
   public static final CommandContext<CollectionSchemaObject> EMPTY_COLLECTION =
       new CommandContext<>(CollectionSchemaObject.MISSING, null, "testCommand", null);
 
@@ -64,6 +62,10 @@ public record CommandContext<T extends SchemaObject>(
     if (schemaObject instanceof KeyspaceSchemaObject kso) {
       return (CommandContext<T>)
           forSchemaObject(kso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+    }
+    if (schemaObject instanceof DatabaseSchemaObject dso) {
+      return (CommandContext<T>)
+          forSchemaObject(dso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
     }
     throw new IllegalArgumentException("Unknown schema object type: " + schemaObject.getClass());
   }
@@ -125,34 +127,55 @@ public record CommandContext<T extends SchemaObject>(
         schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
   }
 
+  /**
+   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
+   * are working with
+   *
+   * @param schemaObject
+   * @param embeddingProvider
+   * @param commandName
+   * @param jsonProcessingMetricsReporter
+   * @return
+   */
+  public static CommandContext<DatabaseSchemaObject> forSchemaObject(
+      DatabaseSchemaObject schemaObject,
+      EmbeddingProvider embeddingProvider,
+      String commandName,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+    return new CommandContext<>(
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+  }
+
   @SuppressWarnings("unchecked")
   public CommandContext<CollectionSchemaObject> asCollectionContext() {
-    Preconditions.checkArgument(
-        schemaObject().type == CollectionSchemaObject.TYPE,
-        "SchemaObject type is actual was %s expected was %s ",
-        schemaObject().type,
-        CollectionSchemaObject.TYPE);
+    checkSchemaObjectType(CollectionSchemaObject.TYPE);
     return (CommandContext<CollectionSchemaObject>) this;
   }
 
   @SuppressWarnings("unchecked")
   public CommandContext<TableSchemaObject> asTableContext() {
-    Preconditions.checkArgument(
-        schemaObject().type == TableSchemaObject.TYPE,
-        "SchemaObject type is actual was %s expected was %s ",
-        schemaObject().type,
-        TableSchemaObject.TYPE);
+    checkSchemaObjectType(TableSchemaObject.TYPE);
     return (CommandContext<TableSchemaObject>) this;
   }
 
   @SuppressWarnings("unchecked")
   public CommandContext<KeyspaceSchemaObject> asKeyspaceContext() {
-    Preconditions.checkArgument(
-        schemaObject().type == KeyspaceSchemaObject.TYPE,
-        "SchemaObject type is actual was %s expected was %s ",
-        schemaObject().type,
-        KeyspaceSchemaObject.TYPE);
+    checkSchemaObjectType(KeyspaceSchemaObject.TYPE);
     return (CommandContext<KeyspaceSchemaObject>) this;
+  }
+
+  @SuppressWarnings("unchecked")
+  public CommandContext<DatabaseSchemaObject> asDatabaseContext() {
+    checkSchemaObjectType(DatabaseSchemaObject.TYPE);
+    return (CommandContext<DatabaseSchemaObject>) this;
+  }
+
+  private void checkSchemaObjectType(SchemaObject.SchemaObjectType expectedType) {
+    Preconditions.checkArgument(
+        schemaObject().type == expectedType,
+        "SchemaObject type actual was %s expected was %s ",
+        schemaObject().type,
+        expectedType);
   }
 
   // TODO: why do we have these public ctors, and a static factor, and this is a record ??

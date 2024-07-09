@@ -29,7 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-
 @TestProfile(CqlSessionCacheIntegrationTest.TestProfile.class)
 public class CqlSessionCacheIntegrationTest {
   public static class TestProfile implements QuarkusTestProfile {
@@ -41,7 +40,6 @@ public class CqlSessionCacheIntegrationTest {
       return Map.of("stargate.jsonapi.operations.database-config.fixed-token", "test-token");
     }
   }
-
 
   private static final String TENANT_ID_FOR_TEST = "test_tenant";
 

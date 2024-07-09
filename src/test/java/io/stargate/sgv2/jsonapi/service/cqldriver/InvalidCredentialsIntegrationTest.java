@@ -29,7 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-
 @TestProfile(InvalidCredentialsIntegrationTest.TestProfile.class)
 public class InvalidCredentialsIntegrationTest {
   public static class TestProfile implements QuarkusTestProfile {

@@ -7,12 +7,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindEmbeddingProvidersCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -26,8 +24,6 @@ public class CreateCollectionResolverVectorizeDisabledTest {
 
   @Nested
   class ResolveCommand {
-
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void vectorizeSearchDisabled() throws Exception {
@@ -53,7 +49,9 @@ public class CreateCollectionResolverVectorizeDisabledTest {
       CreateCollectionCommand command = objectMapper.readValue(json, CreateCollectionCommand.class);
       Exception e =
           catchException(
-              () -> createCollectionCommandResolver.resolveCommand(commandContext, command));
+              () ->
+                  createCollectionCommandResolver.resolveCommand(
+                      TestConstants.KEYSPACE_CONTEXT, command));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
           .hasMessageStartingWith(ErrorCode.VECTORIZE_FEATURE_NOT_AVAILABLE.getMessage());
@@ -61,6 +59,9 @@ public class CreateCollectionResolverVectorizeDisabledTest {
 
     @Test
     public void findEmbeddingProvidersWithVectorizeSearchDisabled() throws Exception {
+      // TODO: This test should be moved, these are rests for create collection NOT for
+      // findEmbeddingProviders.
+
       String json =
           """
                   {
@@ -71,7 +72,9 @@ public class CreateCollectionResolverVectorizeDisabledTest {
           objectMapper.readValue(json, FindEmbeddingProvidersCommand.class);
       Exception e =
           catchException(
-              () -> findEmbeddingProvidersCommandResolver.resolveCommand(commandContext, command));
+              () ->
+                  findEmbeddingProvidersCommandResolver.resolveCommand(
+                      TestConstants.DATABASE_CONTEXT, command));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
           .hasMessageStartingWith(ErrorCode.VECTORIZE_FEATURE_NOT_AVAILABLE.getMessage());

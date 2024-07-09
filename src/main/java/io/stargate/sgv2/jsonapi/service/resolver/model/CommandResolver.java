@@ -64,6 +64,7 @@ public interface CommandResolver<C extends Command> {
       case COLLECTION -> resolveCollectionCommand(commandContext.asCollectionContext(), command);
       case TABLE -> resolveTableCommand(commandContext.asTableContext(), command);
       case KEYSPACE -> resolveKeyspaceCommand(commandContext.asKeyspaceContext(), command);
+      case DATABASE -> resolveDatabaseCommand(commandContext.asDatabaseContext(), command);
     };
   }
 
@@ -114,6 +115,22 @@ public interface CommandResolver<C extends Command> {
     throw new UnsupportedOperationException(
         String.format(
             "%s Command does not support operating on Keyspaces, target was %s",
+            command.getClass().getSimpleName(), ctx.schemaObject().name));
+  }
+
+  /**
+   * Implementors should use this method when they can resolve commands for a databse.
+   *
+   * @param ctx
+   * @param command
+   * @return
+   */
+  default Operation resolveDatabaseCommand(CommandContext<DatabaseSchemaObject> ctx, C command) {
+    // there error is a fallback to make sure it is implemented if it should be
+    // commands are tested well
+    throw new UnsupportedOperationException(
+        String.format(
+            "%s Command does not support operating on Databases, target was %s",
             command.getClass().getSimpleName(), ctx.schemaObject().name));
   }
 

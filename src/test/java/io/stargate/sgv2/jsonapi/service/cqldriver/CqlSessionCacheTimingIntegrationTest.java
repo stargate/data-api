@@ -26,7 +26,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-
 @TestProfile(CqlSessionCacheTimingIntegrationTest.TestProfile.class)
 public class CqlSessionCacheTimingIntegrationTest {
   public static class TestProfile implements QuarkusTestProfile {
@@ -42,7 +41,6 @@ public class CqlSessionCacheTimingIntegrationTest {
           "10");
     }
   }
-
 
   @Inject OperationsConfig operationsConfig;
 

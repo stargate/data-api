@@ -13,9 +13,8 @@ public record SchemaObjectName(String keyspace, String table) {
 
   @SuppressWarnings("StringEquality")
   public SchemaObjectName(String keyspace, String table) {
-    // Check using reference equality for the missing value marker object, so we only allow emptry
-    // string if that
-    // object is used.
+    // Check using reference equality for the missing value marker object, so we only allow empty
+    // string if that object is used.
     Preconditions.checkArgument(
         (MISSING_NAME == keyspace) || !Strings.isNullOrEmpty(keyspace), "keyspace cannot be null");
     Preconditions.checkArgument(

@@ -316,6 +316,8 @@ public record FindOperation(
         // map the response to result
         .map(
             docs -> {
+              // TODO: why is this here and not higher up where it can happen for any command result
+              // ?
               commandContext
                   .jsonProcessingMetricsReporter()
                   .reportJsonReadDocsMetrics(commandContext().commandName(), docs.docs().size());
