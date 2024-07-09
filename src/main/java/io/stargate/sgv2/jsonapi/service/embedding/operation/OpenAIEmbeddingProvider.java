@@ -116,6 +116,7 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
+    checkEmbeddingApiKeyHeader(providerId, apiKeyOverride);
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
     String organizationId = (String) vectorizeServiceParameters.get("organizationId");

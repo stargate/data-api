@@ -99,6 +99,8 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       Optional<String> apiKeyOverride,
       EmbeddingRequestType embeddingRequestType) {
+    checkEmbeddingApiKeyHeader(providerId, apiKeyOverride);
+
     EmbeddingRequest request = new EmbeddingRequest(texts, modelName);
 
     Uni<EmbeddingResponse> response =

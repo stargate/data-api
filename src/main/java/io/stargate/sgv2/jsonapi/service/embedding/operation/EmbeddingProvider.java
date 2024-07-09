@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME;
+import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_API_KEY_MISSING;
+
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -132,6 +135,15 @@ public abstract class EmbeddingProvider {
       baseUrl.append(value);
     }
     return baseUrl.toString();
+  }
+
+  /** Helper method to check if the API key is present in the header */
+  protected void checkEmbeddingApiKeyHeader(String providerId, Optional<String> apiKeyOverride) {
+    if (apiKeyOverride.isEmpty()) {
+      throw EMBEDDING_PROVIDER_API_KEY_MISSING.toApiException(
+          "header value `%s` is missing for embedding provider: %s",
+          EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME, providerId);
+    }
   }
 
   /**
