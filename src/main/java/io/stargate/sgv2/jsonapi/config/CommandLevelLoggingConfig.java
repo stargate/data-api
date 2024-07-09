@@ -17,10 +17,9 @@
 
 package io.stargate.sgv2.jsonapi.config;
 
-import static io.stargate.sgv2.api.common.config.constants.LoggingConstants.*;
-
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.stargate.sgv2.jsonapi.config.constants.LoggingConstants;
 import java.util.Optional;
 import java.util.Set;
 
@@ -43,6 +42,6 @@ public interface CommandLevelLoggingConfig {
   /**
    * @return Set of tenants for which the request info should be logged.
    */
-  @WithDefault(ALL_TENANTS)
+  @WithDefault(LoggingConstants.ALL_TENANTS)
   Optional<Set<String>> enabledTenants();
 }

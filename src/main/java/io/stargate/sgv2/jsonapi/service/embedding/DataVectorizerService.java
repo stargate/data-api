@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.embedding;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
@@ -25,18 +24,15 @@ public class DataVectorizerService {
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
-  private final MetricsConfig metricsConfig;
 
   @Inject
   public DataVectorizerService(
       ObjectMapper objectMapper,
       MeterRegistry meterRegistry,
-      JsonApiMetricsConfig jsonApiMetricsConfig,
-      MetricsConfig metricsConfig) {
+      JsonApiMetricsConfig jsonApiMetricsConfig) {
     this.objectMapper = objectMapper;
     this.meterRegistry = meterRegistry;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
-    this.metricsConfig = metricsConfig;
   }
 
   /**
