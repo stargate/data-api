@@ -1,9 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.security.challenge.impl;
 
-// TODO: create Data API ChallengerSender when remove quarkus-common dependency
-// This class is commented out, since there will be two ChallengeSender implemented
-// need to resolve when we actually remove quarkus-common-module dependency
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
@@ -22,7 +18,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Responds with {@link CommandResult} containing an error on send challenge. */
+/**
+ * Responds with {@link CommandResult} containing an error on send challenge.
+ * BiFunction<RoutingContext, ChallengeData, Uni<Boolean>> implementation here enables definition of
+ * the custom challenge sender in the application. @see
+ * HttpAuthenticationMechanism#sendChallenge(RoutingContext)
+ */
 @ApplicationScoped
 public class ErrorChallengeSender implements ChallengeSender {
 
