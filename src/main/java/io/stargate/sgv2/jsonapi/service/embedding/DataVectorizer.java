@@ -9,8 +9,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -54,11 +52,17 @@ public class DataVectorizer {
   }
 
   /**
-   * Vectorize the '$vectorize' fields in the document
+   * Vectorize the '$vectorize' fields in the document. This method is used by commands: insertOne,
+   * insertMany (detail in DataVectorizerService vectorizeDocument method) updateOne, updateMany,
+   * findOneAndUpdate, findOneAndReplace (detail in SetOperation updateVectorize method)
+   *
+   * <p>With isUpdateCommand flag set as true, this method allows to vectorize JsonNode with both
+   * $vector and $vectorize
    *
    * @param documents - Documents to be vectorized
+   * @param isUpdateCommand - is called from isUpdateCommand or not
    */
-  public Uni<Boolean> vectorize(List<JsonNode> documents) {
+  public Uni<Boolean> vectorize(List<JsonNode> documents, boolean isUpdateCommand) {
     try {
       int vectorDataPosition = 0;
       List<String> vectorizeTexts = new ArrayList<>();
@@ -66,7 +70,8 @@ public class DataVectorizer {
       for (int position = 0; position < documents.size(); position++) {
         JsonNode document = documents.get(position);
         if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-          if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+          // Do not allow using $vector and $vectorize together for insertion commands
+          if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) && !isUpdateCommand) {
             throw new JsonApiException(
                 ErrorCode.INVALID_USAGE_OF_VECTORIZE,
                 ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage()
@@ -203,97 +208,5 @@ public class DataVectorizer {
     } catch (JsonApiException e) {
       return Uni.createFrom().failure(e);
     }
-  }
-
-  /**
-   * Vectorize the '$vectorize' fields in the update clause
-   *
-   * @param updateClause - Update clause to be vectorized
-   */
-  public Uni<Boolean> vectorizeUpdateClause(UpdateClause updateClause) {
-    try {
-      if (updateClause == null) return Uni.createFrom().item(true);
-      final ObjectNode setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
-      final ObjectNode setOnInsertNode =
-          updateClause.updateOperationDefs().get(UpdateOperator.SET_ON_INSERT);
-      return updateVectorize(setNode)
-          .onItem()
-          .transformToUni(
-              vectorized -> {
-                return updateVectorize(setOnInsertNode);
-              })
-          .onItem()
-          .transform(
-              v -> {
-                final ObjectNode unsetNode =
-                    updateClause.updateOperationDefs().get(UpdateOperator.UNSET);
-                if (unsetNode != null
-                    && unsetNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-                  if (unsetNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-                    throw new JsonApiException(ErrorCode.INVALID_USAGE_OF_VECTORIZE);
-                  }
-                  unsetNode.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
-                }
-                return true;
-              });
-    } catch (JsonApiException e) {
-      return Uni.createFrom().failure(e);
-    }
-  }
-
-  private Uni<Boolean> updateVectorize(ObjectNode node) {
-    if (node == null) return Uni.createFrom().item(true);
-    if (node.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-      if (node.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-        throw new JsonApiException(ErrorCode.INVALID_USAGE_OF_VECTORIZE);
-      }
-      final JsonNode jsonNode = node.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
-      if (jsonNode.isNull()) {
-        node.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
-      } else if (jsonNode.isTextual()) {
-        final String text = jsonNode.asText();
-        if (embeddingProvider == null) {
-          throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              collectionSettings.collectionName());
-        }
-        if (text.isBlank()) {
-          node.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
-        } else {
-          final Uni<List<float[]>> vectors =
-              embeddingProvider
-                  .vectorize(
-                      1,
-                      List.of(text),
-                      embeddingApiKey,
-                      EmbeddingProvider.EmbeddingRequestType.INDEX)
-                  .map(res -> res.embeddings());
-          return vectors
-              .onItem()
-              .transform(
-                  vectorData -> {
-                    float[] vector = vectorData.get(0);
-                    // check if vector have the expected size
-                    if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
-                      throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
-                          "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                          collectionSettings.vectorConfig().vectorizeConfig().provider(),
-                          collectionSettings.vectorConfig().vectorSize(),
-                          vector.length);
-                    }
-                    final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
-                    for (float listValue : vector) {
-                      arrayNode.add(nodeFactory.numberNode(listValue));
-                    }
-                    node.put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, arrayNode);
-                    return true;
-                  });
-        }
-
-      } else {
-        throw new JsonApiException(
-            ErrorCode.SHRED_BAD_VECTORIZE_VALUE, ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage());
-      }
-    }
-    return Uni.createFrom().item(true);
   }
 }

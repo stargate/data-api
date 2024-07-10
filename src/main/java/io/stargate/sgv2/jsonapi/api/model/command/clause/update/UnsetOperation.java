@@ -40,6 +40,10 @@ public class UnsetOperation extends UpdateOperation<UnsetOperation.Action> {
     if (modified && unsetPaths.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
       doc.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
     }
+    // $vectorize field is unset, remove $vector field value
+    if (modified && unsetPaths.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+      doc.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+    }
     return modified;
   }
 

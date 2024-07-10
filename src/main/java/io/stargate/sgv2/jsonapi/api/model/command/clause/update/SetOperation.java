@@ -2,7 +2,9 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
@@ -78,6 +80,13 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
     Set<String> setPaths = new HashSet<>();
     actions.stream().forEach(action -> setPaths.add(action.locator().path()));
     for (Action action : actions) {
+
+      if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(action.locator().path())) {
+        // won't update $vectorize in this method
+        // will vectorize on demand and update $vectorize in updateVectorize method below
+        continue;
+      }
+
       PathMatch target = action.locator().findOrCreate(doc);
       JsonNode newValue = action.value();
       JsonNode oldValue = target.valueNode();
@@ -94,6 +103,34 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
       }
     }
     return modified;
+  }
+
+  /**
+   * This updateVectorize method will vectorize as demand and update the $vectorize 1. check if
+   * there is diff for $vectorize and proceed 2. vectorize updated $vectorize to get the new vector
+   * 3. update $vector and $vectorize
+   *
+   * @param doc Document to update
+   * @param dataVectorizer dataVectorizer
+   * @return Uni<Boolean> modified
+   */
+  public Uni<Boolean> updateVectorize(JsonNode doc, DataVectorizer dataVectorizer) {
+    for (Action action : actions) {
+      if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(action.locator().path())) {
+        PathMatch target = action.locator().findOrCreate(doc);
+        JsonNode newValue = action.value();
+        JsonNode oldValue = target.valueNode();
+
+        if ((oldValue == null) || !JsonUtil.equalsOrdered(oldValue, newValue)) {
+          // replace the oldValue with newValue first
+          ((ObjectNode) doc).put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, newValue);
+          // vectorize the newValue, update $vectorize, $vector
+          return dataVectorizer.vectorize(List.of(doc), true);
+        }
+      }
+    }
+    // no diff for $vectorize, so nothing is modified in this method
+    return Uni.createFrom().item(false);
   }
 
   // Needed because some unit tests check for equality

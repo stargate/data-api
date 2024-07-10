@@ -12,9 +12,6 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
@@ -47,7 +44,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
       try {
-        dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
+        dataVectorizer.vectorize(documents, false).subscribe().asCompletionStage().get();
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -74,7 +71,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
       try {
-        dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
+        dataVectorizer.vectorize(documents, false).subscribe().asCompletionStage().get();
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -106,7 +103,7 @@ public class DataVectorizerTest {
       try {
         Throwable failure =
             dataVectorizer
-                .vectorize(documents)
+                .vectorize(documents, false)
                 .subscribe()
                 .withSubscriber(UniAssertSubscriber.create())
                 .awaitFailure()
@@ -133,7 +130,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
       try {
-        dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
+        dataVectorizer.vectorize(documents, false).subscribe().asCompletionStage().get();
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -158,7 +155,7 @@ public class DataVectorizerTest {
       try {
         Throwable failure =
             dataVectorizer
-                .vectorize(documents)
+                .vectorize(documents, false)
                 .subscribe()
                 .withSubscriber(UniAssertSubscriber.create())
                 .awaitFailure()
@@ -171,6 +168,33 @@ public class DataVectorizerTest {
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE);
       } catch (Exception e) {
         throw new RuntimeException(e);
+      }
+    }
+
+    @Test
+    public void testWithBothVectorFieldValuesFromUpdate() {
+      List<JsonNode> documents = new ArrayList<>();
+
+      final ObjectNode document = objectMapper.createObjectNode().put("$vectorize", "test data");
+      final ArrayNode arrayNode = document.putArray("$vector");
+      arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
+      arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
+      documents.add(document);
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      // dataVectorizer will accept usage for $vectorize and $vector at the same time
+      // vectorize the $vectorize, and update both $vectorize and $vector
+      try {
+        dataVectorizer.vectorize(documents, true).subscribe().asCompletionStage().get();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      for (JsonNode doc : documents) {
+        assertThat(doc.has("$vectorize")).isTrue();
+        assertThat(doc.has("$vector")).isTrue();
+        assertThat(doc.get("$vector").isArray()).isTrue();
+        assertThat(doc.get("$vector").size()).isEqualTo(3);
       }
     }
 
@@ -201,7 +225,7 @@ public class DataVectorizerTest {
 
       Throwable failure =
           dataVectorizer
-              .vectorize(documents)
+              .vectorize(documents, false)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -239,7 +263,7 @@ public class DataVectorizerTest {
 
       Throwable failure =
           dataVectorizer
-              .vectorize(documents)
+              .vectorize(documents, false)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -274,218 +298,6 @@ public class DataVectorizerTest {
       assertThat(sortClause.hasVectorizeSearchClause()).isFalse();
       assertThat(sortClause.sortExpressions().get(0).vector()).isNotNull();
       assertThat(sortClause.sortExpressions().get(0).vector().length).isEqualTo(3);
-    }
-  }
-
-  @Nested
-  public class UpdateClauseValues {
-    @Test
-    public void updateClauseSetValues() throws Exception {
-      String json =
-          """
-        {
-          "findOneAndUpdate": {
-            "filter" : {"_id" : "id"},
-            "update" : {"$set" : {"$vectorize" : "New York"}}
-          }
-        }
-        """;
-      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      UpdateClause updateClause = command.updateClause();
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
-      try {
-        dataVectorizer.vectorizeUpdateClause(updateClause).subscribe().asCompletionStage().get();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-      final ObjectNode setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
-      assertThat(setNode.has("$vectorize")).isTrue();
-      assertThat(setNode.has("$vector")).isTrue();
-      assertThat(setNode.get("$vector").isArray()).isTrue();
-      assertThat(setNode.get("$vector").size()).isEqualTo(3);
-    }
-
-    @Test
-    public void updateClauseSetBlankValues() throws Exception {
-      String json =
-          """
-            {
-              "findOneAndUpdate": {
-                "filter" : {"_id" : "id"},
-                "update" : {"$set" : {"$vectorize" : "  "}}
-              }
-            }
-            """;
-      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      UpdateClause updateClause = command.updateClause();
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
-      try {
-        dataVectorizer.vectorizeUpdateClause(updateClause).subscribe().asCompletionStage().get();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-      final ObjectNode setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
-      assertThat(setNode.has("$vectorize")).isTrue();
-      assertThat(setNode.has("$vector")).isTrue();
-      assertThat(setNode.get("$vector").isNull()).isTrue();
-    }
-
-    @Test
-    public void updateClauseSetBothValues() throws Exception {
-      String json =
-          """
-            {
-              "findOneAndUpdate": {
-                "filter" : {"_id" : "id"},
-                "update" : {"$set" : {"$vectorize" : "New York", "$vector" : [0.11, 0.11]}}
-              }
-            }
-            """;
-      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      UpdateClause updateClause = command.updateClause();
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
-      Throwable t =
-          dataVectorizer
-              .vectorizeUpdateClause(updateClause)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitFailure()
-              .getFailure();
-      assertThat(t)
-          .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .withFailMessage("`$vectorize` and `$vector` can't be used together.")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE)
-          .hasMessage(ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
-    }
-
-    @Test
-    public void updateClauseSetOnInsertValues() throws Exception {
-      String json =
-          """
-        {
-          "findOneAndUpdate": {
-            "filter" : {"_id" : "id"},
-            "update" : {"$setOnInsert" : {"$vectorize" : "New York"}}
-          }
-        }
-        """;
-      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      UpdateClause updateClause = command.updateClause();
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.of("test"), collectionSettings);
-      try {
-        dataVectorizer.vectorizeUpdateClause(updateClause).subscribe().asCompletionStage().get();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-      final ObjectNode setNode =
-          updateClause.updateOperationDefs().get(UpdateOperator.SET_ON_INSERT);
-      assertThat(setNode.has("$vectorize")).isTrue();
-      assertThat(setNode.has("$vector")).isTrue();
-      assertThat(setNode.get("$vector").isArray()).isTrue();
-      assertThat(setNode.get("$vector").size()).isEqualTo(3);
-    }
-
-    @Test
-    public void updateClauseSetOnInsertBothValues() throws Exception {
-      String json =
-          """
-                      {
-                        "findOneAndUpdate": {
-                          "filter" : {"_id" : "id"},
-                          "update" : {"$setOnInsert" : {"$vectorize" : "New York", "$vector" : [0.11, 0.11]}}
-                        }
-                      }
-                      """;
-      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      UpdateClause updateClause = command.updateClause();
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
-      Throwable t =
-          dataVectorizer
-              .vectorizeUpdateClause(updateClause)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitFailure()
-              .getFailure();
-      assertThat(t)
-          .isNotNull()
-          .isInstanceOf(JsonApiException.class)
-          .withFailMessage("`$vectorize` and `$vector` can't be used together.")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE)
-          .hasMessage(ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
-    }
-
-    @Test
-    public void updateClauseUnsetValues() throws Exception {
-      String json =
-          """
-        {
-          "findOneAndUpdate": {
-            "filter" : {"_id" : "id"},
-            "update" : {"$unset" : {"$vectorize" : null}}
-          }
-        }
-        """;
-      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      UpdateClause updateClause = command.updateClause();
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
-      try {
-        dataVectorizer.vectorizeUpdateClause(updateClause).subscribe().asCompletionStage().get();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-      final ObjectNode unsetNode = updateClause.updateOperationDefs().get(UpdateOperator.UNSET);
-      assertThat(unsetNode.has("$vectorize")).isTrue();
-      assertThat(unsetNode.has("$vector")).isTrue();
-      assertThat(unsetNode.get("$vector").isNull()).isTrue();
-    }
-
-    @Test
-    public void updateClauseUnsetBothValues() throws Exception {
-      String json =
-          """
-                      {
-                        "findOneAndUpdate": {
-                          "filter" : {"_id" : "id"},
-                          "update" : {"$unset" : {"$vectorize" : null, "$vector" : null}}
-                        }
-                      }
-                      """;
-      FindOneAndUpdateCommand command = objectMapper.readValue(json, FindOneAndUpdateCommand.class);
-      UpdateClause updateClause = command.updateClause();
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
-      try {
-        Throwable t =
-            dataVectorizer
-                .vectorizeUpdateClause(updateClause)
-                .subscribe()
-                .withSubscriber(UniAssertSubscriber.create())
-                .awaitFailure()
-                .getFailure();
-
-        assertThat(t)
-            .isNotNull()
-            .isInstanceOf(JsonApiException.class)
-            .withFailMessage("`$vectorize` and `$vector` can't be used together.")
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE)
-            .hasMessage(ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage());
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
     }
   }
 }

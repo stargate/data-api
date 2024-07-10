@@ -12,7 +12,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -25,7 +24,6 @@ import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -79,7 +77,7 @@ public class UpdateManyCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateClause().buildOperations())
+                          assertThat(updater.updateOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -141,7 +139,7 @@ public class UpdateManyCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateClause().buildOperations())
+                          assertThat(updater.updateOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -194,7 +192,7 @@ public class UpdateManyCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateClause().buildOperations())
+                          assertThat(updater.updateOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -241,12 +239,6 @@ public class UpdateManyCommandResolverTest {
       UpdateClause updateClause =
           DocumentUpdaterUtils.updateClause(
               UpdateOperator.SET, objectMapper.createObjectNode().put("$vectorize", "test data"));
-      new DataVectorizer(
-              TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
-              objectMapper.getNodeFactory(),
-              Optional.empty(),
-              TestEmbeddingProvider.commandContextWithVectorize.collectionSettings())
-          .vectorizeUpdateClause(updateClause);
       assertThat(operation)
           .isInstanceOfSatisfying(
               ReadAndUpdateOperation.class,
@@ -263,7 +255,7 @@ public class UpdateManyCommandResolverTest {
                     .isInstanceOfSatisfying(
                         DocumentUpdater.class,
                         updater -> {
-                          assertThat(updater.updateClause().buildOperations())
+                          assertThat(updater.updateOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())
@@ -328,7 +320,7 @@ public class UpdateManyCommandResolverTest {
                                   UpdateOperator.SET,
                                   objectMapper.createObjectNode().put("location", "New York"));
 
-                          assertThat(updater.updateClause().buildOperations())
+                          assertThat(updater.updateOperations())
                               .isEqualTo(updateClause.buildOperations());
                         });
                 assertThat(op.findOperation())

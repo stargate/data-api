@@ -85,9 +85,9 @@ public class DataVectorizerService {
   private Uni<Boolean> vectorizeDocument(
       DataVectorizer dataVectorizer, CommandContext commandContext, Command command) {
     if (command instanceof InsertOneCommand insertOneCommand) {
-      return dataVectorizer.vectorize(List.of(insertOneCommand.document()));
+      return dataVectorizer.vectorize(List.of(insertOneCommand.document()), false);
     } else if (command instanceof InsertManyCommand insertManyCommand) {
-      return dataVectorizer.vectorize(insertManyCommand.documents());
+      return dataVectorizer.vectorize(insertManyCommand.documents(), false);
     }
     return Uni.createFrom().item(true);
   }

@@ -68,39 +68,10 @@ public record ReadAndUpdateOperation(
             .getDocuments(dataApiRequestInfo, queryExecutor, findOperation().pageState(), null);
     return docsToUpdate
         .onItem()
-        .transformToUni(
+        .transformToMulti(
             findResponse -> {
               pageStateReference.set(findResponse.pageState());
               final List<ReadDocument> docs = findResponse.docs();
-
-              // vectorize the updateClause or ReplacementDocument as needed
-              Uni<Boolean> vectorization = Uni.createFrom().item(false);
-              final DataVectorizer dataVectorizer =
-                  dataVectorizerService.constructDataVectorizer(dataApiRequestInfo, commandContext);
-
-              // 1. UpdateCommand(updateOne, findOneAndUpdate, updateMany):
-              if (documentUpdater.updateType() == DocumentUpdater.UpdateType.UPDATE) {
-                // if there are documents found, and there is $vectorize text diff
-                if (docs.size() != 0 && documentUpdater.hasVectorizeDiff(docs)) {
-                  vectorization = documentUpdater.vectorizeUpdateClause(dataVectorizer);
-                  // if there is no document found, but upsert mode, vectorize the updateOperation
-                } else if (upsert() && matchedCount.get() == 0) {
-                  vectorization = documentUpdater.vectorizeUpdateClause(dataVectorizer);
-                }
-                // 2.replaceCommand(findOneAndReplace)
-              } else if (documentUpdater.updateType() == DocumentUpdater.UpdateType.REPLACE) {
-                // if there is a document found and there is $vectorize text diff
-                if (docs.size() != 0 && documentUpdater.hasVectorizeDiff(docs)) {
-                  vectorization = documentUpdater.vectorizeTheReplacementDocument(dataVectorizer);
-                }
-              }
-              return vectorization
-                  .onItem()
-                  .transformToUni(vectorized -> Uni.createFrom().item(docs));
-            })
-        .onItem()
-        .transformToMulti(
-            docs -> {
               if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
                 return Multi.createFrom().item(findOperation().getNewDocument());
               } else {
@@ -158,6 +129,7 @@ public record ReadAndUpdateOperation(
                   .jsonProcessingMetricsReporter()
                   .reportJsonWrittenDocsMetrics(
                       commandContext().commandName(), modifiedCount.get());
+
               return new UpdateOperationPage(
                   matchedCount.get(),
                   modifiedCount.get(),
@@ -169,27 +141,47 @@ public record ReadAndUpdateOperation(
 
   private Uni<UpdatedDocument> processUpdate(
       DataApiRequestInfo dataApiRequestInfo,
-      ReadDocument document,
+      ReadDocument readDocument,
       QueryExecutor queryExecutor,
       AtomicInteger modifiedCount) {
     return Uni.createFrom()
-        .item(document)
-
-        // perform update operation and save only if data is modified.
+        .item(readDocument)
         .flatMap(
-            readDocument -> {
-              // if there is no document return null item
+            document -> {
+              // if there is no document: return null item
               if (readDocument == null) {
                 return Uni.createFrom().nullItem();
               }
-
               // upsert if we have no transaction if before
               boolean upsert = readDocument.txnId() == null;
-              JsonNode originalDocument = upsert ? null : readDocument.document();
-              // apply document updates
-              // if no changes return null item
-              DocumentUpdater.DocumentUpdaterResponse documentUpdaterResponse =
+              // apply document updates: if no changes return null item
+              // First update, will not vectorize
+              DocumentUpdater.DocumentUpdaterResponse firstDocumentUpdaterResponse =
                   documentUpdater().apply(readDocument.document().deepCopy(), upsert);
+              // Second update, will vectorize on demand and update $vectorize and $vector
+              // accordingly
+              final DataVectorizer dataVectorizer =
+                  dataVectorizerService.constructDataVectorizer(dataApiRequestInfo, commandContext);
+              return documentUpdater()
+                  .applyUpdateVectorize(
+                      firstDocumentUpdaterResponse.document(), upsert, dataVectorizer)
+                  .onItem()
+                  .transformToUni(
+                      secondDocumentUpdaterResponse -> {
+                        // Need to combine two modified result here
+                        return Uni.createFrom()
+                            .item(
+                                new DocumentUpdater.DocumentUpdaterResponse(
+                                    secondDocumentUpdaterResponse.document(),
+                                    firstDocumentUpdaterResponse.modified()
+                                        | secondDocumentUpdaterResponse.modified()));
+                      });
+            })
+        // perform update operation and save only if data is modified.
+        .flatMap(
+            documentUpdaterResponse -> {
+              boolean upsert = readDocument.txnId() == null;
+              JsonNode originalDocument = upsert ? null : readDocument.document();
               // In case no change to document and not an upsert document, short circuit and return
               if (!documentUpdaterResponse.modified() && !upsert) {
                 // If no change return the original document Issue #390
@@ -220,7 +212,9 @@ public record ReadAndUpdateOperation(
                   .transform(
                       v -> {
                         // if not insert increment modified count
-                        if (!upsert) modifiedCount.incrementAndGet();
+                        if (!upsert) {
+                          modifiedCount.incrementAndGet();
+                        }
 
                         // resolve doc to return
                         JsonNode documentToReturn = null;

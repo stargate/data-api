@@ -9,6 +9,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -62,6 +65,12 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
 
   @Override
   public Operation resolveCommand(CommandContext commandContext, FindOneAndReplaceCommand command) {
+    // Add $vector and $vectorize replacement validation here
+    if (command.replacementDocument().has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)
+        && command.replacementDocument().has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+      throw new JsonApiException(ErrorCode.INVALID_USAGE_OF_VECTORIZE);
+    }
+    //
     FindOperation findOperation = getFindOperation(commandContext, command);
 
     final DocumentProjector documentProjector = command.buildProjector();

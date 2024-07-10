@@ -8,23 +8,12 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.List;
 
-/**
- * Updates the document read from the database with the updates came as part of the request.
- * DocumentUpdater construct postpone from commandResolver level to operation level, since we want
- * the vectorize as needed, only vectorize when there are documents found or upsert
- *
- * @param updateClause - vectorize it as needed before building update operations
- * @param replaceDocument - replaceDocument to replace the one read from DB
- * @param replaceDocumentId - documentId from replaceDocument
- * @param updateType - UPDATE/REPLACE
- */
+/** Updates the document read from the database with the updates came as part of the request. */
 public record DocumentUpdater(
-    // buildOperations will be executed when apply to update
-    UpdateClause updateClause,
+    List<UpdateOperation> updateOperations,
     ObjectNode replaceDocument,
     JsonNode replaceDocumentId,
     UpdateType updateType) {
@@ -35,11 +24,7 @@ public record DocumentUpdater(
    * @return
    */
   public static DocumentUpdater construct(UpdateClause updateDef) {
-    // try to build operations but do not save the result
-    // this is for validating the UpdateClause, for example, updator path conflict
-    // error out before update operation's execution
-    updateDef.buildOperations();
-    return new DocumentUpdater(updateDef, null, null, UpdateType.UPDATE);
+    return new DocumentUpdater(updateDef.buildOperations(), null, null, UpdateType.UPDATE);
   }
 
   /**
@@ -54,6 +39,10 @@ public record DocumentUpdater(
   }
 
   /**
+   * This method is the entrance for first level update or replace. first level means it won't
+   * vectorize and update $vectorize so the updatedDocument returned in DocumentUpdaterResponse will
+   * leave $vectorize unchanged
+   *
    * @param readDocument Document to update
    * @param docInserted True if document was just created (inserted); false if updating existing
    *     document
@@ -70,7 +59,8 @@ public record DocumentUpdater(
   }
 
   /**
-   * Will be used for update commands
+   * Will be used for update commands. This method won't update $vectorize (detail in
+   * applyUpdateVectorize method)
    *
    * @param docToUpdate
    * @param docInserted
@@ -78,7 +68,6 @@ public record DocumentUpdater(
    */
   private boolean update(ObjectNode docToUpdate, boolean docInserted) {
     boolean modified = false;
-    List<UpdateOperation> updateOperations = updateClause.buildOperations();
     for (UpdateOperation updateOperation : updateOperations) {
       if (updateOperation.shouldApplyIf(docInserted)) {
         modified |= updateOperation.updateDocument(docToUpdate);
@@ -88,17 +77,8 @@ public record DocumentUpdater(
   }
 
   /**
-   * vectorize UpdateClause as needed, only when documents are found or upsert will be used by
-   * updateOne, findOneAndUpdate, updateMany
-   *
-   * @param dataVectorizer
-   */
-  public Uni<Boolean> vectorizeUpdateClause(DataVectorizer dataVectorizer) {
-    return dataVectorizer.vectorizeUpdateClause(updateClause);
-  }
-
-  /**
-   * Will be used for findOneAndReplace
+   * Will be used for findOneAndReplace. This method will replace $vectorize, but won't re-vectorize
+   * and replace $vector(detail in applyUpdateVectorize method)
    *
    * @param docToUpdate
    * @param docInserted
@@ -115,8 +95,19 @@ public record DocumentUpdater(
         throw new JsonApiException(ErrorCode.DOCUMENT_REPLACE_DIFFERENT_DOCID);
       }
     }
+
+    // If replaceDocument has $vectorize as null value, also set $vector as null here.
+    // This is because we need to do a comparison for compareDoc and replaceDocument later
+    JsonNode vectorizeNode =
+        replaceDocument.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+    if (vectorizeNode != null && vectorizeNode.isNull()) {
+      ((ObjectNode) replaceDocument)
+          .put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
+    }
+
     // In case there is no difference between document return modified as false, so db update
     // doesn't happen
+
     if (JsonUtil.equalsOrdered(compareDoc, replaceDocument())) {
       return false;
     }
@@ -128,64 +119,59 @@ public record DocumentUpdater(
       docToUpdate.set(DocumentConstants.Fields.DOC_ID, replaceDocumentId);
     }
     docToUpdate.setAll(replaceDocument());
+    //    // restore the original $vectorize
+    //    docToUpdate.put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+    // vectorizeNode.asText());
     // return modified flag as true
     return true;
   }
 
   /**
-   * vectorize replacementDocument as needed, only when document is found will be used by
-   * findOneAndReplace
+   * This method is the entrance for second level update or replace. This level will vectorize on
+   * demand and change $vectorize and $vector accordingly.
    *
-   * @param dataVectorizer
+   * @param readDocument Document to update(This document may has been updated once, detail in first
+   *     level update)
+   * @param docInserted True if document was just created (inserted); false if updating existing
+   *     document
    */
-  public Uni<Boolean> vectorizeTheReplacementDocument(DataVectorizer dataVectorizer) {
-    return dataVectorizer.vectorize(List.of(replaceDocument));
-  }
-
-  /**
-   * Check if there is any $vectorize diff If there are docs found to update or doc to replace, then
-   * this is a necessary condition to proceed vectorization
-   *
-   * @param foundDocs
-   */
-  public boolean hasVectorizeDiff(List<ReadDocument> foundDocs) {
-    String vectorizeTextUpdate = null;
-    if (updateType().equals(DocumentUpdater.UpdateType.UPDATE)) {
-      // extract $vectorize if updateClause set operator has it
-      final ObjectNode setNode = updateClause.updateOperationDefs().get(UpdateOperator.SET);
-      if (setNode != null) {
-        final JsonNode updateClauseVectorizeTextJsonNode =
-            setNode.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
-        if (updateClauseVectorizeTextJsonNode != null) {
-          vectorizeTextUpdate = updateClauseVectorizeTextJsonNode.asText();
-        }
-      }
-    } else if (updateType().equals(DocumentUpdater.UpdateType.REPLACE)) {
-      // extract $vectorize if replaceDocument has it
-      final JsonNode replaceDocumentVectorizeTextJsonNode =
-          replaceDocument.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
-      if (replaceDocumentVectorizeTextJsonNode != null) {
-        vectorizeTextUpdate = replaceDocumentVectorizeTextJsonNode.asText();
-      }
-    }
-
-    // if there is no $vectorize to update or replace, then no diff.
-    if (vectorizeTextUpdate == null) {
-      return false;
-    }
-
-    // iterate foundDocs, see if there is any diff for $vectorize
-    for (ReadDocument foundDoc : foundDocs) {
-      final JsonNode foundDocVectorizeTextJsonNode =
-          foundDoc.document().get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
-      if (foundDocVectorizeTextJsonNode != null) {
-        if (!foundDocVectorizeTextJsonNode.asText().equals(vectorizeTextUpdate)) {
-          // There is a diff
-          return true;
+  public Uni<DocumentUpdaterResponse> applyUpdateVectorize(
+      JsonNode readDocument, boolean docInserted, DataVectorizer dataVectorizer) {
+    if (UpdateType.UPDATE == updateType) {
+      for (UpdateOperation updateOperation : updateOperations) {
+        if (updateOperation.shouldApplyIf(docInserted)
+            && updateOperation instanceof SetOperation setOperation) {
+          // filtering out the setOperation
+          // try to vectorize on demand and change $vectorize and $vector accordingly.
+          return setOperation
+              .updateVectorize(readDocument, dataVectorizer)
+              .onItem()
+              .transformToUni(
+                  modified -> {
+                    return Uni.createFrom()
+                        .item(new DocumentUpdaterResponse(readDocument, modified));
+                  });
         }
       }
     }
-    return false;
+    if (UpdateType.REPLACE == updateType) {
+      // Only need to vectorize when:
+      // replaceDocument has $vectorize(not null), this is consistent with previous behaviour
+      // This means even if $vectorize has no diff between readDoc and replacementDoc, we still
+      // re-vectorize
+      if (!replaceDocument.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD).isNull()) {
+        return dataVectorizer
+            // replacement also considered as update, set isUpdateCommand flag as true
+            .vectorize(List.of(readDocument), true)
+            .onItem()
+            .transformToUni(
+                modified -> {
+                  return Uni.createFrom().item(new DocumentUpdaterResponse(readDocument, modified));
+                });
+      }
+    }
+    // there is no setOperation, so won't modify anything
+    return Uni.createFrom().item(new DocumentUpdaterResponse(readDocument, false));
   }
 
   public record DocumentUpdaterResponse(JsonNode document, boolean modified) {}

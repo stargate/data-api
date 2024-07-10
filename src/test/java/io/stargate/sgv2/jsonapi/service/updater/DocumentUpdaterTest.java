@@ -8,18 +8,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadDocument;
-import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -274,9 +275,7 @@ public class DocumentUpdaterTest {
       Throwable t =
           catchThrowable(
               () -> {
-                DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class))
-                    .updateClause()
-                    .buildOperations();
+                DocumentUpdater.construct(objectMapper.readValue(updateClause, UpdateClause.class));
               });
       assertThat(t)
           .isNotNull()
@@ -293,11 +292,9 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () -> {
                 DocumentUpdater.construct(
-                        DocumentUpdaterUtils.updateClause(
-                            UpdateOperator.SET,
-                            objectMapper.getNodeFactory().objectNode().put("_id", "xyz")))
-                    .updateClause()
-                    .buildOperations();
+                    DocumentUpdaterUtils.updateClause(
+                        UpdateOperator.SET,
+                        objectMapper.getNodeFactory().objectNode().put("_id", "xyz")));
               });
       assertThat(t)
           .isNotNull()
@@ -313,11 +310,9 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () -> {
                 DocumentUpdater.construct(
-                        DocumentUpdaterUtils.updateClause(
-                            UpdateOperator.UNSET,
-                            objectMapper.getNodeFactory().objectNode().put("_id", "xyz")))
-                    .updateClause()
-                    .buildOperations();
+                    DocumentUpdaterUtils.updateClause(
+                        UpdateOperator.UNSET,
+                        objectMapper.getNodeFactory().objectNode().put("_id", "xyz")));
               });
       assertThat(t)
           .isNotNull()
@@ -333,13 +328,11 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () -> {
                 DocumentUpdater.construct(
-                        DocumentUpdaterUtils.updateClause(
-                            UpdateOperator.SET,
-                            (ObjectNode) objectMapper.readTree("{\"setField\":3, \"common\":true}"),
-                            UpdateOperator.UNSET,
-                            (ObjectNode) objectMapper.readTree("{\"unsetField\":1, \"common\":1}")))
-                    .updateClause()
-                    .buildOperations();
+                    DocumentUpdaterUtils.updateClause(
+                        UpdateOperator.SET,
+                        (ObjectNode) objectMapper.readTree("{\"setField\":3, \"common\":true}"),
+                        UpdateOperator.UNSET,
+                        (ObjectNode) objectMapper.readTree("{\"unsetField\":1, \"common\":1}")));
               });
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
@@ -353,14 +346,11 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () ->
                   DocumentUpdater.construct(
-                          DocumentUpdaterUtils.updateClause(
-                              UpdateOperator.INC,
-                              (ObjectNode)
-                                  objectMapper.readTree("{\"root.x\":-7, \"root.inc\":-3}"),
-                              UpdateOperator.MUL,
-                              (ObjectNode) objectMapper.readTree("{\"root.mul\":3, \"root.x\":2}")))
-                      .updateClause()
-                      .buildOperations());
+                      DocumentUpdaterUtils.updateClause(
+                          UpdateOperator.INC,
+                          (ObjectNode) objectMapper.readTree("{\"root.x\":-7, \"root.inc\":-3}"),
+                          UpdateOperator.MUL,
+                          (ObjectNode) objectMapper.readTree("{\"root.mul\":3, \"root.x\":2}"))));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
@@ -373,11 +363,9 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () ->
                   DocumentUpdater.construct(
-                          DocumentUpdaterUtils.updateClause(
-                              UpdateOperator.SET,
-                              (ObjectNode) objectMapper.readTree("{\"root.1\":-7, \"root\":[ ]}")))
-                      .updateClause()
-                      .buildOperations());
+                      DocumentUpdaterUtils.updateClause(
+                          UpdateOperator.SET,
+                          (ObjectNode) objectMapper.readTree("{\"root.1\":-7, \"root\":[ ]}"))));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
@@ -391,11 +379,11 @@ public class DocumentUpdaterTest {
           catchThrowable(
               () ->
                   DocumentUpdater.construct(
-                          DocumentUpdaterUtils.updateClause(
-                              UpdateOperator.SET,
-                              (ObjectNode)
-                                  objectMapper.readTree(
-                                      """
+                      DocumentUpdaterUtils.updateClause(
+                          UpdateOperator.SET,
+                          (ObjectNode)
+                              objectMapper.readTree(
+                                  """
           {
             "root" : 7,
             "x" : 3,
@@ -403,9 +391,7 @@ public class DocumentUpdaterTest {
             "y" : 5,
             "root.a" : 3
           }
-          """)))
-                      .updateClause()
-                      .buildOperations());
+          """))));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
@@ -545,96 +531,221 @@ public class DocumentUpdaterTest {
   @Nested
   class VectorizeUpdateTest {
 
+    private final EmbeddingProvider testService = new TestEmbeddingProvider();
+    private final CollectionSettings collectionSettings =
+        TestEmbeddingProvider.commandContextWithVectorize.collectionSettings();
+
     @Test
-    public void updateOne_onlyVectorizeWithDiff_noDiff() throws Exception {
+    public void two_levels_update() throws Exception {
+      // First level update will skip $vectorize for setOperation
+      // vectorization will be done in second level
       String updateVectorizeData =
           """
-                        {"$vectorize" : "Beijing City"}
-                        """;
+                                {"$vectorize" : "Beijing is a big city", "location" : "Beijing City"}
+                                """;
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
 
-      final ReadDocument readDocument =
-          ReadDocument.from(
-              DocumentId.fromString("key1"),
-              UUID.randomUUID(),
-              objectMapper
-                  .createObjectNode()
-                  .put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, "Beijing City"));
+      String expected_level_1 =
+          """
+                          {
+                              "_id": "1",
+                              "location": "Beijing City"
+                          }
+                        """;
 
-      assertThat(documentUpdater.hasVectorizeDiff(List.of(readDocument))).isFalse();
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON); // location as London
+      JsonNode expectedData1 = objectMapper.readTree(expected_level_1);
+      DocumentUpdater.DocumentUpdaterResponse firstResponse =
+          documentUpdater.apply(baseData, false);
+      assertThat(firstResponse)
+          .isNotNull()
+          .satisfies(
+              firstResponseNode -> {
+                assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
+                assertThat(firstResponseNode.modified()).isEqualTo(true); // modified location
+              });
+
+      // Second level update will vectorize in setOperation
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      final DocumentUpdater.DocumentUpdaterResponse secondResponse =
+          documentUpdater
+              .applyUpdateVectorize(firstResponse.document(), false, dataVectorizer)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      String expected_level_2 =
+          """
+                          {
+                              "_id":"1",
+                              "location": "Beijing City",
+                              "$vectorize" : "Beijing is a big city",
+                              "$vector": [0.25,0.25,0.25]
+                          }
+                          """;
+      JsonNode expectedData2 = objectMapper.readTree(expected_level_2);
+      assertThat(secondResponse)
+          .isNotNull()
+          .satisfies(
+              secondResponseNode -> {
+                assertThat(secondResponseNode.document())
+                    .usingRecursiveComparison()
+                    .ignoringFields("order")
+                    .isEqualTo(expectedData2);
+                assertThat(secondResponseNode.modified())
+                    .isEqualTo(true); // modified $vectorize and $vector
+              });
     }
 
     @Test
-    public void updateOne_onlyVectorizeWithDiff() throws Exception {
+    public void not_modified_for_first_update() throws Exception {
+      // First level update will skip $vectorize for setOperation
+      // vectorization will be done in second level
       String updateVectorizeData =
           """
-                        {"$vectorize" : "Beijing City"}
-                        """;
+                                  {"$vectorize" : "Beijing is a big city"}
+                                  """;
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
 
-      final ReadDocument readDocument =
-          ReadDocument.from(
-              DocumentId.fromString("key1"),
-              UUID.randomUUID(),
-              objectMapper
-                  .createObjectNode()
-                  .put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, "Shanghai City"));
+      String expected_level_1 =
+          """
+                      {
+                          "_id": "1",
+                          "location": "London"
+                      }
+                    """;
 
-      assertThat(documentUpdater.hasVectorizeDiff(List.of(readDocument))).isTrue();
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON); // location as London
+      JsonNode expectedData1 = objectMapper.readTree(expected_level_1);
+      DocumentUpdater.DocumentUpdaterResponse firstResponse =
+          documentUpdater.apply(baseData, false);
+      assertThat(firstResponse)
+          .isNotNull()
+          .satisfies(
+              firstResponseNode -> {
+                assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
+                assertThat(firstResponseNode.modified())
+                    .isEqualTo(false); // location is not modified
+              });
+
+      // Second level update will vectorize in setOperation
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      final DocumentUpdater.DocumentUpdaterResponse secondResponse =
+          documentUpdater
+              .applyUpdateVectorize(firstResponse.document(), false, dataVectorizer)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      String expected_level_2 =
+          """
+                      {
+                          "_id":"1",
+                          "location": "London",
+                          "$vectorize" : "Beijing is a big city",
+                          "$vector": [0.25,0.25,0.25]
+                      }
+                      """;
+      JsonNode expectedData2 = objectMapper.readTree(expected_level_2);
+      assertThat(secondResponse)
+          .isNotNull()
+          .satisfies(
+              secondResponseNode -> {
+                assertThat(secondResponseNode.document())
+                    .usingRecursiveComparison()
+                    .ignoringFields("order")
+                    .isEqualTo(expectedData2);
+                assertThat(secondResponseNode.modified())
+                    .isEqualTo(true); // modified $vectorize and $vector
+              });
     }
 
     @Test
-    public void updateMany_onlyVectorizeWithDiff() throws Exception {
+    public void update_vector_at_first_level() throws Exception {
+
+      //            final ObjectNode document = objectMapper.createObjectNode().put("$vectorize",
+      // "test data");
+      //            final ArrayNode arrayNode = document.putArray("$vector");
+      //            arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
+      //            arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
+      //            documents.add(document);
       String updateVectorizeData =
           """
-                        {"$vectorize" : "Beijing City"}
-                        """;
+                                  {"$vectorize" : "Beijing is a big city", "$vector" : [0.2,0.4,0.5]}
+                                  """;
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
+      String expected_level_1 =
+          """
+                      {
+                          "_id": "1",
+                          "location": "London",
+                          "$vector": [0.2,0.4,0.5]
+                      }
+                    """;
 
-      final ReadDocument readDocument1 =
-          ReadDocument.from(
-              DocumentId.fromString("key1"),
-              UUID.randomUUID(),
-              objectMapper
-                  .createObjectNode()
-                  .put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, "Shanghai City"));
-      final ReadDocument readDocument2 =
-          ReadDocument.from(
-              DocumentId.fromString("key2"),
-              UUID.randomUUID(),
-              objectMapper
-                  .createObjectNode()
-                  .put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, "Beijing City"));
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON); // location as London
+      JsonNode expectedData1 = objectMapper.readTree(expected_level_1);
+      DocumentUpdater.DocumentUpdaterResponse firstResponse =
+          documentUpdater.apply(baseData, false);
+      assertThat(firstResponse)
+          .isNotNull()
+          .satisfies(
+              firstResponseNode -> {
+                assertThat(firstResponseNode.document())
+                    .usingRecursiveComparison()
+                    .ignoringFields("order")
+                    .isEqualTo(expectedData1);
+                assertThat(firstResponseNode.modified()).isEqualTo(true); // vector is modified
+              });
 
-      assertThat(documentUpdater.hasVectorizeDiff(List.of(readDocument1, readDocument2))).isTrue();
-    }
+      // Second level update will vectorize in setOperation
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      final DocumentUpdater.DocumentUpdaterResponse secondResponse =
+          documentUpdater
+              .applyUpdateVectorize(firstResponse.document(), false, dataVectorizer)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
 
-    @Test
-    public void findOneAndReplace_onlyVectorizeWithDiff() throws Exception {
-      ObjectNode replaceNode =
-          objectMapper
-              .createObjectNode()
-              .put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, "Beijing City");
-      DocumentUpdater documentUpdater = DocumentUpdater.construct(replaceNode);
-
-      final ReadDocument readDocument =
-          ReadDocument.from(
-              DocumentId.fromString("key1"),
-              UUID.randomUUID(),
-              objectMapper
-                  .createObjectNode()
-                  .put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, "Shanghai City"));
-
-      assertThat(documentUpdater.hasVectorizeDiff(List.of(readDocument))).isTrue();
+      String expected_level_2 =
+          """
+                      {
+                          "_id":"1",
+                          "location": "London",
+                          "$vectorize" : "Beijing is a big city",
+                          "$vector": [0.25,0.25,0.25]
+                      }
+                      """;
+      JsonNode expectedData2 = objectMapper.readTree(expected_level_2);
+      assertThat(secondResponse)
+          .isNotNull()
+          .satisfies(
+              secondResponseNode -> {
+                assertThat(secondResponseNode.document())
+                    .usingRecursiveComparison()
+                    .ignoringFields("order")
+                    .isEqualTo(expectedData2);
+                assertThat(secondResponseNode.modified())
+                    .isEqualTo(true); // modified $vectorize and $vector
+              });
     }
   }
 }
