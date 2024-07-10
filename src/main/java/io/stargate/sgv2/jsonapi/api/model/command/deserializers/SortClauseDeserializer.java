@@ -69,7 +69,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         } else {
           ArrayNode arrayNode = (ArrayNode) inner.getValue();
           float[] arrayVals = new float[arrayNode.size()];
-          if (arrayNode.vectorize(documents)) {
+          if (arrayNode.size() == 0) {
             throw new JsonApiException(
                 ErrorCode.SHRED_BAD_VECTOR_SIZE, ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage());
           }
