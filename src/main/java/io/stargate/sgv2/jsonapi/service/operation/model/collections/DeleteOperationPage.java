@@ -48,7 +48,7 @@ public record DeleteOperationPage(
     deletedInformation.forEach(
         deletedData -> {
           if (deletedData.getItem1() && returnDocument()) {
-            deletedDoc.add(deletedData.getItem3().document());
+            deletedDoc.add(deletedData.getItem3().get());
           }
           if (deletedData.getItem2() != null) {
             String key = ExceptionUtil.getThrowableGroupingKey(deletedData.getItem2());

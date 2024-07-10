@@ -141,7 +141,6 @@ public record ReadAndUpdateOperation(
       AtomicInteger modifiedCount) {
     return Uni.createFrom()
         .item(document)
-
         // perform update operation and save only if data is modified.
         .flatMap(
             readDocument -> {
@@ -151,13 +150,13 @@ public record ReadAndUpdateOperation(
               }
 
               // upsert if we have no transaction if before
-              boolean upsert = readDocument.txnId() == null;
-              JsonNode originalDocument = upsert ? null : readDocument.document();
+              boolean upsert = readDocument.txnId().isEmpty();
+              JsonNode originalDocument = upsert ? null : readDocument.get();
 
               // apply document updates
               // if no changes return null item
               DocumentUpdater.DocumentUpdaterResponse documentUpdaterResponse =
-                  documentUpdater().apply(readDocument.document().deepCopy(), upsert);
+                  documentUpdater().apply(readDocument.get().deepCopy(), upsert);
 
               // In case no change to document and not an upsert document, short circuit and return
               if (!documentUpdaterResponse.modified() && !upsert) {
@@ -176,7 +175,10 @@ public record ReadAndUpdateOperation(
                       .shred(
                           commandContext(),
                           documentUpdaterResponse.document(),
-                          readDocument.txnId());
+                          readDocument
+                              .txnId()
+                              .orElse(null) // will be empty when this is a upsert'd doc
+                          );
 
               // Have to do this because shredder adds _id field to the document if it doesn't exist
               JsonNode updatedDocument = writableShreddedDocument.docJsonNode();

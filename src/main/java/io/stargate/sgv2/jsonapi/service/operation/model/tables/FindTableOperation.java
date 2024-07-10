@@ -11,11 +11,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.model.collections.ReadDocument;
-import io.stargate.sgv2.jsonapi.service.operation.model.collections.ReadOperationPage;
-import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.service.operation.model.DocumentSource;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperationPage;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.NotImplementedException;
@@ -55,22 +53,21 @@ public class FindTableOperation extends TableReadOperation {
 
     var objectMapper = new ObjectMapper();
 
-    var allDocs =
+    var docSources =
         StreamSupport.stream(resultSet.currentPage().spliterator(), false)
             .map(
-                row -> {
-                  try {
-                    return objectMapper.readTree(row.getString("[json]"));
-                  } catch (Exception e) {
-                    throw new NotImplementedException("Bang " + e.getMessage());
-                  }
-                })
-            .map(
-                jsonNode ->
-                    ReadDocument.from(DocumentId.fromString("fake"), UUID.randomUUID(), jsonNode))
+                row ->
+                    (DocumentSource)
+                        () -> {
+                          try {
+                            return objectMapper.readTree(row.getString("[json]"));
+                          } catch (Exception e) {
+                            throw new NotImplementedException("Bang " + e.getMessage());
+                          }
+                        })
             .toList();
 
-    return new ReadOperationPage(allDocs, null, params.isSingleResponse(), false, null);
+    return new ReadOperationPage(docSources, params.isSingleResponse(), null, false, null);
   }
 
   public record FindTableParams(int limit) {

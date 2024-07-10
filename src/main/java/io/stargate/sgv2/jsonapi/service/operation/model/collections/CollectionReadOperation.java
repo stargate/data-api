@@ -347,9 +347,13 @@ public interface CollectionReadOperation extends CollectionOperation {
                   subList.stream()
                       .map(
                           readDoc -> {
-                            JsonNode data = readDoc.docJsonValue().get();
+                            JsonNode data = readDoc.docSupplier().get();
                             projection.applyProjection(data);
-                            return ReadDocument.from(readDoc.id(), readDoc.txnId(), data);
+                            // TODO AARON below is the old code, i updated, but do we need to create
+                            // a new read
+                            // document because applyProjection mutates the document ?
+                            // return new ReadDocument.from(readDoc.id(), readDoc.txnId(), data);
+                            return readDoc.replaceDocSupplier(data);
                           })
                       .collect(Collectors.toList());
               return new FindResponse(responseDocuments, null);

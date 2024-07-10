@@ -158,7 +158,7 @@ public record DeleteOperation(
   }
 
   private ReadDocument applyProjection(ReadDocument document) {
-    resultProjection().applyProjection(document.document());
+    resultProjection().applyProjection(document.get());
     return document;
   }
 
@@ -251,7 +251,8 @@ public record DeleteOperation(
 
   private static SimpleStatement bindDeleteQuery(String query, ReadDocument doc) {
     SimpleStatement deleteStatement =
-        SimpleStatement.newInstance(query, CQLBindValues.getDocumentIdValue(doc.id()), doc.txnId());
+        SimpleStatement.newInstance(
+            query, CQLBindValues.getDocumentIdValue(doc.id()), doc.txnId().orElse(null));
     return deleteStatement;
   }
 }
