@@ -93,13 +93,12 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Optional<String> apiKey,
       EmbeddingRequestType embeddingRequestType) {
     EmbeddingRequest request = new EmbeddingRequest(texts, new EmbeddingRequest.Options(true));
 
     return applyRetry(
-            huggingFaceEmbeddingProviderClient.embed(
-                "Bearer " + apiKeyOverride.get(), modelName, request))
+            huggingFaceEmbeddingProviderClient.embed("Bearer " + apiKey.get(), modelName, request))
         .onItem()
         .transform(
             resp -> {

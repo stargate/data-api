@@ -120,9 +120,9 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Optional<String> apiKey,
       EmbeddingRequestType embeddingRequestType) {
-    checkEmbeddingApiKeyHeader(providerId, apiKeyOverride);
+    checkEmbeddingApiKeyHeader(providerId, apiKey);
     // Oddity: Implementation does not support batching, so we only accept "batches"
     // of 1 String, fail for others
     if (texts.size() != 1) {
@@ -140,8 +140,7 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
     EmbeddingRequest request = new EmbeddingRequest(texts.get(0), modelName);
 
     Uni<EmbeddingResponse> response =
-        applyRetry(
-            upstageAIEmbeddingProviderClient.embed("Bearer " + apiKeyOverride.get(), request));
+        applyRetry(upstageAIEmbeddingProviderClient.embed("Bearer " + apiKey.get(), request));
 
     return response
         .onItem()

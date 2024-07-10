@@ -153,16 +153,15 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Optional<String> apiKey,
       EmbeddingRequestType embeddingRequestType) {
-    checkEmbeddingApiKeyHeader(providerId, apiKeyOverride);
+    checkEmbeddingApiKeyHeader(providerId, apiKey);
     EmbeddingRequest request =
         new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
 
     Uni<EmbeddingResponse> serviceResponse =
         applyRetry(
-            vertexAIEmbeddingProviderClient.embed(
-                "Bearer " + apiKeyOverride.get(), modelName, request));
+            vertexAIEmbeddingProviderClient.embed("Bearer " + apiKey.get(), modelName, request));
 
     return serviceResponse
         .onItem()

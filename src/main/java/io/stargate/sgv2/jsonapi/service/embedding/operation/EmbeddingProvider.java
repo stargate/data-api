@@ -73,15 +73,15 @@ public abstract class EmbeddingProvider {
    * Vectorizes the given list of texts and returns the embeddings.
    *
    * @param texts List of texts to be vectorized
-   * @param apiKeyOverride Optional API key to be used for this request. If not provided, the
-   *     default API key will be used.
+   * @param apiKey Optional API key to be used for this request. If not provided, the default API
+   *     key will be used.
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
    * @return VectorResponse
    */
   public abstract Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Optional<String> apiKey,
       EmbeddingRequestType embeddingRequestType);
 
   /**
@@ -138,8 +138,8 @@ public abstract class EmbeddingProvider {
   }
 
   /** Helper method to check if the API key is present in the header */
-  protected void checkEmbeddingApiKeyHeader(String providerId, Optional<String> apiKeyOverride) {
-    if (apiKeyOverride.isEmpty()) {
+  protected void checkEmbeddingApiKeyHeader(String providerId, Optional<String> apiKey) {
+    if (apiKey.isEmpty()) {
       throw EMBEDDING_PROVIDER_API_KEY_MISSING.toApiException(
           "header value `%s` is missing for embedding provider: %s",
           EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME, providerId);

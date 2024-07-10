@@ -125,9 +125,9 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Optional<String> apiKey,
       EmbeddingRequestType embeddingRequestType) {
-    checkEmbeddingApiKeyHeader(providerId, apiKeyOverride);
+    checkEmbeddingApiKeyHeader(providerId, apiKey);
 
     String[] textArray = new String[texts.size()];
     String input_type =
@@ -136,7 +136,7 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
         new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
 
     Uni<EmbeddingResponse> response =
-        applyRetry(cohereEmbeddingProviderClient.embed("Bearer " + apiKeyOverride.get(), request));
+        applyRetry(cohereEmbeddingProviderClient.embed("Bearer " + apiKey.get(), request));
 
     return response
         .onItem()

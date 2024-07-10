@@ -109,9 +109,9 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Optional<String> apiKey,
       EmbeddingRequestType embeddingRequestType) {
-    checkEmbeddingApiKeyHeader(providerId, apiKeyOverride);
+    checkEmbeddingApiKeyHeader(providerId, apiKey);
     final String inputType =
         (embeddingRequestType == EmbeddingRequestType.SEARCH) ? requestTypeQuery : requestTypeIndex;
     String[] textArray = new String[texts.size()];
@@ -119,8 +119,7 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
         new EmbeddingRequest(inputType, texts.toArray(textArray), modelName, autoTruncate);
 
     Uni<EmbeddingResponse> response =
-        applyRetry(
-            voyageAIEmbeddingProviderClient.embed("Bearer " + apiKeyOverride.get(), request));
+        applyRetry(voyageAIEmbeddingProviderClient.embed("Bearer " + apiKey.get(), request));
 
     return response
         .onItem()
