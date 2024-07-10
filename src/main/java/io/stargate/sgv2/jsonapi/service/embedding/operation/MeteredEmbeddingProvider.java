@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 
 /**
@@ -50,10 +49,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
    */
   @Override
   public Uni<Response> vectorize(
-      int batchId,
-      List<String> texts,
-      Optional<String> apiKey,
-      EmbeddingRequestType embeddingRequestType) {
+      int batchId, List<String> texts, String apiKey, EmbeddingRequestType embeddingRequestType) {
     // String bytes metrics for vectorize
     DistributionSummary ds =
         DistributionSummary.builder(jsonApiMetricsConfig.vectorizeInputBytesMetrics())

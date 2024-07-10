@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * This is a test implementation of the EmbeddingProvider interface. It is used for
@@ -60,13 +59,10 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
 
   @Override
   public Uni<Response> vectorize(
-      int batchId,
-      List<String> texts,
-      Optional<String> apiKey,
-      EmbeddingRequestType embeddingRequestType) {
+      int batchId, List<String> texts, String apiKey, EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
     if (texts.size() == 0) return Uni.createFrom().item(Response.of(batchId, response));
-    if (!apiKey.isPresent() || !apiKey.get().equals(TEST_API_KEY))
+    if (null == apiKey || !apiKey.equals(TEST_API_KEY))
       return Uni.createFrom().failure(new RuntimeException("Invalid API Key"));
     for (String text : texts) {
       if (dimension == 5) {

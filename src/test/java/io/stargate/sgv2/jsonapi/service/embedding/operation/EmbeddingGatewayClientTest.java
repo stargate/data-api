@@ -89,7 +89,7 @@ public class EmbeddingGatewayClientTest {
             .vectorize(
                 1,
                 List.of("data 1", "data 2"),
-                Optional.empty(),
+                null,
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
@@ -139,7 +139,7 @@ public class EmbeddingGatewayClientTest {
             .vectorize(
                 1,
                 List.of("data 1", "data 2"),
-                Optional.empty(),
+                null,
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
