@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.stargate</groupId>
     <artifactId>sgv2-api-parent</artifactId>
-    <version>2.1.0-BETA-12</version>
+    <version>2.1.0-BETA-13</version>
   </parent>
   <artifactId>sgv2-jsonapi</artifactId>
   <version>1.0.14-SNAPSHOT</version>
@@ -13,6 +13,8 @@
     <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->
     <!-- 16-Nov-2023, tatu: but may use 2.16 now that it's available -->
     <jackson.version>2.16.2</jackson.version>
+    <!-- 09-Jul-2024, tatu: temporary override here until SG 2.0.28 -->
+    <quarkus.platform.version>3.9.5</quarkus.platform.version>
     <wiremock.version>3.4.2</wiremock.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
