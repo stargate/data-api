@@ -97,17 +97,12 @@ public class HuggingFaceDedicatedEmbeddingProvider extends EmbeddingProvider {
 
   @Override
   public Uni<Response> vectorize(
-      int batchId,
-      List<String> texts,
-      Optional<String> apiKeyOverride,
-      EmbeddingRequestType embeddingRequestType) {
+      int batchId, List<String> texts, String apiKey, EmbeddingRequestType embeddingRequestType) {
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray));
 
     Uni<EmbeddingResponse> response =
-        applyRetry(
-            huggingFaceDedicatedEmbeddingProviderClient.embed(
-                "Bearer " + apiKeyOverride.get(), request));
+        applyRetry(huggingFaceDedicatedEmbeddingProviderClient.embed("Bearer " + apiKey, request));
 
     return response
         .onItem()

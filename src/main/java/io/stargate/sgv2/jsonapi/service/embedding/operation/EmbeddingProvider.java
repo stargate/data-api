@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,16 +69,13 @@ public abstract class EmbeddingProvider {
    * Vectorizes the given list of texts and returns the embeddings.
    *
    * @param texts List of texts to be vectorized
-   * @param apiKeyOverride Optional API key to be used for this request. If not provided, the
-   *     default API key will be used.
+   * @param apiKey Optional API key to be used for this request. If not provided, the default API
+   *     key will be used.
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
    * @return VectorResponse
    */
   public abstract Uni<Response> vectorize(
-      int batchId,
-      List<String> texts,
-      Optional<String> apiKeyOverride,
-      EmbeddingRequestType embeddingRequestType);
+      int batchId, List<String> texts, String apiKey, EmbeddingRequestType embeddingRequestType);
 
   /**
    * returns the maximum batch size supported by the provider

@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.request;
 
+import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME;
+import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_API_KEY_MISSING;
+
 import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
 import io.vertx.ext.web.RoutingContext;
@@ -53,5 +56,15 @@ public class DataApiRequestInfo {
 
   public Optional<String> getEmbeddingApiKey() {
     return this.embeddingApiKey;
+  }
+
+  public String getAndValidateEmbeddingApiKey() {
+    Optional<String> apiKey = getEmbeddingApiKey();
+    if (apiKey.isEmpty()) {
+      throw EMBEDDING_PROVIDER_API_KEY_MISSING.toApiException(
+          "header value `%s` is missing in the request.",
+          EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME);
+    }
+    return apiKey.get();
   }
 }

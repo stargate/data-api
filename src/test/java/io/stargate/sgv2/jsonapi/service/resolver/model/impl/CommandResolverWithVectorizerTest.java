@@ -43,7 +43,6 @@ import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -543,7 +542,7 @@ public class CommandResolverWithVectorizerTest {
       new DataVectorizer(
               TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
               objectMapper.getNodeFactory(),
-              Optional.empty(),
+              null,
               TestEmbeddingProvider.commandContextWithVectorize.collectionSettings())
           .vectorizeUpdateClause(updateClause)
           .subscribe()
