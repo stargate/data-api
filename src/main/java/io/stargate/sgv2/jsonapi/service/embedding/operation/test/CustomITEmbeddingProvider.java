@@ -62,7 +62,7 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
       int batchId, List<String> texts, String apiKey, EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
     if (texts.size() == 0) return Uni.createFrom().item(Response.of(batchId, response));
-    if (null == apiKey || !apiKey.equals(TEST_API_KEY))
+    if (!TEST_API_KEY.equals(apiKey))
       return Uni.createFrom().failure(new RuntimeException("Invalid API Key"));
     for (String text : texts) {
       if (dimension == 5) {
