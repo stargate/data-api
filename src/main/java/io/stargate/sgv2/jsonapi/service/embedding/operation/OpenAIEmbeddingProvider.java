@@ -114,8 +114,9 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Optional<String> apiKey,
       EmbeddingRequestType embeddingRequestType) {
+    checkEmbeddingApiKeyHeader(providerId, apiKey);
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
     String organizationId = (String) vectorizeServiceParameters.get("organizationId");
@@ -124,7 +125,7 @@ public class OpenAIEmbeddingProvider extends EmbeddingProvider {
     Uni<EmbeddingResponse> response =
         applyRetry(
             openAIEmbeddingProviderClient.embed(
-                "Bearer " + apiKeyOverride.get(), organizationId, projectId, request));
+                "Bearer " + apiKey.get(), organizationId, projectId, request));
 
     return response
         .onItem()
