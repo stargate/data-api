@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.gateway;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
@@ -147,9 +149,15 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             .setEmbeddingRequest(embeddingRequest)
             .setProviderContext(providerContext)
             .build();
-
-    final Uni<EmbeddingGateway.EmbeddingResponse> embeddingResponse =
-        embeddingService.embed(providerEmbedRequest);
+    Uni<EmbeddingGateway.EmbeddingResponse> embeddingResponse;
+    try {
+      embeddingResponse = embeddingService.embed(providerEmbedRequest);
+    } catch (StatusRuntimeException e) {
+      if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
+        throw ErrorCode.EMBEDDING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
+      }
+      throw e;
+    }
     return embeddingResponse
         .onItem()
         .transform(
