@@ -95,16 +95,11 @@ public class JinaAIEmbeddingProvider extends EmbeddingProvider {
 
   @Override
   public Uni<Response> vectorize(
-      int batchId,
-      List<String> texts,
-      Optional<String> apiKey,
-      EmbeddingRequestType embeddingRequestType) {
-    checkEmbeddingApiKeyHeader(providerId, apiKey);
-
+      int batchId, List<String> texts, String apiKey, EmbeddingRequestType embeddingRequestType) {
     EmbeddingRequest request = new EmbeddingRequest(texts, modelName);
 
     Uni<EmbeddingResponse> response =
-        applyRetry(jinaAIEmbeddingProviderClient.embed("Bearer " + apiKey.get(), request));
+        applyRetry(jinaAIEmbeddingProviderClient.embed("Bearer " + apiKey, request));
 
     return response
         .onItem()

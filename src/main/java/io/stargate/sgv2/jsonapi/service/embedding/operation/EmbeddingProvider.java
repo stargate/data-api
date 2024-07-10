@@ -1,8 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
-import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME;
-import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_API_KEY_MISSING;
-
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -10,7 +7,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvide
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,10 +75,7 @@ public abstract class EmbeddingProvider {
    * @return VectorResponse
    */
   public abstract Uni<Response> vectorize(
-      int batchId,
-      List<String> texts,
-      Optional<String> apiKey,
-      EmbeddingRequestType embeddingRequestType);
+      int batchId, List<String> texts, String apiKey, EmbeddingRequestType embeddingRequestType);
 
   /**
    * returns the maximum batch size supported by the provider
@@ -135,15 +128,6 @@ public abstract class EmbeddingProvider {
       baseUrl.append(value);
     }
     return baseUrl.toString();
-  }
-
-  /** Helper method to check if the API key is present in the header */
-  protected void checkEmbeddingApiKeyHeader(String providerId, Optional<String> apiKey) {
-    if (apiKey.isEmpty()) {
-      throw EMBEDDING_PROVIDER_API_KEY_MISSING.toApiException(
-          "header value `%s` is missing for embedding provider: %s",
-          EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME, providerId);
-    }
   }
 
   /**
