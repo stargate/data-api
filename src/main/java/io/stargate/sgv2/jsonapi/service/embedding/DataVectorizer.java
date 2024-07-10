@@ -52,17 +52,11 @@ public class DataVectorizer {
   }
 
   /**
-   * Vectorize the '$vectorize' fields in the document. This method is used by commands: insertOne,
-   * insertMany (detail in DataVectorizerService vectorizeDocument method) updateOne, updateMany,
-   * findOneAndUpdate, findOneAndReplace (detail in SetOperation updateVectorize method)
-   *
-   * <p>With isUpdateCommand flag set as true, this method allows to vectorize JsonNode with both
-   * $vector and $vectorize
+   * Vectorize the '$vectorize' fields in the document
    *
    * @param documents - Documents to be vectorized
-   * @param isUpdateCommand - is called from isUpdateCommand or not
    */
-  public Uni<Boolean> vectorize(List<JsonNode> documents, boolean isUpdateCommand) {
+  public Uni<Boolean> vectorize(List<JsonNode> documents) {
     try {
       int vectorDataPosition = 0;
       List<String> vectorizeTexts = new ArrayList<>();
@@ -70,8 +64,7 @@ public class DataVectorizer {
       for (int position = 0; position < documents.size(); position++) {
         JsonNode document = documents.get(position);
         if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-          // Do not allow using $vector and $vectorize together for insertion commands
-          if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD) && !isUpdateCommand) {
+          if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
             throw new JsonApiException(
                 ErrorCode.INVALID_USAGE_OF_VECTORIZE,
                 ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage()
@@ -159,6 +152,71 @@ public class DataVectorizer {
     } catch (JsonApiException e) {
       return Uni.createFrom().failure(e);
     }
+  }
+
+  /**
+   * This method will be used by documentUpdater(updateOne, updateMany, findOneAndUpdate,
+   * findOneAndReplace) Since we need to vectorize on demand, so vectorization for updateCommands
+   * will postpone and move into ReadAndUpdateOperation.
+   *
+   * @param document - Document to be vectorized
+   * @return Uni<Boolean> - have modified the document or not
+   */
+  public Uni<Boolean> vectorizeUpdateDocument(JsonNode document) {
+    if (!document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+      return Uni.createFrom().item(false);
+    }
+    final JsonNode jsonNode = document.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+    // $vectorize as null value, also update $vector as null, modified
+    if (jsonNode.isNull()) {
+      ((ObjectNode) document).put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
+      return Uni.createFrom().item(true);
+    }
+    // $vectorize is not textual value
+    if (!jsonNode.isTextual()) {
+      throw ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.toApiException();
+    }
+    String vectorizeData = jsonNode.asText();
+    // $vectorize is blank text value, set $vector as null value, modified
+    if (vectorizeData.isBlank()) {
+      ((ObjectNode) document).put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
+      return Uni.createFrom().item(true);
+    }
+
+    // $vectorize is textual and not blank, going to vectorize it
+    if (embeddingProvider == null) {
+      throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
+          collectionSettings.collectionName());
+    }
+    Uni<List<float[]>> vectors =
+        embeddingProvider
+            .vectorize(
+                1,
+                List.of(vectorizeData),
+                embeddingApiKey,
+                EmbeddingProvider.EmbeddingRequestType.INDEX)
+            .map(EmbeddingProvider.Response::embeddings);
+    return vectors
+        .onItem()
+        .transform(
+            vectorData -> {
+              float[] vector = vectorData.get(0);
+              // check if vector have the expected size
+              if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
+                throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
+                    "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
+                    collectionSettings.vectorConfig().vectorizeConfig().provider(),
+                    collectionSettings.vectorConfig().vectorSize(),
+                    vector.length);
+              }
+              final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
+              for (float listValue : vector) {
+                arrayNode.add(nodeFactory.numberNode(listValue));
+              }
+              ((ObjectNode) document)
+                  .put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, arrayNode);
+              return true;
+            });
   }
 
   /**

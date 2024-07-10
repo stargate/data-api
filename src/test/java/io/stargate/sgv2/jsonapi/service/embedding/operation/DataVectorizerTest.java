@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,7 +45,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
       try {
-        dataVectorizer.vectorize(documents, false).subscribe().asCompletionStage().get();
+        dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -71,7 +72,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
       try {
-        dataVectorizer.vectorize(documents, false).subscribe().asCompletionStage().get();
+        dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -103,7 +104,7 @@ public class DataVectorizerTest {
       try {
         Throwable failure =
             dataVectorizer
-                .vectorize(documents, false)
+                .vectorize(documents)
                 .subscribe()
                 .withSubscriber(UniAssertSubscriber.create())
                 .awaitFailure()
@@ -130,7 +131,7 @@ public class DataVectorizerTest {
           new DataVectorizer(
               testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
       try {
-        dataVectorizer.vectorize(documents, false).subscribe().asCompletionStage().get();
+        dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -155,7 +156,7 @@ public class DataVectorizerTest {
       try {
         Throwable failure =
             dataVectorizer
-                .vectorize(documents, false)
+                .vectorize(documents)
                 .subscribe()
                 .withSubscriber(UniAssertSubscriber.create())
                 .awaitFailure()
@@ -168,33 +169,6 @@ public class DataVectorizerTest {
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE);
       } catch (Exception e) {
         throw new RuntimeException(e);
-      }
-    }
-
-    @Test
-    public void testWithBothVectorFieldValuesFromUpdate() {
-      List<JsonNode> documents = new ArrayList<>();
-
-      final ObjectNode document = objectMapper.createObjectNode().put("$vectorize", "test data");
-      final ArrayNode arrayNode = document.putArray("$vector");
-      arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
-      arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
-      documents.add(document);
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
-      // dataVectorizer will accept usage for $vectorize and $vector at the same time
-      // vectorize the $vectorize, and update both $vectorize and $vector
-      try {
-        dataVectorizer.vectorize(documents, true).subscribe().asCompletionStage().get();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-      for (JsonNode doc : documents) {
-        assertThat(doc.has("$vectorize")).isTrue();
-        assertThat(doc.has("$vector")).isTrue();
-        assertThat(doc.get("$vector").isArray()).isTrue();
-        assertThat(doc.get("$vector").size()).isEqualTo(3);
       }
     }
 
@@ -225,7 +199,7 @@ public class DataVectorizerTest {
 
       Throwable failure =
           dataVectorizer
-              .vectorize(documents, false)
+              .vectorize(documents)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -263,7 +237,7 @@ public class DataVectorizerTest {
 
       Throwable failure =
           dataVectorizer
-              .vectorize(documents, false)
+              .vectorize(documents)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -298,6 +272,79 @@ public class DataVectorizerTest {
       assertThat(sortClause.hasVectorizeSearchClause()).isFalse();
       assertThat(sortClause.sortExpressions().get(0).vector()).isNotNull();
       assertThat(sortClause.sortExpressions().get(0).vector().length).isEqualTo(3);
+    }
+  }
+
+  @Nested
+  public class updateText {
+    @Test
+    public void vectorizeUpdate() {
+      final ObjectNode document = objectMapper.createObjectNode().put("$vectorize", "test data");
+      final ArrayNode arrayNode = document.putArray("$vector");
+      arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
+      arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      try {
+        final Boolean modified =
+            dataVectorizer.vectorizeUpdateDocument(document).subscribe().asCompletionStage().get();
+        // modified, since we need to re-vectorize, and update the $vector
+        assertThat(modified).isTrue();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      assertThat(document.has("$vectorize")).isTrue();
+      assertThat(document.has("$vector")).isTrue();
+      assertThat(document.get("$vector").isArray()).isTrue();
+      assertThat(document.get("$vector").size()).isEqualTo(3); // vector updated
+    }
+
+    @Test
+    public void vectorizeBlank() {
+      final ObjectNode document = objectMapper.createObjectNode().put("$vectorize", "");
+      final ArrayNode arrayNode = document.putArray("$vector");
+      arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
+      arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      try {
+        final Boolean modified =
+            dataVectorizer.vectorizeUpdateDocument(document).subscribe().asCompletionStage().get();
+        // modified, since we need to re-vectorize, and update the $vector
+        assertThat(modified).isTrue();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      assertThat(document.has("$vectorize")).isTrue();
+      assertThat(document.has("$vector")).isTrue();
+      assertThat(document.get("$vector").isNull()).isTrue(); // will set $vector as null value
+    }
+
+    @Test
+    public void vectorizeUpdateFailureNonTextual() {
+      final ObjectNode document = objectMapper.createObjectNode().put("$vectorize", 123);
+      final ArrayNode arrayNode = document.putArray("$vector");
+      arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
+      arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      Throwable failure =
+          catchThrowable(
+              () -> {
+                dataVectorizer
+                    .vectorizeUpdateDocument(document)
+                    .subscribe()
+                    .withSubscriber(UniAssertSubscriber.create())
+                    .awaitFailure()
+                    .getFailure();
+              });
+      assertThat(failure)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_VECTORIZE_VALUE_TYPE)
+          .hasFieldOrPropertyWithValue("message", "$vectorize value needs to be text value");
     }
   }
 }

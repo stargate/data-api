@@ -121,11 +121,12 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
         JsonNode newValue = action.value();
         JsonNode oldValue = target.valueNode();
 
+        // if there is no oldValue or there is a diff
         if ((oldValue == null) || !JsonUtil.equalsOrdered(oldValue, newValue)) {
           // replace the oldValue with newValue first
           ((ObjectNode) doc).put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, newValue);
           // vectorize the newValue, update $vectorize, $vector
-          return dataVectorizer.vectorize(List.of(doc), true);
+          return dataVectorizer.vectorizeUpdateDocument(doc);
         }
       }
     }

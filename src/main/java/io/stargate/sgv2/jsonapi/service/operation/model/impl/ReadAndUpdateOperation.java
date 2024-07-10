@@ -72,7 +72,7 @@ public record ReadAndUpdateOperation(
             findResponse -> {
               pageStateReference.set(findResponse.pageState());
               final List<ReadDocument> docs = findResponse.docs();
-              if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
+              if (upsert() && docs.isEmpty() && matchedCount.get() == 0) {
                 return Multi.createFrom().item(findOperation().getNewDocument());
               } else {
                 matchedCount.addAndGet(docs.size());

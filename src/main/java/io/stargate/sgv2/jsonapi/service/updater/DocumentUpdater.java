@@ -77,8 +77,8 @@ public record DocumentUpdater(
   }
 
   /**
-   * Will be used for findOneAndReplace. This method will replace $vectorize, but won't re-vectorize
-   * and replace $vector(detail in applyUpdateVectorize method)
+   * Will be used for findOneAndReplace. This is first level replace. This method will replace the
+   * document, but won't re-vectorize yet(detail in applyUpdateVectorize method)
    *
    * @param docToUpdate
    * @param docInserted
@@ -96,11 +96,13 @@ public record DocumentUpdater(
       }
     }
 
-    // If replaceDocument has $vectorize as null value, also set $vector as null here.
-    // This is because we need to do a comparison for compareDoc and replaceDocument later
+    // If replaceDocument has $vectorize as null or blank text value, also set $vector as null value
+    // here.
     JsonNode vectorizeNode =
         replaceDocument.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
-    if (vectorizeNode != null && vectorizeNode.isNull()) {
+    if (vectorizeNode != null
+        && (vectorizeNode.isNull()
+            || (vectorizeNode.isTextual() && vectorizeNode.asText().isBlank()))) {
       ((ObjectNode) replaceDocument)
           .put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
     }
@@ -156,13 +158,20 @@ public record DocumentUpdater(
     }
     if (UpdateType.REPLACE == updateType) {
       // Only need to vectorize when:
-      // replaceDocument has $vectorize(not null), this is consistent with previous behaviour
+      // replaceDocument has $vectorize(not null value, not blank text value), this is consistent
+      // with previous behaviour
       // This means even if $vectorize has no diff between readDoc and replacementDoc, we still
       // re-vectorize
-      if (!replaceDocument.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD).isNull()) {
+      final JsonNode replaceVectorizeNode =
+          replaceDocument.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+      if (replaceVectorizeNode != null) {
+        // if replace $vectorize is null value or blank text value, no need to vectorize
+        if (replaceVectorizeNode.isNull()
+            || (replaceVectorizeNode.isTextual() && replaceVectorizeNode.asText().isBlank())) {
+          return Uni.createFrom().item(new DocumentUpdaterResponse(readDocument, false));
+        }
         return dataVectorizer
-            // replacement also considered as update, set isUpdateCommand flag as true
-            .vectorize(List.of(readDocument), true)
+            .vectorizeUpdateDocument(readDocument)
             .onItem()
             .transformToUni(
                 modified -> {

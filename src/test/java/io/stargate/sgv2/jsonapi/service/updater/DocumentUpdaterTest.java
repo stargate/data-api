@@ -674,13 +674,6 @@ public class DocumentUpdaterTest {
 
     @Test
     public void update_vector_at_first_level() throws Exception {
-
-      //            final ObjectNode document = objectMapper.createObjectNode().put("$vectorize",
-      // "test data");
-      //            final ArrayNode arrayNode = document.putArray("$vector");
-      //            arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
-      //            arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
-      //            documents.add(document);
       String updateVectorizeData =
           """
                                   {"$vectorize" : "Beijing is a big city", "$vector" : [0.2,0.4,0.5]}
