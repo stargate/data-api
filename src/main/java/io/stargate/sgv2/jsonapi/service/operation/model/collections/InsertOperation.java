@@ -120,7 +120,7 @@ public record InsertOperation(
                     // wrap item and failure
                     // the collection can decide how to react on failure
                     .onItemOrFailure()
-                    .transform((id, t) -> insertion.addFailure(t)))
+                    .transform((id, t) -> insertion.maybeAddFailure(t)))
         .concatenate(false)
 
         // if no failures reduce to the op page
@@ -175,7 +175,7 @@ public record InsertOperation(
                         offlineMode)
                     // handle errors fail silent mode
                     .onItemOrFailure()
-                    .transform((id, t) -> insertion.addFailure(t)))
+                    .transform((id, t) -> insertion.maybeAddFailure(t)))
         // then reduce here
         .collect()
         .in(

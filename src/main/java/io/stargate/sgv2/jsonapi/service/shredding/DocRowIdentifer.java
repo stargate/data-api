@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.model;
+package io.stargate.sgv2.jsonapi.service.shredding;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
