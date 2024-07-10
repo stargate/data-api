@@ -109,7 +109,6 @@ public record DocumentUpdater(
 
     // In case there is no difference between document return modified as false, so db update
     // doesn't happen
-
     if (JsonUtil.equalsOrdered(compareDoc, replaceDocument())) {
       return false;
     }
@@ -121,9 +120,6 @@ public record DocumentUpdater(
       docToUpdate.set(DocumentConstants.Fields.DOC_ID, replaceDocumentId);
     }
     docToUpdate.setAll(replaceDocument());
-    //    // restore the original $vectorize
-    //    docToUpdate.put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-    // vectorizeNode.asText());
     // return modified flag as true
     return true;
   }
@@ -136,6 +132,7 @@ public record DocumentUpdater(
    *     level update)
    * @param docInserted True if document was just created (inserted); false if updating existing
    *     document
+   * @param dataVectorizer dataVectorizer
    */
   public Uni<DocumentUpdaterResponse> applyUpdateVectorize(
       JsonNode readDocument, boolean docInserted, DataVectorizer dataVectorizer) {
@@ -179,13 +176,13 @@ public record DocumentUpdater(
                 });
       }
     }
-    // there is no setOperation, so won't modify anything
+    // If there is no return from above, meaning nothing is modified at this second level update
     return Uni.createFrom().item(new DocumentUpdaterResponse(readDocument, false));
   }
 
   public record DocumentUpdaterResponse(JsonNode document, boolean modified) {}
 
-  public enum UpdateType {
+  private enum UpdateType {
     UPDATE,
     REPLACE
   }

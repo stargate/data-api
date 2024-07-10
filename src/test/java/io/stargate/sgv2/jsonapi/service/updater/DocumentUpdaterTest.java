@@ -740,5 +740,71 @@ public class DocumentUpdaterTest {
                     .isEqualTo(true); // modified $vectorize and $vector
               });
     }
+
+    @Test
+    public void two_levels_update_unset() throws Exception {
+      String updateVectorizeData =
+          """
+                                        {"$vectorize" : "Beijing is a big city", "location" : "London"}
+                                        """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.UNSET,
+                  (ObjectNode)
+                      objectMapper.readTree(
+                          updateVectorizeData))); // will unset $vectorize, $vector and location
+
+      String expected_level_1 =
+          """
+                                  {
+                                      "_id": "1"
+                                  }
+                                """;
+
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR);
+      JsonNode expectedData1 = objectMapper.readTree(expected_level_1);
+      DocumentUpdater.DocumentUpdaterResponse firstResponse =
+          documentUpdater.apply(baseData, false);
+      assertThat(firstResponse)
+          .isNotNull()
+          .satisfies(
+              firstResponseNode -> {
+                assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
+                assertThat(firstResponseNode.modified())
+                    .isEqualTo(true); // modified $vectorize, $vector and location
+              });
+
+      // Second level update will try to vectorize, in this test case, will do nothing, since there
+      // is no setOperation
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(
+              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+      final DocumentUpdater.DocumentUpdaterResponse secondResponse =
+          documentUpdater
+              .applyUpdateVectorize(firstResponse.document(), false, dataVectorizer)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      String expected_level_2 =
+          """
+                                  {
+                                      "_id":"1"
+                                  }
+                                  """;
+      JsonNode expectedData2 = objectMapper.readTree(expected_level_2);
+      assertThat(secondResponse)
+          .isNotNull()
+          .satisfies(
+              secondResponseNode -> {
+                assertThat(secondResponseNode.document())
+                    .usingRecursiveComparison()
+                    .ignoringFields("order")
+                    .isEqualTo(expectedData2);
+                assertThat(secondResponseNode.modified()).isEqualTo(false); // nothing is modified
+              });
+    }
   }
 }
