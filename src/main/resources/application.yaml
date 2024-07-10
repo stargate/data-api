@@ -48,6 +48,10 @@ stargate:
   multi-tenancy:
     enabled: false
 
+  # Is support for API Tables enabled?
+  tables:
+    enabled: false
+
 quarkus:
   # general app properties
   application:

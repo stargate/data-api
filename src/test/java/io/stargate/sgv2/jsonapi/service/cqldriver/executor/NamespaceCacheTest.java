@@ -152,7 +152,7 @@ public class NamespaceCacheTest {
                                 new HashMap<>(),
                                 new HashMap<>())));
               });
-      NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
+      NamespaceCache namespaceCache = createNamespaceCache(queryExecutor);
       var schemaObject =
           namespaceCache
               .getSchemaObject(dataApiRequestInfo, "table")
@@ -283,7 +283,7 @@ public class NamespaceCacheTest {
                                     "{\"indexing\":{\"deny\":[\"comment\"]}}"),
                                 new HashMap<>())));
               });
-      NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
+      NamespaceCache namespaceCache = createNamespaceCache(queryExecutor);
       var schemaObject =
           namespaceCache
               .getSchemaObject(dataApiRequestInfo, "table")
@@ -349,7 +349,7 @@ public class NamespaceCacheTest {
                                 new HashMap<>(),
                                 new HashMap<>())));
               });
-      NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
+      NamespaceCache namespaceCache = createNamespaceCache(queryExecutor);
       Throwable error =
           namespaceCache
               .getSchemaObject(dataApiRequestInfo, "table")
@@ -367,5 +367,9 @@ public class NamespaceCacheTest {
                     .isEqualTo(ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA.getMessage() + "table");
               });
     }
+  }
+
+  private NamespaceCache createNamespaceCache(QueryExecutor qe) {
+    return new NamespaceCache("ks", false, qe, objectMapper);
   }
 }

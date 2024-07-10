@@ -9,6 +9,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.config.ApiTablesConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -24,6 +25,8 @@ public class SchemaCache {
   @Inject ObjectMapper objectMapper;
 
   @Inject OperationsConfig operationsConfig;
+
+  @Inject ApiTablesConfig apiTablesConfig;
 
   // TODO: The size of the cache should be in configuration.
   // TODO: set the cache loader when creating the cache
@@ -65,7 +68,8 @@ public class SchemaCache {
   }
 
   private NamespaceCache addNamespaceCache(CacheKey cacheKey) {
-    return new NamespaceCache(cacheKey.namespace(), queryExecutor, objectMapper);
+    return new NamespaceCache(
+        cacheKey.namespace(), apiTablesConfig.enabled(), queryExecutor, objectMapper);
   }
 
   /**

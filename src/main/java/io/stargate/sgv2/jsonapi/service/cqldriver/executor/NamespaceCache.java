@@ -8,7 +8,6 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.FeatureFlags;
 import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
 import java.time.Duration;
 
@@ -24,6 +23,8 @@ public class NamespaceCache {
 
   private final ObjectMapper objectMapper;
 
+  private final boolean apiTablesEnabled;
+
   // TODO: move the settings to config
   // TODO: set the cache loader when creating the cache
   private static final long CACHE_TTL_SECONDS = 300;
@@ -34,10 +35,15 @@ public class NamespaceCache {
           .maximumSize(CACHE_MAX_SIZE)
           .build();
 
-  public NamespaceCache(String namespace, QueryExecutor queryExecutor, ObjectMapper objectMapper) {
+  public NamespaceCache(
+      String namespace,
+      boolean apiTablesEnabled,
+      QueryExecutor queryExecutor,
+      ObjectMapper objectMapper) {
     this.namespace = namespace;
     this.queryExecutor = queryExecutor;
     this.objectMapper = objectMapper;
+    this.apiTablesEnabled = apiTablesEnabled;
   }
 
   protected Uni<SchemaObject> getSchemaObject(
@@ -130,7 +136,7 @@ public class NamespaceCache {
                     optionalTable.get(), objectMapper);
               }
 
-              if (FeatureFlags.TABLES_SUPPORTED) {
+              if (apiTablesEnabled) {
                 return new TableSchemaObject(namespace, collectionName);
               }
 
