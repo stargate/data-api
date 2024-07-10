@@ -16,7 +16,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -103,10 +102,7 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
 
   @Override
   public Uni<Response> vectorize(
-      int batchId,
-      List<String> texts,
-      Optional<String> apiKeyOverride,
-      EmbeddingRequestType embeddingRequestType) {
+      int batchId, List<String> texts, String apiKey, EmbeddingRequestType embeddingRequestType) {
     String[] textArray = new String[texts.size()];
     String input_type = embeddingRequestType == EmbeddingRequestType.INDEX ? PASSAGE : QUERY;
 
@@ -114,7 +110,7 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
         new EmbeddingRequest(texts.toArray(textArray), modelName, input_type);
 
     Uni<EmbeddingResponse> response =
-        applyRetry(nvidiaEmbeddingProviderClient.embed("Bearer " + apiKeyOverride.get(), request));
+        applyRetry(nvidiaEmbeddingProviderClient.embed("Bearer " + apiKey, request));
 
     return response
         .onItem()
