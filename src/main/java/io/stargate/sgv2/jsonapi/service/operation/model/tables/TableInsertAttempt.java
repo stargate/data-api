@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.service.operation.model.InsertAttempt;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
-import io.stargate.sgv2.jsonapi.service.shredding.WritableDocRow;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
@@ -62,11 +61,6 @@ public class TableInsertAttempt implements InsertAttempt {
   @Override
   public Optional<DocRowIdentifer> docRowID() {
     return Optional.ofNullable(rowId);
-  }
-
-  @Override
-  public Optional<WritableDocRow> docRow() {
-    return Optional.ofNullable(row);
   }
 
   @Override

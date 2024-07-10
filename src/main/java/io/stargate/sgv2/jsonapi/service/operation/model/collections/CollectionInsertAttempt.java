@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.model.collections;
 
 import io.stargate.sgv2.jsonapi.service.operation.model.InsertAttempt;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
-import io.stargate.sgv2.jsonapi.service.shredding.WritableDocRow;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import java.util.ArrayList;
@@ -61,11 +60,6 @@ public class CollectionInsertAttempt implements InsertAttempt {
   @Override
   public Optional<DocRowIdentifer> docRowID() {
     return Optional.ofNullable(documentId);
-  }
-
-  @Override
-  public Optional<WritableDocRow> docRow() {
-    return Optional.ofNullable(document);
   }
 
   @Override
