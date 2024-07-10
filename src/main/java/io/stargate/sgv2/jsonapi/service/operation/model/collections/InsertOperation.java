@@ -11,12 +11,10 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.operation.model.InsertOperationPage;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
@@ -28,67 +26,11 @@ import java.util.function.Supplier;
  */
 public record InsertOperation(
     CommandContext<CollectionSchemaObject> commandContext,
-    List<InsertAttempt> insertions,
+    List<CollectionInsertAttempt> insertions,
     boolean ordered,
     boolean offlineMode,
     boolean returnDocumentResponses)
     implements CollectionModifyOperation {
-
-  /**
-   * Container for an individual Document insertion attempt: used to keep track of the original
-   * input position; document (if available), its id (if available) and possible processing error.
-   * Information will be needed to build optional detail response (returnDocumentResponses).
-   */
-  public static class InsertAttempt implements Comparable<InsertAttempt> {
-    public final int position;
-
-    public final WritableShreddedDocument document;
-    public final DocumentId documentId;
-
-    public Throwable failure;
-
-    public InsertAttempt(int position, DocumentId documentId, Throwable failure) {
-      this.position = position;
-      this.document = null;
-      this.documentId = documentId;
-      this.failure = failure;
-    }
-
-    private InsertAttempt(int position, WritableShreddedDocument document) {
-      this.position = position;
-      this.document = document;
-      this.documentId = document.id();
-    }
-
-    public static InsertAttempt from(int position, WritableShreddedDocument document) {
-      return new InsertAttempt(position, document);
-    }
-
-    public static List<InsertAttempt> from(List<WritableShreddedDocument> documents) {
-      final int count = documents.size();
-      List<InsertAttempt> result = new ArrayList<>(count);
-      for (int i = 0; i < count; ++i) {
-        result.add(from(i, documents.get(i)));
-      }
-      return result;
-    }
-
-    public InsertAttempt addFailure(Throwable failure) {
-      if (failure != null) {
-        this.failure = failure;
-      }
-      return this;
-    }
-
-    public boolean hasVectorValues() {
-      return (document != null) && (document.queryVectorValues() != null);
-    }
-
-    @Override
-    public int compareTo(InsertOperation.InsertAttempt o) {
-      return Integer.compare(position, o.position);
-    }
-  }
 
   public static InsertOperation create(
       CommandContext commandContext,
@@ -98,7 +40,7 @@ public record InsertOperation(
       boolean returnDocumentResponses) {
     return new InsertOperation(
         commandContext,
-        InsertAttempt.from(documents),
+        CollectionInsertAttempt.from(documents),
         ordered,
         offlineMode,
         returnDocumentResponses);
@@ -110,14 +52,18 @@ public record InsertOperation(
       boolean ordered,
       boolean returnDocumentResponses) {
     return new InsertOperation(
-        commandContext, InsertAttempt.from(documents), ordered, false, returnDocumentResponses);
+        commandContext,
+        CollectionInsertAttempt.from(documents),
+        ordered,
+        false,
+        returnDocumentResponses);
   }
 
   public static InsertOperation create(
       CommandContext commandContext, WritableShreddedDocument document) {
     return new InsertOperation(
         commandContext,
-        Collections.singletonList(InsertAttempt.from(0, document)),
+        Collections.singletonList(CollectionInsertAttempt.from(0, document)),
         false,
         false,
         false);
@@ -152,7 +98,7 @@ public record InsertOperation(
       DataApiRequestInfo dataApiRequestInfo,
       QueryExecutor queryExecutor,
       boolean vectorEnabled,
-      List<InsertAttempt> insertions) {
+      List<CollectionInsertAttempt> insertions) {
 
     // build query once
     final String query = buildInsertQuery(vectorEnabled);
@@ -181,13 +127,14 @@ public record InsertOperation(
         .collect()
         .in(
             () -> new InsertOperationPage(insertions, returnDocumentResponses()),
-            (agg, in) -> {
-              Throwable failure = in.failure;
-              agg.aggregate(in);
-
-              if (failure != null) {
-                throw new FailFastInsertException(agg, failure);
-              }
+            (insertPage, insertAttempt) -> {
+              insertPage.aggregate(insertAttempt);
+              insertAttempt
+                  .failure()
+                  .ifPresent(
+                      failure -> {
+                        throw new FailFastInsertException(insertPage, failure);
+                      });
             })
 
         // in case upstream propagated FailFastInsertException
@@ -209,7 +156,7 @@ public record InsertOperation(
       DataApiRequestInfo dataApiRequestInfo,
       QueryExecutor queryExecutor,
       boolean vectorEnabled,
-      List<InsertAttempt> insertions) {
+      List<CollectionInsertAttempt> insertions) {
     // build query once
     String query = buildInsertQuery(vectorEnabled);
     return Multi.createFrom()
@@ -245,12 +192,12 @@ public record InsertOperation(
       DataApiRequestInfo dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String query,
-      InsertAttempt insertion,
+      CollectionInsertAttempt insertion,
       boolean vectorEnabled,
       boolean offlineMode) {
     // First things first: did we already fail? If so, propagate
-    if (insertion.failure != null) {
-      return Uni.createFrom().failure(insertion.failure);
+    if (insertion.failure().isPresent()) {
+      return Uni.createFrom().failure(insertion.failure().get());
     }
 
     // bind and execute

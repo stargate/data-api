@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionInsertAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.model.collections.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -41,9 +42,9 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
     final List<JsonNode> inputDocs = command.documents();
     final int docCount = inputDocs.size();
 
-    final List<InsertOperation.InsertAttempt> insertions = new ArrayList<>(docCount);
+    final List<CollectionInsertAttempt> insertions = new ArrayList<>(docCount);
     for (int pos = 0; pos < docCount; ++pos) {
-      InsertOperation.InsertAttempt attempt;
+      CollectionInsertAttempt attempt;
       // Since exception thrown will prevent returning anything, need to instead pass a
       // reference for Shredder to populate with the document id as soon as it knows it
       // (there is at least one case fail occurs before it knows the id)
@@ -51,9 +52,9 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
       try {
         final WritableShreddedDocument shredded =
             shredder.shred(ctx, inputDocs.get(pos), null, idRef);
-        attempt = InsertOperation.InsertAttempt.from(pos, shredded);
+        attempt = CollectionInsertAttempt.from(pos, shredded);
       } catch (Exception e) {
-        attempt = new InsertOperation.InsertAttempt(pos, idRef.get(), e);
+        attempt = new CollectionInsertAttempt(pos, idRef.get(), e);
       }
       insertions.add(attempt);
     }

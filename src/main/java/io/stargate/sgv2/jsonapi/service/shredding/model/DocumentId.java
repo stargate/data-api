@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.shredding.model;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -9,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.operation.model.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.util.Date;
@@ -28,12 +28,13 @@ import java.util.UUID;
  * </ul>
  */
 @RegisterForReflection
-public interface DocumentId {
+public interface DocumentId extends DocRowIdentifer {
   int typeId();
 
+  // TODO AARON - moved to the base, remove comment when working
   /** Method called by JSON serializer to get value to include in JSON output. */
-  @JsonValue
-  Object value();
+  //  @JsonValue
+  //  Object value();
 
   default JsonNode asJson(ObjectMapper mapper) {
     return asJson(mapper.getNodeFactory());
