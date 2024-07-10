@@ -349,11 +349,14 @@ public interface CollectionReadOperation extends CollectionOperation {
                           readDoc -> {
                             JsonNode data = readDoc.docSupplier().get();
                             projection.applyProjection(data);
-                            // TODO AARON below is the old code, i updated, but do we need to create
-                            // a new read
-                            // document because applyProjection mutates the document ?
-                            // return new ReadDocument.from(readDoc.id(), readDoc.txnId(), data);
-                            return readDoc.replaceDocSupplier(data);
+                            // TODO AARON below is the old code, why do we need to create a new
+                            // obj because applyProjection mutates the document ?
+                            // also, if this doc was from upsert the original ReadDocument obj mayn
+                            // ot have the doc ID
+                            // if there was not one in the filter.
+                            // orig return ReadDocument.from(readDoc.id(), readDoc.txnId(), data);
+                            return ReadDocument.from(
+                                readDoc.id().orElse(null), readDoc.txnId().orElse(null), data);
                           })
                       .collect(Collectors.toList());
               return new FindResponse(responseDocuments, null);

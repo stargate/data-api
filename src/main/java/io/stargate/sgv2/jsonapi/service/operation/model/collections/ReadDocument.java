@@ -21,7 +21,7 @@ import java.util.function.Supplier;
  * @param sortColumns List<JsonNode> Serialized sort column value
  */
 public record ReadDocument(
-    DocumentId id,
+    Optional<DocumentId> id,
     java.util.Optional<UUID> txnId,
     Supplier<JsonNode> docSupplier,
     List<JsonNode> sortColumns)
@@ -30,28 +30,30 @@ public record ReadDocument(
   /// TODO AARON - comments
 
   public ReadDocument {
-    Preconditions.checkNotNull(id, "id cannot be null");
     Preconditions.checkNotNull(txnId, "txnId cannot be null");
     Preconditions.checkNotNull(docSupplier, "docSupplier cannot be null");
     Preconditions.checkNotNull(sortColumns, "sortColumns cannot be null");
   }
 
   public static ReadDocument from(DocumentId id, UUID txnId, JsonNode document) {
-    return new ReadDocument(id, Optional.ofNullable(txnId), () -> document, List.of());
+    return new ReadDocument(
+        Optional.ofNullable(id), Optional.ofNullable(txnId), () -> document, List.of());
   }
 
   public static ReadDocument from(
       DocumentId id, UUID txnId, Supplier<JsonNode> docSupplier, List<JsonNode> sortColumns) {
-    return new ReadDocument(id, Optional.ofNullable(txnId), docSupplier, sortColumns);
+    return new ReadDocument(
+        Optional.ofNullable(id), Optional.ofNullable(txnId), docSupplier, sortColumns);
   }
 
-  public ReadDocument replaceDocSupplier(Supplier<JsonNode> docSupplier) {
-    return new ReadDocument(id, txnId, docSupplier, sortColumns);
-  }
-
-  public ReadDocument replaceDocSupplier(JsonNode doc) {
-    return replaceDocSupplier(() -> doc);
-  }
+  //  public ReadDocument replaceDocSupplier(Supplier<JsonNode> docSupplier) {
+  //    // TODO: the old code would let this happen
+  //    return new ReadDocument(id, txnId, docSupplier, sortColumns);
+  //  }
+  //
+  //  public ReadDocument replaceDocSupplier(JsonNode doc) {
+  //    return replaceDocSupplier(() -> doc);
+  //  }
 
   @Override
   public JsonNode get() {

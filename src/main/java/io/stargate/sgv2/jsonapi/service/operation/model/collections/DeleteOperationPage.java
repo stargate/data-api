@@ -66,7 +66,7 @@ public record DeleteOperationPage(
                   groupedErrorDeletes.get(key);
               final List<DocumentId> documentIds =
                   deletedDocuments.stream()
-                      .map(deletes -> deletes.getItem3().id())
+                      .map(deletes -> deletes.getItem3().id().orElseThrow())
                       .collect(Collectors.toList());
               errors.add(
                   ExceptionUtil.getError(

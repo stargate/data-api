@@ -69,6 +69,15 @@ public record ReadAndUpdateOperation(
               pageStateReference.set(findResponse.pageState());
               final List<ReadDocument> docs = findResponse.docs();
               if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
+                // TODO: creating the new document here, with the defaults from the filter, makes it
+                // harder because
+                // the new document created here may nto have an _id if there was none in the
+                // filter. A better approach
+                // may be to have the documentUpdater create the upsert document totally in once
+                // place. Currently creating the
+                // upsert document is in multiple places. To do this we would create
+                // UpdateOperations from the filter and
+                // give them to the document updated when it is created.
                 return Multi.createFrom().item(findOperation().getNewDocument());
               } else {
                 matchedCount.addAndGet(docs.size());
@@ -109,7 +118,7 @@ public record ReadAndUpdateOperation(
                               .recoverWithItem(
                                   error -> {
                                     return new UpdatedDocument(
-                                        readDocument.id(), false, null, error);
+                                        readDocument.id().orElseThrow(), false, null, error);
                                   });
                         }))
         .collect()
@@ -164,7 +173,9 @@ public record ReadAndUpdateOperation(
                 if (returnDocumentInResponse) {
                   resultProjection.applyProjection(originalDocument);
                   return Uni.createFrom()
-                      .item(new UpdatedDocument(readDocument.id(), upsert, originalDocument, null));
+                      .item(
+                          new UpdatedDocument(
+                              readDocument.id().orElseThrow(), upsert, originalDocument, null));
                 } else {
                   return Uni.createFrom().nullItem();
                 }
@@ -332,7 +343,7 @@ public record ReadAndUpdateOperation(
             dataApiRequestInfo,
             queryExecutor,
             null,
-            new IDCollectionFilter(IDCollectionFilter.Operator.EQ, prevReadDoc.id()))
+            new IDCollectionFilter(IDCollectionFilter.Operator.EQ, prevReadDoc.id().orElseThrow()))
         .onItem()
         .transform(
             response -> {

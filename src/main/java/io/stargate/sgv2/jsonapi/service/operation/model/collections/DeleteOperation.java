@@ -236,7 +236,7 @@ public record DeleteOperation(
             dataApiRequestInfo,
             queryExecutor,
             null,
-            new IDCollectionFilter(IDCollectionFilter.Operator.EQ, prevReadDoc.id()))
+            new IDCollectionFilter(IDCollectionFilter.Operator.EQ, prevReadDoc.id().orElseThrow()))
         .onItem()
         .transform(
             response -> {
@@ -252,7 +252,9 @@ public record DeleteOperation(
   private static SimpleStatement bindDeleteQuery(String query, ReadDocument doc) {
     SimpleStatement deleteStatement =
         SimpleStatement.newInstance(
-            query, CQLBindValues.getDocumentIdValue(doc.id()), doc.txnId().orElse(null));
+            query,
+            CQLBindValues.getDocumentIdValue(doc.id().orElseThrow()),
+            doc.txnId().orElse(null));
     return deleteStatement;
   }
 }
