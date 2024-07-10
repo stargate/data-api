@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding.gateway;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
@@ -28,8 +30,6 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
 
   private Optional<String> tenant;
   private Optional<String> authToken;
-
-  private String apiKey;
   private String modelName;
   private String baseUrl;
   private EmbeddingService embeddingService;
@@ -77,7 +77,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
    * Vectorize the given list of texts
    *
    * @param texts List of texts to be vectorized
-   * @param apiKeyOverride API key sent as header
+   * @param apiKey API key sent as header
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
    * @return
    */
@@ -85,7 +85,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Optional<String> apiKey,
       EmbeddingRequestType embeddingRequestType) {
     Map<String, EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue>
         grpcVectorizeServiceParameter = new HashMap<>();
@@ -136,8 +136,8 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             .setProviderName(provider)
             .setTenantId(tenant.orElse(DEFAULT_TENANT_ID));
     builder.putAuthTokens(DATA_API_KEY, authToken.orElse(""));
-    if (apiKeyOverride.isPresent()) {
-      builder.putAuthTokens(API_KEY, apiKeyOverride.orElse(apiKey));
+    if (apiKey.isPresent()) {
+      builder.putAuthTokens(API_KEY, apiKey.get());
     }
     if (authentication != null) {
       builder.putAllAuthTokens(authentication);
@@ -149,9 +149,15 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             .setEmbeddingRequest(embeddingRequest)
             .setProviderContext(providerContext)
             .build();
-
-    final Uni<EmbeddingGateway.EmbeddingResponse> embeddingResponse =
-        embeddingService.embed(providerEmbedRequest);
+    Uni<EmbeddingGateway.EmbeddingResponse> embeddingResponse;
+    try {
+      embeddingResponse = embeddingService.embed(providerEmbedRequest);
+    } catch (StatusRuntimeException e) {
+      if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
+        throw ErrorCode.EMBEDDING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
+      }
+      throw e;
+    }
     return embeddingResponse
         .onItem()
         .transform(

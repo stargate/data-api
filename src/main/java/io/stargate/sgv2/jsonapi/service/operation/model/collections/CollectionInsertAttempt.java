@@ -1,7 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.collections;
 
 import io.stargate.sgv2.jsonapi.service.operation.model.InsertAttempt;
-import io.stargate.sgv2.jsonapi.service.operation.model.WritableDocRow;
+import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
+import io.stargate.sgv2.jsonapi.service.shredding.WritableDocRow;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
 import java.util.ArrayList;
@@ -21,9 +22,7 @@ public class CollectionInsertAttempt implements InsertAttempt {
 
   private final int position;
   public final WritableShreddedDocument document;
-  // TODO Aaron - once work out why the document can be null, work out if can remove the documentID
-  // and get it from the doc
-  public final DocumentId documentId;
+  private final DocumentId documentId;
 
   private Throwable failure;
 
@@ -60,8 +59,13 @@ public class CollectionInsertAttempt implements InsertAttempt {
   }
 
   @Override
-  public WritableDocRow docRow() {
-    return document;
+  public Optional<DocRowIdentifer> docRowID() {
+    return Optional.ofNullable(documentId);
+  }
+
+  @Override
+  public Optional<WritableDocRow> docRow() {
+    return Optional.ofNullable(document);
   }
 
   @Override
@@ -69,8 +73,9 @@ public class CollectionInsertAttempt implements InsertAttempt {
     return Optional.ofNullable(failure);
   }
 
-  public CollectionInsertAttempt addFailure(Throwable failure) {
-    if (failure != null) {
+  @Override
+  public InsertAttempt maybeAddFailure(Throwable failure) {
+    if (this.failure == null) {
       this.failure = failure;
     }
     return this;

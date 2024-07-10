@@ -5,11 +5,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
@@ -76,8 +73,8 @@ public class InsertOperationPage implements Supplier<CommandResult> {
       // Note: See DocRowIdentifer, it has an attribute that will be called for JSON serialization
       List<DocRowIdentifer> insertedIds =
           successfulInsertions.stream()
-              .map(InsertAttempt::docRow)
-              .map(WritableDocRow::docRowID)
+              .map(InsertAttempt::docRowID)
+              .map(Optional::orElseThrow)
               .toList();
       return new CommandResult(null, Map.of(CommandStatus.INSERTED_IDS, insertedIds), errors);
     }
@@ -91,7 +88,7 @@ public class InsertOperationPage implements Supplier<CommandResult> {
     // Results array filled in order: first successful insertions
     for (InsertAttempt okInsertion : successfulInsertions) {
       results[okInsertion.position()] =
-          new InsertionResult(okInsertion.docRow().docRowID(), InsertionStatus.OK, null);
+          new InsertionResult(okInsertion.docRowID().orElseThrow(), InsertionStatus.OK, null);
     }
     // Second: failed insertions; output in order of insertion
     for (InsertAttempt failedInsertion : failedInsertions) {
@@ -106,7 +103,8 @@ public class InsertOperationPage implements Supplier<CommandResult> {
         errors.add(error);
       }
       results[failedInsertion.position()] =
-          new InsertionResult(failedInsertion.docRow().docRowID(), InsertionStatus.ERROR, errorIdx);
+          new InsertionResult(
+              failedInsertion.docRowID().orElseThrow(), InsertionStatus.ERROR, errorIdx);
     }
 
     // And third, if any, skipped insertions; those that were not attempted (f.ex due
@@ -115,7 +113,7 @@ public class InsertOperationPage implements Supplier<CommandResult> {
       if (null == results[i]) {
         results[i] =
             new InsertionResult(
-                allInsertions.get(i).docRow().docRowID(), InsertionStatus.SKIPPED, null);
+                allInsertions.get(i).docRowID().orElseThrow(), InsertionStatus.SKIPPED, null);
       }
     }
     return new CommandResult(
@@ -126,7 +124,7 @@ public class InsertOperationPage implements Supplier<CommandResult> {
     String message =
         "Failed to insert document with _id %s: %s"
             .formatted(
-                insertAttempt.docRow().docRowID(),
+                insertAttempt.docRowID().orElseThrow(),
                 insertAttempt
                     .failure()
                     .map(Throwable::getMessage)

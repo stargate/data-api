@@ -31,6 +31,7 @@ public enum ErrorCode {
   EMBEDDING_PROVIDER_RATE_LIMITED("The Embedding Provider rate limited the request"),
   EMBEDDING_PROVIDER_TIMEOUT("The Embedding Provider timed out"),
   EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE("The Embedding Provider returned an unexpected response"),
+  EMBEDDING_PROVIDER_API_KEY_MISSING("The Embedding Provider API key is missing"),
 
   FILTER_MULTIPLE_ID_FILTER(
       "Cannot have more than one _id equals filter clause: use $in operator instead"),
