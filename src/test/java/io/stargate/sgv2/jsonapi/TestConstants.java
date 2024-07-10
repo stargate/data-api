@@ -29,16 +29,16 @@ public final class TestConstants {
 
   public static final DatabaseSchemaObject DATABASE_SCHEMA_OBJECT = new DatabaseSchemaObject();
 
-  public static final String COMMAND_NAME = "testCommand";
+  public static final String TEST_COMMAND_NAME = "testCommand";
 
-  // CommandContext for working on the schem objects above
+  // CommandContext for working on the schema objects above
 
   public static final CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT =
-      new CommandContext<>(COLLECTION_SCHEMA_OBJECT, null, COMMAND_NAME, null);
+      new CommandContext<>(COLLECTION_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null);
 
   public static final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
-      new CommandContext<>(KEYSPACE_SCHEMA_OBJECT, null, COMMAND_NAME, null);
+      new CommandContext<>(KEYSPACE_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null);
 
   public static final CommandContext<DatabaseSchemaObject> DATABASE_CONTEXT =
-      new CommandContext<>(DATABASE_SCHEMA_OBJECT, null, COMMAND_NAME, null);
+      new CommandContext<>(DATABASE_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null);
 }

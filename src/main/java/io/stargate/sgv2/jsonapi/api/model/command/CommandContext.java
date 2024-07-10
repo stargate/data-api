@@ -22,13 +22,6 @@ public record CommandContext<T extends SchemaObject>(
   //  private static final CommandContext EMPTY =
   //      new CommandContext(null, null, CollectionSettings.empty(), null, "testCommand", null);
 
-  // TODO: remove the empty collection and table, if they are only used for test data
-  public static final CommandContext<CollectionSchemaObject> EMPTY_COLLECTION =
-      new CommandContext<>(CollectionSchemaObject.MISSING, null, "testCommand", null);
-
-  public static final CommandContext<TableSchemaObject> EMPTY_TABLE =
-      new CommandContext<>(TableSchemaObject.MISSING, null, "testCommand", null);
-
   /**
    * Factory method to create a new instance of {@link CommandContext} based on the schema object we
    * are working with.

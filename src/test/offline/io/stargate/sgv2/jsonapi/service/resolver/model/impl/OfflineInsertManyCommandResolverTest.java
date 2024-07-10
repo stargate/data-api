@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineInsertManyCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.collections.InsertOperation;
@@ -34,7 +34,7 @@ public class OfflineInsertManyCommandResolverTest {
     assertInstanceOf(
         InsertOperation.class,
         offlineInsertManyCommandResolver.resolveCommand(
-            CommandContext.EMPTY_COLLECTION, offlineInsertManyCommand));
+            TestConstants.COLLECTION_CONTEXT, offlineInsertManyCommand));
     assertEquals(
         OfflineInsertManyCommand.class, offlineInsertManyCommandResolver.getCommandClass());
   }
@@ -59,7 +59,7 @@ public class OfflineInsertManyCommandResolverTest {
         IllegalArgumentException.class,
         () ->
             offlineInsertManyCommandResolver.resolveCommand(
-                CommandContext.EMPTY_COLLECTION, offlineInsertManyCommand),
+                TestConstants.COLLECTION_CONTEXT, offlineInsertManyCommand),
         "Exceeded max document insert count");
   }
 }
