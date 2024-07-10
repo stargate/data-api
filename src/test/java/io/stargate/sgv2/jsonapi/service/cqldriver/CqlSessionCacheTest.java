@@ -29,8 +29,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@TestProfile(CqlSessionCacheTests.TestProfile.class)
-public class CqlSessionCacheTests {
+@TestProfile(CqlSessionCacheTest.TestProfile.class)
+public class CqlSessionCacheTest {
   public static class TestProfile implements QuarkusTestProfile {
     // Alas, we do need actual DB backend so cannot do:
     // public boolean disableGlobalTestResources() { return true; }
