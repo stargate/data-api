@@ -68,7 +68,8 @@ public class SchemaCache {
   }
 
   private NamespaceCache addNamespaceCache(CacheKey cacheKey) {
-    return new NamespaceCache(cacheKey.namespace(), apiTablesConfig.enabled(), queryExecutor, objectMapper);
+    return new NamespaceCache(
+        cacheKey.namespace(), apiTablesConfig.enabled(), queryExecutor, objectMapper);
   }
 
   /**

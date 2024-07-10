@@ -35,8 +35,11 @@ public class NamespaceCache {
           .maximumSize(CACHE_MAX_SIZE)
           .build();
 
-  public NamespaceCache(String namespace, boolean apiTablesEnabled,
-                        QueryExecutor queryExecutor, ObjectMapper objectMapper) {
+  public NamespaceCache(
+      String namespace,
+      boolean apiTablesEnabled,
+      QueryExecutor queryExecutor,
+      ObjectMapper objectMapper) {
     this.namespace = namespace;
     this.queryExecutor = queryExecutor;
     this.objectMapper = objectMapper;
