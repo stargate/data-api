@@ -99,7 +99,10 @@ stargate:
                 - name: vectorDimension
                   type: number
                   required: true
-                  default-value: 3072
+                  # https://github.com/stargate/data-api/issues/1241: Docs claim 3072 is max,
+                  # but using values above 1536 does not seem to work. So at least default
+                  # to what seems like a legal value (but leave max higher in case issue is fixed).
+                  default-value: 1536
                   validation:
                     numeric-range: [256, 3072]
                   help: "Vector dimension to use in the database and when calling Azure OpenAI."
