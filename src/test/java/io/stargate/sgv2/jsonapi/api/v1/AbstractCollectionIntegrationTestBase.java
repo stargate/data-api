@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 import io.restassured.http.ContentType;
+import io.restassured.response.ValidatableResponse;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 
@@ -163,5 +164,26 @@ public abstract class AbstractCollectionIntegrationTestBase
         .then()
         .body("status.insertedIds", hasSize(docsAmount))
         .statusCode(200);
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected ValidatableResponse givenHeadersPostJsonThen(String json) {
+    return given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body(json)
+        .when()
+        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+        .then();
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected ValidatableResponse givenHeadersPostJsonThenOk(String json) {
+    return givenHeadersPostJsonThen(json).statusCode(200);
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected ValidatableResponse givenHeadersPostJsonThenOkNoErrors(String json) {
+    return givenHeadersPostJsonThenOk(json).body("errors", is(nullValue()));
   }
 }
