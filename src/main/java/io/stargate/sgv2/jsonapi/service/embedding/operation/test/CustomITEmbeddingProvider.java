@@ -62,11 +62,11 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Optional<String> apiKey,
       EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
     if (texts.size() == 0) return Uni.createFrom().item(Response.of(batchId, response));
-    if (!apiKeyOverride.isPresent() || !apiKeyOverride.get().equals(TEST_API_KEY))
+    if (!apiKey.isPresent() || !apiKey.get().equals(TEST_API_KEY))
       return Uni.createFrom().failure(new RuntimeException("Invalid API Key"));
     for (String text : texts) {
       if (dimension == 5) {

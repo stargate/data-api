@@ -113,14 +113,15 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKeyOverride,
+      Optional<String> apiKey,
       EmbeddingRequestType embeddingRequestType) {
+    checkEmbeddingApiKeyHeader(providerId, apiKey);
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
 
     // NOTE: NO "Bearer " prefix with API key for Azure OpenAI
     Uni<EmbeddingResponse> response =
-        applyRetry(openAIEmbeddingProviderClient.embed(apiKeyOverride.get(), request));
+        applyRetry(openAIEmbeddingProviderClient.embed(apiKey.get(), request));
 
     return response
         .onItem()
