@@ -35,10 +35,7 @@ public class OpenAiEmbeddingClientTest {
                   3,
                   Map.of("organizationId", "org-id", "projectId", "project-id"))
               .vectorize(
-                  1,
-                  List.of("some data"),
-                  Optional.of("test"),
-                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  1, List.of("some data"), "test", EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -66,7 +63,7 @@ public class OpenAiEmbeddingClientTest {
               .vectorize(
                   1,
                   List.of("application/json"),
-                  Optional.of("test"),
+                  "test",
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -93,10 +90,7 @@ public class OpenAiEmbeddingClientTest {
                   3,
                   Map.of("organizationId", "invalid org", "projectId", "project-id"))
               .vectorize(
-                  1,
-                  List.of("some data"),
-                  Optional.of("test"),
-                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  1, List.of("some data"), "test", EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -120,10 +114,7 @@ public class OpenAiEmbeddingClientTest {
                   3,
                   Map.of("organizationId", "org-id", "projectId", "invalid proj"))
               .vectorize(
-                  1,
-                  List.of("some data"),
-                  Optional.of("test"),
-                  EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  1, List.of("some data"), "test", EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
