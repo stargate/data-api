@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class TestEmbeddingProvider extends EmbeddingProvider {
 
@@ -27,7 +28,10 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
 
   @Override
   public Uni<Response> vectorize(
-      int batchId, List<String> texts, String apiKey, EmbeddingRequestType embeddingRequestType) {
+      int batchId,
+      List<String> texts,
+      Optional<String> apiKey,
+      EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
     texts.forEach(
         t -> {

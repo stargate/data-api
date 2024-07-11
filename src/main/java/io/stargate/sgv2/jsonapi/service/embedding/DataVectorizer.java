@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Utility class to execute embedding serive to get vector embeddings for the text fields in the
@@ -29,7 +30,7 @@ import java.util.Map;
 public class DataVectorizer {
   private final EmbeddingProvider embeddingProvider;
   private final JsonNodeFactory nodeFactory;
-  private final String embeddingApiKey;
+  private final Optional<String> embeddingApiKey;
   private final SchemaObject schemaObject;
 
   /**
@@ -44,9 +45,8 @@ public class DataVectorizer {
   public DataVectorizer(
       EmbeddingProvider embeddingProvider,
       JsonNodeFactory nodeFactory,
-      String embeddingApiKey,
+      Optional<String> embeddingApiKey,
       SchemaObject schemaObject) {
-
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
     this.embeddingApiKey = embeddingApiKey;

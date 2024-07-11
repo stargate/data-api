@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -117,7 +118,11 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
 
   @Override
   public Uni<Response> vectorize(
-      int batchId, List<String> texts, String apiKey, EmbeddingRequestType embeddingRequestType) {
+      int batchId,
+      List<String> texts,
+      Optional<String> apiKey,
+      EmbeddingRequestType embeddingRequestType) {
+    checkEmbeddingApiKeyHeader(providerId, apiKey);
     // Oddity: Implementation does not support batching, so we only accept "batches"
     // of 1 String, fail for others
     if (texts.size() != 1) {
@@ -135,7 +140,7 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
     EmbeddingRequest request = new EmbeddingRequest(texts.get(0), modelName);
 
     Uni<EmbeddingResponse> response =
-        applyRetry(upstageAIEmbeddingProviderClient.embed("Bearer " + apiKey, request));
+        applyRetry(upstageAIEmbeddingProviderClient.embed("Bearer " + apiKey.get(), request));
 
     return response
         .onItem()
