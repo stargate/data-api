@@ -39,7 +39,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
   public void setUp() {
     createNamespace();
     createSimpleCollection();
-    String json =
+
+    insert(
         """
             {
               "insertOne": {
@@ -50,10 +51,9 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
                 }
               }
             }
-            """;
-    insert(json);
+            """);
 
-    json =
+    insert(
         """
             {
               "insertOne": {
@@ -69,10 +69,9 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
                 }
               }
             }
-            """;
-    insert(json);
+            """);
 
-    json =
+    insert(
         """
             {
               "insertOne": {
@@ -84,10 +83,9 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
                 }
               }
             }
-            """;
-    insert(json);
+            """);
 
-    json =
+    insert(
         """
             {
               "insertOne": {
@@ -97,10 +95,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
                 }
               }
             }
-            """;
-    insert(json);
-
-    json =
+            """);
+    insert(
         """
             {
               "insertOne": {
@@ -111,8 +107,7 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
                 }
               }
             }
-            """;
-    insert(json);
+            """);
   }
 
   private void insert(String json) {

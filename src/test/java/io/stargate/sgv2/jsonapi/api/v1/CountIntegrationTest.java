@@ -31,88 +31,57 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
     @Test
     @Order(1)
     public void setUp() {
-      insert(
+      insertDoc(
           """
           {
-            "insertOne": {
-              "document": {
-                "_id": "doc1",
-                "username": "user1",
-                "active_user" : true
-              }
-            }
+            "_id": "doc1",
+            "username": "user1",
+            "active_user" : true
           }
           """);
 
-      insert(
+      insertDoc(
           """
           {
-            "insertOne": {
-              "document": {
-                "_id": "doc2",
-                "username": "user2",
-                "subdoc" : {
-                   "id" : "abc"
-                },
-                "array" : [
-                    "value1"
-                ]
-              }
-            }
+            "_id": "doc2",
+            "username": "user2",
+            "subdoc" : {
+               "id" : "abc"
+            },
+            "array" : [
+                "value1"
+            ]
           }
           """);
 
-      insert(
+      insertDoc(
           """
           {
-            "insertOne": {
-              "document": {
-                "_id": "doc3",
-                "username": "user3",
-                "tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true],
-                "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]
-              }
-            }
+            "_id": "doc3",
+            "username": "user3",
+            "tags" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true],
+            "nestedArray" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]
           }
           """);
 
-      insert(
+      insertDoc(
           """
           {
-            "insertOne": {
-              "document": {
-                "_id": "doc4",
-                "indexedObject" : { "0": "value_0", "1": "value_1" }
-              }
-            }
+            "_id": "doc4",
+            "indexedObject" : { "0": "value_0", "1": "value_1" }
           }
           """);
 
-      insert(
+      insertDoc(
           """
           {
-            "insertOne": {
-              "document": {
-                "_id": "doc5",
-                "username": "user5",
-                "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
-              }
-            }
+            "_id": "doc5",
+            "username": "user5",
+            "sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } }
           }
           """);
 
-      insert(
-          """
-            {
-              "insertOne": {
-              "document": {}
-            }
-            }
-            """);
-    }
-
-    private void insert(String json) {
-      givenHeadersPostJsonThenOkNoErrors(json);
+      insertDoc("{ }");
     }
 
     @Test
@@ -120,8 +89,8 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
       verifyCountCommand(
               5,
               """
-                          { "countDocuments": { } }
-                          """)
+              { "countDocuments": { } }
+              """)
           .body("status.moreData", is(true));
     }
 

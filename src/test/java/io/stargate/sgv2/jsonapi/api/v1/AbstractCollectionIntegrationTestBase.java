@@ -98,26 +98,7 @@ public abstract class AbstractCollectionIntegrationTestBase
 
   /** Utility to insert a doc to the test collection. */
   protected void insertDoc(String docJson) {
-    String doc =
-            """
-        {
-          "insertOne": {
-            "document": %s
-          }
-        }
-        """
-            .formatted(docJson);
-
-    given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(doc)
-        .when()
-        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-        .then()
-        // Sanity check: let's look for non-empty inserted id
-        .body("status.insertedIds[0]", not(emptyString()))
-        .statusCode(200);
+    insertDoc(collectionName, docJson);
   }
 
   protected void insertDoc(String collection, String docJson) {
