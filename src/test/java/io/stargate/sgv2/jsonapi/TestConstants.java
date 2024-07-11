@@ -24,6 +24,14 @@ public final class TestConstants {
           VectorConfig.notEnabledVectorConfig(),
           null);
 
+  public static final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT =
+      new CollectionSchemaObject(
+          SCHEMA_OBJECT_NAME,
+          CollectionSchemaObject.IdConfig.defaultIdConfig(),
+          new VectorConfig(
+              true, -1, CollectionSchemaObject.SimilarityFunction.COSINE, null),
+          null);
+
   public static final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
       KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);
 
@@ -35,6 +43,9 @@ public final class TestConstants {
 
   public static final CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT =
       new CommandContext<>(COLLECTION_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null);
+
+  public static final CommandContext<CollectionSchemaObject> VECTOR_COLLECTION_CONTEXT =
+      new CommandContext<>(VECTOR_COLLECTION_SCHEMA_OBJECT, null, null, null);
 
   public static final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
       new CommandContext<>(KEYSPACE_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null);

@@ -101,11 +101,11 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                              find.logicalExpression()
+                                  .comparisonExpressions
+                                  .get(0)
+                                  .getDbFilters()
+                                  .get(0))
                               .isEqualTo(filter);
                         });
               });
@@ -216,11 +216,11 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                              find.logicalExpression()
+                                  .comparisonExpressions
+                                  .get(0)
+                                  .getDbFilters()
+                                  .get(0))
                               .isEqualTo(filter);
                         });
               });
@@ -246,10 +246,10 @@ public class UpdateManyCommandResolverTest {
           DocumentUpdaterUtils.updateClause(
               UpdateOperator.SET, objectMapper.createObjectNode().put("$vectorize", "test data"));
       new DataVectorizer(
-              TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
-              objectMapper.getNodeFactory(),
-              Optional.empty(),
-              TestEmbeddingProvider.commandContextWithVectorize.schemaObject())
+          TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
+          objectMapper.getNodeFactory(),
+          null,
+          TestEmbeddingProvider.commandContextWithVectorize.schemaObject())
           .vectorizeUpdateClause(updateClause);
       assertThat(operation)
           .isInstanceOfSatisfying(
@@ -286,11 +286,11 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                              find.logicalExpression()
+                                  .comparisonExpressions
+                                  .get(0)
+                                  .getDbFilters()
+                                  .get(0))
                               .isEqualTo(filter);
                           assertThat(find.singleResponse()).isFalse();
                         });

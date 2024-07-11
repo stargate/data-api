@@ -228,11 +228,11 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
                           assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                              find.logicalExpression()
+                                  .comparisonExpressions
+                                  .get(0)
+                                  .getDbFilters()
+                                  .get(0))
                               .isEqualTo(filter);
                           assertThat(find.orderBy()).isNull();
                           assertThat(find.vector()).isNotNull();
@@ -311,11 +311,11 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                              find.logicalExpression()
+                                  .comparisonExpressions
+                                  .get(0)
+                                  .getDbFilters()
+                                  .get(0))
                               .isEqualTo(filter);
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
@@ -409,11 +409,11 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                              find.logicalExpression()
+                                  .comparisonExpressions
+                                  .get(0)
+                                  .getDbFilters()
+                                  .get(0))
                               .isEqualTo(filter);
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
@@ -496,11 +496,11 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                              find.logicalExpression()
+                                  .comparisonExpressions
+                                  .get(0)
+                                  .getDbFilters()
+                                  .get(0))
                               .isEqualTo(filter);
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
@@ -542,10 +542,10 @@ public class CommandResolverWithVectorizerTest {
               UpdateOperator.SET, objectMapper.createObjectNode().put("$vectorize", "test data"));
 
       new DataVectorizer(
-              TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
-              objectMapper.getNodeFactory(),
-              Optional.empty(),
-              TestEmbeddingProvider.commandContextWithVectorize.schemaObject())
+          TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
+          objectMapper.getNodeFactory(),
+          null,
+          TestEmbeddingProvider.commandContextWithVectorize.schemaObject())
           .vectorizeUpdateClause(updateClause)
           .subscribe()
           .withSubscriber(UniAssertSubscriber.create())
@@ -586,11 +586,11 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                              find.logicalExpression()
+                                  .comparisonExpressions
+                                  .get(0)
+                                  .getDbFilters()
+                                  .get(0))
                               .isEqualTo(filter);
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.11f, 0.22f, 0.33f, 0.44f);
@@ -648,7 +648,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(find.singleResponse()).isTrue();
                 assertThat(find.vector()).containsExactly(vector);
                 assertThat(
-                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
+                    find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
                     .isEqualTo(filter);
               });
     }
