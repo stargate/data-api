@@ -66,14 +66,19 @@ public record DocumentUpdater(
    * @param docInserted
    * @return
    */
-  private boolean update(ObjectNode docToUpdate, boolean docInserted) {
-    boolean modified = false;
-    for (UpdateOperation updateOperation : updateOperations) {
-      if (updateOperation.shouldApplyIf(docInserted)) {
-        modified |= updateOperation.updateDocument(docToUpdate);
-      }
-    }
-    return modified;
+  private List<UpdateOperation.UpdateOperationResult<? extends ActionWithLocator>> update(ObjectNode docToUpdate, boolean docInserted) {
+
+    return updateOperations.stream()
+        .filter(updateOperation -> updateOperation.shouldApplyIf(docInserted))
+        .map(updateOperation -> updateOperation.updateDocument(docToUpdate))
+        .toList();
+//    boolean modified = false;
+//    for (UpdateOperation updateOperation : updateOperations) {
+//      if (updateOperation.shouldApplyIf(docInserted)) {
+//        modified |= updateOperation.updateDocument(docToUpdate);
+//      }
+//    }
+//    return modified;
   }
 
   /**
@@ -145,7 +150,7 @@ public record DocumentUpdater(
           return setOperation
               .updateVectorize(readDocument, dataVectorizer)
               .onItem()
-              .transformToUni(
+              .tranDocumentUpdaterResponsesformToUni(
                   modified -> {
                     return Uni.createFrom()
                         .item(new DocumentUpdaterResponse(readDocument, modified));
@@ -180,10 +185,28 @@ public record DocumentUpdater(
     return Uni.createFrom().item(new DocumentUpdaterResponse(readDocument, false));
   }
 
-  public record DocumentUpdaterResponse(JsonNode document, boolean modified) {}
-
   private enum UpdateType {
     UPDATE,
     REPLACE
   }
+
+  public record DocumentUpdaterResponse(UpdateType type,
+                                        boolean modified,
+                                        JsonNode document,
+                                        List<UpdateOperation.UpdateOperationResult<? extends  ActionWithLocator>> updateOperationResults,
+                                        List<UpdateOperation.EmbeddingUpdateOperation> replacementEmbeddingUpdateOperations) {
+
+
+    public List<UpdateOperation.EmbeddingUpdateOperation> anyEmbeddingUpdateOperations() {
+      if (type == UpdateType.REPLACE) {
+        return replacementEmbeddingUpdateOperations;
+      }
+      return updateOperationResults.stream()
+            .map(UpdateOperation.UpdateOperationResult::embeddingUpdateOperations)
+            .flatMap(List::stream)
+            .toList();
+    }
+
+  }
+
 }

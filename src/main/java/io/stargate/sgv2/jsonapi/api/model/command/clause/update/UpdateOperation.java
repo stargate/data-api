@@ -28,9 +28,9 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
    * Method called to apply operation to given document.
    *
    * @param doc Document to apply operation to
-   * @return True if document was modified by operation; false if not.
+   * @return True if document was modified by operation; false if not. // TODO: fix comment
    */
-  public abstract boolean updateDocument(ObjectNode doc);
+  public abstract UpdateOperationResult<? extends ActionWithLocator> updateDocument(ObjectNode doc);
 
   /**
    * Method called to see if update operator should be applied for specific kind of update:
@@ -109,5 +109,22 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
     public int compare(ActionWithLocator o1, ActionWithLocator o2) {
       return o1.path().compareTo(o2.path());
     }
+  }
+
+  public record UpdateOperationResult<A extends ActionWithLocator>(
+      UpdateOperation<A> operation,
+      List<A> appliedActions,
+      List<EmbeddingUpdateOperation> embeddingUpdateOperations) {
+    public boolean modified() {
+      return !appliedActions.isEmpty();
+    }
+  }
+
+  // Records is an update requires generating an embedding, and has a pre-build update operation that knows where to
+  // apply new vector to
+  public interface EmbeddingUpdateOperation {
+    String vectorizeContent();
+
+    UpdateOperationResult<? extends ActionWithLocator> updateDocument(ObjectNode doc, float[] vector);
   }
 }

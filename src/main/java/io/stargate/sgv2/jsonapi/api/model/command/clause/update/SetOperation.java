@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -75,63 +76,75 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
-    boolean modified = false;
+  public UpdateOperationResult<SetOperation.Action> updateDocument(ObjectNode doc) {
     Set<String> setPaths = new HashSet<>();
     actions.stream().forEach(action -> setPaths.add(action.locator().path()));
-    for (Action action : actions) {
 
-      if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(action.locator().path())) {
-        // won't update $vectorize in this method
-        // will vectorize on demand and update $vectorize in updateVectorize method below
-        continue;
-      }
+    List<EmbeddingUpdateOperation> embeddingUpdateOperations = new ArrayList<>();
 
-      PathMatch target = action.locator().findOrCreate(doc);
-      JsonNode newValue = action.value();
-      JsonNode oldValue = target.valueNode();
-      // Modify if no old value OR new value differs, as per Mongo-equality rules
-      if ((oldValue == null) || !JsonUtil.equalsOrdered(oldValue, newValue)) {
-        target.replaceValue(newValue);
-        // $vector is updated and $vectorize is not updated, remove the $vectorize field in the
-        // document
-        if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(action.locator().path())
-            && !setPaths.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-          doc.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
-        }
-        modified = true;
-      }
-    }
-    return modified;
-  }
+    var appliedActions = actions.stream()
+        .map(action -> {
+            PathMatch target = action.locator().findOrCreate(doc);
+            JsonNode newValue = action.value();
+            JsonNode oldValue = target.valueNode();
+            // Modify if no old value OR new value differs, as per Mongo-equality rules
+            if ((oldValue == null) || !JsonUtil.equalsOrdered(oldValue, newValue)) {
+              target.replaceValue(newValue);
+              // $vector is updated and $vectorize is not updated, remove the $vectorize field in the
+              // document
+              if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(action.locator().path())
+                  && !setPaths.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+                doc.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+              }
 
-  /**
-   * This updateVectorize method will vectorize as demand and update the $vectorize 1. check if
-   * there is diff for $vectorize and proceed 2. vectorize updated $vectorize to get the new vector
-   * 3. update $vector and $vectorize
-   *
-   * @param doc Document to update
-   * @param dataVectorizer dataVectorizer
-   * @return Uni<Boolean> modified
-   */
-  public Uni<Boolean> updateVectorize(JsonNode doc, DataVectorizer dataVectorizer) {
-    for (Action action : actions) {
-      if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(action.locator().path())) {
-        PathMatch target = action.locator().findOrCreate(doc);
-        JsonNode newValue = action.value();
-        JsonNode oldValue = target.valueNode();
+              if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(action.locator().path())){
+                embeddingUpdateOperations.add(new EmbeddingUpdateOperation(){
+                  @Override
+                  public String vectorizeContent() {
+                    return newValue.asText();
+                  }
 
-        // if there is no oldValue or there is a diff
-        if ((oldValue == null) || !JsonUtil.equalsOrdered(oldValue, newValue)) {
-          // replace the oldValue with newValue first
-          ((ObjectNode) doc).put(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, newValue);
-          // vectorize the newValue, update $vectorize, $vector
-          return dataVectorizer.vectorizeUpdateDocument(doc);
-        }
-      }
-    }
-    // no diff for $vectorize, so nothing is modified in this method
-    return Uni.createFrom().item(false);
+                  @Override
+                  public UpdateOperationResult<? extends ActionWithLocator> updateDocument(ObjectNode doc, float[] vector) {
+                    final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
+                    for (float listValue : vector) {
+                      arrayNode.add(nodeFactory.numberNode(listValue));
+                    }
+
+                    return SetOperation.constructSet(
+                        DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, arrayNode).updateDocument(doc);
+                  }
+                });
+              }
+              return action;
+            }
+            return null;
+        })
+        .filter(Objects::nonNull)
+        .toList();
+
+    return new UpdateOperationResult<>(self, appliedActions);
+
+
+
+//    for (Action action : actions) {
+//      PathMatch target = action.locator().findOrCreate(doc);
+//      JsonNode newValue = action.value();
+//      JsonNode oldValue = target.valueNode();
+//      // Modify if no old value OR new value differs, as per Mongo-equality rules
+//      if ((oldValue == null) || !JsonUtil.equalsOrdered(oldValue, newValue)) {
+//        target.replaceValue(newValue);
+//        // $vector is updated and $vectorize is not updated, remove the $vectorize field in the
+//        // document
+//        if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(action.locator().path())
+//            && !setPaths.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+//          doc.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
+//        }
+//        appliedActions.add(action);
+//        modified = true;
+//      }
+//    }
+//    return modified;
   }
 
   // Needed because some unit tests check for equality
