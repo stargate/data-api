@@ -102,11 +102,16 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
 
   @Override
   public Uni<Response> vectorize(
-      int batchId, List<String> texts, String apiKey, EmbeddingRequestType embeddingRequestType) {
+      int batchId,
+      List<String> texts,
+      Optional<String> apiKey,
+      EmbeddingRequestType embeddingRequestType) {
+    checkEmbeddingApiKeyHeader(providerId, apiKey);
+
     EmbeddingRequest request = new EmbeddingRequest(texts, modelName, "float");
 
     Uni<EmbeddingResponse> response =
-        applyRetry(mistralEmbeddingProviderClient.embed("Bearer " + apiKey, request));
+        applyRetry(mistralEmbeddingProviderClient.embed("Bearer " + apiKey.get(), request));
 
     return response
         .onItem()
