@@ -141,19 +141,21 @@ public record ReadAndUpdateOperation(
 
   private Uni<UpdatedDocument> processUpdate(
       DataApiRequestInfo dataApiRequestInfo,
-      ReadDocument readDocument,
+      ReadDocument document,
       QueryExecutor queryExecutor,
       AtomicInteger modifiedCount) {
     return Uni.createFrom()
-        .item(readDocument)
+        .item(document)
         .flatMap(
-            document -> {
+            readDocument -> {
               // if there is no document: return null item
               if (readDocument == null) {
                 return Uni.createFrom().nullItem();
               }
               // upsert if we have no transaction if before
               boolean upsert = readDocument.txnId() == null;
+              JsonNode originalDocument = upsert ? null : readDocument.document();
+
               // apply document updates: if no changes return null item
               // First update, will not vectorize
               DocumentUpdater.DocumentUpdaterResponse firstDocumentUpdaterResponse =
@@ -175,60 +177,66 @@ public record ReadAndUpdateOperation(
                                     secondDocumentUpdaterResponse.document(),
                                     firstDocumentUpdaterResponse.modified()
                                         | secondDocumentUpdaterResponse.modified()));
-                      });
-            })
-        // perform update operation and save only if data is modified.
-        .flatMap(
-            documentUpdaterResponse -> {
-              boolean upsert = readDocument.txnId() == null;
-              JsonNode originalDocument = upsert ? null : readDocument.document();
-              // In case no change to document and not an upsert document, short circuit and return
-              if (!documentUpdaterResponse.modified() && !upsert) {
-                // If no change return the original document Issue #390
-                if (returnDocumentInResponse) {
-                  resultProjection.applyProjection(originalDocument);
-                  return Uni.createFrom()
-                      .item(new UpdatedDocument(readDocument.id(), upsert, originalDocument, null));
-                } else {
-                  return Uni.createFrom().nullItem();
-                }
-              }
-
-              final WritableShreddedDocument writableShreddedDocument =
-                  shredder()
-                      .shred(
-                          commandContext(),
-                          documentUpdaterResponse.document(),
-                          readDocument.txnId());
-
-              // Have to do this because shredder adds _id field to the document if it doesn't exist
-              JsonNode updatedDocument = writableShreddedDocument.docJsonNode();
-              // update the document
-              return updatedDocument(dataApiRequestInfo, queryExecutor, writableShreddedDocument)
-
-                  // send result back depending on the input
+                      })
                   .onItem()
-                  .ifNotNull()
-                  .transform(
-                      v -> {
-                        // if not insert increment modified count
-                        if (!upsert) {
-                          modifiedCount.incrementAndGet();
-                        }
-
-                        // resolve doc to return
-                        JsonNode documentToReturn = null;
-                        if (returnDocumentInResponse) {
-                          documentToReturn =
-                              returnUpdatedDocument ? updatedDocument : originalDocument;
-                          // Some operations (findOneAndUpdate) define projection to apply to
-                          // result:
-                          if (documentToReturn != null) { // null for some Operation tests
-                            resultProjection.applyProjection(documentToReturn);
+                  .transformToUni(
+                      combinedUpdaterResponse -> {
+                        // In case no change to document and not an upsert document, short circuit
+                        // and return
+                        if (!combinedUpdaterResponse.modified() && !upsert) {
+                          // If no change return the original document Issue #390
+                          if (returnDocumentInResponse) {
+                            resultProjection.applyProjection(originalDocument);
+                            return Uni.createFrom()
+                                .item(
+                                    new UpdatedDocument(
+                                        readDocument.id(), upsert, originalDocument, null));
+                          } else {
+                            return Uni.createFrom().nullItem();
                           }
                         }
-                        return new UpdatedDocument(
-                            writableShreddedDocument.id(), upsert, documentToReturn, null);
+
+                        final WritableShreddedDocument writableShreddedDocument =
+                            shredder()
+                                .shred(
+                                    commandContext(),
+                                    combinedUpdaterResponse.document(),
+                                    readDocument.txnId());
+
+                        // Have to do this because shredder adds _id field to the document if it
+                        // doesn't exist
+                        JsonNode updatedDocument = writableShreddedDocument.docJsonNode();
+                        // update the document
+                        return updatedDocument(
+                                dataApiRequestInfo, queryExecutor, writableShreddedDocument)
+
+                            // send result back depending on the input
+                            .onItem()
+                            .ifNotNull()
+                            .transform(
+                                v -> {
+                                  // if not insert increment modified count
+                                  if (!upsert) {
+                                    modifiedCount.incrementAndGet();
+                                  }
+
+                                  // resolve doc to return
+                                  JsonNode documentToReturn = null;
+                                  if (returnDocumentInResponse) {
+                                    documentToReturn =
+                                        returnUpdatedDocument ? updatedDocument : originalDocument;
+                                    // operations (findOneAndUpdate) define projection to apply to
+                                    // result
+                                    if (documentToReturn != null) { // null for some Operation tests
+                                      resultProjection.applyProjection(documentToReturn);
+                                    }
+                                  }
+                                  return new UpdatedDocument(
+                                      writableShreddedDocument.id(),
+                                      upsert,
+                                      documentToReturn,
+                                      null);
+                                });
                       });
             });
   }
