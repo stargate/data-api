@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -110,13 +111,17 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
 
   @Override
   public Uni<Response> vectorize(
-      int batchId, List<String> texts, String apiKey, EmbeddingRequestType embeddingRequestType) {
+      int batchId,
+      List<String> texts,
+      Optional<String> apiKey,
+      EmbeddingRequestType embeddingRequestType) {
+    checkEmbeddingApiKeyHeader(providerId, apiKey);
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
 
     // NOTE: NO "Bearer " prefix with API key for Azure OpenAI
     Uni<EmbeddingResponse> response =
-        applyRetry(openAIEmbeddingProviderClient.embed(apiKey, request));
+        applyRetry(openAIEmbeddingProviderClient.embed(apiKey.get(), request));
 
     return response
         .onItem()
