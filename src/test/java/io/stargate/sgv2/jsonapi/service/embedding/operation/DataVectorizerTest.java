@@ -318,8 +318,7 @@ public class DataVectorizerTest {
       arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
       arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
       DataVectorizer dataVectorizer =
-          new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
       Throwable failure =
           catchThrowable(
               () -> {

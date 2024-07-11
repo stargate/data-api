@@ -20,7 +20,6 @@ import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvide
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -570,8 +569,7 @@ public class DocumentUpdaterTest {
 
       // Second level update will vectorize in setOperation
       DataVectorizer dataVectorizer =
-          new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
       final DocumentUpdater.DocumentUpdaterResponse secondResponse =
           documentUpdater
               .applyUpdateVectorize(firstResponse.document(), false, dataVectorizer)
@@ -639,8 +637,7 @@ public class DocumentUpdaterTest {
 
       // Second level update will vectorize in setOperation
       DataVectorizer dataVectorizer =
-          new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
       final DocumentUpdater.DocumentUpdaterResponse secondResponse =
           documentUpdater
               .applyUpdateVectorize(firstResponse.document(), false, dataVectorizer)
@@ -708,8 +705,7 @@ public class DocumentUpdaterTest {
 
       // Second level update will vectorize in setOperation
       DataVectorizer dataVectorizer =
-          new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
       final DocumentUpdater.DocumentUpdaterResponse secondResponse =
           documentUpdater
               .applyUpdateVectorize(firstResponse.document(), false, dataVectorizer)
@@ -778,8 +774,7 @@ public class DocumentUpdaterTest {
       // Second level update will try to vectorize, in this test case, will do nothing, since there
       // is no setOperation
       DataVectorizer dataVectorizer =
-          new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
       final DocumentUpdater.DocumentUpdaterResponse secondResponse =
           documentUpdater
               .applyUpdateVectorize(firstResponse.document(), false, dataVectorizer)
