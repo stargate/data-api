@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.restassured.response.ValidatableResponse;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -30,7 +31,7 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
     @Test
     @Order(1)
     public void setUp() {
-      String json =
+      insert(
           """
           {
             "insertOne": {
@@ -41,10 +42,9 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
               }
             }
           }
-          """;
-      insert(json);
+          """);
 
-      json =
+      insert(
           """
           {
             "insertOne": {
@@ -60,10 +60,9 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
               }
             }
           }
-          """;
-      insert(json);
+          """);
 
-      json =
+      insert(
           """
           {
             "insertOne": {
@@ -75,10 +74,9 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
               }
             }
           }
-          """;
-      insert(json);
+          """);
 
-      json =
+      insert(
           """
           {
             "insertOne": {
@@ -88,10 +86,9 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
               }
             }
           }
-          """;
-      insert(json);
+          """);
 
-      json =
+      insert(
           """
           {
             "insertOne": {
@@ -102,18 +99,16 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
               }
             }
           }
-          """;
-      insert(json);
+          """);
 
-      json =
+      insert(
           """
-              {
-                "insertOne": {
-                  "document": {}
-                }
-              }
-              """;
-      insert(json);
+            {
+              "insertOne": {
+              "document": {}
+            }
+            }
+            """);
     }
 
     private void insert(String json) {
@@ -122,17 +117,18 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
 
     @Test
     public void noFilter() {
-      givenHeadersPostJsonThenOkNoErrors(
+      verifyCountCommand(
+              5,
               """
                           { "countDocuments": { } }
                           """)
-          .body("status.count", is(5))
           .body("status.moreData", is(true));
     }
 
     @Test
     public void emptyOptionsAllowed() {
-      givenHeadersPostJsonThenOkNoErrors(
+      verifyCountCommand(
+              5,
               """
           {
             "countDocuments": {
@@ -140,22 +136,20 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
             }
           }
           """)
-          .body("status.count", is(5))
           .body("status.moreData", is(true));
     }
 
     @Test
     public void byColumn() {
-      givenHeadersPostJsonThenOkNoErrors(
-              """
+      verifyCountCommand(
+          1,
+          """
           {
             "countDocuments": {
               "filter" : {"username" : "user1"}
             }
           }
-          """)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
@@ -178,121 +172,98 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
           }
               """;
 
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(2))
-          .body("data", is(nullValue()));
+      verifyCountCommand(2, json);
     }
 
     @Test
     public void withEqComparisonOperator() {
-      String json =
+      verifyCountCommand(
+          1,
           """
           {
             "countDocuments": {
               "filter" : {"username" : {"$eq" : "user1"}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withEqSubDoc() {
-      String json =
+      verifyCountCommand(
+          1,
           """
           {
             "countDocuments": {
               "filter" : {"subdoc.id" : {"$eq" : "abc"}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withEqSubDocWithIndex() {
-      String json =
+      verifyCountCommand(
+          1,
           """
           {
             "countDocuments": {
               "filter" : {"indexedObject.1" : {"$eq" : "value_1"}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withEqArrayElement() {
-      String json =
+      verifyCountCommand(
+          1,
           """
           {
             "countDocuments": {
               "filter" : {"array.0" : {"$eq" : "value1"}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withExistFalseOperator() {
-      String json =
+      verifyCountCommand(
+          5,
           """
           {
             "countDocuments": {
               "filter" : {"active_user" : {"$exists" : false}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(5))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withExistOperator() {
-      String json =
+      verifyCountCommand(
+          1,
           """
           {
             "countDocuments": {
               "filter" : {"active_user" : {"$exists" : true}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withAllOperator() {
-      String json =
+      verifyCountCommand(
+          1,
           """
           {
             "countDocuments": {
               "filter" : {"tags" : {"$all" : ["tag1", "tag2"]}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
@@ -322,247 +293,202 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
                               }
                       """;
 
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(0))
-          .body("data", is(nullValue()));
+      verifyCountCommand(0, json);
     }
 
     @Test
     public void withAllOperatorLongerString() {
-      String json =
+      verifyCountCommand(
+          1,
           """
           {
             "countDocuments": {
               "filter" : {"tags" : {"$all" : ["tag1", "tag1234567890123456789012345"]}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withAllOperatorMixedAFormatArray() {
-      String json =
+      verifyCountCommand(
+          1,
           """
           {
             "countDocuments": {
               "filter" : {"tags" : {"$all" : ["tag1", 1, true, null]}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withAllOperatorNoMatch() {
-      String json =
+      verifyCountCommand(
+          0,
           """
           {
             "countDocuments": {
               "filter" : {"tags" : {"$all" : ["tag1", 2, true, null]}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(0))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withEqSubDocumentShortcut() {
-      String json =
+      verifyCountCommand(
+          1,
           """
           {
             "countDocuments": {
               "filter" : {"sub_doc" : { "a": 5, "b": { "c": "v1", "d": false } } }
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withEqSubDocument() {
-      String json =
+      verifyCountCommand(
+          1,
           """
           {
             "countDocuments": {
               "filter" : {"sub_doc" : { "$eq" : { "a": 5, "b": { "c": "v1", "d": false } } } }
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withEqSubDocumentOrderChangeNoMatch() {
-      String json =
+      verifyCountCommand(
+          0,
           """
           {
             "countDocuments": {
               "filter" : {"sub_doc" : { "$eq" : { "a": 5, "b": { "d": false, "c": "v1" } } } }
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(0))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withEqSubDocumentNoMatch() {
-      String json =
+      verifyCountCommand(
+          0,
           """
           {
             "countDocuments": {
               "filter" : {"sub_doc" : { "$eq" : { "a": 5, "b": { "c": "v1", "d": true } } } }
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(0))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withSizeOperator() {
-      String json =
+      verifyCountCommand(
+          1,
           """
           {
             "countDocuments": {
               "filter" : {"tags" : {"$size" : 6}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withSizeOperatorNoMatch() {
-      String json =
+      verifyCountCommand(
+          0,
           """
           {
             "countDocuments": {
               "filter" : {"tags" : {"$size" : 1}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(0))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withEqOperatorArray() {
-      String json =
+      verifyCountCommand(
+          1,
           """
           {
             "countDocuments": {
               "filter" : {"tags" : {"$eq" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1, true]}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withEqOperatorNestedArray() {
-      String json =
+      verifyCountCommand(
+          1,
           """
           {
             "countDocuments": {
               "filter" : {"nestedArray" : {"$eq" : [["tag1", "tag2"], ["tag1234567890123456789012345", null]]}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withEqOperatorArrayNoMatch() {
-      String json =
+      verifyCountCommand(
+          0,
           """
           {
             "countDocuments": {
               "filter" : {"tags" : {"$eq" : ["tag1", "tag2", "tag1234567890123456789012345", null, 1]}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(0))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withEqOperatorNestedArrayNoMatch() {
-      String json =
+      verifyCountCommand(
+          0,
           """
           {
             "countDocuments": {
               "filter" : {"nestedArray" : {"$eq" : [["tag1", "tag2"], ["tag1234567890123456789012345", null], ["abc"]]}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(0))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void withNEComparisonOperator() {
-      String json =
+      verifyCountCommand(
+          5,
           """
           {
             "countDocuments": {
               "filter" : {"username" : {"$ne" : "user1"}}
             }
           }
-          """;
-
-      givenHeadersPostJsonThenOkNoErrors(json)
-          .body("status.count", is(5))
-          .body("data", is(nullValue()));
+          """);
     }
 
     @Test
     public void byBooleanColumn() {
-      givenHeadersPostJsonThenOkNoErrors(
-              """
+      verifyCountCommand(
+          1,
+          """
           {
             "countDocuments": {
               "filter" : {"active_user" : true}
             }
           }
-          """)
-          .body("status.count", is(1))
-          .body("data", is(nullValue()));
+          """);
     }
   }
 
@@ -574,5 +500,11 @@ public class CountIntegrationTest extends AbstractCollectionIntegrationTestBase 
       CountIntegrationTest.super.checkMetrics("CountDocumentsCommand");
       CountIntegrationTest.super.checkDriverMetricsTenantId();
     }
+  }
+
+  protected ValidatableResponse verifyCountCommand(int expectedCount, String json) {
+    return givenHeadersPostJsonThenOkNoErrors(json)
+        .body("data", is(nullValue()))
+        .body("status.count", is(expectedCount));
   }
 }
