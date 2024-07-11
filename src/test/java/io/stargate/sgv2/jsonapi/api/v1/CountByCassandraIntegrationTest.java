@@ -1,12 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.restassured.response.ValidatableResponse;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
@@ -93,7 +91,9 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void noFilter() {
-    verifyCountCommand(5, """
+    verifyCountCommand(
+        5,
+        """
             {
               "countDocuments": {
               }
@@ -103,7 +103,9 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void emptyOptionsAllowed() {
-    verifyCountCommand(5, """
+    verifyCountCommand(
+        5,
+        """
             {
               "countDocuments": {
                 "options": {}
@@ -114,7 +116,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void byColumn() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -148,7 +151,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withEqComparisonOperator() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -160,7 +164,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withEqSubDoc() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -172,7 +177,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withEqSubDocWithIndex() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -184,7 +190,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withEqArrayElement() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -196,7 +203,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withExistFalseOperator() {
-    verifyCountCommand(4,
+    verifyCountCommand(
+        4,
         """
             {
               "countDocuments": {
@@ -208,7 +216,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withExistOperator() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -220,7 +229,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withAllOperator() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -262,7 +272,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withAllOperatorLongerString() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -274,7 +285,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withAllOperatorMixedAFormatArray() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -286,7 +298,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withAllOperatorNoMatch() {
-    verifyCountCommand(0,
+    verifyCountCommand(
+        0,
         """
             {
               "countDocuments": {
@@ -298,7 +311,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withEqSubDocumentShortcut() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -310,7 +324,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withEqSubDocument() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -322,7 +337,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withEqSubDocumentOrderChangeNoMatch() {
-    verifyCountCommand(0,
+    verifyCountCommand(
+        0,
         """
             {
               "countDocuments": {
@@ -334,7 +350,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withEqSubDocumentNoMatch() {
-    verifyCountCommand(0,
+    verifyCountCommand(
+        0,
         """
             {
               "countDocuments": {
@@ -346,7 +363,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withSizeOperator() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -358,7 +376,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withSizeOperatorNoMatch() {
-    verifyCountCommand(0,
+    verifyCountCommand(
+        0,
         """
             {
               "countDocuments": {
@@ -370,7 +389,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withEqOperatorArray() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -382,7 +402,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withEqOperatorNestedArray() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -394,7 +415,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withEqOperatorArrayNoMatch() {
-    verifyCountCommand(0,
+    verifyCountCommand(
+        0,
         """
             {
               "countDocuments": {
@@ -406,7 +428,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withEqOperatorNestedArrayNoMatch() {
-    verifyCountCommand(0,
+    verifyCountCommand(
+        0,
         """
             {
               "countDocuments": {
@@ -418,7 +441,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void withNEComparisonOperator() {
-    verifyCountCommand(4,
+    verifyCountCommand(
+        4,
         """
             {
               "countDocuments": {
@@ -430,7 +454,8 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   @Test
   public void byBooleanColumn() {
-    verifyCountCommand(1,
+    verifyCountCommand(
+        1,
         """
             {
               "countDocuments": {
@@ -442,8 +467,7 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   protected ValidatableResponse verifyCountCommand(int expectedCount, String json) {
     return givenHeadersPostJsonThenOkNoErrors(json)
-            .body("data", is(nullValue()))
-            .body("status.count", is(expectedCount));
+        .body("data", is(nullValue()))
+        .body("status.count", is(expectedCount));
   }
 }
-
