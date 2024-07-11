@@ -5,7 +5,7 @@ services:
     image: datastax/hcd:${HCDTAG}
     networks:
       - stargate
-    mem_limit: 2G
+    mem_limit: 3G
     environment:
       - MAX_HEAP_SIZE=1536M
       - CLUSTER_NAME=hcd-${HCDTAG}-cluster
