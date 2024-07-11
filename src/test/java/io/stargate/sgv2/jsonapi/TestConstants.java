@@ -28,8 +28,7 @@ public final class TestConstants {
       new CollectionSchemaObject(
           SCHEMA_OBJECT_NAME,
           CollectionSchemaObject.IdConfig.defaultIdConfig(),
-          new VectorConfig(
-              true, -1, CollectionSchemaObject.SimilarityFunction.COSINE, null),
+          new VectorConfig(true, -1, CollectionSchemaObject.SimilarityFunction.COSINE, null),
           null);
 
   public static final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =

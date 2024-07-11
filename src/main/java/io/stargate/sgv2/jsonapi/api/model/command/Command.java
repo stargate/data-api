@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.CommandResolver;
 
 /**
  * POJO object (data no behavior) that represents a syntactically and grammatically valid command as

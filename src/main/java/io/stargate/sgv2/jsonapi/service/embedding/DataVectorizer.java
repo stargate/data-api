@@ -45,7 +45,7 @@ public class DataVectorizer {
       EmbeddingProvider embeddingProvider,
       JsonNodeFactory nodeFactory,
       String embeddingApiKey,
-    SchemaObject schemaObject) {
+      SchemaObject schemaObject) {
 
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
