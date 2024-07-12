@@ -26,10 +26,14 @@ stargate:
               type: string
               required: false
               help: "Optional, OpenAI Organization ID. If provided passed as `OpenAI-Organization` header."
+              display-name: "Organization ID"
+              hint: "Add an (optional) organization ID"
             - name: projectId
               type: string
               required: false
               help: "Optional, OpenAI Project ID. If provided passed as `OpenAI-Project` header."
+              display-name: "Project ID"
+              hint: "Add an (optional) project ID"
           properties:
             max-batch-size: 2048
           models:
@@ -172,14 +176,20 @@ stargate:
               type: string
               required: true
               help: "The name of your Hugging Face dedicated endpoint, the first part of the Endpoint URL."
+              display-name: "Endpoint name"
+              hint: "Add endpoint name"
             - name: "regionName"
               type: string
               required: true
               help: "The region your Hugging Face dedicated endpoint is deployed to, the second part of the Endpoint URL."
+              display-name: "Region name"
+              hint: "Add region name"
             - name: "cloudName"
               type: string
               required: true
               help: "The cloud your Hugging Face dedicated endpoint is deployed to, the third part of the Endpoint URL."
+              display-name: "Cloud provider where the dedicated endpoint is deployed"
+              hint: "Add cloud name"
         # OUT OF SCOPE FOR INITIAL PREVIEW
         vertexai:
           # see https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#get_text_embeddings_for_a_snippet_of_text
