@@ -3,6 +3,7 @@ version: '3'
 services:
   hcd:
     image: datastax/hcd:${HCDTAG}
+    platform: linux/amd64
     networks:
       - stargate
     mem_limit: 3G
