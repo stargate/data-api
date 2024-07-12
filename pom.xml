@@ -95,6 +95,8 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
     </dependency>
+    <!-- 11-Jul-2024, tatu: Since Quarkus 3.9, use new simpler package names
+      -->
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-rest-client-jackson</artifactId>
@@ -166,7 +168,7 @@
       <!-- for generating UUIDs of versions not supported by JDK -->
       <groupId>com.fasterxml.uuid</groupId>
       <artifactId>java-uuid-generator</artifactId>
-      <version>5.0.0</version>
+      <version>5.1.0</version>
     </dependency>
     <dependency>
       <!-- for ObjectId handling -->
