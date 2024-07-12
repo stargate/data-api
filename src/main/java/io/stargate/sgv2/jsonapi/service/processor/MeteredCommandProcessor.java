@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
@@ -34,6 +36,7 @@ public class MeteredCommandProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(MeteredCommandProcessor.class);
 
+  private static final ObjectWriter OBJECT_WRITER = new ObjectMapper().writer();
   private static final String UNKNOWN_VALUE = "unknown";
 
   private static final String NA = "NA";
@@ -146,7 +149,11 @@ public class MeteredCommandProcessor {
             getIncomingDocumentsCount(command),
             getOutgoingDocumentsCount(result),
             result != null ? result.errors() : Collections.emptyList());
-    return new ObjectMapper().valueToTree(commandLog).toString();
+    try {
+      return OBJECT_WRITER.writeValueAsString(commandLog);
+    } catch (JacksonException e) {
+      return "ERROR: Failed to serialize CommandLog instance, cause = " + e;
+    }
   }
 
   /**
@@ -200,7 +207,9 @@ public class MeteredCommandProcessor {
     }
     if (!isFailure
         && commandLevelLoggingConfig.onlyResultsWithErrors()
-        && (commandResult == null || commandResult.errors().isEmpty())) {
+        && (commandResult == null
+            || commandResult.errors() == null
+            || commandResult.errors().isEmpty())) {
       return false;
     }
     // return true in all other cases
