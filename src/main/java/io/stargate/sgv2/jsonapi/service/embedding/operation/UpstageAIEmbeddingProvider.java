@@ -121,6 +121,7 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
+    checkEmbeddingApiKeyHeader(providerId, credentials.apiKey());
     // Oddity: Implementation does not support batching, so we only accept "batches"
     // of 1 String, fail for others
     if (texts.size() != 1) {

@@ -106,6 +106,8 @@ public class NvidiaEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
+    checkEmbeddingApiKeyHeader(providerId, credentials.apiKey());
+
     String[] textArray = new String[texts.size()];
     String input_type = embeddingRequestType == EmbeddingRequestType.INDEX ? PASSAGE : QUERY;
 

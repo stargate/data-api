@@ -110,6 +110,7 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
+    checkEmbeddingApiKeyHeader(providerId, credentials.apiKey());
     final String inputType =
         (embeddingRequestType == EmbeddingRequestType.SEARCH) ? requestTypeQuery : requestTypeIndex;
     String[] textArray = new String[texts.size()];

@@ -7,7 +7,6 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +19,6 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
 
     @Test
     public void tokenMissing() {
-      final Map<String, ?> headers = getHeaders();
       given()
           .contentType(ContentType.JSON)
           .body("{}")
