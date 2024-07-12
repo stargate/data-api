@@ -692,108 +692,87 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                   summary = "`findEmbeddingProviders` command result",
                   value =
                       """
-                              {
-                                "status": {
-                                    "embeddingProviders": {
-                                        "openai": {
-                                            "displayName": "OpenAI",
-                                            "url": "https://api.openai.com/v1/",
-                                            "supportedAuthentication": {
-                                                "HEADER": {
-                                                    "enabled": true,
-                                                    "tokens": [
-                                                        {
-                                                            "forwarded": "Authorization",
-                                                            "accepted": "x-embedding-api-key"
-                                                        }
-                                                    ]
-                                                },
-                                                "SHARED_SECRET": {
-                                                    "enabled": false,
-                                                    "tokens": [
-                                                        {
-                                                            "forwarded": "Authorization",
-                                                            "accepted": "providerKey"
-                                                        }
-                                                    ]
-                                                },
-                                                "NONE": {
-                                                    "enabled": false,
-                                                    "tokens": []
-                                                }
-                                            },
-                                            "parameters": [
+                      {
+                        "status": {
+                            "embeddingProviders": {
+                                "openai": {
+                                    "displayName": "OpenAI",
+                                    "url": "https://api.openai.com/v1/",
+                                    "supportedAuthentication": {
+                                        "HEADER": {
+                                            "enabled": true,
+                                            "tokens": [
                                                 {
-                                                    "name": "organizationId",
-                                                    "type": "STRING",
-                                                    "defaultValue": null,
-                                                    "displayName": "Organization ID",
-                                                    "help": "Optional, OpenAI Organization ID. If provided passed as `OpenAI-Organization` header.",
-                                                    "hint": "Add an (optional) organization ID",
-                                                    "required": false,
-                                                    "validation": {}
-                                                },
-                                                {
-                                                    "name": "projectId",
-                                                    "type": "STRING",
-                                                    "defaultValue": null,
-                                                    "displayName": "Project ID",
-                                                    "help": "Optional, OpenAI Project ID. If provided passed as `OpenAI-Project` header.",
-                                                    "hint": "Add an (optional) project ID",
-                                                    "required": false,
-                                                    "validation": {}
-                                                }
-                                            ],
-                                            "models": [
-                                                {
-                                                    "name": "text-embedding-3-small",
-                                                    "vectorDimension": null,
-                                                    "parameters": [
-                                                        {
-                                                            "name": "vectorDimension",
-                                                            "type": "number",
-                                                            "required": true,
-                                                            "defaultValue": "512",
-                                                            "validation": {
-                                                                "numericRange": [
-                                                                    2,
-                                                                    1536
-                                                                ]
-                                                            },
-                                                            "help": "Vector dimension to use in the database and when calling OpenAI."
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "name": "text-embedding-3-large",
-                                                    "vectorDimension": null,
-                                                    "parameters": [
-                                                        {
-                                                            "name": "vectorDimension",
-                                                            "type": "number",
-                                                            "required": true,
-                                                            "defaultValue": "1024",
-                                                            "validation": {
-                                                                "numericRange": [
-                                                                    256,
-                                                                    3072
-                                                                ]
-                                                            },
-                                                            "help": "Vector dimension to use in the database and when calling OpenAI."
-                                                        }
-                                                    ]
-                                                },
-                                                {
-                                                    "name": "text-embedding-ada-002",
-                                                    "vectorDimension": 1536,
-                                                    "parameters": []
+                                                    "forwarded": "Authorization",
+                                                    "accepted": "x-embedding-api-key"
                                                 }
                                             ]
+                                        },
+                                        "SHARED_SECRET": {
+                                            "enabled": false,
+                                            "tokens": [
+                                                {
+                                                    "forwarded": "Authorization",
+                                                    "accepted": "providerKey"
+                                                }
+                                            ]
+                                        },
+                                        "NONE": {
+                                            "enabled": false,
+                                            "tokens": []
                                         }
-                                    }
+                                    },
+                                    "parameters": [],
+                                    "models": [
+                                        {
+                                            "name": "text-embedding-3-small",
+                                            "vectorDimension": null,
+                                            "parameters": [
+                                                {
+                                                    "name": "vectorDimension",
+                                                    "type": "number",
+                                                    "required": true,
+                                                    "defaultValue": "512",
+                                                    "validation": {
+                                                        "numericRange": [
+                                                            2,
+                                                            1536
+                                                        ]
+                                                    },
+                                                    "help": "Vector dimension to use in the database and when calling OpenAI."
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "name": "text-embedding-3-large",
+                                            "vectorDimension": null,
+                                            "parameters": [
+                                                {
+                                                    "name": "vectorDimension",
+                                                    "type": "number",
+                                                    "required": true,
+                                                    "defaultValue": "1024",
+                                                    "validation": {
+                                                        "numericRange": [
+                                                            256,
+                                                            3072
+                                                        ]
+                                                    },
+                                                    "help": "Vector dimension to use in the database and when calling OpenAI."
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "name": "text-embedding-ada-002",
+                                            "vectorDimension": 1536,
+                                            "parameters": []
+                                        }
+                                    ]
                                 }
-                              }
-                              """)
+                            }
+                        }
+                      }
+                      """)
             }))
 public class StargateJsonApi extends Application {
   @Produces
