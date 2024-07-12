@@ -94,6 +94,7 @@ public class HuggingFaceEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
+    checkEmbeddingApiKeyHeader(providerId, credentials.apiKey());
     EmbeddingRequest request = new EmbeddingRequest(texts, new EmbeddingRequest.Options(true));
 
     return applyRetry(
