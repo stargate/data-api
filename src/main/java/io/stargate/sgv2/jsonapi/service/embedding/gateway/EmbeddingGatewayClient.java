@@ -83,7 +83,10 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
    */
   @Override
   public Uni<Response> vectorize(
-      int batchId, List<String> texts, String apiKey, EmbeddingRequestType embeddingRequestType) {
+      int batchId,
+      List<String> texts,
+      Optional<String> apiKey,
+      EmbeddingRequestType embeddingRequestType) {
     Map<String, EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue>
         grpcVectorizeServiceParameter = new HashMap<>();
     if (vectorizeServiceParameter != null) {
@@ -133,8 +136,8 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             .setProviderName(provider)
             .setTenantId(tenant.orElse(DEFAULT_TENANT_ID));
     builder.putAuthTokens(DATA_API_KEY, authToken.orElse(""));
-    if (null != apiKey) {
-      builder.putAuthTokens(API_KEY, apiKey);
+    if (apiKey.isPresent()) {
+      builder.putAuthTokens(API_KEY, apiKey.get());
     }
     if (authentication != null) {
       builder.putAllAuthTokens(authentication);
