@@ -107,10 +107,16 @@ quarkus:
     console:
       format: "%-5p [%t] %d{yyyy-MM-dd HH:mm:ss,SSS} %F:%L - %m%n"
 
-    # silent caffeine cache warnings
+    level: WARN
+
     category:
+      # silent caffeine cache warnings
       'com.github.benmanes.caffeine.cache':
         level: ERROR
+      'com.datastax.oss.driver':
+        level: WARN
+      'io.stargate.*':
+        level: INFO
 
     min-level: trace
 

@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception.mappers;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -12,7 +13,11 @@ import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 public class GenericExceptionMapper {
 
   // explicitly add types to override Quarkus mappers
-  @ServerExceptionMapper({Exception.class, MismatchedInputException.class})
+  @ServerExceptionMapper({
+    Exception.class,
+    JsonParseException.class,
+    MismatchedInputException.class
+  })
   public RestResponse<CommandResult> genericExceptionMapper(Throwable e) {
     CommandResult commandResult = new ThrowableCommandResultSupplier(e).get();
     return commandResult.map();

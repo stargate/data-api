@@ -44,6 +44,9 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
+          // 10-Jul-2024, tatu: As per [data-api#1216], should be 400, not 200
+          //  (we want to return 4xx because we cannot actually process the request
+          //  as JSON is unparseable) but right now this is not working for some reason.
           .statusCode(200)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_REQUEST_NOT_JSON"))
