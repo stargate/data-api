@@ -13,16 +13,16 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cql.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.ChainedComparator;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.CollectionFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.CollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import java.util.*;
@@ -340,7 +340,7 @@ public record FindOperation(
       DataApiRequestInfo dataApiRequestInfo,
       QueryExecutor queryExecutor,
       String pageState,
-      IDFilter additionalIdFilter) {
+      IDCollectionFilter additionalIdFilter) {
 
     // ensure we pass failure down if read type is not DOCUMENT or KEY
     // COUNT is not supported
@@ -409,13 +409,14 @@ public record FindOperation(
         for (DBFilterBase filter : currentComparisonExpression.getDbFilters()) {
           // every filter must be a collection filter, because we are making a new document and we
           // only do this for docs
-          if (filter instanceof IDFilter) {
-            IDFilter idFilter = (IDFilter) filter;
+          if (filter instanceof IDCollectionFilter) {
+            IDCollectionFilter idFilter = (IDCollectionFilter) filter;
             documentId = idFilter.getSingularDocumentId();
-            idFilter.updateForNewDocument(objectMapper().getNodeFactory())
+            idFilter
+                .updateForNewDocument(objectMapper().getNodeFactory())
                 .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
-          } else if (filter instanceof CollectionFilterBase) {
-            CollectionFilterBase f = (CollectionFilterBase) filter;
+          } else if (filter instanceof CollectionFilter) {
+            CollectionFilter f = (CollectionFilter) filter;
             f.updateForNewDocument(objectMapper().getNodeFactory())
                 .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
           } else {
@@ -437,7 +438,7 @@ public record FindOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<SimpleStatement> buildSelectQueries(IDFilter additionalIdFilter) {
+  private List<SimpleStatement> buildSelectQueries(IDCollectionFilter additionalIdFilter) {
     final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing
@@ -501,7 +502,7 @@ public record FindOperation(
    * @return Returns a list of queries, where a query is built using element returned by the
    *     buildConditions method.
    */
-  private List<SimpleStatement> buildSortedSelectQueries(IDFilter additionalIdFilter) {
+  private List<SimpleStatement> buildSortedSelectQueries(IDCollectionFilter additionalIdFilter) {
     final List<Expression<BuiltCondition>> expressions =
         ExpressionBuilder.buildExpressions(logicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing

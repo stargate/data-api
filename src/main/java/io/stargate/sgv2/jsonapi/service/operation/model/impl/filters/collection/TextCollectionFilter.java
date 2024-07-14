@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.util.Optional;
 
 /** Filters db documents based on a text field value */
-public class TextFilter extends MapFilterBase<String> {
+public class TextCollectionFilter extends MapCollectionFilter<String> {
   private final String strValue;
 
-  public TextFilter(String path, Operator operator, String value) {
+  public TextCollectionFilter(String path, Operator operator, String value) {
     super("query_text_values", path, operator, value);
     this.strValue = value;
     if (Operator.EQ == operator || Operator.NE == operator) indexUsage.arrayContainsTag = true;

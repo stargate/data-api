@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.util.Optional;
 
 /** Filter for document where array has specified number of elements */
-public class SizeFilter extends MapFilterBase<Integer> {
-  public SizeFilter(String path, Operator operator, Integer size) {
+public class SizeCollectionFilter extends MapCollectionFilter<Integer> {
+  public SizeCollectionFilter(String path, Operator operator, Integer size) {
     super("array_size", path, operator, size);
     this.indexUsage.arraySizeIndexTag = true;
   }

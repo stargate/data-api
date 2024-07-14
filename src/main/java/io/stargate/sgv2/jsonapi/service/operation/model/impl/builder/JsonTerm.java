@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.model.impl;
+package io.stargate.sgv2.jsonapi.service.operation.model.impl.builder;
 
 import java.util.List;
 import java.util.Objects;
@@ -9,11 +9,14 @@ import java.util.Objects;
  * required as a placeholder to set values in query builder and extracted out to set the value in
  * SimpleStatement positional values
  */
-public class JsonTerm {
+public class JsonTerm extends BuildConditionTerm {
+
   static final String NULL_ERROR_MESSAGE = "Use Values.NULL to bind a null CQL value";
+  // TODO: explain why this is an object and not a string
   private final Object key;
   private final Object value;
 
+  // TODO: the variable name is "value" but this ctor is to set the key !
   public JsonTerm(Object value) {
     this(null, value);
   }
@@ -53,7 +56,8 @@ public class JsonTerm {
    * <p>e.g. select * from table where array_contains contains ? limit 1; * For this case, we
    * populate positional cql value
    */
-  public void addToCqlValues(List<Object> values) {
+  @Override
+  public void appendPositionalValue(List<Object> values) {
     if (this.key != null) {
       values.add(this.key);
     }

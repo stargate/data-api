@@ -7,10 +7,10 @@ import java.util.Date;
 import java.util.Optional;
 
 /** Filters db documents based on a date field value */
-public class DateFilter extends MapFilterBase<Instant> {
+public class DateCollectionFilter extends MapCollectionFilter<Instant> {
   private final Date dateValue;
 
-  public DateFilter(String path, Operator operator, Date value) {
+  public DateCollectionFilter(String path, Operator operator, Date value) {
     super("query_timestamp_values", path, operator, Instant.ofEpochMilli(value.getTime()));
     this.dateValue = value;
     if (Operator.EQ == operator || Operator.NE == operator) indexUsage.arrayContainsTag = true;

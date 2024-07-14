@@ -15,8 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public abstract class CollectionFilterBase extends DBFilterBase {
-  protected CollectionFilterBase(String path) {
+public abstract class CollectionFilter extends DBFilterBase {
+  protected CollectionFilter(String path) {
     super(path);
   }
 
@@ -99,8 +99,7 @@ public abstract class CollectionFilterBase extends DBFilterBase {
     } else if (value == null) {
       return nodeFactory.nullNode();
     } else {
-      throw new IllegalArgumentException(
-          "Unexpected object class: " + value.getClass().getName());
+      throw new IllegalArgumentException("Unexpected object class: " + value.getClass().getName());
     }
   }
 
