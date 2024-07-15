@@ -50,7 +50,9 @@ public record EmbeddingProvidersConfigImpl(
         boolean required,
         Optional<String> defaultValue,
         Map<ValidationType, List<Integer>> validation,
-        Optional<String> help)
+        Optional<String> help,
+        Optional<String> displayName,
+        Optional<String> hint)
         implements ParameterConfig {
       public ParameterConfigImpl(
           EmbeddingGateway.GetSupportedProvidersResponse.ProviderConfig.ParameterConfig
@@ -65,7 +67,9 @@ public record EmbeddingProvidersConfigImpl(
                     Collectors.toMap(
                         e -> ValidationType.fromString(e.getKey()),
                         e -> new ArrayList<>(e.getValue().getValuesList()))),
-            Optional.of(grpcModelParameter.getHelp()));
+            Optional.of(grpcModelParameter.getHelp()),
+            Optional.of(grpcModelParameter.getDisplayName()),
+            Optional.of(grpcModelParameter.getHint()));
       }
     }
 

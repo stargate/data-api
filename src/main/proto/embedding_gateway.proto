@@ -125,6 +125,8 @@ message GetSupportedProvidersResponse {
       //No ValidationType Enum, since enum can not be key of map in grpc message
       map<string, IntList> validation = 5;
       string help = 6;
+      string display_name = 7;
+      string hint = 8;
 
       message IntList {
         repeated int32 values = 1;

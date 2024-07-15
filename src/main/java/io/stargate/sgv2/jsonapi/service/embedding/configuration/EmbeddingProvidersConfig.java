@@ -158,6 +158,14 @@ public interface EmbeddingProvidersConfig {
       @Nullable
       @JsonProperty
       Optional<String> help();
+
+      @Nullable
+      @JsonProperty
+      Optional<String> displayName();
+
+      @Nullable
+      @JsonProperty
+      Optional<String> hint();
     }
 
     enum ValidationType {
