@@ -9,10 +9,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.faulttolerance.Retry;
 import org.slf4j.Logger;
@@ -144,7 +141,7 @@ public class EmbeddingProvidersConfigProducer {
           new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
               grpcProviderConfig.getDisplayName(),
               grpcProviderConfig.getEnabled(),
-              grpcProviderConfig.getUrl(),
+              Optional.of(grpcProviderConfig.getUrl()),
               supportedAuthenticationsMap,
               providerParameterList,
               providerRequestProperties,

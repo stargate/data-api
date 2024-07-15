@@ -11,7 +11,7 @@ public record EmbeddingProvidersConfigImpl(
   public record EmbeddingProviderConfigImpl(
       String displayName,
       boolean enabled,
-      String url,
+      Optional<String> url,
       Map<AuthenticationType, AuthenticationConfig> supportedAuthentications,
       List<ParameterConfig> parameters,
       RequestProperties properties,

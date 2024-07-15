@@ -115,7 +115,6 @@ stargate:
         bedrock:
           display-name: Amazon Bedrock
           enabled: true
-          url: " "
           supported-authentications:
             NONE:
               enabled: false

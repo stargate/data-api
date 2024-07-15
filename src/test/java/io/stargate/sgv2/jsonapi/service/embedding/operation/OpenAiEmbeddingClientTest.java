@@ -33,7 +33,7 @@ public class OpenAiEmbeddingClientTest {
           new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("openai").url(),
+                  config.providers().get("openai").url().get(),
                   "test",
                   3,
                   Map.of("organizationId", "org-id", "projectId", "project-id"))
@@ -62,7 +62,7 @@ public class OpenAiEmbeddingClientTest {
           new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("openai").url(),
+                  config.providers().get("openai").url().get(),
                   "test",
                   3,
                   Map.of())
@@ -91,7 +91,7 @@ public class OpenAiEmbeddingClientTest {
           new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("openai").url(),
+                  config.providers().get("openai").url().get(),
                   "test",
                   3,
                   Map.of("organizationId", "invalid org", "projectId", "project-id"))
@@ -118,7 +118,7 @@ public class OpenAiEmbeddingClientTest {
           new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("openai").url(),
+                  config.providers().get("openai").url().get(),
                   "test",
                   3,
                   Map.of("organizationId", "org-id", "projectId", "invalid proj"))
