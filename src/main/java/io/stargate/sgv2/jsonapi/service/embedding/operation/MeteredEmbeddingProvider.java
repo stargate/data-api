@@ -5,6 +5,7 @@ import io.micrometer.core.instrument.*;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,7 +44,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
    * call and the size of the input texts.
    *
    * @param texts the list of texts to vectorize.
-   * @param credentials the credentials to use for the vectorization call.
+   * @param embeddingCredentials the credentials to use for the vectorization call.
    * @param embeddingRequestType the type of embedding request, influencing how texts are processed.
    * @return a {@link Uni} that will provide the list of vectorized texts, as arrays of floats.
    */
@@ -51,7 +52,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Credentials credentials,
+      EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
     // String bytes metrics for vectorize
     DistributionSummary ds =
@@ -78,7 +79,7 @@ public class MeteredEmbeddingProvider extends EmbeddingProvider {
             batch -> {
               // call vectorize by the batch id
               return embeddingProvider.vectorize(
-                  batch.getLeft(), batch.getRight(), credentials, embeddingRequestType);
+                  batch.getLeft(), batch.getRight(), embeddingCredentials, embeddingRequestType);
             })
         .merge()
         .collect()

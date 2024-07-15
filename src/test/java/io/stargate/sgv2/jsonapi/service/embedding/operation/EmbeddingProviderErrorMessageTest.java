@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -20,8 +21,8 @@ import org.junit.jupiter.api.Test;
 public class EmbeddingProviderErrorMessageTest {
   private static final int DEFAULT_DIMENSIONS = 0;
 
-  private final EmbeddingProvider.Credentials credentials =
-      new EmbeddingProvider.Credentials(Optional.of("test"), Optional.empty(), Optional.empty());
+  private final EmbeddingCredentials embeddingCredentials =
+      new EmbeddingCredentials(Optional.of("test"), Optional.empty(), Optional.empty());
 
   @Inject EmbeddingProvidersConfig config;
 
@@ -38,7 +39,10 @@ public class EmbeddingProviderErrorMessageTest {
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
-                  1, List.of("429"), credentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  1,
+                  List.of("429"),
+                  embeddingCredentials,
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -62,7 +66,10 @@ public class EmbeddingProviderErrorMessageTest {
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
-                  1, List.of("400"), credentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  1,
+                  List.of("400"),
+                  embeddingCredentials,
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -86,7 +93,10 @@ public class EmbeddingProviderErrorMessageTest {
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
-                  1, List.of("503"), credentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  1,
+                  List.of("503"),
+                  embeddingCredentials,
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -110,7 +120,10 @@ public class EmbeddingProviderErrorMessageTest {
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
-                  1, List.of("408"), credentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
+                  1,
+                  List.of("408"),
+                  embeddingCredentials,
+                  EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()
@@ -136,7 +149,7 @@ public class EmbeddingProviderErrorMessageTest {
               .vectorize(
                   1,
                   List.of("application/json"),
-                  credentials,
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -160,7 +173,7 @@ public class EmbeddingProviderErrorMessageTest {
               .vectorize(
                   1,
                   List.of("application/xml"),
-                  credentials,
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -188,7 +201,7 @@ public class EmbeddingProviderErrorMessageTest {
               .vectorize(
                   1,
                   List.of("text/plain;charset=UTF-8"),
-                  credentials,
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -216,7 +229,7 @@ public class EmbeddingProviderErrorMessageTest {
               .vectorize(
                   1,
                   List.of("no json body"),
-                  credentials,
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -244,7 +257,7 @@ public class EmbeddingProviderErrorMessageTest {
               .vectorize(
                   1,
                   List.of("empty json body"),
-                  credentials,
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())

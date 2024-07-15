@@ -4,6 +4,7 @@ import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_
 import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_API_KEY_MISSING;
 
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -73,26 +74,15 @@ public abstract class EmbeddingProvider {
    * Vectorizes the given list of texts and returns the embeddings.
    *
    * @param texts List of texts to be vectorized
-   * @param credentials Credentials required for the provider
+   * @param embeddingCredentials embeddingCredentials required for the provider
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
    * @return VectorResponse
    */
   public abstract Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Credentials credentials,
+      EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType);
-
-  /**
-   * Record to hold the credentials required for the provider
-   *
-   * @param apiKey Optional API key for the all providers other than AWS Bedrock. If not provided,
-   *     the default API key will be used.
-   * @param accessKeyId AWS access key id
-   * @param secretAccessKey AWS secret access key
-   */
-  public record Credentials(
-      Optional<String> apiKey, Optional<String> accessKeyId, Optional<String> secretAccessKey) {}
 
   /**
    * returns the maximum batch size supported by the provider

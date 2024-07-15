@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -22,8 +23,8 @@ public class OpenAiEmbeddingClientTest {
 
   @Inject EmbeddingProvidersConfig config;
 
-  private final EmbeddingProvider.Credentials credentials =
-      new EmbeddingProvider.Credentials(Optional.of("test"), Optional.empty(), Optional.empty());
+  private final EmbeddingCredentials embeddingCredentials =
+      new EmbeddingCredentials(Optional.of("test"), Optional.empty(), Optional.empty());
 
   @Nested
   class OpenAiEmbeddingTest {
@@ -40,7 +41,7 @@ public class OpenAiEmbeddingClientTest {
               .vectorize(
                   1,
                   List.of("some data"),
-                  credentials,
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -69,7 +70,7 @@ public class OpenAiEmbeddingClientTest {
               .vectorize(
                   1,
                   List.of("application/json"),
-                  credentials,
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -98,7 +99,7 @@ public class OpenAiEmbeddingClientTest {
               .vectorize(
                   1,
                   List.of("some data"),
-                  credentials,
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -125,7 +126,7 @@ public class OpenAiEmbeddingClientTest {
               .vectorize(
                   1,
                   List.of("some data"),
-                  credentials,
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())

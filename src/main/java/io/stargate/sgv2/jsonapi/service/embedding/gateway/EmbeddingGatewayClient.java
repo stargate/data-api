@@ -5,6 +5,7 @@ import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -87,7 +88,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
    * Vectorize the given list of texts
    *
    * @param texts List of texts to be vectorized
-   * @param credentials Credentials required for the provider
+   * @param embeddingCredentials Credentials required for the provider
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
    * @return
    */
@@ -95,7 +96,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Credentials credentials,
+      EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
     Map<String, EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue>
         grpcVectorizeServiceParameter = new HashMap<>();
@@ -148,16 +149,16 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
     // Add the value of `Token` in the header
     builder.putAuthTokens(DATA_API_TOKEN, authToken.orElse(""));
     // Add the value of `x-embedding-api-key` in the header
-    if (credentials.apiKey().isPresent()) {
-      builder.putAuthTokens(EMBEDDING_API_KEY, credentials.apiKey().get());
+    if (embeddingCredentials.apiKey().isPresent()) {
+      builder.putAuthTokens(EMBEDDING_API_KEY, embeddingCredentials.apiKey().get());
     }
     // Add the value of `x-embedding-access-id` in the header
-    if (credentials.accessKeyId().isPresent()) {
-      builder.putAuthTokens(EMBEDDING_ACCESS_ID, credentials.accessKeyId().get());
+    if (embeddingCredentials.accessId().isPresent()) {
+      builder.putAuthTokens(EMBEDDING_ACCESS_ID, embeddingCredentials.accessId().get());
     }
     // Add the value of `x-embedding-secret-id` in the header
-    if (credentials.secretAccessKey().isPresent()) {
-      builder.putAuthTokens(EMBEDDING_SECRET_ID, credentials.secretAccessKey().get());
+    if (embeddingCredentials.secretId().isPresent()) {
+      builder.putAuthTokens(EMBEDDING_SECRET_ID, embeddingCredentials.secretId().get());
     }
     // Add the `authentication` (sync service key) in the createCollection command
     if (authentication != null) {
