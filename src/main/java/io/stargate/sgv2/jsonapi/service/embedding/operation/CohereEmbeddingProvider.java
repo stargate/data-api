@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -124,9 +125,9 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Credentials credentials,
+      EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
-    checkEmbeddingApiKeyHeader(providerId, credentials.apiKey());
+    checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
 
     String[] textArray = new String[texts.size()];
     String input_type =
@@ -136,7 +137,8 @@ public class CohereEmbeddingProvider extends EmbeddingProvider {
 
     Uni<EmbeddingResponse> response =
         applyRetry(
-            cohereEmbeddingProviderClient.embed("Bearer " + credentials.apiKey().get(), request));
+            cohereEmbeddingProviderClient.embed(
+                "Bearer " + embeddingCredentials.apiKey().get(), request));
 
     return response
         .onItem()

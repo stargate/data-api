@@ -1,11 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
+import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME;
+import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -25,8 +29,8 @@ import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
 
   private static final String providerId = ProviderConstants.BEDROCK;
-  private static ObjectWriter ow = new ObjectMapper().writer();
-  private static ObjectReader or = new ObjectMapper().reader();
+  private static final ObjectWriter ow = new ObjectMapper().writer();
+  private static final ObjectReader or = new ObjectMapper().reader();
 
   public AwsBedrockEnbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
@@ -46,23 +50,27 @@ public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      EmbeddingProvider.Credentials credentials,
+      EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
-    if (credentials.accessKeyId().isEmpty() && credentials.secretAccessKey().isEmpty()) {
+    if (embeddingCredentials.accessId().isEmpty() && embeddingCredentials.secretId().isEmpty()) {
       throw ErrorCode.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "Both 'x-embedding-access-id' and 'x-embedding-secret-id' are missing in the header for provider '%s'",
+          "Both '%s' and '%s' are missing in the header for provider '%s'",
+          EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME,
+          EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME,
           providerId);
-    } else if (credentials.accessKeyId().isEmpty()) {
+    } else if (embeddingCredentials.accessId().isEmpty()) {
       throw ErrorCode.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "'x-embedding-access-id' is missing in the header for provider '%s'", providerId);
-    } else if (credentials.secretAccessKey().isEmpty()) {
+          "'%s' is missing in the header for provider '%s'",
+          EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME, providerId);
+    } else if (embeddingCredentials.secretId().isEmpty()) {
       throw ErrorCode.EMBEDDING_PROVIDER_AUTHENTICATION_KEYS_NOT_PROVIDED.toApiException(
-          "'x-embedding-secret-id' is missing in the header for provider '%s'", providerId);
+          "'%s' is missing in the header for provider '%s'",
+          EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME, providerId);
     }
 
     AwsBasicCredentials awsCreds =
         AwsBasicCredentials.create(
-            credentials.accessKeyId().get(), credentials.secretAccessKey().get());
+            embeddingCredentials.accessId().get(), embeddingCredentials.secretId().get());
 
     BedrockRuntimeAsyncClient client =
         BedrockRuntimeAsyncClient.builder()

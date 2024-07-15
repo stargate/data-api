@@ -8,27 +8,27 @@ import java.util.Optional;
 /**
  * Implementation to resolve the embedding api key, access id and secret id from the request header.
  */
-public class HeaderBasedEmbeddingCredentialResolver implements EmbeddingCredentialResolver {
+public class HeaderBasedEmbeddingCredentialsResolver implements EmbeddingCredentialsResolver {
   private final String tokenHeaderName;
   private final String accessIdHeaderName;
   private final String secretIdHeaderName;
 
-  public HeaderBasedEmbeddingCredentialResolver(
+  public HeaderBasedEmbeddingCredentialsResolver(
       String tokenHeaderName, String accessIdHeaderName, String secretIdHeaderName) {
-    Objects.requireNonNull(tokenHeaderName, "Token header name cannot be null");
-    Objects.requireNonNull(accessIdHeaderName, "Access Id header name cannot be null");
-    Objects.requireNonNull(secretIdHeaderName, "Secret Id header name cannot be null");
-    this.tokenHeaderName = tokenHeaderName;
-    this.accessIdHeaderName = accessIdHeaderName;
-    this.secretIdHeaderName = secretIdHeaderName;
+    this.tokenHeaderName =
+        Objects.requireNonNull(tokenHeaderName, "Token header name cannot be null");
+    this.accessIdHeaderName =
+        Objects.requireNonNull(accessIdHeaderName, "Access Id header name cannot be null");
+    this.secretIdHeaderName =
+        Objects.requireNonNull(secretIdHeaderName, "Secret Id header name cannot be null");
   }
 
-  public EmbeddingCredential resolveEmbeddingCredential(RoutingContext context) {
+  public EmbeddingCredentials resolveEmbeddingCredentials(RoutingContext context) {
     HttpServerRequest request = context.request();
     String headerValue = request.getHeader(this.tokenHeaderName);
     String accessId = request.getHeader(this.accessIdHeaderName);
     String secretId = request.getHeader(this.secretIdHeaderName);
-    return new EmbeddingCredential(
+    return new EmbeddingCredentials(
         Optional.ofNullable(headerValue),
         Optional.ofNullable(accessId),
         Optional.ofNullable(secretId));

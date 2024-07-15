@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -29,7 +30,7 @@ import java.util.Map;
 public class DataVectorizer {
   private final EmbeddingProvider embeddingProvider;
   private final JsonNodeFactory nodeFactory;
-  private final EmbeddingProvider.Credentials credentials;
+  private final EmbeddingCredentials embeddingCredentials;
   private final CollectionSettings collectionSettings;
 
   /**
@@ -38,17 +39,17 @@ public class DataVectorizer {
    * @param embeddingProvider - Service client based on embedding service configuration set for the
    *     table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
-   * @param credentials - Credentials for the embedding service
+   * @param embeddingCredentials - Credentials for the embedding service
    * @param collectionSettings - The collection setting for vectorize call
    */
   public DataVectorizer(
       EmbeddingProvider embeddingProvider,
       JsonNodeFactory nodeFactory,
-      EmbeddingProvider.Credentials credentials,
+      EmbeddingCredentials embeddingCredentials,
       CollectionSettings collectionSettings) {
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
-    this.credentials = credentials;
+    this.embeddingCredentials = embeddingCredentials;
     this.collectionSettings = collectionSettings;
   }
 
@@ -108,7 +109,10 @@ public class DataVectorizer {
         Uni<List<float[]>> vectors =
             embeddingProvider
                 .vectorize(
-                    1, vectorizeTexts, credentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
+                    1,
+                    vectorizeTexts,
+                    embeddingCredentials,
+                    EmbeddingProvider.EmbeddingRequestType.INDEX)
                 .map(res -> res.embeddings());
         return vectors
             .onItem()
@@ -172,7 +176,10 @@ public class DataVectorizer {
         Uni<List<float[]>> vectors =
             embeddingProvider
                 .vectorize(
-                    1, List.of(text), credentials, EmbeddingProvider.EmbeddingRequestType.SEARCH)
+                    1,
+                    List.of(text),
+                    embeddingCredentials,
+                    EmbeddingProvider.EmbeddingRequestType.SEARCH)
                 .map(res -> res.embeddings());
         return vectors
             .onItem()
@@ -255,7 +262,10 @@ public class DataVectorizer {
           final Uni<List<float[]>> vectors =
               embeddingProvider
                   .vectorize(
-                      1, List.of(text), credentials, EmbeddingProvider.EmbeddingRequestType.INDEX)
+                      1,
+                      List.of(text),
+                      embeddingCredentials,
+                      EmbeddingProvider.EmbeddingRequestType.INDEX)
                   .map(res -> res.embeddings());
           return vectors
               .onItem()

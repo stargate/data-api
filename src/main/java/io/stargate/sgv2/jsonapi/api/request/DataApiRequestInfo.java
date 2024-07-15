@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.request;
 
 import io.stargate.sgv2.jsonapi.api.request.tenant.DataApiTenantResolver;
 import io.stargate.sgv2.jsonapi.api.request.token.DataApiTokenResolver;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.inject.Instance;
@@ -18,7 +17,7 @@ import java.util.Optional;
 public class DataApiRequestInfo {
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
-  private EmbeddingProvider.Credentials credentials;
+  private final EmbeddingCredentials embeddingCredentials;
 
   /**
    * Constructor that will be useful in the offline library mode, where only the tenant will be set
@@ -29,7 +28,7 @@ public class DataApiRequestInfo {
   public DataApiRequestInfo(Optional<String> tenantId) {
     this.tenantId = tenantId;
     this.cassandraToken = Optional.empty();
-    this.credentials = null;
+    this.embeddingCredentials = null;
   }
 
   @Inject
@@ -38,14 +37,8 @@ public class DataApiRequestInfo {
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
       Instance<DataApiTokenResolver> tokenResolver,
-      Instance<EmbeddingCredentialResolver> apiKeysResolver) {
-    final EmbeddingCredential embeddingCredential =
-        apiKeysResolver.get().resolveEmbeddingCredential(routingContext);
-    this.credentials =
-        new EmbeddingProvider.Credentials(
-            embeddingCredential.apiKey(),
-            embeddingCredential.accessId(),
-            embeddingCredential.secretId());
+      Instance<EmbeddingCredentialsResolver> apiKeysResolver) {
+    this.embeddingCredentials = apiKeysResolver.get().resolveEmbeddingCredentials(routingContext);
     this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
   }
@@ -58,7 +51,7 @@ public class DataApiRequestInfo {
     return this.cassandraToken;
   }
 
-  public EmbeddingProvider.Credentials getCredentials() {
-    return this.credentials;
+  public EmbeddingCredentials getEmbeddingCredentials() {
+    return this.embeddingCredentials;
   }
 }
