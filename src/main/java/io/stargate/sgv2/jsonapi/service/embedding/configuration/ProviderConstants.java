@@ -14,6 +14,7 @@ public final class ProviderConstants {
   public static final String JINA_AI = "jinaAI";
   public static final String CUSTOM = "custom";
   public static final String MISTRAL = "mistral";
+  public static final String BEDROCK = "bedrock";
 
   // Private constructor to prevent instantiation
   private ProviderConstants() {}

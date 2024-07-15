@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -17,7 +18,6 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
@@ -153,15 +153,16 @@ public class VertexAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKey,
+      EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
-    checkEmbeddingApiKeyHeader(providerId, apiKey);
+    checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
     EmbeddingRequest request =
         new EmbeddingRequest(texts.stream().map(t -> new EmbeddingRequest.Content(t)).toList());
 
     Uni<EmbeddingResponse> serviceResponse =
         applyRetry(
-            vertexAIEmbeddingProviderClient.embed("Bearer " + apiKey.get(), modelName, request));
+            vertexAIEmbeddingProviderClient.embed(
+                "Bearer " + embeddingCredentials.apiKey().get(), modelName, request));
 
     return serviceResponse
         .onItem()

@@ -26,8 +26,9 @@ public interface EmbeddingProvidersConfig {
     @JsonProperty
     boolean enabled();
 
+    @Nullable
     @JsonProperty
-    String url();
+    Optional<String> url();
 
     /**
      * A map of supported authentications. HEADER, SHARED_SECRET and NONE are the only techniques
