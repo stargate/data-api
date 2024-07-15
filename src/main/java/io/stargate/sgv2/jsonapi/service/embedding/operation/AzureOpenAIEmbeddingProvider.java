@@ -114,6 +114,7 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
+    checkEmbeddingApiKeyHeader(providerId, credentials.apiKey());
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
 

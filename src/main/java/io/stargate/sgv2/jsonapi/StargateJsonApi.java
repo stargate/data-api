@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi;
 
-import io.stargate.sgv2.api.common.grpc.SourceApiQualifier;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import jakarta.ws.rs.Produces;
@@ -777,7 +776,6 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
             }))
 public class StargateJsonApi extends Application {
   @Produces
-  @SourceApiQualifier
   public String sourceApi() {
     return "rest";
   }

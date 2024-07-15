@@ -1,13 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
-import static io.stargate.sgv2.api.common.config.constants.LoggingConstants.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.api.common.config.MetricsConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -17,8 +14,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.config.constants.LoggingConstants;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
@@ -192,8 +191,10 @@ public class MeteredCommandProcessor {
       return false;
     }
     Set<String> allowedTenants =
-        commandLevelLoggingConfig.enabledTenants().orElse(Collections.singleton(ALL_TENANTS));
-    if (!allowedTenants.contains(ALL_TENANTS)
+        commandLevelLoggingConfig
+            .enabledTenants()
+            .orElse(Collections.singleton(LoggingConstants.ALL_TENANTS));
+    if (!allowedTenants.contains(LoggingConstants.ALL_TENANTS)
         && !allowedTenants.contains(dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE))) {
       return false;
     }

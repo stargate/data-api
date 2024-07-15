@@ -5,7 +5,6 @@ Data API is an HTTP service that gives access to data stored in a Cassandra clus
 
 Specifications and design documents for this service are defined in the [docs](docs) directory.
 
-The project depends on the [sgv2-quarkus-common](https://github.com/stargate/stargate/blob/main/apis/sgv2-quarkus-common) module, which provides common functionality used by all Stargate V2 APIs.
 
 ##### Table of Contents
 * [Quick Start](#quick-start)
@@ -44,10 +43,6 @@ We also have a Postman collection you can use to learn about the various operati
 
 ## Concepts
 
-### Shared concepts
-
-Please read the [Stargate Shared Concepts](https://github.com/stargate/stargate/blob/main/apis/sgv2-quarkus-common/README.md#shared-concepts) in order to get basic concepts shared between all V2 API implementations.
-
 ## Configuration properties
 
 There are two main configuration property prefixes used, `stargate.` and `quarkus.`.
@@ -55,7 +50,7 @@ There are two main configuration property prefixes used, `stargate.` and `quarku
 The `quarkus.` properties are defined by the Quarkus framework, and the complete list of available properties can be found on the [All configuration options](https://quarkus.io/guides/all-config) page.
 In addition, the related guide of each [Quarkus extension](#quarkus-extensions) used in the project provides an overview of the available config options.
 
-The `stargate.` properties are defined by this project itself and by the [sgv2-quarkus-common configuration](https://github.com/stargate/stargate/blob/main/apis/sgv2-quarkus-common/CONFIGURATION.md).
+The `stargate.` properties are defined by this project itself.
 The properties are defined by dedicated config classes annotated with the `@ConfigMapping`.
 The list of currently available properties is documented in the [Configuration Guide](CONFIGURATION.md).
 
@@ -212,8 +207,6 @@ If you want to learn more about building container images, please consult [Conta
 
 This project uses various Quarkus extensions, modules that run on top of a Quarkus application.
 You can list, add and remove the extensions using the `quarkus ext` command.
-
-> *NOTE: Please check the shared extensions introduced by the [sgv2-quarkus-common](https://github.com/stargate/stargate/blob/main/apis/sgv2-quarkus-common/README.md#shared-quarkus-extensions) project.
 
 ### `quarkus-arc`
 [Related guide](https://quarkus.io/guides/cdi-reference)

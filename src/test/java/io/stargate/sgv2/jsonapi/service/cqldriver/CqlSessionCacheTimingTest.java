@@ -12,20 +12,35 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@TestProfile(FixedTokenTimingTestProfile.class)
-public class CqlSessionCacheTimingTests {
+@TestProfile(CqlSessionCacheTimingTest.TestProfile.class)
+public class CqlSessionCacheTimingTest {
+  public static class TestProfile implements QuarkusTestProfile {
+    // Alas, we do need actual DB backend so cannot do:
+    // public boolean disableGlobalTestResources() { return true; }
+
+    @Override
+    public Map<String, String> getConfigOverrides() {
+      return Map.of(
+          "stargate.jsonapi.operations.database-config.fixed-token",
+          "test-token",
+          "stargate.jsonapi.operations.database-config.session-cache-ttl-seconds",
+          "10");
+    }
+  }
 
   @Inject OperationsConfig operationsConfig;
 

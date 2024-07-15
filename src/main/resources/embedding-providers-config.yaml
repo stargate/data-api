@@ -55,6 +55,7 @@ stargate:
               vector-dimension: 1536
         azureOpenAI:
           # see https://learn.microsoft.com/en-us/azure/ai-services/openai/reference
+          # see https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models
           display-name: Azure OpenAI
           enabled: true
           url: https://{resourceName}.openai.azure.com/openai/deployments/{deploymentId}/embeddings?api-version=2024-02-01

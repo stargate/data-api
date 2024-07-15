@@ -22,7 +22,6 @@ import com.datastax.oss.protocol.internal.response.result.ColumnSpec;
 import com.datastax.oss.protocol.internal.response.result.RawType;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import io.smallrye.faulttolerance.core.util.CompletionStages;
 import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import java.io.File;
@@ -32,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.cassandra.config.Config;
@@ -213,7 +213,7 @@ public class FileWriterSession implements CqlSession {
       this.cqlsSSTableWriter.addRow(boundValues);
       buffers.add(TypeCodecs.BOOLEAN.encode(Boolean.TRUE, ProtocolVersion.DEFAULT));
       CompletionStage<AsyncResultSet> resultSetCompletionStage =
-          CompletionStages.completedStage(
+          CompletableFuture.completedFuture(
               new FileWriterAsyncResultSet(
                   responseColumnDefinitions,
                   new FileWriterResponseRow(responseColumnDefinitions, 0, buffers)));
@@ -269,7 +269,7 @@ public class FileWriterSession implements CqlSession {
       throw new RuntimeException(e);
     }
     cqlSessionCache.removeSession(this.cacheKey);
-    return CompletionStages.completedStage(null);
+    return CompletableFuture.completedFuture(null);
   }
 
   @NonNull

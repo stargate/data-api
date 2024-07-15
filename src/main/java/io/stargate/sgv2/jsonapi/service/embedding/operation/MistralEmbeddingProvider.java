@@ -106,6 +106,8 @@ public class MistralEmbeddingProvider extends EmbeddingProvider {
       List<String> texts,
       Credentials credentials,
       EmbeddingRequestType embeddingRequestType) {
+    checkEmbeddingApiKeyHeader(providerId, credentials.apiKey());
+
     EmbeddingRequest request = new EmbeddingRequest(texts, modelName, "float");
 
     Uni<EmbeddingResponse> response =
