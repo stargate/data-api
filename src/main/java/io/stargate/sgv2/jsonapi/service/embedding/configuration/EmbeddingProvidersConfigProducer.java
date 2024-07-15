@@ -141,7 +141,9 @@ public class EmbeddingProvidersConfigProducer {
           new EmbeddingProvidersConfigImpl.EmbeddingProviderConfigImpl(
               grpcProviderConfig.getDisplayName(),
               grpcProviderConfig.getEnabled(),
-              Optional.of(grpcProviderConfig.getUrl()),
+              grpcProviderConfig.hasUrl()
+                  ? Optional.of(grpcProviderConfig.getUrl())
+                  : Optional.empty(),
               supportedAuthenticationsMap,
               providerParameterList,
               providerRequestProperties,
