@@ -13,13 +13,13 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.TruncateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.DeleteOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.TruncateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.IDCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.MapCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -74,7 +74,7 @@ public class DeleteManyCommandResolverTest {
                           assertThat(find.limit())
                               .isEqualTo(operationsConfig.maxDocumentDeleteCount() + 1);
                           assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
+                          assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
                           assertThat(
                                   find.logicalExpression()
                                       .comparisonExpressions
@@ -164,7 +164,7 @@ public class DeleteManyCommandResolverTest {
                           assertThat(find.limit())
                               .isEqualTo(operationsConfig.maxDocumentDeleteCount() + 1);
                           assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
+                          assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
                           assertThat(
                                   find.logicalExpression()
                                       .comparisonExpressions

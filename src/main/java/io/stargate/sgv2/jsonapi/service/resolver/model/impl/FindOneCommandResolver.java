@@ -11,8 +11,8 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
@@ -54,6 +54,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
   @Override
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindOneCommand command) {
+
     LogicalExpression logicalExpression = resolve(ctx, command);
     final SortClause sortClause = command.sortClause();
     // validate sort path
@@ -70,19 +71,21 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
       includeSimilarity = options.includeSimilarity();
       includeSortVector = options.includeSortVector();
     }
+    var indexUsage = ctx.schemaObject().newCollectionIndexUsage();
+    indexUsage.vectorIndexTag = vector != null;
     addToMetrics(
         meterRegistry,
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
         logicalExpression,
-        vector != null);
+        indexUsage);
     if (vector != null) {
       return FindOperation.vsearchSingle(
           ctx,
           logicalExpression,
           command.buildProjector(includeSimilarity),
-          ReadType.DOCUMENT,
+          CollectionReadType.DOCUMENT,
           objectMapper,
           vector,
           includeSortVector);
@@ -97,7 +100,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
           command.buildProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
-          ReadType.SORTED_DOCUMENT,
+          CollectionReadType.SORTED_DOCUMENT,
           objectMapper,
           orderBy,
           0,
@@ -110,7 +113,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
           ctx,
           logicalExpression,
           command.buildProjector(),
-          ReadType.DOCUMENT,
+          CollectionReadType.DOCUMENT,
           objectMapper,
           includeSortVector);
     }

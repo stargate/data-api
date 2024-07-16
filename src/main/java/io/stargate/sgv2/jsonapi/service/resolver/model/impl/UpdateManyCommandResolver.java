@@ -10,9 +10,9 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.ReadAndUpdateOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
@@ -83,8 +83,15 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
   private FindOperation getFindOperation(
       CommandContext<CollectionSchemaObject> ctx, UpdateManyCommand command) {
     LogicalExpression logicalExpression = resolve(ctx, command);
+
+    // TODO this did not track the vector usage, correct ?
     addToMetrics(
-        meterRegistry, dataApiRequestInfo, jsonApiMetricsConfig, command, logicalExpression, false);
+        meterRegistry,
+        dataApiRequestInfo,
+        jsonApiMetricsConfig,
+        command,
+        logicalExpression,
+        ctx.schemaObject().newIndexUsage());
     return FindOperation.unsorted(
         ctx,
         logicalExpression,
@@ -92,7 +99,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         null != command.options() ? command.options().pageState() : null,
         Integer.MAX_VALUE,
         operationsConfig.defaultPageSize(),
-        ReadType.DOCUMENT,
+        CollectionReadType.DOCUMENT,
         objectMapper,
         false);
   }

@@ -26,4 +26,11 @@ public abstract class SchemaObject {
    * @return
    */
   public abstract VectorConfig vectorConfig();
+
+  /**
+   * Call to get an instance of the appropriate {@link IndexUsage} for this schema object
+   *
+   * @return non null, IndexUsage instance
+   */
+  public abstract IndexUsage newIndexUsage();
 }

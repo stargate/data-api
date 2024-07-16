@@ -153,15 +153,16 @@ public class NamespaceCacheTest {
                                 new HashMap<>())));
               });
       NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
-      CollectionSchemaObject collectionSettings =
+      var schemaObject =
           namespaceCache
-              .getCollectionProperties(dataApiRequestInfo, "table")
+              .getSchemaObject(dataApiRequestInfo, "table")
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
 
-      assertThat(collectionSettings)
+      assertThat(schemaObject instanceof CollectionSchemaObject);
+      assertThat(schemaObject)
           .satisfies(
               s -> {
                 assertThat(s.vectorConfig().vectorEnabled()).isFalse();
@@ -283,15 +284,17 @@ public class NamespaceCacheTest {
                                 new HashMap<>())));
               });
       NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
-      CollectionSchemaObject collectionSettings =
+      var schemaObject =
           namespaceCache
-              .getCollectionProperties(dataApiRequestInfo, "table")
+              .getSchemaObject(dataApiRequestInfo, "table")
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
 
-      assertThat(collectionSettings)
+      assertThat(schemaObject instanceof CollectionSchemaObject);
+      var collectionSchemaObject = (CollectionSchemaObject) schemaObject;
+      assertThat(collectionSchemaObject)
           .satisfies(
               s -> {
                 assertThat(s.vectorConfig().vectorEnabled()).isFalse();
@@ -349,7 +352,7 @@ public class NamespaceCacheTest {
       NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
       Throwable error =
           namespaceCache
-              .getCollectionProperties(dataApiRequestInfo, "table")
+              .getSchemaObject(dataApiRequestInfo, "table")
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()

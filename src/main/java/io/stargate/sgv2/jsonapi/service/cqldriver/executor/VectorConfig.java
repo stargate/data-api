@@ -19,6 +19,7 @@ public record VectorConfig(
     VectorizeConfig vectorizeConfig) {
 
   // TODO: this is an immutable record, this can be singleton
+  // TODO: Remove the use of NULL for the objects like vectorizeConfig
   public static VectorConfig notEnabledVectorConfig() {
     return new VectorConfig(false, -1, null, null);
   }

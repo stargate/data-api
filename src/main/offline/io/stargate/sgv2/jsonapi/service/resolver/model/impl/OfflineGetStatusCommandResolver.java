@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineGetStatusCommand;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.OfflineGetStatusOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -17,7 +18,8 @@ public class OfflineGetStatusCommandResolver implements CommandResolver<OfflineG
   }
 
   @Override
-  public Operation resolveCollectionCommand(CommandContext<CollectionSchemaObject> ctx,  OfflineGetStatusCommand command) {
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, OfflineGetStatusCommand command) {
     return new OfflineGetStatusOperation(command.sessionId());
   }
 }

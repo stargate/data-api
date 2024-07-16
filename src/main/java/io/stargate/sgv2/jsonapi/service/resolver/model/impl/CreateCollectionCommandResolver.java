@@ -15,7 +15,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -152,6 +152,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     final ObjectNode collectionNode = objectMapper.createObjectNode();
     ObjectNode optionsNode = objectMapper.createObjectNode(); // For storing collection options.
 
+    // TODO: move this out of the command resolver, it is not a responsbility for this class
     if (hasIndexing) {
       optionsNode.putPOJO(TableCommentConstants.COLLECTION_INDEXING_KEY, indexing);
     }

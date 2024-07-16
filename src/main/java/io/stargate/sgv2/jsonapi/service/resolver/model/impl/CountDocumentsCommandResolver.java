@@ -8,8 +8,8 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CountOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -48,7 +48,12 @@ public class CountDocumentsCommandResolver extends FilterableResolver<CountDocum
       CommandContext<CollectionSchemaObject> ctx, CountDocumentsCommand command) {
     LogicalExpression logicalExpression = resolve(ctx, command);
     addToMetrics(
-        meterRegistry, dataApiRequestInfo, jsonApiMetricsConfig, command, logicalExpression, false);
+        meterRegistry,
+        dataApiRequestInfo,
+        jsonApiMetricsConfig,
+        command,
+        logicalExpression,
+        ctx.schemaObject().newIndexUsage());
 
     return new CountOperation(
         ctx,

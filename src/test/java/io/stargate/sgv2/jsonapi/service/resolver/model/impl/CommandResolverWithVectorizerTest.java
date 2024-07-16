@@ -32,13 +32,13 @@ import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.DeleteOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.InsertOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.ReadAndUpdateOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.MapCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
@@ -133,7 +133,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -226,7 +226,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.pageSize()).isEqualTo(1);
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.KEY);
+                          assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
                           assertThat(
                                   find.logicalExpression()
                                       .comparisonExpressions
@@ -309,7 +309,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.pageSize()).isEqualTo(1);
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
                                   find.logicalExpression()
                                       .comparisonExpressions
@@ -407,7 +407,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.pageSize()).isEqualTo(1);
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
                                   find.logicalExpression()
                                       .comparisonExpressions
@@ -494,7 +494,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.pageSize()).isEqualTo(1);
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
                                   find.logicalExpression()
                                       .comparisonExpressions
@@ -584,7 +584,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.pageSize()).isEqualTo(1);
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
                                   find.logicalExpression()
                                       .comparisonExpressions
@@ -642,7 +642,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(find.pageSize()).isEqualTo(1);
                 assertThat(find.limit()).isEqualTo(1);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isTrue();

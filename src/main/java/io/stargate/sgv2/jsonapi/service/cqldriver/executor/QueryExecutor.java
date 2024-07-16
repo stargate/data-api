@@ -257,6 +257,7 @@ public class QueryExecutor {
               .getKeyspaces()
               .get(CqlIdentifier.fromInternal(namespace));
     } catch (Exception e) {
+      // TODO: this ^^ is a very wide error catch, confirm what it should actually be catcing
       return Uni.createFrom().failure(e);
     }
     // if namespace does not exist, throw error
@@ -268,6 +269,7 @@ public class QueryExecutor {
                   "The provided namespace does not exist: " + namespace));
     }
     // else get the table
+    // TODO: this should probably use CqlIdentifier.fromCql() if we want to be case sensitive
     return Uni.createFrom().item(keyspaceMetadata.getTable("\"" + collectionName + "\""));
   }
 

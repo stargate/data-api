@@ -76,6 +76,23 @@ public final class CollectionSchemaObject extends SchemaObject {
     return vectorConfig;
   }
 
+  @Override
+  public IndexUsage newIndexUsage() {
+    return new CollectionIndexUsage();
+  }
+
+  /**
+   * Helper to avoid cast from the interface method because there are times we need to set
+   * properties on this immediately
+   *
+   * <p>Used in resolvers so they can set the vector tag for an ANN sort
+   *
+   * @return
+   */
+  public CollectionIndexUsage newCollectionIndexUsage() {
+    return new CollectionIndexUsage();
+  }
+
   public record IdConfig(IdType idType) {
     public static IdConfig defaultIdConfig() {
       return new IdConfig(IdType.UNDEFINED);
