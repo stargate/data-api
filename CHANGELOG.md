@@ -4,6 +4,13 @@
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.13...v1.0.14)
 
+**Highlights:**
+
+- Support AWS Bedrock Embedding Provider
+- Set lower default for Azure OpenAI model "text-embedding-3-large" to observed legal value
+- Content updates for form field displayName, hint, and help text
+- Error handling improvements
+
 **Closed issues:**
 
 - Improve error message when EGW timeout [\#1254](https://github.com/stargate/data-api/issues/1254)
