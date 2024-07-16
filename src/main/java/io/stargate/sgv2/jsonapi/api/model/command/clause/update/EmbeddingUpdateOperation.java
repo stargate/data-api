@@ -7,14 +7,16 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 
+/**
+ * This operation will be used to pass along $vectorize content and provides a method to update a
+ * document with new vector
+ *
+ * @param vectorizeContent, $vectorize content needed to be vectorized
+ */
 public record EmbeddingUpdateOperation(String vectorizeContent) {
-  //        UpdateOperation.UpdateOperationResult<? extends ActionWithLocator>
-  // updateDocument(ObjectNode doc, float[] vector)
 
   /**
-   * // TODO 一定会换的，因为我们已经知道 vectorize 有 diff了 , 而且你已经拿到vector array了
-   *
-   * <p>update the document with corresponding vector
+   * update the document with corresponding vector
    *
    * @param doc Document to update
    * @param dataVectorizer dataVectorizer
