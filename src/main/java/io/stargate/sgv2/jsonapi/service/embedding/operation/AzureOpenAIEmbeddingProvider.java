@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -16,7 +17,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -113,15 +113,16 @@ public class AzureOpenAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKey,
+      EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
-    checkEmbeddingApiKeyHeader(providerId, apiKey);
+    checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
     String[] textArray = new String[texts.size()];
     EmbeddingRequest request = new EmbeddingRequest(texts.toArray(textArray), modelName, dimension);
 
     // NOTE: NO "Bearer " prefix with API key for Azure OpenAI
     Uni<EmbeddingResponse> response =
-        applyRetry(openAIEmbeddingProviderClient.embed(apiKey.get(), request));
+        applyRetry(
+            openAIEmbeddingProviderClient.embed(embeddingCredentials.apiKey().get(), request));
 
     return response
         .onItem()

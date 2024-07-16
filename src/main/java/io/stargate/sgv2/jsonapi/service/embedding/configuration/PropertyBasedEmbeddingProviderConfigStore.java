@@ -30,7 +30,7 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
     return ServiceConfig.provider(
         serviceName,
         serviceName,
-        config.providers().get(serviceName).url().toString(),
+        config.providers().get(serviceName).url().orElse(null),
         RequestProperties.of(
             properties.atMostRetries(),
             properties.initialBackOffMillis(),

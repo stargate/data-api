@@ -2,10 +2,10 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class TestEmbeddingProvider extends EmbeddingProvider {
 
@@ -31,7 +31,7 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKey,
+      EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
     texts.forEach(

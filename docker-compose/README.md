@@ -19,6 +19,26 @@ You can control the platform using the `-Dquarkus.docker.buildx.platform=linux/a
 
 Follow instructions under the [Script options](#script-options) section to use the locally built image.
 
+### Resource requirements
+
+To run different set-ups, Docker runtime environment (like Docker Desktop) requires following resources:
+
+#### Memory: HCD (docker-compose-hcd.yml)
+
+HCD cluster only runs a single HCD node, requiring 3 gigabytes of memory.
+Data API requires additional 2 gigabyte of memory, if run (`-d` NOT specified):
+
+* 3 GB if running only HCD
+* 5 GB if running both HCD and Data API
+
+#### Memory: DSE-6.9 (docker-compose.yml)
+
+DSE-6.9 cluster runs 3 nodes, each requiring 2.5 gigabytes of memory.
+Data API requires additional 2 gigabyte of memory, if run (`-d` NOT specified):
+
+* 7.5 GB if running only DSE-6.9
+* 9.6 GB if running both DSE-6.9 and Data API
+
 ## Data API with HCD or DSE-6.9 cluster
 
 You can start a simple configuration with HCD with the following command:

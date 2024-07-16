@@ -13,6 +13,10 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
@@ -31,6 +35,8 @@ public class DataVectorizerTest {
   private final EmbeddingProvider testService = new TestEmbeddingProvider();
   private final CollectionSettings collectionSettings =
       TestEmbeddingProvider.commandContextWithVectorize.collectionSettings();
+  private final EmbeddingCredentials embeddingCredentials =
+      new EmbeddingCredentials(Optional.empty(), Optional.empty(), Optional.empty());
 
   @Nested
   public class TestTextValues {
@@ -43,7 +49,7 @@ public class DataVectorizerTest {
       }
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -70,7 +76,7 @@ public class DataVectorizerTest {
 
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -100,7 +106,7 @@ public class DataVectorizerTest {
 
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
       try {
         Throwable failure =
             dataVectorizer
@@ -129,7 +135,7 @@ public class DataVectorizerTest {
 
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
       try {
         dataVectorizer.vectorize(documents).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -152,7 +158,7 @@ public class DataVectorizerTest {
       documents.add(document);
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
       try {
         Throwable failure =
             dataVectorizer
@@ -180,7 +186,7 @@ public class DataVectorizerTest {
             public Uni<Response> vectorize(
                 int batchId,
                 List<String> texts,
-                Optional<String> apiKey,
+                EmbeddingCredentials embeddingCredentials,
                 EmbeddingRequestType embeddingRequestType) {
               List<float[]> customResponse = new ArrayList<>();
               texts.forEach(t -> customResponse.add(new float[] {0.5f, 0.5f, 0.5f}));
@@ -195,7 +201,10 @@ public class DataVectorizerTest {
       }
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testProvider, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+              testProvider,
+              objectMapper.getNodeFactory(),
+              embeddingCredentials,
+              collectionSettings);
 
       Throwable failure =
           dataVectorizer
@@ -233,7 +242,7 @@ public class DataVectorizerTest {
       }
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
 
       Throwable failure =
           dataVectorizer
@@ -262,7 +271,7 @@ public class DataVectorizerTest {
       SortClause sortClause = new SortClause(sortExpressions);
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
       try {
         dataVectorizer.vectorize(sortClause).subscribe().asCompletionStage().get();
       } catch (Exception e) {
@@ -285,7 +294,7 @@ public class DataVectorizerTest {
       arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
       try {
         final Boolean modified =
             dataVectorizer.vectorizeUpdateDocument(document).subscribe().asCompletionStage().get();
@@ -308,7 +317,7 @@ public class DataVectorizerTest {
       arrayNode.add(objectMapper.getNodeFactory().numberNode(0.11f));
       DataVectorizer dataVectorizer =
           new DataVectorizer(
-              testService, objectMapper.getNodeFactory(), Optional.empty(), collectionSettings);
+              testService, objectMapper.getNodeFactory(), embeddingCredentials, collectionSettings);
       try {
         final Boolean modified =
             dataVectorizer.vectorizeUpdateDocument(document).subscribe().asCompletionStage().get();
