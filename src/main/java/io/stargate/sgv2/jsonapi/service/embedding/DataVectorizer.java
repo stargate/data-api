@@ -9,8 +9,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -157,45 +155,19 @@ public class DataVectorizer {
   }
 
   /**
-   * This method will be used by documentUpdater(updateOne, updateMany, findOneAndUpdate,
-   * findOneAndReplace) Since we need to vectorize on demand, so vectorization for updateCommands
-   * will postpone and move into ReadAndUpdateOperation.
+   * This method will be used to vectorize the $vectorize string content vectorizeContent must be
+   * not null and not blank text
    *
-   * @param document - Document to be vectorized
-   * @return Uni<Boolean> - have modified the document or not
+   * @param vectorizeContent - vectorize string to be vectorized
+   * @return Uni<float[]> - result vector float array
    */
-  public Uni<Boolean> vectorizeUpdateDocument(JsonNode document) {
-    if (!document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-      return Uni.createFrom().item(false);
-    }
-    final JsonNode jsonNode = document.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
-    // $vectorize as null value, also update $vector as null, modified
-    if (jsonNode.isNull()) {
-      ((ObjectNode) document).put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
-      return Uni.createFrom().item(true);
-    }
-    // $vectorize is not textual value
-    if (!jsonNode.isTextual()) {
-      throw ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.toApiException();
-    }
-    String vectorizeData = jsonNode.asText();
-    // $vectorize is blank text value, set $vector as null value, modified
-    if (vectorizeData.isBlank()) {
-      ((ObjectNode) document).put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
-      return Uni.createFrom().item(true);
-    }
-
-    // $vectorize is textual and not blank, going to vectorize it
-    if (embeddingProvider == null) {
-      throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-          collectionSettings.collectionName());
-    }
+  public Uni<float[]> vectorize(String vectorizeContent) {
     Uni<List<float[]>> vectors =
         embeddingProvider
             .vectorize(
                 1,
-                List.of(vectorizeData),
-                    embeddingCredentials,
+                List.of(vectorizeContent),
+                embeddingCredentials,
                 EmbeddingProvider.EmbeddingRequestType.INDEX)
             .map(EmbeddingProvider.Response::embeddings);
     return vectors
@@ -211,13 +183,7 @@ public class DataVectorizer {
                     collectionSettings.vectorConfig().vectorSize(),
                     vector.length);
               }
-              final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
-              for (float listValue : vector) {
-                arrayNode.add(nodeFactory.numberNode(listValue));
-              }
-              ((ObjectNode) document)
-                  .put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, arrayNode);
-              return true;
+              return vector;
             });
   }
 
@@ -243,7 +209,7 @@ public class DataVectorizer {
                 .vectorize(
                     1,
                     List.of(text),
-                        embeddingCredentials,
+                    embeddingCredentials,
                     EmbeddingProvider.EmbeddingRequestType.SEARCH)
                 .map(res -> res.embeddings());
         return vectors

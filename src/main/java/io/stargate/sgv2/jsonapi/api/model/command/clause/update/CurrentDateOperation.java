@@ -52,7 +52,7 @@ public class CurrentDateOperation extends UpdateOperation<CurrentDateOperation.A
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public UpdateOperationResult updateDocument(ObjectNode doc) {
     boolean modified = false;
     final long now = System.currentTimeMillis();
     ObjectNode newValue = JsonUtil.createEJSonDate(doc, now);
@@ -66,7 +66,7 @@ public class CurrentDateOperation extends UpdateOperation<CurrentDateOperation.A
         modified = true;
       }
     }
-    return modified;
+    return new UpdateOperationResult(modified, null);
   }
 
   record Action(PathMatchLocator locator) implements ActionWithLocator {}

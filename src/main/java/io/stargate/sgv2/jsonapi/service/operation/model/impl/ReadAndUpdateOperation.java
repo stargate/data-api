@@ -25,8 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
- * This operation method is used for 4 commands findOneAndUpdate, findOneAndReplace, updateOne and
- * updateMany
+ * This operation method is used for 3 commands findOneAndUpdate, updateOne and updateMany
  *
  * @param commandContext
  * @param findOperation
@@ -72,7 +71,7 @@ public record ReadAndUpdateOperation(
             findResponse -> {
               pageStateReference.set(findResponse.pageState());
               final List<ReadDocument> docs = findResponse.docs();
-              if (upsert() && docs.isEmpty() && matchedCount.get() == 0) {
+              if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
                 return Multi.createFrom().item(findOperation().getNewDocument());
               } else {
                 matchedCount.addAndGet(docs.size());
@@ -129,7 +128,6 @@ public record ReadAndUpdateOperation(
                   .jsonProcessingMetricsReporter()
                   .reportJsonWrittenDocsMetrics(
                       commandContext().commandName(), modifiedCount.get());
-
               return new UpdateOperationPage(
                   matchedCount.get(),
                   modifiedCount.get(),
@@ -146,44 +144,32 @@ public record ReadAndUpdateOperation(
       AtomicInteger modifiedCount) {
     return Uni.createFrom()
         .item(document)
+
+        // perform update operation and save only if data is modified.
         .flatMap(
             readDocument -> {
-              // if there is no document: return null item
+              // if there is no document return null item
               if (readDocument == null) {
                 return Uni.createFrom().nullItem();
               }
+
               // upsert if we have no transaction if before
               boolean upsert = readDocument.txnId() == null;
               JsonNode originalDocument = upsert ? null : readDocument.document();
 
-              // apply document updates: if no changes return null item
-              // First update, will not vectorize
-              DocumentUpdater.DocumentUpdaterResponse firstDocumentUpdaterResponse =
+              DocumentUpdater.DocumentUpdaterResponse documentUpdaterResponse =
                   documentUpdater().apply(readDocument.document().deepCopy(), upsert);
-              // Second update, will vectorize on demand and update $vectorize and $vector
-              // accordingly
+
               final DataVectorizer dataVectorizer =
                   dataVectorizerService.constructDataVectorizer(dataApiRequestInfo, commandContext);
-              return documentUpdater()
-                  .applyUpdateVectorize(
-                      firstDocumentUpdaterResponse.document(), upsert, dataVectorizer)
+              return documentUpdater
+                  .updateEmbeddingVector(documentUpdaterResponse, dataVectorizer)
                   .onItem()
                   .transformToUni(
-                      secondDocumentUpdaterResponse -> {
-                        // Need to combine two modified result here
-                        return Uni.createFrom()
-                            .item(
-                                new DocumentUpdater.DocumentUpdaterResponse(
-                                    secondDocumentUpdaterResponse.document(),
-                                    firstDocumentUpdaterResponse.modified()
-                                        | secondDocumentUpdaterResponse.modified()));
-                      })
-                  .onItem()
-                  .transformToUni(
-                      combinedUpdaterResponse -> {
+                      vectorizedDocumentUpdaterResponse -> {
                         // In case no change to document and not an upsert document, short circuit
                         // and return
-                        if (!combinedUpdaterResponse.modified() && !upsert) {
+                        if (!vectorizedDocumentUpdaterResponse.modified() && !upsert) {
                           // If no change return the original document Issue #390
                           if (returnDocumentInResponse) {
                             resultProjection.applyProjection(originalDocument);
@@ -200,7 +186,7 @@ public record ReadAndUpdateOperation(
                             shredder()
                                 .shred(
                                     commandContext(),
-                                    combinedUpdaterResponse.document(),
+                                    vectorizedDocumentUpdaterResponse.document(),
                                     readDocument.txnId());
 
                         // Have to do this because shredder adds _id field to the document if it
@@ -216,17 +202,16 @@ public record ReadAndUpdateOperation(
                             .transform(
                                 v -> {
                                   // if not insert increment modified count
-                                  if (!upsert) {
-                                    modifiedCount.incrementAndGet();
-                                  }
+                                  if (!upsert) modifiedCount.incrementAndGet();
 
                                   // resolve doc to return
                                   JsonNode documentToReturn = null;
                                   if (returnDocumentInResponse) {
                                     documentToReturn =
                                         returnUpdatedDocument ? updatedDocument : originalDocument;
-                                    // operations (findOneAndUpdate) define projection to apply to
-                                    // result
+                                    // Some operations (findOneAndUpdate) define projection to apply
+                                    // to
+                                    // result:
                                     if (documentToReturn != null) { // null for some Operation tests
                                       resultProjection.applyProjection(documentToReturn);
                                     }

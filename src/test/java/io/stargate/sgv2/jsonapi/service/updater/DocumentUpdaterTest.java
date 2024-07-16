@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.updater;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -535,28 +536,27 @@ public class DocumentUpdaterTest {
         TestEmbeddingProvider.commandContextWithVectorize.collectionSettings();
 
     @Test
-    public void two_levels_update() throws Exception {
-      // First level update will skip $vectorize for setOperation
-      // vectorization will be done in second level
+    public void updateVectorize() throws Exception {
       String updateVectorizeData =
           """
-                                {"$vectorize" : "Beijing is a big city", "location" : "Beijing City"}
-                                """;
+                          {"$vectorize" : "Beijing is a big city", "location" : "Beijing City"}
+                          """;
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
 
-      String expected_level_1 =
+      String expected1 =
           """
-                          {
-                              "_id": "1",
-                              "location": "Beijing City"
-                          }
-                        """;
+                            {
+                                "_id": "1",
+                                "location": "Beijing City",
+                                "$vectorize": "Beijing is a big city"
+                            }
+                          """;
 
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON); // location as London
-      JsonNode expectedData1 = objectMapper.readTree(expected_level_1);
+      JsonNode expectedData1 = objectMapper.readTree(expected1);
       DocumentUpdater.DocumentUpdaterResponse firstResponse =
           documentUpdater.apply(baseData, false);
       assertThat(firstResponse)
@@ -565,20 +565,23 @@ public class DocumentUpdaterTest {
               firstResponseNode -> {
                 assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
                 assertThat(firstResponseNode.modified()).isEqualTo(true); // modified location
+                assertThat(firstResponseNode.embeddingUpdateOperation()).isNotNull();
+                assertThat(firstResponseNode.embeddingUpdateOperation().vectorizeContent())
+                    .isEqualTo("Beijing is a big city");
               });
 
-      // Second level update will vectorize in setOperation
+      // Second update will vectorize
       DataVectorizer dataVectorizer =
           new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
       final DocumentUpdater.DocumentUpdaterResponse secondResponse =
           documentUpdater
-              .applyUpdateVectorize(firstResponse.document(), false, dataVectorizer)
+              .updateEmbeddingVector(firstResponse, dataVectorizer)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
 
-      String expected_level_2 =
+      String expected2 =
           """
                           {
                               "_id":"1",
@@ -587,7 +590,7 @@ public class DocumentUpdaterTest {
                               "$vector": [0.25,0.25,0.25]
                           }
                           """;
-      JsonNode expectedData2 = objectMapper.readTree(expected_level_2);
+      JsonNode expectedData2 = objectMapper.readTree(expected2);
       assertThat(secondResponse)
           .isNotNull()
           .satisfies(
@@ -596,34 +599,31 @@ public class DocumentUpdaterTest {
                     .usingRecursiveComparison()
                     .ignoringFields("order")
                     .isEqualTo(expectedData2);
-                assertThat(secondResponseNode.modified())
-                    .isEqualTo(true); // modified $vectorize and $vector
+                assertThat(secondResponseNode.modified()).isEqualTo(true); // modified $vector
               });
     }
 
     @Test
-    public void not_modified_for_first_update() throws Exception {
-      // First level update will skip $vectorize for setOperation
-      // vectorization will be done in second level
+    public void update_noVectorize() throws Exception {
       String updateVectorizeData =
           """
-                                  {"$vectorize" : "Beijing is a big city"}
-                                  """;
+                          {"location" : "Beijing City"}
+                          """;
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
 
-      String expected_level_1 =
+      String expected1 =
           """
-                      {
-                          "_id": "1",
-                          "location": "London"
-                      }
-                    """;
+                            {
+                                "_id": "1",
+                                "location": "Beijing City"
+                            }
+                          """;
 
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON); // location as London
-      JsonNode expectedData1 = objectMapper.readTree(expected_level_1);
+      JsonNode expectedData1 = objectMapper.readTree(expected1);
       DocumentUpdater.DocumentUpdaterResponse firstResponse =
           documentUpdater.apply(baseData, false);
       assertThat(firstResponse)
@@ -631,135 +631,67 @@ public class DocumentUpdaterTest {
           .satisfies(
               firstResponseNode -> {
                 assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
-                assertThat(firstResponseNode.modified())
-                    .isEqualTo(false); // location is not modified
-              });
-
-      // Second level update will vectorize in setOperation
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
-      final DocumentUpdater.DocumentUpdaterResponse secondResponse =
-          documentUpdater
-              .applyUpdateVectorize(firstResponse.document(), false, dataVectorizer)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-
-      String expected_level_2 =
-          """
-                      {
-                          "_id":"1",
-                          "location": "London",
-                          "$vectorize" : "Beijing is a big city",
-                          "$vector": [0.25,0.25,0.25]
-                      }
-                      """;
-      JsonNode expectedData2 = objectMapper.readTree(expected_level_2);
-      assertThat(secondResponse)
-          .isNotNull()
-          .satisfies(
-              secondResponseNode -> {
-                assertThat(secondResponseNode.document())
-                    .usingRecursiveComparison()
-                    .ignoringFields("order")
-                    .isEqualTo(expectedData2);
-                assertThat(secondResponseNode.modified())
-                    .isEqualTo(true); // modified $vectorize and $vector
+                assertThat(firstResponseNode.modified()).isEqualTo(true); // modified location
+                assertThat(firstResponseNode.embeddingUpdateOperation()).isNull(); // should be null
               });
     }
 
     @Test
-    public void update_vector_at_first_level() throws Exception {
+    public void update_notModified() throws Exception {
       String updateVectorizeData =
           """
-                                  {"$vectorize" : "Beijing is a big city", "$vector" : [0.2,0.4,0.5]}
-                                  """;
+                          {"location" : "London"}
+                          """;
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
                   UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
-      String expected_level_1 =
+
+      String expected1 =
           """
-                      {
-                          "_id": "1",
-                          "location": "London",
-                          "$vector": [0.2,0.4,0.5]
-                      }
-                    """;
+                            {
+                                "_id": "1",
+                                "location": "London"
+                            }
+                          """;
 
       JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON); // location as London
-      JsonNode expectedData1 = objectMapper.readTree(expected_level_1);
+      JsonNode expectedData1 = objectMapper.readTree(expected1);
       DocumentUpdater.DocumentUpdaterResponse firstResponse =
           documentUpdater.apply(baseData, false);
       assertThat(firstResponse)
           .isNotNull()
           .satisfies(
               firstResponseNode -> {
-                assertThat(firstResponseNode.document())
-                    .usingRecursiveComparison()
-                    .ignoringFields("order")
-                    .isEqualTo(expectedData1);
-                assertThat(firstResponseNode.modified()).isEqualTo(true); // vector is modified
-              });
-
-      // Second level update will vectorize in setOperation
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
-      final DocumentUpdater.DocumentUpdaterResponse secondResponse =
-          documentUpdater
-              .applyUpdateVectorize(firstResponse.document(), false, dataVectorizer)
-              .subscribe()
-              .withSubscriber(UniAssertSubscriber.create())
-              .awaitItem()
-              .getItem();
-
-      String expected_level_2 =
-          """
-                      {
-                          "_id":"1",
-                          "location": "London",
-                          "$vectorize" : "Beijing is a big city",
-                          "$vector": [0.25,0.25,0.25]
-                      }
-                      """;
-      JsonNode expectedData2 = objectMapper.readTree(expected_level_2);
-      assertThat(secondResponse)
-          .isNotNull()
-          .satisfies(
-              secondResponseNode -> {
-                assertThat(secondResponseNode.document())
-                    .usingRecursiveComparison()
-                    .ignoringFields("order")
-                    .isEqualTo(expectedData2);
-                assertThat(secondResponseNode.modified())
-                    .isEqualTo(true); // modified $vectorize and $vector
+                assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
+                assertThat(firstResponseNode.modified()).isEqualTo(false); // not modified
+                assertThat(firstResponseNode.embeddingUpdateOperation()).isNull(); // should be null
               });
     }
 
     @Test
-    public void two_levels_update_unset() throws Exception {
+    public void update_notModifiedVectorize() throws Exception {
       String updateVectorizeData =
           """
-                                        {"$vectorize" : "Beijing is a big city", "location" : "London"}
-                                        """;
+                          {"location" : "London", "$vectorize": "London City"}
+                          """;
       DocumentUpdater documentUpdater =
           DocumentUpdater.construct(
               DocumentUpdaterUtils.updateClause(
-                  UpdateOperator.UNSET,
-                  (ObjectNode)
-                      objectMapper.readTree(
-                          updateVectorizeData))); // will unset $vectorize, $vector and location
+                  UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
 
-      String expected_level_1 =
+      String expected1 =
           """
-                                  {
-                                      "_id": "1"
-                                  }
+                          {
+                                "_id": "1",
+                                "location": "London",
+                                "$vector": [0.11, 0.22, 0.33],
+                                "$vectorize": "London City"
+                            }
                                 """;
 
-      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR);
-      JsonNode expectedData1 = objectMapper.readTree(expected_level_1);
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR); // location as London
+      JsonNode expectedData1 = objectMapper.readTree(expected1);
       DocumentUpdater.DocumentUpdaterResponse firstResponse =
           documentUpdater.apply(baseData, false);
       assertThat(firstResponse)
@@ -768,28 +700,100 @@ public class DocumentUpdaterTest {
               firstResponseNode -> {
                 assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
                 assertThat(firstResponseNode.modified())
-                    .isEqualTo(true); // modified $vectorize, $vector and location
+                    .isEqualTo(false); // $vectorize has no diff, not modified
+                assertThat(firstResponseNode.embeddingUpdateOperation()).isNull(); // should be null
               });
+    }
 
-      // Second level update will try to vectorize, in this test case, will do nothing, since there
-      // is no setOperation
+    @Test
+    public void update_modifiedVector() throws Exception {
+      String updateVectorizeData =
+          """
+                          {"location" : "London", "$vector": [0.1,0.5,0.3]}
+                          """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
+
+      String expected1 =
+          """
+                          {
+                                "_id": "1",
+                                "location": "London",
+                                "$vector": [0.1,0.5,0.3]
+                            }
+                                """;
+
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR); // location as London
+      JsonNode expectedData1 = objectMapper.readTree(expected1);
+      DocumentUpdater.DocumentUpdaterResponse firstResponse =
+          documentUpdater.apply(baseData, false);
+      assertThat(firstResponse)
+          .isNotNull()
+          .satisfies(
+              firstResponseNode -> {
+                assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
+                assertThat(firstResponseNode.modified())
+                    .isEqualTo(true); // $vector is updated, $vectorize is not
+                assertThat(firstResponseNode.embeddingUpdateOperation()).isNull(); // should be null
+              });
+    }
+
+    @Test
+    public void update_vectorizeOverwriteVector() throws Exception {
+      String updateVectorizeData =
+          """
+                          {"location" : "London", "$vector": [0.1,0.9,0.6], "$vectorize":"London is rainy"}
+                          """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
+
+      String expected1 =
+          """
+                          {
+                                "_id": "1",
+                                "location": "London",
+                                "$vector": [0.1,0.9,0.6],
+                                "$vectorize": "London is rainy"
+                            }
+                                """;
+
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR); // location as London
+      JsonNode expectedData1 = objectMapper.readTree(expected1);
+      DocumentUpdater.DocumentUpdaterResponse firstResponse =
+          documentUpdater.apply(baseData, false);
+      assertThat(firstResponse)
+          .isNotNull()
+          .satisfies(
+              firstResponseNode -> {
+                assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
+                assertThat(firstResponseNode.modified())
+                    .isEqualTo(true); // $vector is updated but not overwrite, $vectorize is updated
+                assertThat(firstResponseNode.embeddingUpdateOperation()).isNotNull(); // not null
+              });
+      // Second update will vectorize and overwrite $vector
       DataVectorizer dataVectorizer =
           new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
       final DocumentUpdater.DocumentUpdaterResponse secondResponse =
           documentUpdater
-              .applyUpdateVectorize(firstResponse.document(), false, dataVectorizer)
+              .updateEmbeddingVector(firstResponse, dataVectorizer)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
-
-      String expected_level_2 =
+      String expected2 =
           """
-                                  {
-                                      "_id":"1"
-                                  }
-                                  """;
-      JsonNode expectedData2 = objectMapper.readTree(expected_level_2);
+                          {
+                                "_id": "1",
+                                "location": "London",
+                                "$vector": [0.25,0.25,0.25],
+                                "$vectorize": "London is rainy1"
+                          }
+                          """;
+      JsonNode expectedData2 = objectMapper.readTree(expected2);
       assertThat(secondResponse)
           .isNotNull()
           .satisfies(
@@ -798,7 +802,428 @@ public class DocumentUpdaterTest {
                     .usingRecursiveComparison()
                     .ignoringFields("order")
                     .isEqualTo(expectedData2);
-                assertThat(secondResponseNode.modified()).isEqualTo(false); // nothing is modified
+                assertThat(secondResponseNode.modified()).isEqualTo(true);
+              });
+    }
+
+    @Test
+    public void update_vectorizeBlank() throws JsonProcessingException {
+
+      String updateVectorizeData =
+          """
+                          {"location" : "London", "$vectorize":""}
+                          """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
+
+      String expected1 =
+          """
+                          {
+                                "_id": "1",
+                                "location": "London",
+                                "$vector": null,
+                                "$vectorize": ""
+                            }
+                                """;
+
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR); // location as London
+      JsonNode expectedData1 = objectMapper.readTree(expected1);
+      DocumentUpdater.DocumentUpdaterResponse firstResponse =
+          documentUpdater.apply(baseData, false);
+      assertThat(firstResponse)
+          .isNotNull()
+          .satisfies(
+              firstResponseNode -> {
+                assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
+                assertThat(firstResponseNode.modified())
+                    .isEqualTo(true); // $vector is updated , $vectorize is updated
+                assertThat(firstResponseNode.embeddingUpdateOperation()).isNull();
+              });
+    }
+
+    @Test
+    public void update_vectorizeNullValue() throws JsonProcessingException {
+
+      String updateVectorizeData =
+          """
+                          {"location" : "London", "$vectorize":null}
+                          """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
+
+      String expected1 =
+          """
+                          {
+                                "_id": "1",
+                                "location": "London",
+                                "$vector": null,
+                                "$vectorize": null
+                            }
+                                """;
+
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR); // location as London
+      JsonNode expectedData1 = objectMapper.readTree(expected1);
+      DocumentUpdater.DocumentUpdaterResponse firstResponse =
+          documentUpdater.apply(baseData, false);
+      assertThat(firstResponse)
+          .isNotNull()
+          .satisfies(
+              firstResponseNode -> {
+                assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
+                assertThat(firstResponseNode.modified())
+                    .isEqualTo(true); // $vector is updated , $vectorize is updated
+                assertThat(firstResponseNode.embeddingUpdateOperation()).isNull();
+              });
+    }
+
+    @Test
+    public void update_vectorizeNonTextualFailure() throws JsonProcessingException {
+
+      String updateVectorizeData =
+          """
+                          {"location" : "London", "$vectorize":123}
+                          """;
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              DocumentUpdaterUtils.updateClause(
+                  UpdateOperator.SET, (ObjectNode) objectMapper.readTree(updateVectorizeData)));
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR); // location as London
+
+      Throwable failure =
+          catchThrowable(
+              () -> {
+                DocumentUpdater.DocumentUpdaterResponse firstResponse =
+                    documentUpdater.apply(baseData, false);
+              });
+      assertThat(failure)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_VECTORIZE_VALUE_TYPE)
+          .hasFieldOrPropertyWithValue("message", "$vectorize value needs to be text value");
+    }
+  }
+
+  @Nested
+  class replaceVectorizeTest {
+
+    private final EmbeddingProvider testService = new TestEmbeddingProvider();
+    private final CollectionSettings collectionSettings =
+        TestEmbeddingProvider.commandContextWithVectorize.collectionSettings();
+
+    @Test
+    public void replaceDocument() throws Exception {
+      String expected1 =
+          """
+                      {
+                          "_id": "1",
+                          "$vectorize" : "random text"
+                      }
+                    """;
+
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON);
+      JsonNode expectedData = objectMapper.readTree(expected1);
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              (ObjectNode)
+                  objectMapper.readTree(
+                      """
+                                                {
+                          "$vectorize" : "random text"
+                                                      }
+                                                                        """));
+      DocumentUpdater.DocumentUpdaterResponse updatedDocument =
+          documentUpdater.apply(baseData, false);
+      assertThat(updatedDocument)
+          .isNotNull()
+          .satisfies(
+              node -> {
+                assertThat(node.document()).isEqualTo(expectedData);
+                assertThat(node.embeddingUpdateOperation()).isNotNull();
+
+                assertThat(node.modified()).isEqualTo(true);
+              });
+
+      // Second update will vectorize
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
+      final DocumentUpdater.DocumentUpdaterResponse secondResponse =
+          documentUpdater
+              .updateEmbeddingVector(updatedDocument, dataVectorizer)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      String expected2 =
+          """
+                                          {
+                                                   "_id": "1",
+                                "$vectorize" : "random text",
+                                "$vector": [0.25,0.25,0.25]
+                                          }
+                                          """;
+      JsonNode expectedData2 = objectMapper.readTree(expected2);
+      assertThat(secondResponse)
+          .isNotNull()
+          .satisfies(
+              secondResponseNode -> {
+                assertThat(secondResponseNode.document())
+                    .usingRecursiveComparison()
+                    .ignoringFields("order")
+                    .isEqualTo(expectedData2);
+                assertThat(secondResponseNode.modified()).isEqualTo(true);
+                // modified $vector
+              });
+    }
+
+    @Test
+    public void replaceDocument_only_replace_vector() throws Exception {
+      String expected1 =
+          """
+                            {
+                                "_id": "1",
+                                "$vector": [0.2,0.5,0.7]
+                            }
+                            """;
+
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR);
+      JsonNode expectedData = objectMapper.readTree(expected1);
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              (ObjectNode)
+                  objectMapper.readTree(
+                      """
+                                                                    {
+                                "$vector": [0.2,0.5,0.7]
+                                                                          }
+                                                                                            """));
+      DocumentUpdater.DocumentUpdaterResponse updatedDocument =
+          documentUpdater.apply(baseData, false);
+      assertThat(updatedDocument)
+          .isNotNull()
+          .satisfies(
+              node -> {
+                assertThat(node.document()).isEqualTo(expectedData);
+                assertThat(node.embeddingUpdateOperation()).isNull();
+                assertThat(node.modified()).isEqualTo(true);
+              });
+    }
+
+    @Test
+    public void replaceDocument_vectorizeBlankTest() throws Exception {
+      String expected1 =
+          """
+                            {
+                                "_id": "1",
+                                "$vectorize": "",
+                                "$vector":null
+                            }
+                            """;
+
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR);
+      JsonNode expectedData = objectMapper.readTree(expected1);
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              (ObjectNode)
+                  objectMapper.readTree(
+                      """
+                                            {
+                                             "$vectorize": ""
+                                              }
+                                                   """));
+      DocumentUpdater.DocumentUpdaterResponse updatedDocument =
+          documentUpdater.apply(baseData, false);
+      assertThat(updatedDocument)
+          .isNotNull()
+          .satisfies(
+              node -> {
+                assertThat(node.document()).isEqualTo(expectedData);
+                assertThat(node.embeddingUpdateOperation()).isNull();
+                assertThat(node.modified()).isEqualTo(true);
+              });
+    }
+
+    @Test
+    public void replaceDocument_vectorizeNonTextFailure() throws Exception {
+      String expected1 =
+          """
+                            {
+                                "_id": "1",
+                                "$vectorize": "",
+                                "$vector":null
+                            }
+                            """;
+
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR);
+      JsonNode expectedData = objectMapper.readTree(expected1);
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              (ObjectNode)
+                  objectMapper.readTree(
+                      """
+                                            {
+                                             "$vectorize": 123
+                                              }
+                                                   """));
+      Throwable failure =
+          catchThrowable(
+              () -> {
+                DocumentUpdater.DocumentUpdaterResponse firstResponse =
+                    documentUpdater.apply(baseData, false);
+              });
+      assertThat(failure)
+          .isInstanceOf(JsonApiException.class)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_VECTORIZE_VALUE_TYPE)
+          .hasFieldOrPropertyWithValue("message", "$vectorize value needs to be text value");
+    }
+
+    @Test
+    public void replaceDocument_vectorizeNullValue() throws Exception {
+      String expected1 =
+          """
+                            {
+                                "_id": "1",
+                                "$vectorize": null,
+                                "$vector":null
+                            }
+                            """;
+
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR);
+      JsonNode expectedData = objectMapper.readTree(expected1);
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              (ObjectNode)
+                  objectMapper.readTree(
+                      """
+                                            {
+                                             "$vectorize": null
+                                              }
+                                                   """));
+      DocumentUpdater.DocumentUpdaterResponse updatedDocument =
+          documentUpdater.apply(baseData, false);
+      assertThat(updatedDocument)
+          .isNotNull()
+          .satisfies(
+              node -> {
+                assertThat(node.document()).isEqualTo(expectedData);
+                assertThat(node.embeddingUpdateOperation()).isNull();
+                assertThat(node.modified()).isEqualTo(true);
+              });
+    }
+
+    @Test
+    public void replaceDocument_allNull() throws Exception {
+      String expected1 =
+          """
+                            {
+                                "_id": "123",
+                                "$vectorize": null,
+                                "$vector":null
+                            }
+                            """;
+
+      String allNull =
+          """
+                      {
+                          "_id": "123",
+                          "$vectorize": null,
+                          "$vector":null
+                      }
+          """;
+
+      JsonNode baseData = objectMapper.readTree(allNull);
+      JsonNode expectedData = objectMapper.readTree(expected1);
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              (ObjectNode)
+                  objectMapper.readTree(
+                      """
+                                            {
+                                             "$vectorize": null
+                                              }
+                                                   """));
+      DocumentUpdater.DocumentUpdaterResponse updatedDocument =
+          documentUpdater.apply(baseData, false);
+      assertThat(updatedDocument)
+          .isNotNull()
+          .satisfies(
+              node -> {
+                assertThat(node.document()).isEqualTo(expectedData);
+                assertThat(node.embeddingUpdateOperation()).isNull();
+                assertThat(node.modified()).isEqualTo(false); // identical, so not modified
+              });
+    }
+
+    @Test
+    public void replaceDocument_willVectorizeEvenVectorizeHasNoDiff() throws Exception {
+      String expected1 =
+          """
+                                    {
+                                        "_id": "1",
+                                        "location": "London",
+                                        "$vectorize": "London City"
+                                    }
+                                    """;
+
+      JsonNode baseData = objectMapper.readTree(BASE_DOC_JSON_VECTOR);
+      JsonNode expectedData = objectMapper.readTree(expected1);
+      DocumentUpdater documentUpdater =
+          DocumentUpdater.construct(
+              (ObjectNode)
+                  objectMapper.readTree(
+                      """
+                                          {
+                                          "$vectorize": "London City",
+                                          "location": "London"
+                                                                  }
+                                                                       """));
+      DocumentUpdater.DocumentUpdaterResponse updatedDocument =
+          documentUpdater.apply(baseData, false);
+      assertThat(updatedDocument)
+          .isNotNull()
+          .satisfies(
+              node -> {
+                assertThat(node.document()).isEqualTo(expectedData);
+                assertThat(node.embeddingUpdateOperation()).isNotNull(); // need to re-vectorize
+                assertThat(node.modified())
+                    .isEqualTo(
+                        true); // not identical, because there is no $vector in replaceDocument
+              });
+
+      // Second update will vectorize
+      DataVectorizer dataVectorizer =
+          new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
+      final DocumentUpdater.DocumentUpdaterResponse secondResponse =
+          documentUpdater
+              .updateEmbeddingVector(updatedDocument, dataVectorizer)
+              .subscribe()
+              .withSubscriber(UniAssertSubscriber.create())
+              .awaitItem()
+              .getItem();
+
+      String expected2 =
+          """
+                                                  {
+                                       "_id": "1",
+                                        "location": "London",
+                                        "$vectorize": "London City",
+                                        "$vector": [0.25,0.25,0.25]
+                                                  }
+                                                  """;
+      JsonNode expectedData2 = objectMapper.readTree(expected2);
+      assertThat(secondResponse)
+          .isNotNull()
+          .satisfies(
+              secondResponseNode -> {
+                assertThat(secondResponseNode.document())
+                    .usingRecursiveComparison()
+                    .ignoringFields("order")
+                    .isEqualTo(expectedData2);
+                assertThat(secondResponseNode.modified()).isEqualTo(true);
+                // modified $vector
               });
     }
   }

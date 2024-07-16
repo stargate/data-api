@@ -30,7 +30,7 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
    * @param doc Document to apply operation to
    * @return True if document was modified by operation; false if not.
    */
-  public abstract boolean updateDocument(ObjectNode doc);
+  public abstract UpdateOperationResult updateDocument(ObjectNode doc);
 
   /**
    * Method called to see if update operator should be applied for specific kind of update:
@@ -110,4 +110,7 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
       return o1.path().compareTo(o2.path());
     }
   }
+
+  public record UpdateOperationResult(
+      boolean modified, EmbeddingUpdateOperation embeddingUpdateOperation) {}
 }

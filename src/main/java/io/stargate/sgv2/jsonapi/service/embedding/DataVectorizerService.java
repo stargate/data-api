@@ -70,7 +70,7 @@ public class DataVectorizerService {
     return new DataVectorizer(
         embeddingProvider,
         objectMapper.getNodeFactory(),
-            dataApiRequestInfo.getEmbeddingCredentials(),
+        dataApiRequestInfo.getEmbeddingCredentials(),
         commandContext.collectionSettings());
   }
 

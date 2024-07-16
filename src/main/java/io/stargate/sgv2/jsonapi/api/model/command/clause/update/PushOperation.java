@@ -125,7 +125,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public UpdateOperationResult updateDocument(ObjectNode doc) {
     for (Action action : actions) {
       final JsonNode toAdd = action.value;
 
@@ -174,7 +174,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
     }
 
     // Every valid update operation modifies document so need just one:
-    return !actions.isEmpty();
+    return new UpdateOperationResult(!actions.isEmpty(), null);
   }
 
   // Just needed for tests

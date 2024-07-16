@@ -47,7 +47,7 @@ public class MulOperation extends UpdateOperation<MulOperation.Action> {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public UpdateOperationResult updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (Action action : actions) {
       final NumericNode multiplier = action.value;
@@ -76,7 +76,7 @@ public class MulOperation extends UpdateOperation<MulOperation.Action> {
       }
     }
 
-    return modified;
+    return new UpdateOperationResult(modified, null);
   }
 
   private JsonNode multiply(ObjectNode doc, JsonNode oldValue, JsonNode multiplierValue) {

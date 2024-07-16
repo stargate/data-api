@@ -46,7 +46,7 @@ public class MinMaxOperation extends UpdateOperation<MinMaxOperation.Action> {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public UpdateOperationResult updateDocument(ObjectNode doc) {
     // Almost always changes, except if adding zero; need to track
     boolean modified = false;
     for (Action action : actions) {
@@ -66,7 +66,7 @@ public class MinMaxOperation extends UpdateOperation<MinMaxOperation.Action> {
       }
     }
 
-    return modified;
+    return new UpdateOperationResult(modified, null);
   }
 
   private boolean shouldReplace(JsonNode oldValue, JsonNode newValue) {

@@ -57,7 +57,7 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public UpdateOperationResult updateDocument(ObjectNode doc) {
     boolean changes = false;
     for (Action action : actions) {
       PathMatch target = action.locator().findIfExists(doc);
@@ -89,7 +89,7 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
                 + value.getNodeType());
       }
     }
-    return changes;
+    return new UpdateOperationResult(changes, null);
   }
 
   /** Value class for per-field Pop operation definitions. */

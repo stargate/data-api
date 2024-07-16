@@ -46,7 +46,7 @@ public class IncOperation extends UpdateOperation<IncOperation.Action> {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public UpdateOperationResult updateDocument(ObjectNode doc) {
     // Almost always changes, except if adding zero; need to track
     boolean modified = false;
     for (Action action : actions) {
@@ -77,7 +77,7 @@ public class IncOperation extends UpdateOperation<IncOperation.Action> {
       }
     }
 
-    return modified;
+    return new UpdateOperationResult(modified, null);
   }
 
   private JsonNode addNumbers(ObjectNode doc, NumericNode nr1, NumericNode nr2) {

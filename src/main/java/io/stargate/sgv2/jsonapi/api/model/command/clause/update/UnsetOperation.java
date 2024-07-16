@@ -28,7 +28,7 @@ public class UnsetOperation extends UpdateOperation<UnsetOperation.Action> {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public UpdateOperationResult updateDocument(ObjectNode doc) {
     boolean modified = false;
     Set<String> unsetPaths = new HashSet<>();
     actions.stream().forEach(action -> unsetPaths.add(action.locator().path()));
@@ -44,7 +44,7 @@ public class UnsetOperation extends UpdateOperation<UnsetOperation.Action> {
     if (modified && unsetPaths.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
       doc.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
     }
-    return modified;
+    return new UpdateOperationResult(modified, null);
   }
 
   record Action(PathMatchLocator locator) implements ActionWithLocator {}

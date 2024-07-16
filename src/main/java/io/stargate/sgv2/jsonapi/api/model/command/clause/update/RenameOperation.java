@@ -44,7 +44,7 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public UpdateOperationResult updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (Action action : actions) {
       PathMatch src = action.sourceLocator().findIfExists(doc);
@@ -78,7 +78,7 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
         dst.replaceValue(value);
       }
     }
-    return modified;
+    return new UpdateOperationResult(modified, null);
   }
 
   // Unlike most operations, we have 2 locators (src, dest), use explicit names
