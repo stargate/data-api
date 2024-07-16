@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineGetStatusCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.OfflineGetStatusOperation;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
@@ -22,7 +23,8 @@ public class OfflineGetStatusCommandResolverTest {
     OfflineGetStatusCommand offlineGetStatusCommand = new OfflineGetStatusCommand(sessionId);
     assertInstanceOf(
         OfflineGetStatusOperation.class,
-        offlineGetStatusCommandResolver.resolveCommand(null, offlineGetStatusCommand));
+        offlineGetStatusCommandResolver.resolveCommand(
+            CommandContext.EMPTY_COLLECTION, offlineGetStatusCommand));
     assertEquals(OfflineGetStatusCommand.class, offlineGetStatusCommandResolver.getCommandClass());
   }
 }

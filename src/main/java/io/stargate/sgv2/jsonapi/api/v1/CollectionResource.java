@@ -161,7 +161,7 @@ public class CollectionResource {
           @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
-        .getCollectionSettings(
+        .getSchemaObject(
             dataApiRequestInfo, dataApiRequestInfo.getTenantId(), namespace, collection)
         .onItemOrFailure()
         .transformToUni(
@@ -178,7 +178,7 @@ public class CollectionResource {
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
                 // TODO No need for the else clause here, simplify
-                // TODO: this is where we know if it's a table or a collection
+                // TODO: refactor this code to be cleaner so it assigns on one line
                 EmbeddingProvider embeddingProvider = null;
                 final VectorConfig.VectorizeConfig vectorizeConfig =
                     schemaObject.vectorConfig().vectorizeConfig();
@@ -195,17 +195,13 @@ public class CollectionResource {
                           command.getClass().getSimpleName());
                 }
 
-                // TODO: when the schema cache returns table and collections we switch here to
-                // create
-                // the correct command context
-                CommandContext<?> commandContext =
-                    CommandContext.collectionCommandContext(
+                var commandContext =
+                    CommandContext.forSchemaObject(
                         schemaObject,
                         embeddingProvider,
                         command.getClass().getSimpleName(),
                         jsonProcessingMetricsReporter);
 
-                // call processor
                 return meteredCommandProcessor.processCommand(
                     dataApiRequestInfo, commandContext, command);
               }

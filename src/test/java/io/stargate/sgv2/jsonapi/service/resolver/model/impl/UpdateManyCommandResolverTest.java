@@ -17,12 +17,12 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.ReadAndUpdateOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.IDCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.MapCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
@@ -99,7 +99,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
                                   find.logicalExpression()
                                       .comparisonExpressions
@@ -157,7 +157,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
                         });
               });
@@ -214,7 +214,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
                                   find.logicalExpression()
                                       .comparisonExpressions
@@ -284,7 +284,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.pageSize()).isEqualTo(20);
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(
                                   find.logicalExpression()
                                       .comparisonExpressions
@@ -344,7 +344,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
-                          assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                          assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                           assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
                         });
               });

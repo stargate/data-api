@@ -24,10 +24,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.*;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.MapCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
@@ -51,6 +51,7 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
+
   private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT;
 
   @Inject Shredder shredder;
@@ -217,7 +218,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             COMMAND_CONTEXT,
             implicitAnd,
             DocumentProjector.defaultProjector(),
-            ReadType.DOCUMENT,
+            CollectionReadType.DOCUMENT,
             objectMapper,
             false);
 
@@ -359,7 +360,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             COMMAND_CONTEXT,
             implicitAnd,
             DocumentProjector.defaultProjector(),
-            ReadType.DOCUMENT,
+            CollectionReadType.DOCUMENT,
             objectMapper,
             false);
 
@@ -509,7 +510,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             COMMAND_CONTEXT,
             implicitAnd,
             DocumentProjector.defaultProjector(),
-            ReadType.DOCUMENT,
+            CollectionReadType.DOCUMENT,
             objectMapper,
             false);
 
@@ -694,7 +695,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             null,
             3,
             3,
-            ReadType.DOCUMENT,
+            CollectionReadType.DOCUMENT,
             objectMapper,
             false);
 
@@ -904,7 +905,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             null,
             3,
             3,
-            ReadType.DOCUMENT,
+            CollectionReadType.DOCUMENT,
             objectMapper,
             false);
     DocumentUpdater documentUpdater =

@@ -31,10 +31,12 @@ import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.*;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.*;
+import io.stargate.sgv2.jsonapi.service.operation.model.builder.BuiltCondition;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.ExpressionBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
@@ -137,7 +139,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               20,
               20,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -283,7 +285,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               2,
               2,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -370,7 +372,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               2,
               2,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               true);
 
@@ -415,7 +417,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               2,
               2,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -503,7 +505,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               2,
               2,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -587,7 +589,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               1,
               2,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -649,7 +651,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -707,7 +709,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               1,
               1,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -767,7 +769,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -832,7 +834,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -897,7 +899,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -963,7 +965,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1029,7 +1031,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1094,7 +1096,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1160,7 +1162,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1221,7 +1223,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1284,7 +1286,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1354,7 +1356,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               explicitOr,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1424,7 +1426,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               explicitOr,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1490,7 +1492,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               1,
               1,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1560,7 +1562,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1629,7 +1631,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1697,7 +1699,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1765,7 +1767,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1824,7 +1826,7 @@ public class FindOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
 
@@ -1991,7 +1993,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               5,
               20,
-              ReadType.SORTED_DOCUMENT,
+              CollectionReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               0,
@@ -2191,7 +2193,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               5,
               20,
-              ReadType.SORTED_DOCUMENT,
+              CollectionReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("sort_date", true)),
               0,
@@ -2372,7 +2374,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               5,
               20,
-              ReadType.SORTED_DOCUMENT,
+              CollectionReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", true)),
               5,
@@ -2547,7 +2549,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               5,
               20,
-              ReadType.SORTED_DOCUMENT,
+              CollectionReadType.SORTED_DOCUMENT,
               objectMapper,
               List.of(new FindOperation.OrderBy("username", false)),
               0,
@@ -2677,7 +2679,7 @@ public class FindOperationTest extends OperationTestBase {
             null,
             5,
             20,
-            ReadType.SORTED_DOCUMENT,
+            CollectionReadType.SORTED_DOCUMENT,
             objectMapper,
             List.of(new FindOperation.OrderBy("uuidv6", true)),
             0,
@@ -2757,7 +2759,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               2,
               2,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               new float[] {0.25f, 0.25f, 0.25f, 0.25f},
               false);
@@ -2830,7 +2832,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               2,
               2,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               new float[] {0.25f, 0.25f, 0.25f, 0.25f},
               true);
@@ -2896,7 +2898,7 @@ public class FindOperationTest extends OperationTestBase {
               VECTOR_COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.includeAllProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               new float[] {0.25f, 0.25f, 0.25f, 0.25f},
               false);
@@ -2938,7 +2940,7 @@ public class FindOperationTest extends OperationTestBase {
                 COMMAND_CONTEXT,
                 implicitAnd1,
                 DocumentProjector.defaultProjector(),
-                ReadType.DOCUMENT,
+                CollectionReadType.DOCUMENT,
                 objectMapper,
                 false);
 
@@ -2956,7 +2958,7 @@ public class FindOperationTest extends OperationTestBase {
                 COMMAND_CONTEXT,
                 implicitAnd2,
                 DocumentProjector.defaultProjector(),
-                ReadType.DOCUMENT,
+                CollectionReadType.DOCUMENT,
                 objectMapper,
                 false);
 
@@ -3002,7 +3004,7 @@ public class FindOperationTest extends OperationTestBase {
               null,
               2,
               2,
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               new float[] {0.25f, 0.25f, 0.25f, 0.25f},
               false);

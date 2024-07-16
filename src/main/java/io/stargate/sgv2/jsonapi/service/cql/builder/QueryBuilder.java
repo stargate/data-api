@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cql.ColumnUtils;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
+import io.stargate.sgv2.jsonapi.service.operation.model.builder.BuiltCondition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

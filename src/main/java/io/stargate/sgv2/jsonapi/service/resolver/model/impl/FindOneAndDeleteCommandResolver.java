@@ -11,9 +11,9 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.DeleteOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
@@ -68,7 +68,7 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
   }
 
   private FindOperation getFindOperation(
-      CommandContext commandContext, FindOneAndDeleteCommand command) {
+      CommandContext<CollectionSchemaObject> commandContext, FindOneAndDeleteCommand command) {
     LogicalExpression logicalExpression = resolve(commandContext, command);
 
     final SortClause sortClause = command.sortClause();
@@ -78,19 +78,22 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
     }
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
+    var indexUsage = commandContext.schemaObject().newCollectionIndexUsage();
+    indexUsage.vectorIndexTag = vector != null;
+
     addToMetrics(
         meterRegistry,
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
         logicalExpression,
-        vector != null);
+        indexUsage);
     if (vector != null) {
       return FindOperation.vsearchSingle(
           commandContext,
           logicalExpression,
           DocumentProjector.includeAllProjector(),
-          ReadType.DOCUMENT,
+          CollectionReadType.DOCUMENT,
           objectMapper,
           vector,
           false);
@@ -105,7 +108,7 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
           DocumentProjector.includeAllProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
-          ReadType.SORTED_DOCUMENT,
+          CollectionReadType.SORTED_DOCUMENT,
           objectMapper,
           orderBy,
           0,
@@ -118,7 +121,7 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
           commandContext,
           logicalExpression,
           DocumentProjector.includeAllProjector(),
-          ReadType.DOCUMENT,
+          CollectionReadType.DOCUMENT,
           objectMapper,
           false);
     }

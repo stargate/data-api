@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.InsertOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
