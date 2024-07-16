@@ -95,7 +95,6 @@ jobs:
   # runs int tests
   int-tests:
     name: Integration tests
-    needs: [ build ]
     runs-on: ubuntu-latest
 
     # max run time 40 minutes
