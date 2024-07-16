@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
@@ -38,7 +39,7 @@ import java.util.function.Supplier;
  * @param retryLimit - Number of times retry to happen in case of lwt failure
  */
 public record ReadAndUpdateOperation(
-    CommandContext commandContext,
+    CommandContext<CollectionSchemaObject> commandContext,
     FindOperation findOperation,
     DocumentUpdater documentUpdater,
     boolean returnDocumentInResponse,
@@ -215,9 +216,9 @@ public record ReadAndUpdateOperation(
       WritableShreddedDocument writableShreddedDocument) {
     final SimpleStatement updateQuery =
         bindUpdateValues(
-            buildUpdateQuery(commandContext().isVectorEnabled()),
+            buildUpdateQuery(commandContext().schemaObject().isVectorEnabled()),
             writableShreddedDocument,
-            commandContext().isVectorEnabled());
+            commandContext().schemaObject().isVectorEnabled());
     return queryExecutor
         .executeWrite(dataApiRequestInfo, updateQuery)
         .onItem()
@@ -251,7 +252,10 @@ public record ReadAndUpdateOperation(
               + "            key = ?"
               + "        IF "
               + "            tx_id = ?";
-      return String.format(update, commandContext.namespace(), commandContext.collection());
+      return String.format(
+          update,
+          commandContext.schemaObject().name.keyspace(),
+          commandContext.schemaObject().name.table());
     } else {
       String update =
           "UPDATE \"%s\".\"%s\" "
@@ -270,7 +274,10 @@ public record ReadAndUpdateOperation(
               + "            key = ?"
               + "        IF "
               + "            tx_id = ?";
-      return String.format(update, commandContext.namespace(), commandContext.collection());
+      return String.format(
+          update,
+          commandContext.schemaObject().name.keyspace(),
+          commandContext.schemaObject().name.table());
     }
   }
 

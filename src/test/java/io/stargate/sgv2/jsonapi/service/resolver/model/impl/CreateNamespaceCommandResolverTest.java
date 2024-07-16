@@ -5,7 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateNamespaceOperation;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -19,6 +22,8 @@ class CreateNamespaceCommandResolverTest {
 
   @Inject ObjectMapper objectMapper;
   @Inject CreateNamespaceCommandResolver resolver;
+
+  CommandContext<CollectionSchemaObject> commandContext = TestConstants.CONTEXT;
 
   @Nested
   class ResolveCommand {
@@ -35,7 +40,7 @@ class CreateNamespaceCommandResolverTest {
             """;
 
       CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
-      Operation result = resolver.resolveCommand(null, command);
+      Operation result = resolver.resolveCommand(commandContext, command);
 
       assertThat(result)
           .isInstanceOfSatisfying(
@@ -64,7 +69,7 @@ class CreateNamespaceCommandResolverTest {
             """;
 
       CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
-      Operation result = resolver.resolveCommand(null, command);
+      Operation result = resolver.resolveCommand(commandContext, command);
 
       assertThat(result)
           .isInstanceOfSatisfying(
@@ -94,7 +99,7 @@ class CreateNamespaceCommandResolverTest {
             """;
 
       CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
-      Operation result = resolver.resolveCommand(null, command);
+      Operation result = resolver.resolveCommand(commandContext, command);
 
       assertThat(result)
           .isInstanceOfSatisfying(
@@ -125,7 +130,7 @@ class CreateNamespaceCommandResolverTest {
             """;
 
       CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
-      Operation result = resolver.resolveCommand(null, command);
+      Operation result = resolver.resolveCommand(commandContext, command);
 
       assertThat(result)
           .isInstanceOfSatisfying(
@@ -157,7 +162,7 @@ class CreateNamespaceCommandResolverTest {
             """;
 
       CreateNamespaceCommand command = objectMapper.readValue(json, CreateNamespaceCommand.class);
-      Operation result = resolver.resolveCommand(null, command);
+      Operation result = resolver.resolveCommand(commandContext, command);
 
       assertThat(result)
           .isInstanceOfSatisfying(

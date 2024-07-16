@@ -8,12 +8,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.EstimatedCountResult;
 import java.util.function.Supplier;
 
 /** Operation that returns estimated count of documents. */
-public record EstimatedDocumentCountOperation(CommandContext commandContext)
-    implements ReadOperation {
+public record EstimatedDocumentCountOperation<T extends SchemaObject>(
+    CommandContext<T> commandContext) implements ReadOperation {
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
@@ -34,9 +35,9 @@ public record EstimatedDocumentCountOperation(CommandContext commandContext)
     return selectFrom("system", "size_estimates")
         .all()
         .whereColumn("keyspace_name")
-        .isEqualTo(literal(commandContext.namespace()))
+        .isEqualTo(literal(commandContext.schemaObject().name.keyspace()))
         .whereColumn("table_name")
-        .isEqualTo(literal(commandContext.collection()))
+        .isEqualTo(literal(commandContext.schemaObject().name.table()))
         .build();
   }
 }

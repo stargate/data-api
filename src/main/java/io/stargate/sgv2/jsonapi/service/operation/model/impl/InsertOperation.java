@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
@@ -27,7 +28,7 @@ import java.util.function.Supplier;
  * @param ordered If insertions should be attempted sequentially, in order.
  */
 public record InsertOperation(
-    CommandContext commandContext,
+    CommandContext<CollectionSchemaObject> commandContext,
     List<InsertAttempt> insertions,
     boolean ordered,
     boolean offlineMode,
@@ -127,11 +128,12 @@ public record InsertOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    final boolean vectorEnabled = commandContext().isVectorEnabled();
+    final boolean vectorEnabled = commandContext().schemaObject().isVectorEnabled();
     if (!vectorEnabled && insertions.stream().anyMatch(insertion -> insertion.hasVectorValues())) {
       throw new JsonApiException(
           ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED,
-          ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage() + commandContext().collection());
+          ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage()
+              + commandContext().schemaObject().name.table());
     }
     // create json doc write metrics
     if (commandContext.jsonProcessingMetricsReporter() != null) {
@@ -287,7 +289,9 @@ public record InsertOperation(
       // The offline mode SSTableWriter does not support conditional inserts, so it can not have the
       // IF NOT EXISTS clause
       return String.format(
-          insertWithVector, commandContext.namespace(), commandContext.collection());
+          insertWithVector,
+          commandContext.schemaObject().name.keyspace(),
+          commandContext.schemaObject().name.table());
     } else {
       String insert =
           "INSERT INTO \"%s\".\"%s\""
@@ -297,7 +301,10 @@ public record InsertOperation(
               + (offlineMode ? "" : " IF NOT EXISTS");
       // The offline mode SSTableWriter does not support conditional inserts, so it can not have the
       // IF NOT EXISTS clause
-      return String.format(insert, commandContext.namespace(), commandContext.collection());
+      return String.format(
+          insert,
+          commandContext.schemaObject().name.keyspace(),
+          commandContext.schemaObject().name.table());
     }
   }
 

@@ -25,8 +25,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
@@ -58,9 +59,9 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class ReadAndUpdateOperationTest extends OperationTestBase {
-  private CommandContext COMMAND_CONTEXT;
+  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT;
 
-  private CommandContext COMMAND_VECTOR_CONTEXT;
+  private CommandContext<CollectionSchemaObject> COMMAND_VECTOR_CONTEXT;
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
@@ -108,18 +109,13 @@ public class ReadAndUpdateOperationTest extends OperationTestBase {
 
   @PostConstruct
   public void init() {
-    COMMAND_CONTEXT =
-        new CommandContext(
-            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+    COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
     COMMAND_VECTOR_CONTEXT =
-        new CommandContext(
-            KEYSPACE_NAME,
-            COLLECTION_NAME,
-            new CollectionSettings(
-                COLLECTION_NAME,
-                CollectionSettings.IdConfig.defaultIdConfig(),
-                new CollectionSettings.VectorConfig(
-                    true, -1, CollectionSettings.SimilarityFunction.COSINE, null),
+        new CommandContext<>(
+            new CollectionSchemaObject(
+                SCHEMA_OBJECT_NAME,
+                CollectionSchemaObject.IdConfig.defaultIdConfig(),
+                new VectorConfig(true, -1, CollectionSchemaObject.SimilarityFunction.COSINE, null),
                 null),
             null,
             "testCommand",

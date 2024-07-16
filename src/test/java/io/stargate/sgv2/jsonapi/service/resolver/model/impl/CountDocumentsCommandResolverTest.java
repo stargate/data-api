@@ -4,13 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.InjectMock;
-import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.CountOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapCollectionFilter.Operator;
@@ -33,7 +34,7 @@ class CountDocumentsCommandResolverTest {
   @Nested
   class ResolveCommand {
 
-    @Mock CommandContext context;
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.CONTEXT;
 
     @Test
     public void noFilter() throws Exception {
@@ -46,13 +47,13 @@ class CountDocumentsCommandResolverTest {
             """;
 
       CountDocumentsCommand command = objectMapper.readValue(json, CountDocumentsCommand.class);
-      Operation result = resolver.resolveCommand(context, command);
+      Operation result = resolver.resolveCommand(commandContext, command);
 
       assertThat(result)
           .isInstanceOfSatisfying(
               CountOperation.class,
               op -> {
-                assertThat(op.commandContext()).isEqualTo(context);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(op.logicalExpression().comparisonExpressions).isEmpty();
                 assertThat(op.pageSize()).isEqualTo(operationsConfig.defaultCountPageSize());
                 assertThat(op.limit()).isEqualTo(operationsConfig.maxCountLimit());
@@ -73,7 +74,7 @@ class CountDocumentsCommandResolverTest {
             """;
 
       CountDocumentsCommand command = objectMapper.readValue(json, CountDocumentsCommand.class);
-      Operation result = resolver.resolveCommand(context, command);
+      Operation result = resolver.resolveCommand(commandContext, command);
 
       assertThat(result)
           .isInstanceOfSatisfying(
@@ -82,7 +83,7 @@ class CountDocumentsCommandResolverTest {
                 TextCollectionFilter expected =
                     new TextCollectionFilter("name", Operator.EQ, "Aaron");
 
-                assertThat(op.commandContext()).isEqualTo(context);
+                assertThat(op.commandContext()).isEqualTo(commandContext);
                 assertThat(
                         op.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
                     .isEqualTo(expected);

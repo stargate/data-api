@@ -25,6 +25,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
@@ -55,7 +56,7 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(SerialConsistencyOverrideOperationTest.SerialConsistencyOverrideProfile.class)
 public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
-  private CommandContext COMMAND_CONTEXT;
+  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT;
   private final ColumnDefinitions COLUMNS_APPLIED =
       buildColumnDefs(TestColumn.ofBoolean("[applied]"));
 
@@ -78,9 +79,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
   @PostConstruct
   public void init() {
-    COMMAND_CONTEXT =
-        new CommandContext(
-            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+    COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
   }
 
   @Nested

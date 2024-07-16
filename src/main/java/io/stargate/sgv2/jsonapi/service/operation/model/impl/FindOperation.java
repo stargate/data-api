@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.ChainedComparator;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 
 /** Operation that returns the documents or its key based on the filter condition. */
 public record FindOperation(
-    CommandContext commandContext,
+    CommandContext<CollectionSchemaObject> commandContext,
     LogicalExpression logicalExpression,
     /**
      * Projection used on document to return; if no changes desired, identity projection. Defined
@@ -66,7 +67,7 @@ public record FindOperation(
    * @return FindOperation for a single document unsorted find
    */
   public static FindOperation unsortedSingle(
-      CommandContext commandContext,
+      CommandContext<CollectionSchemaObject> commandContext,
       LogicalExpression logicalExpression,
       DocumentProjector projection,
       ReadType readType,
@@ -105,7 +106,7 @@ public record FindOperation(
    * @return FindOperation for a multi document unsorted find
    */
   public static FindOperation unsorted(
-      CommandContext commandContext,
+      CommandContext<CollectionSchemaObject> commandContext,
       LogicalExpression logicalExpression,
       DocumentProjector projection,
       String pageState,
@@ -144,7 +145,7 @@ public record FindOperation(
    * @return FindOperation for a multi document unsorted find
    */
   public static FindOperation vsearchSingle(
-      CommandContext commandContext,
+      CommandContext<CollectionSchemaObject> commandContext,
       LogicalExpression logicalExpression,
       DocumentProjector projection,
       ReadType readType,
@@ -183,7 +184,7 @@ public record FindOperation(
    * @return FindOperation for a multi document unsorted find
    */
   public static FindOperation vsearch(
-      CommandContext commandContext,
+      CommandContext<CollectionSchemaObject> commandContext,
       LogicalExpression logicalExpression,
       DocumentProjector projection,
       String pageState,
@@ -226,7 +227,7 @@ public record FindOperation(
    * @return FindOperation for a single document sorted find
    */
   public static FindOperation sortedSingle(
-      CommandContext commandContext,
+      CommandContext<CollectionSchemaObject> commandContext,
       LogicalExpression logicalExpression,
       DocumentProjector projection,
       int pageSize,
@@ -271,7 +272,7 @@ public record FindOperation(
    * @return FindOperation for a multi document sorted find
    */
   public static FindOperation sorted(
-      CommandContext commandContext,
+      CommandContext<CollectionSchemaObject> commandContext,
       LogicalExpression logicalExpression,
       DocumentProjector projection,
       String pageState,
@@ -303,14 +304,14 @@ public record FindOperation(
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    final boolean vectorEnabled = commandContext().isVectorEnabled();
+    final boolean vectorEnabled = commandContext().schemaObject().isVectorEnabled();
     if (vector() != null && !vectorEnabled) {
       return Uni.createFrom()
           .failure(
               new JsonApiException(
                   ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED,
                   ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage()
-                      + commandContext().collection()));
+                      + commandContext().schemaObject().name.table()));
     }
     // get FindResponse
     return getDocuments(dataApiRequestInfo, queryExecutor, pageState(), null)
@@ -409,6 +410,7 @@ public record FindOperation(
         for (DBFilterBase filter : currentComparisonExpression.getDbFilters()) {
           // every filter must be a collection filter, because we are making a new document and we
           // only do this for docs
+          // TODO: move ot modern swtich with pattern matching
           if (filter instanceof IDCollectionFilter) {
             IDCollectionFilter idFilter = (IDCollectionFilter) filter;
             documentId = idFilter.getSingularDocumentId();
@@ -453,7 +455,9 @@ public record FindOperation(
                 new QueryBuilder()
                     .select()
                     .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-                    .from(commandContext.namespace(), commandContext.collection())
+                    .from(
+                        commandContext.schemaObject().name.keyspace(),
+                        commandContext.schemaObject().name.table())
                     .where(expression)
                     .limit(limit)
                     .build();
@@ -477,8 +481,10 @@ public record FindOperation(
           .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
           .similarityFunction(
               DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
-              commandContext().similarityFunction())
-          .from(commandContext.namespace(), commandContext.collection())
+              commandContext().schemaObject().similarityFunction())
+          .from(
+              commandContext.schemaObject().name.keyspace(),
+              commandContext.schemaObject().name.table())
           .where(expression)
           .limit(limit)
           .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
@@ -487,7 +493,9 @@ public record FindOperation(
       return new QueryBuilder()
           .select()
           .column(ReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
-          .from(commandContext.namespace(), commandContext.collection())
+          .from(
+              commandContext.schemaObject().name.keyspace(),
+              commandContext.schemaObject().name.table())
           .where(expression)
           .limit(limit)
           .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
@@ -523,7 +531,9 @@ public record FindOperation(
               new QueryBuilder()
                   .select()
                   .column(columnsToAdd)
-                  .from(commandContext.namespace(), commandContext.collection())
+                  .from(
+                      commandContext.schemaObject().name.keyspace(),
+                      commandContext.schemaObject().name.table())
                   .where(expression)
                   .limit(maxSortReadLimit())
                   .build();

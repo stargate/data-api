@@ -17,7 +17,7 @@ public class OfflineGetStatusCommandResolver implements CommandResolver<OfflineG
   }
 
   @Override
-  public Operation resolveCommand(CommandContext ctx, OfflineGetStatusCommand command) {
+  public Operation resolveCollectionCommand(CommandContext<CollectionSchemaObject> ctx,  OfflineGetStatusCommand command) {
     return new OfflineGetStatusOperation(command.sessionId());
   }
 }

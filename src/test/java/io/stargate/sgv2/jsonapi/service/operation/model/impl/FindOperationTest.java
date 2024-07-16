@@ -28,8 +28,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.*;
@@ -60,9 +61,9 @@ import org.mockito.Mockito;
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class FindOperationTest extends OperationTestBase {
-  private CommandContext COMMAND_CONTEXT;
+  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT;
 
-  private CommandContext VECTOR_COMMAND_CONTEXT;
+  private CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT;
 
   private final ColumnDefinitions KEY_TXID_JSON_COLUMNS =
       buildColumnDefs(
@@ -72,18 +73,16 @@ public class FindOperationTest extends OperationTestBase {
 
   @PostConstruct
   public void init() {
-    COMMAND_CONTEXT =
-        new CommandContext(
-            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+    // TODO: a lot of these test create the same command context, these should be in the base class
+    // leaving as new objects for now, they can prob be reused
+
+    COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
     VECTOR_COMMAND_CONTEXT =
-        new CommandContext(
-            KEYSPACE_NAME,
-            COLLECTION_NAME,
-            new CollectionSettings(
-                COLLECTION_NAME,
-                CollectionSettings.IdConfig.defaultIdConfig(),
-                new CollectionSettings.VectorConfig(
-                    true, -1, CollectionSettings.SimilarityFunction.COSINE, null),
+        new CommandContext<>(
+            new CollectionSchemaObject(
+                SCHEMA_OBJECT_NAME,
+                CollectionSchemaObject.IdConfig.defaultIdConfig(),
+                new VectorConfig(true, -1, CollectionSchemaObject.SimilarityFunction.COSINE, null),
                 null),
             null,
             "testCommand",
