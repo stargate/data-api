@@ -45,7 +45,7 @@ public class FindOneAndUpdateCommandResolverTest {
   @Nested
   class Resolve {
 
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.CONTEXT;
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void idFilterCondition() throws Exception {

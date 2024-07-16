@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model;
 
-import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
@@ -13,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.filters.DBFilterBase;
+import java.util.Objects;
 
 /**
  * Resolver looks at a valid {@link Command} and determines the best {@link Operation} to implement
@@ -57,13 +57,14 @@ public interface CommandResolver<C extends Command> {
   @SuppressWarnings("unchecked")
   default <T extends SchemaObject> Operation resolveCommand(
       CommandContext<T> commandContext, C command) {
-    Preconditions.checkNotNull(commandContext, "commandContext must not be null");
-    Preconditions.checkNotNull(command, "command must not be null");
+    Objects.requireNonNull(commandContext, "commandContext must not be null");
+    Objects.requireNonNull(command, "command must not be null");
 
     return switch (commandContext.schemaObject().type) {
       case COLLECTION -> resolveCollectionCommand(commandContext.asCollectionContext(), command);
       case TABLE -> resolveTableCommand(commandContext.asTableContext(), command);
       case KEYSPACE -> resolveKeyspaceCommand(commandContext.asKeyspaceContext(), command);
+      case DATABASE -> resolveDatabaseCommand(commandContext.asDatabaseContext(), command);
     };
   }
 
@@ -80,7 +81,7 @@ public interface CommandResolver<C extends Command> {
     // commands are tested well
     throw new UnsupportedOperationException(
         String.format(
-            "%s Command does not support operating on Collectons, target was %s",
+            "%s Command does not support operating on Collections, target was %s",
             command.getClass().getSimpleName(), ctx.schemaObject().name));
   }
   ;
@@ -114,6 +115,22 @@ public interface CommandResolver<C extends Command> {
     throw new UnsupportedOperationException(
         String.format(
             "%s Command does not support operating on Keyspaces, target was %s",
+            command.getClass().getSimpleName(), ctx.schemaObject().name));
+  }
+
+  /**
+   * Implementors should use this method when they can resolve commands for a databse.
+   *
+   * @param ctx
+   * @param command
+   * @return
+   */
+  default Operation resolveDatabaseCommand(CommandContext<DatabaseSchemaObject> ctx, C command) {
+    // there error is a fallback to make sure it is implemented if it should be
+    // commands are tested well
+    throw new UnsupportedOperationException(
+        String.format(
+            "%s Command does not support operating on Databases, target was %s",
             command.getClass().getSimpleName(), ctx.schemaObject().name));
   }
 

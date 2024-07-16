@@ -5,7 +5,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import java.util.function.Supplier;
@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  * @param context Command context, carries namespace of the collection.
  * @param name Collection name.
  */
-public record DeleteCollectionOperation(CommandContext<CollectionSchemaObject> context, String name)
+public record DeleteCollectionOperation(CommandContext<KeyspaceSchemaObject> context, String name)
     implements Operation {
   private static final Logger logger = LoggerFactory.getLogger(DeleteCollectionOperation.class);
 

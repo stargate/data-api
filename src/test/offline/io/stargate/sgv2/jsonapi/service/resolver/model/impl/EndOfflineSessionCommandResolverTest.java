@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.EndOfflineSessionCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.EndOfflineSessionOperation;
 import java.util.UUID;
@@ -20,7 +20,7 @@ public class EndOfflineSessionCommandResolverTest {
     assertInstanceOf(
         EndOfflineSessionOperation.class,
         endOfflineSessionCommandResolver.resolveCommand(
-            CommandContext.EMPTY_COLLECTION, endOfflineSessionCommand));
+            TestConstants.COLLECTION_CONTEXT, endOfflineSessionCommand));
     assertEquals(
         EndOfflineSessionCommand.class, endOfflineSessionCommandResolver.getCommandClass());
   }

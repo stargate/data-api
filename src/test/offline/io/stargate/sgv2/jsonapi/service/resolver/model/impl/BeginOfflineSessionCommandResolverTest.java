@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.BeginOfflineSessionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.BeginOfflineSessionOperation;
@@ -24,7 +24,7 @@ public class BeginOfflineSessionCommandResolverTest {
     assertInstanceOf(
         BeginOfflineSessionOperation.class,
         beginOfflineSessionCommandResolver.resolveCommand(
-            CommandContext.EMPTY_COLLECTION,
+            TestConstants.COLLECTION_CONTEXT,
             new BeginOfflineSessionCommand(
                 "namespace1", createCollectionCommand, "ssTableOutputDirectory", 20)));
     assertEquals(
