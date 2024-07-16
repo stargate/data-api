@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.model.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.model.filters.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.CollectionFilter;
@@ -322,7 +323,7 @@ public record FindOperation(
                   .jsonProcessingMetricsReporter()
                   .reportJsonReadDocsMetrics(commandContext().commandName(), docs.docs().size());
               return new ReadOperationPage(
-                  docs.docs(), docs.pageState(), singleResponse, includeSortVector(), vector());
+                  docs.docs(), singleResponse, docs.pageState(), includeSortVector(), vector());
             });
   }
 

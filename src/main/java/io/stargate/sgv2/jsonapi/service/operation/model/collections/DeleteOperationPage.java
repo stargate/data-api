@@ -48,7 +48,7 @@ public record DeleteOperationPage(
     deletedInformation.forEach(
         deletedData -> {
           if (deletedData.getItem1() && returnDocument()) {
-            deletedDoc.add(deletedData.getItem3().document());
+            deletedDoc.add(deletedData.getItem3().get());
           }
           if (deletedData.getItem2() != null) {
             String key = ExceptionUtil.getThrowableGroupingKey(deletedData.getItem2());
@@ -66,7 +66,7 @@ public record DeleteOperationPage(
                   groupedErrorDeletes.get(key);
               final List<DocumentId> documentIds =
                   deletedDocuments.stream()
-                      .map(deletes -> deletes.getItem3().id())
+                      .map(deletes -> deletes.getItem3().id().orElseThrow())
                       .collect(Collectors.toList());
               errors.add(
                   ExceptionUtil.getError(

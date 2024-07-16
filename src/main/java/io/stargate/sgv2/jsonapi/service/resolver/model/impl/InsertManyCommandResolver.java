@@ -4,12 +4,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionInsertAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.model.collections.InsertOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.tables.InsertTableOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.tables.TableInsertAttempt;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -20,11 +25,13 @@ import java.util.concurrent.atomic.AtomicReference;
 @ApplicationScoped
 public class InsertManyCommandResolver implements CommandResolver<InsertManyCommand> {
 
-  private final Shredder shredder;
+  private final Shredder documentShredder;
+  private final RowShredder rowShredder;
 
   @Inject
-  public InsertManyCommandResolver(Shredder shredder) {
-    this.shredder = shredder;
+  public InsertManyCommandResolver(Shredder documentShredder, RowShredder rowShredder) {
+    this.documentShredder = documentShredder;
+    this.rowShredder = rowShredder;
   }
 
   @Override
@@ -41,22 +48,31 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
     final List<JsonNode> inputDocs = command.documents();
     final int docCount = inputDocs.size();
 
-    final List<InsertOperation.InsertAttempt> insertions = new ArrayList<>(docCount);
+    final List<CollectionInsertAttempt> insertions = new ArrayList<>(docCount);
     for (int pos = 0; pos < docCount; ++pos) {
-      InsertOperation.InsertAttempt attempt;
+      CollectionInsertAttempt attempt;
       // Since exception thrown will prevent returning anything, need to instead pass a
       // reference for Shredder to populate with the document id as soon as it knows it
       // (there is at least one case fail occurs before it knows the id)
       AtomicReference<DocumentId> idRef = new AtomicReference<>();
       try {
         final WritableShreddedDocument shredded =
-            shredder.shred(ctx, inputDocs.get(pos), null, idRef);
-        attempt = InsertOperation.InsertAttempt.from(pos, shredded);
+            documentShredder.shred(ctx, inputDocs.get(pos), null, idRef);
+        attempt = CollectionInsertAttempt.from(pos, shredded);
       } catch (Exception e) {
-        attempt = new InsertOperation.InsertAttempt(pos, idRef.get(), e);
+        // TODO: need a base Shredding exception to catch
+        attempt = new CollectionInsertAttempt(pos, idRef.get(), e);
       }
       insertions.add(attempt);
     }
     return new InsertOperation(ctx, insertions, ordered, false, returnDocumentResponses);
+  }
+
+  @Override
+  public Operation resolveTableCommand(
+      CommandContext<TableSchemaObject> ctx, InsertManyCommand command) {
+
+    return new InsertTableOperation(
+        ctx, TableInsertAttempt.create(rowShredder, command.documents()));
   }
 }
