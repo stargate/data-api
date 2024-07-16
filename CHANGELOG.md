@@ -8,7 +8,7 @@
 
 - Support AWS Bedrock Embedding Provider
 - Set lower default for Azure OpenAI model "text-embedding-3-large" to observed legal value
-- Add `displagName` and `hint` in embedding providers parameters configuration
+- Add `displayName` and `hint` in embedding providers parameters configuration
 - Error handling improvements
 
 **Closed issues:**
