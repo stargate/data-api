@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
@@ -35,17 +36,19 @@ public record FindCollectionsOperation(
     ObjectMapper objectMapper,
     CQLSessionCache cqlSessionCache,
     JsonapiTableMatcher tableMatcher,
-    CommandContext<CollectionSchemaObject> commandContext)
+    CommandContext<KeyspaceSchemaObject> commandContext)
     implements Operation {
 
   // shared table matcher instance
+  // TODO: if this is static why does the record that have an instance variable passed by the ctor
+  // below ?
   private static final JsonapiTableMatcher TABLE_MATCHER = new JsonapiTableMatcher();
 
   public FindCollectionsOperation(
       boolean explain,
       ObjectMapper objectMapper,
       CQLSessionCache cqlSessionCache,
-      CommandContext<CollectionSchemaObject> commandContext) {
+      CommandContext<KeyspaceSchemaObject> commandContext) {
     this(explain, objectMapper, cqlSessionCache, TABLE_MATCHER, commandContext);
   }
 

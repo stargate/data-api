@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -45,6 +46,7 @@ public class GeneralResource {
     this.meteredCommandProcessor = meteredCommandProcessor;
   }
 
+  // TODO: add example for findEmbeddingProviders
   @Operation(summary = "Execute command", description = "Executes a single general command.")
   @RequestBody(
       content =
@@ -73,9 +75,13 @@ public class GeneralResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
-    // call processor
+
+    var commandContext =
+        CommandContext.forSchemaObject(
+            new DatabaseSchemaObject(), null, command.getClass().getSimpleName(), null);
+
     return meteredCommandProcessor
-        .processCommand(dataApiRequestInfo, CommandContext.EMPTY_COLLECTION, command)
+        .processCommand(dataApiRequestInfo, commandContext, command)
         // map to 2xx unless overridden by error
         .map(commandResult -> commandResult.map());
   }

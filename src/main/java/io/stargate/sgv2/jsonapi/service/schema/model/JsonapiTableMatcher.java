@@ -77,6 +77,8 @@ public class JsonapiTableMatcher implements Predicate<TableMetadata> {
                     CqlIdentifier.fromInternal("query_null_values"),
                     new PrimitiveType(ProtocolConstants.DataType.VARCHAR)));
 
+    // TODO: do not duplicate all of the code above below here, just add one extra predicate if we
+    // need to test for a vector.
     columnsPredicateVector =
         new CqlColumnMatcher.BasicType(
                 CqlIdentifier.fromInternal("tx_id"),

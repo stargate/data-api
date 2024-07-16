@@ -90,7 +90,7 @@ public class NamespaceResource {
           String namespace) {
 
     // create context
-    // TODO: Aaron , left here to see what CTOR was used, there was a lot of different onces.
+    // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
     //    CommandContext commandContext = new CommandContext(namespace, null);
     // HACK TODO: The above did not set a command name on the command context, how did that work ?
     CommandContext<KeyspaceSchemaObject> commandContext =

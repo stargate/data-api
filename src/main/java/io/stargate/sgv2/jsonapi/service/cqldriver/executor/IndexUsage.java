@@ -26,9 +26,10 @@ public interface IndexUsage {
   Tags getTags();
 
   /**
-   * This method is used to merge the index usage of two different types for filters used in a query
+   * Method used to merge the index usage of two different types for filters used in a query; tags
+   * from {@code otherIndexUsage} are merged into {@code this} instance.
    *
-   * @param indexUsage
+   * @param otherIndexUsage the other index usage to merge into this instance
    */
-  void merge(IndexUsage indexUsage);
+  void merge(IndexUsage otherIndexUsage);
 }

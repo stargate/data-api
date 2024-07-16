@@ -9,6 +9,7 @@ public abstract class SchemaObject {
     TABLE,
     COLLECTION,
     KEYSPACE,
+    DATABASE
   }
 
   public final SchemaObjectType type;

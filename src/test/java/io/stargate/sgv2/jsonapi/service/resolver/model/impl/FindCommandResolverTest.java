@@ -40,7 +40,7 @@ public class FindCommandResolverTest {
   @Nested
   class FindCommandResolveCommand {
 
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.CONTEXT;
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void idFilterCondition() throws Exception {
@@ -996,7 +996,7 @@ public class FindCommandResolverTest {
   @Nested
   class FindCommandResolveWithProjection {
 
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.CONTEXT;
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void idFilterConditionAndProjection() throws Exception {
@@ -1098,7 +1098,7 @@ public class FindCommandResolverTest {
 
   @Nested
   class FindCommandResolveWithINOperator {
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.CONTEXT;
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void NonIdIn() throws Exception {
@@ -1424,7 +1424,7 @@ public class FindCommandResolverTest {
 
   @Nested
   class FindCommandResolveWithRangeOperator {
-    CommandContext<CollectionSchemaObject> commandContext = TestConstants.CONTEXT;
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void gt() throws Exception {
