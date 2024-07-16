@@ -11,9 +11,9 @@ import io.stargate.sgv2.jsonapi.api.request.FileWriterParams;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
-import io.stargate.sgv2.jsonapi.service.operation.model.collections.CreateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.collections.InsertOperation;
-import io.stargate.sgv2.jsonapi.service.resolver.model.impl.CreateCollectionCommandResolver;
+import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.resolver.CreateCollectionCommandResolver;
 import java.util.*;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -209,9 +209,9 @@ public class BeginOfflineSessionCommand implements CollectionCommand {
             .stream()
             .map(SimpleStatement::getQuery)
             .toList();
-    InsertOperation insertOperation =
-        InsertOperation.create(tableCommandContext, List.of(), true, true, false);
-    String insertStatementCQL = insertOperation.buildInsertQuery(hasVector);
+    InsertCollectionOperation insertCollectionOperation =
+        InsertCollectionOperation.create(tableCommandContext, List.of(), true, true, false);
+    String insertStatementCQL = insertCollectionOperation.buildInsertQuery(hasVector);
     return new FileWriterParams(
         this.namespace,
         this.createCollection.name(),

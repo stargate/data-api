@@ -26,7 +26,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.impl.BeginOfflineSessionC
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.EndOfflineSessionCommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineGetStatusCommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineInsertManyCommandResolver;
-import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -78,13 +78,14 @@ public class OfflineCommandsProcessor {
         new SmallRyeConfigBuilder().withMapping(DocumentLimitsConfig.class).build();
     DocumentLimitsConfig documentLimitsConfig =
         smallRyeConfig.getConfigMapping(DocumentLimitsConfig.class);
-    Shredder shredder = new Shredder(objectMapper, documentLimitsConfig, null);
+    DocumentShredder documentShredder =
+        new DocumentShredder(objectMapper, documentLimitsConfig, null);
     return new CommandResolverService(
         List.of(
             new BeginOfflineSessionCommandResolver(),
             new EndOfflineSessionCommandResolver(),
             new OfflineGetStatusCommandResolver(),
-            new OfflineInsertManyCommandResolver(shredder, this.operationsConfig)));
+            new OfflineInsertManyCommandResolver(documentShredder, this.operationsConfig)));
   }
 
   private static DataVectorizerService buildDataVectorizeService() {
