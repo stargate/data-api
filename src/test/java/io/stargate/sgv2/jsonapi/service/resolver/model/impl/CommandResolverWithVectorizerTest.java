@@ -25,7 +25,9 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
@@ -78,17 +80,15 @@ public class CommandResolverWithVectorizerTest {
 
   @Nested
   class Resolve {
+    // TODO: do these need to be uniqe to this test ? Can we use TestConstants ?
     protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
     protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-    private final CommandContext VECTOR_COMMAND_CONTEXT =
-        new CommandContext(
-            KEYSPACE_NAME,
-            COLLECTION_NAME,
-            new CollectionSettings(
-                COLLECTION_NAME,
-                CollectionSettings.IdConfig.defaultIdConfig(),
-                new CollectionSettings.VectorConfig(
-                    true, -1, CollectionSettings.SimilarityFunction.COSINE, null),
+    private final CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT =
+        new CommandContext<>(
+            new CollectionSchemaObject(
+                new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME),
+                CollectionSchemaObject.IdConfig.defaultIdConfig(),
+                new VectorConfig(true, -1, CollectionSchemaObject.SimilarityFunction.COSINE, null),
                 null),
             null,
             null,
@@ -170,7 +170,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(exception.getMessage())
                     .isEqualTo(
                         "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.collection());
+                            + VECTOR_COMMAND_CONTEXT.schemaObject().name.table());
                 assertThat(exception.getErrorCode())
                     .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
@@ -352,7 +352,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(exception.getMessage())
                     .isEqualTo(
                         "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.collection());
+                            + VECTOR_COMMAND_CONTEXT.schemaObject().name.table());
                 assertThat(exception.getErrorCode())
                     .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
@@ -545,7 +545,7 @@ public class CommandResolverWithVectorizerTest {
               TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
               objectMapper.getNodeFactory(),
               Optional.empty(),
-              TestEmbeddingProvider.commandContextWithVectorize.collectionSettings())
+              TestEmbeddingProvider.commandContextWithVectorize.schemaObject())
           .vectorizeUpdateClause(updateClause)
           .subscribe()
           .withSubscriber(UniAssertSubscriber.create())
@@ -745,7 +745,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(exception.getMessage())
                     .isEqualTo(
                         "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.collection());
+                            + VECTOR_COMMAND_CONTEXT.schemaObject().name.table());
                 assertThat(exception.getErrorCode())
                     .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });

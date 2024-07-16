@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
@@ -55,8 +56,9 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
   }
 
   @Override
-  public Operation resolveCommand(CommandContext commandContext, UpdateManyCommand command) {
-    FindOperation findOperation = getFindOperation(commandContext, command);
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, UpdateManyCommand command) {
+    FindOperation findOperation = getFindOperation(ctx, command);
 
     DocumentUpdater documentUpdater = DocumentUpdater.construct(command.updateClause());
 
@@ -66,7 +68,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
 
     // return op
     return new ReadAndUpdateOperation(
-        commandContext,
+        ctx,
         findOperation,
         documentUpdater,
         false,
@@ -78,12 +80,13 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         operationsConfig.lwt().retries());
   }
 
-  private FindOperation getFindOperation(CommandContext commandContext, UpdateManyCommand command) {
-    LogicalExpression logicalExpression = resolve(commandContext, command);
+  private FindOperation getFindOperation(
+      CommandContext<CollectionSchemaObject> ctx, UpdateManyCommand command) {
+    LogicalExpression logicalExpression = resolve(ctx, command);
     addToMetrics(
         meterRegistry, dataApiRequestInfo, jsonApiMetricsConfig, command, logicalExpression, false);
     return FindOperation.unsorted(
-        commandContext,
+        ctx,
         logicalExpression,
         DocumentProjector.includeAllProjector(),
         null != command.options() ? command.options().pageState() : null,

@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver.model;
 
+import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
@@ -9,6 +10,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.IndexUsage;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
@@ -42,15 +47,70 @@ public interface CommandResolver<C extends Command> {
   Class<C> getCommandClass();
 
   /**
-   * Implementations should return a {@link Operation} to execute the command that has the {@link
-   * CommandContext} so it knows the db and other contextual info, and as well has all the data it
-   * needs.
+   * Call to resolve the {@link Command} into an {@link Operation} that will implement the command
+   * agains the database.
    *
-   * @param ctx {@link CommandContext}
-   * @param command {@link Command}
-   * @return Operation, must no be <code>null</code>
+   * <p>Call this method, not the schema object specific ones, they are helpers for implementors so
+   * they don't have to cast.
+   *
+   * @param commandContext Context the command is running in
+   * @param command The command to resolve into an opertion
+   * @return Operation, must not be <code>null</code>
+   * @param <T>
    */
-  Operation resolveCommand(CommandContext ctx, C command);
+  @SuppressWarnings("unchecked")
+  default <T extends SchemaObject> Operation resolveCommand(
+      CommandContext<T> commandContext, C command) {
+    Preconditions.checkNotNull(commandContext, "commandContext must not be null");
+    Preconditions.checkNotNull(command, "command must not be null");
+
+    return switch (commandContext.schemaObject().type) {
+      case COLLECTION -> resolveCollectionCommand(commandContext.asCollectionContext(), command);
+      case TABLE -> resolveTableCommand(commandContext.asTableContext(), command);
+      case KEYSPACE -> resolveKeyspaceCommand(commandContext.asKeyspaceContext(), command);
+    };
+  }
+
+  /**
+   * Implementors should use this method when they can resolve commands for a collection.
+   *
+   * @param ctx
+   * @param command
+   * @return
+   */
+  default Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, C command) {
+    // there error is a fallback to make sure it is implemented if it should be
+    // commands are tested well
+    throw new UnsupportedOperationException("resolveCollectionCommand Not Implemented");
+  }
+  ;
+
+  /**
+   * Implementors should use this method when they can resolve commands for a table.
+   *
+   * @param ctx
+   * @param command
+   * @return
+   */
+  default Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, C command) {
+    // there error is a fallback to make sure it is implemented if it should be
+    // commands are tested well
+    throw new UnsupportedOperationException("resolveTableCommand Not Implemented");
+  }
+
+  /**
+   * Implementors should use this method when they can resolve commands for a keyspace.
+   *
+   * @param ctx
+   * @param command
+   * @return
+   */
+  default Operation resolveKeyspaceCommand(CommandContext<KeyspaceSchemaObject> ctx, C command) {
+    // there error is a fallback to make sure it is implemented if it should be
+    // commands are tested well
+    throw new UnsupportedOperationException("resolveKeyspaceCommand Not Implemented");
+  }
 
   static final String UNKNOWN_VALUE = "unknown";
   static final String TENANT_TAG = "tenant";

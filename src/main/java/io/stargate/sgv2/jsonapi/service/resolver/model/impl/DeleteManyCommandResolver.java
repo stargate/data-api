@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
@@ -50,14 +51,15 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
   }
 
   @Override
-  public Operation resolveCommand(CommandContext commandContext, DeleteManyCommand command) {
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, DeleteManyCommand command) {
     // If there is no filter or filter is empty, use Truncate operation instead of Delete
     if (command.filterClause() == null || command.filterClause().logicalExpression().isEmpty()) {
-      return new TruncateCollectionOperation(commandContext);
+      return new TruncateCollectionOperation(ctx);
     }
-    final FindOperation findOperation = getFindOperation(commandContext, command);
+    final FindOperation findOperation = getFindOperation(ctx, command);
     return DeleteOperation.delete(
-        commandContext,
+        ctx,
         findOperation,
         operationsConfig.maxDocumentDeleteCount(),
         operationsConfig.lwt().retries());
@@ -68,13 +70,13 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
     return DeleteManyCommand.class;
   }
 
-  private FindOperation getFindOperation(CommandContext commandContext, DeleteManyCommand command) {
-    LogicalExpression logicalExpression = resolve(commandContext, command);
+  private FindOperation getFindOperation(CommandContext ctx, DeleteManyCommand command) {
+    LogicalExpression logicalExpression = resolve(ctx, command);
     // Read One extra document than delete limit so return moreData flag
     addToMetrics(
         meterRegistry, dataApiRequestInfo, jsonApiMetricsConfig, command, logicalExpression, false);
     return FindOperation.unsorted(
-        commandContext,
+        ctx,
         logicalExpression,
         DocumentProjector.includeAllProjector(),
         null,

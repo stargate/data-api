@@ -6,6 +6,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDese
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import java.util.List;
 import java.util.Map;
@@ -21,8 +23,16 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
              {"name": "Aaron", "country": "US"}
               """)
 public record FilterClause(LogicalExpression logicalExpression) {
-  public void validate(CommandContext commandContext) {
-    IndexingProjector indexingProjector = commandContext.indexingProjector();
+
+  public <T extends SchemaObject> void validate(CommandContext<T> commandContext) {
+
+    if (commandContext.schemaObject().type != CollectionSchemaObject.TYPE) {
+      return;
+    }
+
+    IndexingProjector indexingProjector =
+        commandContext.asCollectionContext().schemaObject().indexingProjector();
+
     // If nothing specified, everything indexed
     if (indexingProjector.isIdentityProjection()) {
       return;

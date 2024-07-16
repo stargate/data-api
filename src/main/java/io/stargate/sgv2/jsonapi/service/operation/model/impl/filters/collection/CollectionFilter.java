@@ -86,6 +86,8 @@ public abstract class CollectionFilter extends DBFilterBase {
   }
 
   protected static JsonNode toJsonNode(JsonNodeFactory nodeFactory, Object value) {
+
+    // TODO: this is a lot easier using switch pattern matching
     if (value instanceof DocumentId) {
       return toJsonNode(nodeFactory, (DocumentId) value);
     } else if (value instanceof String) {

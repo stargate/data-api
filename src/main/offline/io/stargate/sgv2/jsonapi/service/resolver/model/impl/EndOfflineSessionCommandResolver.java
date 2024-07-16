@@ -17,7 +17,7 @@ public class EndOfflineSessionCommandResolver implements CommandResolver<EndOffl
   }
 
   @Override
-  public Operation resolveCommand(CommandContext ctx, EndOfflineSessionCommand command) {
+  public Operation resolveCollectionCommand(CommandContext<CollectionSchemaObject> ctx,  EndOfflineSessionCommand command) {
     return new EndOfflineSessionOperation(command.sessionId());
   }
 }

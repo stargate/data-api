@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
@@ -51,10 +52,11 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
   }
 
   @Override
-  public Operation resolveCommand(CommandContext commandContext, DeleteOneCommand command) {
-    FindOperation findOperation = getFindOperation(commandContext, command);
-    return DeleteOperation.delete(
-        commandContext, findOperation, 1, operationsConfig.lwt().retries());
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, DeleteOneCommand command) {
+
+    FindOperation findOperation = getFindOperation(ctx, command);
+    return DeleteOperation.delete(ctx, findOperation, 1, operationsConfig.lwt().retries());
   }
 
   @Override

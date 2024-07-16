@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindCollectionsOperation;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -24,7 +26,7 @@ public class FindCollectionCommandResolverTest {
   @Nested
   class FindCollectionCommandResolveCommand {
 
-    CommandContext commandContext = CommandContext.empty();
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.CONTEXT;
 
     @Test
     public void findCollection() throws Exception {

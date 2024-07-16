@@ -153,7 +153,7 @@ public class NamespaceCacheTest {
                                 new HashMap<>())));
               });
       NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
-      CollectionSettings collectionSettings =
+      CollectionSchemaObject collectionSettings =
           namespaceCache
               .getCollectionProperties(dataApiRequestInfo, "table")
               .subscribe()
@@ -165,7 +165,7 @@ public class NamespaceCacheTest {
           .satisfies(
               s -> {
                 assertThat(s.vectorConfig().vectorEnabled()).isFalse();
-                assertThat(s.collectionName()).isEqualTo("table");
+                assertThat(s.name.table()).isEqualTo("table");
               });
     }
 
@@ -283,7 +283,7 @@ public class NamespaceCacheTest {
                                 new HashMap<>())));
               });
       NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
-      CollectionSettings collectionSettings =
+      CollectionSchemaObject collectionSettings =
           namespaceCache
               .getCollectionProperties(dataApiRequestInfo, "table")
               .subscribe()
@@ -295,7 +295,7 @@ public class NamespaceCacheTest {
           .satisfies(
               s -> {
                 assertThat(s.vectorConfig().vectorEnabled()).isFalse();
-                assertThat(s.collectionName()).isEqualTo("table");
+                assertThat(s.name.table()).isEqualTo("table");
                 assertThat(s.indexingConfig().denied()).containsExactly("comment");
               });
     }

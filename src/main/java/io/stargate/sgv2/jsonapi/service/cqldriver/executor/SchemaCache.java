@@ -28,7 +28,7 @@ public class SchemaCache {
   private final Cache<CacheKey, NamespaceCache> schemaCache =
       Caffeine.newBuilder().maximumSize(1000).build();
 
-  public Uni<CollectionSettings> getCollectionSettings(
+  public Uni<CollectionSchemaObject> getCollectionSettings(
       DataApiRequestInfo dataApiRequestInfo,
       Optional<String> tenant,
       String namespace,
