@@ -303,16 +303,6 @@ stargate:
           supported-authentications:
             NONE:
               enabled: true
-            HEADER:
-              enabled: false
-              tokens:
-                - accepted: x-embedding-api-key
-                  forwarded: Authorization
-            SHARED_SECRET:
-              enabled: false
-              tokens:
-                - accepted: providerKey
-                  forwarded: Authorization
           properties:
             max-batch-size: 8
           models:
