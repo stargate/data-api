@@ -23,7 +23,9 @@ import java.math.BigDecimal;
 import java.util.*;
 import org.eclipse.microprofile.config.ConfigProvider;
 
-/** {@link StdDeserializer} for the {@link FilterClause}. */
+/** {@link StdDeserializer} for the {@link FilterClause}.
+ * TIDY: this class has a lot of string constants for filter operations that we have defined as constants elsewhere
+ * */
 public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   private final OperationsConfig operationsConfig;
 

@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
@@ -66,10 +67,7 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
 
     LogicalExpression logicalExpression = resolve(ctx, command);
     final SortClause sortClause = command.sortClause();
-    // validate sort path
-    if (sortClause != null) {
-      sortClause.validate(ctx);
-    }
+    ValidatableCommandClause.maybeValidate(ctx, sortClause);
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 

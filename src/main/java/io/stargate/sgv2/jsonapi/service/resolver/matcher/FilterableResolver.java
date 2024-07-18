@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
+import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
@@ -143,10 +144,9 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   }
 
   protected LogicalExpression resolve(CommandContext commandContext, T command) {
-    // verify if filter fields are in deny list or not in allow list
-    if (commandContext != null && command.filterClause() != null) {
-      command.filterClause().validate(commandContext);
-    }
+
+    ValidatableCommandClause.maybeValidate(commandContext, command.filterClause());
+
     LogicalExpression filter = matchRules.apply(commandContext, command);
     if (filter.getTotalComparisonExpressionCount() > operationsConfig.maxFilterObjectProperties()) {
       throw new JsonApiException(
