@@ -22,7 +22,7 @@ class JsonapiTableMatcherTest {
   JsonapiTableMatcher tableMatcher = new JsonapiTableMatcher();
 
   @Nested
-  class PredicateTest {
+  class BuiltConditionPredicateTest {
 
     // NOTE: happy path asserted in the integration test
 

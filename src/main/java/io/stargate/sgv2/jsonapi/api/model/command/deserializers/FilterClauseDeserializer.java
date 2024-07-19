@@ -130,8 +130,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                 "%s: filter clause path ('%s') contains character(s) not allowed",
                 ErrorCode.INVALID_FILTER_EXPRESSION.getMessage(), entry.getKey()));
       }
-      logicalExpression.addComparisonExpression(
-          ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
+      logicalExpression.addComparisonExpressions(
+          List.of(
+              ComparisonExpression.eq(
+                  entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue()))));
     }
   }
 

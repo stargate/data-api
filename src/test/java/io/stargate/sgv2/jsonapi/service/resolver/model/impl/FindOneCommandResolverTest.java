@@ -11,8 +11,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -51,9 +53,9 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               op -> {
-                DBFilterBase.IDFilter filter =
-                    new DBFilterBase.IDFilter(
-                        DBFilterBase.IDFilter.Operator.EQ, DocumentId.fromString("id"));
+                IDCollectionFilter filter =
+                    new IDCollectionFilter(
+                        IDCollectionFilter.Operator.EQ, DocumentId.fromString("id"));
 
                 assertThat(op.objectMapper()).isEqualTo(objectMapper);
                 assertThat(op.commandContext()).isEqualTo(commandContext);
@@ -88,9 +90,8 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               op -> {
-                DBFilterBase.TextFilter filter =
-                    new DBFilterBase.TextFilter(
-                        "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+                TextCollectionFilter filter =
+                    new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
 
                 assertThat(op.objectMapper()).isEqualTo(objectMapper);
                 assertThat(op.commandContext()).isEqualTo(commandContext);
@@ -130,9 +131,8 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                DBFilterBase.TextFilter filter =
-                    new DBFilterBase.TextFilter(
-                        "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+                TextCollectionFilter filter =
+                    new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
 
                 float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
@@ -174,9 +174,8 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                DBFilterBase.TextFilter filter =
-                    new DBFilterBase.TextFilter(
-                        "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+                TextCollectionFilter filter =
+                    new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
 
                 float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
@@ -219,9 +218,8 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                DBFilterBase.TextFilter filter =
-                    new DBFilterBase.TextFilter(
-                        "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+                TextCollectionFilter filter =
+                    new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
 
                 float[] vector = new float[] {0.11f, 0.22f, 0.33f, 0.44f};
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
@@ -263,9 +261,8 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               find -> {
-                DBFilterBase.TextFilter filter =
-                    new DBFilterBase.TextFilter(
-                        "status", DBFilterBase.MapFilterBase.Operator.EQ, "active");
+                TextCollectionFilter filter =
+                    new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active");
 
                 assertThat(find.objectMapper()).isEqualTo(objectMapper);
                 assertThat(find.commandContext()).isEqualTo(commandContext);
@@ -361,9 +358,8 @@ public class FindOneCommandResolverTest {
           .isInstanceOfSatisfying(
               FindOperation.class,
               op -> {
-                DBFilterBase.TextFilter filter =
-                    new DBFilterBase.TextFilter(
-                        "col", DBFilterBase.MapFilterBase.Operator.EQ, "val");
+                TextCollectionFilter filter =
+                    new TextCollectionFilter("col", MapCollectionFilter.Operator.EQ, "val");
 
                 assertThat(op.objectMapper()).isEqualTo(objectMapper);
                 assertThat(op.commandContext()).isEqualTo(commandContext);

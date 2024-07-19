@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cql.ColumnUtils;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.operation.model.impl.builder.BuiltCondition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -188,6 +189,7 @@ public class QueryBuilder {
         }
       }
       case "or" -> {
+        // TODO: this code is basically a duplicate of the match because with OR rather than AND
         // have parenthesis only when having more than one innerExpression
         if (innerExpressions.size() > 1) {
           sb.append("(");
@@ -203,11 +205,13 @@ public class QueryBuilder {
           sb.append(")");
         }
       }
+        // TODO: MAKE THIS AN ENUM or something more than a string !
+        // there is a public Variable.EXPR_TYPE
       case "variable" -> {
         Variable<BuiltCondition> variable = (Variable) outerExpression;
         BuiltCondition condition = variable.getValue();
         condition.lhs.appendToBuilder(sb);
-        condition.jsonTerm.addToCqlValues(values);
+        condition.rhsTerm.appendPositionalValue(values);
         sb.append(" ").append(condition.predicate.toString()).append(" ?");
       }
       default ->
