@@ -2,7 +2,9 @@ package io.stargate.sgv2.jsonapi.service.processor;
 
 import static io.stargate.sgv2.jsonapi.config.constants.LoggingConstants.*;
 
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
@@ -35,6 +37,8 @@ import org.slf4j.MDC;
 public class MeteredCommandProcessor {
 
   private static final Logger logger = LoggerFactory.getLogger(MeteredCommandProcessor.class);
+
+  private static final ObjectWriter OBJECT_WRITER = new ObjectMapper().writer();
 
   private static final String UNKNOWN_VALUE = "unknown";
 
@@ -143,7 +147,11 @@ public class MeteredCommandProcessor {
             getIncomingDocumentsCount(command),
             getOutgoingDocumentsCount(result),
             result != null ? result.errors() : Collections.emptyList());
-    return new ObjectMapper().valueToTree(commandLog).toString();
+    try {
+      return OBJECT_WRITER.writeValueAsString(commandLog);
+    } catch (JacksonException e) {
+      return "ERROR: Failed to serialize CommandLog instance, cause = " + e;
+    }
   }
 
   /**
