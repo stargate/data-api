@@ -26,13 +26,12 @@ public class LogicalExpression {
     }
   }
 
-  // TODO: why are these not final ?
-  public List<LogicalExpression> logicalExpressions;
-  public List<ComparisonExpression> comparisonExpressions;
+  public final List<LogicalExpression> logicalExpressions;
+  public final List<ComparisonExpression> comparisonExpressions;
 
   private LogicalOperator logicalRelation;
 
-  // These two counter will sum up all the matched expression in the Expression tree. (Note: not
+  // These two counters will sum up all the matched expression in the Expression tree. (Note: not
   // just current level)
   // TODO: the list is public so anyone can change it and break this count. May need to re-design
   private int totalComparisonExpressionCount;

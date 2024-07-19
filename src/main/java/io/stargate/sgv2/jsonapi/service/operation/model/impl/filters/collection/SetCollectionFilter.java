@@ -15,7 +15,9 @@ public abstract class SetCollectionFilter<T> extends CollectionFilter {
     NOT_CONTAINS;
   }
 
+  /** Set-valued database column this filter operates on. */
   protected final String columnName;
+
   protected final T value;
   protected final Operator operator;
 
@@ -31,9 +33,9 @@ public abstract class SetCollectionFilter<T> extends CollectionFilter {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     SetCollectionFilter<?> that = (SetCollectionFilter<?>) o;
-    return columnName.equals(that.columnName)
-        && value.equals(that.value)
-        && operator == that.operator;
+    return operator == that.operator
+        && columnName.equals(that.columnName)
+        && value.equals(that.value);
   }
 
   @Override
