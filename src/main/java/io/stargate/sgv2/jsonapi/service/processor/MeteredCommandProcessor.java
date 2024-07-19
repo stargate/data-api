@@ -203,7 +203,9 @@ public class MeteredCommandProcessor {
     }
     if (!isFailure
         && commandLevelLoggingConfig.onlyResultsWithErrors()
-        && (commandResult == null || commandResult.errors().isEmpty())) {
+        && (commandResult == null
+            || commandResult.errors() == null
+            || commandResult.errors().isEmpty())) {
       return false;
     }
     // return true in all other cases
