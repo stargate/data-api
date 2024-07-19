@@ -1,8 +1,8 @@
 version: '3'
 
 services:
-  hcd:
-    image: datastax/hcd:${HCDTAG}
+  hcd-1:
+    image: ${HCDIMAGE}:${HCDTAG}
     platform: linux/amd64
     networks:
       - stargate
@@ -10,6 +10,50 @@ services:
     environment:
       - MAX_HEAP_SIZE=1536M
       - CLUSTER_NAME=hcd-${HCDTAG}-cluster
+      - DS_LICENSE=accept
+      - HCD_AUTO_CONF_OFF=cassandra.yaml
+    volumes:
+      - ${PWD}/cassandra-hcd.yaml:/opt/hcd/resources/cassandra/conf/cassandra.yaml:rw
+    ports:
+      - "9042:9042"
+    healthcheck:
+      test: [ "CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'describe keyspaces'" ]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+
+  hcd-2:
+    image: ${HCDIMAGE}:${HCDTAG}
+    platform: linux/amd64
+    networks:
+      - stargate
+    mem_limit: 3G
+    environment:
+      - MAX_HEAP_SIZE=1536M
+      - CLUSTER_NAME=hcd-${HCDTAG}-cluster
+      - SEEDS=hcd-1
+      - DS_LICENSE=accept
+      - HCD_AUTO_CONF_OFF=cassandra.yaml
+    volumes:
+      - ${PWD}/cassandra-hcd.yaml:/opt/hcd/resources/cassandra/conf/cassandra.yaml:rw
+    ports:
+      - "9042:9042"
+    healthcheck:
+      test: [ "CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'describe keyspaces'" ]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+
+  hcd-3:
+    image: ${HCDIMAGE}:${HCDTAG}
+    platform: linux/amd64
+    networks:
+      - stargate
+    mem_limit: 3G
+    environment:
+      - MAX_HEAP_SIZE=1536M
+      - CLUSTER_NAME=hcd-${HCDTAG}-cluster
+      - SEEDS=hcd-1
       - DS_LICENSE=accept
       - HCD_AUTO_CONF_OFF=cassandra.yaml
     volumes:
