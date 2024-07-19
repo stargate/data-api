@@ -205,7 +205,7 @@ public class QueryBuilder {
           sb.append(")");
         }
       }
-        // TODO OMG MAKE THIS AN ENUM or something more than a string !
+        // TODO: MAKE THIS AN ENUM or something more than a string !
         // there is a public Variable.EXPR_TYPE
       case "variable" -> {
         Variable<BuiltCondition> variable = (Variable) outerExpression;

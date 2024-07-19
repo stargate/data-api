@@ -26,18 +26,17 @@ public class LogicalExpression {
     }
   }
 
-  // TODO: why are these not final ?
-  public List<LogicalExpression> logicalExpressions;
-  public List<ComparisonExpression> comparisonExpressions;
+  public final List<LogicalExpression> logicalExpressions;
+  public final List<ComparisonExpression> comparisonExpressions;
 
   private LogicalOperator logicalRelation;
-  // TODO - there MUST be explaination of why this count is needed, why not just use the size of the
-  // list ?
-  // Also, the list is public so anyone can change it and break this count.
+
+  // These two counters will sum up all the matched expression in the Expression tree. (Note: not
+  // just current level)
+  // TODO: the list is public so anyone can change it and break this count. May need to re-design
   private int totalComparisonExpressionCount;
   private int totalIdComparisonExpressionCount;
 
-  // TODO: All the uses of this ctor only pass a different opertor, all other args are the same
   private LogicalExpression(
       LogicalOperator logicalRelation,
       int totalComparisonExpressionCount,
@@ -61,8 +60,10 @@ public class LogicalExpression {
     return new LogicalExpression(LogicalOperator.NOT, 0, new ArrayList<>(), new ArrayList<>());
   }
 
-  /** This method will flip the operators and operand if logical operator is not */
-  // TODO: comment to explain what is going on here
+  /**
+   * This method will flip the operators and operand if logical operator is $not. $not will traverse
+   * the expression tree and flip AND->OR, OR->AND, operator->opposite operator
+   */
   public void traverseForNot(LogicalExpression parent) {
     // TODO: why this is new array needed ? it is used one to traverse the same list ?
     List<LogicalExpression> tempLogicalExpressions = new ArrayList<>(logicalExpressions);
@@ -75,21 +76,18 @@ public class LogicalExpression {
     while (iterator.hasNext()) {
       LogicalExpression logicalExpression = iterator.next();
       if (logicalExpression.logicalRelation == LogicalOperator.NOT) {
-        // TODO: why are we removing the element from the list ?
+        // NOT operator, remove it because it is only for flipping other operators
         iterator.remove();
 
-        // TODO wy use this and why not use -=
-        this.totalComparisonExpressionCount =
-            this.totalComparisonExpressionCount - logicalExpression.totalComparisonExpressionCount;
-        this.totalIdComparisonExpressionCount =
-            this.totalIdComparisonExpressionCount
-                - logicalExpression.totalIdComparisonExpressionCount;
+        this.totalComparisonExpressionCount -= logicalExpression.totalComparisonExpressionCount;
+        this.totalIdComparisonExpressionCount -= logicalExpression.totalIdComparisonExpressionCount;
       }
     }
 
-    // TODO WHY ?
     if (logicalRelation == LogicalOperator.NOT) {
+      // flip AND->OR, OR->AND, operator->opposite operator
       flip();
+      // add to parent logicalExpression after the flip
       addToParent(parent);
     }
   }
@@ -102,18 +100,6 @@ public class LogicalExpression {
     totalComparisonExpressionCount += logicalExpression.getTotalComparisonExpressionCount();
     totalIdComparisonExpressionCount += logicalExpression.getTotalIdComparisonExpressionCount();
     logicalExpressions.add(logicalExpression);
-  }
-
-  // TODO: this is the same function as below, this is just code duplication
-  public void addComparisonExpression(ComparisonExpression comparisonExpression) {
-    // Two counters totalIdComparisonExpressionCount and totalComparisonExpressionCount
-    // They are for validating the filters
-    // e.g. no more than one ID filter, maximum filter amount
-    if (comparisonExpression.getPath().equals(DocumentConstants.Fields.DOC_ID)) {
-      totalIdComparisonExpressionCount++;
-    }
-    totalComparisonExpressionCount++;
-    comparisonExpressions.add(comparisonExpression);
   }
 
   public void addComparisonExpressions(List<ComparisonExpression> comparisonExpressionList) {
@@ -159,12 +145,14 @@ public class LogicalExpression {
       // Multiple conditions in not, after push down will become or
       final LogicalExpression orLogic = LogicalExpression.or();
       comparisonExpressions.stream()
-          .forEach(comparisonExpression -> orLogic.addComparisonExpression(comparisonExpression));
+          .forEach(
+              comparisonExpression ->
+                  orLogic.addComparisonExpressions(List.of(comparisonExpression)));
       parent.addLogicalExpression(orLogic);
     } else {
       if (comparisonExpressions.size() == 1) {
         // Unary not, after push down will become additional condition
-        parent.addComparisonExpression(comparisonExpressions.get(0));
+        parent.addComparisonExpressions(List.of(comparisonExpressions.get(0)));
       }
     }
     comparisonExpressions.clear();

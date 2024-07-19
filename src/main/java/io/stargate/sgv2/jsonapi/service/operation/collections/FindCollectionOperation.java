@@ -410,7 +410,6 @@ public record FindCollectionOperation(
         for (DBFilterBase filter : currentComparisonExpression.getDbFilters()) {
           // every filter must be a collection filter, because we are making a new document and we
           // only do this for docs
-          // TODO: move ot modern swtich with pattern matching
           if (filter instanceof IDCollectionFilter) {
             IDCollectionFilter idFilter = (IDCollectionFilter) filter;
             documentId = idFilter.getSingularDocumentId();
