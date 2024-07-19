@@ -38,10 +38,10 @@ public class LogicalExpressionTest {
 
       LogicalExpression and = LogicalExpression.and();
       LogicalExpression nestedOr = LogicalExpression.and();
-      nestedOr.addComparisonExpression(comparisonExpression2);
-      nestedOr.addComparisonExpression(comparisonExpression3);
+      nestedOr.addComparisonExpressions(List.of(comparisonExpression2));
+      nestedOr.addComparisonExpressions(List.of(comparisonExpression3));
       and.addLogicalExpression(nestedOr);
-      and.addComparisonExpression(comparisonExpression1);
+      and.addComparisonExpressions(List.of(comparisonExpression1));
 
       assertThat(and.getTotalComparisonExpressionCount()).isEqualTo(3);
       assertThat(and.getTotalIdComparisonExpressionCount()).isEqualTo(1);

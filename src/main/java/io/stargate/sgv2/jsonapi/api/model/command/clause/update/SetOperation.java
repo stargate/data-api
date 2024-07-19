@@ -50,6 +50,8 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
    * @param skipValidation whether to skip validation, used for internl purposes for so _id and
    *     others can be updated
    */
+  //  TODO: Having skipValidation here is weird IMO
+  //    If this is for internal usage, we could create a new construct method with a better name.
   public static SetOperation constructSet(
       String filterPath, JsonNode value, boolean skipValidation) {
     List<Action> additions = new ArrayList<>();
