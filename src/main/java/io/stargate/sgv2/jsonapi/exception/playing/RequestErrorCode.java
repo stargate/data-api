@@ -2,16 +2,20 @@ package io.stargate.sgv2.jsonapi.exception.playing;
 
 public enum RequestErrorCode {
 
-  FILTER_MULTIPLE_ID_FILTER(
-      "Cannot have more than one _id equals filter clause"),
+  FILTER_MULTIPLE_ID_FILTER(),
 
   FILTER_FIELDS_LIMIT_VIOLATION("Too many fields in the filter");
 
 
   public final String title;
+  private final String template;
 
   RequestErrorCode(String title) {
-    this.title = title;
+    this.title = // get title from file
+    this.template = // get template from file
   }
 
+  Error toError(){
+
+  }
 }
