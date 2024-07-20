@@ -1,4 +1,4 @@
-# DSE Config Version: 6.9.0-early-preview
+# DSE Config Version: 6.9.0
 
 # Memory limit for DSE In-Memory tables as a fraction of system memory. When not set,
 # the default is 0.2 (20% of system memory).
@@ -68,7 +68,7 @@ authentication_options:
   default_scheme: internal
   other_schemes:
   scheme_permissions: false
-  allow_digest_with_kerberos: false
+  allow_digest_with_kerberos: true
   plain_text_without_ssl: warn
   transitional_mode: disabled
 
@@ -1192,7 +1192,7 @@ internode_messaging_options:
     # The number of "Gremlin" threads available to execute scripts in a ScriptEngine as well as bytecode requests.
     # This pool represents the workers available to handle blocking operations in Gremlin Server. When unset or set to zero,
     # this value will be defaulted to 10 times the value of the JVM property "cassandra.available_processors" (if set)
-    # or to 10 times the value of Runtime.getRuntime().availableProcessors() (otherwise).
+  # or to 10 times the value of Runtime.getRuntime().availableProcessors() (otherwise).
   # gremlinPool: 0
 
 #        # The gremlin-groovy script engine will always be added even if the configuration option is not present.

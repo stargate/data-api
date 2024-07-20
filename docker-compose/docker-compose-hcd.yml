@@ -15,7 +15,7 @@ services:
     volumes:
       - ${PWD}/cassandra-hcd.yaml:/opt/hcd/resources/cassandra/conf/cassandra.yaml:rw
     ports:
-      - "9042:9042"
+      - ${HCD_PORT}:${HCD_FWD_PORT}
     healthcheck:
       test: [ "CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'describe keyspaces'" ]
       interval: 15s
@@ -28,6 +28,9 @@ services:
     networks:
       - stargate
     mem_limit: 3G
+    depends_on:
+      hcd-1:
+        condition: service_healthy
     environment:
       - MAX_HEAP_SIZE=1536M
       - CLUSTER_NAME=hcd-${HCDTAG}-cluster
@@ -36,8 +39,6 @@ services:
       - HCD_AUTO_CONF_OFF=cassandra.yaml
     volumes:
       - ${PWD}/cassandra-hcd.yaml:/opt/hcd/resources/cassandra/conf/cassandra.yaml:rw
-    ports:
-      - "9042:9042"
     healthcheck:
       test: [ "CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'describe keyspaces'" ]
       interval: 15s
@@ -50,6 +51,9 @@ services:
     networks:
       - stargate
     mem_limit: 3G
+    depends_on:
+      hcd-1:
+        condition: service_healthy
     environment:
       - MAX_HEAP_SIZE=1536M
       - CLUSTER_NAME=hcd-${HCDTAG}-cluster
@@ -58,8 +62,6 @@ services:
       - HCD_AUTO_CONF_OFF=cassandra.yaml
     volumes:
       - ${PWD}/cassandra-hcd.yaml:/opt/hcd/resources/cassandra/conf/cassandra.yaml:rw
-    ports:
-      - "9042:9042"
     healthcheck:
       test: [ "CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'describe keyspaces'" ]
       interval: 15s
@@ -69,7 +71,7 @@ services:
   data-api:
     image: ${DATAAPIIMAGE}:${DATAAPITAG}
     depends_on:
-      hcd:
+      hcd-1:
         condition: service_healthy
     networks:
       - stargate

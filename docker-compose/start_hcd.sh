@@ -18,7 +18,7 @@ HCDIMAGE="cr.dtsx.io/datastax/hcd"
 HCDONLY="false"
 HCDNODES=1
 
-while getopts "dlqnr:j:" opt; do
+while getopts "dlqn:r:j:" opt; do
   case $opt in
     l)
       DATAAPITAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
@@ -59,15 +59,20 @@ export HCDNODES
 export DATAAPITAG
 export DATAAPIIMAGE
 
+if [ -z "${HCD_PORT}" ]; then
+  export HCD_PORT="9042"
+fi
+
+if [ -z "${HCD_FWD_PORT}" ]; then
+  export HCD_FWD_PORT="9042"
+fi
+
 echo "Running with HCD $HCDIMAGE:$HCDTAG ($HCDNODES nodes), Data API $DATAAPIIMAGE:$DATAAPITAG"
 
 if [ "$HCDONLY" = "true" ]; then
   docker compose -f docker-compose-hcd.yml up -d --wait hcd-1
   exit 0
 else
-  docker compose -f docker-compose-hcd.yml up -d --wait
-
-
   if [ "$HCDNODES" = 1 ]; then
     docker compose -f docker-compose-hcd.yml up -d --wait hcd-1 data-api
   elif [ "$HCDNODES" = 2 ]; then
