@@ -44,12 +44,12 @@ public abstract class ConditionLHS {
     public boolean equals(Object other) {
       if (other == this) {
         return true;
-      } else if (other instanceof ColumnName) {
+      }
+      if (other instanceof ColumnName) {
         ColumnName that = (ColumnName) other;
         return Objects.equals(this.columnName, that.columnName);
-      } else {
-        return false;
       }
+      return false;
     }
 
     @Override
