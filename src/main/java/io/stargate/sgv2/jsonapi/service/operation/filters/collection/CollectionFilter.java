@@ -29,8 +29,8 @@ public abstract class CollectionFilter extends DBFilterBase {
   }
 
   /**
-   * Optionally returns a <link>SetOperation</link> that should be used to update a new document
-   * created during an updset operation with the filter condition.
+   * Optionally returns a <link>SetOperation</link> that should be used (if any) to update a new
+   * document created during an upsert operation with the filter condition.
    *
    * @return
    */

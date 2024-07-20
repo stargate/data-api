@@ -49,6 +49,8 @@ public class AllCollectionFilter extends CollectionFilter {
   //        return false;
   //    }
 
+  /* allFilter will populate a list of BuiltCondition, which will be used to logical AND together later
+   */
   public List<BuiltCondition> getAll() {
     final ArrayList<BuiltCondition> result = new ArrayList<>();
     for (Object value : arrayValue) {
@@ -64,6 +66,6 @@ public class AllCollectionFilter extends CollectionFilter {
 
   @Override
   public BuiltCondition get() {
-    throw new UnsupportedOperationException("For $all filter we always use getALL() method");
+    throw new UnsupportedOperationException("For $all filter we always use getAll() method");
   }
 }

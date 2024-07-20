@@ -6,11 +6,11 @@ import java.util.List;
 public abstract class BuildConditionTerm {
 
   /**
-   * This method is used for populate positional cql value list e.g. select * from table where
+   * This method is used for populating positional cql value list e.g. select * from table where
    * map[?] = ? limit 1; For this case, we populate as key and value
    *
-   * <p>e.g. select * from table where array_contains contains ? limit 1; * For this case, we
-   * populate positional cql value
+   * <p>e.g. select * from table where array_contains contains ? limit 1; For this case, we populate
+   * positional cql value
    */
   public abstract void appendPositionalValue(List<Object> values);
 }
