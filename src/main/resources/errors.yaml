@@ -1,0 +1,7 @@
+FilterValidationException:
+  FILTER_MULTIPLE_ID_FILTER:
+      title: the title for the error
+      body: big long message with {vars} in it
+   ANOTHER_ERROR:
+      title: the title for the error
+      body: big long message with {vars} in it
