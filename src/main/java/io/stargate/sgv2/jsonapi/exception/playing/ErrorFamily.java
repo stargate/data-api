@@ -1,8 +1,14 @@
 package io.stargate.sgv2.jsonapi.exception.playing;
 
+/**
+ * Top level hierarchy for all exceptions thrown by the API.
+ *
+ * <p>See {@link APIException}
+ */
 public enum ErrorFamily {
+  /** See {@link RequestException} */
+  REQUEST,
 
-  REQUEST_ERROR_FAMILY,
-  SERVER_ERROR_FAMILY,
-  EMBEDDING_PROVIDER_ERROR_FAMILY
+  /** See {@link ServerException} */
+  SERVER;
 }
