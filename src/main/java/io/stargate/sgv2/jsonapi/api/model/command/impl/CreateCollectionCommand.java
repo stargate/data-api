@@ -137,7 +137,7 @@ public record CreateCollectionCommand(
           @Nullable
               @Schema(
                   description =
-                      "Optional parameters that match the template provided for the provider",
+                      "Optional parameters that match the messageTemplate provided for the provider",
                   type = SchemaType.OBJECT)
               @JsonProperty("parameters")
               @JsonInclude(JsonInclude.Include.NON_NULL)

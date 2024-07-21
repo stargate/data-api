@@ -1,7 +1,51 @@
-FilterValidationException:
-  FILTER_MULTIPLE_ID_FILTER:
-      title: the title for the error
-      body: big long message with {vars} in it
-   ANOTHER_ERROR:
-      title: the title for the error
-      body: big long message with {vars} in it
+# Data API Error Messages
+# This file contain the error messages that are returned by the Data API
+#
+# Error Messages have the following hierarchy:
+# Family -> (optional) Scope -> Code
+# Where
+# * Family: Identifies if the error relates to the client request or the processing, analogous to the 4XX and 5XX HTTP status codes
+# * Scope: Optionally identifies the part of the request or server processing that caused the fault, for example "FILTER".
+#          Use "NONE" for no scope. Scope generally map to a concrete Exception class such as FilterException.
+# * Code: A unique string identifying the error
+#
+# All values are strings and must be SNAKE_CASE, all upper case and using _ for space.
+#
+# All values are defined in code see the following:
+# * ErrorFamily - A single enum definition of all families.
+# * ErrorScope - Each family has its own list of scopes, see this interface and it's implementations for the list of scopes.
+# * ErrorCode - Each exception class such as FilterException represents a Scope, and has a list of error codes in an enum.
+#              See this interface for information and it's implementations for the list of error codes.
+#
+# For each error code we define:
+# * title: A short title for the error, that must not change between instances of the error.
+# * body: A longer message that may contain {vars} and be multi line that are replaced by the error handling code.
+#
+# Snippets can be used to include common text in multiple error messages.
+# The snippet is defined at the top of the file and then referenced in the error message body.
+# Snippets are referenced using `$(snippet.<NAME>}` where <NAME> is the name of the snippet key.
+
+snippet:
+  contact_support: |
+    Please contact support if the issue persists.
+
+errors:
+  REQUEST:
+    FILTER:
+      MULTIPLE_ID_FILTER:
+        title: the title for the error
+        body: |
+          big long message with {vars} in it
+    NONE:
+      DOCUMENT_UNPARSEABLE:
+        title: Unable to parse the document
+        body: | 
+          big long message with {vars} in it.
+          
+          ${snippet.contact_support}
+  SERVER:
+    DATABASE:
+      SERVER_READ_FAILED:
+        title: the title for the error
+        body: big long message with {vars} in it
+
