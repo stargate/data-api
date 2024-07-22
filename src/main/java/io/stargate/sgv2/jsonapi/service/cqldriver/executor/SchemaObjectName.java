@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import com.datastax.oss.driver.shaded.guava.common.base.Strings;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import org.slf4j.MDC;
 
 public record SchemaObjectName(String keyspace, String table) {

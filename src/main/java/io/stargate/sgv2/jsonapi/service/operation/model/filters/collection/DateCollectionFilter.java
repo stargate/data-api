@@ -13,9 +13,11 @@ public class DateCollectionFilter extends MapCollectionFilter<Instant> {
   public DateCollectionFilter(String path, Operator operator, Date value) {
     super("query_timestamp_values", path, operator, Instant.ofEpochMilli(value.getTime()));
     this.dateValue = value;
-    if (Operator.EQ == operator || Operator.NE == operator)
+    if (Operator.EQ == operator || Operator.NE == operator) {
       collectionIndexUsage.arrayContainsTag = true;
-    else collectionIndexUsage.timestampIndexTag = true;
+    } else {
+      collectionIndexUsage.timestampIndexTag = true;
+    }
   }
 
   /**

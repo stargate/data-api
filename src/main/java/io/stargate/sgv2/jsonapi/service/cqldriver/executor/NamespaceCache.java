@@ -68,7 +68,7 @@ public class NamespaceCache {
                                     .concat(collectionName)));
                   }
                   // collection does not exist
-                  // TODO: DO NOT do a string starts with , use property error structures
+                  // TODO: DO NOT do a string starts with, use proper error structures
                   // again, why is this here, looks like it returns the same error code ?
                   if (error instanceof RuntimeException rte
                       && rte.getMessage().startsWith(ErrorCode.COLLECTION_NOT_EXIST.getMessage())) {
