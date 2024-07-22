@@ -89,7 +89,7 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
                 + value.getNodeType());
       }
     }
-    return new UpdateOperationResult(changes, null);
+    return new UpdateOperationResult(changes, List.of());
   }
 
   /** Value class for per-field Pop operation definitions. */

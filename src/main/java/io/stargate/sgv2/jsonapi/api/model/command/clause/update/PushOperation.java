@@ -174,7 +174,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
     }
 
     // Every valid update operation modifies document so need just one:
-    return new UpdateOperationResult(!actions.isEmpty(), null);
+    return new UpdateOperationResult(!actions.isEmpty(), List.of());
   }
 
   // Just needed for tests
