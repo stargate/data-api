@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.shredding;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

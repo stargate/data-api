@@ -3,11 +3,12 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineInsertManyCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.InsertOperation;
-import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
-import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
-import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.resolver.CommandResolver;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -16,11 +17,12 @@ import java.util.List;
 @ApplicationScoped
 public class OfflineInsertManyCommandResolver implements CommandResolver<OfflineInsertManyCommand> {
   private final OperationsConfig operationsConfig;
-  private final Shredder shredder;
+  private final DocumentShredder documentShredder;
 
   @Inject
-  public OfflineInsertManyCommandResolver(Shredder shredder, OperationsConfig operationsConfig) {
-    this.shredder = shredder;
+  public OfflineInsertManyCommandResolver(
+      DocumentShredder documentShredder, OperationsConfig operationsConfig) {
+    this.documentShredder = documentShredder;
     this.operationsConfig = operationsConfig;
   }
 
@@ -30,19 +32,21 @@ public class OfflineInsertManyCommandResolver implements CommandResolver<Offline
   }
 
   @Override
-  public Operation resolveCommand(CommandContext ctx, OfflineInsertManyCommand command) {
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, OfflineInsertManyCommand command) {
     if (command.documents().size()
         > operationsConfig.offlineModeConfig().maxDocumentInsertCount()) {
       throw new IllegalArgumentException("Exceeded max document insert count");
     }
     final List<WritableShreddedDocument> shreddedDocuments =
-        command.documents().stream().map(doc -> shredder.shred(ctx, doc, null)).toList();
+        command.documents().stream().map(doc -> documentShredder.shred(ctx, doc, null)).toList();
 
     // Offline insert is always ordered
     final boolean ordered = true;
     // and no need to return document positions
     final boolean returnDocumentResponses = false;
 
-    return InsertOperation.create(ctx, shreddedDocuments, ordered, true, returnDocumentResponses);
+    return InsertCollectionOperation.create(
+        ctx, shreddedDocuments, ordered, true, returnDocumentResponses);
   }
 }

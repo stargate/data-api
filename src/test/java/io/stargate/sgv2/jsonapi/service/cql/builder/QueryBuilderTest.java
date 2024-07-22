@@ -7,9 +7,11 @@ import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import io.stargate.sgv2.jsonapi.service.cql.ExpressionUtils;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.JsonTerm;
+import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
+import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
+import io.stargate.sgv2.jsonapi.service.operation.builder.JsonTerm;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -86,7 +88,7 @@ public class QueryBuilderTest {
                   .select()
                   .column("a", "b", "c")
                   .similarityFunction(
-                      "query_vector_value", CollectionSettings.SimilarityFunction.COSINE)
+                      "query_vector_value", CollectionSchemaObject.SimilarityFunction.COSINE)
                   .from("ks", "tbl")
                   .limit(1)
                   .vsearch(VECTOR_COLUMN, TEST_VECTOR)
@@ -98,7 +100,7 @@ public class QueryBuilderTest {
                   .select()
                   .column("a", "b", "c")
                   .similarityFunction(
-                      "query_vector_value", CollectionSettings.SimilarityFunction.DOT_PRODUCT)
+                      "query_vector_value", CollectionSchemaObject.SimilarityFunction.DOT_PRODUCT)
                   .from("ks", "tbl")
                   .limit(1)
                   .vsearch(VECTOR_COLUMN, TEST_VECTOR)
@@ -110,7 +112,7 @@ public class QueryBuilderTest {
                   .select()
                   .column("a", "b", "c")
                   .similarityFunction(
-                      VECTOR_COLUMN, CollectionSettings.SimilarityFunction.EUCLIDEAN)
+                      VECTOR_COLUMN, CollectionSchemaObject.SimilarityFunction.EUCLIDEAN)
                   .from("ks", "tbl")
                   .limit(1)
                   .vsearch("query_vector_value", TEST_VECTOR)
@@ -126,8 +128,10 @@ public class QueryBuilderTest {
     public void simpleAnd() {
       Expression<BuiltCondition> expression =
           ExpressionUtils.andOf(
-              Variable.of(BuiltCondition.of("Name", Predicate.EQ, new JsonTerm("testName"))),
-              Variable.of(BuiltCondition.of("age", Predicate.EQ, new JsonTerm("testAge"))));
+              Variable.of(
+                  BuiltCondition.of("Name", BuiltConditionPredicate.EQ, new JsonTerm("testName"))),
+              Variable.of(
+                  BuiltCondition.of("age", BuiltConditionPredicate.EQ, new JsonTerm("testAge"))));
       Query query = new QueryBuilder().select().from("ks", "tbl").where(expression).build();
       assertThat(query.cql()).isEqualTo("SELECT * FROM ks.tbl WHERE (\"Name\" = ? AND age = ?)");
       assertThat(query.values()).contains("testName", "testAge");
@@ -152,13 +156,15 @@ public class QueryBuilderTest {
     public void vsearchWithFilter() {
       Expression<BuiltCondition> expression =
           ExpressionUtils.andOf(
-              Variable.of(BuiltCondition.of("name", Predicate.EQ, new JsonTerm("testName"))));
+              Variable.of(
+                  BuiltCondition.of("name", BuiltConditionPredicate.EQ, new JsonTerm("testName"))));
       Query query =
           new QueryBuilder()
               .select()
               .column("a", "b")
               .from("ks", "tbl")
-              .similarityFunction(VECTOR_COLUMN, CollectionSettings.SimilarityFunction.EUCLIDEAN)
+              .similarityFunction(
+                  VECTOR_COLUMN, CollectionSchemaObject.SimilarityFunction.EUCLIDEAN)
               .vsearch(VECTOR_COLUMN, TEST_VECTOR)
               .where(expression)
               .limit(10)
@@ -173,8 +179,10 @@ public class QueryBuilderTest {
     public void simpleOr() {
       Expression<BuiltCondition> expression =
           ExpressionUtils.orOf(
-              Variable.of(BuiltCondition.of("name", Predicate.EQ, new JsonTerm("testName"))),
-              Variable.of(BuiltCondition.of("age", Predicate.EQ, new JsonTerm("testAge"))));
+              Variable.of(
+                  BuiltCondition.of("name", BuiltConditionPredicate.EQ, new JsonTerm("testName"))),
+              Variable.of(
+                  BuiltCondition.of("age", BuiltConditionPredicate.EQ, new JsonTerm("testAge"))));
       Query query = new QueryBuilder().select().from("ks", "tbl").where(expression).build();
       assertThat(query.cql()).isEqualTo("SELECT * FROM ks.tbl WHERE (name = ? OR age = ?)");
       assertThat(query.values()).contains("testName", "testAge");
@@ -184,7 +192,8 @@ public class QueryBuilderTest {
     public void singleVariableWithoutParenthesis() {
       Expression<BuiltCondition> expression1 =
           ExpressionUtils.andOf(
-              Variable.of(BuiltCondition.of("name", Predicate.EQ, new JsonTerm("testName"))));
+              Variable.of(
+                  BuiltCondition.of("name", BuiltConditionPredicate.EQ, new JsonTerm("testName"))));
       Query query1 = new QueryBuilder().select().from("ks", "tbl").where(expression1).build();
       assertThat(query1.cql()).isEqualTo("SELECT * FROM ks.tbl WHERE name = ?");
       assertThat(query1.values()).containsOnly("testName");
@@ -194,10 +203,16 @@ public class QueryBuilderTest {
     public void nestedAndOr() {
       Expression<BuiltCondition> expression2 =
           ExpressionUtils.orOf(
-              Variable.of(BuiltCondition.of("address", Predicate.EQ, new JsonTerm("testAddress"))),
+              Variable.of(
+                  BuiltCondition.of(
+                      "address", BuiltConditionPredicate.EQ, new JsonTerm("testAddress"))),
               ExpressionUtils.andOf(
-                  Variable.of(BuiltCondition.of("name", Predicate.EQ, new JsonTerm("testName"))),
-                  Variable.of(BuiltCondition.of("age", Predicate.EQ, new JsonTerm("testAge")))));
+                  Variable.of(
+                      BuiltCondition.of(
+                          "name", BuiltConditionPredicate.EQ, new JsonTerm("testName"))),
+                  Variable.of(
+                      BuiltCondition.of(
+                          "age", BuiltConditionPredicate.EQ, new JsonTerm("testAge")))));
       Query query2 = new QueryBuilder().select().from("ks", "tbl").where(expression2).build();
       assertThat(query2.cql())
           .isEqualTo("SELECT * FROM ks.tbl WHERE (address = ? OR (name = ? AND age = ?))");
@@ -208,9 +223,13 @@ public class QueryBuilderTest {
     public void singleVariableExpression() {
       Expression<BuiltCondition> expression2 =
           ExpressionUtils.orOf(
-              Variable.of(BuiltCondition.of("address", Predicate.EQ, new JsonTerm("testAddress"))),
+              Variable.of(
+                  BuiltCondition.of(
+                      "address", BuiltConditionPredicate.EQ, new JsonTerm("testAddress"))),
               ExpressionUtils.andOf(
-                  Variable.of(BuiltCondition.of("age", Predicate.EQ, new JsonTerm("testAge")))));
+                  Variable.of(
+                      BuiltCondition.of(
+                          "age", BuiltConditionPredicate.EQ, new JsonTerm("testAge")))));
       Query query2 = new QueryBuilder().select().from("ks", "tbl").where(expression2).build();
       assertThat(query2.cql()).isEqualTo("SELECT * FROM ks.tbl WHERE (address = ? OR age = ?)");
       assertThat(query2.values()).contains("testAge", "testAddress");

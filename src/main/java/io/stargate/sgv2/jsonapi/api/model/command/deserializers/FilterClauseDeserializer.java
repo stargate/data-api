@@ -15,8 +15,8 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
-import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -130,8 +130,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
                 "%s: filter clause path ('%s') contains character(s) not allowed",
                 ErrorCode.INVALID_FILTER_EXPRESSION.getMessage(), entry.getKey()));
       }
-      logicalExpression.addComparisonExpression(
-          ComparisonExpression.eq(entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue())));
+      logicalExpression.addComparisonExpressions(
+          List.of(
+              ComparisonExpression.eq(
+                  entry.getKey(), jsonNodeValue(entry.getKey(), entry.getValue()))));
     }
   }
 
