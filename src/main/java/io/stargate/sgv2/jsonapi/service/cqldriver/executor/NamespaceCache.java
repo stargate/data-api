@@ -7,7 +7,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.schema.model.JsonapiTableMatcher;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
 
 /** Caches the vector enabled status for the namespace */
@@ -112,7 +112,7 @@ public class NamespaceCache {
 
               // check if its a valid json api table
               // TODO: re-use the table matcher this is on the request hot path
-              if (new JsonapiTableMatcher().test(table)) {
+              if (new CollectionTableMatcher().test(table)) {
                 return CollectionSchemaObject.getCollectionSettings(
                     optionalTable.get(), objectMapper);
               }

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.OfflineGetStatusCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.OfflineGetStatusOperation;
-import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +16,7 @@ public class OfflineGetStatusCommandResolverTest {
   @Test
   public void verifyOperation() {
     ObjectMapper objectMapper = new ObjectMapper();
-    Shredder shredder = new Shredder(objectMapper, null, null);
+    DocumentShredder documentShredder = new DocumentShredder(objectMapper, null, null);
     OfflineGetStatusCommandResolver offlineGetStatusCommandResolver =
         new OfflineGetStatusCommandResolver();
     String sessionId = UUID.randomUUID().toString();
