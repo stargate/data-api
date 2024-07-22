@@ -24,6 +24,7 @@ public record SchemaObjectName(String keyspace, String table) {
     this.table = table;
   }
 
+  // TODO, check if MDC actually populates these logs as expected
   public void addToMDC() {
     // NOTE: MUST stay as namespace for logging analysis
     MDC.put("namespace", keyspace);

@@ -10,9 +10,9 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.NotImplementedException;
 
-public class FindTableOperaton extends TableReadOperation {
+public class FindTableOperation extends TableReadOperation {
 
-  public FindTableOperaton(
+  public FindTableOperation(
       CommandContext<CollectionSchemaObject> commandContext, LogicalExpression logicalExpression) {
     super(commandContext, logicalExpression);
   }

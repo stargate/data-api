@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -79,24 +78,6 @@ public class NamespaceCache {
                                 ErrorCode.COLLECTION_NOT_EXIST
                                     .getMessage()
                                     .concat(collectionName)));
-                  }
-
-                  // TODO This if block can be deleted? grpc code
-                  // ignoring the error and return false. This will be handled while trying to
-                  //  execute the query
-                  // TODO: WHY ARE WE IGNORING THE ERROR AND RETURNING FAKE COLLECTION SCHEMA ? This
-                  // is a bad practice
-                  if ((error instanceof StatusRuntimeException sre
-                      && (sre.getStatus().getCode() == io.grpc.Status.Code.NOT_FOUND
-                          || sre.getStatus().getCode() == io.grpc.Status.Code.INVALID_ARGUMENT))) {
-                    return Uni.createFrom()
-                        .item(
-                            new CollectionSchemaObject(
-                                namespace,
-                                collectionName,
-                                CollectionSchemaObject.IdConfig.defaultIdConfig(),
-                                VectorConfig.notEnabledVectorConfig(),
-                                null));
                   }
                   return Uni.createFrom().failure(error);
                 } else {
