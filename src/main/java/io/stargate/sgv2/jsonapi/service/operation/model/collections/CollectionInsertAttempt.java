@@ -76,7 +76,7 @@ public class CollectionInsertAttempt implements InsertAttempt {
   }
 
   public boolean hasVectorValues() {
-    // TODO: AARON work out if we need hasVecotrs int he base on the base
+    // TODO: AARON work out if we need hasVectors in the base
     return (document != null) && (document.queryVectorValues() != null);
   }
 }

@@ -1,13 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.operation.model.tables;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.service.operation.model.InsertAttempt;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
@@ -29,8 +29,8 @@ public class TableInsertAttempt implements InsertAttempt {
   }
 
   public static List<TableInsertAttempt> create(RowShredder shredder, List<JsonNode> documents) {
-    Preconditions.checkNotNull(shredder, "shredder cannot be null");
-    Preconditions.checkNotNull(documents, "documents cannot be null");
+    Objects.requireNonNull(shredder, "shredder cannot be null");
+    Objects.requireNonNull(documents, "documents cannot be null");
 
     return IntStream.range(0, documents.size())
         .mapToObj(

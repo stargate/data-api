@@ -130,7 +130,7 @@ public class InsertOperationPage implements Supplier<CommandResult> {
                     .map(Throwable::getMessage)
                     .orElse("InsertAttempt failure was null."));
 
-    /// TODO: confirm the null hanlding in the getMapperWithMessageFunction
+    /// TODO: confirm the null handling in the getMapperWithMessageFunction
     // passing null is what would have happened before changing to optional
     return ThrowableToErrorMapper.getMapperWithMessageFunction()
         .apply(insertAttempt.failure().orElse(null), message);
