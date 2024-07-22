@@ -568,8 +568,9 @@ public class DocumentUpdaterTest {
               firstResponseNode -> {
                 assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
                 assertThat(firstResponseNode.modified()).isEqualTo(true); // modified location
-                assertThat(firstResponseNode.embeddingUpdateOperation()).isNotNull();
-                assertThat(firstResponseNode.embeddingUpdateOperation().vectorizeContent())
+                assertThat(firstResponseNode.embeddingUpdateOperations()).isNotEmpty();
+                ;
+                assertThat(firstResponseNode.embeddingUpdateOperations().get(0).vectorizeContent())
                     .isEqualTo("Beijing is a big city");
               });
 
@@ -637,7 +638,8 @@ public class DocumentUpdaterTest {
               firstResponseNode -> {
                 assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
                 assertThat(firstResponseNode.modified()).isEqualTo(true); // modified location
-                assertThat(firstResponseNode.embeddingUpdateOperation()).isNull(); // should be null
+                assertThat(firstResponseNode.embeddingUpdateOperations())
+                    .isEmpty(); // should be null
               });
     }
 
@@ -670,7 +672,8 @@ public class DocumentUpdaterTest {
               firstResponseNode -> {
                 assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
                 assertThat(firstResponseNode.modified()).isEqualTo(false); // not modified
-                assertThat(firstResponseNode.embeddingUpdateOperation()).isNull(); // should be null
+                assertThat(firstResponseNode.embeddingUpdateOperations())
+                    .isEmpty(); // should be null
               });
     }
 
@@ -706,7 +709,8 @@ public class DocumentUpdaterTest {
                 assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
                 assertThat(firstResponseNode.modified())
                     .isEqualTo(false); // $vectorize has no diff, not modified
-                assertThat(firstResponseNode.embeddingUpdateOperation()).isNull(); // should be null
+                assertThat(firstResponseNode.embeddingUpdateOperations())
+                    .isEmpty(); // should be null
               });
     }
 
@@ -741,7 +745,8 @@ public class DocumentUpdaterTest {
                 assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
                 assertThat(firstResponseNode.modified())
                     .isEqualTo(true); // $vector is updated, $vectorize is not
-                assertThat(firstResponseNode.embeddingUpdateOperation()).isNull(); // should be null
+                assertThat(firstResponseNode.embeddingUpdateOperations())
+                    .isEmpty(); // should be null
               });
     }
 
@@ -777,7 +782,8 @@ public class DocumentUpdaterTest {
                 assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
                 assertThat(firstResponseNode.modified())
                     .isEqualTo(true); // $vector is updated but not overwrite, $vectorize is updated
-                assertThat(firstResponseNode.embeddingUpdateOperation()).isNotNull(); // not null
+                assertThat(firstResponseNode.embeddingUpdateOperations()).isNotEmpty();
+                ; // not null
               });
       // Second update will vectorize and overwrite $vector
       final DocumentUpdater.DocumentUpdaterResponse secondResponse =
@@ -846,7 +852,7 @@ public class DocumentUpdaterTest {
                 assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
                 assertThat(firstResponseNode.modified())
                     .isEqualTo(true); // $vector is updated , $vectorize is updated
-                assertThat(firstResponseNode.embeddingUpdateOperation()).isNull();
+                assertThat(firstResponseNode.embeddingUpdateOperations()).isEmpty();
               });
     }
 
@@ -883,7 +889,7 @@ public class DocumentUpdaterTest {
                 assertThat(firstResponseNode.document()).isEqualTo(expectedData1);
                 assertThat(firstResponseNode.modified())
                     .isEqualTo(true); // $vector is updated , $vectorize is updated
-                assertThat(firstResponseNode.embeddingUpdateOperation()).isNull();
+                assertThat(firstResponseNode.embeddingUpdateOperations()).isEmpty();
               });
     }
 
@@ -948,7 +954,7 @@ public class DocumentUpdaterTest {
           .satisfies(
               node -> {
                 assertThat(node.document()).isEqualTo(expectedData);
-                assertThat(node.embeddingUpdateOperation()).isNotNull();
+                assertThat(node.embeddingUpdateOperations()).isNotEmpty();
 
                 assertThat(node.modified()).isEqualTo(true);
               });
@@ -1016,7 +1022,7 @@ public class DocumentUpdaterTest {
           .satisfies(
               node -> {
                 assertThat(node.document()).isEqualTo(expectedData);
-                assertThat(node.embeddingUpdateOperation()).isNull();
+                assertThat(node.embeddingUpdateOperations()).isEmpty();
                 assertThat(node.modified()).isEqualTo(true);
               });
     }
@@ -1050,7 +1056,7 @@ public class DocumentUpdaterTest {
           .satisfies(
               node -> {
                 assertThat(node.document()).isEqualTo(expectedData);
-                assertThat(node.embeddingUpdateOperation()).isNull();
+                assertThat(node.embeddingUpdateOperations()).isEmpty();
                 assertThat(node.modified()).isEqualTo(true);
               });
     }
@@ -1118,7 +1124,7 @@ public class DocumentUpdaterTest {
           .satisfies(
               node -> {
                 assertThat(node.document()).isEqualTo(expectedData);
-                assertThat(node.embeddingUpdateOperation()).isNull();
+                assertThat(node.embeddingUpdateOperations()).isEmpty();
                 assertThat(node.modified()).isEqualTo(true);
               });
     }
@@ -1161,7 +1167,7 @@ public class DocumentUpdaterTest {
           .satisfies(
               node -> {
                 assertThat(node.document()).isEqualTo(expectedData);
-                assertThat(node.embeddingUpdateOperation()).isNull();
+                assertThat(node.embeddingUpdateOperations()).isEmpty();
                 assertThat(node.modified()).isEqualTo(false); // identical, so not modified
               });
     }
@@ -1196,7 +1202,7 @@ public class DocumentUpdaterTest {
           .satisfies(
               node -> {
                 assertThat(node.document()).isEqualTo(expectedData);
-                assertThat(node.embeddingUpdateOperation()).isNotNull(); // need to re-vectorize
+                assertThat(node.embeddingUpdateOperations()).isNotEmpty(); // need to re-vectorize
                 assertThat(node.modified())
                     .isEqualTo(
                         true); // not identical, because there is no $vector in replaceDocument

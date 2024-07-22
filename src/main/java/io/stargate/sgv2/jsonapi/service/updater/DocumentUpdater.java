@@ -102,6 +102,7 @@ public record DocumentUpdater(
       }
     }
 
+    List<EmbeddingUpdateOperation> embeddingUpdateOperationList = new ArrayList<>();
     EmbeddingUpdateOperation embeddingUpdateOperation = null;
     JsonNode vectorizeNode =
         replaceDocument.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
@@ -120,13 +121,14 @@ public record DocumentUpdater(
       } else {
         // if $vectorize is textual and not blank, create embeddingUpdateOperation
         embeddingUpdateOperation = new EmbeddingUpdateOperation(vectorizeNode.asText());
+        embeddingUpdateOperationList.add(embeddingUpdateOperation);
       }
     }
 
     // In case there is no difference between document return modified as false, so db update
     // doesn't happen
     if (JsonUtil.equalsOrdered(compareDoc, replaceDocument())) {
-      return new DocumentUpdaterResponse(docToUpdate, false, null);
+      return new DocumentUpdaterResponse(docToUpdate, false, List.of());
     }
     // remove all data and add _id as first field; either from original document or from replacement
     docToUpdate.removeAll();
@@ -137,7 +139,7 @@ public record DocumentUpdater(
     }
     docToUpdate.setAll(replaceDocument());
     // return modified flag as true
-    return new DocumentUpdaterResponse(docToUpdate, true, embeddingUpdateOperation);
+    return new DocumentUpdaterResponse(docToUpdate, true, embeddingUpdateOperationList);
   }
 
   /**
