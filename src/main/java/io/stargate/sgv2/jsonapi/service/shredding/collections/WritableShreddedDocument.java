@@ -49,7 +49,7 @@ public record WritableShreddedDocument(
 
   @Override
   public boolean equals(Object o) {
-    // TODO: why do we have a customer equals and has for a record ?
+    // TODO: why do we have a custom equals() and hashCode() for a record ?
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     WritableShreddedDocument that = (WritableShreddedDocument) o;
@@ -318,12 +318,7 @@ public record WritableShreddedDocument(
       shredText(path, String.valueOf(extensionValue));
     }
 
-    /**
-     * Index vectorize field for $exists support
-     *
-     * @param path
-     * @param vector
-     */
+    /** Index vectorize field for $exists support */
     @Override
     public void shredVectorize(JsonPath path) {
       // vector data is added only to queryVectorValues and exists keys index
@@ -347,8 +342,6 @@ public record WritableShreddedDocument(
      * </ol>
      *
      * <p>Method will add path to {@link #existKeys}.
-     *
-     * @param key
      */
     private void addKey(JsonPath key) {
       existKeys.add(key);

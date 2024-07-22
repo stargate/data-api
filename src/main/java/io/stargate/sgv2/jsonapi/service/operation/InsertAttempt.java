@@ -4,7 +4,7 @@ import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import java.util.Optional;
 
 /**
- * Container for an individual Document or Row insertion attempy.
+ * Container for an individual Document or Row insertion attempt.
  *
  * <p>Tracks the original input position; document (if available), its id (if available) and
  * possible processing error.
@@ -46,7 +46,7 @@ public interface InsertAttempt extends Comparable<InsertAttempt> {
   /**
    * Updates the attempt with an error that happened when trying to process the insert.
    *
-   * <p>Implmentations must only remember the first error that happened.
+   * <p>Implementations must only remember the first error that happened.
    *
    * @param failure An error that happened when trying to process the insert.
    * @return Return the updated {@link InsertAttempt}, must be the same instance the method was

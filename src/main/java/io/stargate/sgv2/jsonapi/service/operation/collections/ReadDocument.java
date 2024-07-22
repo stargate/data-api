@@ -1,10 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
@@ -30,9 +30,9 @@ public record ReadDocument(
   /// TODO AARON - comments
 
   public ReadDocument {
-    Preconditions.checkNotNull(txnId, "txnId cannot be null");
-    Preconditions.checkNotNull(docSupplier, "docSupplier cannot be null");
-    Preconditions.checkNotNull(sortColumns, "sortColumns cannot be null");
+    Objects.requireNonNull(txnId, "txnId cannot be null");
+    Objects.requireNonNull(docSupplier, "docSupplier cannot be null");
+    Objects.requireNonNull(sortColumns, "sortColumns cannot be null");
   }
 
   public static ReadDocument from(DocumentId id, UUID txnId, JsonNode document) {

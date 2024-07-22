@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
- * Holds the documents froma read operation to create the {@link CommandResult}
+ * Holds the documents from a read operation to create the {@link CommandResult}
  *
  * @param documentSources The source documents to be included the results, may be empty but never
  *     null. If singleResponse only the first {@link DocumentSource} will be used.
