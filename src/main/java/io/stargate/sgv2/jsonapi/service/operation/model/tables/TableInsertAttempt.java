@@ -32,6 +32,7 @@ public class TableInsertAttempt implements InsertAttempt {
     Preconditions.checkNotNull(shredder, "shredder cannot be null");
     Preconditions.checkNotNull(documents, "documents cannot be null");
 
+    // TODO, just use a for loop, instead of IntStream
     return IntStream.range(0, documents.size())
         .mapToObj(
             i -> {
