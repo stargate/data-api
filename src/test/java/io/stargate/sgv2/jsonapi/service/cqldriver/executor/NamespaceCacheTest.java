@@ -153,19 +153,20 @@ public class NamespaceCacheTest {
                                 new HashMap<>())));
               });
       NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
-      CollectionSettings collectionSettings =
+      var schemaObject =
           namespaceCache
-              .getCollectionProperties(dataApiRequestInfo, "table")
+              .getSchemaObject(dataApiRequestInfo, "table")
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
 
-      assertThat(collectionSettings)
+      assertThat(schemaObject instanceof CollectionSchemaObject);
+      assertThat(schemaObject)
           .satisfies(
               s -> {
                 assertThat(s.vectorConfig().vectorEnabled()).isFalse();
-                assertThat(s.collectionName()).isEqualTo("table");
+                assertThat(s.name.table()).isEqualTo("table");
               });
     }
 
@@ -283,19 +284,21 @@ public class NamespaceCacheTest {
                                 new HashMap<>())));
               });
       NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
-      CollectionSettings collectionSettings =
+      var schemaObject =
           namespaceCache
-              .getCollectionProperties(dataApiRequestInfo, "table")
+              .getSchemaObject(dataApiRequestInfo, "table")
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
               .getItem();
 
-      assertThat(collectionSettings)
+      assertThat(schemaObject instanceof CollectionSchemaObject);
+      var collectionSchemaObject = (CollectionSchemaObject) schemaObject;
+      assertThat(collectionSchemaObject)
           .satisfies(
               s -> {
                 assertThat(s.vectorConfig().vectorEnabled()).isFalse();
-                assertThat(s.collectionName()).isEqualTo("table");
+                assertThat(s.name.table()).isEqualTo("table");
                 assertThat(s.indexingConfig().denied()).containsExactly("comment");
               });
     }
@@ -349,7 +352,7 @@ public class NamespaceCacheTest {
       NamespaceCache namespaceCache = new NamespaceCache("ks", queryExecutor, objectMapper);
       Throwable error =
           namespaceCache
-              .getCollectionProperties(dataApiRequestInfo, "table")
+              .getSchemaObject(dataApiRequestInfo, "table")
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitFailure()

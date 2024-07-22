@@ -9,10 +9,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.DeleteOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
@@ -51,10 +52,11 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
   }
 
   @Override
-  public Operation resolveCommand(CommandContext commandContext, DeleteOneCommand command) {
-    FindOperation findOperation = getFindOperation(commandContext, command);
-    return DeleteOperation.delete(
-        commandContext, findOperation, 1, operationsConfig.lwt().retries());
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, DeleteOneCommand command) {
+
+    FindOperation findOperation = getFindOperation(ctx, command);
+    return DeleteOperation.delete(ctx, findOperation, 1, operationsConfig.lwt().retries());
   }
 
   @Override
@@ -62,7 +64,8 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
     return DeleteOneCommand.class;
   }
 
-  private FindOperation getFindOperation(CommandContext commandContext, DeleteOneCommand command) {
+  private FindOperation getFindOperation(
+      CommandContext<CollectionSchemaObject> commandContext, DeleteOneCommand command) {
 
     LogicalExpression logicalExpression = resolve(commandContext, command);
     final SortClause sortClause = command.sortClause();
@@ -72,19 +75,22 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
     }
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
+    var indexUsage = commandContext.schemaObject().newCollectionIndexUsage();
+    indexUsage.vectorIndexTag = vector != null;
+
     addToMetrics(
         meterRegistry,
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
         logicalExpression,
-        vector != null);
+        indexUsage);
     if (vector != null) {
       return FindOperation.vsearchSingle(
           commandContext,
           logicalExpression,
           DocumentProjector.includeAllProjector(),
-          ReadType.KEY,
+          CollectionReadType.KEY,
           objectMapper,
           vector,
           false);
@@ -99,7 +105,7 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
           DocumentProjector.includeAllProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
-          ReadType.SORTED_DOCUMENT,
+          CollectionReadType.SORTED_DOCUMENT,
           objectMapper,
           orderBy,
           0,
@@ -112,7 +118,7 @@ public class DeleteOneCommandResolver extends FilterableResolver<DeleteOneComman
           commandContext,
           logicalExpression,
           DocumentProjector.includeAllProjector(),
-          ReadType.KEY,
+          CollectionReadType.KEY,
           objectMapper,
           false);
     }

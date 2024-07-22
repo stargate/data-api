@@ -2,8 +2,9 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.DeleteCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -16,7 +17,8 @@ public class DeleteCollectionCommandResolver implements CommandResolver<DeleteCo
   }
 
   @Override
-  public Operation resolveCommand(CommandContext ctx, DeleteCollectionCommand command) {
+  public Operation resolveKeyspaceCommand(
+      CommandContext<KeyspaceSchemaObject> ctx, DeleteCollectionCommand command) {
     return new DeleteCollectionOperation(ctx, command.name());
   }
 }

@@ -32,7 +32,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CreateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -51,8 +53,8 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class CreateCollectionOperationTest extends OperationTestBase {
 
-  private CommandContext COMMAND_CONTEXT =
-      new CommandContext(KEYSPACE_NAME, COLLECTION_NAME, "CreateCollectionCommand", null);
+  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT =
+      new CommandContext<>(COLLECTION_SCHEMA_OBJECT, null, "CreateCollectionCommand", null);
 
   @Inject DatabaseLimitsConfig databaseLimitsConfig;
 
@@ -101,7 +103,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       CreateCollectionOperation operation =
           CreateCollectionOperation.withoutVectorSearch(
-              COMMAND_CONTEXT,
+              KEYSPACE_CONTEXT,
               databaseLimitsConfig,
               objectMapper,
               sessionCache,
@@ -159,7 +161,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       CreateCollectionOperation operation =
           CreateCollectionOperation.withVectorSearch(
-              COMMAND_CONTEXT,
+              KEYSPACE_CONTEXT,
               databaseLimitsConfig,
               objectMapper,
               sessionCache,
@@ -219,7 +221,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       CreateCollectionOperation operation =
           CreateCollectionOperation.withoutVectorSearch(
-              COMMAND_CONTEXT,
+              KEYSPACE_CONTEXT,
               databaseLimitsConfig,
               objectMapper,
               sessionCache,
@@ -277,7 +279,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       CreateCollectionOperation operation =
           CreateCollectionOperation.withVectorSearch(
-              COMMAND_CONTEXT,
+              KEYSPACE_CONTEXT,
               databaseLimitsConfig,
               objectMapper,
               sessionCache,
@@ -362,7 +364,7 @@ public class CreateCollectionOperationTest extends OperationTestBase {
 
       CreateCollectionOperation operation =
           CreateCollectionOperation.withoutVectorSearch(
-              COMMAND_CONTEXT,
+              KEYSPACE_CONTEXT,
               databaseLimitsConfig,
               objectMapper,
               sessionCache,

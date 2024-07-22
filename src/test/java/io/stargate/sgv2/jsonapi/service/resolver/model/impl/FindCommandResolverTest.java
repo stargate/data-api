@@ -7,16 +7,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.*;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.*;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -38,7 +40,7 @@ public class FindCommandResolverTest {
   @Nested
   class FindCommandResolveCommand {
 
-    CommandContext commandContext = CommandContext.empty();
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void idFilterCondition() throws Exception {
@@ -68,7 +70,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -107,7 +109,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -147,7 +149,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -185,7 +187,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -222,7 +224,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -261,7 +263,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -304,7 +306,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -341,7 +343,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -376,7 +378,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit())
                     .isEqualTo(operationsConfig.maxDocumentSortCount());
@@ -412,7 +414,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit())
                     .isEqualTo(operationsConfig.maxDocumentSortCount());
@@ -447,7 +449,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -483,7 +485,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -520,7 +522,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -559,7 +561,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -597,7 +599,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
                 assertThat(find.limit()).isEqualTo(10);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
                 assertThat(find.skip()).isEqualTo(5);
                 assertThat(find.maxSortReadLimit())
                     .isEqualTo(operationsConfig.maxDocumentSortCount());
@@ -634,7 +636,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(7);
                 assertThat(find.pageState()).isEqualTo("dlavjhvbavkjbna");
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -670,7 +672,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -713,7 +715,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -775,7 +777,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -831,7 +833,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -893,7 +895,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -980,7 +982,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -994,7 +996,7 @@ public class FindCommandResolverTest {
   @Nested
   class FindCommandResolveWithProjection {
 
-    CommandContext commandContext = CommandContext.empty();
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void idFilterConditionAndProjection() throws Exception {
@@ -1037,7 +1039,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -1084,7 +1086,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -1096,7 +1098,7 @@ public class FindCommandResolverTest {
 
   @Nested
   class FindCommandResolveWithINOperator {
-    CommandContext commandContext = CommandContext.empty();
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void NonIdIn() throws Exception {
@@ -1125,7 +1127,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -1169,7 +1171,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -1215,7 +1217,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -1260,7 +1262,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -1307,7 +1309,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.maxVectorSearchLimit());
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -1354,7 +1356,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit())
                     .isEqualTo(operationsConfig.maxDocumentSortCount());
@@ -1404,7 +1406,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultSortPageSize());
                 assertThat(find.limit()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.SORTED_DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit())
                     .isEqualTo(operationsConfig.maxDocumentSortCount());
@@ -1422,7 +1424,7 @@ public class FindCommandResolverTest {
 
   @Nested
   class FindCommandResolveWithRangeOperator {
-    CommandContext commandContext = CommandContext.empty();
+    CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
     @Test
     public void gt() throws Exception {
@@ -1452,7 +1454,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -1491,7 +1493,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -1530,7 +1532,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -1569,7 +1571,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -1608,7 +1610,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
@@ -1647,7 +1649,7 @@ public class FindCommandResolverTest {
                 assertThat(find.pageSize()).isEqualTo(operationsConfig.defaultPageSize());
                 assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                 assertThat(find.pageState()).isNull();
-                assertThat(find.readType()).isEqualTo(ReadType.DOCUMENT);
+                assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
                 assertThat(find.skip()).isZero();
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();

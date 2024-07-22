@@ -3,8 +3,9 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindNamespacesCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindNamespacesOperations;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindNamespacesOperations;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -25,7 +26,8 @@ public class FindNamespacesCommandResolver implements CommandResolver<FindNamesp
 
   /** {@inheritDoc} */
   @Override
-  public Operation resolveCommand(CommandContext ctx, FindNamespacesCommand command) {
+  public Operation resolveDatabaseCommand(
+      CommandContext<DatabaseSchemaObject> ctx, FindNamespacesCommand command) {
     return new FindNamespacesOperations(cqlSessionCache);
   }
 }

@@ -21,12 +21,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.MapCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.TextCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.*;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.MapCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocValueHasher;
@@ -45,15 +46,13 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
-  private static final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private static final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
-  private CommandContext COMMAND_CONTEXT;
+
+  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT;
 
   @Inject Shredder shredder;
   @Inject ObjectMapper objectMapper;
@@ -66,9 +65,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
 
   @PostConstruct
   public void init() {
-    COMMAND_CONTEXT =
-        new CommandContext(
-            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+    COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
   }
 
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {
@@ -221,7 +218,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             COMMAND_CONTEXT,
             implicitAnd,
             DocumentProjector.defaultProjector(),
-            ReadType.DOCUMENT,
+            CollectionReadType.DOCUMENT,
             objectMapper,
             false);
 
@@ -363,7 +360,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             COMMAND_CONTEXT,
             implicitAnd,
             DocumentProjector.defaultProjector(),
-            ReadType.DOCUMENT,
+            CollectionReadType.DOCUMENT,
             objectMapper,
             false);
 
@@ -513,7 +510,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             COMMAND_CONTEXT,
             implicitAnd,
             DocumentProjector.defaultProjector(),
-            ReadType.DOCUMENT,
+            CollectionReadType.DOCUMENT,
             objectMapper,
             false);
 
@@ -698,7 +695,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             null,
             3,
             3,
-            ReadType.DOCUMENT,
+            CollectionReadType.DOCUMENT,
             objectMapper,
             false);
 
@@ -908,7 +905,7 @@ public class ReadAndUpdateOperationRetryTest extends OperationTestBase {
             null,
             3,
             3,
-            ReadType.DOCUMENT,
+            CollectionReadType.DOCUMENT,
             objectMapper,
             false);
     DocumentUpdater documentUpdater =

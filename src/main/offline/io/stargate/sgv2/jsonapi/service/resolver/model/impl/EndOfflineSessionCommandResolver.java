@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.EndOfflineSessionCommand;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.EndOfflineSessionOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
@@ -17,7 +18,8 @@ public class EndOfflineSessionCommandResolver implements CommandResolver<EndOffl
   }
 
   @Override
-  public Operation resolveCommand(CommandContext ctx, EndOfflineSessionCommand command) {
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, EndOfflineSessionCommand command) {
     return new EndOfflineSessionOperation(command.sessionId());
   }
 }

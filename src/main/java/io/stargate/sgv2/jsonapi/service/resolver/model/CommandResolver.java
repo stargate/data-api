@@ -9,9 +9,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.IndexUsage;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.DBFilterBase;
+import java.util.Objects;
 
 /**
  * Resolver looks at a valid {@link Command} and determines the best {@link Operation} to implement
@@ -42,37 +43,132 @@ public interface CommandResolver<C extends Command> {
   Class<C> getCommandClass();
 
   /**
-   * Implementations should return a {@link Operation} to execute the command that has the {@link
-   * CommandContext} so it knows the db and other contextual info, and as well has all the data it
-   * needs.
+   * Call to resolve the {@link Command} into an {@link Operation} that will implement the command
+   * agains the database.
    *
-   * @param ctx {@link CommandContext}
-   * @param command {@link Command}
-   * @return Operation, must no be <code>null</code>
+   * <p>Call this method, not the schema object specific ones, they are helpers for implementors so
+   * they don't have to cast.
+   *
+   * @param commandContext Context the command is running in
+   * @param command The command to resolve into an opertion
+   * @return Operation, must not be <code>null</code>
+   * @param <T>
    */
-  Operation resolveCommand(CommandContext ctx, C command);
+  @SuppressWarnings("unchecked")
+  default <T extends SchemaObject> Operation resolveCommand(
+      CommandContext<T> commandContext, C command) {
+    Objects.requireNonNull(commandContext, "commandContext must not be null");
+    Objects.requireNonNull(command, "command must not be null");
+
+    return switch (commandContext.schemaObject().type) {
+      case COLLECTION -> resolveCollectionCommand(commandContext.asCollectionContext(), command);
+      case TABLE -> resolveTableCommand(commandContext.asTableContext(), command);
+      case KEYSPACE -> resolveKeyspaceCommand(commandContext.asKeyspaceContext(), command);
+      case DATABASE -> resolveDatabaseCommand(commandContext.asDatabaseContext(), command);
+    };
+  }
+
+  /**
+   * Implementors should use this method when they can resolve commands for a collection.
+   *
+   * @param ctx
+   * @param command
+   * @return
+   */
+  default Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, C command) {
+    // there error is a fallback to make sure it is implemented if it should be
+    // commands are tested well
+    throw new UnsupportedOperationException(
+        String.format(
+            "%s Command does not support operating on Collections, target was %s",
+            command.getClass().getSimpleName(), ctx.schemaObject().name));
+  }
+  ;
+
+  /**
+   * Implementors should use this method when they can resolve commands for a table.
+   *
+   * @param ctx
+   * @param command
+   * @return
+   */
+  default Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, C command) {
+    // there error is a fallback to make sure it is implemented if it should be
+    // commands are tested well
+    throw new UnsupportedOperationException(
+        String.format(
+            "%s Command does not support operating on Tables, target was %s",
+            command.getClass().getSimpleName(), ctx.schemaObject().name));
+  }
+
+  /**
+   * Implementors should use this method when they can resolve commands for a keyspace.
+   *
+   * @param ctx
+   * @param command
+   * @return
+   */
+  default Operation resolveKeyspaceCommand(CommandContext<KeyspaceSchemaObject> ctx, C command) {
+    // there error is a fallback to make sure it is implemented if it should be
+    // commands are tested well
+    throw new UnsupportedOperationException(
+        String.format(
+            "%s Command does not support operating on Keyspaces, target was %s",
+            command.getClass().getSimpleName(), ctx.schemaObject().name));
+  }
+
+  /**
+   * Implementors should use this method when they can resolve commands for a databse.
+   *
+   * @param ctx
+   * @param command
+   * @return
+   */
+  default Operation resolveDatabaseCommand(CommandContext<DatabaseSchemaObject> ctx, C command) {
+    // there error is a fallback to make sure it is implemented if it should be
+    // commands are tested well
+    throw new UnsupportedOperationException(
+        String.format(
+            "%s Command does not support operating on Databases, target was %s",
+            command.getClass().getSimpleName(), ctx.schemaObject().name));
+  }
 
   static final String UNKNOWN_VALUE = "unknown";
   static final String TENANT_TAG = "tenant";
 
   /** Added count metrics for index column usage */
+
+  /**
+   * Call to track metrics for the index usage, this method is called after the command is resolved
+   * and we know the filters we want to run.
+   *
+   * @param meterRegistry
+   * @param dataApiRequestInfo
+   * @param jsonApiMetricsConfig
+   * @param command
+   * @param logicalExpression
+   * @param baseIndexUsage Callers should pass an initial {@link IndexUsage} object that will be
+   *     merged with those from the {@link DBFilterBase} used in the {@link LogicalExpression}. This
+   *     means the caller can set some things the filter may not have, like using ANN in a sort. Use
+   *     {@link SchemaObject#newIndexUsage()} to get the correct type of IndexUsage.
+   */
   default void addToMetrics(
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       Command command,
       LogicalExpression logicalExpression,
-      boolean annSort) {
-
+      IndexUsage baseIndexUsage) {
+    // TODO: this functions hould not be on the CommandResolver interface, it has nothing to do with
+    // that
+    // it's only here because of the use of records and interfaces, move to a base class
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
-    String tenant = dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE);
-    Tag tenantTag = Tag.of("tenant", tenant);
+    Tag tenantTag = Tag.of(TENANT_TAG, dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     Tags tags = Tags.of(commandTag, tenantTag);
 
-    IndexUsage indexUsage = new IndexUsage();
-    if (annSort) indexUsage.vectorIndexTag = true;
-    getIndexUsageTags(logicalExpression, indexUsage);
-    tags = tags.and(indexUsage.getTags());
+    getIndexUsageTags(logicalExpression, baseIndexUsage);
+    tags = tags.and(baseIndexUsage.getTags());
 
     meterRegistry.counter(jsonApiMetricsConfig.indexUsageCounterMetrics(), tags).increment();
   }

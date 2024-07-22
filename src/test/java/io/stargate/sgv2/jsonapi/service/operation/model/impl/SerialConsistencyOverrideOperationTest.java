@@ -25,16 +25,16 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.collection.IDCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.*;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
 import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.model.WritableShreddedDocument;
-// import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
@@ -55,7 +55,7 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 @TestProfile(SerialConsistencyOverrideOperationTest.SerialConsistencyOverrideProfile.class)
 public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
-  private CommandContext COMMAND_CONTEXT;
+  private CommandContext<CollectionSchemaObject> COMMAND_CONTEXT;
   private final ColumnDefinitions COLUMNS_APPLIED =
       buildColumnDefs(TestColumn.ofBoolean("[applied]"));
 
@@ -78,9 +78,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
   @PostConstruct
   public void init() {
-    COMMAND_CONTEXT =
-        new CommandContext(
-            KEYSPACE_NAME, COLLECTION_NAME, "testCommand", jsonProcessingMetricsReporter);
+    COMMAND_CONTEXT = createCommandContextWithCommandName("testCommand");
   }
 
   @Nested
@@ -137,7 +135,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.KEY,
+              CollectionReadType.KEY,
               objectMapper,
               false);
       DeleteOperation operation = DeleteOperation.delete(COMMAND_CONTEXT, findOperation, 1, 3);
@@ -335,7 +333,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               implicitAnd,
               DocumentProjector.defaultProjector(),
-              ReadType.DOCUMENT,
+              CollectionReadType.DOCUMENT,
               objectMapper,
               false);
       DocumentUpdater documentUpdater =

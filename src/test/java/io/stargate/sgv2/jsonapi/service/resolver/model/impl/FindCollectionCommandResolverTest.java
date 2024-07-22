@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindCollectionsOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindCollectionsOperation;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -24,7 +26,7 @@ public class FindCollectionCommandResolverTest {
   @Nested
   class FindCollectionCommandResolveCommand {
 
-    CommandContext commandContext = CommandContext.empty();
+    CommandContext<KeyspaceSchemaObject> commandContext = TestConstants.KEYSPACE_CONTEXT;
 
     @Test
     public void findCollection() throws Exception {

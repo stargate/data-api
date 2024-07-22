@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * collectionSettings
  */
 public interface CollectionSettingsReader {
-  CollectionSettings readCollectionSettings(
-      JsonNode jsonNode, String collectionName, ObjectMapper objectMapper);
+
+  CollectionSchemaObject readCollectionSettings(
+      JsonNode jsonNode, String keyspaceName, String collectionName, ObjectMapper objectMapper);
 }

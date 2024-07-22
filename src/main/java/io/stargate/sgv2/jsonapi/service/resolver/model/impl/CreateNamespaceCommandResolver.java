@@ -2,8 +2,9 @@ package io.stargate.sgv2.jsonapi.service.resolver.model.impl;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.CreateNamespaceOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CreateNamespaceOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
@@ -27,7 +28,8 @@ public class CreateNamespaceCommandResolver implements CommandResolver<CreateNam
 
   /** {@inheritDoc} */
   @Override
-  public Operation resolveCommand(CommandContext ctx, CreateNamespaceCommand command) {
+  public Operation resolveDatabaseCommand(
+      CommandContext<DatabaseSchemaObject> ctx, CreateNamespaceCommand command) {
     String replicationMap = getReplicationMap(command.options());
     return new CreateNamespaceOperation(command.name(), replicationMap);
   }
@@ -38,6 +40,7 @@ public class CreateNamespaceCommandResolver implements CommandResolver<CreateNam
       return DEFAULT_REPLICATION_MAP;
     }
 
+    // TODO REMOVE THE OPTION TO PASS REPLICATION STRATEGY!!!!
     CreateNamespaceCommand.Replication replication = options.replication();
     if ("NetworkTopologyStrategy".equals(replication.strategy())) {
       return networkTopologyStrategyMap(replication);

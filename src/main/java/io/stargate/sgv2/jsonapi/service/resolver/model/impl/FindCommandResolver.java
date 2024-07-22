@@ -10,9 +10,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.CollectionReadType;
+import io.stargate.sgv2.jsonapi.service.operation.model.collections.FindOperation;
 import io.stargate.sgv2.jsonapi.service.resolver.model.CommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.matcher.FilterableResolver;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
@@ -53,8 +54,9 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
   }
 
   @Override
-  public Operation resolveCommand(CommandContext commandContext, FindCommand command) {
-    final LogicalExpression resolvedLogicalExpression = resolve(commandContext, command);
+  public Operation resolveCollectionCommand(
+      CommandContext<CollectionSchemaObject> ctx, FindCommand command) {
+    final LogicalExpression resolvedLogicalExpression = resolve(ctx, command);
     // limit and page state defaults
     int limit = Integer.MAX_VALUE;
     int skip = 0;
@@ -81,11 +83,13 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
 
     // validate sort path
     if (sortClause != null) {
-      sortClause.validate(commandContext);
+      sortClause.validate(ctx);
     }
 
     // if vector search
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
+    var indexUsage = ctx.schemaObject().newCollectionIndexUsage();
+    indexUsage.vectorIndexTag = vector != null;
 
     addToMetrics(
         meterRegistry,
@@ -93,20 +97,20 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
         jsonApiMetricsConfig,
         command,
         resolvedLogicalExpression,
-        vector != null);
+        indexUsage);
 
     if (vector != null) {
       limit =
           Math.min(
               limit, operationsConfig.maxVectorSearchLimit()); // Max vector search support is 1000
       return FindOperation.vsearch(
-          commandContext,
+          ctx,
           resolvedLogicalExpression,
           command.buildProjector(includeSimilarity),
           pageState,
           limit,
           operationsConfig.defaultPageSize(),
-          ReadType.DOCUMENT,
+          CollectionReadType.DOCUMENT,
           objectMapper,
           vector,
           includeSortVector);
@@ -116,7 +120,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
     // if orderBy present
     if (orderBy != null) {
       return FindOperation.sorted(
-          commandContext,
+          ctx,
           resolvedLogicalExpression,
           command.buildProjector(),
           pageState,
@@ -125,7 +129,7 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           Math.min(limit, operationsConfig.defaultPageSize()),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
-          ReadType.SORTED_DOCUMENT,
+          CollectionReadType.SORTED_DOCUMENT,
           objectMapper,
           orderBy,
           skip,
@@ -133,13 +137,13 @@ public class FindCommandResolver extends FilterableResolver<FindCommand>
           includeSortVector);
     } else {
       return FindOperation.unsorted(
-          commandContext,
+          ctx,
           resolvedLogicalExpression,
           command.buildProjector(),
           pageState,
           limit,
           operationsConfig.defaultPageSize(),
-          ReadType.DOCUMENT,
+          CollectionReadType.DOCUMENT,
           objectMapper,
           includeSortVector);
     }

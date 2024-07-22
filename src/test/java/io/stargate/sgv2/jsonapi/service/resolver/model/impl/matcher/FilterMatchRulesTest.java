@@ -6,12 +6,12 @@ import static org.mockito.Mockito.mock;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.model.filters.DBFilterBase;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.EnumSet;
@@ -57,7 +57,7 @@ public class FilterMatchRulesTest {
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
       LogicalExpression response =
-          filterMatchRules.apply(new CommandContext("namespace", "collection"), findOneCommand);
+          filterMatchRules.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
       assertThat(response).isNotNull();
 
       json =
@@ -70,8 +70,7 @@ public class FilterMatchRulesTest {
           """;
 
       findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
-      response =
-          filterMatchRules.apply(new CommandContext("namespace", "collection"), findOneCommand);
+      response = filterMatchRules.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
       assertThat(response).isNotNull();
     }
 
