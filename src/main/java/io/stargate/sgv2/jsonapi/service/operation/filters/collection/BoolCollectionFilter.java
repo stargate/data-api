@@ -11,9 +11,11 @@ public class BoolCollectionFilter extends MapCollectionFilter<Boolean> {
   public BoolCollectionFilter(String path, Operator operator, Boolean value) {
     super("query_bool_values", path, operator, value);
     this.boolValue = value;
-    if (Operator.EQ == operator || Operator.NE == operator)
+    if (Operator.EQ == operator || Operator.NE == operator) {
       collectionIndexUsage.arrayContainsTag = true;
-    else collectionIndexUsage.booleanIndexTag = true;
+    } else {
+      collectionIndexUsage.booleanIndexTag = true;
+    }
   }
 
   /**

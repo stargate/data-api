@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import com.datastax.oss.driver.shaded.guava.common.base.Strings;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import org.slf4j.MDC;
 
 public record SchemaObjectName(String keyspace, String table) {
@@ -24,6 +24,7 @@ public record SchemaObjectName(String keyspace, String table) {
     this.table = table;
   }
 
+  // TODO, check if MDC actually populates these logs as expected
   public void addToMDC() {
     // NOTE: MUST stay as namespace for logging analysis
     MDC.put("namespace", keyspace);

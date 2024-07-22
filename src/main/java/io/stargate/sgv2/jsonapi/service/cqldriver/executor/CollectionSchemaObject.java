@@ -78,7 +78,7 @@ public final class CollectionSchemaObject extends SchemaObject {
 
   @Override
   public IndexUsage newIndexUsage() {
-    return new CollectionIndexUsage();
+    return newCollectionIndexUsage();
   }
 
   /**
@@ -245,7 +245,9 @@ public final class CollectionSchemaObject extends SchemaObject {
       if (vectorIndex != null) {
         final String functionName =
             vectorIndex.getOptions().get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME);
-        if (functionName != null) function = SimilarityFunction.fromString(functionName);
+        if (functionName != null) {
+          function = SimilarityFunction.fromString(functionName);
+        }
       }
       final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       return createCollectionSettings(

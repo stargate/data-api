@@ -55,6 +55,7 @@ public class CommandProcessor {
    * @param command {@link Command}
    * @return Uni emitting the result of the command execution.
    * @param <T> Type of the command.
+   * @param <U> Type of the schema object command operates on.
    */
   public <T extends Command, U extends SchemaObject> Uni<CommandResult> processCommand(
       DataApiRequestInfo dataApiRequestInfo, CommandContext<U> commandContext, T command) {

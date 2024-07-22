@@ -12,9 +12,11 @@ public class NumberCollectionFilter extends MapCollectionFilter<BigDecimal> {
   public NumberCollectionFilter(String path, Operator operator, BigDecimal value) {
     super("query_dbl_values", path, operator, value);
     this.numberValue = value;
-    if (Operator.EQ == operator || Operator.NE == operator)
+    if (Operator.EQ == operator || Operator.NE == operator) {
       collectionIndexUsage.arrayContainsTag = true;
-    else collectionIndexUsage.numberIndexTag = true;
+    } else {
+      collectionIndexUsage.numberIndexTag = true;
+    }
   }
 
   /**
