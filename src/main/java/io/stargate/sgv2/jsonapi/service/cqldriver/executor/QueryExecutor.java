@@ -257,7 +257,7 @@ public class QueryExecutor {
               .getKeyspaces()
               .get(CqlIdentifier.fromInternal(namespace));
     } catch (Exception e) {
-      // TODO: this ^^ is a very wide error catch, confirm what it should actually be catcing
+      // TODO: this ^^ is a very wide error catch, confirm what it should actually be catching
       return Uni.createFrom().failure(e);
     }
     // if namespace does not exist, throw error
