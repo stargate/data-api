@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.shredding.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
@@ -11,7 +11,7 @@ import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
 
-/** AATON TODO shreds docs for rows */
+/** AARON TODO shreds docs for rows */
 @ApplicationScoped
 public class RowShredder {
 
@@ -45,7 +45,7 @@ public class RowShredder {
     Object keyObject;
     try {
       keyObject = objectMapper.treeToValue(document.get("key"), Object.class);
-    } catch (JsonProcessingException e) {
+    } catch (JacksonException e) {
       throw new RuntimeException(e);
     }
 
@@ -54,12 +54,12 @@ public class RowShredder {
         .fields()
         .forEachRemaining(
             entry -> {
-              // using fromCQL so it is case sensitive
+              // using fromCQL so it is case-sensitive
               try {
                 columnValues.put(
                     CqlIdentifier.fromCql(entry.getKey()),
                     objectMapper.treeToValue(entry.getValue(), Object.class));
-              } catch (JsonProcessingException e) {
+              } catch (JacksonException e) {
                 throw new RuntimeException(e);
               }
             });

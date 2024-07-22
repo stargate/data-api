@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.model.DocumentSource;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperationPage;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
@@ -28,8 +29,7 @@ public class FindTableOperation extends TableReadOperation {
       FindTableParams params) {
     super(commandContext, logicalExpression);
 
-    Preconditions.checkNotNull(params, "Params must not be null");
-    this.params = params;
+    this.params = Objects.requireNonNull(params, "Params must not be null");
   }
 
   @Override
