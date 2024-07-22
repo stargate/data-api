@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.response;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.processor.CommandProcessor;
-import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.util.List;
 
 public record OfflineInsertManyResponse(
