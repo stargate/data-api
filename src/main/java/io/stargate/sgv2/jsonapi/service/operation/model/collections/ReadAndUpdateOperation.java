@@ -69,6 +69,15 @@ public record ReadAndUpdateOperation(
               pageStateReference.set(findResponse.pageState());
               final List<ReadDocument> docs = findResponse.docs();
               if (upsert() && docs.size() == 0 && matchedCount.get() == 0) {
+                // TODO: creating the new document here, with the defaults from the filter, makes it
+                // harder because
+                // the new document created here may nto have an _id if there was none in the
+                // filter. A better approach
+                // may be to have the documentUpdater create the upsert document totally in once
+                // place. Currently creating the
+                // upsert document is in multiple places. To do this we would create
+                // UpdateOperations from the filter and
+                // give them to the document updated when it is created.
                 return Multi.createFrom().item(findOperation().getNewDocument());
               } else {
                 matchedCount.addAndGet(docs.size());
@@ -109,7 +118,7 @@ public record ReadAndUpdateOperation(
                               .recoverWithItem(
                                   error -> {
                                     return new UpdatedDocument(
-                                        readDocument.id(), false, null, error);
+                                        readDocument.id().orElseThrow(), false, null, error);
                                   });
                         }))
         .collect()
@@ -141,7 +150,6 @@ public record ReadAndUpdateOperation(
       AtomicInteger modifiedCount) {
     return Uni.createFrom()
         .item(document)
-
         // perform update operation and save only if data is modified.
         .flatMap(
             readDocument -> {
@@ -151,13 +159,13 @@ public record ReadAndUpdateOperation(
               }
 
               // upsert if we have no transaction if before
-              boolean upsert = readDocument.txnId() == null;
-              JsonNode originalDocument = upsert ? null : readDocument.document();
+              boolean upsert = readDocument.txnId().isEmpty();
+              JsonNode originalDocument = upsert ? null : readDocument.get();
 
               // apply document updates
               // if no changes return null item
               DocumentUpdater.DocumentUpdaterResponse documentUpdaterResponse =
-                  documentUpdater().apply(readDocument.document().deepCopy(), upsert);
+                  documentUpdater().apply(readDocument.get().deepCopy(), upsert);
 
               // In case no change to document and not an upsert document, short circuit and return
               if (!documentUpdaterResponse.modified() && !upsert) {
@@ -165,7 +173,9 @@ public record ReadAndUpdateOperation(
                 if (returnDocumentInResponse) {
                   resultProjection.applyProjection(originalDocument);
                   return Uni.createFrom()
-                      .item(new UpdatedDocument(readDocument.id(), upsert, originalDocument, null));
+                      .item(
+                          new UpdatedDocument(
+                              readDocument.id().orElseThrow(), upsert, originalDocument, null));
                 } else {
                   return Uni.createFrom().nullItem();
                 }
@@ -176,7 +186,10 @@ public record ReadAndUpdateOperation(
                       .shred(
                           commandContext(),
                           documentUpdaterResponse.document(),
-                          readDocument.txnId());
+                          readDocument
+                              .txnId()
+                              .orElse(null) // will be empty when this is a upsert'd doc
+                          );
 
               // Have to do this because shredder adds _id field to the document if it doesn't exist
               JsonNode updatedDocument = writableShreddedDocument.docJsonNode();
@@ -330,7 +343,7 @@ public record ReadAndUpdateOperation(
             dataApiRequestInfo,
             queryExecutor,
             null,
-            new IDCollectionFilter(IDCollectionFilter.Operator.EQ, prevReadDoc.id()))
+            new IDCollectionFilter(IDCollectionFilter.Operator.EQ, prevReadDoc.id().orElseThrow()))
         .onItem()
         .transform(
             response -> {

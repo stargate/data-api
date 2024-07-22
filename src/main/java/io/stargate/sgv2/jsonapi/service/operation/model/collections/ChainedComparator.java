@@ -24,6 +24,7 @@ public record ChainedComparator(List<FindOperation.OrderBy> sortColumns, ObjectM
     // This needs to be done to maintain the relative ordering of document whose sort fields values
     // are same.
     return JsonNodeComparator.ascending()
-        .compare(o1.id().asJson(objectMapper), o2.id().asJson(objectMapper));
+        .compare(
+            o1.id().orElseThrow().asJson(objectMapper), o2.id().orElseThrow().asJson(objectMapper));
   }
 }

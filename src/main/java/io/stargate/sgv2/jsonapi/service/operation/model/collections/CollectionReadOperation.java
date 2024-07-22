@@ -117,6 +117,7 @@ public interface CollectionReadOperation extends CollectionOperation {
                   JsonNode root = readDocument ? objectMapper.readTree(row.getString(2)) : null;
                   if (root != null) {
                     // create metrics
+                    // TODO Use the column names!
                     jsonProcessingMetricsReporter.reportJsonReadBytesMetrics(
                         commandName, row.getString(2).length());
 
@@ -346,9 +347,16 @@ public interface CollectionReadOperation extends CollectionOperation {
                   subList.stream()
                       .map(
                           readDoc -> {
-                            JsonNode data = readDoc.docJsonValue().get();
+                            JsonNode data = readDoc.docSupplier().get();
                             projection.applyProjection(data);
-                            return ReadDocument.from(readDoc.id(), readDoc.txnId(), data);
+                            // TODO AARON below is the old code, why do we need to create a new
+                            // obj because applyProjection mutates the document ?
+                            // also, if this doc was from upsert the original ReadDocument obj may
+                            // not have the doc ID
+                            // if there was not one in the filter.
+                            // orig return ReadDocument.from(readDoc.id(), readDoc.txnId(), data);
+                            return ReadDocument.from(
+                                readDoc.id().orElse(null), readDoc.txnId().orElse(null), data);
                           })
                       .collect(Collectors.toList());
               return new FindResponse(responseDocuments, null);
