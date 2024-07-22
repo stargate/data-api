@@ -170,43 +170,4 @@ public record CommandContext<T extends SchemaObject>(
         schemaObject().type,
         expectedType);
   }
-
-  // TODO: why do we have these public ctors, and a static factor, and this is a record ??
-  //  public CommandContext(String namespace, String collection) {
-  //    this(CollectionSchemaObject.EMPTY, null, null, null);
-  //  }
-
-  //  public CommandContext(
-  //      String namespace,
-  //      String collection,
-  //      String commandName,
-  //      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
-  //    this(
-  //        CollectionSchemaObject.EMPTY,
-  //        null,
-  //        commandName,
-  //        jsonProcessingMetricsReporter);
-  //  }
-
-  /**
-   * An utility method to create a new instance of {@link CommandContext} by passing the namespace,
-   * the collection, the collection settings, embedding provider and the command name.
-   *
-   * @param namespace Namespace
-   * @param collection Collection
-   * @param collectionSettings Collection settings
-   * @param embeddingProvider Embedding provider
-   * @param commandName Command name
-   * @return Returns a new instance of {@link CommandContext}.
-   */
-  //  public static CommandContext from(
-  //      String namespace,
-  //      String collection,
-  //      CollectionSchemaObject collectionSettings,
-  //      EmbeddingProvider embeddingProvider,
-  //      String commandName) {
-  //    return new CommandContext(
-  //        collectionSettings, embeddingProvider, commandName, null);
-  //  }
-
 }

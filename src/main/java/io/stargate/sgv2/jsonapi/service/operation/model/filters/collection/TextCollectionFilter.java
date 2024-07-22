@@ -11,9 +11,11 @@ public class TextCollectionFilter extends MapCollectionFilter<String> {
   public TextCollectionFilter(String path, Operator operator, String value) {
     super("query_text_values", path, operator, value);
     this.strValue = value;
-    if (Operator.EQ == operator || Operator.NE == operator)
+    if (Operator.EQ == operator || Operator.NE == operator) {
       collectionIndexUsage.arrayContainsTag = true;
-    else collectionIndexUsage.textIndexTag = true;
+    } else {
+      collectionIndexUsage.textIndexTag = true;
+    }
   }
 
   /**
