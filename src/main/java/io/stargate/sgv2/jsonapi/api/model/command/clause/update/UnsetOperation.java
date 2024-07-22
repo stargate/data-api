@@ -44,7 +44,7 @@ public class UnsetOperation extends UpdateOperation<UnsetOperation.Action> {
     if (modified && unsetPaths.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
       doc.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
     }
-    return new UpdateOperationResult(modified, null);
+    return new UpdateOperationResult(modified, List.of());
   }
 
   record Action(PathMatchLocator locator) implements ActionWithLocator {}

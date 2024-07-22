@@ -3,12 +3,16 @@ package io.stargate.sgv2.jsonapi.service.updater;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.*;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
+import java.util.ArrayList;
 import java.util.List;
 
 /** Updates the document read from the database with the updates came as part of the request. */
@@ -66,16 +70,16 @@ public record DocumentUpdater(
    */
   private DocumentUpdaterResponse update(ObjectNode docToUpdate, boolean docInserted) {
     boolean modified = false;
-    EmbeddingUpdateOperation embeddingUpdateOperation = null;
+    List<EmbeddingUpdateOperation> embeddingUpdateOperationList = new ArrayList<>();
     for (UpdateOperation updateOperation : updateOperations) {
       if (updateOperation.shouldApplyIf(docInserted)) {
         final UpdateOperation.UpdateOperationResult updateOperationResult =
             updateOperation.updateDocument(docToUpdate);
         modified |= updateOperationResult.modified();
-        embeddingUpdateOperation = updateOperationResult.embeddingUpdateOperation();
+        embeddingUpdateOperationList.addAll(updateOperationResult.embeddingUpdateOperations());
       }
     }
-    return new DocumentUpdaterResponse(docToUpdate, modified, embeddingUpdateOperation);
+    return new DocumentUpdaterResponse(docToUpdate, modified, embeddingUpdateOperationList);
   }
 
   /**
@@ -106,13 +110,13 @@ public record DocumentUpdater(
       // null value here.
       if (vectorizeNode.isNull()) {
         // if $vectorize is null value, update $vector as null
-        replaceDocument.put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
+        replaceDocument.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
       } else if (!vectorizeNode.isTextual()) {
         // if $vectorize is not textual value
         throw ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.toApiException();
       } else if (vectorizeNode.asText().isBlank()) {
         // $vectorize is blank text value, set $vector as null value, no need to vectorize
-        replaceDocument.put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
+        replaceDocument.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
       } else {
         // if $vectorize is textual and not blank, create embeddingUpdateOperation
         embeddingUpdateOperation = new EmbeddingUpdateOperation(vectorizeNode.asText());
@@ -137,37 +141,59 @@ public record DocumentUpdater(
   }
 
   /**
-   * This method is used for potential vectorize There may exist a not-null embeddingUpdateOperation
-   * in responseBeforeVectorize param, then use dataVectorizer to vectorize the content and then use
-   * embeddingUpdateOperation to update the document's $vector field
-   *
-   * @param responseBeforeVectorize response before vectorize
-   * @param dataVectorizer dataVectorizer
-   * @return Uni<DocumentUpdaterResponse>
-   */
-  public Uni<DocumentUpdaterResponse> updateEmbeddingVector(
-      DocumentUpdaterResponse responseBeforeVectorize, DataVectorizer dataVectorizer) {
-    final EmbeddingUpdateOperation embeddingUpdateOperation =
-        responseBeforeVectorize.embeddingUpdateOperation();
-    if (embeddingUpdateOperation == null) {
-      return Uni.createFrom().item(responseBeforeVectorize);
-    }
-    return dataVectorizer
-        .vectorize(embeddingUpdateOperation.vectorizeContent())
-        .onItem()
-        .transformToUni(
-            vector -> {
-              embeddingUpdateOperation.updateDocument(responseBeforeVectorize.document, vector);
-              return Uni.createFrom().item(responseBeforeVectorize);
-            });
-  }
-
-  /**
    * The documentUpdaterResponse has the updated document, boolean flag to indicate the document is
    * modified or not, an embeddingUpdateOperation to update the embedding
    */
   public record DocumentUpdaterResponse(
-      JsonNode document, boolean modified, EmbeddingUpdateOperation embeddingUpdateOperation) {}
+      JsonNode document,
+      boolean modified,
+      List<EmbeddingUpdateOperation> embeddingUpdateOperations) {
+
+    /**
+     * This method is used for potential vectorize There may exist a not-null
+     * embeddingUpdateOperation in responseBeforeVectorize param, then use dataVectorizer to
+     * vectorize the content and then use embeddingUpdateOperation to update the document's $vector
+     * field.
+     *
+     * @param responseBeforeVectorize response before vectorization
+     * @param DataVectorizerService dataVectorizerService
+     * @param DataApiRequestInfo dataApiRequestInfo
+     * @param CommandContext commandContext
+     * @return Uni<DocumentUpdaterResponse>
+     */
+    public Uni<DocumentUpdaterResponse> updateEmbeddingVector(
+        DocumentUpdaterResponse responseBeforeVectorize,
+        DataVectorizerService dataVectorizerService,
+        DataApiRequestInfo dataApiRequestInfo,
+        CommandContext commandContext) {
+
+      List<EmbeddingUpdateOperation> embeddingUpdateOperations =
+          responseBeforeVectorize.embeddingUpdateOperations();
+      if (embeddingUpdateOperations.isEmpty()) {
+        return Uni.createFrom().item(responseBeforeVectorize);
+      }
+      // lazy construct the dataVectorizer, only when embeddingUpdateOperation is not null
+      final DataVectorizer dataVectorizer =
+          dataVectorizerService.constructDataVectorizer(dataApiRequestInfo, commandContext);
+      // TODO: only SetOperation and Replacement may create one embeddingUpdateOperation, Refactor
+      // when there are multiple
+      final EmbeddingUpdateOperation embeddingUpdateOperation = embeddingUpdateOperations.get(0);
+      return dataVectorizer
+          .vectorize(embeddingUpdateOperation.vectorizeContent())
+          .onItem()
+          .transformToUni(
+              vector -> {
+                embeddingUpdateOperation.updateDocument(responseBeforeVectorize.document, vector);
+                // create new DocumentUpdaterResponse, set embeddingUpdateOperation as null.
+                return Uni.createFrom()
+                    .item(
+                        new DocumentUpdaterResponse(
+                            responseBeforeVectorize.document,
+                            responseBeforeVectorize.modified,
+                            List.of()));
+              });
+    }
+  }
 
   private enum UpdateType {
     UPDATE,

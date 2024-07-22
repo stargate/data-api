@@ -76,7 +76,7 @@ public class MulOperation extends UpdateOperation<MulOperation.Action> {
       }
     }
 
-    return new UpdateOperationResult(modified, null);
+    return new UpdateOperationResult(modified, List.of());
   }
 
   private JsonNode multiply(ObjectNode doc, JsonNode oldValue, JsonNode multiplierValue) {

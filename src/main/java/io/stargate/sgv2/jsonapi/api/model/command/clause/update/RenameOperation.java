@@ -78,7 +78,7 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
         dst.replaceValue(value);
       }
     }
-    return new UpdateOperationResult(modified, null);
+    return new UpdateOperationResult(modified, List.of());
   }
 
   // Unlike most operations, we have 2 locators (src, dest), use explicit names

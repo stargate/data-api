@@ -12,15 +12,17 @@ import io.quarkus.test.junit.TestProfile;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
-import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -28,6 +30,7 @@ import org.junit.jupiter.api.Test;
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class DocumentUpdaterTest {
   @Inject ObjectMapper objectMapper;
+  @Inject DataVectorizerService dataVectorizerService;
 
   private static String BASE_DOC_JSON =
       """
@@ -571,11 +574,13 @@ public class DocumentUpdaterTest {
               });
 
       // Second update will vectorize
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
       final DocumentUpdater.DocumentUpdaterResponse secondResponse =
-          documentUpdater
-              .updateEmbeddingVector(firstResponse, dataVectorizer)
+          firstResponse
+              .updateEmbeddingVector(
+                  firstResponse,
+                  dataVectorizerService,
+                  new DataApiRequestInfo(Optional.of("testTenant")),
+                  TestEmbeddingProvider.commandContextWithVectorize)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -775,11 +780,13 @@ public class DocumentUpdaterTest {
                 assertThat(firstResponseNode.embeddingUpdateOperation()).isNotNull(); // not null
               });
       // Second update will vectorize and overwrite $vector
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
       final DocumentUpdater.DocumentUpdaterResponse secondResponse =
-          documentUpdater
-              .updateEmbeddingVector(firstResponse, dataVectorizer)
+          firstResponse
+              .updateEmbeddingVector(
+                  firstResponse,
+                  dataVectorizerService,
+                  new DataApiRequestInfo(Optional.of("testTenant")),
+                  TestEmbeddingProvider.commandContextWithVectorize)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -933,7 +940,7 @@ public class DocumentUpdaterTest {
                                                 {
                           "$vectorize" : "random text"
                                                       }
-                                                                        """));
+                          """));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
           documentUpdater.apply(baseData, false);
       assertThat(updatedDocument)
@@ -947,11 +954,13 @@ public class DocumentUpdaterTest {
               });
 
       // Second update will vectorize
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
       final DocumentUpdater.DocumentUpdaterResponse secondResponse =
-          documentUpdater
-              .updateEmbeddingVector(updatedDocument, dataVectorizer)
+          updatedDocument
+              .updateEmbeddingVector(
+                  updatedDocument,
+                  dataVectorizerService,
+                  new DataApiRequestInfo(Optional.of("testTenant")),
+                  TestEmbeddingProvider.commandContextWithVectorize)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -964,7 +973,7 @@ public class DocumentUpdaterTest {
                                 "$vectorize" : "random text",
                                 "$vector": [0.25,0.25,0.25]
                                           }
-                                          """;
+                                """;
       JsonNode expectedData2 = objectMapper.readTree(expected2);
       assertThat(secondResponse)
           .isNotNull()
@@ -1033,7 +1042,7 @@ public class DocumentUpdaterTest {
                                             {
                                              "$vectorize": ""
                                               }
-                                                   """));
+                                            """));
       DocumentUpdater.DocumentUpdaterResponse updatedDocument =
           documentUpdater.apply(baseData, false);
       assertThat(updatedDocument)
@@ -1194,11 +1203,13 @@ public class DocumentUpdaterTest {
               });
 
       // Second update will vectorize
-      DataVectorizer dataVectorizer =
-          new DataVectorizer(testService, objectMapper.getNodeFactory(), null, collectionSettings);
       final DocumentUpdater.DocumentUpdaterResponse secondResponse =
-          documentUpdater
-              .updateEmbeddingVector(updatedDocument, dataVectorizer)
+          updatedDocument
+              .updateEmbeddingVector(
+                  updatedDocument,
+                  dataVectorizerService,
+                  new DataApiRequestInfo(Optional.of("testTenant")),
+                  TestEmbeddingProvider.commandContextWithVectorize)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()

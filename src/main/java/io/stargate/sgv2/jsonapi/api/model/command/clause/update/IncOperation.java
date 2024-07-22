@@ -77,7 +77,7 @@ public class IncOperation extends UpdateOperation<IncOperation.Action> {
       }
     }
 
-    return new UpdateOperationResult(modified, null);
+    return new UpdateOperationResult(modified, List.of());
   }
 
   private JsonNode addNumbers(ObjectNode doc, NumericNode nr1, NumericNode nr2) {

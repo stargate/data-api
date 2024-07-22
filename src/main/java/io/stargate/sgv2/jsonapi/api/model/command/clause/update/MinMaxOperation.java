@@ -66,7 +66,7 @@ public class MinMaxOperation extends UpdateOperation<MinMaxOperation.Action> {
       }
     }
 
-    return new UpdateOperationResult(modified, null);
+    return new UpdateOperationResult(modified, List.of());
   }
 
   private boolean shouldReplace(JsonNode oldValue, JsonNode newValue) {

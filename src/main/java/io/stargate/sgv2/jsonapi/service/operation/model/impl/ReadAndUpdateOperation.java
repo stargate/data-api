@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
 import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
@@ -160,10 +159,12 @@ public record ReadAndUpdateOperation(
               DocumentUpdater.DocumentUpdaterResponse documentUpdaterResponse =
                   documentUpdater().apply(readDocument.document().deepCopy(), upsert);
 
-              final DataVectorizer dataVectorizer =
-                  dataVectorizerService.constructDataVectorizer(dataApiRequestInfo, commandContext);
-              return documentUpdater
-                  .updateEmbeddingVector(documentUpdaterResponse, dataVectorizer)
+              return documentUpdaterResponse
+                  .updateEmbeddingVector(
+                      documentUpdaterResponse,
+                      dataVectorizerService,
+                      dataApiRequestInfo,
+                      commandContext)
                   .onItem()
                   .transformToUni(
                       vectorizedDocumentUpdaterResponse -> {
@@ -202,7 +203,9 @@ public record ReadAndUpdateOperation(
                             .transform(
                                 v -> {
                                   // if not insert increment modified count
-                                  if (!upsert) modifiedCount.incrementAndGet();
+                                  if (!upsert) {
+                                    modifiedCount.incrementAndGet();
+                                  }
 
                                   // resolve doc to return
                                   JsonNode documentToReturn = null;

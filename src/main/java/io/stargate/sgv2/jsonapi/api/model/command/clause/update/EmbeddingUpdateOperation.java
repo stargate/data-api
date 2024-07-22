@@ -23,7 +23,6 @@ public record EmbeddingUpdateOperation(String vectorizeContent) {
    * @return Uni<Boolean> modified
    */
   public void updateDocument(JsonNode doc, float[] vector) {
-    // TODO can I do this instancitation?
     ObjectMapper objectMapper = new ObjectMapper();
     JsonNodeFactory nodeFactory = objectMapper.getNodeFactory();
     final JsonNode vectorJsonNode = doc.get(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);

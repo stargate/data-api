@@ -66,7 +66,7 @@ public class CurrentDateOperation extends UpdateOperation<CurrentDateOperation.A
         modified = true;
       }
     }
-    return new UpdateOperationResult(modified, null);
+    return new UpdateOperationResult(modified, List.of());
   }
 
   record Action(PathMatchLocator locator) implements ActionWithLocator {}

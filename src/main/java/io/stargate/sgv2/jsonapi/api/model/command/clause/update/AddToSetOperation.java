@@ -136,7 +136,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
       }
     }
 
-    return new UpdateOperationResult(modified, null);
+    return new UpdateOperationResult(modified, List.of());
   }
 
   private boolean addToSet(ArrayNode set, JsonNode elementToAdd) {

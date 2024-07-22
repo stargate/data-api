@@ -112,5 +112,5 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
   }
 
   public record UpdateOperationResult(
-      boolean modified, EmbeddingUpdateOperation embeddingUpdateOperation) {}
+      boolean modified, List<EmbeddingUpdateOperation> embeddingUpdateOperations) {}
 }
