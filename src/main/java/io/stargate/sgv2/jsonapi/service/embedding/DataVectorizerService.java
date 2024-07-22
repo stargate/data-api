@@ -63,7 +63,7 @@ public class DataVectorizerService {
         new DataVectorizer(
             embeddingProvider,
             objectMapper.getNodeFactory(),
-            dataApiRequestInfo.getEmbeddingApiKey(),
+            dataApiRequestInfo.getEmbeddingCredentials(),
             commandContext.schemaObject());
     return vectorizeSortClause(dataVectorizer, commandContext, command)
         .onItem()

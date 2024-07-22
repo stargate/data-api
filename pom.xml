@@ -7,7 +7,7 @@
     <version>2.1.0-BETA-13</version>
   </parent>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.14-SNAPSHOT</version>
+  <version>1.0.15-SNAPSHOT</version>
   <properties>
     <stargate.version>${project.parent.version}</stargate.version>
     <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->
@@ -53,6 +53,13 @@
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>${quarkus.platform.artifact-id}</artifactId>
         <version>${quarkus.platform.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>software.amazon.awssdk</groupId>
+        <artifactId>bom</artifactId>
+        <version>2.26.12</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -124,6 +131,23 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.bpodgursky</groupId>
+      <artifactId>jbool_expressions</artifactId>
+      <version>1.23</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>bedrockruntime</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>sts</artifactId>
     </dependency>
     <dependency>
       <groupId>com.bpodgursky</groupId>

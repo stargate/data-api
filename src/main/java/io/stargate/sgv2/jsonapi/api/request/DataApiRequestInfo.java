@@ -17,7 +17,7 @@ import java.util.Optional;
 public class DataApiRequestInfo {
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
-  private final Optional<String> embeddingApiKey;
+  private final EmbeddingCredentials embeddingCredentials;
 
   /**
    * Constructor that will be useful in the offline library mode, where only the tenant will be set
@@ -28,7 +28,7 @@ public class DataApiRequestInfo {
   public DataApiRequestInfo(Optional<String> tenantId) {
     this.tenantId = tenantId;
     this.cassandraToken = Optional.empty();
-    this.embeddingApiKey = Optional.empty();
+    this.embeddingCredentials = null;
   }
 
   @Inject
@@ -37,8 +37,8 @@ public class DataApiRequestInfo {
       SecurityContext securityContext,
       Instance<DataApiTenantResolver> tenantResolver,
       Instance<DataApiTokenResolver> tokenResolver,
-      Instance<EmbeddingApiKeyResolver> apiKeyResolver) {
-    this.embeddingApiKey = apiKeyResolver.get().resolveApiKey(routingContext);
+      Instance<EmbeddingCredentialsResolver> apiKeysResolver) {
+    this.embeddingCredentials = apiKeysResolver.get().resolveEmbeddingCredentials(routingContext);
     this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
   }
@@ -51,7 +51,7 @@ public class DataApiRequestInfo {
     return this.cassandraToken;
   }
 
-  public Optional<String> getEmbeddingApiKey() {
-    return this.embeddingApiKey;
+  public EmbeddingCredentials getEmbeddingCredentials() {
+    return this.embeddingCredentials;
   }
 }

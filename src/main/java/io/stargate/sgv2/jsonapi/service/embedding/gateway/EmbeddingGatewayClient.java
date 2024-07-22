@@ -5,6 +5,7 @@ import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -19,8 +20,18 @@ import java.util.Optional;
 public class EmbeddingGatewayClient extends EmbeddingProvider {
 
   private static final String DEFAULT_TENANT_ID = "default";
-  private static final String API_KEY = "API_KEY";
-  private static final String DATA_API_KEY = "DATA_API_AUTH_KEY";
+
+  /** Map to the value of `x-embedding-api-key` in the header */
+  private static final String EMBEDDING_API_KEY = "EMBEDDING_API_KEY";
+
+  /** Map to the value of `x-embedding-access-id` in the header */
+  private static final String EMBEDDING_ACCESS_ID = "EMBEDDING_ACCESS_ID";
+
+  /** Map to the value of `x-embedding-secret-id` in the header */
+  private static final String EMBEDDING_SECRET_ID = "EMBEDDING_SECRET_ID";
+
+  /** Map to the value of `Token` in the header */
+  private static final String DATA_API_TOKEN = "DATA_API_TOKEN";
 
   private EmbeddingProviderConfigStore.RequestProperties requestProperties;
 
@@ -77,7 +88,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
    * Vectorize the given list of texts
    *
    * @param texts List of texts to be vectorized
-   * @param apiKey API key sent as header
+   * @param embeddingCredentials Credentials required for the provider
    * @param embeddingRequestType Type of request (INDEX or SEARCH)
    * @return
    */
@@ -85,7 +96,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKey,
+      EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
     Map<String, EmbeddingGateway.ProviderEmbedRequest.EmbeddingRequest.ParameterValue>
         grpcVectorizeServiceParameter = new HashMap<>();
@@ -135,10 +146,21 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
         EmbeddingGateway.ProviderEmbedRequest.ProviderContext.newBuilder()
             .setProviderName(provider)
             .setTenantId(tenant.orElse(DEFAULT_TENANT_ID));
-    builder.putAuthTokens(DATA_API_KEY, authToken.orElse(""));
-    if (apiKey.isPresent()) {
-      builder.putAuthTokens(API_KEY, apiKey.get());
+    // Add the value of `Token` in the header
+    builder.putAuthTokens(DATA_API_TOKEN, authToken.orElse(""));
+    // Add the value of `x-embedding-api-key` in the header
+    if (embeddingCredentials.apiKey().isPresent()) {
+      builder.putAuthTokens(EMBEDDING_API_KEY, embeddingCredentials.apiKey().get());
     }
+    // Add the value of `x-embedding-access-id` in the header
+    if (embeddingCredentials.accessId().isPresent()) {
+      builder.putAuthTokens(EMBEDDING_ACCESS_ID, embeddingCredentials.accessId().get());
+    }
+    // Add the value of `x-embedding-secret-id` in the header
+    if (embeddingCredentials.secretId().isPresent()) {
+      builder.putAuthTokens(EMBEDDING_SECRET_ID, embeddingCredentials.secretId().get());
+    }
+    // Add the `authentication` (sync service key) in the createCollection command
     if (authentication != null) {
       builder.putAllAuthTokens(authentication);
     }

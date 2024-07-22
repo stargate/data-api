@@ -58,7 +58,7 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
    */
   private record EmbeddingProviderResponse(
       String displayName,
-      String url,
+      Optional<String> url,
       Map<
               EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationType,
               EmbeddingProvidersConfig.EmbeddingProviderConfig.AuthenticationConfig>

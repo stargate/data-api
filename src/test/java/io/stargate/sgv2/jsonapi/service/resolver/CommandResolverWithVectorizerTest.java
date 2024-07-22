@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -541,7 +542,7 @@ public class CommandResolverWithVectorizerTest {
       new DataVectorizer(
               TestEmbeddingProvider.commandContextWithVectorize.embeddingProvider(),
               objectMapper.getNodeFactory(),
-              Optional.empty(),
+              new EmbeddingCredentials(Optional.empty(), Optional.empty(), Optional.empty()),
               TestEmbeddingProvider.commandContextWithVectorize.schemaObject())
           .vectorizeUpdateClause(updateClause)
           .subscribe()

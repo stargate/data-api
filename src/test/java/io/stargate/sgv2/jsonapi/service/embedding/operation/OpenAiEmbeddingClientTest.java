@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -22,6 +23,9 @@ public class OpenAiEmbeddingClientTest {
 
   @Inject EmbeddingProvidersConfig config;
 
+  private final EmbeddingCredentials embeddingCredentials =
+      new EmbeddingCredentials(Optional.of("test"), Optional.empty(), Optional.empty());
+
   @Nested
   class OpenAiEmbeddingTest {
     @Test
@@ -30,14 +34,14 @@ public class OpenAiEmbeddingClientTest {
           new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("openai").url(),
+                  config.providers().get("openai").url().get(),
                   "test",
                   3,
                   Map.of("organizationId", "org-id", "projectId", "project-id"))
               .vectorize(
                   1,
                   List.of("some data"),
-                  Optional.of("test"),
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -59,14 +63,14 @@ public class OpenAiEmbeddingClientTest {
           new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("openai").url(),
+                  config.providers().get("openai").url().get(),
                   "test",
                   3,
                   Map.of())
               .vectorize(
                   1,
                   List.of("application/json"),
-                  Optional.of("test"),
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -88,14 +92,14 @@ public class OpenAiEmbeddingClientTest {
           new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("openai").url(),
+                  config.providers().get("openai").url().get(),
                   "test",
                   3,
                   Map.of("organizationId", "invalid org", "projectId", "project-id"))
               .vectorize(
                   1,
                   List.of("some data"),
-                  Optional.of("test"),
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -115,14 +119,14 @@ public class OpenAiEmbeddingClientTest {
           new OpenAIEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("openai").url(),
+                  config.providers().get("openai").url().get(),
                   "test",
                   3,
                   Map.of("organizationId", "org-id", "projectId", "invalid proj"))
               .vectorize(
                   1,
                   List.of("some data"),
-                  Optional.of("test"),
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
