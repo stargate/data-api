@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
@@ -23,20 +22,13 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
       String srcPath = validateUpdatePath(UpdateOperator.RENAME, entry.getKey());
       JsonNode value = entry.getValue();
       if (!value.isTextual()) {
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                + ": $rename requires STRING parameter for 'to', got: "
-                + value.getNodeType());
+        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+            "$rename requires STRING parameter for 'to', got: %s", value.getNodeType());
       }
       String dstPath = validateUpdatePath(UpdateOperator.RENAME, value.textValue());
       if (srcPath.equals(dstPath)) {
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH,
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
-                + ": $rename requires that 'source' and `destination` differ ('"
-                + srcPath
-                + "')");
+        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
+            "$rename requires that 'source' and `destination` differ ('%s')", srcPath);
       }
       actions.add(new Action(PathMatchLocator.forPath(srcPath), PathMatchLocator.forPath(dstPath)));
     }
@@ -52,12 +44,8 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
       if (value != null) {
         // $rename does not allow renaming of Array elements
         if (src.contextNode().isArray()) {
-          throw new JsonApiException(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH,
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
-                  + ": $rename does not allow ARRAY field as source ('"
-                  + action.sourceLocator()
-                  + "')");
+          throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
+              "$rename does not allow ARRAY field as source ('%s')", action.sourceLocator());
         }
 
         // If there is a value will be a modification (since source value will
@@ -67,12 +55,8 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
 
         // Also not allowed: destination as Array element:
         if (dst.contextNode().isArray()) {
-          throw new JsonApiException(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH,
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
-                  + ": $rename does not allow ARRAY field as destination ('"
-                  + action.targetLocator()
-                  + "')");
+          throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
+              "$rename does not allow ARRAY field as destination ('%s')", action.targetLocator());
         }
 
         dst.replaceValue(value);
