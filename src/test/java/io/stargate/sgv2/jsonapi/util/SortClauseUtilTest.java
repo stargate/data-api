@@ -6,7 +6,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
+import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
@@ -19,7 +19,7 @@ public class SortClauseUtilTest {
   class HappyPathSortClauseUtil {
     @Test
     public void emptySort() {
-      final List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(null);
+      final List<FindCollectionOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(null);
       assertThat(orderBy).isNull();
     }
 
@@ -28,7 +28,8 @@ public class SortClauseUtilTest {
       SortClause sortClause =
           new SortClause(
               List.of(SortExpression.sort("col1", true), SortExpression.sort("col2", false)));
-      final List<FindOperation.OrderBy> orderBy = SortClauseUtil.resolveOrderBy(sortClause);
+      final List<FindCollectionOperation.OrderBy> orderBy =
+          SortClauseUtil.resolveOrderBy(sortClause);
       assertThat(orderBy)
           .isNotNull()
           .satisfies(
