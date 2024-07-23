@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -75,10 +74,8 @@ public record InsertCollectionOperation(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     final boolean vectorEnabled = commandContext().schemaObject().isVectorEnabled();
     if (!vectorEnabled && insertions.stream().anyMatch(insertion -> insertion.hasVectorValues())) {
-      throw new JsonApiException(
-          ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED,
-          ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage()
-              + commandContext().schemaObject().name.table());
+      throw ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
+          commandContext().schemaObject().name.table());
     }
     // create json doc write metrics
     if (commandContext.jsonProcessingMetricsReporter() != null) {
@@ -217,8 +214,7 @@ public record InsertCollectionOperation(
                 if (doc.nextTxID().equals(txId)) {
                   return Uni.createFrom().item(doc.id());
                 }
-                Exception failure = new JsonApiException(ErrorCode.DOCUMENT_ALREADY_EXISTS);
-                return Uni.createFrom().failure(failure);
+                return Uni.createFrom().failure(ErrorCode.DOCUMENT_ALREADY_EXISTS.toApiException());
               }
             });
   }

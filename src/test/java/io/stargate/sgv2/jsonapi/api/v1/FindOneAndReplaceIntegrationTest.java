@@ -473,7 +473,8 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .body("errors[0].errorCode", is("DOCUMENT_REPLACE_DIFFERENT_DOCID"))
           .body(
               "errors[0].message",
-              startsWith("The replace document and document resolved using filter have different _id"));
+              startsWith(
+                  "The replace document and document resolved using filter have different _id"));
     }
 
     @Test

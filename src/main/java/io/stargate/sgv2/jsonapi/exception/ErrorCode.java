@@ -130,7 +130,7 @@ public enum ErrorCode {
 
   VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),
 
-  VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection "),
+  VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection"),
 
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name"),
 
