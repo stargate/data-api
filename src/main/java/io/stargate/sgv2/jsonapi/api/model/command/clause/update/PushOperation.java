@@ -89,7 +89,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
     }
     // For now should not be possible to occur but once we add other modifiers could:
     if (eachArg == null) {
-      throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+      throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.toApiException(
           "$push modifiers can only be used with $each modifier; none included");
     }
 

@@ -68,7 +68,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
 
         default:
           throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.toApiException(
-              "$addToSet only supports $each modifier; trying to use '%s'");
+              "$addToSet only supports $each modifier; trying to use '%s'", modifier);
       }
     }
     // For now should not be possible to occur but once we add other modifiers could:
