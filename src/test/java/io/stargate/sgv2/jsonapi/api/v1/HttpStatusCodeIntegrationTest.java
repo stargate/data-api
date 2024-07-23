@@ -103,6 +103,27 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
     }
 
     @Test
+    public void invalidContentType() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.HTML)
+          .body(
+              """
+                                                {
+                                                  "findCollections": { }
+                                                }
+                                                """)
+          .when()
+          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .then()
+          .statusCode(415)
+          .body("errors", is(notNullValue()))
+          .body("errors[0].message", is("Invalid Content-Type header"))
+          .body("errors[0].errorCode", is("INVALID_CONTENT_TYPE_HEADER"))
+          .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
     public void resourceNotFound() {
       String json =
           """

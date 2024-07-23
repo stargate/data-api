@@ -105,6 +105,8 @@ public enum ErrorCode {
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 
+  INVALID_CONTENT_TYPE_HEADER("Invalid Content-Type header"),
+
   UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
 
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),

@@ -15,6 +15,7 @@ import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.core.Response;
 import java.util.Collection;
 import java.util.Collections;
@@ -67,6 +68,17 @@ public final class ThrowableToErrorMapper {
         // handle all driver exceptions
         if (throwable instanceof DriverException) {
           return handleDriverException((DriverException) throwable, message);
+        }
+
+        // handle an invalid Content-Type header
+        if (throwable instanceof NotSupportedException
+            && throwable
+                .getMessage()
+                .contains("The content-type header value did not match the value")) {
+          // validate the Content-Type header, 415 if failed
+          return ErrorCode.INVALID_CONTENT_TYPE_HEADER
+              .toApiException()
+              .getCommandResultError(Response.Status.UNSUPPORTED_MEDIA_TYPE);
         }
 
         // handle all other exceptions

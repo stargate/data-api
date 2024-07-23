@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.WebApplicationException;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
@@ -42,6 +43,12 @@ public class WebApplicationExceptionMapper {
     if (e instanceof NotFoundException) {
       return RestResponse.status(RestResponse.Status.NOT_FOUND, commandResult);
     }
+    // Return 415 for invalid Content-Type
+    if (e instanceof NotSupportedException
+        && e.getMessage().contains("The content-type header value did not match the value")) {
+      return RestResponse.status(RestResponse.Status.UNSUPPORTED_MEDIA_TYPE, commandResult);
+    }
+
     return RestResponse.ok(commandResult);
   }
 }
