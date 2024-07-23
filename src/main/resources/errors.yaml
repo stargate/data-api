@@ -48,4 +48,13 @@ errors:
       SERVER_READ_FAILED:
         title: the title for the error
         body: big long message with {vars} in it
+    EMBEDDING_PROVIDER:
+      CLIENT_ERROR:
+        title: The Embedding Provider returned a HTTP client error
+        body: |
+          Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+      SERVER_ERROR:
+        title: The Embedding Provider returned a HTTP server error
+        body: |
+          Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
 
