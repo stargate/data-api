@@ -9,15 +9,16 @@ fi
 # Default to INFO as root log level
 LOGLEVEL=INFO
 
-# Default to images used in project integration tests
-HCDTAG="$(../mvnw -f .. help:evaluate -Phcd-it -Dexpression=stargate.int-test.cassandra.image-tag -q -DforceStdout)"
-
 # Default to latest released version
 DATAAPITAG="v1"
 DATAAPIIMAGE="stargateio/data-api"
-HCDONLY="false"
 
-while getopts "dlqnr:j:" opt; do
+HCDTAG="1.0.0"
+HCDIMAGE="cr.dtsx.io/datastax/hcd"
+HCDONLY="false"
+HCDNODES=1
+
+while getopts "dlqn:r:j:" opt; do
   case $opt in
     l)
       DATAAPITAG="v$(../mvnw -f .. help:evaluate -Dexpression=project.version -q -DforceStdout)"
@@ -26,7 +27,7 @@ while getopts "dlqnr:j:" opt; do
       DATAAPITAG=$OPTARG
       ;;
     n)
-      DATAAPIIMAGE="stargateio/data-api-native"
+      HCDNODES=$OPTARG
       ;;
     q)
       REQUESTLOG="true"
@@ -41,7 +42,7 @@ while getopts "dlqnr:j:" opt; do
       echo "Valid options:"
       echo "  -l - use Data API Docker image from local build (see project README for build instructions)"
       echo "  -j <tag> - use Data API Docker image tagged with specified Data API version (will pull images from Docker Hub if needed)"
-      echo "  -n <tag> - use Data API native image instead of default Java-based image"
+      echo "  -n - number of HCD nodes to use (1, 2 or 3)"
       echo "  -d - Start only HCD container"
       echo "  -q - enable request logging for APIs in 'io.quarkus.http.access-log' (default: disabled)"
       echo "  -r - specify root log level for APIs (defaults to INFO); usually DEBUG, WARN or ERROR"
@@ -52,15 +53,31 @@ done
 
 export LOGLEVEL
 export REQUESTLOG
+export HCDIMAGE
 export HCDTAG
+export HCDNODES
 export DATAAPITAG
 export DATAAPIIMAGE
 
-echo "Running with DSE $DSETAG, Data API $DATAAPIIMAGE:$DATAAPITAG"
+if [ -z "${HCD_PORT}" ]; then
+  export HCD_PORT="9042"
+fi
+
+if [ -z "${HCD_FWD_PORT}" ]; then
+  export HCD_FWD_PORT="9042"
+fi
+
+echo "Running with HCD $HCDIMAGE:$HCDTAG ($HCDNODES nodes), Data API $DATAAPIIMAGE:$DATAAPITAG"
 
 if [ "$HCDONLY" = "true" ]; then
-  docker compose -f docker-compose-hcd.yml up -d --wait hcd
+  docker compose -f docker-compose-hcd.yml up -d --wait hcd-1
   exit 0
 else
-  docker compose -f docker-compose-hcd.yml up -d --wait
+  if [ "$HCDNODES" = 1 ]; then
+    docker compose -f docker-compose-hcd.yml up -d --wait hcd-1 data-api
+  elif [ "$HCDNODES" = 2 ]; then
+    docker compose -f docker-compose-hcd.yml up -d --wait hcd-1 hcd-2 data-api
+  else
+    docker compose -f docker-compose-hcd.yml up -d --wait
+  fi
 fi

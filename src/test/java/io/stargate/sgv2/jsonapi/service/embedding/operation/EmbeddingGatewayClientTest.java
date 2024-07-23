@@ -11,6 +11,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -27,6 +28,9 @@ import org.junit.jupiter.api.Test;
 public class EmbeddingGatewayClientTest {
 
   public static final String TESTING_COMMAND_NAME = "test_command";
+
+  private final EmbeddingCredentials embeddingCredentials =
+      new EmbeddingCredentials(Optional.empty(), Optional.empty(), Optional.empty());
 
   // for [data-api#1088] (NPE for VoyageAI provider)
   @Test
@@ -89,7 +93,7 @@ public class EmbeddingGatewayClientTest {
             .vectorize(
                 1,
                 List.of("data 1", "data 2"),
-                Optional.empty(),
+                embeddingCredentials,
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())
@@ -139,7 +143,7 @@ public class EmbeddingGatewayClientTest {
             .vectorize(
                 1,
                 List.of("data 1", "data 2"),
-                Optional.empty(),
+                embeddingCredentials,
                 EmbeddingGatewayClient.EmbeddingRequestType.INDEX)
             .subscribe()
             .withSubscriber(UniAssertSubscriber.create())

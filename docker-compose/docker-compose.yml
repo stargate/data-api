@@ -2,10 +2,11 @@ version: '2'
 
 services:
   dse-1:
-    image: datastax/dse-server:${DSETAG}
+    image: ${DSEIMAGE}:${DSETAG}
+    platform: linux/amd64
     networks:
       - stargate
-    mem_limit: 2G
+    mem_limit: 2500M
     environment:
       - MAX_HEAP_SIZE=1536M
       - CLUSTER_NAME=dse-${DSETAG}-cluster
@@ -21,10 +22,11 @@ services:
       retries: 20
 
   dse-2:
-    image: datastax/dse-server:${DSETAG}
+    image: ${DSEIMAGE}:${DSETAG}
     platform: linux/amd64
     networks:
       - stargate
+    mem_limit: 2500M
     depends_on:
       dse-1:
         condition: service_healthy
@@ -40,10 +42,11 @@ services:
       retries: 20
 
   dse-3:
-    image: datastax/dse-server:${DSETAG}
+    image: ${DSEIMAGE}:${DSETAG}
     platform: linux/amd64
     networks:
       - stargate
+    mem_limit: 2500M
     depends_on:
       dse-1:
         condition: service_healthy

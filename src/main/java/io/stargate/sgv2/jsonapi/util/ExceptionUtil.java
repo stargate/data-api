@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.util;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
-import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.util.List;
 
 public class ExceptionUtil {

@@ -8,8 +8,9 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
-import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -29,7 +30,7 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class CommandProcessor {
 
-  private static Logger logger = LoggerFactory.getLogger(CommandProcessor.class);
+  private static final Logger logger = LoggerFactory.getLogger(CommandProcessor.class);
 
   private final QueryExecutor queryExecutor;
 
@@ -54,9 +55,10 @@ public class CommandProcessor {
    * @param command {@link Command}
    * @return Uni emitting the result of the command execution.
    * @param <T> Type of the command.
+   * @param <U> Type of the schema object command operates on.
    */
-  public <T extends Command> Uni<CommandResult> processCommand(
-      DataApiRequestInfo dataApiRequestInfo, CommandContext commandContext, T command) {
+  public <T extends Command, U extends SchemaObject> Uni<CommandResult> processCommand(
+      DataApiRequestInfo dataApiRequestInfo, CommandContext<U> commandContext, T command) {
     // vectorize the data
     return dataVectorizerService
         .vectorize(dataApiRequestInfo, commandContext, command)

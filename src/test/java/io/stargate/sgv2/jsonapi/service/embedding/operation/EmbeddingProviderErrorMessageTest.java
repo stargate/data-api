@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
@@ -20,6 +21,9 @@ import org.junit.jupiter.api.Test;
 public class EmbeddingProviderErrorMessageTest {
   private static final int DEFAULT_DIMENSIONS = 0;
 
+  private final EmbeddingCredentials embeddingCredentials =
+      new EmbeddingCredentials(Optional.of("test"), Optional.empty(), Optional.empty());
+
   @Inject EmbeddingProvidersConfig config;
 
   @Nested
@@ -30,14 +34,14 @@ public class EmbeddingProviderErrorMessageTest {
           new NvidiaEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("nvidia").url(),
+                  config.providers().get("nvidia").url().get(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   1,
                   List.of("429"),
-                  Optional.of("test"),
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -57,14 +61,14 @@ public class EmbeddingProviderErrorMessageTest {
           new NvidiaEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("nvidia").url(),
+                  config.providers().get("nvidia").url().get(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   1,
                   List.of("400"),
-                  Optional.of("test"),
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -84,14 +88,14 @@ public class EmbeddingProviderErrorMessageTest {
           new NvidiaEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("nvidia").url(),
+                  config.providers().get("nvidia").url().get(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   1,
                   List.of("503"),
-                  Optional.of("test"),
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -111,14 +115,14 @@ public class EmbeddingProviderErrorMessageTest {
           new NvidiaEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("nvidia").url(),
+                  config.providers().get("nvidia").url().get(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   1,
                   List.of("408"),
-                  Optional.of("test"),
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -138,14 +142,14 @@ public class EmbeddingProviderErrorMessageTest {
           new NvidiaEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("nvidia").url(),
+                  config.providers().get("nvidia").url().get(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   1,
                   List.of("application/json"),
-                  Optional.of("test"),
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -162,14 +166,14 @@ public class EmbeddingProviderErrorMessageTest {
           new NvidiaEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("nvidia").url(),
+                  config.providers().get("nvidia").url().get(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   1,
                   List.of("application/xml"),
-                  Optional.of("test"),
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -190,14 +194,14 @@ public class EmbeddingProviderErrorMessageTest {
           new NvidiaEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("nvidia").url(),
+                  config.providers().get("nvidia").url().get(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   1,
                   List.of("text/plain;charset=UTF-8"),
-                  Optional.of("test"),
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -218,14 +222,14 @@ public class EmbeddingProviderErrorMessageTest {
           new NvidiaEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("nvidia").url(),
+                  config.providers().get("nvidia").url().get(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   1,
                   List.of("no json body"),
-                  Optional.of("test"),
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -246,14 +250,14 @@ public class EmbeddingProviderErrorMessageTest {
           new NvidiaEmbeddingProvider(
                   EmbeddingProviderConfigStore.RequestProperties.of(
                       2, 100, 3000, 100, 0.5, Optional.empty(), Optional.empty(), 10),
-                  config.providers().get("nvidia").url(),
+                  config.providers().get("nvidia").url().get(),
                   "test",
                   DEFAULT_DIMENSIONS,
                   null)
               .vectorize(
                   1,
                   List.of("empty json body"),
-                  Optional.of("test"),
+                  embeddingCredentials,
                   EmbeddingProvider.EmbeddingRequestType.INDEX)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())

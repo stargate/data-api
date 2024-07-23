@@ -46,19 +46,16 @@ jobs:
           mask-password: 'true'
 
         # Run Stargate coordinator in developer mode to save time / resources
-        # Pull JSON API image from ECR corresponding to latest commit on main branch
+        # Pull Data API image from ECR corresponding to latest commit on main branch
         # Pull Stargate coordinator image from ECR corresponding to version dependency in project pom
         # Retag images to remove repository name since start script does not expect it
       - name: Start Backend
         run: |
-          JSONTAG=$(git show -s --format="%H")
-          docker pull ${{ secrets.ECR_REPOSITORY }}/stargateio/jsonapi:$JSONTAG
-          docker image tag ${{ secrets.ECR_REPOSITORY }}/stargateio/jsonapi:$JSONTAG stargateio/jsonapi:$JSONTAG
-          SGTAG="$(./mvnw -f . help:evaluate -Dexpression=stargate.int-test.coordinator.image-tag -q -DforceStdout)"
-          docker pull ${{ secrets.ECR_REPOSITORY }}/stargateio/coordinator-dse-next:$SGTAG
-          docker image tag ${{ secrets.ECR_REPOSITORY }}/stargateio/coordinator-dse-next:$SGTAG stargateio/coordinator-dse-next:$SGTAG
+          DATAAPITAG=$(git show -s --format="%H")
+          docker pull ${{ secrets.ECR_REPOSITORY }}/stargateio/jsonapi:$DATAAPITAG
+          docker image tag ${{ secrets.ECR_REPOSITORY }}/stargateio/jsonapi:$DATAAPITAG stargateio/jsonapi:$DATAAPITAG
           cd docker-compose
-          ./start_dse_next_dev_mode.sh -j $JSONTAG -t $SGTAG
+          ./start_dse69.sh -j $DATAAPITAG 
 
       - name: Install Postman CLI
         run: |
@@ -75,6 +72,6 @@ jobs:
         if: always()
         run: |
           cd docker-compose
-          docker compose logs jsonapi
-          docker compose -f docker-compose-dev-mode.yml down
+          docker compose logs data-api
+          docker compose down
 
