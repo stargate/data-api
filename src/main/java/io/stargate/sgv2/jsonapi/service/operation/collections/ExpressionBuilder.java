@@ -14,6 +14,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// TIDY: this class needs a large refactor and tidy, it is breaking the archiecture by having
+// classes from the API package use DBFilters from the Operations, and vice-verse
 public class ExpressionBuilder {
 
   public static List<Expression<BuiltCondition>> buildExpressions(
