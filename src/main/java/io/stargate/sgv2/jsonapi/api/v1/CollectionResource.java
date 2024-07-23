@@ -22,8 +22,8 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
@@ -161,24 +161,26 @@ public class CollectionResource {
           @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
-        .getCollectionSettings(
+        .getSchemaObject(
             dataApiRequestInfo, dataApiRequestInfo.getTenantId(), namespace, collection)
         .onItemOrFailure()
         .transformToUni(
-            (collectionProperty, throwable) -> {
+            (schemaObject, throwable) -> {
               if (throwable != null) {
                 Throwable error = throwable;
-                if (throwable instanceof RuntimeException && throwable.getCause() != null)
+                if (throwable instanceof RuntimeException && throwable.getCause() != null) {
                   error = throwable.getCause();
-                else if (error instanceof JsonApiException jsonApiException) {
+                } else if (error instanceof JsonApiException jsonApiException) {
                   return Uni.createFrom().failure(jsonApiException);
                 }
                 // otherwise use generic for now
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
+                // TODO No need for the else clause here, simplify
+                // TODO: refactor this code to be cleaner so it assigns on one line
                 EmbeddingProvider embeddingProvider = null;
-                final CollectionSettings.VectorConfig.VectorizeConfig vectorizeConfig =
-                    collectionProperty.vectorConfig().vectorizeConfig();
+                final VectorConfig.VectorizeConfig vectorizeConfig =
+                    schemaObject.vectorConfig().vectorizeConfig();
                 if (vectorizeConfig != null) {
                   embeddingProvider =
                       embeddingProviderFactory.getConfiguration(
@@ -186,22 +188,19 @@ public class CollectionResource {
                           dataApiRequestInfo.getCassandraToken(),
                           vectorizeConfig.provider(),
                           vectorizeConfig.modelName(),
-                          collectionProperty.vectorConfig().vectorSize(),
+                          schemaObject.vectorConfig().vectorSize(),
                           vectorizeConfig.parameters(),
                           vectorizeConfig.authentication(),
                           command.getClass().getSimpleName());
                 }
 
-                CommandContext commandContext =
-                    new CommandContext(
-                        namespace,
-                        collection,
-                        collectionProperty,
+                var commandContext =
+                    CommandContext.forSchemaObject(
+                        schemaObject,
                         embeddingProvider,
                         command.getClass().getSimpleName(),
                         jsonProcessingMetricsReporter);
 
-                // call processor
                 return meteredCommandProcessor.processCommand(
                     dataApiRequestInfo, commandContext, command);
               }

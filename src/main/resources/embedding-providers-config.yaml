@@ -26,10 +26,14 @@ stargate:
               type: string
               required: false
               help: "Optional, OpenAI Organization ID. If provided passed as `OpenAI-Organization` header."
+              display-name: "Organization ID"
+              hint: "Add an (optional) organization ID"
             - name: projectId
               type: string
               required: false
               help: "Optional, OpenAI Project ID. If provided passed as `OpenAI-Project` header."
+              display-name: "Project ID"
+              hint: "Add an (optional) project ID"
           properties:
             max-batch-size: 2048
           models:
@@ -108,6 +112,45 @@ stargate:
                   help: "Vector dimension to use in the database and when calling Azure OpenAI."
             - name: text-embedding-ada-002
               vector-dimension: 1536
+        bedrock:
+          display-name: Amazon Bedrock
+          enabled: true
+          supported-authentications:
+            NONE:
+              enabled: false
+            HEADER:
+              enabled: true
+              tokens:
+                - accepted: x-embedding-access-id
+                  forwarded: aws_access_key_id
+                - accepted: x-embedding-secret-id
+                  forwarded: aws_secret_access_key
+            SHARED_SECRET:
+              enabled: false
+              tokens:
+                - accepted: accessId
+                  forwarded: aws_access_key_id
+                - accepted: secretKey
+                  forwarded: aws_secret_access_key
+          parameters:
+            - name: "region"
+              type: string
+              required: true
+              help: "AWS region where the model is hosted."
+          properties:
+            max-batch-size: 1
+          models:
+            - name: amazon.titan-embed-text-v1
+              vector-dimension: 1536
+            - name: amazon.titan-embed-text-v2:0
+              parameters:
+                - name: vectorDimension
+                  type: number
+                  required: false
+                  default-value: 1024
+                  validation:
+                    options: [256, 512, 1024]
+                  help: "Vector dimension to use in the database and when calling Amazon Bedrock Titan V2 embedding model."
         huggingface:
           # see https://huggingface.co/blog/getting-started-with-embeddings
           display-name: Hugging Face - Serverless
@@ -175,14 +218,20 @@ stargate:
               type: string
               required: true
               help: "The name of your Hugging Face dedicated endpoint, the first part of the Endpoint URL."
+              display-name: "Endpoint name"
+              hint: "Add endpoint name"
             - name: "regionName"
               type: string
               required: true
               help: "The region your Hugging Face dedicated endpoint is deployed to, the second part of the Endpoint URL."
+              display-name: "Region name"
+              hint: "Add region name"
             - name: "cloudName"
               type: string
               required: true
               help: "The cloud your Hugging Face dedicated endpoint is deployed to, the third part of the Endpoint URL."
+              display-name: "Cloud provider where the dedicated endpoint is deployed"
+              hint: "Add cloud name"
         # OUT OF SCOPE FOR INITIAL PREVIEW
         vertexai:
           # see https://cloud.google.com/vertex-ai/generative-ai/docs/embeddings/get-text-embeddings#get_text_embeddings_for_a_snippet_of_text
@@ -254,16 +303,6 @@ stargate:
           supported-authentications:
             NONE:
               enabled: true
-            HEADER:
-              enabled: false
-              tokens:
-                - accepted: x-embedding-api-key
-                  forwarded: Authorization
-            SHARED_SECRET:
-              enabled: false
-              tokens:
-                - accepted: providerKey
-                  forwarded: Authorization
           properties:
             max-batch-size: 8
           models:

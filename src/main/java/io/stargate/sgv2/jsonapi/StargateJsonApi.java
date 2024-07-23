@@ -722,7 +722,28 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                                             "tokens": []
                                         }
                                     },
-                                    "parameters": [],
+                                    "parameters": [
+                                        {
+                                            "name": "organizationId",
+                                            "type": "STRING",
+                                            "defaultValue": null,
+                                            "displayName": "Organization ID",
+                                            "help": "Optional, OpenAI Organization ID. If provided passed as `OpenAI-Organization` header.",
+                                            "hint": "Add an (optional) organization ID",
+                                            "validation": {},
+                                            "required": false
+                                        },
+                                        {
+                                            "name": "projectId",
+                                            "type": "STRING",
+                                            "defaultValue": null,
+                                            "displayName": "Project ID",
+                                            "help": "Optional, OpenAI Project ID. If provided passed as `OpenAI-Project` header.",
+                                            "hint": "Add an (optional) project ID",
+                                            "validation": {},
+                                            "required": false
+                                        }
+                                    ],
                                     "models": [
                                         {
                                             "name": "text-embedding-3-small",

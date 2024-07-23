@@ -1,86 +1,173 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
+import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
-import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 
 /**
  * Defines the context in which to execute the command.
  *
- * @param namespace The name of the namespace.
- * @param collection The name of the collection.
- * @param collectionSettings Settings for the collection, if Collection-specific command; if not,
- *     "empty" Settings {see CollectionSettings#empty()}.
+ * @param schemaObject Settings for the collection, if Collection-specific command; if not, "empty"
+ *     Settings {see CollectionSettings#empty()}.
  */
-public record CommandContext(
-    String namespace,
-    String collection,
-    CollectionSettings collectionSettings,
+public record CommandContext<T extends SchemaObject>(
+    T schemaObject,
     EmbeddingProvider embeddingProvider,
     String commandName,
     JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
 
-  public CommandContext(String namespace, String collection) {
-    this(namespace, collection, CollectionSettings.empty(), null, null, null);
-  }
+  // TODO: this is what the original EMPTY had, no idea why the name of the command is missing
+  // this is used by the GeneralResource
+  //  private static final CommandContext EMPTY =
+  //      new CommandContext(null, null, CollectionSettings.empty(), null, "testCommand", null);
 
   /**
-   * An utility method to create a new instance of {@link CommandContext} by passing the namespace,
-   * the collection, the collection settings, embedding provider and the command name.
+   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
+   * are working with.
    *
-   * @param namespace Namespace
-   * @param collection Collection
-   * @param collectionSettings Collection settings
-   * @param embeddingProvider Embedding provider
-   * @param commandName Command name
-   * @return Returns a new instance of {@link CommandContext}.
+   * <p>This one handles the super class of {@link SchemaObject}
+   *
+   * @param schemaObject
+   * @param embeddingProvider
+   * @param commandName
+   * @param jsonProcessingMetricsReporter
+   * @return
    */
-  public static CommandContext from(
-      String namespace,
-      String collection,
-      CollectionSettings collectionSettings,
+  @SuppressWarnings("unchecked")
+  public static <T extends SchemaObject> CommandContext<T> forSchemaObject(
+      T schemaObject,
       EmbeddingProvider embeddingProvider,
-      String commandName) {
-    return new CommandContext(
-        namespace, collection, collectionSettings, embeddingProvider, commandName, null);
-  }
-
-  public CommandContext(
-      String namespace,
-      String collection,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
-    this(
-        namespace,
-        collection,
-        CollectionSettings.empty(),
-        null,
-        commandName,
-        jsonProcessingMetricsReporter);
-  }
 
-  private static final CommandContext EMPTY =
-      new CommandContext(null, null, CollectionSettings.empty(), null, "testCommand", null);
+    // TODO: upgrade to use the modern switch statements
+    // TODO: how to remove the unchecked cast ? Had to use unchecked cast to get back to the
+    // CommandContext<T>
+    if (schemaObject instanceof CollectionSchemaObject cso) {
+      return (CommandContext<T>)
+          forSchemaObject(cso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+    }
+    if (schemaObject instanceof TableSchemaObject tso) {
+      return (CommandContext<T>)
+          forSchemaObject(tso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+    }
+    if (schemaObject instanceof KeyspaceSchemaObject kso) {
+      return (CommandContext<T>)
+          forSchemaObject(kso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+    }
+    if (schemaObject instanceof DatabaseSchemaObject dso) {
+      return (CommandContext<T>)
+          forSchemaObject(dso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+    }
+    throw new IllegalArgumentException("Unknown schema object type: " + schemaObject.getClass());
+  }
 
   /**
-   * @return Returns empty command context, having both {@link #namespace} and {@link #collection}
-   *     as <code>null</code>.
+   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
+   * are working with
+   *
+   * @param schemaObject
+   * @param embeddingProvider
+   * @param commandName
+   * @param jsonProcessingMetricsReporter
+   * @return
    */
-  public static CommandContext empty() {
-    return EMPTY;
+  public static CommandContext<CollectionSchemaObject> forSchemaObject(
+      CollectionSchemaObject schemaObject,
+      EmbeddingProvider embeddingProvider,
+      String commandName,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+    return new CommandContext<>(
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
   }
 
-  public CollectionSettings.SimilarityFunction similarityFunction() {
-    return collectionSettings.vectorConfig().similarityFunction();
+  /**
+   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
+   * are working with
+   *
+   * @param schemaObject
+   * @param embeddingProvider
+   * @param commandName
+   * @param jsonProcessingMetricsReporter
+   * @return
+   */
+  public static CommandContext<TableSchemaObject> forSchemaObject(
+      TableSchemaObject schemaObject,
+      EmbeddingProvider embeddingProvider,
+      String commandName,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+    return new CommandContext<>(
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
   }
 
-  public boolean isVectorEnabled() {
-    return collectionSettings.vectorConfig() != null
-        && collectionSettings.vectorConfig().vectorEnabled();
+  /**
+   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
+   * are working with
+   *
+   * @param schemaObject
+   * @param embeddingProvider
+   * @param commandName
+   * @param jsonProcessingMetricsReporter
+   * @return
+   */
+  public static CommandContext<KeyspaceSchemaObject> forSchemaObject(
+      KeyspaceSchemaObject schemaObject,
+      EmbeddingProvider embeddingProvider,
+      String commandName,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+    return new CommandContext<>(
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
   }
 
-  public IndexingProjector indexingProjector() {
-    return collectionSettings.indexingProjector();
+  /**
+   * Factory method to create a new instance of {@link CommandContext} based on the schema object we
+   * are working with
+   *
+   * @param schemaObject
+   * @param embeddingProvider
+   * @param commandName
+   * @param jsonProcessingMetricsReporter
+   * @return
+   */
+  public static CommandContext<DatabaseSchemaObject> forSchemaObject(
+      DatabaseSchemaObject schemaObject,
+      EmbeddingProvider embeddingProvider,
+      String commandName,
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+    return new CommandContext<>(
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+  }
+
+  @SuppressWarnings("unchecked")
+  public CommandContext<CollectionSchemaObject> asCollectionContext() {
+    checkSchemaObjectType(CollectionSchemaObject.TYPE);
+    return (CommandContext<CollectionSchemaObject>) this;
+  }
+
+  @SuppressWarnings("unchecked")
+  public CommandContext<TableSchemaObject> asTableContext() {
+    checkSchemaObjectType(TableSchemaObject.TYPE);
+    return (CommandContext<TableSchemaObject>) this;
+  }
+
+  @SuppressWarnings("unchecked")
+  public CommandContext<KeyspaceSchemaObject> asKeyspaceContext() {
+    checkSchemaObjectType(KeyspaceSchemaObject.TYPE);
+    return (CommandContext<KeyspaceSchemaObject>) this;
+  }
+
+  @SuppressWarnings("unchecked")
+  public CommandContext<DatabaseSchemaObject> asDatabaseContext() {
+    checkSchemaObjectType(DatabaseSchemaObject.TYPE);
+    return (CommandContext<DatabaseSchemaObject>) this;
+  }
+
+  private void checkSchemaObjectType(SchemaObject.SchemaObjectType expectedType) {
+    Preconditions.checkArgument(
+        schemaObject().type == expectedType,
+        "SchemaObject type actual was %s expected was %s ",
+        schemaObject().type,
+        expectedType);
   }
 }

@@ -9,6 +9,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.config.ApiTablesConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -25,25 +26,36 @@ public class SchemaCache {
 
   @Inject OperationsConfig operationsConfig;
 
+  @Inject ApiTablesConfig apiTablesConfig;
+
+  // TODO: The size of the cache should be in configuration.
+  // TODO: set the cache loader when creating the cache
   private final Cache<CacheKey, NamespaceCache> schemaCache =
       Caffeine.newBuilder().maximumSize(1000).build();
 
-  public Uni<CollectionSettings> getCollectionSettings(
+  public Uni<SchemaObject> getSchemaObject(
       DataApiRequestInfo dataApiRequestInfo,
       Optional<String> tenant,
       String namespace,
       String collectionName) {
+
+    // TODO: refactor, this has duplicate code, the only special handling the OSS has is the tenant
+    // check
+
     if (CASSANDRA.equals(operationsConfig.databaseConfig().type())) {
       // default_tenant is for oss run
+      // TODO: move the string to a constant or config, why does this still check the tenant if this
+      // is for OSS ?
       final NamespaceCache namespaceCache =
           schemaCache.get(
               new CacheKey(Optional.of(tenant.orElse("default_tenant")), namespace),
               this::addNamespaceCache);
-      return namespaceCache.getCollectionProperties(dataApiRequestInfo, collectionName);
+      return namespaceCache.getSchemaObject(dataApiRequestInfo, collectionName);
     }
+
     final NamespaceCache namespaceCache =
         schemaCache.get(new CacheKey(tenant, namespace), this::addNamespaceCache);
-    return namespaceCache.getCollectionProperties(dataApiRequestInfo, collectionName);
+    return namespaceCache.getSchemaObject(dataApiRequestInfo, collectionName);
   }
 
   /** Evict collectionSetting Cache entry when there is a drop table event */
@@ -56,7 +68,8 @@ public class SchemaCache {
   }
 
   private NamespaceCache addNamespaceCache(CacheKey cacheKey) {
-    return new NamespaceCache(cacheKey.namespace(), queryExecutor, objectMapper);
+    return new NamespaceCache(
+        cacheKey.namespace(), apiTablesConfig.enabled(), queryExecutor, objectMapper);
   }
 
   /**
