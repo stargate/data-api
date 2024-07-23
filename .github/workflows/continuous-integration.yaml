@@ -117,7 +117,7 @@ jobs:
           - type: native
             #profile: '-Pnative'
           - type: docker
-            profile: '-Poffline'
+            #profile: '-Poffline'
     steps:
       - uses: actions/checkout@v4
 
