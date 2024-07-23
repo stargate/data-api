@@ -213,13 +213,8 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             "The 'dimension' can not be null if 'service' is not provided");
       }
       if (vectorDimension > documentLimitsConfig.maxVectorEmbeddingLength()) {
-        throw new JsonApiException(
-            ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE,
-            String.format(
-                "%s: %d (max %d)",
-                ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE.getMessage(),
-                vectorDimension,
-                documentLimitsConfig.maxVectorEmbeddingLength()));
+        throw ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE.toApiException(
+            "%d (max %d)", vectorDimension, documentLimitsConfig.maxVectorEmbeddingLength());
       }
     }
     return vector;
