@@ -83,7 +83,7 @@ public class PushOperation extends UpdateOperation<PushOperation.Action> {
           break;
 
         default:
-          throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+          throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.toApiException(
               "$push only supports $each and $position currently; trying to use '%s'", modifier);
       }
     }
