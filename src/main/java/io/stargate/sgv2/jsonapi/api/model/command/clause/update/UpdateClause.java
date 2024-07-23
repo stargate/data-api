@@ -55,10 +55,9 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
               for (ActionWithLocator action : actions) {
                 UpdateOperator prevType = actionMap.put(action.locator(), type);
                 if (prevType != null) {
-                  throw new JsonApiException(
-                      ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
-                      "Update operators '%s' and '%s' must not refer to same path: '%s'"
-                          .formatted(prevType.operator(), type.operator(), action.locator()));
+                  throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+                      "update operators '%s' and '%s' must not refer to same path: '%s'",
+                      prevType.operator(), type.operator(), action.locator());
                 }
               }
             });

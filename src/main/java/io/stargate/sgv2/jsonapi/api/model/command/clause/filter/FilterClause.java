@@ -5,7 +5,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import java.util.List;
@@ -67,11 +66,9 @@ public record FilterClause(LogicalExpression logicalExpression) {
         return;
       }
       // otherwise throw JsonApiException
-      throw new JsonApiException(
-          ErrorCode.ID_NOT_INDEXED,
-          String.format(
-              "%s: filter path '%s' is not indexed, you can only use $eq or $in as the operator",
-              ErrorCode.ID_NOT_INDEXED.getMessage(), DocumentConstants.Fields.DOC_ID));
+      throw ErrorCode.ID_NOT_INDEXED.toApiException(
+          "filter path '%s' is not indexed, you can only use $eq or $in as the operator",
+          ErrorCode.ID_NOT_INDEXED.getMessage(), DocumentConstants.Fields.DOC_ID);
     }
 
     // If path is not indexed, throw error

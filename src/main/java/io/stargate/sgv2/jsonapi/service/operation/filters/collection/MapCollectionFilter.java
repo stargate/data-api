@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.collection;
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.DATA_CONTAINS;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.builder.ConditionLHS;
@@ -130,9 +129,8 @@ public abstract class MapCollectionFilter<T> extends CollectionFilter {
             BuiltConditionPredicate.LTE,
             new JsonTerm(key, value));
       default:
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_FILTER_OPERATION,
-            String.format("Unsupported map operation %s on column %s", operator, columnName));
+        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+            "Map operation '%s' on column '%s'", operator, columnName);
     }
   }
 }
