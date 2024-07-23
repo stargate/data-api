@@ -99,9 +99,7 @@ public class NamespaceCache {
               // TODO: error code here needs to be for collections and tables
               var table =
                   optionalTable.orElseThrow(
-                      () ->
-                          new RuntimeException(
-                              ErrorCode.COLLECTION_NOT_EXIST.getMessage() + collectionName));
+                      () -> ErrorCode.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
 
               // check if its a valid json api table
               // TODO: re-use the table matcher this is on the request hot path

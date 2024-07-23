@@ -17,7 +17,7 @@ public enum ErrorCode {
   COMMAND_FIELD_INVALID("Request invalid"),
 
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
-  COLLECTION_NOT_EXIST("Collection does not exist, collection name: "),
+  COLLECTION_NOT_EXIST("Collection does not exist, collection name"),
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
 
   DOCUMENT_ALREADY_EXISTS("Document already exists with the given _id"),
@@ -59,7 +59,7 @@ public enum ErrorCode {
 
   ID_NOT_INDEXED("_id is not indexed"),
 
-  NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist."),
+  NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist"),
 
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
 
