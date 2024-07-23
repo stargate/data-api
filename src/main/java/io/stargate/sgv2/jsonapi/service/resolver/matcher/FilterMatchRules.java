@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
@@ -72,8 +71,11 @@ public class FilterMatchRules<T extends Command & Filterable> {
                     "Filter type not supported, unable to resolve to a filtering strategy"));
   }
 
-  @VisibleForTesting
-  protected List<BiFunction<CommandContext, T, Optional<LogicalExpression>>> getMatchRules() {
-    return matchRules;
+  public boolean isEmpty() {
+    return matchRules.isEmpty();
+  }
+
+  public int size() {
+    return matchRules.size();
   }
 }
