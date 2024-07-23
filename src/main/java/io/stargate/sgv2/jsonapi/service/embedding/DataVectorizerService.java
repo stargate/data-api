@@ -55,7 +55,7 @@ public class DataVectorizerService {
         .transform(flag -> command);
   }
 
-  public DataVectorizer constructDataVectorizer(
+  public <T extends SchemaObject> DataVectorizer constructDataVectorizer(
       DataApiRequestInfo dataApiRequestInfo, CommandContext<T> commandContext) {
     EmbeddingProvider embeddingProvider =
         Optional.ofNullable(commandContext.embeddingProvider())

@@ -11,10 +11,8 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
-import io.stargate.sgv2.jsonapi.service.operation.model.ModifyOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadOperation;
+import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -188,20 +186,23 @@ public record ReadAndUpdateCollectionOperation(
                             return Uni.createFrom()
                                 .item(
                                     new UpdatedDocument(
-                                        readDocument.id().orElseThrow(), upsert, originalDocument, null));
+                                        readDocument.id().orElseThrow(),
+                                        upsert,
+                                        originalDocument,
+                                        null));
                           } else {
                             return Uni.createFrom().nullItem();
                           }
                         }
 
                         final WritableShreddedDocument writableShreddedDocument =
-                                documentShredder()
+                            documentShredder()
                                 .shred(
                                     commandContext(),
                                     vectorizedDocumentUpdaterResponse.document(),
-                                        readDocument
-                                                .txnId()
-                                                .orElse(null) ); // will be empty when this is a upsert'd doc
+                                    readDocument
+                                        .txnId()
+                                        .orElse(null)); // will be empty when this is a upsert'd doc
 
                         // Have to do this because shredder adds _id field to the document if it
                         // doesn't exist

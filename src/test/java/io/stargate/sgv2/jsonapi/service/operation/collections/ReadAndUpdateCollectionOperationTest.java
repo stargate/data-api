@@ -30,7 +30,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
 import io.stargate.sgv2.jsonapi.service.operation.filters.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;

@@ -15,9 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
-import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
@@ -534,10 +532,6 @@ public class DocumentUpdaterTest {
   @Nested
   class VectorizeUpdateTest {
 
-    private final EmbeddingProvider testService = new TestEmbeddingProvider();
-    private final CollectionSettings collectionSettings =
-        TestEmbeddingProvider.commandContextWithVectorize.collectionSettings();
-
     @Test
     public void updateVectorize() throws Exception {
       String updateVectorizeData =
@@ -921,10 +915,6 @@ public class DocumentUpdaterTest {
 
   @Nested
   class replaceVectorizeTest {
-
-    private final EmbeddingProvider testService = new TestEmbeddingProvider();
-    private final CollectionSettings collectionSettings =
-        TestEmbeddingProvider.commandContextWithVectorize.collectionSettings();
 
     @Test
     public void replaceDocument() throws Exception {

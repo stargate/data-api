@@ -179,8 +179,8 @@ public class DataVectorizer {
               if (vector.length != schemaObject.vectorConfig().vectorSize()) {
                 throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                     "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                        schemaObject.vectorConfig().vectorizeConfig().provider(),
-                        schemaObject.vectorConfig().vectorSize(),
+                    schemaObject.vectorConfig().vectorizeConfig().provider(),
+                    schemaObject.vectorConfig().vectorSize(),
                     vector.length);
               }
               return vector;
@@ -202,7 +202,7 @@ public class DataVectorizer {
         String text = expression.vectorize();
         if (embeddingProvider == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-                  schemaObject.name.table());
+              schemaObject.name.table());
         }
         Uni<List<float[]>> vectors =
             embeddingProvider
@@ -221,8 +221,8 @@ public class DataVectorizer {
                   if (vector.length != schemaObject.vectorConfig().vectorSize()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                         "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                            schemaObject.vectorConfig().vectorizeConfig().provider(),
-                            schemaObject.vectorConfig().vectorSize(),
+                        schemaObject.vectorConfig().vectorizeConfig().provider(),
+                        schemaObject.vectorConfig().vectorSize(),
                         vector.length);
                   }
                   sortExpressions.clear();

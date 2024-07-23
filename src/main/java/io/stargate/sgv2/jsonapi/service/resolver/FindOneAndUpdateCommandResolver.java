@@ -10,15 +10,11 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
-import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.model.ReadType;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.FindOperation;
-import io.stargate.sgv2.jsonapi.service.operation.model.impl.ReadAndUpdateOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterableResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -45,7 +41,6 @@ public class FindOneAndUpdateCommandResolver extends FilterableResolver<FindOneA
   public FindOneAndUpdateCommandResolver(
       ObjectMapper objectMapper,
       OperationsConfig operationsConfig,
-      Shredder shredder,
       DataVectorizerService dataVectorizerService,
       DocumentShredder documentShredder,
       MeterRegistry meterRegistry,
