@@ -82,7 +82,8 @@ public enum ErrorCode {
   SHRED_DOC_LIMIT_VIOLATION("Document size limitation violated"),
 
   EXISTING_COLLECTION_DIFFERENT_SETTINGS("Collection already exists"),
-  INVALID_DATA_API_COLLECTION("Invalid Data API collection"),
+  EXISTING_TABLE_NOT_DATA_API_COLLECTION(
+      "An existing table does not follow Data API collection schema pattern"),
   INVALID_VECTORIZE_VALUE_TYPE("$vectorize value needs to be text value"),
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),

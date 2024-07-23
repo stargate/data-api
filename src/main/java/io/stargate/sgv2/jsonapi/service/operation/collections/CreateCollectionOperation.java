@@ -347,8 +347,8 @@ public record CreateCollectionOperation(
       if (table.getName().asInternal().equals(tableName)) {
         // If that is not a valid Data API table, error out the createCollectionCommand
         if (!COLLECTION_MATCHER.test(table)) {
-          throw ErrorCode.INVALID_DATA_API_COLLECTION.toApiException(
-              "collection ('%s') already exists but does not follow Data API schema pattern",
+          throw ErrorCode.EXISTING_TABLE_NOT_DATA_API_COLLECTION.toApiException(
+              "table ('%s') already exists and it does not follow Data API schema pattern",
               tableName);
         }
         // If that is a valid Data API table, we returned it
