@@ -306,10 +306,8 @@ public record FindCollectionOperation(
     if (vector() != null && !vectorEnabled) {
       return Uni.createFrom()
           .failure(
-              new JsonApiException(
-                  ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED,
-                  ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage()
-                      + commandContext().schemaObject().name.table()));
+              ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
+                  "%s", commandContext().schemaObject().name.table()));
     }
     // get FindResponse
     return getDocuments(dataApiRequestInfo, queryExecutor, pageState(), null)

@@ -205,10 +205,9 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
              """;
       AnyOf<String> anyOf =
           AnyOf.anyOf(
-              endsWith("INVALID_ARGUMENT: Keyspace '%s' doesn't exist".formatted("badNamespace")),
+              endsWith("Keyspace '%s' doesn't exist".formatted("badNamespace")),
               endsWith(
-                  "INVALID_ARGUMENT: Unknown namespace '%s', you must create it first."
-                      .formatted("badNamespace")));
+                  "Unknown namespace '%s', you must create it first".formatted("badNamespace")));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)

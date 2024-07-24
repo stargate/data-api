@@ -331,7 +331,8 @@ public class DocumentUpdaterTest {
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessage("Update operators '$set' and '$unset' must not refer to same path: 'common'");
+          .hasMessageContaining(
+              "update operators '$set' and '$unset' must not refer to same path: 'common'");
     }
 
     @Test
@@ -348,7 +349,8 @@ public class DocumentUpdaterTest {
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessage("Update operators '$inc' and '$mul' must not refer to same path: 'root.x'");
+          .hasMessageContaining(
+              "update operators '$inc' and '$mul' must not refer to same path: 'root.x'");
     }
 
     @Test
@@ -363,7 +365,7 @@ public class DocumentUpdaterTest {
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessage(
+          .hasMessageContaining(
               "Update operator path conflict due to overlap: 'root' ($set) vs 'root.1' ($set)");
     }
 
@@ -389,7 +391,7 @@ public class DocumentUpdaterTest {
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
-          .hasMessage(
+          .hasMessageContaining(
               "Update operator path conflict due to overlap: 'root' ($set) vs 'root.a' ($set)");
     }
   }

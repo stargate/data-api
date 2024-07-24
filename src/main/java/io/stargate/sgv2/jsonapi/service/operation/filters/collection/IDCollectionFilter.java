@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
@@ -86,9 +85,8 @@ public class IDCollectionFilter extends CollectionFilter {
                   BuiltConditionPredicate.NEQ,
                   new JsonTerm(DOC_ID, strId)));
         } else {
-          throw new JsonApiException(
-              ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
-              String.format("Unsupported $ne operand value : %s", documentId.value()));
+          throw ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE.toApiException(
+              "Unsupported $ne operand value: %s", documentId.value());
         }
       case IN:
         if (values.isEmpty()) return List.of();
@@ -103,9 +101,8 @@ public class IDCollectionFilter extends CollectionFilter {
                 })
             .collect(Collectors.toList());
       default:
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_FILTER_OPERATION,
-            String.format("Unsupported id column operation %s", operator));
+        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+            "Unsupported id column operation %s", operator);
     }
   }
 

@@ -106,8 +106,8 @@ public class FilterClauseDeserializerTest {
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo(
-                        "Invalid filter expression, $gte operator must have `DATE` or `NUMBER` value");
+                    .contains(
+                        "Invalid filter expression: $gte operator must have `DATE` or `NUMBER` value");
               });
     }
 
@@ -403,7 +403,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("$all operator must have `ARRAY` value");
+                assertThat(t.getMessage()).contains("$all operator must have `ARRAY` value");
               });
     }
 
@@ -418,7 +418,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("$all operator must have at least one value");
+                assertThat(t.getMessage()).contains("$all operator must have at least one value");
               });
     }
 
@@ -502,7 +502,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("$size operator must have integer");
+                assertThat(t.getMessage()).contains("$size operator must have integer");
               });
     }
 
@@ -518,7 +518,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("$size operator must have integer");
+                assertThat(t.getMessage()).contains("$size operator must have integer");
               });
 
       String json1 =
@@ -531,7 +531,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("$size operator must have integer");
+                assertThat(t.getMessage()).contains("$size operator must have integer");
               });
     }
 
@@ -546,7 +546,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("$size operator must have integer value >= 0");
+                assertThat(t.getMessage()).contains("$size operator must have integer value >= 0");
               });
     }
 
@@ -1491,7 +1491,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("$in operator must have `ARRAY`");
+                assertThat(t.getMessage()).contains("$in operator must have `ARRAY`");
               });
     }
 
@@ -1506,7 +1506,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("$nin operator must have `ARRAY`");
+                assertThat(t.getMessage()).contains("$nin operator must have `ARRAY`");
               });
     }
 
@@ -1528,7 +1528,7 @@ public class FilterClauseDeserializerTest {
           .isInstanceOf(JsonApiException.class)
           .satisfies(
               t -> {
-                assertThat(t.getMessage()).isEqualTo("$nin operator must have `ARRAY`");
+                assertThat(t.getMessage()).contains("$nin operator must have `ARRAY`");
               });
     }
 
@@ -1545,7 +1545,7 @@ public class FilterClauseDeserializerTest {
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo(
+                    .contains(
                         "$in operator must have at most "
                             + operationsConfig.maxInOperatorValueSize()
                             + " values");
@@ -1565,7 +1565,7 @@ public class FilterClauseDeserializerTest {
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo(
+                    .contains(
                         "$nin operator must have at most "
                             + operationsConfig.maxInOperatorValueSize()
                             + " values");

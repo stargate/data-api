@@ -229,7 +229,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .body("data", is(nullValue()))
           .body(
               "errors[0].message",
-              is("Invalid filter expression, $gt operator must have `DATE` or `NUMBER` value"))
+              is("Invalid filter expression: $gt operator must have `DATE` or `NUMBER` value"))
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
     }
 
