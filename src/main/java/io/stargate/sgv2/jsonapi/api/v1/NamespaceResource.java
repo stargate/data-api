@@ -3,10 +3,18 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.SchemaCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.config.ApiTablesConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
@@ -41,10 +49,11 @@ import org.jboss.resteasy.reactive.RestResponse;
 public class NamespaceResource {
 
   public static final String BASE_PATH = "/v1/{namespace}";
-
   private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
+
+  @Inject ApiTablesConfig apiTablesConfig;
 
   @Inject
   public NamespaceResource(MeteredCommandProcessor meteredCommandProcessor) {
@@ -59,7 +68,14 @@ public class NamespaceResource {
       content =
           @Content(
               mediaType = MediaType.APPLICATION_JSON,
-              schema = @Schema(anyOf = {CreateCollectionCommand.class}),
+              schema =
+                  @Schema(
+                      anyOf = {
+                        CreateCollectionCommand.class,
+                        FindCollectionsCommand.class,
+                        DeleteCollectionCommand.class,
+                        CreateTableCommand.class
+                      }),
               examples = {
                 @ExampleObject(ref = "createCollection"),
                 @ExampleObject(ref = "createCollectionVectorSearch"),
@@ -82,12 +98,22 @@ public class NamespaceResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
-      @NotNull @Valid NamespaceCommand command,
+      @NotNull @Valid SchemaCommand command,
       @PathParam("namespace")
           @NotNull
           @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
           @Size(min = 1, max = 48)
           String namespace) {
+
+    if (command instanceof NamespaceCommand) {
+      return namespaceCommand(namespace, (NamespaceCommand) command);
+    } else {
+      return keyspaceCommand(namespace, (KeyspaceCommand) command);
+    }
+  }
+
+  private Uni<RestResponse<CommandResult>> namespaceCommand(
+      String namespace, NamespaceCommand command) {
 
     // create context
     // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
@@ -95,6 +121,32 @@ public class NamespaceResource {
     // HACK TODO: The above did not set a command name on the command context, how did that work ?
     CommandContext<KeyspaceSchemaObject> commandContext =
         new CommandContext<>(new KeyspaceSchemaObject(namespace), null, "", null);
+
+    //     call processor
+    return meteredCommandProcessor
+        .processCommand(dataApiRequestInfo, commandContext, command)
+        // map to 2xx unless overridden by error
+        .map(commandResult -> commandResult.map());
+  }
+
+  private Uni<RestResponse<CommandResult>> keyspaceCommand(
+      String keyspace, KeyspaceCommand command) {
+
+    // create context
+    // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
+    //    CommandContext commandContext = new CommandContext(namespace, null);
+    // HACK TODO: The above did not set a command name on the command context, how did that work ?
+
+    if (!apiTablesConfig.enabled()) {
+      return Uni.createFrom()
+          .item(
+              new ThrowableCommandResultSupplier(
+                  ErrorCode.API_TABLE_FEATURE_NOT_ENABLED.toApiException()))
+          .map(commandResult -> commandResult.map());
+    }
+
+    CommandContext<KeyspaceSchemaObject> commandContext =
+        new CommandContext<>(new KeyspaceSchemaObject(keyspace), null, "", null);
 
     //     call processor
     return meteredCommandProcessor

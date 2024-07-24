@@ -13,4 +13,4 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
   @JsonSubTypes.Type(value = FindCollectionsCommand.class),
   @JsonSubTypes.Type(value = DeleteCollectionCommand.class),
 })
-public interface NamespaceCommand extends Command {}
+public interface NamespaceCommand extends SchemaCommand {}
