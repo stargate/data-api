@@ -23,7 +23,8 @@ public class FixedTokenTestResource extends DseTestResource {
     propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", "test-token");
     ImmutableMap<String, String> props = propsBuilder.build();
     props.forEach(System::setProperty);
-    LOG.info("DseTestResource, Using props map for the integration tests: %s".formatted(props));
-    return propsBuilder.build();
+    LOG.info(
+        "FixedTokenTestResource, Using props map for the integration tests: %s".formatted(props));
+    return props;
   }
 }
