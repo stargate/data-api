@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.session.ProgrammaticArguments;
 import com.datastax.oss.driver.internal.core.context.DefaultDriverContext;
 import com.datastax.oss.protocol.internal.util.collection.NullAllowingImmutableMap;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import java.util.Map;
 
 /**
@@ -30,7 +31,7 @@ public class TenantAwareCqlSessionBuilder extends CqlSessionBuilder {
    */
   public TenantAwareCqlSessionBuilder(String tenantId) {
     if (tenantId == null || tenantId.isEmpty()) {
-      throw new RuntimeException("Tenant ID cannot be null or empty");
+      throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException("Tenant ID cannot be null or empty");
     }
     this.tenantId = tenantId;
   }

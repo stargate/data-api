@@ -25,23 +25,24 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
 
   private final Response.Status httpStatus;
 
-  public JsonApiException(ErrorCode errorCode) {
+  protected JsonApiException(ErrorCode errorCode) {
     this(errorCode, errorCode.getMessage(), null);
   }
 
+  // Still needed by EmbeddingGatewayClient for gRPC, needs to remain public
   public JsonApiException(ErrorCode errorCode, String message) {
     this(errorCode, message, null);
   }
 
-  public JsonApiException(ErrorCode errorCode, Throwable cause) {
+  protected JsonApiException(ErrorCode errorCode, Throwable cause) {
     this(errorCode, null, cause);
   }
 
-  public JsonApiException(ErrorCode errorCode, String message, Throwable cause) {
+  protected JsonApiException(ErrorCode errorCode, String message, Throwable cause) {
     this(errorCode, message, cause, Response.Status.OK);
   }
 
-  public JsonApiException(
+  protected JsonApiException(
       ErrorCode errorCode, String message, Throwable cause, Response.Status httpStatus) {
     super(message, cause);
     this.errorCode = errorCode;
