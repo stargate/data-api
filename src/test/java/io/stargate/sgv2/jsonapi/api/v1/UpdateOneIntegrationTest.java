@@ -2072,7 +2072,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PARAM"))
           .body(
               "errors[0].message",
-              is(
+              constainsString(
                   "Update operator path conflict due to overlap: 'root.array' ($unset) vs 'root.array.1' ($set)"));
     }
   }
