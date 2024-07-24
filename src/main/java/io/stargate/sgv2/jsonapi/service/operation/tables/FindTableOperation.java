@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
@@ -17,7 +18,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
-import org.apache.commons.lang3.NotImplementedException;
 
 public class FindTableOperation extends TableReadOperation {
 
@@ -63,7 +63,8 @@ public class FindTableOperation extends TableReadOperation {
                           try {
                             return objectMapper.readTree(row.getString("[json]"));
                           } catch (Exception e) {
-                            throw new NotImplementedException("Bang " + e.getMessage());
+                            throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+                                e, "Failed to parse row JSON: %s", e.getMessage());
                           }
                         })
             .toList();

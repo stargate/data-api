@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
@@ -179,9 +180,9 @@ public record CommandResult(
     // this is a compact constructor for records
     // ensure message is not set in the fields key
     public Error {
-      if (null != fields && fields.get("message") != null) {
-        throw new IllegalArgumentException(
-            "Error fields can not contain the reserved message key.");
+      if (null != fields && fields.containsKey("message")) {
+        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+            "Error fields can not contain the reserved key 'message'");
       }
     }
   }

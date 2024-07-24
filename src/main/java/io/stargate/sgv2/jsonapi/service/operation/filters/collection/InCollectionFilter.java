@@ -56,7 +56,8 @@ public class InCollectionFilter extends CollectionFilter {
 
   @Override
   public BuiltCondition get() {
-    throw new UnsupportedOperationException("For IN filter we always use getALL() method");
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "For IN filter we always use getALL() method");
   }
 
   public List<BuiltCondition> getAll() {

@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.session.ProgrammaticArguments;
 import com.datastax.oss.driver.internal.core.config.typesafe.DefaultDriverConfigLoader;
 import io.quarkus.test.junit.QuarkusTest;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,7 @@ public class TenantAwareCqlSessionBuilderTest {
     Throwable t = catchThrowable(() -> new TenantAwareCqlSessionBuilder(null));
     assertThat(t)
         .isNotNull()
-        .isInstanceOf(RuntimeException.class)
-        .hasMessage("Tenant ID cannot be null or empty");
+        .isInstanceOf(JsonApiException.class)
+        .hasMessageContaining("Tenant ID cannot be null or empty");
   }
 }

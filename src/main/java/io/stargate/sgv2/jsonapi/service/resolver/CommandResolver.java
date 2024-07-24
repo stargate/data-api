@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.filters.DBFilterBase;
@@ -77,12 +78,10 @@ public interface CommandResolver<C extends Command> {
    */
   default Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, C command) {
-    // there error is a fallback to make sure it is implemented if it should be
-    // commands are tested well
-    throw new UnsupportedOperationException(
-        String.format(
-            "%s Command does not support operating on Collections, target was %s",
-            command.getClass().getSimpleName(), ctx.schemaObject().name));
+    // throw error as a fallback to make sure method is implemented, commands are tested well
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "%s Command does not support operating on Collections, target was %s",
+        command.getClass().getSimpleName(), ctx.schemaObject().name);
   }
   ;
 
@@ -94,12 +93,10 @@ public interface CommandResolver<C extends Command> {
    * @return
    */
   default Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, C command) {
-    // there error is a fallback to make sure it is implemented if it should be
-    // commands are tested well
-    throw new UnsupportedOperationException(
-        String.format(
-            "%s Command does not support operating on Tables, target was %s",
-            command.getClass().getSimpleName(), ctx.schemaObject().name));
+    // throw error as a fallback to make sure method is implemented, commands are tested well
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "%s Command does not support operating on Tables, target was %s",
+        command.getClass().getSimpleName(), ctx.schemaObject().name);
   }
 
   /**
@@ -110,12 +107,10 @@ public interface CommandResolver<C extends Command> {
    * @return
    */
   default Operation resolveKeyspaceCommand(CommandContext<KeyspaceSchemaObject> ctx, C command) {
-    // there error is a fallback to make sure it is implemented if it should be
-    // commands are tested well
-    throw new UnsupportedOperationException(
-        String.format(
-            "%s Command does not support operating on Keyspaces, target was %s",
-            command.getClass().getSimpleName(), ctx.schemaObject().name));
+    // throw error as a fallback to make sure method is implemented, commands are tested well
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "%s Command does not support operating on Keyspaces, target was %s",
+        command.getClass().getSimpleName(), ctx.schemaObject().name);
   }
 
   /**
@@ -126,12 +121,10 @@ public interface CommandResolver<C extends Command> {
    * @return
    */
   default Operation resolveDatabaseCommand(CommandContext<DatabaseSchemaObject> ctx, C command) {
-    // there error is a fallback to make sure it is implemented if it should be
-    // commands are tested well
-    throw new UnsupportedOperationException(
-        String.format(
-            "%s Command does not support operating on Databases, target was %s",
-            command.getClass().getSimpleName(), ctx.schemaObject().name));
+    // throw error as a fallback to make sure method is implemented, commands are tested well
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "%s Command does not support operating on Databases, target was %s",
+        command.getClass().getSimpleName(), ctx.schemaObject().name);
   }
 
   static final String UNKNOWN_VALUE = "unknown";

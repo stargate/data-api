@@ -419,8 +419,8 @@ public record FindCollectionOperation(
             f.updateForNewDocument(objectMapper().getNodeFactory())
                 .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
           } else {
-            throw new RuntimeException(
-                "Unsupported filter type in getNewDocument: " + filter.getClass().getName());
+            throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+                "Unsupported filter type in getNewDocument: %s", filter.getClass().getName());
           }
         }
       }
