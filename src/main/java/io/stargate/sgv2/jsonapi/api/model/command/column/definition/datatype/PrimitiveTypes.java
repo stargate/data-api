@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.column.definition.datatype;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 
+/** Interface for primitive column types similar to what is defined in cassandra java driver. */
 public class PrimitiveTypes {
 
   public static final ColumnType TEXT = new Text();
