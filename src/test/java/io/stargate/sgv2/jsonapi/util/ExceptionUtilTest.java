@@ -6,7 +6,6 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.List;
@@ -19,7 +18,7 @@ public class ExceptionUtilTest {
   @Test
   public void checkKey() {
     String key =
-        ExceptionUtil.getThrowableGroupingKey(new JsonApiException(ErrorCode.CONCURRENCY_FAILURE));
+        ExceptionUtil.getThrowableGroupingKey(ErrorCode.CONCURRENCY_FAILURE.toApiException());
     assertThat(key).isNotNull();
     assertThat(key).isEqualTo(ErrorCode.CONCURRENCY_FAILURE.name());
 
@@ -33,7 +32,7 @@ public class ExceptionUtilTest {
     String message = "test error for ids %s: %s";
     List<DocumentId> ids = List.of(DocumentId.fromString("doc1"), DocumentId.fromString("doc2"));
 
-    Exception throwable = new JsonApiException(ErrorCode.CONCURRENCY_FAILURE);
+    Exception throwable = ErrorCode.CONCURRENCY_FAILURE.toApiException();
     CommandResult.Error error = ExceptionUtil.getError(message, ids, throwable);
     assertThat(error).isNotNull();
     assertThat(error)
