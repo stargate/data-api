@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 
@@ -60,7 +61,8 @@ public record CommandContext<T extends SchemaObject>(
       return (CommandContext<T>)
           forSchemaObject(dso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
     }
-    throw new IllegalArgumentException("Unknown schema object type: " + schemaObject.getClass());
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "Unknown schema object type: %s", schemaObject.getClass().getName());
   }
 
   /**
