@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -158,7 +159,19 @@ public class DocumentProjector {
    * @param <T> Actual column identifier type
    */
   public <T> List<T> filterColumns(Map<String, T> columnDefs) {
-    // !!! TODO: actually filter; for now just return all as-is
+    // "missing" root layer used as short-cut for include-all/exclude-all
+    if (rootLayer == null) {
+      if (inclusion) { // exclude-all
+        return Collections.emptyList();
+      }
+      // include-all
+      return columnDefs.values().stream().toList();
+    }
+
+    // Otherwise need to actually determine
+    if (isInclusion()) {
+    } else {
+    }
     return columnDefs.values().stream().toList();
   }
 
