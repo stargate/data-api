@@ -20,7 +20,7 @@ public class FixedTokenTestResource extends DseTestResource {
     propsBuilder.putAll(env);
 
     // set fix-token, used by CqlSessionTest
-    //    propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", "test-token");
+    propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", "test-token");
     ImmutableMap<String, String> props = propsBuilder.build();
     props.forEach(System::setProperty);
     LOG.info(
