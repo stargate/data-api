@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TableFilter;
+import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,20 +32,23 @@ public class FindTableOperation extends TableReadOperation {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FindTableOperation.class);
 
-  private final OperationProjection projection;
+  private final DocumentProjector projector;
   private final FindTableParams params;
+
+  private final OperationProjection projection;
 
   public FindTableOperation(
       CommandContext<TableSchemaObject> commandContext,
+      ObjectMapper objectMapper,
       LogicalExpression logicalExpression,
-      OperationProjection projection,
+      DocumentProjector projector,
       FindTableParams params) {
     super(commandContext, logicalExpression);
 
-    Preconditions.checkNotNull(params, "params must not be null");
-    Preconditions.checkNotNull(projection, "projection must not be null");
-    this.projection = projection;
-    this.params = params;
+    this.params = Preconditions.checkNotNull(params, "params must not be null");
+    this.projector = Preconditions.checkNotNull(projector, "projector must not be null");
+
+    projection = new AllJSONProjection(objectMapper);
   }
 
   @Override
