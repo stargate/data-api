@@ -35,7 +35,7 @@ import org.junit.jupiter.api.*;
 // to do basic validations
 @QuarkusTest
 // @TestProfile(CqlSessionTest.TestProfile.class)
-@QuarkusTestResource(FixedTokenTestResource.class)
+@QuarkusTestResource(value = FixedTokenTestResource.class, restrictToAnnotatedClass = true)
 public class CqlSessionIntegrationTest {
 
   // For this test, we did not disable GlobalTestResources, so it will spin up the backend DB.
