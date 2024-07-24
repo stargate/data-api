@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
@@ -67,8 +68,8 @@ class ErrorSerializerTest {
                       Response.Status.OK));
 
       assertThat(throwable)
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessage("Error fields can not contain the reserved message key.");
+          .isInstanceOf(JsonApiException.class)
+          .hasMessageContaining("Error fields can not contain the reserved key 'message'");
     }
 
     @Test

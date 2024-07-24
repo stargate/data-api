@@ -184,7 +184,8 @@ public class CQLSessionCache {
       //      }
       return cqlSession;
     }
-    throw new RuntimeException("Unsupported database type: " + databaseConfig.type());
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "Unsupported database type: %s", databaseConfig.type());
   }
 
   //  /**
@@ -264,9 +265,9 @@ public class CQLSessionCache {
               dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
               new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
         } else {
-          throw new RuntimeException(
-              "Missing/Invalid authentication credentials provided for type: "
-                  + operationsConfig.databaseConfig().type());
+          throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+              "Missing/Invalid authentication credentials provided for type: %s",
+              operationsConfig.databaseConfig().type());
         }
       }
       case ASTRA -> {
@@ -278,8 +279,8 @@ public class CQLSessionCache {
         return new SessionCacheKey(dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT), null);
       }
     }
-    throw new RuntimeException(
-        "Unsupported database type: " + operationsConfig.databaseConfig().type());
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "Unsupported database type: %s", operationsConfig.databaseConfig().type());
   }
 
   /**
