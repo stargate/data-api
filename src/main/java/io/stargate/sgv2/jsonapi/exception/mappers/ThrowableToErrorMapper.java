@@ -71,10 +71,7 @@ public final class ThrowableToErrorMapper {
         }
 
         // handle an invalid Content-Type header
-        if (throwable instanceof NotSupportedException
-            && throwable
-                .getMessage()
-                .contains("The content-type header value did not match the value")) {
+        if (throwable instanceof NotSupportedException) {
           // validate the Content-Type header, 415 if failed
           return ErrorCode.INVALID_CONTENT_TYPE_HEADER
               .toApiException()

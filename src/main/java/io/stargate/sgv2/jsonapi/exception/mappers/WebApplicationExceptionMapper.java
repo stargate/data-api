@@ -44,8 +44,7 @@ public class WebApplicationExceptionMapper {
       return RestResponse.status(RestResponse.Status.NOT_FOUND, commandResult);
     }
     // Return 415 for invalid Content-Type
-    if (e instanceof NotSupportedException
-        && e.getMessage().contains("The content-type header value did not match the value")) {
+    if (e instanceof NotSupportedException) {
       return RestResponse.status(RestResponse.Status.UNSUPPORTED_MEDIA_TYPE, commandResult);
     }
 
