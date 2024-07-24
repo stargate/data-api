@@ -99,8 +99,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
 
         if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(path).matches()) {
           throw ErrorCode.INVALID_SORT_CLAUSE_PATH.toApiException(
-              "sort clause path ('%s') contains character(s) not allowed",
-              ErrorCode.INVALID_SORT_CLAUSE_PATH.getMessage(), path);
+              "sort clause path ('%s') contains character(s) not allowed", path);
         }
 
         if (!inner.getValue().isInt()
