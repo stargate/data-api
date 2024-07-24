@@ -49,7 +49,7 @@ public class FindTableOperation extends TableReadOperation {
     super(commandContext, logicalExpression);
 
     this.params = Preconditions.checkNotNull(params, "params must not be null");
-    this.projector = Preconditions.checkNotNull(projector, "projector must not be null");
+    Preconditions.checkNotNull(projector, "projector must not be null");
 
     Map<String, ColumnMetadata> columnsByName =
         columns(commandContext.schemaObject().tableMetadata);
