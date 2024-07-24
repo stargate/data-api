@@ -55,19 +55,6 @@ public class InCollectionFilter extends CollectionFilter {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    InCollectionFilter inFilter = (InCollectionFilter) o;
-    return operator == inFilter.operator && Objects.equals(arrayValue, inFilter.arrayValue);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(arrayValue, operator);
-  }
-
-  @Override
   public BuiltCondition get() {
     throw new UnsupportedOperationException("For IN filter we always use getALL() method");
   }
@@ -170,5 +157,19 @@ public class InCollectionFilter extends CollectionFilter {
         throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
             "Unsupported %s column operation %s", getPath(), operator);
     }
+  }
+
+  // override the equals method for filter object comparison in tests
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    InCollectionFilter inFilter = (InCollectionFilter) o;
+    return operator == inFilter.operator && Objects.equals(arrayValue, inFilter.arrayValue);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(arrayValue, operator);
   }
 }

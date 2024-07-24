@@ -28,21 +28,6 @@ public abstract class SetCollectionFilter<T> extends CollectionFilter {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    SetCollectionFilter<?> that = (SetCollectionFilter<?>) o;
-    return operator == that.operator
-        && columnName.equals(that.columnName)
-        && value.equals(that.value);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(columnName, value, operator);
-  }
-
-  @Override
   public BuiltCondition get() {
     switch (operator) {
       case CONTAINS:
@@ -57,5 +42,21 @@ public abstract class SetCollectionFilter<T> extends CollectionFilter {
         throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
             "Set operation '%s' on column '%s'", operator, columnName);
     }
+  }
+
+  // override the equals method for filter object comparison in tests
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    SetCollectionFilter<?> that = (SetCollectionFilter<?>) o;
+    return operator == that.operator
+        && columnName.equals(that.columnName)
+        && value.equals(that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(columnName, value, operator);
   }
 }

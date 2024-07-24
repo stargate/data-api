@@ -41,19 +41,6 @@ public class IDCollectionFilter extends CollectionFilter {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    IDCollectionFilter idFilter = (IDCollectionFilter) o;
-    return operator == idFilter.operator && Objects.equals(values, idFilter.values);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(operator, values);
-  }
-
-  @Override
   public BuiltCondition get() {
     // For Id filter we always use getALL() method
     return null;
@@ -119,17 +106,17 @@ public class IDCollectionFilter extends CollectionFilter {
     return Optional.empty();
   }
 
-  //    @Override
-  //    public JsonNode asJson(JsonNodeFactory nodeFactory) {
-  //        return DBFilterBase.getJsonNode(nodeFactory, values.get(0));
-  //    }
-  //
-  //    @Override
-  //    public boolean canAddField() {
-  //        if (operator.equals(Operator.EQ)) {
-  //            return true;
-  //        } else {
-  //            return false;
-  //        }
-  //    }
+  // override the equals method for filter object comparison in tests
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    IDCollectionFilter idFilter = (IDCollectionFilter) o;
+    return operator == idFilter.operator && Objects.equals(values, idFilter.values);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(operator, values);
+  }
 }

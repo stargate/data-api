@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
-import static io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilderTest.TENANT_ID_PROPERTY_KEY;
+import static io.stargate.sgv2.jsonapi.service.cqldriver.TenantAwareCqlSessionBuilderIntegrationTest.TENANT_ID_PROPERTY_KEY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.Mockito.mock;
@@ -29,8 +29,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@TestProfile(CqlSessionCacheTest.TestProfile.class)
-public class CqlSessionCacheTest {
+@TestProfile(CqlSessionCacheIntegrationTest.TestProfile.class)
+public class CqlSessionCacheIntegrationTest {
   public static class TestProfile implements QuarkusTestProfile {
     // Alas, we do need actual DB backend so cannot do:
     // public boolean disableGlobalTestResources() { return true; }

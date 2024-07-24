@@ -70,22 +70,6 @@ public abstract class MapCollectionFilter<T> extends CollectionFilter {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    MapCollectionFilter<?> that = (MapCollectionFilter<?>) o;
-    return columnName.equals(that.columnName)
-        && key.equals(that.key)
-        && operator == that.operator
-        && value.equals(that.value);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(columnName, key, operator, value);
-  }
-
-  @Override
   public BuiltCondition get() {
     switch (operator) {
       case EQ:
@@ -132,5 +116,22 @@ public abstract class MapCollectionFilter<T> extends CollectionFilter {
         throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
             "Map operation '%s' on column '%s'", operator, columnName);
     }
+  }
+
+  // override the equals method for filter object comparison in tests
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    MapCollectionFilter<?> that = (MapCollectionFilter<?>) o;
+    return columnName.equals(that.columnName)
+        && key.equals(that.key)
+        && operator == that.operator
+        && value.equals(that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(columnName, key, operator, value);
   }
 }

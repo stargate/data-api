@@ -6,11 +6,12 @@ import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.session.ProgrammaticArguments;
 import com.datastax.oss.driver.internal.core.config.typesafe.DefaultDriverConfigLoader;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
-@QuarkusTest
-public class TenantAwareCqlSessionBuilderTest {
+@QuarkusIntegrationTest
+public class TenantAwareCqlSessionBuilderIntegrationTest {
   private static final String TEST_TENANT_ID = "95816830-7dec-11ee-b962-0242ac120002";
   protected static final String TENANT_ID_PROPERTY_KEY = "TENANT_ID";
 
