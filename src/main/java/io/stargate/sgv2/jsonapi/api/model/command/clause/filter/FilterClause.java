@@ -66,9 +66,7 @@ public record FilterClause(LogicalExpression logicalExpression) {
         return;
       }
       // otherwise throw JsonApiException
-      throw ErrorCode.ID_NOT_INDEXED.toApiException(
-          "filter path '%s' is not indexed, you can only use $eq or $in as the operator",
-          ErrorCode.ID_NOT_INDEXED.getMessage(), DocumentConstants.Fields.DOC_ID);
+      throw ErrorCode.ID_NOT_INDEXED.toApiException("you can only use $eq or $in as the operator");
     }
 
     // If path is not indexed, throw error
