@@ -2,8 +2,13 @@ package io.stargate.sgv2.jsonapi.testresource;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FixedTokenTestResource extends DseTestResource {
+
+  private static final Logger LOG = LoggerFactory.getLogger(FixedTokenTestResource.class);
+
   public FixedTokenTestResource() {
     super();
   }
@@ -16,6 +21,10 @@ public class FixedTokenTestResource extends DseTestResource {
 
     // set fix-token, used by CqlSessionTest
     propsBuilder.put("stargate.jsonapi.operations.database-config.fixed-token", "test-token");
+    ImmutableMap<String, String> props = propsBuilder.build();
+    props.forEach(System::setProperty);
+    LOG.info(
+        "DseTestResource, Using props map for the integration tests: %s".formatted(propsBuilder));
     return propsBuilder.build();
   }
 }

@@ -3,8 +3,12 @@ package io.stargate.sgv2.jsonapi.testresource;
 import com.google.common.collect.ImmutableMap;
 import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DseTestResource extends StargateTestResource {
+  private static final Logger LOG = LoggerFactory.getLogger(DseTestResource.class);
+
   // set default props if not set, so we launch DSE
   // this is only needed for test from the IDE
   public DseTestResource() {
@@ -114,6 +118,11 @@ public class DseTestResource extends StargateTestResource {
     } else {
       propsBuilder.put("stargate.jsonapi.operations.database-config.ddl-delay-millis", "50");
     }
+
+    ImmutableMap<String, String> props = propsBuilder.build();
+    props.forEach(System::setProperty);
+    LOG.info(
+        "DseTestResource, Using props map for the integration tests: %s".formatted(propsBuilder));
     return propsBuilder.build();
   }
 }

@@ -100,7 +100,8 @@ public abstract class StargateTestResource
 
       ImmutableMap<String, String> props = propsBuilder.build();
       props.forEach(System::setProperty);
-      LOG.info("Using props map for the integration tests: %s".formatted(props));
+      LOG.info(
+          "StargateTestResource, Using props map for the integration tests: %s".formatted(props));
       return props;
     }
   }
