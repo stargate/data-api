@@ -299,8 +299,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
             || valueObject instanceof BigDecimal
             || (valueObject instanceof DocumentId && (value.isObject() || value.isNumber())))) {
           throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
-              "Invalid filter expression, %s operator must have `DATE` or `NUMBER` value",
-              operator.getOperator());
+              "%s operator must have `DATE` or `NUMBER` value", operator.getOperator());
         }
       }
       ComparisonExpression expression =

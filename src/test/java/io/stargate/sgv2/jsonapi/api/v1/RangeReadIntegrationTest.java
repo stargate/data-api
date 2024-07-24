@@ -230,7 +230,11 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .body(
               "errors[0].message",
               is("Invalid filter expression, $gt operator must have `DATE` or `NUMBER` value"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body(
+              "errors[0].errorCode",
+              is(
+                  "          .body(\"errors[0].errorCode\", is(\"INVALID_VECTORIZE_VALUE_TYPE\"))\n"
+                      + "          .body(\"errors[0].exceptionClass\", is(\"JsonApiException\"));\n"));
     }
 
     @Test

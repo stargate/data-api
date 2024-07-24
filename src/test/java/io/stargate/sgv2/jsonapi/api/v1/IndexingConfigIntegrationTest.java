@@ -423,7 +423,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
-              endsWith("_id is not indexed, you can only use $eq or $in as the operator"));
+              is("_id is not indexed: you can only use $eq or $in as the operator"));
     }
 
     @Test
@@ -510,7 +510,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
-              endsWith("_id is not indexed, you can only use $eq or $in as the operator"));
+              is("_id is not indexed: you can only use $eq or $in as the operator"));
       String filterData3 =
           """
                       {
