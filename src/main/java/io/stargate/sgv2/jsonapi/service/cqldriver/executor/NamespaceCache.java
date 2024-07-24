@@ -66,11 +66,8 @@ public class NamespaceCache {
                           == ErrorCode.VECTORIZECONFIG_CHECK_FAIL) {
                     return Uni.createFrom()
                         .failure(
-                            new JsonApiException(
-                                ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA,
-                                ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA
-                                    .getMessage()
-                                    .concat(collectionName)));
+                            ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA.toApiException(
+                                "%s", collectionName));
                   }
                   // collection does not exist
                   // TODO: DO NOT do a string starts with, use proper error structures
@@ -79,11 +76,7 @@ public class NamespaceCache {
                       && rte.getMessage().startsWith(ErrorCode.COLLECTION_NOT_EXIST.getMessage())) {
                     return Uni.createFrom()
                         .failure(
-                            new JsonApiException(
-                                ErrorCode.COLLECTION_NOT_EXIST,
-                                ErrorCode.COLLECTION_NOT_EXIST
-                                    .getMessage()
-                                    .concat(collectionName)));
+                            ErrorCode.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
                   }
                   return Uni.createFrom().failure(error);
                 } else {
@@ -106,9 +99,7 @@ public class NamespaceCache {
               // TODO: error code here needs to be for collections and tables
               var table =
                   optionalTable.orElseThrow(
-                      () ->
-                          new RuntimeException(
-                              ErrorCode.COLLECTION_NOT_EXIST.getMessage() + collectionName));
+                      () -> ErrorCode.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
 
               // check if its a valid json api table
               // TODO: re-use the table matcher this is on the request hot path
@@ -122,9 +113,8 @@ public class NamespaceCache {
               }
 
               // Target is not a collection and we are not supporting tables
-              throw new JsonApiException(
-                  ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA,
-                  ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA.getMessage() + collectionName);
+              throw ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA.toApiException(
+                  "%s", collectionName);
             });
   }
 

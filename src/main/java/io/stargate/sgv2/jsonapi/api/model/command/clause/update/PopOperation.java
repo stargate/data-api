@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
@@ -29,11 +28,8 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
 
       // Argument must be -1 (remove first) or 1 (remove last)
       if (!arg.isNumber()) {
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                + ": $pop requires NUMBER argument (-1 or 1), instead got: "
-                + arg.getNodeType());
+        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+            "$pop requires NUMBER argument (-1 or 1), instead got: %s", arg.getNodeType());
       }
       boolean first;
 
@@ -45,11 +41,8 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
           first = false;
           break;
         default:
-          throw new JsonApiException(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                  + ": $pop requires argument of -1 or 1, instead got: "
-                  + arg.intValue());
+          throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+              "$pop requires argument of -1 or 1, instead got: %s", arg.intValue());
       }
       actions.add(new Action(PathMatchLocator.forPath(path), first));
     }
@@ -80,13 +73,9 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
           changes = true;
         }
       } else { // Something else? fail
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET,
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                + ": $pop requires target to be ARRAY; value at '"
-                + target.fullPath()
-                + "' of type "
-                + value.getNodeType());
+        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.toApiException(
+            "$pop requires target to be ARRAY; value at '%s' of type %s",
+            target.fullPath(), value.getNodeType());
       }
     }
     return changes;
