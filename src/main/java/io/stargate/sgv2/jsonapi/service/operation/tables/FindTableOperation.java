@@ -3,6 +3,8 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
@@ -17,7 +19,9 @@ import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TableFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
@@ -32,7 +36,6 @@ public class FindTableOperation extends TableReadOperation {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FindTableOperation.class);
 
-  private final DocumentProjector projector;
   private final FindTableParams params;
 
   private final OperationProjection projection;
@@ -48,7 +51,17 @@ public class FindTableOperation extends TableReadOperation {
     this.params = Preconditions.checkNotNull(params, "params must not be null");
     this.projector = Preconditions.checkNotNull(projector, "projector must not be null");
 
-    projection = new AllJSONProjection(objectMapper);
+    Map<String, ColumnMetadata> columnsByName =
+        columns(commandContext.schemaObject().tableMetadata);
+    List<ColumnMetadata> columns = projector.filterColumns(columnsByName);
+
+    projection = new SomeJSONProjection(objectMapper, columns);
+  }
+
+  private static Map<String, ColumnMetadata> columns(TableMetadata tableMetadata) {
+    Map<String, ColumnMetadata> columnsByName = new HashMap<>();
+    tableMetadata.getColumns().forEach((id, column) -> columnsByName.put(id.asInternal(), column));
+    return columnsByName;
   }
 
   @Override

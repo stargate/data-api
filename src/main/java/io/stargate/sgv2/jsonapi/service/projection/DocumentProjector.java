@@ -150,6 +150,18 @@ public class DocumentProjector {
     }
   }
 
+  /**
+   * Method that uses this Projection to filter matching columns from a map of column definitions.
+   *
+   * @param columnDefs Column definitions by matching name to proper identifier
+   * @return Filtered List of matching columns
+   * @param <T> Actual column identifier type
+   */
+  public <T> List<T> filterColumns(Map<String, T> columnDefs) {
+    // !!! TODO: actually filter; for now just return all as-is
+    return columnDefs.values().stream().toList();
+  }
+
   // Mostly for deserialization tests
   @Override
   public boolean equals(Object o) {
