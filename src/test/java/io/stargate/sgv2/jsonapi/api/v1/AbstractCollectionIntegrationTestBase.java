@@ -149,10 +149,7 @@ public abstract class AbstractCollectionIntegrationTestBase
 
   /** Utility method for reducing boilerplate code for sending JSON commands */
   protected ValidatableResponse givenHeadersPostJsonThen(String json) {
-    return given()
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(json)
+    return givenHeadersAndJson(json)
         .when()
         .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
         .then();
