@@ -98,10 +98,11 @@ public enum ErrorCode {
 
   UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator"),
 
+  INVALID_SORT_CLAUSE("Invalid sort clause"),
+
   INVALID_SORT_CLAUSE_PATH("Invalid sort clause path"),
 
-  INVALID_SORT_CLAUSE_VALUE(
-      "Sort ordering value can only be `1` for ascending or `-1` for descending."),
+  INVALID_SORT_CLAUSE_VALUE("Invalid sort clause value"),
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
 

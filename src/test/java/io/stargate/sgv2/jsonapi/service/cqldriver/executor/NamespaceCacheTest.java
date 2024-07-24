@@ -364,7 +364,8 @@ public class NamespaceCacheTest {
               s -> {
                 assertThat(s.getErrorCode()).isEqualTo(ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA);
                 assertThat(s.getMessage())
-                    .isEqualTo(ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA.getMessage() + "table");
+                    .isEqualTo(
+                        ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA.getMessage() + ": table");
               });
     }
   }
