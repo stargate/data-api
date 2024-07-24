@@ -31,8 +31,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.*;
 
 @QuarkusTest
-@TestProfile(CqlSessionIntegrationTest.TestProfile.class)
-public class CqlSessionIntegrationTest {
+@TestProfile(CqlSessionTest.TestProfile.class)
+public class CqlSessionTest {
 
   // For this test, we did not disable GlobalTestResources, so it will spin up the backend DB.
   public static class TestProfile implements QuarkusTestProfile {
