@@ -214,8 +214,8 @@ public class QueryBuilder {
         sb.append(" ").append(condition.predicate.toString()).append(" ?");
       }
       default ->
-          throw new IllegalArgumentException(
-              String.format("Unsupported expression type %s", outerExpression.getExprType()));
+          throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+              "Unsupported expression type %s", outerExpression.getExprType());
     }
   }
 
