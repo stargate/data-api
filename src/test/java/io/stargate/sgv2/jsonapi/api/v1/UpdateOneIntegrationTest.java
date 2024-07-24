@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -2072,7 +2073,7 @@ public class UpdateOneIntegrationTest extends AbstractCollectionIntegrationTestB
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_OPERATION_PARAM"))
           .body(
               "errors[0].message",
-              is(
+              containsString(
                   "Update operator path conflict due to overlap: 'root.array' ($unset) vs 'root.array.1' ($set)"));
     }
   }

@@ -67,11 +67,8 @@ public class DataVectorizer {
         JsonNode document = documents.get(position);
         if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
           if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-            throw new JsonApiException(
-                ErrorCode.INVALID_USAGE_OF_VECTORIZE,
-                ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage()
-                    + ", issue in document at position "
-                    + (position + 1));
+            throw ErrorCode.INVALID_USAGE_OF_VECTORIZE.toApiException(
+                "issue in document at position %d", (position + 1));
           }
           final JsonNode jsonNode =
               document.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
@@ -81,11 +78,8 @@ public class DataVectorizer {
             continue;
           }
           if (!jsonNode.isTextual()) {
-            throw new JsonApiException(
-                ErrorCode.INVALID_VECTORIZE_VALUE_TYPE,
-                ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.getMessage()
-                    + ", issue in document at position "
-                    + (position + 1));
+            throw ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.toApiException(
+                "issue in document at position %s", (position + 1));
           }
 
           String vectorizeData = jsonNode.asText();
@@ -230,7 +224,7 @@ public class DataVectorizer {
                 if (unsetNode != null
                     && unsetNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
                   if (unsetNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-                    throw new JsonApiException(ErrorCode.INVALID_USAGE_OF_VECTORIZE);
+                    throw ErrorCode.INVALID_USAGE_OF_VECTORIZE.toApiException();
                   }
                   unsetNode.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
                 }
@@ -245,7 +239,7 @@ public class DataVectorizer {
     if (node == null) return Uni.createFrom().item(true);
     if (node.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
       if (node.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-        throw new JsonApiException(ErrorCode.INVALID_USAGE_OF_VECTORIZE);
+        throw ErrorCode.INVALID_USAGE_OF_VECTORIZE.toApiException();
       }
       final JsonNode jsonNode = node.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
       if (jsonNode.isNull()) {
@@ -290,8 +284,7 @@ public class DataVectorizer {
         }
 
       } else {
-        throw new JsonApiException(
-            ErrorCode.SHRED_BAD_VECTORIZE_VALUE, ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage());
+        throw ErrorCode.SHRED_BAD_VECTORIZE_VALUE.toApiException();
       }
     }
     return Uni.createFrom().item(true);

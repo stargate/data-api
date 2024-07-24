@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import java.util.HashSet;
 import java.util.Map;
@@ -162,9 +161,8 @@ public final class CollectionSchemaObject extends SchemaObject {
         case "euclidean" -> EUCLIDEAN;
         case "dot_product" -> DOT_PRODUCT;
         default ->
-            throw new JsonApiException(
-                ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
-                ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
+            throw ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.toApiException(
+                "'%s'", similarityFunction);
       };
     }
   }

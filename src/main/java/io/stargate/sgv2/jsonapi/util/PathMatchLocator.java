@@ -226,12 +226,8 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
     String[] result = DOT.split(dotPath);
     for (String segment : result) {
       if (segment.isEmpty()) {
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH,
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
-                + ": empty segment ('') in path '"
-                + dotPath
-                + "'");
+        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
+            "empty segment ('') in path '%s'", dotPath);
       }
     }
     return result;
@@ -245,17 +241,12 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
   }
 
   private JsonApiException cantCreatePropertyPath(String fullPath, String prop, JsonNode context) {
-    return new JsonApiException(
-        ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH,
-        String.format(
-            "%s: cannot create field ('%s') in path '%s'; only OBJECT nodes have properties (got %s)",
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage(),
-            prop,
-            fullPath,
-            context.getNodeType()));
+    return ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
+        "cannot create field ('%s') in path '%s'; only OBJECT nodes have properties (got %s)",
+        prop, fullPath, context.getNodeType());
   }
 
-  // Needed because Command Resolver unit tests rely in equality checks for Command equality
+  // Needed because Command Resolver unit tests rely on equality checks for Command equality
   @Override
   public boolean equals(Object o) {
     if (o == this) return true;

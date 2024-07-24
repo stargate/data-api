@@ -101,11 +101,9 @@ public interface DocumentId extends DocRowIdentifer {
           case "false":
             return fromBoolean(false);
         }
-        throw new JsonApiException(
-            ErrorCode.SHRED_BAD_DOCID_TYPE,
-            String.format(
-                "%s: Document Id type Boolean stored as invalid String '%s' (must be 'true' or 'false')",
-                ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), documentIdAsText));
+        throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+            "Document Id type Boolean stored as invalid String '%s' (must be 'true' or 'false')",
+            documentIdAsText);
       }
       case NULL -> {
         return fromNull();
@@ -114,11 +112,9 @@ public interface DocumentId extends DocRowIdentifer {
         try {
           return fromNumber(new BigDecimal(documentIdAsText));
         } catch (NumberFormatException e) {
-          throw new JsonApiException(
-              ErrorCode.SHRED_BAD_DOCID_TYPE,
-              String.format(
-                  "%s: Document Id type Number stored as invalid String '%s' (not a valid Number)",
-                  ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), documentIdAsText));
+          throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+              "Document Id type Number stored as invalid String '%s' (not a valid Number)",
+              documentIdAsText);
         }
       }
       case STRING -> {
@@ -129,15 +125,13 @@ public interface DocumentId extends DocRowIdentifer {
           long ts = Long.parseLong(documentIdAsText);
           return fromTimestamp(ts);
         } catch (NumberFormatException e) {
-          throw new JsonApiException(
-              ErrorCode.SHRED_BAD_DOCID_TYPE,
-              String.format(
-                  "%s: Document Id type Date stored as invalid String '%s' (needs to be Number)",
-                  ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage(), documentIdAsText));
+          throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+              "Document Id type Date stored as invalid String '%s' (needs to be Number)",
+              documentIdAsText);
         }
       }
     }
-    throw new JsonApiException(ErrorCode.SHRED_BAD_DOCID_TYPE);
+    throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException();
   }
 
   static DocumentId fromBoolean(boolean key) {
@@ -156,7 +150,7 @@ public interface DocumentId extends DocRowIdentifer {
   static DocumentId fromString(String key) {
     key = Objects.requireNonNull(key);
     if (key.isEmpty()) {
-      throw new JsonApiException(ErrorCode.SHRED_BAD_DOCID_EMPTY_STRING);
+      throw ErrorCode.SHRED_BAD_DOCID_EMPTY_STRING.toApiException();
     }
     return new StringId(key);
   }

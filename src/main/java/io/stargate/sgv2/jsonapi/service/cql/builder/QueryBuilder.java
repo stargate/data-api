@@ -4,7 +4,6 @@ import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cql.ColumnUtils;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -276,9 +275,8 @@ public class QueryBuilder {
           functionCalls.add(
               FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_DOT_PRODUCT"));
       default ->
-          throw new JsonApiException(
-              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
-              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
+          throw ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.toApiException(
+              "%s", similarityFunction);
     }
     return this;
   }
