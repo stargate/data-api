@@ -12,7 +12,8 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
 
   @Override
   public void saveConfiguration(Optional<String> tenant, ServiceConfig serviceConfig) {
-    throw new UnsupportedOperationException("Not implemented");
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "PropertyBasedEmbeddingProviderConfigStore.saveConfiguration() not implemented");
   }
 
   @Override

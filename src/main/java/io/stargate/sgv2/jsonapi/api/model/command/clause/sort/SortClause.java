@@ -61,9 +61,9 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
         }
         break;
       default:
-        throw new UnsupportedOperationException(
-            "SortClause validation is not supported for schemaObject type: "
-                + commandContext.schemaObject().type);
+        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+            "SortClause validation is not supported for schemaObject type: %s",
+            commandContext.schemaObject().type);
     }
   }
 }
