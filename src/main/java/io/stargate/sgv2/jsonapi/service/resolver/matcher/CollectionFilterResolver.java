@@ -22,8 +22,8 @@ import java.util.*;
  *
  * <p>This understands how filter operations like `$size` work with Collections.
  *
- * <p>TIDY: a lot of methods in this class a public for testing, change this
- * TIDY: fix the unchecked casts, may need some interface changes
+ * <p>TIDY: a lot of methods in this class a public for testing, change this TIDY: fix the unchecked
+ * casts, may need some interface changes
  */
 public class CollectionFilterResolver<T extends Command & Filterable>
     extends FilterResolver<T, CollectionSchemaObject> {

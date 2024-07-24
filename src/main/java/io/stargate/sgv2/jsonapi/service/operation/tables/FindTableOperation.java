@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
 import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TableFilter;
 import java.util.ArrayList;
@@ -21,12 +20,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
-import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO: this is still a POC class, showing how we can build a filter still to do is order and projections
+ * TODO: this is still a POC class, showing how we can build a filter still to do is order and
+ * projections
  */
 public class FindTableOperation extends TableReadOperation {
 
@@ -53,11 +52,11 @@ public class FindTableOperation extends TableReadOperation {
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
 
     // Start the select
-    Select select = projection.forSelect(
-        selectFrom(
+    Select select =
+        projection.forSelect(
+            selectFrom(
                 commandContext.schemaObject().tableMetadata.getKeyspace(),
-                commandContext.schemaObject().tableMetadata.getName())
-        );
+                commandContext.schemaObject().tableMetadata.getName()));
 
     // BUG: this probably break order for nested expressions, for now enough to get this tested
     var tableFilters =
@@ -87,7 +86,8 @@ public class FindTableOperation extends TableReadOperation {
 
     var objectMapper = new ObjectMapper();
 
-    var docSources = StreamSupport.stream(resultSet.currentPage().spliterator(), false)
+    var docSources =
+        StreamSupport.stream(resultSet.currentPage().spliterator(), false)
             .map(projection::toDocument)
             .toList();
 

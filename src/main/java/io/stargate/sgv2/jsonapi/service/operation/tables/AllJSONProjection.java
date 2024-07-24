@@ -11,29 +11,28 @@ import org.apache.commons.lang3.NotImplementedException;
  * POC implementation that represents a projection that includes all columns in the table, and does
  * a CQL select AS JSON
  */
-public record AllJSONProjection(ObjectMapper objectMapper) implements OperationProjection{
-
+public record AllJSONProjection(ObjectMapper objectMapper) implements OperationProjection {
 
   /**
    * POC implementation that selects all columns, and returns the result using CQL AS JSON
+   *
    * @param select
    * @return
    */
   @Override
   public Select forSelect(SelectFrom select) {
-    return select
-        .json()
-        .all();
+    return select.json().all();
   }
 
   @Override
   public DocumentSource toDocument(Row row) {
-    return (DocumentSource) () -> {
-      try {
-        return objectMapper.readTree(row.getString("[json]"));
-      } catch (Exception e) {
-        throw new NotImplementedException("BANG " + e.getMessage());
-      }
-    };
+    return (DocumentSource)
+        () -> {
+          try {
+            return objectMapper.readTree(row.getString("[json]"));
+          } catch (Exception e) {
+            throw new NotImplementedException("BANG " + e.getMessage());
+          }
+        };
   }
 }

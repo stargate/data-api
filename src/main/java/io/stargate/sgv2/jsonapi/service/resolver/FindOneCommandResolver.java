@@ -65,7 +65,8 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
       CommandContext<TableSchemaObject> ctx, FindOneCommand command) {
 
     return new FindTableOperation(
-        ctx, tableFilterResolver.resolve(ctx, command),
+        ctx,
+        tableFilterResolver.resolve(ctx, command),
         new AllJSONProjection(new ObjectMapper()),
         new FindTableOperation.FindTableParams(1));
   }
