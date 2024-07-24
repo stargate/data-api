@@ -80,8 +80,8 @@ public class QueryBuilder {
 
   public QueryBuilder as(String alias) {
     if (functionCalls.isEmpty()) {
-      throw new IllegalStateException(
-          "The as() method cannot be called without a preceding function call.");
+      throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+          "as() method cannot be called without a preceding function call");
     }
     // the alias is set for the last function call
     FunctionCall functionCall = functionCalls.get(functionCalls.size() - 1);
