@@ -14,33 +14,38 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.security.UnauthorizedException;
+import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.QuarkusTestProfile;
-import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
+import io.stargate.sgv2.jsonapi.testresource.FixedTokenTestResource;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.*;
 
+// Note, we call this class integration test, does not mean we are doing black box test at the point
+// This test will spin up a DB backend, and it is a slow test
+// So, making this test included in the integration test suite will give us a short clean unit test
+// to do basic validations
 @QuarkusTest
-@TestProfile(CqlSessionTest.TestProfile.class)
-public class CqlSessionTest {
+// @TestProfile(CqlSessionTest.TestProfile.class)
+@QuarkusTestResource(FixedTokenTestResource.class)
+public class CqlSessionIntegrationTest {
 
   // For this test, we did not disable GlobalTestResources, so it will spin up the backend DB.
-  public static class TestProfile implements QuarkusTestProfile {
-    @Override
-    public Map<String, String> getConfigOverrides() {
-      return Map.of("stargate.jsonapi.operations.database-config.fixed-token", "test-token");
-    }
-  }
+  //  public static class TestProfile implements QuarkusTestProfile {
+  //    @Override
+  //    public Map<String, String> getConfigOverrides() {
+  //      //If fixed-token is set, then request's token will be compared to this fixed-token
+  //      return Map.of("stargate.jsonapi.operations.database-config.fixed-token", "test-token");
+  //    }
+  //  }
 
   private static final String TENANT_ID_FOR_TEST = "test_tenant";
 
