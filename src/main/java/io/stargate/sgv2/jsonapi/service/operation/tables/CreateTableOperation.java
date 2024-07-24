@@ -72,7 +72,8 @@ public class CreateTableOperation implements Operation {
         createTable =
             create.withPartitionKey(partitionKey, columnTypes.get(partitionKey).getCqlType());
       } else {
-        createTable.withPartitionKey(partitionKey, columnTypes.get(partitionKey).getCqlType());
+        createTable =
+            createTable.withPartitionKey(partitionKey, columnTypes.get(partitionKey).getCqlType());
       }
       columnTypes.remove(partitionKey);
     }
