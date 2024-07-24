@@ -7,8 +7,8 @@ import com.datastax.oss.driver.api.core.context.DriverContext;
 import com.datastax.oss.driver.api.core.session.ProgrammaticArguments;
 import com.datastax.oss.driver.internal.core.config.typesafe.DefaultDriverConfigLoader;
 import io.quarkus.test.junit.QuarkusTest;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import org.junit.jupiter.api.Test;
 
