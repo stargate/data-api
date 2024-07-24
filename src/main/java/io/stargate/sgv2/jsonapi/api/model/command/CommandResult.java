@@ -182,7 +182,7 @@ public record CommandResult(
     public Error {
       if (null != fields && fields.containsKey("message")) {
         throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
-            "Error fields can not contain the reserved 'message' key");
+            "Error fields can not contain the reserved key 'message'");
       }
     }
   }
