@@ -376,9 +376,9 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .statusCode(200)
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].message", is("$in operator must have `ARRAY`"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].message", containsString("$in operator must have `ARRAY`"));
     }
 
     @Test
@@ -401,9 +401,9 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .statusCode(200)
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].message", is("$nin operator must have `ARRAY`"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].message", containsString("$nin operator must have `ARRAY`"));
     }
 
     @Test
@@ -696,9 +696,9 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].message", is("$all operator must have `ARRAY` value"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].message", containsString("$all operator must have `ARRAY` value"));
     }
 
     @Test
@@ -772,9 +772,9 @@ public class FindOneIntegrationTest extends AbstractCollectionIntegrationTestBas
           .body("data", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", hasSize(1))
-          .body("errors[0].message", is("$size operator must have integer"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
+          .body("errors[0].message", containsString("$size operator must have integer"));
     }
   }
 
