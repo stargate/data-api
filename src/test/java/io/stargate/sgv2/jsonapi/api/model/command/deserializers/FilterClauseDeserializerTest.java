@@ -107,7 +107,7 @@ public class FilterClauseDeserializerTest {
               t -> {
                 assertThat(t.getMessage())
                     .contains(
-                        "Invalid filter expression, $gte operator must have `DATE` or `NUMBER` value");
+                        "Invalid filter expression: $gte operator must have `DATE` or `NUMBER` value");
               });
     }
 
