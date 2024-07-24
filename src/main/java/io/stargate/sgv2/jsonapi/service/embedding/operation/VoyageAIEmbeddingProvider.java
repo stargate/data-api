@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -17,7 +18,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.microprofile.rest.client.annotation.ClientHeaderParam;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
@@ -109,9 +109,9 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKey,
+      EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
-    checkEmbeddingApiKeyHeader(providerId, apiKey);
+    checkEmbeddingApiKeyHeader(providerId, embeddingCredentials.apiKey());
     final String inputType =
         (embeddingRequestType == EmbeddingRequestType.SEARCH) ? requestTypeQuery : requestTypeIndex;
     String[] textArray = new String[texts.size()];
@@ -119,7 +119,9 @@ public class VoyageAIEmbeddingProvider extends EmbeddingProvider {
         new EmbeddingRequest(inputType, texts.toArray(textArray), modelName, autoTruncate);
 
     Uni<EmbeddingResponse> response =
-        applyRetry(voyageAIEmbeddingProviderClient.embed("Bearer " + apiKey.get(), request));
+        applyRetry(
+            voyageAIEmbeddingProviderClient.embed(
+                "Bearer " + embeddingCredentials.apiKey().get(), request));
 
     return response
         .onItem()

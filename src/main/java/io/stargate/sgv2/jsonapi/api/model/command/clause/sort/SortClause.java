@@ -42,18 +42,28 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) {
             .equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
   }
 
-  public void validate(CommandContext commandContext) {
-    IndexingProjector indexingProjector = commandContext.indexingProjector();
-    // If nothing specified, everything indexed
-    if (indexingProjector.isIdentityProjection()) {
-      return;
-    }
-    // validate each path in sortExpressions
-    for (SortExpression sortExpression : sortExpressions) {
-      if (!indexingProjector.isPathIncluded(sortExpression.path())) {
-        throw ErrorCode.UNINDEXED_SORT_PATH.toApiException(
-            "sort path '%s' is not indexed", sortExpression.path());
-      }
+  public void validate(CommandContext<?> commandContext) {
+
+    switch (commandContext.schemaObject().type) {
+      case COLLECTION:
+        IndexingProjector indexingProjector =
+            commandContext.asCollectionContext().schemaObject().indexingProjector();
+        // If nothing specified, everything indexed
+        if (indexingProjector.isIdentityProjection()) {
+          return;
+        }
+        // validate each path in sortExpressions
+        for (SortExpression sortExpression : sortExpressions) {
+          if (!indexingProjector.isPathIncluded(sortExpression.path())) {
+            throw ErrorCode.UNINDEXED_SORT_PATH.toApiException(
+                "sort path '%s' is not indexed", sortExpression.path());
+          }
+        }
+        break;
+      default:
+        throw new UnsupportedOperationException(
+            "SortClause validation is not supported for schemaObject type: "
+                + commandContext.schemaObject().type);
     }
   }
 }

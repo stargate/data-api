@@ -24,14 +24,13 @@ public class WebApplicationExceptionMapper {
 
     // and if we have StreamConstraintsException, re-create as ApiException
     if (toReport instanceof StreamConstraintsException) {
-      toReport =
-          new JsonApiException(
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION,
-              ErrorCode.SHRED_DOC_LIMIT_VIOLATION.getMessage() + ": " + toReport.getMessage(),
-              // but leave out the root cause, as it is not useful
-              null);
+      // but leave out the root cause, as it is not useful
+      toReport = ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(toReport.getMessage());
     }
     CommandResult commandResult = new ThrowableCommandResultSupplier(toReport).get();
+    if (toReport instanceof JsonApiException jae) {
+      return RestResponse.status(jae.getHttpStatus(), commandResult);
+    }
     // Return 405 for method not allowed and 404 for not found
     if (e instanceof NotAllowedException) {
       return RestResponse.status(RestResponse.Status.METHOD_NOT_ALLOWED, commandResult);

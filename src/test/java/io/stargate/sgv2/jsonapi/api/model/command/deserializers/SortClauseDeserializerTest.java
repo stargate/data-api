@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -251,7 +250,7 @@ class SortClauseDeserializerTest {
 
       Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, SortClause.class));
 
-      assertThat(throwable).isInstanceOf(JsonMappingException.class);
+      assertThat(throwable).isInstanceOf(JsonApiException.class);
     }
 
     @Test

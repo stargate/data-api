@@ -26,7 +26,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.model.impl.BeginOfflineSessionC
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.EndOfflineSessionCommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineGetStatusCommandResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.model.impl.OfflineInsertManyCommandResolver;
-import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -78,13 +78,14 @@ public class OfflineCommandsProcessor {
         new SmallRyeConfigBuilder().withMapping(DocumentLimitsConfig.class).build();
     DocumentLimitsConfig documentLimitsConfig =
         smallRyeConfig.getConfigMapping(DocumentLimitsConfig.class);
-    Shredder shredder = new Shredder(objectMapper, documentLimitsConfig, null);
+    DocumentShredder documentShredder =
+        new DocumentShredder(objectMapper, documentLimitsConfig, null);
     return new CommandResolverService(
         List.of(
             new BeginOfflineSessionCommandResolver(),
             new EndOfflineSessionCommandResolver(),
             new OfflineGetStatusCommandResolver(),
-            new OfflineInsertManyCommandResolver(shredder, this.operationsConfig)));
+            new OfflineInsertManyCommandResolver(documentShredder, this.operationsConfig)));
   }
 
   private static DataVectorizerService buildDataVectorizeService() {
@@ -98,7 +99,7 @@ public class OfflineCommandsProcessor {
     return new DataVectorizerService(objectMapper, new SimpleMeterRegistry(), null);
   }
 
-  public OfflineGetStatusResponse getStatus(CommandContext commandContext, String sessionId)
+  public OfflineGetStatusResponse getStatus(CommandContext<?> commandContext, String sessionId)
       throws ExecutionException, InterruptedException {
     CommandProcessor commandProcessor =
         new CommandProcessor(
@@ -123,18 +124,20 @@ public class OfflineCommandsProcessor {
         >= createNewSessionAfterDataInBytes;
   }
 
-  public Triple<BeginOfflineSessionResponse, CommandContext, SchemaInfo> beginSession(
+  public Triple<BeginOfflineSessionResponse, CommandContext<?>, SchemaInfo> beginSession(
       CreateCollectionCommand createCollectionCommand,
       String namespace,
       String ssTablesOutputDirectory,
       int fileWriterBufferSizeInMB,
       EmbeddingProvider embeddingProvider)
       throws ExecutionException, InterruptedException {
+
     CommandProcessor commandProcessor =
         new CommandProcessor(
             new QueryExecutor(cqlSessionCache, operationsConfig),
             commandResolverService,
             dataVectorizerService);
+
     BeginOfflineSessionCommand beginOfflineSessionCommand =
         new BeginOfflineSessionCommand(
             namespace, createCollectionCommand, ssTablesOutputDirectory, fileWriterBufferSizeInMB);
@@ -142,13 +145,21 @@ public class OfflineCommandsProcessor {
     DataApiRequestInfo dataApiRequestInfo =
         new DataApiRequestInfo(Optional.of(beginOfflineSessionCommand.getSessionId()));
 
-    CommandContext commandContext =
-        CommandContext.from(
-            namespace,
-            createCollectionCommand.name(),
-            beginOfflineSessionCommand.getCollectionSettings(),
+    var commandContext =
+        new CommandContext<>(
+            beginOfflineSessionCommand.getCollectionSchemaObject(),
             embeddingProvider,
-            beginOfflineSessionCommand.getClass().getSimpleName());
+            beginOfflineSessionCommand.getClass().getSimpleName(),
+            null);
+
+    // TODO: AARON - below was the original create command context before changing
+    //        CommandContext.from(
+    //            namespace,
+    //            createCollectionCommand.name(),
+    //            beginOfflineSessionCommand.getCollectionSettings(),
+    //            embeddingProvider,
+    //            beginOfflineSessionCommand.getClass().getSimpleName());
+
     CommandResult commandResult =
         commandProcessor
             .processCommand(dataApiRequestInfo, commandContext, beginOfflineSessionCommand)
@@ -170,8 +181,9 @@ public class OfflineCommandsProcessor {
   }
 
   public OfflineInsertManyResponse loadData(
-      String sessionId, CommandContext commandContext, List<JsonNode> records)
+      String sessionId, CommandContext<?> commandContext, List<JsonNode> records)
       throws ExecutionException, InterruptedException {
+
     CommandProcessor commandProcessor =
         new CommandProcessor(
             new QueryExecutor(cqlSessionCache, operationsConfig),
@@ -181,6 +193,7 @@ public class OfflineCommandsProcessor {
     // TODO - SL, what happens if some documents fail ?
     OfflineInsertManyCommand offlineInsertManyCommand =
         new OfflineInsertManyCommand(sessionId, records);
+
     CommandResult commandResult =
         commandProcessor
             .processCommand(dataApiRequestInfo, commandContext, offlineInsertManyCommand)
@@ -190,7 +203,7 @@ public class OfflineCommandsProcessor {
     return OfflineInsertManyResponse.fromCommandResult(commandResult);
   }
 
-  public EndOfflineSessionResponse endSession(String sessionId, CommandContext commandContext)
+  public EndOfflineSessionResponse endSession(String sessionId, CommandContext<?> commandContext)
       throws ExecutionException, InterruptedException {
     CommandProcessor commandProcessor =
         new CommandProcessor(

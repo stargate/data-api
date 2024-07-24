@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +16,7 @@ class BeginOfflineSessionCommandTest {
     String collectionName = "collection1";
     String ssTableOutputDirectory = "ssTableOutputDirectory";
     int vectorDimension = 1536;
-    String similarityFunction = CollectionSettings.SimilarityFunction.EUCLIDEAN.toString();
+    String similarityFunction = CollectionSchemaObject.SimilarityFunction.EUCLIDEAN.toString();
     CreateCollectionCommand.Options.IdConfig idConfig =
         new CreateCollectionCommand.Options.IdConfig(idType);
     CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig vectorizeConfig = null;
@@ -57,27 +57,29 @@ class BeginOfflineSessionCommandTest {
       int vectorDimension,
       String similarityFunction) {
     assertEquals(
-        collectionName, beginOfflineSessionCommand.getCollectionSettings().collectionName());
+        collectionName, beginOfflineSessionCommand.getCollectionSchemaObject().name.table());
     assertEquals(
-        idType, beginOfflineSessionCommand.getCollectionSettings().idConfig().idType().toString());
+        idType,
+        beginOfflineSessionCommand.getCollectionSchemaObject().idConfig().idType().toString());
     if (isVectorNull) {
-      assertNull(beginOfflineSessionCommand.getCollectionSettings().vectorConfig());
+      assertNull(beginOfflineSessionCommand.getCollectionSchemaObject().vectorConfig());
     } else {
-      assertTrue(beginOfflineSessionCommand.getCollectionSettings().vectorConfig().vectorEnabled());
+      assertTrue(
+          beginOfflineSessionCommand.getCollectionSchemaObject().vectorConfig().vectorEnabled());
       assertEquals(
           vectorDimension,
-          beginOfflineSessionCommand.getCollectionSettings().vectorConfig().vectorSize());
+          beginOfflineSessionCommand.getCollectionSchemaObject().vectorConfig().vectorSize());
       assertEquals(
           similarityFunction,
           beginOfflineSessionCommand
-              .getCollectionSettings()
+              .getCollectionSchemaObject()
               .vectorConfig()
               .similarityFunction()
               .toString());
       assertNull(
-          beginOfflineSessionCommand.getCollectionSettings().vectorConfig().vectorizeConfig());
+          beginOfflineSessionCommand.getCollectionSchemaObject().vectorConfig().vectorizeConfig());
     }
-    assertNull(beginOfflineSessionCommand.getCollectionSettings().indexingConfig());
+    assertNull(beginOfflineSessionCommand.getCollectionSchemaObject().indexingConfig());
   }
 
   private void verifyFileWriterParams(

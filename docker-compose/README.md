@@ -19,6 +19,26 @@ You can control the platform using the `-Dquarkus.docker.buildx.platform=linux/a
 
 Follow instructions under the [Script options](#script-options) section to use the locally built image.
 
+### Resource requirements
+
+To run different set-ups, Docker runtime environment (like Docker Desktop) requires following resources:
+
+#### Memory: HCD (docker-compose-hcd.yml)
+
+HCD cluster only runs a single HCD node, requiring 3 gigabytes of memory.
+Data API requires additional 2 gigabyte of memory, if run (`-d` NOT specified):
+
+* 3 GB if running only HCD
+* 5 GB if running both HCD and Data API
+
+#### Memory: DSE-6.9 (docker-compose.yml)
+
+DSE-6.9 cluster runs 3 nodes, each requiring 2.5 gigabytes of memory.
+Data API requires additional 2 gigabyte of memory, if run (`-d` NOT specified):
+
+* 7.5 GB if running only DSE-6.9
+* 9.6 GB if running both DSE-6.9 and Data API
+
 ## Data API with HCD or DSE-6.9 cluster
 
 You can start a simple configuration with HCD with the following command:
@@ -67,8 +87,6 @@ Both convenience scripts support the following options:
 
 * You can specify an image tag (version) of the Data API using `-j [VERSION]`, or use the `-l` tag to use a locally built image with the latest snapshot version. 
 
-* The scripts default to using the Java-based image for Data API, you can specify to use the native GraalVM based variant using `-n`.
-
 * You can change the default root log level for the Data API using `-r [LEVEL]` (default `INFO`). Valid values: `ERROR`, `WARN`, `INFO`, `DEBUG`
 
 * You can enable reguest logging for the Data API using `-q`: if so, each request is logged under category `io.quarkus.http.access-log`
@@ -92,6 +110,6 @@ docker exec -it data-api-dse-1 cqlsh -u cassandra -p cassandra
 ## Notes
 
 * The `.env` file defines variables for the docker compose project name (`COMPOSE_PROJECT_NAME`),
- the DSE Docker image tag to use (`DSETAG`) and the HCD Docker image tag to use (`HCDTAG`).
+ the DSE Docker image (`DSEIMAGE`) and tag (`DSETAG`) to use and the HCD Docker image (`HCDIMAGE`) and tag (`HCDTAG`) to use .
 
-* You can override forwarding cqlsh port for `DSE` using `DSE_FWD_PORT` environment variable respectively.
+* You can override forwarding cqlsh port for DSE/HCD using `DSE_FWD_PORT`/`HCD_FWD_PORT` environment variable respectively.

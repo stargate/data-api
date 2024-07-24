@@ -29,8 +29,8 @@ env:
 #
 # 1. Runs unit tests
 # 2. Then 2 jobs in parallel
-#  a) Integration tests with docker image
-#  b) Integration tests with native docker image
+#  a) Integration tests with DSE 6.9
+#  b) Integration tests with HCD
 jobs:
 
   # runs unit tests
@@ -95,7 +95,6 @@ jobs:
   # runs int tests
   int-tests:
     name: Integration tests
-    needs: [ build ]
     runs-on: ubuntu-latest
 
     # max run time 40 minutes
@@ -110,8 +109,6 @@ jobs:
       matrix:
         type: [ docker, native, dse69-it, hcd-it ]
         include:
-          - type: docker
-            profile: '-Poffline'
           - type: dse69-it
             profile: '-Pdse69-it,offline'
           - type: hcd-it
@@ -119,7 +116,8 @@ jobs:
         exclude:
           - type: native
             #profile: '-Pnative'
-
+          - type: docker
+            #profile: '-Poffline'
     steps:
       - uses: actions/checkout@v4
 

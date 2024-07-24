@@ -4,10 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.BeginOfflineSessionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.service.operation.model.impl.BeginOfflineSessionOperation;
-import io.stargate.sgv2.jsonapi.service.shredding.Shredder;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import org.junit.jupiter.api.Test;
 
 public class BeginOfflineSessionCommandResolverTest {
@@ -15,7 +16,7 @@ public class BeginOfflineSessionCommandResolverTest {
   @Test
   public void verifyOperation() {
     ObjectMapper objectMapper = new ObjectMapper();
-    Shredder shredder = new Shredder(objectMapper, null, null);
+    DocumentShredder documentShredder = new DocumentShredder(objectMapper, null, null);
     BeginOfflineSessionCommandResolver beginOfflineSessionCommandResolver =
         new BeginOfflineSessionCommandResolver();
     CreateCollectionCommand createCollectionCommand =
@@ -23,7 +24,7 @@ public class BeginOfflineSessionCommandResolverTest {
     assertInstanceOf(
         BeginOfflineSessionOperation.class,
         beginOfflineSessionCommandResolver.resolveCommand(
-            null,
+            TestConstants.COLLECTION_CONTEXT,
             new BeginOfflineSessionCommand(
                 "namespace1", createCollectionCommand, "ssTableOutputDirectory", 20)));
     assertEquals(

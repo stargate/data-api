@@ -1,5 +1,60 @@
 # Changelog
 
+## [v1.0.14](https://github.com/stargate/data-api/tree/v1.0.14) (2024-07-15)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.13...v1.0.14)
+
+**Highlights:**
+
+- Support AWS Bedrock Embedding Provider
+- Set lower default for Azure OpenAI model "text-embedding-3-large" to observed legal value
+- Add `displayName` and `hint` in embedding providers parameters configuration
+- Error handling improvements
+
+**Closed issues:**
+
+- Improve error message when EGW timeout [\#1254](https://github.com/stargate/data-api/issues/1254)
+- Improve the error message when users call vectorize but don't provide the provider key through `x-embedding-api-key` [\#1250](https://github.com/stargate/data-api/issues/1250)
+- Azure Open AI provider \(`azureOpenAI`\) default settings for large model \(`text-embedding-3-large`\) wrong [\#1241](https://github.com/stargate/data-api/issues/1241)
+- Replace internal \(non-user-triggerable\) `ErrorCode` with `ErrorCode.SERVER\_INTERNAL\_ERROR`  [\#1238](https://github.com/stargate/data-api/issues/1238)
+- Improve failure message for `ErrorCode.COMMAND\_UNKNOWN` to include legal options [\#1236](https://github.com/stargate/data-api/issues/1236)
+- Unify `ErrorCode`s `COMMAND\_NOT\_IMPLEMENTED` and `NO\_COMMAND\_MATCHED` into `COMMAND\_UNKNOWN` [\#1232](https://github.com/stargate/data-api/issues/1232)
+- PoC for "API Tables": `findRows` command on existing CQL table\(s\) [\#1224](https://github.com/stargate/data-api/issues/1224)
+- Add namespace and collection name to log lines [\#1168](https://github.com/stargate/data-api/issues/1168)
+
+**Merged pull requests:**
+
+- refine log levels to eliminate unwanted messages [\#1270](https://github.com/stargate/data-api/pull/1270) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Fix a performance issue wrt. not reusing ObjectMappers for command logging [\#1269](https://github.com/stargate/data-api/pull/1269) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Null check for errors in CommandResult [\#1268](https://github.com/stargate/data-api/pull/1268) ([kathirsvn](https://github.com/kathirsvn))
+- Add `hint` and `displayName` in parameters [\#1267](https://github.com/stargate/data-api/pull/1267) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Increase mem limit of single-HCD set up from 2 to 3 gigs; DSEx3 to 2.5 gigs per node [\#1264](https://github.com/stargate/data-api/pull/1264) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix Quarkus REST package refs/names as per 3.9 upgrade instructions [\#1263](https://github.com/stargate/data-api/pull/1263) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Revert "Follow up for PR \#1251: Remove `Optional` and centralize validation" [\#1262](https://github.com/stargate/data-api/pull/1262) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Reduce boiler-plate code for "CountIntegrationTest" by 40% [\#1261](https://github.com/stargate/data-api/pull/1261) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#1241: lower default for Azure OpenAI model "text-embedding-3-large" to observed legal value [\#1260](https://github.com/stargate/data-api/pull/1260) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Follow up for PR \#1251: Remove `Optional` and centralize validation [\#1259](https://github.com/stargate/data-api/pull/1259) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Improve error message when EGW timeout [\#1255](https://github.com/stargate/data-api/pull/1255) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Use Stargate v2.1.0-BETA-13 [\#1252](https://github.com/stargate/data-api/pull/1252) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Small fix: Improve error message when not providing provider key through `x-embedding-api-key` [\#1251](https://github.com/stargate/data-api/pull/1251) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Fix a problem that would prevent Quarkus 3.12 upgrade \(due to change in Smallrye lib\) [\#1248](https://github.com/stargate/data-api/pull/1248) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- fix http port to 8181, refactor application.yaml as alphabetic order [\#1247](https://github.com/stargate/data-api/pull/1247) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Update Quarkus Data API uses to 3.9.5 \(from parent 3.6.x\) [\#1246](https://github.com/stargate/data-api/pull/1246) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Refactor unit test profiles, try to speed things up [\#1244](https://github.com/stargate/data-api/pull/1244) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix accidental dependencies to shaded packages [\#1243](https://github.com/stargate/data-api/pull/1243) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1238: convert internal-only `ErrorCode`s into `ErrorCode.SERVER\_INTERNAL\_ERROR` [\#1239](https://github.com/stargate/data-api/pull/1239) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1236: add valid Command names in fail message [\#1237](https://github.com/stargate/data-api/pull/1237) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix base64 encoding for 'cassandra' in docstring [\#1235](https://github.com/stargate/data-api/pull/1235) ([hemidactylus](https://github.com/hemidactylus))
+- Added highlights for v1.0.13 release [\#1234](https://github.com/stargate/data-api/pull/1234) ([kathirsvn](https://github.com/kathirsvn))
+- Fix \#1232: unify/rename 2 different ErrorCodes for similar thing [\#1233](https://github.com/stargate/data-api/pull/1233) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixed the index usage metrics for IDFilter and InFilter [\#1227](https://github.com/stargate/data-api/pull/1227) ([maheshrajamani](https://github.com/maheshrajamani))
+- Update READMEs wrt running things locally [\#1225](https://github.com/stargate/data-api/pull/1225) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#1222](https://github.com/stargate/data-api/pull/1222) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Support AWS Bedrock Embedding Provider [\#1219](https://github.com/stargate/data-api/pull/1219) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Refactoring to allow fixing \#1216 by making `JsonApiException` accept HTTP status code, propagate [\#1217](https://github.com/stargate/data-api/pull/1217) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bridge-Removal - Detach the quarkus-common-module dependency \(OFF WE GO!\) [\#1191](https://github.com/stargate/data-api/pull/1191) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Bridge-Removal - miscellaneous cleanups [\#1149](https://github.com/stargate/data-api/pull/1149) ([Yuqi-Du](https://github.com/Yuqi-Du))
+
 ## [v1.0.13](https://github.com/stargate/data-api/tree/v1.0.13) (2024-07-01)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.12...v1.0.13)
