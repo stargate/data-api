@@ -3,9 +3,9 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
-import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * POC implementation that represents a projection that includes all columns in the table, and does
@@ -26,13 +26,12 @@ public record AllJSONProjection(ObjectMapper objectMapper) implements OperationP
 
   @Override
   public DocumentSource toDocument(Row row) {
-    return (DocumentSource)
-        () -> {
-          try {
-            return objectMapper.readTree(row.getString("[json]"));
-          } catch (Exception e) {
-            throw new NotImplementedException("BANG " + e.getMessage());
-          }
-        };
+    return () -> {
+      try {
+        return objectMapper.readTree(row.getString("[json]"));
+      } catch (JacksonException e) {
+        throw new RuntimeException("BANG " + e.getMessage());
+      }
+    };
   }
 }
