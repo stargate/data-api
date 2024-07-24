@@ -358,7 +358,7 @@ public record CreateCollectionOperation(
     if (collectionCount >= MAX_COLLECTIONS) {
       throw ErrorCode.TOO_MANY_COLLECTIONS.toApiException(
           "number of collections in database cannot exceed %d, already have %d",
-          ErrorCode.TOO_MANY_COLLECTIONS.getMessage(), MAX_COLLECTIONS, collectionCount);
+          MAX_COLLECTIONS, collectionCount);
     }
     // And then see how many Indexes have been created, how many available
     int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();
