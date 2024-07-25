@@ -94,13 +94,14 @@ public class TableProjectionDefinition {
   }
 
   /**
-   * Method that uses this Projection to filter matching columns from a map of column definitions.
+   * Method that selects columns from a map of column definitions, based on this projection
+   * definition.
    *
    * @param columnDefs Column definitions by matching name to proper identifier
    * @return Filtered List of matching columns
    * @param <T> Actual column identifier type
    */
-  public <T> List<T> filterColumns(Map<String, T> columnDefs) {
+  public <T> List<T> extractSelectedColumns(Map<String, T> columnDefs) {
     // "missing" root layer used as short-cut for include-all/exclude-all
     if (columnNames.isEmpty()) {
       if (inclusion) { // exclude-all

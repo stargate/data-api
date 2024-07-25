@@ -73,7 +73,6 @@ public class DocumentProjector {
     return createFromDefinition(projectionDefinition, false);
   }
 
-  /** Method for constructing "nested" Document projector for use by Collection API. */
   public static DocumentProjector createFromDefinition(
       JsonNode projectionDefinition, boolean includeSimilarity) {
     // First special case: "simple" default projection

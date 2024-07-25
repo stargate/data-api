@@ -14,8 +14,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Projection used for Table Rows (as opposed to Collection Documents), built from command API
+ * projection definitions (expressed in JSON).
+ */
 public record TableRowProjection(ObjectMapper objectMapper, List<ColumnMetadata> columns)
     implements OperationProjection {
+  /**
+   * Factory method for construction projection instance, given a projection definition and table
+   * schema.
+   */
   public static TableRowProjection fromDefinition(
       ObjectMapper objectMapper,
       TableProjectionDefinition projectionDefinition,
@@ -26,7 +34,7 @@ public record TableRowProjection(ObjectMapper objectMapper, List<ColumnMetadata>
         .getColumns()
         .forEach((id, column) -> columnsByName.put(id.asInternal(), column));
 
-    List<ColumnMetadata> columns = projectionDefinition.filterColumns(columnsByName);
+    List<ColumnMetadata> columns = projectionDefinition.extractSelectedColumns(columnsByName);
 
     if (columns.isEmpty()) {
       throw ErrorCode.UNSUPPORTED_PROJECTION_DEFINITION.toApiException(
