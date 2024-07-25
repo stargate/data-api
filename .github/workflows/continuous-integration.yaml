@@ -107,15 +107,13 @@ jobs:
 
       # matrix props:
       matrix:
-        type: [ docker, native, dse69-it, hcd-it ]
+        type: [ docker, dse69-it, hcd-it ]
         include:
           - type: dse69-it
             profile: '-Pdse69-it,offline'
           - type: hcd-it
             profile: '-Phcd-it,offline'
         exclude:
-          - type: native
-            #profile: '-Pnative'
           - type: docker
             #profile: '-Poffline'
     steps:
