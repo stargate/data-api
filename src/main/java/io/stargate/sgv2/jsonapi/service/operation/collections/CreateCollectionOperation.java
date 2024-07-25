@@ -331,11 +331,11 @@ public record CreateCollectionOperation(
   }
 
   /**
-   * Method for finding existing table with given name: 1. if valid one exists and returning that
-   * table; 2. if invalid one exists, error out; 3. if no table exists with given name, verify
+   * Method for finding existing collection with given name: 1. if valid one exists and returning
+   * that table; 2. if invalid one exists, error out; 3. if no table exists with given name, verify
    * maximum table limit and return null;
    *
-   * @return Existing valid table with given name, if any; {@code null} if not
+   * @return Existing valid collection with given name, if any; {@code null} if not
    */
   TableMetadata findTableAndValidateLimits(
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces,
@@ -344,11 +344,10 @@ public record CreateCollectionOperation(
     // First: do we already have a Table with the same name?
     for (TableMetadata table : currKeyspace.getTables().values()) {
       if (table.getName().asInternal().equals(tableName)) {
-        // If that is not a valid Data API table, error out the createCollectionCommand
+        // If that is not a valid Data API collection, error out the createCollectionCommand
         if (!COLLECTION_MATCHER.test(table)) {
           throw ErrorCode.EXISTING_TABLE_NOT_DATA_API_COLLECTION.toApiException(
-              "table ('%s') already exists and it does not follow Data API schema pattern",
-              tableName);
+              "table ('%s') already exists and it is not a valid Data API Collection", tableName);
         }
         // If that is a valid Data API table, we returned it
         return table;
