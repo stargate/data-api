@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.POJONode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.Date;
@@ -75,7 +76,8 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
         return compareBooleans(o1.booleanValue(), o2.booleanValue());
       default:
         // Should never happen:
-        throw new IllegalStateException("Unsupported JsonNodeType for comparison: " + type1);
+        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+            "Unsupported JsonNodeType for comparison: %s", type1);
     }
   }
 
@@ -85,8 +87,9 @@ public class JsonNodeComparator implements Comparator<JsonNode> {
     if (pojo1 instanceof Date) {
       return ((Date) pojo1).compareTo((Date) pojo2);
     }
-    // this error should never happen.
-    throw new IllegalStateException("Unsupported POJO type for comparison: " + pojo1.getClass());
+    // should never happen.
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "Unsupported POJO type for comparison: %s", pojo1.getClass().getName());
   }
 
   private int compareBooleans(boolean b1, boolean b2) {

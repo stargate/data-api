@@ -176,8 +176,8 @@ public final class JsonPath implements Comparable<JsonPath> {
 
     public Builder property(String propName) {
       if (inArray) {
-        throw new IllegalStateException(
-            "Cannot add property '" + propName + "' when in array context: " + build());
+        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+            "Cannot add property '%s' when in array context: %s", propName, build());
       }
       childPath = (basePath == null) ? propName : (basePath + '.' + propName);
       return this;
@@ -185,8 +185,8 @@ public final class JsonPath implements Comparable<JsonPath> {
 
     public Builder index(int index) {
       if (!inArray) {
-        throw new IllegalStateException(
-            "Cannot add index (" + index + ") when not in array context: " + build());
+        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+            "Cannot add index (%d) when not in array context: %s", index, build());
       }
       StringBuilder sb;
       if (basePath == null) { // root

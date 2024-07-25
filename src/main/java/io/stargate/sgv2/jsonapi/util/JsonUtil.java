@@ -245,7 +245,9 @@ public class JsonUtil {
             "'%s' value has to be 36-character UUID String, instead got (%s)",
             etype.encodedName(), value);
     }
-    throw new IllegalStateException("Unrecognized JsonExtensionType: " + etype);
+    // should never happen
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "Unrecognized JsonExtensionType: %s", etype);
   }
 
   /**
