@@ -15,9 +15,9 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertOperationPage;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.FromJavaCodecException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.ArrayList;
@@ -105,16 +105,16 @@ public class InsertTableOperation extends TableMutationOperation {
     for (Map.Entry<CqlIdentifier, Object> entry : row.allColumnValues().entrySet()) {
       try {
         var codec =
-            JSONCodecRegistry.codecFor(
+            JSONCodecRegistry.codecToCQL(
                 commandContext.schemaObject().tableMetadata, entry.getKey(), entry.getValue());
-        positionalValues.add(codec.apply(entry.getValue()));
+        positionalValues.add(codec.toCQL(entry.getValue()));
       } catch (UnknownColumnException e) {
         // TODO AARON - Handle error
         throw new RuntimeException(e);
       } catch (MissingJSONCodecException e) {
         // TODO AARON - Handle error
         throw new RuntimeException(e);
-      } catch (FromJavaCodecException e) {
+      } catch (ToCQLCodecException e) {
         // TODO AARON - Handle error
         throw new RuntimeException(e);
       }
