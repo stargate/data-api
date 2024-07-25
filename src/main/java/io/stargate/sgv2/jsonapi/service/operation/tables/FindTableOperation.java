@@ -34,15 +34,18 @@ public class FindTableOperation extends TableReadOperation {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FindTableOperation.class);
 
+  private final OperationProjection projection;
   private final FindTableParams params;
 
   public FindTableOperation(
       CommandContext<TableSchemaObject> commandContext,
       LogicalExpression logicalExpression,
+      OperationProjection projection,
       FindTableParams params) {
     super(commandContext, logicalExpression);
 
-    this.params = Objects.requireNonNull(params, "Params must not be null");
+    this.params = Objects.requireNonNull(params, "params must not be null");
+    this.projection = Objects.requireNonNull(projection, "projection must not be null");
   }
 
   @Override
@@ -50,12 +53,11 @@ public class FindTableOperation extends TableReadOperation {
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
 
     // Start the select
-    Select select =
+    Select select = projection.forSelect(
         selectFrom(
                 commandContext.schemaObject().tableMetadata.getKeyspace(),
                 commandContext.schemaObject().tableMetadata.getName())
-            .json()
-            .all(); // TODO: this is where we would do the field selection / projection
+        );
 
     // BUG: this probably break order for nested expressions, for now enough to get this tested
     var tableFilters =
@@ -65,15 +67,15 @@ public class FindTableOperation extends TableReadOperation {
             .toList();
 
     // Add the where clause operations
-    List<Object> positonalValues = new ArrayList<>();
+    List<Object> positionalValues = new ArrayList<>();
     for (TableFilter tableFilter : tableFilters) {
-      select = tableFilter.apply(commandContext.schemaObject(), select, positonalValues);
+      select = tableFilter.apply(commandContext.schemaObject(), select, positionalValues);
     }
 
     select = select.limit(params.limit());
 
     // Building a statment using the positional values added by the TableFilter
-    var statement = select.build(positonalValues.toArray());
+    var statement = select.build(positionalValues.toArray());
 
     // TODO: pageSize for FindTableOperation
     return queryExecutor
@@ -86,19 +88,8 @@ public class FindTableOperation extends TableReadOperation {
 
     var objectMapper = new ObjectMapper();
 
-    var docSources =
-        StreamSupport.stream(resultSet.currentPage().spliterator(), false)
-            .map(
-                row ->
-                    (DocumentSource)
-                        () -> {
-                          try {
-                            return objectMapper.readTree(row.getString("[json]"));
-                          } catch (Exception e) {
-                            throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
-                                e, "Failed to parse row JSON: %s", e.getMessage());
-                          }
-                        })
+    var docSources = StreamSupport.stream(resultSet.currentPage().spliterator(), false)
+            .map(projection::toDocument)
             .toList();
 
     return new ReadOperationPage(docSources, params.isSingleResponse(), null, false, null);
