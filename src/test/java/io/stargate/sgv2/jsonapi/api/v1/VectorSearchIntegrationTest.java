@@ -1071,7 +1071,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
           .body(
               "errors[0].message",
-              is(
+              containsString(
                   "Cannot filter on '$vector' field using operator '$eq': only '$exists' is supported"));
     }
   }

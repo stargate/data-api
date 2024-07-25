@@ -17,7 +17,7 @@ public enum ErrorCode {
   COMMAND_FIELD_INVALID("Request invalid"),
 
   CONCURRENCY_FAILURE("Unable to complete transaction due to concurrent transactions"),
-  COLLECTION_NOT_EXIST("Collection does not exist, collection name: "),
+  COLLECTION_NOT_EXIST("Collection does not exist, collection name"),
   DATASET_TOO_BIG("Response data set too big to be sorted, add more filters"),
 
   DOCUMENT_ALREADY_EXISTS("Document already exists with the given _id"),
@@ -59,7 +59,7 @@ public enum ErrorCode {
 
   ID_NOT_INDEXED("_id is not indexed"),
 
-  NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist."),
+  NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist"),
 
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
 
@@ -88,7 +88,7 @@ public enum ErrorCode {
 
   INVALID_FILTER_EXPRESSION("Invalid filter expression"),
 
-  INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema: "),
+  INVALID_JSONAPI_COLLECTION_SCHEMA("Not a valid json api collection schema"),
 
   TOO_MANY_COLLECTIONS("Too many collections"),
 
@@ -99,12 +99,15 @@ public enum ErrorCode {
 
   UNSUPPORTED_FILTER_OPERATION("Unsupported filter operator"),
 
+  INVALID_SORT_CLAUSE("Invalid sort clause"),
+
   INVALID_SORT_CLAUSE_PATH("Invalid sort clause path"),
 
-  INVALID_SORT_CLAUSE_VALUE(
-      "Sort ordering value can only be `1` for ascending or `-1` for descending."),
+  INVALID_SORT_CLAUSE_VALUE("Invalid sort clause value"),
 
   INVALID_USAGE_OF_VECTORIZE("`$vectorize` and `$vector` can't be used together"),
+
+  INVALID_CONTENT_TYPE_HEADER("Invalid Content-Type header"),
 
   UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
 
@@ -131,9 +134,9 @@ public enum ErrorCode {
 
   VECTOR_SEARCH_USAGE_ERROR("Vector search can't be used with other sort clause"),
 
-  VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection "),
+  VECTOR_SEARCH_NOT_SUPPORTED("Vector search is not enabled for the collection"),
 
-  VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name: "),
+  VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name"),
 
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
 

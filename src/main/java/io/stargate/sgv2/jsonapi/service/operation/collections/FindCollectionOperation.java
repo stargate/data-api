@@ -306,10 +306,8 @@ public record FindCollectionOperation(
     if (vector() != null && !vectorEnabled) {
       return Uni.createFrom()
           .failure(
-              new JsonApiException(
-                  ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED,
-                  ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.getMessage()
-                      + commandContext().schemaObject().name.table()));
+              ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
+                  "%s", commandContext().schemaObject().name.table()));
     }
     // get FindResponse
     return getDocuments(dataApiRequestInfo, queryExecutor, pageState(), null)
@@ -421,8 +419,8 @@ public record FindCollectionOperation(
             f.updateForNewDocument(objectMapper().getNodeFactory())
                 .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
           } else {
-            throw new RuntimeException(
-                "Unsupported filter type in getNewDocument: " + filter.getClass().getName());
+            throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+                "Unsupported filter type in getNewDocument: %s", filter.getClass().getName());
           }
         }
       }

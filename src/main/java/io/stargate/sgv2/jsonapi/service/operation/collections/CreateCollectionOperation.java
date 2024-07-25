@@ -119,10 +119,9 @@ public record CreateCollectionOperation(
     if (currKeyspace == null) {
       return Uni.createFrom()
           .failure(
-              new JsonApiException(
-                  ErrorCode.NAMESPACE_DOES_NOT_EXIST,
-                  "INVALID_ARGUMENT: Unknown namespace '%s', you must create it first."
-                      .formatted(commandContext.schemaObject().name.keyspace())));
+              ErrorCode.NAMESPACE_DOES_NOT_EXIST.toApiException(
+                  "Unknown namespace '%s', you must create it first",
+                  commandContext.schemaObject().name.keyspace()));
     }
     TableMetadata table = findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
 
@@ -365,11 +364,9 @@ public record CreateCollectionOperation(
     final long collectionCount = allTables.stream().filter(COLLECTION_MATCHER).count();
     final int MAX_COLLECTIONS = dbLimitsConfig.maxCollections();
     if (collectionCount >= MAX_COLLECTIONS) {
-      throw new JsonApiException(
-          ErrorCode.TOO_MANY_COLLECTIONS,
-          String.format(
-              "%s: number of collections in database cannot exceed %d, already have %d",
-              ErrorCode.TOO_MANY_COLLECTIONS.getMessage(), MAX_COLLECTIONS, collectionCount));
+      throw ErrorCode.TOO_MANY_COLLECTIONS.toApiException(
+          "number of collections in database cannot exceed %d, already have %d",
+          MAX_COLLECTIONS, collectionCount);
     }
     // And then see how many Indexes have been created, how many available
     int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.math.BigDecimal;
@@ -35,11 +34,8 @@ public class MulOperation extends UpdateOperation<MulOperation.Action> {
       name = validateUpdatePath(UpdateOperator.MUL, name);
       JsonNode value = entry.getValue();
       if (!value.isNumber()) {
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-                + ": $mul requires numeric parameter, got: "
-                + value.getNodeType());
+        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+            "$mul requires numeric parameter, got: %s", value.getNodeType());
       }
       updates.add(new Action(PathMatchLocator.forPath(name), (NumericNode) value));
     }
@@ -66,13 +62,9 @@ public class MulOperation extends UpdateOperation<MulOperation.Action> {
           modified = true;
         }
       } else { // Non-number existing value? Fail
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET,
-            ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
-                + ": $mul requires target to be Number; value at '"
-                + target.fullPath()
-                + "' of type "
-                + oldValue.getNodeType());
+        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.toApiException(
+            "$mul requires target to be Number; value at '%s' of type %s",
+            target.fullPath(), oldValue.getNodeType());
       }
     }
 
