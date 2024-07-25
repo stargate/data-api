@@ -2,14 +2,17 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.FromJavaCodecException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,28 +100,20 @@ public abstract class NativeTypeTableFilter<T> extends TableFilter {
   public Select apply(
       TableSchemaObject tableSchemaObject, Select select, List<Object> positionalValues) {
 
-    // TODO: AARON return the correct errors, this is POC work now
-    var column =
-        tableSchemaObject
-            .tableMetadata
-            .getColumn(path)
-            .orElseThrow(() -> new IllegalArgumentException("Column not found: " + path));
-
-    var codec =
-        JSONCodecRegistry.codecFor(column.getType(), columnValue)
-            .orElseThrow(
-                () ->
-                    new RuntimeException(
-                        String.format(
-                            "No Codec for a value of type %s with table column %s it has CQL type %s",
-                            columnValue.getClass(),
-                            column.getName(),
-                            column.getType().asCql(true, false))));
-
     try {
-      positionalValues.add(codec.apply(columnValue));
-    } catch (FromJavaCodecException e) {
-      throw new RuntimeException("Error applying codec", e);
+      var codec =
+          JSONCodecRegistry.codecToCQL(
+              tableSchemaObject.tableMetadata, CqlIdentifier.fromCql(path), columnValue);
+      positionalValues.add(codec.toCQL(columnValue));
+    } catch (UnknownColumnException e) {
+      // TODO AARON - Handle error
+      throw new RuntimeException(e);
+    } catch (MissingJSONCodecException e) {
+      // TODO AARON - Handle error
+      throw new RuntimeException(e);
+    } catch (ToCQLCodecException e) {
+      // TODO AARON - Handle error
+      throw new RuntimeException(e);
     }
 
     return select.where(Relation.column(path).build(operator.predicate.cql, bindMarker()));

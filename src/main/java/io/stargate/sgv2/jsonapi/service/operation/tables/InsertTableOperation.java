@@ -4,7 +4,9 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.querybuilder.term.Term;
+import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
+import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
+import com.google.common.base.Preconditions;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -13,14 +15,21 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertOperationPage;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InsertTableOperation extends TableMutationOperation {
+  private static final Logger LOGGER = LoggerFactory.getLogger(InsertTableOperation.class);
 
   private final List<TableInsertAttempt> insertAttempts;
 
@@ -82,14 +91,43 @@ public class InsertTableOperation extends TableMutationOperation {
 
   private SimpleStatement buildInsertStatement(QueryExecutor queryExecutor, WriteableTableRow row) {
 
-    Map<CqlIdentifier, Term> colValues =
-        row.allColumnValues().entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> literal(e.getValue())));
+    Preconditions.checkArgument(
+        !row.allColumnValues().isEmpty(), "Row must have at least one column to insert");
 
-    return insertInto(
-            commandContext.schemaObject().name.keyspace(),
-            commandContext.schemaObject().name.table())
-        .valuesByIds(colValues)
-        .build();
+    InsertInto insertInto =
+        insertInto(
+            commandContext.schemaObject().tableMetadata.getKeyspace(),
+            commandContext.schemaObject().tableMetadata.getName());
+
+    List<Object> positionalValues = new ArrayList<>(row.allColumnValues().size());
+    RegularInsert ongoingInsert = null;
+
+    for (Map.Entry<CqlIdentifier, Object> entry : row.allColumnValues().entrySet()) {
+      try {
+        var codec =
+            JSONCodecRegistry.codecToCQL(
+                commandContext.schemaObject().tableMetadata, entry.getKey(), entry.getValue());
+        positionalValues.add(codec.toCQL(entry.getValue()));
+      } catch (UnknownColumnException e) {
+        // TODO AARON - Handle error
+        throw new RuntimeException(e);
+      } catch (MissingJSONCodecException e) {
+        // TODO AARON - Handle error
+        throw new RuntimeException(e);
+      } catch (ToCQLCodecException e) {
+        // TODO AARON - Handle error
+        throw new RuntimeException(e);
+      }
+
+      // need to switch from the InertInto interface to the RegularInsert to get to the
+      // asCQL() later.
+      ongoingInsert =
+          ongoingInsert == null
+              ? insertInto.value(entry.getKey(), bindMarker())
+              : ongoingInsert.value(entry.getKey(), bindMarker());
+    }
+
+    assert ongoingInsert != null;
+    return SimpleStatement.newInstance(ongoingInsert.asCql(), positionalValues.toArray());
   }
 }
