@@ -67,7 +67,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
         ctx,
         objectMapper,
         tableFilterResolver.resolve(ctx, command),
-        command.buildTableProjector(),
+        command.tableProjectionDefinition(),
         new FindTableOperation.FindTableParams(1));
   }
 

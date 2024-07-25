@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
 import java.util.List;
 
-public record SomeJSONProjection(ObjectMapper objectMapper, List<ColumnMetadata> columns)
+public record TableProjection(ObjectMapper objectMapper, List<ColumnMetadata> columns)
     implements OperationProjection {
   @Override
   public Select forSelect(SelectFrom selectFrom) {

@@ -71,7 +71,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
         ctx,
         objectMapper,
         LogicalExpression.and(),
-        command.buildTableProjector(),
+        command.tableProjectionDefinition(),
         new FindTableOperation.FindTableParams(limit));
   }
 

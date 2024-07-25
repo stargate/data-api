@@ -12,25 +12,25 @@ import java.util.Map;
  * Class similar to {@link DocumentProjector} but used for Table API, for non-nested
  * inclusion/exclusion projections.
  */
-public class TableProjector {
+public class TableProjectionDefinition {
   // Include-all is "exclude nothing"
-  private static final TableProjector INCLUDE_ALL_PROJECTOR =
-      new TableProjector(false, Collections.emptyList());
+  private static final TableProjectionDefinition INCLUDE_ALL_PROJECTOR =
+      new TableProjectionDefinition(false, Collections.emptyList());
 
   // Exclude-all is "include nothing"
-  private static final TableProjector EXCLUDE_ALL_PROJECTOR =
-      new TableProjector(true, Collections.emptyList());
+  private static final TableProjectionDefinition EXCLUDE_ALL_PROJECTOR =
+      new TableProjectionDefinition(true, Collections.emptyList());
 
   private final boolean inclusion;
 
   private final List<String> columnNames;
 
-  private TableProjector(boolean inclusion, List<String> columnNames) {
+  private TableProjectionDefinition(boolean inclusion, List<String> columnNames) {
     this.inclusion = inclusion;
     this.columnNames = columnNames;
   }
 
-  public static TableProjector createFromDefinition(JsonNode projectionDefinition) {
+  public static TableProjectionDefinition createFromDefinition(JsonNode projectionDefinition) {
     // First special case: "simple" default projection; "include all"
     if (projectionDefinition == null || projectionDefinition.isEmpty()) {
       return INCLUDE_ALL_PROJECTOR;
@@ -53,7 +53,7 @@ public class TableProjector {
     return createFromNonEmpty(projectionDefinition);
   }
 
-  private static TableProjector createFromNonEmpty(JsonNode projectionDefinition) {
+  private static TableProjectionDefinition createFromNonEmpty(JsonNode projectionDefinition) {
     List<String> columnNames = new ArrayList<>();
     boolean inclusionProjection = false;
 
@@ -90,7 +90,7 @@ public class TableProjector {
       }
       columnNames.add(path);
     }
-    return new TableProjector(inclusionProjection, columnNames);
+    return new TableProjectionDefinition(inclusionProjection, columnNames);
   }
 
   /**

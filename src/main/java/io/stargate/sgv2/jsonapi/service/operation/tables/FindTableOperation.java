@@ -18,7 +18,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TableFilter;
-import io.stargate.sgv2.jsonapi.service.projection.TableProjector;
+import io.stargate.sgv2.jsonapi.service.projection.TableProjectionDefinition;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,23 +45,23 @@ public class FindTableOperation extends TableReadOperation {
       CommandContext<TableSchemaObject> commandContext,
       ObjectMapper objectMapper,
       LogicalExpression logicalExpression,
-      TableProjector projector,
+      TableProjectionDefinition projectionDefinition,
       FindTableParams params) {
     super(commandContext, logicalExpression);
 
     this.params = Preconditions.checkNotNull(params, "params must not be null");
-    Preconditions.checkNotNull(projector, "projector must not be null");
+    Preconditions.checkNotNull(projectionDefinition, "projectionDefinition must not be null");
 
     Map<String, ColumnMetadata> columnsByName =
         columns(commandContext.schemaObject().tableMetadata);
-    List<ColumnMetadata> columns = projector.filterColumns(columnsByName);
+    List<ColumnMetadata> columns = projectionDefinition.filterColumns(columnsByName);
 
     if (columns.isEmpty()) {
       throw ErrorCode.UNSUPPORTED_PROJECTION_DEFINITION.toApiException(
           "did not include any Table columns");
     }
 
-    projection = new SomeJSONProjection(objectMapper, columns);
+    projection = new TableProjection(objectMapper, columns);
   }
 
   private static Map<String, ColumnMetadata> columns(TableMetadata tableMetadata) {
