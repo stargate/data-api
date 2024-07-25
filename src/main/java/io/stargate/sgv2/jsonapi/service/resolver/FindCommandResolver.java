@@ -69,7 +69,8 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
             .orElse(Integer.MAX_VALUE);
 
     return new FindTableOperation(
-        ctx, LogicalExpression.and(),
+        ctx,
+        LogicalExpression.and(),
         new AllJSONProjection(new ObjectMapper()),
         new FindTableOperation.FindTableParams(limit));
   }

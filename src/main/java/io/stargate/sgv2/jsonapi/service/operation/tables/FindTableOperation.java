@@ -11,10 +11,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
 import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TableFilter;
 import java.util.ArrayList;
@@ -53,11 +51,11 @@ public class FindTableOperation extends TableReadOperation {
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
 
     // Start the select
-    Select select = projection.forSelect(
-        selectFrom(
+    Select select =
+        projection.forSelect(
+            selectFrom(
                 commandContext.schemaObject().tableMetadata.getKeyspace(),
-                commandContext.schemaObject().tableMetadata.getName())
-        );
+                commandContext.schemaObject().tableMetadata.getName()));
 
     // BUG: this probably break order for nested expressions, for now enough to get this tested
     var tableFilters =
@@ -88,7 +86,8 @@ public class FindTableOperation extends TableReadOperation {
 
     var objectMapper = new ObjectMapper();
 
-    var docSources = StreamSupport.stream(resultSet.currentPage().spliterator(), false)
+    var docSources =
+        StreamSupport.stream(resultSet.currentPage().spliterator(), false)
             .map(projection::toDocument)
             .toList();
 
