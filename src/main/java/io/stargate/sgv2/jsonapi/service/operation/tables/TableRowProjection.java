@@ -9,6 +9,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.projection.TableProjectionDefinition;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +22,8 @@ import java.util.Map;
  * Projection used for Table Rows (as opposed to Collection Documents), built from command API
  * projection definitions (expressed in JSON).
  */
-public record TableRowProjection(ObjectMapper objectMapper, List<ColumnMetadata> columns)
+public record TableRowProjection(
+    ObjectMapper objectMapper, TableSchemaObject table, List<ColumnMetadata> columns)
     implements OperationProjection {
   /**
    * Factory method for construction projection instance, given a projection definition and table
@@ -27,9 +32,9 @@ public record TableRowProjection(ObjectMapper objectMapper, List<ColumnMetadata>
   public static TableRowProjection fromDefinition(
       ObjectMapper objectMapper,
       TableProjectionDefinition projectionDefinition,
-      TableSchemaObject schema) {
+      TableSchemaObject table) {
     Map<String, ColumnMetadata> columnsByName = new HashMap<>();
-    schema
+    table
         .tableMetadata
         .getColumns()
         .forEach((id, column) -> columnsByName.put(id.asInternal(), column));
@@ -41,7 +46,7 @@ public record TableRowProjection(ObjectMapper objectMapper, List<ColumnMetadata>
           "did not include any Table columns");
     }
 
-    return new TableRowProjection(objectMapper, columns);
+    return new TableRowProjection(objectMapper, table, columns);
   }
 
   @Override
@@ -53,12 +58,27 @@ public record TableRowProjection(ObjectMapper objectMapper, List<ColumnMetadata>
   public DocumentSource toDocument(Row row) {
     ObjectNode result = objectMapper.createObjectNode();
     for (int i = 0, len = columns.size(); i < len; ++i) {
-      ColumnMetadata column = columns.get(i);
-      // result.put(column.getName().asInternal(), row.getString(i));
-      // !!! TODO
-      result.put(
-          column.getName().asInternal(),
-          column.getType().toString() + "/" + column.getType().getClass().getName());
+      final ColumnMetadata column = columns.get(i);
+      final String columnName = column.getName().asInternal();
+      JSONCodec codec;
+
+      try {
+        codec = JSONCodecRegistry.codecToJSON(table.tableMetadata, column);
+      } catch (MissingJSONCodecException e) {
+        throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+            "Column '%s' has unsupported type '%s'", columnName, column.getType().toString());
+      }
+      try {
+        result.put(columnName, codec.toJSON(objectMapper, row.get(i, codec.javaType())));
+        // columnName, column.getType().toString() + "/" + column.getType().getClass().getName());
+      } catch (ToJSONCodecException e) {
+        throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+            e,
+            "Column '%s' has invalid value of type '%s': failed to convert to JSON: %s",
+            columnName,
+            column.getType().toString(),
+            e.getMessage());
+      }
     }
     return () -> result;
   }
