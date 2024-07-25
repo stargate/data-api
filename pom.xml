@@ -274,11 +274,19 @@
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>${surefire-plugin.version}</version>
-        <configuration>
-          <excludes>
-            <exclude>**/*IntegrationTest.*</exclude>
-          </excludes>
-        </configuration>
+        <executions>
+        <execution>
+          <goals>
+            <goal>integration-test</goal>
+            <goal>verify</goal>
+          </goals>
+          <configuration>
+            <excludes>
+              <exclude>**/*IntegrationTest.*</exclude>
+            </excludes>
+          </configuration>
+        </execution>
+        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
