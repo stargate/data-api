@@ -103,7 +103,7 @@ public enum ErrorCode {
 
   UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
 
-  UNSUPPORTED_PROJECTION_TYPE("Unsupported projection type"),
+  UNSUPPORTED_PROJECTION_DEFINITION("Unsupported projection definition"),
 
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
 

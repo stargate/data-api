@@ -36,8 +36,8 @@ public class TableProjector {
       return INCLUDE_ALL_PROJECTOR;
     }
     if (!projectionDefinition.isObject()) {
-      throw ErrorCode.UNSUPPORTED_PROJECTION_TYPE.toApiException(
-          "definition must be OBJECT, was %s", projectionDefinition.getNodeType());
+      throw ErrorCode.UNSUPPORTED_PROJECTION_DEFINITION.toApiException(
+          "must be OBJECT, was %s", projectionDefinition.getNodeType());
     }
     // Special cases: "star-include/exclude"
     if (projectionDefinition.size() == 1) {

@@ -57,7 +57,7 @@ public class FindTableOperation extends TableReadOperation {
     List<ColumnMetadata> columns = projector.filterColumns(columnsByName);
 
     if (columns.isEmpty()) {
-      throw ErrorCode.UNSUPPORTED_PROJECTION_TYPE.toApiException(
+      throw ErrorCode.UNSUPPORTED_PROJECTION_DEFINITION.toApiException(
           "did not include any Table columns");
     }
 
