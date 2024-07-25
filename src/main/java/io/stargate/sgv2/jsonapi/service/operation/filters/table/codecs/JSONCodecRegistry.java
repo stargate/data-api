@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.base.Preconditions;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -14,13 +15,12 @@ import java.util.List;
  * Builds and manages the {@link JSONCodec} instances that are used to convert Java objects into the
  * objects expected by the CQL driver for specific CQL data types.
  *
- * <p>See {@link #codecFor(TableMetadata, CqlIdentifier, Object)} for the main entry point.
+ * <p>See {@link #codecToCQL(TableMetadata, CqlIdentifier, Object)} for the main entry point.
  *
  * <p>IMPORTANT: There must be a codec for every CQL data type we want to write to, even if the
  * translation is an identity translation. This is so we know if the translation can happen, and
- * then if it was done correctly with the actual value. See {@link
- * JSONCodec.FromJava#unsafeIdentity()} for the identity mapping, and example usage in {@link #TEXT}
- * codec.
+ * then if it was done correctly with the actual value. See {@link JSONCodec.ToCQL#unsafeIdentity()}
+ * for the identity mapping, and example usage in {@link #TEXT} codec.
  */
 public class JSONCodecRegistry {
 
@@ -45,7 +45,7 @@ public class JSONCodecRegistry {
    * @throws UnknownColumnException If the column is not found in the table.
    * @throws MissingJSONCodecException If no codec is found for the column and type of the value.
    */
-  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecFor(
+  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(
       TableMetadata table, CqlIdentifier column, Object value)
       throws UnknownColumnException, MissingJSONCodecException {
 
@@ -59,11 +59,30 @@ public class JSONCodecRegistry {
 
     // compiler telling me we need to use the unchecked assignment again like the codecFor does
     JSONCodec<JavaT, CqlT> codec =
-        JSONCodec.unchecked(internalCodecFor(columnMetadata.getType(), value));
+        JSONCodec.unchecked(internalCodecForToCQL(columnMetadata.getType(), value));
     if (codec != null) {
       return codec;
     }
     throw new MissingJSONCodecException(table, columnMetadata, value.getClass(), value);
+  }
+
+  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(
+      TableMetadata table, CqlIdentifier column)
+      throws UnknownColumnException, MissingJSONCodecException {
+
+    Preconditions.checkNotNull(table, "table must not be null");
+    Preconditions.checkNotNull(column, "column must not be null");
+
+    var columnMetadata =
+        table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
+
+    // compiler telling me we need to use the unchecked assignment again like the codecFor does
+    JSONCodec<JavaT, CqlT> codec =
+        JSONCodec.unchecked(internalCodecForToJSON(columnMetadata.getType()));
+    if (codec != null) {
+      return codec;
+    }
+    throw new MissingJSONCodecException(table, columnMetadata, null, null);
   }
 
   /**
@@ -78,71 +97,106 @@ public class JSONCodecRegistry {
    * @param javaValue
    * @return The codec, or `null` if none found.
    */
-  private static JSONCodec<?, ?> internalCodecFor(DataType targetCQLType, Object javaValue) {
+  private static JSONCodec<?, ?> internalCodecForToCQL(DataType targetCQLType, Object javaValue) {
     // BUG: needs to handle NULl value
     return CODECS.stream()
-        .filter(codec -> codec.test(targetCQLType, javaValue))
+        .filter(codec -> codec.testToCQL(targetCQLType, javaValue))
+        .findFirst()
+        .orElse(null);
+  }
+
+  /**
+   * Same as {@link #internalCodecForToCQL(DataType, Object)}
+   *
+   * @param targetCQLType
+   * @return
+   */
+  private static JSONCodec<?, ?> internalCodecForToJSON(DataType targetCQLType) {
+    return CODECS.stream()
+        .filter(codec -> codec.testToJSON(targetCQLType))
         .findFirst()
         .orElse(null);
   }
 
   // Boolean
   public static final JSONCodec<Boolean, Boolean> BOOLEAN =
-      new JSONCodec<>(GenericType.BOOLEAN, DataTypes.BOOLEAN, JSONCodec.FromJava.unsafeIdentity());
+      new JSONCodec<>(
+          GenericType.BOOLEAN,
+          DataTypes.BOOLEAN,
+          JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::booleanNode));
 
   // Numeric Codecs
   public static final JSONCodec<BigDecimal, Long> BIGINT =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.BIGINT,
-          JSONCodec.FromJava.safeNumber(BigDecimal::longValueExact));
+          JSONCodec.ToCQL.safeNumber(BigDecimal::longValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, BigDecimal> DECIMAL =
       new JSONCodec<>(
-          GenericType.BIG_DECIMAL, DataTypes.DECIMAL, JSONCodec.FromJava.unsafeIdentity());
+          GenericType.BIG_DECIMAL,
+          DataTypes.DECIMAL,
+          JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, Double> DOUBLE =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.DOUBLE,
-          JSONCodec.FromJava.safeNumber(BigDecimal::doubleValue));
+          JSONCodec.ToCQL.safeNumber(BigDecimal::doubleValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, Float> FLOAT =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.FLOAT,
-          JSONCodec.FromJava.safeNumber(BigDecimal::floatValue));
+          JSONCodec.ToCQL.safeNumber(BigDecimal::floatValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, Integer> INT =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.INT,
-          JSONCodec.FromJava.safeNumber(BigDecimal::intValueExact));
+          JSONCodec.ToCQL.safeNumber(BigDecimal::intValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, Short> SMALLINT =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.SMALLINT,
-          JSONCodec.FromJava.safeNumber(BigDecimal::shortValueExact));
+          JSONCodec.ToCQL.safeNumber(BigDecimal::shortValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, Byte> TINYINT =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.TINYINT,
-          JSONCodec.FromJava.safeNumber(BigDecimal::byteValueExact));
+          JSONCodec.ToCQL.safeNumber(BigDecimal::byteValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, BigInteger> VARINT =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.VARINT,
-          JSONCodec.FromJava.safeNumber(BigDecimal::toBigIntegerExact));
+          JSONCodec.ToCQL.safeNumber(BigDecimal::toBigIntegerExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   // Text Codecs
   public static final JSONCodec<String, String> ASCII =
-      new JSONCodec<>(GenericType.STRING, DataTypes.ASCII, JSONCodec.FromJava.unsafeIdentity());
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.ASCII,
+          JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::textNode));
 
   public static final JSONCodec<String, String> TEXT =
-      new JSONCodec<>(GenericType.STRING, DataTypes.TEXT, JSONCodec.FromJava.unsafeIdentity());
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.TEXT,
+          JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::textNode));
 
   /** IMPORTANT: All codecs must be added to the list here. */
   static {

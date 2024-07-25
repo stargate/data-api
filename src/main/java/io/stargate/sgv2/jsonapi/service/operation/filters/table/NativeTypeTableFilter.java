@@ -9,9 +9,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonO
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.FromJavaCodecException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
 import java.util.List;
 import org.slf4j.Logger;
@@ -102,16 +102,16 @@ public abstract class NativeTypeTableFilter<T> extends TableFilter {
 
     try {
       var codec =
-          JSONCodecRegistry.codecFor(
+          JSONCodecRegistry.codecToCQL(
               tableSchemaObject.tableMetadata, CqlIdentifier.fromCql(path), columnValue);
-      positionalValues.add(codec.apply(columnValue));
+      positionalValues.add(codec.toCQL(columnValue));
     } catch (UnknownColumnException e) {
       // TODO AARON - Handle error
       throw new RuntimeException(e);
     } catch (MissingJSONCodecException e) {
       // TODO AARON - Handle error
       throw new RuntimeException(e);
-    } catch (FromJavaCodecException e) {
+    } catch (ToCQLCodecException e) {
       // TODO AARON - Handle error
       throw new RuntimeException(e);
     }
