@@ -3,8 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
@@ -13,16 +11,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TableFilter;
-import io.stargate.sgv2.jsonapi.service.projection.TableProjectionDefinition;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
@@ -43,31 +37,13 @@ public class FindTableOperation extends TableReadOperation {
 
   public FindTableOperation(
       CommandContext<TableSchemaObject> commandContext,
-      ObjectMapper objectMapper,
       LogicalExpression logicalExpression,
-      TableProjectionDefinition projectionDefinition,
+      OperationProjection projection,
       FindTableParams params) {
     super(commandContext, logicalExpression);
 
     this.params = Preconditions.checkNotNull(params, "params must not be null");
-    Preconditions.checkNotNull(projectionDefinition, "projectionDefinition must not be null");
-
-    Map<String, ColumnMetadata> columnsByName =
-        columns(commandContext.schemaObject().tableMetadata);
-    List<ColumnMetadata> columns = projectionDefinition.filterColumns(columnsByName);
-
-    if (columns.isEmpty()) {
-      throw ErrorCode.UNSUPPORTED_PROJECTION_DEFINITION.toApiException(
-          "did not include any Table columns");
-    }
-
-    projection = new TableProjection(objectMapper, columns);
-  }
-
-  private static Map<String, ColumnMetadata> columns(TableMetadata tableMetadata) {
-    Map<String, ColumnMetadata> columnsByName = new HashMap<>();
-    tableMetadata.getColumns().forEach((id, column) -> columnsByName.put(id.asInternal(), column));
-    return columnsByName;
+    this.projection = Preconditions.checkNotNull(projection, "projection must not be null");
   }
 
   @Override

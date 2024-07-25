@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.FindTableOperation;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableRowProjection;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -69,9 +70,9 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
     return new FindTableOperation(
         ctx,
-        objectMapper,
         LogicalExpression.and(),
-        command.tableProjectionDefinition(),
+        TableRowProjection.fromDefinition(
+            objectMapper, command.tableProjectionDefinition(), ctx.schemaObject()),
         new FindTableOperation.FindTableParams(limit));
   }
 

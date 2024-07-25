@@ -6,11 +6,36 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
+import io.stargate.sgv2.jsonapi.service.projection.TableProjectionDefinition;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public record TableProjection(ObjectMapper objectMapper, List<ColumnMetadata> columns)
+public record TableRowProjection(ObjectMapper objectMapper, List<ColumnMetadata> columns)
     implements OperationProjection {
+  public static TableRowProjection fromDefinition(
+      ObjectMapper objectMapper,
+      TableProjectionDefinition projectionDefinition,
+      TableSchemaObject schema) {
+    Map<String, ColumnMetadata> columnsByName = new HashMap<>();
+    schema
+        .tableMetadata
+        .getColumns()
+        .forEach((id, column) -> columnsByName.put(id.asInternal(), column));
+
+    List<ColumnMetadata> columns = projectionDefinition.filterColumns(columnsByName);
+
+    if (columns.isEmpty()) {
+      throw ErrorCode.UNSUPPORTED_PROJECTION_DEFINITION.toApiException(
+          "did not include any Table columns");
+    }
+
+    return new TableRowProjection(objectMapper, columns);
+  }
+
   @Override
   public Select forSelect(SelectFrom selectFrom) {
     return selectFrom.columnsIds(columns.stream().map(ColumnMetadata::getName).toList());
