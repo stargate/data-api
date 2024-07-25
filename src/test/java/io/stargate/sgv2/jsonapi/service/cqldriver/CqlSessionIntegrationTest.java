@@ -15,7 +15,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.test.common.QuarkusTestResource;
-import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -35,7 +34,6 @@ import org.junit.jupiter.api.*;
 // So, making this test included in the integration test suite will give us a short clean unit test
 // to do basic validations
 @QuarkusTest
-@QuarkusIntegrationTest
 // @TestProfile(CqlSessionIntegrationTest.TestProfile.class)
 @QuarkusTestResource(value = FixedTokenTestResource.class, restrictToAnnotatedClass = true)
 public class CqlSessionIntegrationTest {
