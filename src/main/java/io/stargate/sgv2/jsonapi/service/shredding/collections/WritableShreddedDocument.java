@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.WritableDocRow;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -306,8 +305,7 @@ public record WritableShreddedDocument(
       for (int i = 0; i < vector.size(); i++) {
         JsonNode element = vector.get(i);
         if (!element.isNumber()) {
-          throw new JsonApiException(
-              ErrorCode.SHRED_BAD_VECTOR_VALUE, ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage());
+          throw ErrorCode.SHRED_BAD_VECTOR_VALUE.toApiException();
         }
         arrayVals[i] = element.floatValue();
       }

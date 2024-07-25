@@ -419,12 +419,11 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].errorCode", is("ID_NOT_INDEXED"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
-              endsWith(
-                  "filter path '_id' is not indexed, you can only use $eq or $in as the operator"))
-          .body("errors[0].errorCode", is("ID_NOT_INDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              is("_id is not indexed: you can only use $eq or $in as the operator"));
     }
 
     @Test
@@ -507,12 +506,11 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
+          .body("errors[0].errorCode", is("ID_NOT_INDEXED"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
-              endsWith(
-                  "filter path '_id' is not indexed, you can only use $eq or $in as the operator"))
-          .body("errors[0].errorCode", is("ID_NOT_INDEXED"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+              is("_id is not indexed: you can only use $eq or $in as the operator"));
       String filterData3 =
           """
                       {

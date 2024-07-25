@@ -12,7 +12,6 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -263,10 +262,7 @@ public class QueryExecutor {
     // if namespace does not exist, throw error
     if (keyspaceMetadata == null) {
       return Uni.createFrom()
-          .failure(
-              new JsonApiException(
-                  ErrorCode.NAMESPACE_DOES_NOT_EXIST,
-                  "The provided namespace does not exist: " + namespace));
+          .failure(ErrorCode.NAMESPACE_DOES_NOT_EXIST.toApiException("%s", namespace));
     }
     // else get the table
     // TODO: this should probably use CqlIdentifier.fromCql() if we want to be case sensitive

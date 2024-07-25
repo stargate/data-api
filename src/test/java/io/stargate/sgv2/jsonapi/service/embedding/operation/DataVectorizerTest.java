@@ -120,7 +120,7 @@ public class DataVectorizerTest {
             .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_VECTORIZE_VALUE_TYPE)
             .hasFieldOrPropertyWithValue(
                 "message",
-                "$vectorize value needs to be text value, issue in document at position 1");
+                "$vectorize value needs to be text value: issue in document at position 1");
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
