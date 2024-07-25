@@ -87,7 +87,7 @@ public class FilterMatchRulesTest {
               """;
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
-      FilterMatchRules filterMatchRules = new FilterMatchRules<FindOneCommand>();
+      FilterMatchRules<FindOneCommand> filterMatchRules = new FilterMatchRules<>();
       Function<CaptureExpression, List<DBFilterBase>> resolveFunction =
           captureExpression -> filters;
       filterMatchRules
@@ -100,7 +100,7 @@ public class FilterMatchRulesTest {
           .capture("TEST1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
-      assertThat(filterMatchRules.getMatchRules()).hasSize(2);
+      assertThat(filterMatchRules.size()).isEqualTo(2);
     }
   }
 }

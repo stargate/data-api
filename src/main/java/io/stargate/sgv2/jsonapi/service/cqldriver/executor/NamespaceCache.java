@@ -109,7 +109,7 @@ public class NamespaceCache {
               }
 
               if (apiTablesEnabled) {
-                return new TableSchemaObject(namespace, collectionName);
+                return new TableSchemaObject(table);
               }
 
               // Target is not a collection and we are not supporting tables

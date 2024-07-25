@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
-import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterableResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -22,14 +22,15 @@ import jakarta.inject.Inject;
 
 /** Resolves the {@link UpdateManyCommand } */
 @ApplicationScoped
-public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyCommand>
-    implements CommandResolver<UpdateManyCommand> {
+public class UpdateManyCommandResolver implements CommandResolver<UpdateManyCommand> {
   private final DocumentShredder documentShredder;
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
+
+  private final CollectionFilterResolver<UpdateManyCommand> collectionFilterResolver;
 
   @Inject
   public UpdateManyCommandResolver(
@@ -39,7 +40,6 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
-    super();
     this.objectMapper = objectMapper;
     this.documentShredder = documentShredder;
     this.operationsConfig = operationsConfig;
@@ -47,6 +47,8 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
     this.meterRegistry = meterRegistry;
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
+
+    this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
   }
 
   @Override
@@ -81,7 +83,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> ctx, UpdateManyCommand command) {
-    LogicalExpression logicalExpression = resolve(ctx, command);
+    LogicalExpression logicalExpression = collectionFilterResolver.resolve(ctx, command);
 
     // TODO this did not track the vector usage, correct ?
     addToMetrics(
