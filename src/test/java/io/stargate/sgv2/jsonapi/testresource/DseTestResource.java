@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.testresource;
 
 import com.google.common.collect.ImmutableMap;
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -40,7 +39,6 @@ public class DseTestResource extends StargateTestResource {
           "cassandra.sai.max_string_term_size_kb",
           String.valueOf(DEFAULT_SAI_MAX_STRING_TERM_SIZE_KB));
     }
-    Log.info("DseTestResource," + System.getProperties());
   }
 
   // Many tests create more than 5 collections so default to 10

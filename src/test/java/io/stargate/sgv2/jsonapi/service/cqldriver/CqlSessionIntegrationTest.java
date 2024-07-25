@@ -15,6 +15,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.security.UnauthorizedException;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -34,15 +35,16 @@ import org.junit.jupiter.api.*;
 // So, making this test included in the integration test suite will give us a short clean unit test
 // to do basic validations
 @QuarkusTest
-// @TestProfile(CqlSessionTest.TestProfile.class)
+@QuarkusIntegrationTest
+// @TestProfile(CqlSessionIntegrationTest.TestProfile.class)
 @QuarkusTestResource(value = FixedTokenTestResource.class, restrictToAnnotatedClass = true)
 public class CqlSessionIntegrationTest {
 
-  // For this test, we did not disable GlobalTestResources, so it will spin up the backend DB.
+  //   For this test, we did not disable GlobalTestResources, so it will spin up the backend DB.
   //  public static class TestProfile implements QuarkusTestProfile {
   //    @Override
   //    public Map<String, String> getConfigOverrides() {
-  //      //If fixed-token is set, then request's token will be compared to this fixed-token
+  //      // If fixed-token is set, then request's token will be compared to this fixed-token
   //      return Map.of("stargate.jsonapi.operations.database-config.fixed-token", "test-token");
   //    }
   //  }
