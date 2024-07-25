@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
@@ -54,6 +55,11 @@ public class FindTableOperation extends TableReadOperation {
     Map<String, ColumnMetadata> columnsByName =
         columns(commandContext.schemaObject().tableMetadata);
     List<ColumnMetadata> columns = projector.filterColumns(columnsByName);
+
+    if (columns.isEmpty()) {
+      throw ErrorCode.UNSUPPORTED_PROJECTION_TYPE.toApiException(
+          "did not include any Table columns");
+    }
 
     projection = new SomeJSONProjection(objectMapper, columns);
   }

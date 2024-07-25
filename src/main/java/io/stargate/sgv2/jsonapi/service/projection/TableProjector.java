@@ -13,9 +13,11 @@ import java.util.Map;
  * inclusion/exclusion projections.
  */
 public class TableProjector {
+  // Include-all is "exclude nothing"
   private static final TableProjector INCLUDE_ALL_PROJECTOR =
       new TableProjector(false, Collections.emptyList());
 
+  // Exclude-all is "include nothing"
   private static final TableProjector EXCLUDE_ALL_PROJECTOR =
       new TableProjector(true, Collections.emptyList());
 
@@ -34,7 +36,7 @@ public class TableProjector {
       return INCLUDE_ALL_PROJECTOR;
     }
     if (!projectionDefinition.isObject()) {
-      throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+      throw ErrorCode.UNSUPPORTED_PROJECTION_TYPE.toApiException(
           "definition must be OBJECT, was %s", projectionDefinition.getNodeType());
     }
     // Special cases: "star-include/exclude"
@@ -109,10 +111,24 @@ public class TableProjector {
     }
 
     // Otherwise need to actually determine
+    List<T> included = new ArrayList<>();
+
     if (inclusion) {
+      for (String columnName : columnNames) {
+        T columnDef = columnDefs.get(columnName);
+        if (columnDef != null) {
+          included.add(columnDef);
+        }
+      }
     } else {
+      for (Map.Entry<String, T> entry : columnDefs.entrySet()) {
+        if (!columnNames.contains(entry.getKey())) {
+          included.add(entry.getValue());
+        }
+      }
     }
-    return columnDefs.values().stream().toList();
+
+    return included;
   }
 
   private static boolean extractIncludeOrExclude(String path, JsonNode value) {
