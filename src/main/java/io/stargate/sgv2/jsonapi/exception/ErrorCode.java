@@ -185,6 +185,10 @@ public enum ErrorCode {
 
   // API Table Error Codes
   API_TABLE_FEATURE_NOT_ENABLED("API Table feature is not enabled"),
+
+  COLUMN_TYPE_NOT_PROVIDED("Column data type not provided as part of definition"),
+  MISSING_PARTITIONING_KEYS("Key needs to be provided as part of partitioning definition"),
+  COLUMN_DEFINITION_MISSING("Column definition is missing for the provided key field"),
   UNSUPPORTED_COLUMN_TYPE("Unsupported column types");
   private final String message;
 

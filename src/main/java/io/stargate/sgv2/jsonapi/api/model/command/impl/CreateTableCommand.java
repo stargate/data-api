@@ -14,7 +14,7 @@ import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "Command that creates a api table.")
+@Schema(description = "Command that creates an api table.")
 @JsonTypeName("createTable")
 public record CreateTableCommand(
     @NotNull

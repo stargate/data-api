@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.column.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableOperation;
@@ -22,10 +23,26 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
         command.definition().columns().entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().type()));
     List<String> partitionKeys = Arrays.stream(command.definition().partitioning().keys()).toList();
+    if (partitionKeys.isEmpty()) throw ErrorCode.MISSING_PARTITIONING_KEYS.toApiException();
+    partitionKeys.forEach(
+        key -> {
+          if (!columnTypes.containsKey(key)) {
+            throw ErrorCode.COLUMN_DEFINITION_MISSING.toApiException("%s", key);
+          }
+        });
+
     List<CreateTableCommand.Definition.Partitioning.OrderingKey> clusteringKeys =
         command.definition().partitioning().orderingKeys() == null
             ? List.of()
             : Arrays.stream(command.definition().partitioning().orderingKeys()).toList();
+
+    clusteringKeys.forEach(
+        key -> {
+          if (!columnTypes.containsKey(key.column())) {
+            throw ErrorCode.COLUMN_DEFINITION_MISSING.toApiException("%s", key.column());
+          }
+        });
+
     // set to empty will be used when vectorize is  supported
     String comment = "";
     return new CreateTableOperation(
