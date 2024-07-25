@@ -17,7 +17,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TableFilter;
-import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.projection.TableProjector;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,7 +44,7 @@ public class FindTableOperation extends TableReadOperation {
       CommandContext<TableSchemaObject> commandContext,
       ObjectMapper objectMapper,
       LogicalExpression logicalExpression,
-      DocumentProjector projector,
+      TableProjector projector,
       FindTableParams params) {
     super(commandContext, logicalExpression);
 
