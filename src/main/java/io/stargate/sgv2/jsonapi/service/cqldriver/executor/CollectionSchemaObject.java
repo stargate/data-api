@@ -5,7 +5,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Suppliers;
@@ -310,9 +310,10 @@ public final class CollectionSchemaObject extends SchemaObject {
       JsonNode commentConfigNode;
       try {
         commentConfigNode = objectMapper.readTree(comment);
-      } catch (JsonProcessingException e) {
+      } catch (JacksonException e) {
         // This should never happen, already check if vectorize is a valid JSON
-        throw new RuntimeException("Invalid json string, please check 'options' configuration.", e);
+        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+            e, "Invalid JSON in Table comment for Collection, problem: %s", e.getMessage());
       }
       // new table comment design from schema_version v1, with collection as top-level key
       JsonNode collectionNode = commentConfigNode.get(TableCommentConstants.TOP_LEVEL_KEY);

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.HashMap;
@@ -46,7 +47,8 @@ public class RowShredder {
     try {
       keyObject = objectMapper.treeToValue(document.get("key"), Object.class);
     } catch (JacksonException e) {
-      throw new RuntimeException(e);
+      throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+          e, "Failed to convert row key: %s", e.getMessage());
     }
 
     Map<CqlIdentifier, Object> columnValues = new HashMap<>();
@@ -60,7 +62,8 @@ public class RowShredder {
                     CqlIdentifier.fromCql(entry.getKey()),
                     objectMapper.treeToValue(entry.getValue(), Object.class));
               } catch (JacksonException e) {
-                throw new RuntimeException(e);
+                throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+                    e, "Failed to convert row value: %s", e.getMessage());
               }
             });
     return new WriteableTableRow(new RowId(new Object[] {keyObject}), columnValues);

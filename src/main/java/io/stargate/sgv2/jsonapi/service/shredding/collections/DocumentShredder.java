@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding.collections;
 
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -17,7 +18,6 @@ import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.OptionalInt;
@@ -146,8 +146,9 @@ public class DocumentShredder {
       // Important! Must use configured ObjectMapper for serialization, NOT JsonNode.toString()
       // (to use configuration we specify wrt serialization)
       docJson = objectMapper.writeValueAsString(docWithId);
-    } catch (IOException e) { // never happens but signature exposes it
-      throw new RuntimeException(e);
+    } catch (JacksonException e) { // should never happen but signature exposes it
+      throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+          e, "Failed to serialize document: %s", e.getMessage());
     }
 
     // And then we can validate the document size
