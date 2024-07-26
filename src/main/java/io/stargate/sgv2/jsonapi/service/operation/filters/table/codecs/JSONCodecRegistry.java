@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
@@ -67,22 +68,29 @@ public class JSONCodecRegistry {
   }
 
   public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(
-      TableMetadata table, CqlIdentifier column)
+      TableMetadata table, CqlIdentifier columnId)
       throws UnknownColumnException, MissingJSONCodecException {
 
     Preconditions.checkNotNull(table, "table must not be null");
-    Preconditions.checkNotNull(column, "column must not be null");
+    Preconditions.checkNotNull(columnId, "column must not be null");
 
     var columnMetadata =
-        table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
+        table.getColumn(columnId).orElseThrow(() -> new UnknownColumnException(table, columnId));
+    return codecToJSON(table, columnMetadata);
+  }
 
+  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(
+      TableMetadata table, ColumnMetadata column) throws MissingJSONCodecException {
     // compiler telling me we need to use the unchecked assignment again like the codecFor does
-    JSONCodec<JavaT, CqlT> codec =
-        JSONCodec.unchecked(internalCodecForToJSON(columnMetadata.getType()));
-    if (codec != null) {
-      return codec;
+    JSONCodec<JavaT, CqlT> codec = codecToJSON(column.getType());
+    if (codec == null) {
+      throw new MissingJSONCodecException(table, column, null, null);
     }
-    throw new MissingJSONCodecException(table, columnMetadata, null, null);
+    return codec;
+  }
+
+  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(DataType targetCQLType) {
+    return JSONCodec.unchecked(internalCodecForToJSON(targetCQLType));
   }
 
   /**

@@ -32,7 +32,7 @@ public interface OperationProjection {
   Select forSelect(SelectFrom select);
 
   /**
-   * Called by an opertion when it wants to get a {@link DocumentSource} implementation that when
+   * Called by an operation when it wants to get a {@link DocumentSource} implementation that when
    * later called, will be able to convert the provided {@link Row} into a document to return to the
    * user.
    *
