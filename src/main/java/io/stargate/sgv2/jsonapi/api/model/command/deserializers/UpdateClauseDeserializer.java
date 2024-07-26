@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.io.IOException;
 import java.util.*;
 
@@ -26,10 +25,9 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
     JsonNode filterNode = deserializationContext.readTree(jsonParser);
     if (!filterNode.isObject()) {
-      throw new JsonApiException(
-          ErrorCode.UNSUPPORTED_UPDATE_DATA_TYPE,
-          "Unsupported update data type for UpdateClause (must be JSON Object): "
-              + filterNode.getNodeType());
+      throw ErrorCode.UNSUPPORTED_UPDATE_DATA_TYPE.toApiException(
+          "update data type for UpdateClause must be JSON Object, was: %s",
+          filterNode.getNodeType());
     }
     final EnumMap<UpdateOperator, ObjectNode> updateDefs = new EnumMap<>(UpdateOperator.class);
     Iterator<Map.Entry<String, JsonNode>> fieldIter = filterNode.fields();
@@ -47,10 +45,9 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
       }
       JsonNode operationArg = entry.getValue();
       if (!operationArg.isObject()) {
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_UPDATE_DATA_TYPE,
-            "Unsupported update data type for Operator '%s' (must be JSON Object): %s"
-                .formatted(operName, operationArg.getNodeType()));
+        throw ErrorCode.UNSUPPORTED_UPDATE_DATA_TYPE.toApiException(
+            "update data type for Operator '%s' must be JSON Object, was: %s",
+            operName, operationArg.getNodeType());
       }
       updateDefs.put(oper, (ObjectNode) operationArg);
     }

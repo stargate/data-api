@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -55,24 +54,18 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
         && !(oper.operator().equals("$set")
             || oper.operator().equals("$unset")
             || oper.operator().equals("$setOnInsert"))) {
-      throw new JsonApiException(
-          ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTOR,
-          ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTOR.getMessage() + ": " + oper.operator());
+      throw ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTOR.toApiException("%s", oper.operator());
     }
 
     if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)
         && !(oper.operator().equals("$set")
             || oper.operator().equals("$unset")
             || oper.operator().equals("$setOnInsert"))) {
-      throw new JsonApiException(
-          ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTORIZE,
-          ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTORIZE.getMessage() + ": " + oper.operator());
+      throw ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTORIZE.toApiException("%s", oper.operator());
     }
 
     if (DocumentConstants.Fields.DOC_ID.equals(path)) {
-      throw new JsonApiException(
-          ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID,
-          ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": " + oper.operator());
+      throw ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.toApiException("%s", oper.operator());
     }
     return path;
   }
@@ -88,12 +81,8 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
    */
   protected static String validateNonModifierPath(UpdateOperator oper, String path) {
     if (looksLikeModifier(path)) {
-      throw new JsonApiException(
-          ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER,
-          ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
-              + ": "
-              + oper.operator()
-              + " does not support modifiers");
+      throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.toApiException(
+          "%s does not support modifiers", oper.operator());
     }
     return path;
   }

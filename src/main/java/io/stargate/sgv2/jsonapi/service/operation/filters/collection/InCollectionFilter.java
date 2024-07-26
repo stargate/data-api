@@ -6,7 +6,6 @@ import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.builder.ConditionLHS;
@@ -70,7 +69,8 @@ public class InCollectionFilter extends CollectionFilter {
 
   @Override
   public BuiltCondition get() {
-    throw new UnsupportedOperationException("For IN filter we always use getALL() method");
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "For IN filter we always use getALL() method");
   }
 
   public List<BuiltCondition> getAll() {
@@ -160,18 +160,16 @@ public class InCollectionFilter extends CollectionFilter {
                         new JsonTerm(DOC_ID, strId));
                 conditions.add(condition);
               } else {
-                throw new JsonApiException(
-                    ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
-                    String.format("Unsupported _id $nin operand value: %s", docIdValue));
+                throw ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE.toApiException(
+                    "Unsupported _id $nin operand value: %s", docIdValue);
               }
             }
           }
           return conditions;
         }
       default:
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_FILTER_OPERATION,
-            String.format("Unsupported %s column operation %s", getPath(), operator));
+        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+            "Unsupported %s column operation %s", getPath(), operator);
     }
   }
 }

@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
@@ -43,12 +42,9 @@ public class CurrentDateOperation extends UpdateOperation<CurrentDateOperation.A
     } else if (value.isBoolean() && value.booleanValue()) {
       return;
     }
-    throw new JsonApiException(
-        ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM,
-        ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
-            + ": $currentDate requires argument of either `true` or `{\"$type\":\"date\"}`, got: `"
-            + value
-            + "`");
+    throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+        "$currentDate requires argument of either `true` or `{\"$type\":\"date\"}`, got: `%s`",
+        value);
   }
 
   @Override

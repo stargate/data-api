@@ -263,12 +263,12 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body("status", is(nullValue()))
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("INVALID_VECTORIZE_VALUE_TYPE"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
               startsWith(
-                  "$vectorize value needs to be text value, issue in document at position 1"))
-          .body("errors[0].errorCode", is("INVALID_VECTORIZE_VALUE_TYPE"))
-          .body("errors[0].exceptionClass", is("JsonApiException"));
+                  "$vectorize value needs to be text value: issue in document at position 1"));
     }
 
     @Test

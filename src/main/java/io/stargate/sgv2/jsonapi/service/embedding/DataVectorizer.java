@@ -65,11 +65,8 @@ public class DataVectorizer {
         JsonNode document = documents.get(position);
         if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
           if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-            throw new JsonApiException(
-                ErrorCode.INVALID_USAGE_OF_VECTORIZE,
-                ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage()
-                    + ", issue in document at position "
-                    + (position + 1));
+            throw ErrorCode.INVALID_USAGE_OF_VECTORIZE.toApiException(
+                "issue in document at position %d", (position + 1));
           }
           final JsonNode jsonNode =
               document.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
@@ -79,11 +76,8 @@ public class DataVectorizer {
             continue;
           }
           if (!jsonNode.isTextual()) {
-            throw new JsonApiException(
-                ErrorCode.INVALID_VECTORIZE_VALUE_TYPE,
-                ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.getMessage()
-                    + ", issue in document at position "
-                    + (position + 1));
+            throw ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.toApiException(
+                "issue in document at position %s", (position + 1));
           }
 
           String vectorizeData = jsonNode.asText();

@@ -119,10 +119,9 @@ public record CreateCollectionOperation(
     if (currKeyspace == null) {
       return Uni.createFrom()
           .failure(
-              new JsonApiException(
-                  ErrorCode.NAMESPACE_DOES_NOT_EXIST,
-                  "INVALID_ARGUMENT: Unknown namespace '%s', you must create it first."
-                      .formatted(commandContext.schemaObject().name.keyspace())));
+              ErrorCode.NAMESPACE_DOES_NOT_EXIST.toApiException(
+                  "Unknown namespace '%s', you must create it first",
+                  commandContext.schemaObject().name.keyspace()));
     }
     TableMetadata table = findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
 
@@ -332,18 +331,25 @@ public record CreateCollectionOperation(
   }
 
   /**
-   * Method for finding existing table with given name, if one exists and returning that table; or
-   * if not, verify maximum table limit and return null.
+   * Method for finding existing collection with given name: 1. if valid one exists and returning
+   * that table; 2. if invalid one exists, error out; 3. if no table exists with given name, verify
+   * maximum table limit and return null;
    *
-   * @return Existing table with given name, if any; {@code null} if not
+   * @return Existing valid collection with given name, if any; {@code null} if not
    */
   TableMetadata findTableAndValidateLimits(
       Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces,
       KeyspaceMetadata currKeyspace,
       String tableName) {
-    // First: do we already have a Table with the same name? If so, return it
+    // First: do we already have a Table with the same name?
     for (TableMetadata table : currKeyspace.getTables().values()) {
       if (table.getName().asInternal().equals(tableName)) {
+        // If that is not a valid Data API collection, error out the createCollectionCommand
+        if (!COLLECTION_MATCHER.test(table)) {
+          throw ErrorCode.EXISTING_TABLE_NOT_DATA_API_COLLECTION.toApiException(
+              "table ('%s') already exists and it is not a valid Data API Collection", tableName);
+        }
+        // If that is a valid Data API table, we returned it
         return table;
       }
     }
@@ -357,11 +363,9 @@ public record CreateCollectionOperation(
     final long collectionCount = allTables.stream().filter(COLLECTION_MATCHER).count();
     final int MAX_COLLECTIONS = dbLimitsConfig.maxCollections();
     if (collectionCount >= MAX_COLLECTIONS) {
-      throw new JsonApiException(
-          ErrorCode.TOO_MANY_COLLECTIONS,
-          String.format(
-              "%s: number of collections in database cannot exceed %d, already have %d",
-              ErrorCode.TOO_MANY_COLLECTIONS.getMessage(), MAX_COLLECTIONS, collectionCount));
+      throw ErrorCode.TOO_MANY_COLLECTIONS.toApiException(
+          "number of collections in database cannot exceed %d, already have %d",
+          MAX_COLLECTIONS, collectionCount);
     }
     // And then see how many Indexes have been created, how many available
     int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();

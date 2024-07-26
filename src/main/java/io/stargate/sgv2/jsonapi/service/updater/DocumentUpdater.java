@@ -98,7 +98,8 @@ public record DocumentUpdater(
     if (replaceDocumentId != null && idNode != null) {
       if (!JsonUtil.equalsOrdered(replaceDocumentId, idNode)) {
         // throw error id cannot be different
-        throw new JsonApiException(ErrorCode.DOCUMENT_REPLACE_DIFFERENT_DOCID);
+        throw ErrorCode.DOCUMENT_REPLACE_DIFFERENT_DOCID.toApiException(
+            "'%s' vs '%s'", idNode, replaceDocumentId);
       }
     }
 
