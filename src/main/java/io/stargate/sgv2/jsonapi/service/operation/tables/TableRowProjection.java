@@ -62,6 +62,7 @@ public record TableRowProjection(
       final String columnName = column.getName().asInternal();
       JSONCodec codec;
 
+      // TODO: maybe optimize common case of String, Boolean to avoid conversions, lookups
       try {
         codec = JSONCodecRegistry.codecToJSON(table.tableMetadata, column);
       } catch (MissingJSONCodecException e) {
@@ -69,8 +70,7 @@ public record TableRowProjection(
             "Column '%s' has unsupported type '%s'", columnName, column.getType().toString());
       }
       try {
-        result.put(columnName, codec.toJSON(objectMapper, row.get(i, codec.javaType())));
-        // columnName, column.getType().toString() + "/" + column.getType().getClass().getName());
+        result.put(columnName, codec.toJSON(objectMapper, row.getObject(i)));
       } catch (ToJSONCodecException e) {
         throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
             e,
