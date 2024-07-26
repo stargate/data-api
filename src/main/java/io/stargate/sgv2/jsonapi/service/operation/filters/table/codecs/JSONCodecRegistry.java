@@ -89,8 +89,8 @@ public class JSONCodecRegistry {
     return codec;
   }
 
-  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(DataType targetCQLType) {
-    return JSONCodec.unchecked(internalCodecForToJSON(targetCQLType));
+  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(DataType fromCQLType) {
+    return JSONCodec.unchecked(internalCodecForToJSON(fromCQLType));
   }
 
   /**
@@ -116,14 +116,11 @@ public class JSONCodecRegistry {
   /**
    * Same as {@link #internalCodecForToCQL(DataType, Object)}
    *
-   * @param targetCQLType
+   * @param fromCQLType
    * @return
    */
-  private static JSONCodec<?, ?> internalCodecForToJSON(DataType targetCQLType) {
-    return CODECS.stream()
-        .filter(codec -> codec.testToJSON(targetCQLType))
-        .findFirst()
-        .orElse(null);
+  private static JSONCodec<?, ?> internalCodecForToJSON(DataType fromCQLType) {
+    return CODECS.stream().filter(codec -> codec.testToJSON(fromCQLType)).findFirst().orElse(null);
   }
 
   // Boolean
