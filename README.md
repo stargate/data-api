@@ -62,7 +62,7 @@ If you want to learn more about Quarkus, please visit its [website](https://quar
 It's recommended that you install Quarkus CLI in order to have a better development experience.
 See [CLI Tooling](https://quarkus.io/guides/cli-tooling) for more information.
 
-Note that this project uses Java 17, please ensure that you have the target JDK installed on your system.
+Note that this project uses Java 21, please ensure that you have the target JDK installed on your system.
 
 ### Running the application in dev mode
 
