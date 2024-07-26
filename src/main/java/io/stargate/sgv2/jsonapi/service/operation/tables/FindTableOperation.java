@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TableFilter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
@@ -36,8 +37,8 @@ public class FindTableOperation extends TableReadOperation {
       FindTableParams params) {
     super(commandContext, logicalExpression);
 
-    this.params = Preconditions.checkNotNull(params, "params must not be null");
-    this.projection = Preconditions.checkNotNull(projection, "projection must not be null");
+    this.params = Objects.requireNonNull(params, "params must not be null");
+    this.projection = Objects.requireNonNull(projection, "projection must not be null");
   }
 
   @Override
@@ -69,6 +70,7 @@ public class FindTableOperation extends TableReadOperation {
     // Building a statment using the positional values added by the TableFilter
     var statement = select.build(positionalValues.toArray());
 
+    // TODO: pageSize for FindTableOperation
     return queryExecutor
         .executeRead(dataApiRequestInfo, statement, Optional.empty(), 100)
         .onItem()
@@ -90,6 +92,7 @@ public class FindTableOperation extends TableReadOperation {
   public record FindTableParams(int limit) {
 
     public FindTableParams(int limit) {
+      // TODO, refactor all Guava checks
       Preconditions.checkArgument(limit > 0, "Limit must be greater than 0");
       this.limit = limit;
     }

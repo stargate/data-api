@@ -108,6 +108,8 @@ public enum ErrorCode {
 
   INVALID_CONTENT_TYPE_HEADER("Invalid Content-Type header"),
 
+  UNSUPPORTED_PROJECTION_DEFINITION("Unsupported projection definition"),
+
   UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
 
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
