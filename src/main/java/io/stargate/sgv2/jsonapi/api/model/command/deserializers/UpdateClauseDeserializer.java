@@ -64,7 +64,7 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
       if (checkUpdateOperationNode != null
           && checkUpdateOperationNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
         if (checkUpdateOperationNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-          throw new JsonApiException(ErrorCode.INVALID_USAGE_OF_VECTORIZE);
+          throw ErrorCode.INVALID_USAGE_OF_VECTORIZE.toApiException();
         }
       }
     }

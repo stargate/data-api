@@ -2,13 +2,13 @@ package io.stargate.sgv2.jsonapi.service.updater;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.*;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -178,23 +178,33 @@ public record DocumentUpdater(
       // lazy construct the dataVectorizer, only when embeddingUpdateOperation is not null
       final DataVectorizer dataVectorizer =
           dataVectorizerService.constructDataVectorizer(dataApiRequestInfo, commandContext);
-      // TODO: only SetOperation and Replacement may create one embeddingUpdateOperation, Refactor
-      // when there are multiple
-      final EmbeddingUpdateOperation embeddingUpdateOperation = embeddingUpdateOperations.get(0);
-      return dataVectorizer
-          .vectorize(embeddingUpdateOperation.vectorizeContent())
+      // currently, there is only one $vectorize for document
+      return Multi.createFrom()
+          .iterable(embeddingUpdateOperations)
           .onItem()
-          .transformToUni(
-              vector -> {
-                embeddingUpdateOperation.updateDocument(responseBeforeVectorize.document, vector);
-                // create new DocumentUpdaterResponse, set embeddingUpdateOperation as null.
-                return Uni.createFrom()
-                    .item(
-                        new DocumentUpdaterResponse(
-                            responseBeforeVectorize.document,
-                            responseBeforeVectorize.modified,
-                            List.of()));
-              });
+          .transformToUniAndConcatenate(
+              embeddingUpdateOperation ->
+                  dataVectorizer
+                      .vectorize(embeddingUpdateOperation.vectorizeContent())
+                      .onItem()
+                      .transform(
+                          vector -> {
+                            embeddingUpdateOperation.updateDocument(
+                                responseBeforeVectorize.document, vector);
+                            // Return null since we don't need individual results
+                            return null;
+                          }))
+          .collect()
+          .asList()
+          .onItem()
+          .transform(
+              ignored ->
+                  new DocumentUpdaterResponse(
+                      responseBeforeVectorize.document,
+                      responseBeforeVectorize.modified,
+                      List.of() // Assuming the embeddingUpdateOperations are not needed in the
+                      // final response
+                      ));
     }
   }
 

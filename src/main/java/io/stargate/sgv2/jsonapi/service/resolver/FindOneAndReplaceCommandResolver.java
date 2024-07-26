@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -70,7 +69,7 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
     // Add $vector and $vectorize replacement validation here
     if (command.replacementDocument().has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)
         && command.replacementDocument().has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-      throw new JsonApiException(ErrorCode.INVALID_USAGE_OF_VECTORIZE);
+      throw ErrorCode.INVALID_USAGE_OF_VECTORIZE.toApiException();
     }
 
     //
