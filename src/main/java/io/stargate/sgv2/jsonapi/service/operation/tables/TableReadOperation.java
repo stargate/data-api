@@ -8,12 +8,8 @@ import java.util.Objects;
 /** For now, a marker class / interface for operations that read data in a table. */
 abstract class TableReadOperation extends TableOperation {
 
-  protected final LogicalExpression logicalExpression;
-
   public TableReadOperation(
-      CommandContext<TableSchemaObject> commandContext, LogicalExpression logicalExpression) {
+      CommandContext<TableSchemaObject> commandContext) {
     super(commandContext);
-    this.logicalExpression =
-        Objects.requireNonNull(logicalExpression, "logicalExpression cannot be null");
   }
 }

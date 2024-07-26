@@ -1,8 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.datastax.oss.driver.api.core.cql.Row;
-import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
 
 /**
@@ -11,25 +9,8 @@ import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
  * <p>The idea is to encapsulate both what columns we pull from the table & how we then convert a
  * row we read into a document into this one interface to a read operation can hand it all off.
  *
- * <p>See {@link AllJSONProjection} for a POC that is how the initial Tables POC works
  */
-public interface OperationProjection {
-
-  /**
-   * Called by an operation when it wants the projection to add the columns it will select from the
-   * database to the {@link Select} from the Query builder.
-   *
-   * <p>Implementations should add the columns they need by name from their internal state. The
-   * projection should already have been valided as valid to run against the table, all the columns
-   * in the projection should exist in the table.
-   *
-   * <p>TODO: the select param should be a Select type, is only a SelectFrom because that is where
-   * the builder has json(), will change to select when we stop doing that. See AllJSONProjection
-   *
-   * @param select
-   * @return
-   */
-  Select forSelect(SelectFrom select);
+public interface DocumentSourceSupplier {
 
   /**
    * Called by an operation when it wants to get a {@link DocumentSource} implementation that when
@@ -47,5 +28,5 @@ public interface OperationProjection {
    * @param row
    * @return
    */
-  DocumentSource toDocument(Row row);
+  DocumentSource documentSource(Row row);
 }

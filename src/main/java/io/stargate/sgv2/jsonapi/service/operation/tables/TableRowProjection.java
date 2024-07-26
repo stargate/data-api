@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public record TableRowProjection(
     ObjectMapper objectMapper, TableSchemaObject table, List<ColumnMetadata> columns)
-    implements OperationProjection {
+    implements SelectBuilder, DocumentSourceSupplier {
   /**
    * Factory method for construction projection instance, given a projection definition and table
    * schema.
@@ -50,12 +50,12 @@ public record TableRowProjection(
   }
 
   @Override
-  public Select forSelect(SelectFrom selectFrom) {
+  public Select apply(SelectFrom selectFrom) {
     return selectFrom.columnsIds(columns.stream().map(ColumnMetadata::getName).toList());
   }
 
   @Override
-  public DocumentSource toDocument(Row row) {
+  public DocumentSource documentSource(Row row) {
     ObjectNode result = objectMapper.createObjectNode();
     for (int i = 0, len = columns.size(); i < len; ++i) {
       final ColumnMetadata column = columns.get(i);

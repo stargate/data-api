@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.FindTableOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableRowProjection;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereBuilder;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
@@ -64,11 +65,15 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, FindOneCommand command) {
 
+    var tableRowProjection = TableRowProjection.fromDefinition(objectMapper,
+        command.tableProjectionDefinition(),
+        ctx.schemaObject());
+
     return new FindTableOperation(
         ctx,
-        tableFilterResolver.resolve(ctx, command),
-        TableRowProjection.fromDefinition(
-            objectMapper, command.tableProjectionDefinition(), ctx.schemaObject()),
+        tableRowProjection,
+        new TableWhereBuilder(ctx.schemaObject(), tableFilterResolver.resolve(ctx, command)),
+        tableRowProjection,
         new FindTableOperation.FindTableParams(1));
   }
 

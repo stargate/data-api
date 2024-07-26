@@ -70,8 +70,13 @@ public class InsertTableOperation extends TableMutationOperation {
       return Uni.createFrom().failure(insertAttempt.failure().get());
     }
 
+    // If we did not fail, then we should have a row, test that
+    if (insertAttempt.row().isEmpty()){
+      return Uni.createFrom().failure(new IllegalStateException("InsertAttempt has no row, and no failure"));
+    }
+
     // bind and execute
-    var boundStatement = buildInsertStatement(queryExecutor, insertAttempt.row().orElseThrow());
+    var boundStatement = buildInsertStatement(queryExecutor, insertAttempt);
 
     // TODO: AARON What happens to errors here?
     return queryExecutor
@@ -89,45 +94,14 @@ public class InsertTableOperation extends TableMutationOperation {
         .transform((ia, throwable) -> (TableInsertAttempt) ia.maybeAddFailure(throwable));
   }
 
-  private SimpleStatement buildInsertStatement(QueryExecutor queryExecutor, WriteableTableRow row) {
+  private SimpleStatement buildInsertStatement(QueryExecutor queryExecutor, TableInsertAttempt insertAttempt) {
 
-    Preconditions.checkArgument(
-        !row.allColumnValues().isEmpty(), "Row must have at least one column to insert");
-
-    InsertInto insertInto =
-        insertInto(
+    InsertInto insertInto = insertInto(
             commandContext.schemaObject().tableMetadata.getKeyspace(),
             commandContext.schemaObject().tableMetadata.getName());
 
-    List<Object> positionalValues = new ArrayList<>(row.allColumnValues().size());
-    RegularInsert ongoingInsert = null;
-
-    for (Map.Entry<CqlIdentifier, Object> entry : row.allColumnValues().entrySet()) {
-      try {
-        var codec =
-            JSONCodecRegistry.codecToCQL(
-                commandContext.schemaObject().tableMetadata, entry.getKey(), entry.getValue());
-        positionalValues.add(codec.toCQL(entry.getValue()));
-      } catch (UnknownColumnException e) {
-        // TODO AARON - Handle error
-        throw new RuntimeException(e);
-      } catch (MissingJSONCodecException e) {
-        // TODO AARON - Handle error
-        throw new RuntimeException(e);
-      } catch (ToCQLCodecException e) {
-        // TODO AARON - Handle error
-        throw new RuntimeException(e);
-      }
-
-      // need to switch from the InertInto interface to the RegularInsert to get to the
-      // asCQL() later.
-      ongoingInsert =
-          ongoingInsert == null
-              ? insertInto.value(entry.getKey(), bindMarker())
-              : ongoingInsert.value(entry.getKey(), bindMarker());
-    }
-
-    assert ongoingInsert != null;
+    List<Object> positionalValues = new ArrayList<>();
+    RegularInsert ongoingInsert = insertAttempt.getInsertValuesBuilder().apply(insertInto, positionalValues);
     return SimpleStatement.newInstance(ongoingInsert.asCql(), positionalValues.toArray());
   }
 }
