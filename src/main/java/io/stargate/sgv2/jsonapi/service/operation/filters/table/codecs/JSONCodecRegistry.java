@@ -25,7 +25,7 @@ import java.util.List;
  */
 public class JSONCodecRegistry {
 
-  // Internal list of all codes
+  // Internal list of all codecs
   // IMPORTANT: any codec must be added to the list to be available!
   // They are added in a static block at the end of the file
   private static final List<JSONCodec<?, ?>> CODECS;
@@ -138,6 +138,10 @@ public class JSONCodecRegistry {
           DataTypes.BIGINT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::longValueExact),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+  // TODO Tatu For performance reasons we could also consider only converting FP values into
+  // BigDecimal JsonNode -- but converting CQL integer values into long-valued JsonNode.
+  //  I think our internal handling can deal with Integer and Long valued JsonNodes and this avoids
+  // some of BigDecimal overhead (avoids conversion overhead, serialization is faster).
 
   public static final JSONCodec<BigDecimal, BigDecimal> DECIMAL =
       new JSONCodec<>(

@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 
 /**
  * Base for classes that turn a configured {@link
- * io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause} inot a {@link
+ * io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause} into a {@link
  * LogicalExpression} using the configured {@link FilterMatchRules}.
  *
  * @param <T> The type od the {@link Command} that is being resolved.
@@ -44,7 +44,7 @@ public abstract class FilterResolver<T extends Command & Filterable, U extends S
   protected abstract FilterMatchRules<T> buildMatchRules();
 
   /**
-   * Users of the class should call this function to convert the filer on the command into a {@link
+   * Users of the class should call this function to convert the filter on the command into a {@link
    * LogicalExpression}.
    *
    * @param commandContext

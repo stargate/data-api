@@ -30,11 +30,15 @@ import java.util.function.Function;
  * @param targetCQLType {@link DataType} of the CQL column type the Java object needs to be
  *     transformed into.
  * @param toCQL Function that transforms the Java object into the CQL object
+ * @param toJSON Function that transforms the value returned by CQL into a JsonNode
  * @param <JavaT> The type of the Java object that needs to be transformed into the type CQL expects
  * @param <CqlT> The type Java object the CQL driver expects
  */
 public record JSONCodec<JavaT, CqlT>(
     GenericType<JavaT> javaType,
+    // TODO Mahesh, The codec looks fine for primitive type. Needs a revisit when we doing complex
+    // types where only few fields will need to be returned. Will we be creating custom Codec based
+    // on user requests?
     DataType targetCQLType,
     ToCQL<JavaT, CqlT> toCQL,
     ToJSON<CqlT> toJSON) {
@@ -139,6 +143,7 @@ public record JSONCodec<JavaT, CqlT>(
      * @return
      * @param <JavaT>
      */
+    // TODO what is the point here? Is it for type-casting purpose or why is this needed?
     static <JavaT> ToCQL<JavaT, JavaT> unsafeIdentity() {
       return (toCQLType, value) -> value;
     }

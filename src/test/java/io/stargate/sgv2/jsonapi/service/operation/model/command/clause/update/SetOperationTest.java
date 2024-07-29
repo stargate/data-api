@@ -36,7 +36,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
               """
                           { "a" : 1, "c" : true, "b" : 1234 }
                           """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       assertThat(doc)
           .isEqualTo(
               fromJson(
@@ -60,7 +60,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
               """
                 { "a" : 1, "c" : true, "$vector" : [0.44, 0.44, 0.66] }
               """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       assertThat(doc)
           .isEqualTo(
               fromJson(
@@ -84,7 +84,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
                           { "a" : 1, "c" : true, "b" : 1234 }
                           """);
       // Will append the new property so there is modification
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -105,7 +105,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
       assertThat(oper).isInstanceOf(SetOperation.class);
       // Will append the new property so there is modification
       ObjectNode doc = objectFromJson("{ }");
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       ObjectNode expected = objectFromJson("{ \"a\": 1, \"b\": 2 }");
 
       // Important! Compare serialization as that preserves ordering: not ObjectNode
@@ -129,7 +129,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
                           """);
       ObjectNode doc = orig.deepCopy();
       // No change, c was already set as true
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc).modified()).isFalse();
       // And document should not be changed
       assertThat(doc).isEqualTo(orig);
     }
@@ -159,7 +159,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
                 }
                 """);
       // Should indicate document being modified
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       assertThat(doc)
           .isEqualTo(
               fromJson(
@@ -183,7 +183,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
                                             }
                                             """));
       ObjectNode doc = objectFromJson("{ }");
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       assertThat(doc)
           .isEqualTo(
               fromJson(
@@ -203,7 +203,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
       ObjectNode exp = doc.deepCopy();
 
       // No change reported, none observed
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc).modified()).isFalse();
       assertThat(doc).isEqualTo(exp);
     }
   }
@@ -232,7 +232,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
                         }
                         """);
       // Should indicate document being modified
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       assertThat(doc)
           .isEqualTo(
               fromJson(
@@ -262,7 +262,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
       ObjectNode exp = doc.deepCopy();
 
       // Should indicate NO change; as well as, well, not change :)
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc).modified()).isFalse();
       assertThat(doc).isEqualTo(exp);
     }
 
@@ -308,7 +308,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
                 }
             """);
 
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       assertThat(doc).isEqualTo(exp);
     }
   }
@@ -333,7 +333,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
             { "people" :  { "name":"Bob", "age":42 } }
       """));
       // No actual change
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc).modified()).isFalse();
       // Compare Strings to verify ordering is identical -- ObjectNode.equals() is
       // order-INsensitive:
       assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
@@ -363,7 +363,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
       """);
 
       // Actual change due to reordering of fields
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       // Compare Strings to verify ordering is identical -- ObjectNode.equals() is
       // order-INsensitive:
       assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
@@ -407,7 +407,7 @@ public class SetOperationTest extends UpdateOperationTestBase {
               """
                       { "_id": 0, "a": 1 }
                       """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       assertThat(doc)
           .isEqualTo(
               fromJson(

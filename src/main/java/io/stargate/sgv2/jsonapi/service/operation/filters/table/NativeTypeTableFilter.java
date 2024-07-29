@@ -57,6 +57,7 @@ public abstract class NativeTypeTableFilter<T> extends TableFilter {
    * operator definitions
    */
   public enum Operator {
+    // TODO, other operators like  NE, IN etc.
     EQ(BuiltConditionPredicate.EQ),
     LT(BuiltConditionPredicate.LT),
     GT(BuiltConditionPredicate.GT),

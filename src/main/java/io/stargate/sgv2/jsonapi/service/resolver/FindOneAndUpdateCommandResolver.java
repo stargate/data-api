@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
@@ -36,10 +37,13 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
 
   private final CollectionFilterResolver<FindOneAndUpdateCommand> collectionFilterResolver;
 
+  private final DataVectorizerService dataVectorizerService;
+
   @Inject
   public FindOneAndUpdateCommandResolver(
       ObjectMapper objectMapper,
       OperationsConfig operationsConfig,
+      DataVectorizerService dataVectorizerService,
       DocumentShredder documentShredder,
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
@@ -48,7 +52,7 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
     this.objectMapper = objectMapper;
     this.documentShredder = documentShredder;
     this.operationsConfig = operationsConfig;
-
+    this.dataVectorizerService = dataVectorizerService;
     this.meterRegistry = meterRegistry;
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
@@ -81,6 +85,7 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
         ctx,
         findCollectionOperation,
         documentUpdater,
+        dataVectorizerService,
         true,
         returnUpdatedDocument,
         upsert,

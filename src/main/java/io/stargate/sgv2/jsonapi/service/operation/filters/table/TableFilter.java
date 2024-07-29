@@ -12,9 +12,8 @@ import java.util.List;
  */
 public abstract class TableFilter extends DBFilterBase {
 
-  // TIDY - the path is the column name here, maybe rename ?
-  protected TableFilter(String path) {
-    super(path, IndexUsage.NO_OP);
+  protected TableFilter(String column) {
+    super(column, IndexUsage.NO_OP);
   }
 
   /**
