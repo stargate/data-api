@@ -26,7 +26,7 @@ public class ColumnDefinitionDeserializer extends StdDeserializer<ColumnDefiniti
       throws IOException, JacksonException {
     JsonNode definition = deserializationContext.readTree(jsonParser);
     if (definition.has("type")) {
-      throw ErrorCode.COLUMN_TYPE_NOT_PROVIDED.toApiException();
+      throw ErrorCode.TABLE_COLUMN_TYPE_NOT_PROVIDED.toApiException();
     }
     ColumnType type = ColumnType.fromString(definition.path("type").asText());
     return new ColumnDefinition(type);

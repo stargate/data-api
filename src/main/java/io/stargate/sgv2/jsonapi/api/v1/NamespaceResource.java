@@ -141,7 +141,7 @@ public class NamespaceResource {
       return Uni.createFrom()
           .item(
               new ThrowableCommandResultSupplier(
-                  ErrorCode.API_TABLE_FEATURE_NOT_ENABLED.toApiException()))
+                  ErrorCode.TABLE_FEATURE_NOT_ENABLED.toApiException()))
           .map(commandResult -> commandResult.map());
     }
 

@@ -19,7 +19,7 @@ public class PrimitiveTypes {
   private static class Int implements ColumnType {
     @Override
     public DataType getCqlType() {
-      return DataTypes.TEXT;
+      return DataTypes.INT;
     }
   }
 }

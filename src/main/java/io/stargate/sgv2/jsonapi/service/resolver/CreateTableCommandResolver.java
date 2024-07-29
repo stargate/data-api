@@ -23,11 +23,11 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
         command.definition().columns().entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().type()));
     List<String> partitionKeys = Arrays.stream(command.definition().partitioning().keys()).toList();
-    if (partitionKeys.isEmpty()) throw ErrorCode.MISSING_PARTITIONING_KEYS.toApiException();
+    if (partitionKeys.isEmpty()) throw ErrorCode.TABLE_MISSING_PARTITIONING_KEYS.toApiException();
     partitionKeys.forEach(
         key -> {
           if (!columnTypes.containsKey(key)) {
-            throw ErrorCode.COLUMN_DEFINITION_MISSING.toApiException("%s", key);
+            throw ErrorCode.TABLE_COLUMN_DEFINITION_MISSING.toApiException("%s", key);
           }
         });
 
@@ -39,7 +39,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
     clusteringKeys.forEach(
         key -> {
           if (!columnTypes.containsKey(key.column())) {
-            throw ErrorCode.COLUMN_DEFINITION_MISSING.toApiException("%s", key.column());
+            throw ErrorCode.TABLE_COLUMN_DEFINITION_MISSING.toApiException("%s", key.column());
           }
         });
 
