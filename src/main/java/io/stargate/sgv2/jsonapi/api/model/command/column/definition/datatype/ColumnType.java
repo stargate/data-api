@@ -16,7 +16,8 @@ public interface ColumnType {
       case "int":
         return PrimitiveTypes.INT;
       default:
-        throw ErrorCode.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException("Invalid column type: " + type);
+        throw ErrorCode.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException(
+            "Invalid column type: " + type);
     }
   }
 }
