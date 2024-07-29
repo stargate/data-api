@@ -15,6 +15,24 @@ public interface ColumnType {
         return PrimitiveTypes.TEXT;
       case "int":
         return PrimitiveTypes.INT;
+      case "boolean":
+        return PrimitiveTypes.BOOLEAN;
+      case "bigint":
+        return PrimitiveTypes.BIGINT;
+      case "decimal":
+        return PrimitiveTypes.DECIMAL;
+      case "double":
+        return PrimitiveTypes.DOUBLE;
+      case "float":
+        return PrimitiveTypes.FLOAT;
+      case "smallint":
+        return PrimitiveTypes.SMALLINT;
+      case "tinyint":
+        return PrimitiveTypes.TINYINT;
+      case "varint":
+        return PrimitiveTypes.VARINT;
+      case "ascii":
+        return PrimitiveTypes.ASCII;
       default:
         throw ErrorCode.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException(
             "Invalid column type: " + type);
