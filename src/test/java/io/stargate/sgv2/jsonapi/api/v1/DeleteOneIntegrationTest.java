@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.empty;
@@ -11,7 +10,6 @@ import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,7 +30,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
   class DeleteOne {
     @Test
     public void byId() {
-      String json =
+      givenHeadersPostJsonThenOkNoErrors(
           """
           {
             "insertOne": {
@@ -42,107 +40,58 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
               }
             }
           }
-          """;
+          """);
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(nullValue()));
-
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "deleteOne": {
               "filter" : {"_id" : "doc3"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("status.deletedCount", is(1))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("data", is(nullValue()));
 
       // ensure find does not find the document
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"_id" : "doc3"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("data.document", is(nullValue()))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("status", is(nullValue()));
     }
 
     @Test
     public void emptyOptionsAllowed() {
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "deleteOne": {
               "filter" : {"_id" : "doc3"},
               "options": {}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("status.deletedCount", is(0))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("data", is(nullValue()));
     }
 
     @Test
     public void noOptionsAllowed() {
-      String json =
-          """
+      givenHeadersPostJsonThenOk(
+              """
               {
                 "deleteOne": {
                   "filter" : {"_id" : "docWithOptions"},
                   "options": {"setting":"abc"}
                 }
               }
-              """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
+              """)
           .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(notNullValue()))
@@ -154,7 +103,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
 
     @Test
     public void byColumn() {
-      String json =
+      givenHeadersPostJsonThenOkNoErrors(
           """
           {
             "insertOne": {
@@ -164,65 +113,34 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
               }
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(nullValue()));
-
-      json =
-          """
+          """);
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "deleteOne": {
               "filter" : {"username" : "user4"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("status.deletedCount", is(1))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("data", is(nullValue()));
 
       // ensure find does not find the document
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"_id" : "doc4"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("data.document", is(nullValue()))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("status", is(nullValue()));
     }
 
     @Test
     public void noFilter() {
-      String json =
+      givenHeadersPostJsonThenOkNoErrors(
           """
           {
             "insertOne": {
@@ -232,65 +150,35 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
               }
             }
           }
-          """;
+          """);
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(nullValue()));
-
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "deleteOne": {
                "filter": {}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("status.deletedCount", is(1))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("data", is(nullValue()));
 
       // ensure find does not find the document
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"_id" : "doc3"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("data.document", is(nullValue()))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("status", is(nullValue()));
     }
 
     @Test
     public void noMatch() {
-      String json =
+      givenHeadersPostJsonThenOkNoErrors(
           """
           {
             "insertOne": {
@@ -300,121 +188,71 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
               }
             }
           }
-          """;
+          """);
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(nullValue()));
-
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "deleteOne": {
                "filter" : {"username" : "user12345"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("status.deletedCount", is(0))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("data", is(nullValue()));
 
       // ensure find does find the document
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "findOne": {
               "filter" : {"_id" : "doc5"}
             }
           }
-          """;
-
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("data.document._id", is("doc5"))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("status", is(nullValue()));
     }
 
     @Test
     public void withSort() {
-      String document =
+      insertDoc(
           """
             {
               "_id": "doc7",
               "username": "user7",
               "active_user" : true
             }
-            """;
-      insertDoc(document);
-
-      String document1 =
+            """);
+      insertDoc(
           """
             {
               "_id": "doc6",
               "username": "user6",
               "active_user" : true
             }
-            """;
-      insertDoc(document1);
+            """);
 
-      String json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
             {
               "deleteOne": {
                 "filter" : {"active_user" : true},
                 "sort" : {"username" : 1}
               }
             }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
-          .body("status.deletedCount", is(1))
-          .body("errors", is(nullValue()));
+            """)
+          .body("status.deletedCount", is(1));
 
       // assert state after update
-      json =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
             {
               "find": {
                 "filter" : {"_id" : "doc6"}
               }
             }
-            """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
+            """)
           .body("data.documents", hasSize(0));
 
       // cleanUp
@@ -427,26 +265,17 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
 
     @RepeatedTest(10)
     public void concurrentDeletes() throws Exception {
-      String document =
+      insertDoc(
           """
           {
             "_id": "concurrent"
           }
-          """;
-      insertDoc(document);
+          """);
 
       // we can hit with more threads, max 1 retry per thread
       int threads = Math.max(Runtime.getRuntime().availableProcessors() - 1, 3);
       CountDownLatch latch = new CountDownLatch(threads);
 
-      String deleteJson =
-          """
-          {
-            "deleteOne": {
-              "filter" : {"_id" : "concurrent"}
-            }
-          }
-          """;
       // start all threads
       AtomicInteger reportedDeletions = new AtomicInteger(0);
       AtomicReferenceArray<Exception> exceptions = new AtomicReferenceArray<>(threads);
@@ -456,16 +285,15 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
                 () -> {
                   try {
                     Integer deletedCount =
-                        given()
-                            .headers(getHeaders())
-                            .contentType(ContentType.JSON)
-                            .body(deleteJson)
-                            .when()
-                            .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-                            .then()
-                            .statusCode(200)
+                        givenHeadersPostJsonThenOkNoErrors(
+                                """
+                              {
+                                "deleteOne": {
+                                  "filter" : {"_id" : "concurrent"}
+                                }
+                              }
+                              """)
                             .body("status.deletedCount", anyOf(is(0), is(1)))
-                            .body("errors", is(nullValue()))
                             .extract()
                             .path("status.deletedCount");
 
@@ -499,22 +327,14 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
       assertThat(reportedDeletions.get()).isOne();
 
       // assert state after all deletes
-      String findJson =
-          """
+      givenHeadersPostJsonThenOkNoErrors(
+              """
           {
             "find": {
               "filter" : {"_id" : "concurrent"}
             }
           }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(findJson)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
-          .then()
-          .statusCode(200)
+          """)
           .body("data.documents", is(empty()));
     }
   }

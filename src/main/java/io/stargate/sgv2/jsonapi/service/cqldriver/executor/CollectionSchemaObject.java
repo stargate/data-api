@@ -5,7 +5,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Suppliers;
@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import java.util.HashSet;
 import java.util.Map;
@@ -162,9 +161,8 @@ public final class CollectionSchemaObject extends SchemaObject {
         case "euclidean" -> EUCLIDEAN;
         case "dot_product" -> DOT_PRODUCT;
         default ->
-            throw new JsonApiException(
-                ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
-                ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
+            throw ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.toApiException(
+                "'%s'", similarityFunction);
       };
     }
   }
@@ -312,9 +310,10 @@ public final class CollectionSchemaObject extends SchemaObject {
       JsonNode commentConfigNode;
       try {
         commentConfigNode = objectMapper.readTree(comment);
-      } catch (JsonProcessingException e) {
+      } catch (JacksonException e) {
         // This should never happen, already check if vectorize is a valid JSON
-        throw new RuntimeException("Invalid json string, please check 'options' configuration.", e);
+        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+            e, "Invalid JSON in Table comment for Collection, problem: %s", e.getMessage());
       }
       // new table comment design from schema_version v1, with collection as top-level key
       JsonNode collectionNode = commentConfigNode.get(TableCommentConstants.TOP_LEVEL_KEY);

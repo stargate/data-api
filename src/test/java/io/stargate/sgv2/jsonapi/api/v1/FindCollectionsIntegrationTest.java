@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
@@ -306,7 +307,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body("errors[0].errorCode", is("NAMESPACE_DOES_NOT_EXIST"))
           .body(
               "errors[0].message",
-              is("Unknown namespace should_not_be_there, you must create it first."));
+              containsString("Unknown namespace 'should_not_be_there', you must create it first"));
     }
 
     @Test

@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
@@ -149,13 +148,9 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     }
     LogicalExpression filter = matchRules.apply(commandContext, command);
     if (filter.getTotalComparisonExpressionCount() > operationsConfig.maxFilterObjectProperties()) {
-      throw new JsonApiException(
-          ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION,
-          String.format(
-              "%s: filter has %d fields, exceeds maximum allowed %s",
-              ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION.getMessage(),
-              filter.getTotalComparisonExpressionCount(),
-              operationsConfig.maxFilterObjectProperties()));
+      throw ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION.toApiException(
+          "filter has %d fields, exceeds maximum allowed %s",
+          filter.getTotalComparisonExpressionCount(), operationsConfig.maxFilterObjectProperties());
     }
     return filter;
   }
@@ -200,10 +195,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                     (DocumentId) filterOperation.operand().value()));
             break;
           default:
-            throw new JsonApiException(
-                ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
-                String.format(
-                    "Unsupported filter operator %s ", filterOperation.operator().getOperator()));
+            throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+                "%s", filterOperation.operator().getOperator());
         }
       }
       if (captureExpression.marker() == ID_GROUP_IN) {
@@ -222,10 +215,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
                     (List<Object>) filterOperation.operand().value()));
             break;
           default:
-            throw new JsonApiException(
-                ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
-                String.format(
-                    "Unsupported filter operator %s ", filterOperation.operator().getOperator()));
+            throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+                "%s", filterOperation.operator().getOperator());
         }
       }
 
@@ -371,9 +362,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       case LTE:
         return MapCollectionFilter.Operator.LTE;
       default:
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
-            String.format("Unsupported filter operator %s ", filterOperator.getOperator()));
+        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+            "%s", filterOperator.getOperator());
     }
   }
 
@@ -385,9 +375,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       case NIN:
         return InCollectionFilter.Operator.NIN;
       default:
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
-            String.format("Unsupported filter operator %s ", filterOperator.getOperator()));
+        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+            "%s", filterOperator.getOperator());
     }
   }
 
@@ -399,9 +388,8 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
       case NE:
         return SetCollectionFilter.Operator.NOT_CONTAINS;
       default:
-        throw new JsonApiException(
-            ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE,
-            String.format("Unsupported filter operator %s ", filterOperator.getOperator()));
+        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+            "%s", filterOperator.getOperator());
     }
   }
 }

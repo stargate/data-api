@@ -6,7 +6,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.util.List;
 
@@ -85,7 +84,8 @@ public record DocumentUpdater(
     if (replaceDocumentId != null && idNode != null) {
       if (!JsonUtil.equalsOrdered(replaceDocumentId, idNode)) {
         // throw error id cannot be different
-        throw new JsonApiException(ErrorCode.DOCUMENT_REPLACE_DIFFERENT_DOCID);
+        throw ErrorCode.DOCUMENT_REPLACE_DIFFERENT_DOCID.toApiException(
+            "'%s' vs '%s'", idNode, replaceDocumentId);
       }
     }
     // In case there is no difference between document return modified as false, so db update

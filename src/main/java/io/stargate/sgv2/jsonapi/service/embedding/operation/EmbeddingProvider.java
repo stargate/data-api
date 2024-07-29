@@ -141,8 +141,8 @@ public abstract class EmbeddingProvider {
 
       Object value = parameters.get(key);
       if (value == null) {
-        throw new IllegalArgumentException(
-            "Missing URL parameter '" + key + "' (available: " + parameters.keySet() + ")");
+        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+            "Missing URL parameter '%s' (available: %s)", key, parameters.keySet());
       }
       baseUrl.append(value);
     }
