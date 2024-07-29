@@ -72,7 +72,7 @@ public class FindTableOperation extends TableReadOperation {
 
     select = select.limit(params.limit());
 
-    // Building a statment using the positional values added by the TableFilter
+    // Building a statement using the positional values added by the TableFilter
     var statement = select.build(positionalValues.toArray());
 
     // TODO: pageSize for FindTableOperation

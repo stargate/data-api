@@ -35,7 +35,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
       assertThat(oper).isInstanceOf(UnsetOperation.class);
       // Should indicate document being modified
       ObjectNode doc = defaultTestDocABC();
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       // and be left with just one property
       assertThat(doc)
           .isEqualTo(
@@ -57,7 +57,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
       assertThat(oper).isInstanceOf(UnsetOperation.class);
       // Should indicate document being modified
       ObjectNode doc = defaultTestDocABCVector();
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       // and be left with just one property
       assertThat(doc).isEqualTo(defaultTestDocABC());
     }
@@ -74,7 +74,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
       assertThat(oper).isInstanceOf(UnsetOperation.class);
       ObjectNode doc = defaultTestDocABC();
       // No modifications
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc).modified()).isFalse();
       // and be left with same as original (but get a new copy just to make sure)
       assertThat(doc).isEqualTo(defaultTestDocABC());
     }
@@ -115,7 +115,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
                                  "array.x" : 1
                               }
                               """));
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
 
       ObjectNode exp =
           objectFromJson(
@@ -149,7 +149,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
 
       UpdateOperation oper =
           UpdateOperator.UNSET.resolveOperation(objectFromJson("{\"subdoc.b\": 1, \"x.y\": 1 }"));
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc).modified()).isFalse();
       // and no modifications expected
       assertThat(doc).isEqualTo(orig);
     }
@@ -183,7 +183,7 @@ public class UnsetOperationTest extends UpdateOperationTestBase {
                                  "array2" : 1
                               }
                               """));
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
 
       // Note: in Array values, placeholder nulls must be added (to retain index positions);
       // but replacing WHOLE array is fine (no null left)

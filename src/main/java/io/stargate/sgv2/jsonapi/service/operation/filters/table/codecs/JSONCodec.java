@@ -143,6 +143,7 @@ public record JSONCodec<JavaT, CqlT>(
      * @return
      * @param <JavaT>
      */
+    // TODO what is the point here? Is it for type-casting purpose or why is this needed?
     static <JavaT> ToCQL<JavaT, JavaT> unsafeIdentity() {
       return (toCQLType, value) -> value;
     }

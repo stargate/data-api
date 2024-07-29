@@ -27,7 +27,7 @@ public class RenameOperationTest extends UpdateOperationTestBase {
       assertThat(oper).isInstanceOf(RenameOperation.class);
       ObjectNode doc = objectFromJson("{ \"a\": 1 }");
       // Should indicate document being modified
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       assertThat(doc).isEqualTo(fromJson("{\"b\": 1}"));
     }
 
@@ -37,7 +37,7 @@ public class RenameOperationTest extends UpdateOperationTestBase {
           UpdateOperator.RENAME.resolveOperation(objectFromJson("{\"a\":\"b\"}"));
       ObjectNode doc = objectFromJson("{ \"b\": 3 }");
       // Nothing to rename, no change
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc).modified()).isFalse();
       assertThat(doc).isEqualTo(fromJson("{\"b\": 3}"));
     }
   }
@@ -57,7 +57,7 @@ public class RenameOperationTest extends UpdateOperationTestBase {
          }
       }
       """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       // Will leave empty Object after removing the only property:
       assertThat(doc)
           .isEqualTo(
@@ -88,7 +88,7 @@ public class RenameOperationTest extends UpdateOperationTestBase {
       """);
       ObjectNode origDoc = doc.deepCopy();
       // No source property, no change
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc).modified()).isFalse();
       assertThat(doc).isEqualTo(origDoc);
     }
   }
@@ -101,7 +101,7 @@ public class RenameOperationTest extends UpdateOperationTestBase {
       UpdateOperation oper =
           UpdateOperator.RENAME.resolveOperation(objectFromJson("{\"array.0\":\"x\"}"));
       ObjectNode doc = objectFromJson("{\"array\" : [1, 2]}");
-      Exception e = catchException(() -> oper.updateDocument(doc));
+      Exception e = catchException(() -> oper.updateDocument(doc).modified());
 
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
@@ -116,7 +116,7 @@ public class RenameOperationTest extends UpdateOperationTestBase {
       UpdateOperation oper =
           UpdateOperator.RENAME.resolveOperation(objectFromJson("{\"x\":\"array.0\"}"));
       ObjectNode doc = objectFromJson("{\"x\":3, \"array\" : [1]}");
-      Exception e = catchException(() -> oper.updateDocument(doc));
+      Exception e = catchException(() -> oper.updateDocument(doc).modified());
 
       assertThat(e)
           .isInstanceOf(JsonApiException.class)

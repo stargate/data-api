@@ -40,7 +40,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
               """
                     { "integer" : 1, "fp" : 0.25, "text" : "value"  }
                     """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -64,7 +64,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
               """
                     { "integer" : 1, "fp" : 0.25, "text" : "value"  }
                     """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -88,7 +88,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
               """
                     { "integer" : 1, "fp" : 0.25, "text" : "value"  }
                     """);
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc).modified()).isFalse();
       ObjectNode expected =
           objectFromJson(
               """
@@ -121,7 +121,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
                               "fpArray" : [ 0, 0.25 ]
                             }
                             """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -150,7 +150,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
                               "text" : "value"
                             }"
                             """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -187,7 +187,7 @@ public class IncOperationTest extends UpdateOperationTestBase {
                             }"
                             """);
       ObjectNode expected = doc.deepCopy();
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc).modified()).isFalse();
       // NOTE: need to use "toPrettyString()" since NumberNode types may differ
       assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
     }
