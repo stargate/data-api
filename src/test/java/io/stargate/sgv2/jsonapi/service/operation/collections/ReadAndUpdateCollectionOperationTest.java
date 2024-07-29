@@ -29,6 +29,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
@@ -64,6 +65,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
   @Inject DocumentShredder documentShredder;
   @Inject ObjectMapper objectMapper;
+  @Inject DataVectorizerService dataVectorizerService;
 
   private static String UPDATE =
       "UPDATE \"%s\".\"%s\" "
@@ -254,6 +256,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               COMMAND_VECTOR_CONTEXT,
               findCollectionOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               false,
@@ -341,6 +344,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               commandContext,
               findCollectionOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               false,
@@ -638,6 +642,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               commandContext,
               findCollectionOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               false,
@@ -868,6 +873,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               findCollectionOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               false,
@@ -969,6 +975,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               findCollectionOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               true,
@@ -1136,6 +1143,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               findCollectionOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               false,
@@ -1297,6 +1305,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               findCollectionOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               false,
@@ -1395,6 +1404,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               findCollectionOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               true,
@@ -1472,6 +1482,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               findCollectionOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               false,
@@ -1620,6 +1631,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               findCollectionOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               false,
@@ -1719,6 +1731,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               findCollectionOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               true,
@@ -1796,6 +1809,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               findCollectionOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               false,

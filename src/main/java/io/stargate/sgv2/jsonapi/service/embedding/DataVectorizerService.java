@@ -6,8 +6,6 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
-import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -48,6 +46,17 @@ public class DataVectorizerService {
    */
   public <T extends SchemaObject> Uni<Command> vectorize(
       DataApiRequestInfo dataApiRequestInfo, CommandContext<T> commandContext, Command command) {
+    final DataVectorizer dataVectorizer =
+        constructDataVectorizer(dataApiRequestInfo, commandContext);
+    return vectorizeSortClause(dataVectorizer, commandContext, command)
+        .onItem()
+        .transformToUni(flag -> vectorizeDocument(dataVectorizer, commandContext, command))
+        .onItem()
+        .transform(flag -> command);
+  }
+
+  public <T extends SchemaObject> DataVectorizer constructDataVectorizer(
+      DataApiRequestInfo dataApiRequestInfo, CommandContext<T> commandContext) {
     EmbeddingProvider embeddingProvider =
         Optional.ofNullable(commandContext.embeddingProvider())
             .map(
@@ -57,21 +66,13 @@ public class DataVectorizerService {
                         jsonApiMetricsConfig,
                         dataApiRequestInfo,
                         provider,
-                        command.getClass().getSimpleName()))
+                        commandContext.commandName()))
             .orElse(null);
-    final DataVectorizer dataVectorizer =
-        new DataVectorizer(
-            embeddingProvider,
-            objectMapper.getNodeFactory(),
-            dataApiRequestInfo.getEmbeddingCredentials(),
-            commandContext.schemaObject());
-    return vectorizeSortClause(dataVectorizer, commandContext, command)
-        .onItem()
-        .transformToUni(flag -> vectorizeUpdateClause(dataVectorizer, commandContext, command))
-        .onItem()
-        .transformToUni(flag -> vectorizeDocument(dataVectorizer, commandContext, command))
-        .onItem()
-        .transform(flag -> command);
+    return new DataVectorizer(
+        embeddingProvider,
+        objectMapper.getNodeFactory(),
+        dataApiRequestInfo.getEmbeddingCredentials(),
+        commandContext.schemaObject());
   }
 
   private <T extends SchemaObject> Uni<Boolean> vectorizeSortClause(
@@ -82,22 +83,12 @@ public class DataVectorizerService {
     return Uni.createFrom().item(true);
   }
 
-  private <T extends SchemaObject> Uni<Boolean> vectorizeUpdateClause(
-      DataVectorizer dataVectorizer, CommandContext<T> commandContext, Command command) {
-    if (command instanceof Updatable updatable) {
-      return dataVectorizer.vectorizeUpdateClause(updatable.updateClause());
-    }
-    return Uni.createFrom().item(true);
-  }
-
   private <T extends SchemaObject> Uni<Boolean> vectorizeDocument(
       DataVectorizer dataVectorizer, CommandContext<T> commandContext, Command command) {
     if (command instanceof InsertOneCommand insertOneCommand) {
       return dataVectorizer.vectorize(List.of(insertOneCommand.document()));
     } else if (command instanceof InsertManyCommand insertManyCommand) {
       return dataVectorizer.vectorize(insertManyCommand.documents());
-    } else if (command instanceof FindOneAndReplaceCommand findOneAndReplaceCommand) {
-      return dataVectorizer.vectorize(List.of(findOneAndReplaceCommand.replacementDocument()));
     }
     return Uni.createFrom().item(true);
   }
