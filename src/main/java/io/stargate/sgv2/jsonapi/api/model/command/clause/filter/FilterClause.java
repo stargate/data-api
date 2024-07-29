@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -20,35 +21,32 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         """
              {"name": "Aaron", "country": "US"}
               """)
-public record FilterClause(LogicalExpression logicalExpression) {
+public record FilterClause(LogicalExpression logicalExpression)
+    implements ValidatableCommandClause {
 
-  public void validate(CommandContext<?> commandContext) {
+  @Override
+  public void validateCollectionCommand(CommandContext<CollectionSchemaObject> commandContext) {
 
-    if (commandContext.schemaObject().type != CollectionSchemaObject.TYPE) {
-      return;
-    }
-
-    IndexingProjector indexingProjector =
-        commandContext.asCollectionContext().schemaObject().indexingProjector();
+    IndexingProjector indexingProjector = commandContext.schemaObject().indexingProjector();
 
     // If nothing specified, everything indexed
     if (indexingProjector.isIdentityProjection()) {
       return;
     }
-    validateLogicalExpression(logicalExpression, indexingProjector);
+    validateCollectionLogicalExpression(logicalExpression, indexingProjector);
   }
 
-  public void validateLogicalExpression(
+  private void validateCollectionLogicalExpression(
       LogicalExpression logicalExpression, IndexingProjector indexingProjector) {
     for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
-      validateLogicalExpression(subLogicalExpression, indexingProjector);
+      validateCollectionLogicalExpression(subLogicalExpression, indexingProjector);
     }
     for (ComparisonExpression subComparisonExpression : logicalExpression.comparisonExpressions) {
-      validateComparisonExpression(subComparisonExpression, indexingProjector);
+      validateCollectionComparisonExpression(subComparisonExpression, indexingProjector);
     }
   }
 
-  public void validateComparisonExpression(
+  private void validateCollectionComparisonExpression(
       ComparisonExpression comparisonExpression, IndexingProjector indexingProjector) {
     String path = comparisonExpression.getPath();
     boolean isPathIndexed =
@@ -79,15 +77,16 @@ public record FilterClause(LogicalExpression logicalExpression) {
     // If path is an object (like address), validate the incremental path (like address.city)
     if (operand.type() == JsonType.ARRAY || operand.type() == JsonType.SUB_DOC) {
       if (operand.value() instanceof Map<?, ?> map) {
-        validateMap(indexingProjector, map, path);
+        validateCollectionMap(indexingProjector, map, path);
       }
       if (operand.value() instanceof List<?> list) {
-        validateList(indexingProjector, list, path);
+        validateCollectionList(indexingProjector, list, path);
       }
     }
   }
 
-  private void validateMap(IndexingProjector indexingProjector, Map<?, ?> map, String currentPath) {
+  private void validateCollectionMap(
+      IndexingProjector indexingProjector, Map<?, ?> map, String currentPath) {
     for (Map.Entry<?, ?> entry : map.entrySet()) {
       String incrementalPath = currentPath + "." + entry.getKey();
       if (!indexingProjector.isPathIncluded(incrementalPath)) {
@@ -96,21 +95,22 @@ public record FilterClause(LogicalExpression logicalExpression) {
       }
       // continue build the incremental path if the value is a map
       if (entry.getValue() instanceof Map<?, ?> valueMap) {
-        validateMap(indexingProjector, valueMap, incrementalPath);
+        validateCollectionMap(indexingProjector, valueMap, incrementalPath);
       }
       // continue build the incremental path if the value is a list
       if (entry.getValue() instanceof List<?> list) {
-        validateList(indexingProjector, list, incrementalPath);
+        validateCollectionList(indexingProjector, list, incrementalPath);
       }
     }
   }
 
-  private void validateList(IndexingProjector indexingProjector, List<?> list, String currentPath) {
+  private void validateCollectionList(
+      IndexingProjector indexingProjector, List<?> list, String currentPath) {
     for (Object element : list) {
       if (element instanceof Map<?, ?> map) {
-        validateMap(indexingProjector, map, currentPath);
+        validateCollectionMap(indexingProjector, map, currentPath);
       } else if (element instanceof List<?> sublList) {
-        validateList(indexingProjector, sublList, currentPath);
+        validateCollectionList(indexingProjector, sublList, currentPath);
       } else if (element instanceof String) {
         // no need to build incremental path, validate current path
         if (!indexingProjector.isPathIncluded(currentPath)) {
