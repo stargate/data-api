@@ -1,7 +1,15 @@
 package io.stargate.sgv2.jsonapi.exception.playing;
 
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
+import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
+import jakarta.ws.rs.core.Response;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * Base for any exceptions from the API.
@@ -86,6 +94,25 @@ public abstract class APIException extends RuntimeException
   @Override
   public CommandResponseError get() {
     return null;
+  }
+
+  // TODO: just for test
+  public CommandResult.Error getCommandResultError() {
+    Map<String, Object> fieldsForMetricsTag =
+        Map.of("errorCode", code, "exceptionClass", this.getClass().getSimpleName());
+    SmallRyeConfig config;
+    if (ApiConstants.isOffline()) {
+      config = new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
+    } else {
+      config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+    }
+    DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
+    final boolean debugEnabled = debugModeConfig.enabled();
+    final Map<String, Object> fields =
+        debugEnabled
+            ? Map.of("errorCode", code, "exceptionClass", this.getClass().getSimpleName())
+            : Map.of("errorCode", code);
+    return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
   }
 
   @Override

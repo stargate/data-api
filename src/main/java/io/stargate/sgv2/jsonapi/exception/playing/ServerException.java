@@ -14,7 +14,9 @@ public class ServerException extends APIException {
 
   public enum Scope implements ErrorScope {
     /** See {@link DatabaseException} */
-    DATABASE;
+    DATABASE,
+    /** See {@link EmbeddingProviderException} */
+    EMBEDDING_PROVIDER;
 
     @Override
     public String scope() {

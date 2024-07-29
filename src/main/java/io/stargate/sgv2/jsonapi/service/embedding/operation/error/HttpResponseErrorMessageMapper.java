@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation.error;
 import static jakarta.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.playing.EmbeddingProviderException;
 import jakarta.ws.rs.core.Response;
 
 public class HttpResponseErrorMessageMapper {
@@ -34,9 +35,15 @@ public class HttpResponseErrorMessageMapper {
 
     // Status code in 4XX other than 429
     if (response.getStatusInfo().getFamily() == CLIENT_ERROR) {
-      return ErrorCode.EMBEDDING_PROVIDER_CLIENT_ERROR.toApiException(
-          "Provider: %s; HTTP Status: %s; Error Message: %s",
-          providerName, response.getStatus(), message);
+      var test =
+          EmbeddingProviderException.Code.CLIENT_ERROR.get(
+              "provider",
+              providerName,
+              "httpStatus",
+              String.valueOf(response.getStatus()),
+              "errorMessage",
+              message);
+      return test;
     }
 
     // Status code in 5XX
