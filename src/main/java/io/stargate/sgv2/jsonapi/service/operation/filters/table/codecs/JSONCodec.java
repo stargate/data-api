@@ -97,7 +97,7 @@ public record JSONCodec<JavaT, CqlT>(
    *     should convert this into the appropriate exception for the use case.
    */
   public JsonNode toJSON(ObjectMapper objectMapper, CqlT value) throws ToJSONCodecException {
-    return toJSON.toJson(objectMapper, targetCQLType, value);
+    return toJSON.apply(objectMapper, targetCQLType, value);
   }
 
   @SuppressWarnings("unchecked")
@@ -196,7 +196,7 @@ public record JSONCodec<JavaT, CqlT>(
      * @throws ToJSONCodecException Checked exception raised for any error, users of the function
      *     must catch and convert to the appropriate error for the use case.
      */
-    JsonNode toJson(ObjectMapper objectMapper, DataType fromCQLType, CqlT value)
+    JsonNode apply(ObjectMapper objectMapper, DataType fromCQLType, CqlT value)
         throws ToJSONCodecException;
 
     /**
