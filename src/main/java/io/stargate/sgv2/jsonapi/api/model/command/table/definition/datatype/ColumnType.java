@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.model.command.column.definition.datatype;
+package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
 import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;

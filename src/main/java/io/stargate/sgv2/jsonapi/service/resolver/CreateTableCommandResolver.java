@@ -1,8 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.column.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -22,7 +23,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
     Map<String, ColumnType> columnTypes =
         command.definition().columns().entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().type()));
-    List<String> partitionKeys = Arrays.stream(command.definition().partitioning().keys()).toList();
+    List<String> partitionKeys = Arrays.stream(command.definition().primaryKey().keys()).toList();
     if (partitionKeys.isEmpty()) throw ErrorCode.TABLE_MISSING_PARTITIONING_KEYS.toApiException();
     partitionKeys.forEach(
         key -> {
@@ -31,10 +32,10 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
           }
         });
 
-    List<CreateTableCommand.Definition.Partitioning.OrderingKey> clusteringKeys =
-        command.definition().partitioning().orderingKeys() == null
+    List<PrimaryKey.OrderingKey> clusteringKeys =
+        command.definition().primaryKey().orderingKeys() == null
             ? List.of()
-            : Arrays.stream(command.definition().partitioning().orderingKeys()).toList();
+            : Arrays.stream(command.definition().primaryKey().orderingKeys()).toList();
 
     clusteringKeys.forEach(
         key -> {

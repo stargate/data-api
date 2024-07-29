@@ -11,9 +11,8 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.column.definition.datatype.ColumnType;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand.Definition.Partitioning.OrderingKey;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand.Definition.Partitioning.OrderingKey.Order;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -29,7 +28,7 @@ public class CreateTableOperation implements Operation {
   private final String tableName;
   private final Map<String, ColumnType> columnTypes;
   private final List<String> partitionKeys;
-  private final List<OrderingKey> clusteringKeys;
+  private final List<PrimaryKey.OrderingKey> clusteringKeys;
   private final String comment;
 
   public CreateTableOperation(
@@ -37,7 +36,7 @@ public class CreateTableOperation implements Operation {
       String tableName,
       Map<String, ColumnType> columnTypes,
       List<String> partitionKeys,
-      List<OrderingKey> clusteringKeys,
+      List<PrimaryKey.OrderingKey> clusteringKeys,
       String comment) {
     this.commandContext = commandContext;
     this.tableName = tableName;
@@ -64,7 +63,7 @@ public class CreateTableOperation implements Operation {
   private CreateTable addColumnsAndKeys(
       CreateTableStart create,
       List<String> partitionKeys,
-      List<OrderingKey> clusteringKeys,
+      List<PrimaryKey.OrderingKey> clusteringKeys,
       Map<String, ColumnType> columnTypes) {
     CreateTable createTable = null;
     for (String partitionKey : partitionKeys) {
@@ -77,7 +76,7 @@ public class CreateTableOperation implements Operation {
       }
       columnTypes.remove(partitionKey);
     }
-    for (OrderingKey clusteringKey : clusteringKeys) {
+    for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
       ColumnType columnType = columnTypes.get(clusteringKey.column());
       createTable =
           createTable.withClusteringColumn(clusteringKey.column(), columnType.getCqlType());
@@ -91,8 +90,8 @@ public class CreateTableOperation implements Operation {
   }
 
   private CreateTableWithOptions addClusteringOrder(
-      CreateTableWithOptions createTableWithOptions, List<OrderingKey> clusteringKeys) {
-    for (OrderingKey clusteringKey : clusteringKeys) {
+      CreateTableWithOptions createTableWithOptions, List<PrimaryKey.OrderingKey> clusteringKeys) {
+    for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
       createTableWithOptions =
           createTableWithOptions.withClusteringOrder(
               clusteringKey.column(), getCqlClusterOrder(clusteringKey.order()));
@@ -100,7 +99,7 @@ public class CreateTableOperation implements Operation {
     return createTableWithOptions;
   }
 
-  public ClusteringOrder getCqlClusterOrder(Order ordering) {
+  public ClusteringOrder getCqlClusterOrder(PrimaryKey.OrderingKey.Order ordering) {
     return switch (ordering) {
       case ASC -> ClusteringOrder.ASC;
       case DESC -> ClusteringOrder.DESC;

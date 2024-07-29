@@ -1,8 +1,8 @@
-package io.stargate.sgv2.jsonapi.api.model.command.column.definition;
+package io.stargate.sgv2.jsonapi.api.model.command.table.definition;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.stargate.sgv2.jsonapi.api.model.command.column.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDefinitionDeserializer;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
 import jakarta.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;

@@ -5,8 +5,8 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import io.stargate.sgv2.jsonapi.api.model.command.column.definition.ColumnDefinition;
-import io.stargate.sgv2.jsonapi.api.model.command.column.definition.datatype.ColumnType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnDefinition;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import java.io.IOException;
 
@@ -25,7 +25,7 @@ public class ColumnDefinitionDeserializer extends StdDeserializer<ColumnDefiniti
       JsonParser jsonParser, DeserializationContext deserializationContext)
       throws IOException, JacksonException {
     JsonNode definition = deserializationContext.readTree(jsonParser);
-    if (definition.has("type")) {
+    if (!definition.has("type")) {
       throw ErrorCode.TABLE_COLUMN_TYPE_NOT_PROVIDED.toApiException();
     }
     ColumnType type = ColumnType.fromString(definition.path("type").asText());
