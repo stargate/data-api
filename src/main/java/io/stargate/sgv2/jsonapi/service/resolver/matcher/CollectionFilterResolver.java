@@ -1,33 +1,31 @@
 package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
-import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
-import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.util.*;
 
 /**
- * Base for resolvers that are {@link Filterable}, there are a number of commands like find,
- * findOne, updateOne that all have a filter.
+ * A {@link FilterResolver} for resolving {@link FilterClause} against a {@link
+ * CollectionSchemaObject}.
  *
- * <p>There will be some re-use, and some customisation to work out.
+ * <p>This understands how filter operations like `$size` work with Collections.
  *
- * <p>T - type of the command we are resolving
+ * <p>TIDY: a lot of methods in this class a public for testing, change this TIDY: fix the unchecked
+ * casts, may need some interface changes
  */
-public abstract class FilterableResolver<T extends Command & Filterable> {
-
-  private final FilterMatchRules<T> matchRules = new FilterMatchRules<>();
+public class CollectionFilterResolver<T extends Command & Filterable>
+    extends FilterResolver<T, CollectionSchemaObject> {
 
   private static final Object ID_GROUP = new Object();
   private static final Object ID_GROUP_IN = new Object();
@@ -45,25 +43,31 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
   private static final Object ARRAY_EQUALS = new Object();
   private static final Object SUB_DOC_EQUALS = new Object();
 
-  @Inject OperationsConfig operationsConfig;
+  public CollectionFilterResolver(OperationsConfig operationsConfig) {
+    super(operationsConfig);
+  }
 
-  @Inject
-  public FilterableResolver() {
-    matchRules.addMatchRule(FilterableResolver::findNoFilter, FilterMatcher.MatchStrategy.EMPTY);
+  @Override
+  protected FilterMatchRules<T> buildMatchRules() {
+    var matchRules = new FilterMatchRules<T>();
+
+    matchRules.addMatchRule(
+        CollectionFilterResolver::findNoFilter, FilterMatcher.MatchStrategy.EMPTY);
+
     matchRules
-        .addMatchRule(FilterableResolver::findById, FilterMatcher.MatchStrategy.STRICT)
+        .addMatchRule(CollectionFilterResolver::findById, FilterMatcher.MatchStrategy.STRICT)
         .matcher()
         .capture(ID_GROUP)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.EQ), JsonType.DOCUMENT_ID);
 
     matchRules
-        .addMatchRule(FilterableResolver::findById, FilterMatcher.MatchStrategy.STRICT)
+        .addMatchRule(CollectionFilterResolver::findById, FilterMatcher.MatchStrategy.STRICT)
         .matcher()
         .capture(ID_GROUP_IN)
         .compareValues("_id", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
 
     matchRules
-        .addMatchRule(FilterableResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
+        .addMatchRule(CollectionFilterResolver::findDynamic, FilterMatcher.MatchStrategy.GREEDY)
         .matcher()
         .capture(ID_GROUP)
         .compareValues(
@@ -140,22 +144,11 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
             "*",
             EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
             JsonType.SUB_DOC);
+
+    return matchRules;
   }
 
-  protected LogicalExpression resolve(CommandContext commandContext, T command) {
-
-    ValidatableCommandClause.maybeValidate(commandContext, command.filterClause());
-
-    LogicalExpression filter = matchRules.apply(commandContext, command);
-    if (filter.getTotalComparisonExpressionCount() > operationsConfig.maxFilterObjectProperties()) {
-      throw ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION.toApiException(
-          "filter has %d fields, exceeds maximum allowed %s",
-          filter.getTotalComparisonExpressionCount(), operationsConfig.maxFilterObjectProperties());
-    }
-    return filter;
-  }
-
-  public static List<DBFilterBase> findById(CaptureExpression captureExpression) {
+  private static List<DBFilterBase> findById(CaptureExpression captureExpression) {
     List<DBFilterBase> filters = new ArrayList<>();
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
       if (captureExpression.marker() == ID_GROUP) {
@@ -163,6 +156,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
             new IDCollectionFilter(
                 IDCollectionFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
       }
+      // TIDY: Resolve the unchecked cast (List<DocumentId>) below and in other places in this file
       if (captureExpression.marker() == ID_GROUP_IN) {
         filters.add(
             new IDCollectionFilter(
@@ -346,6 +340,7 @@ public abstract class FilterableResolver<T extends Command & Filterable> {
     return filters;
   }
 
+  // TIDY move these to the MapCollectionFilter etc enums
   private static MapCollectionFilter.Operator getMapFilterBaseOperator(
       FilterOperator filterOperator) {
     switch ((ValueComparisonOperator) filterOperator) {

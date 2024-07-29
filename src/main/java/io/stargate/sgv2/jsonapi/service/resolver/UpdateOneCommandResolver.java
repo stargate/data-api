@@ -17,7 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
-import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterableResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
@@ -27,8 +27,7 @@ import java.util.List;
 
 /** Resolves the {@link UpdateOneCommand } */
 @ApplicationScoped
-public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneCommand>
-    implements CommandResolver<UpdateOneCommand> {
+public class UpdateOneCommandResolver implements CommandResolver<UpdateOneCommand> {
   private final DocumentShredder documentShredder;
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
@@ -36,6 +35,8 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
   private final MeterRegistry meterRegistry;
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
+
+  private final CollectionFilterResolver<UpdateOneCommand> collectionFilterResolver;
 
   @Inject
   public UpdateOneCommandResolver(
@@ -54,6 +55,8 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
     this.meterRegistry = meterRegistry;
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
+
+    this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
   }
 
   @Override
@@ -89,7 +92,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> ctx, UpdateOneCommand command) {
-    LogicalExpression logicalExpression = resolve(ctx, command);
+    LogicalExpression logicalExpression = collectionFilterResolver.resolve(ctx, command);
 
     final SortClause sortClause = command.sortClause();
     ValidatableCommandClause.maybeValidate(ctx, sortClause);

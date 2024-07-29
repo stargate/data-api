@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
+
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import io.smallrye.mutiny.Uni;
@@ -14,12 +16,23 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
 import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.TableFilter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * TODO: this is still a POC class, showing how we can build a filter still to do is order and
+ * projections
+ */
 public class FindTableOperation extends TableReadOperation {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(FindTableOperation.class);
 
   private final FindTableParams params;
 
@@ -35,13 +48,32 @@ public class FindTableOperation extends TableReadOperation {
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    var cql =
-        "select JSON * from %s.%s limit %s;"
-            .formatted(
-                commandContext.schemaObject().name.keyspace(),
-                commandContext.schemaObject().name.table(),
-                params.limit());
-    var statement = SimpleStatement.newInstance(cql);
+
+    // Start the select
+    Select select =
+        selectFrom(
+                commandContext.schemaObject().tableMetadata.getKeyspace(),
+                commandContext.schemaObject().tableMetadata.getName())
+            .json()
+            .all(); // TODO: this is where we would do the field selection / projection
+
+    // BUG: this probably break order for nested expressions, for now enough to get this tested
+    var tableFilters =
+        logicalExpression.comparisonExpressions.stream()
+            .flatMap(comparisonExpression -> comparisonExpression.getDbFilters().stream())
+            .map(dbFilter -> (TableFilter) dbFilter)
+            .toList();
+
+    // Add the where clause operations
+    List<Object> positonalValues = new ArrayList<>();
+    for (TableFilter tableFilter : tableFilters) {
+      select = tableFilter.apply(commandContext.schemaObject(), select, positonalValues);
+    }
+
+    select = select.limit(params.limit());
+
+    // Building a statement using the positional values added by the TableFilter
+    var statement = select.build(positonalValues.toArray());
 
     // TODO: pageSize for FindTableOperation
     return queryExecutor
