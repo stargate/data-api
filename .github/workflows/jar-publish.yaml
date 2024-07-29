@@ -24,11 +24,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           cache: maven
 
       - name: Setup Maven
@@ -68,8 +68,8 @@ jobs:
 
       - name: Build
         run: |
-          JAVA_HOME=$JAVA_17 ./mvnw -B -ntp clean package -P offline         
+          JAVA_HOME=$JAVA_21 ./mvnw -B -ntp clean package -P offline         
 
       - name: Publish JAR
         run: |
-          JAVA_HOME=$JAVA_17 ./mvnw -B -ntp clean deploy -DskipTests -P offline
+          JAVA_HOME=$JAVA_21 ./mvnw -B -ntp clean deploy -DskipTests -P offline

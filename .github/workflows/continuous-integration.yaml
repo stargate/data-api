@@ -44,11 +44,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           cache: maven
 
       - name: Setup Maven
@@ -107,25 +107,23 @@ jobs:
 
       # matrix props:
       matrix:
-        type: [ docker, native, dse69-it, hcd-it ]
+        type: [ docker, dse69-it, hcd-it ]
         include:
           - type: dse69-it
             profile: '-Pdse69-it,offline'
           - type: hcd-it
             profile: '-Phcd-it,offline'
         exclude:
-          - type: native
-            #profile: '-Pnative'
           - type: docker
             #profile: '-Poffline'
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           cache: maven
 
       - name: Setup Maven
