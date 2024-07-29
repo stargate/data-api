@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
