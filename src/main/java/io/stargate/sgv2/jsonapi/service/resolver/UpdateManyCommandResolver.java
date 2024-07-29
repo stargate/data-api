@@ -9,6 +9,7 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
@@ -27,6 +28,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
   private final DocumentShredder documentShredder;
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
+  private final DataVectorizerService dataVectorizerService;
   private final MeterRegistry meterRegistry;
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
@@ -36,6 +38,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
       ObjectMapper objectMapper,
       DocumentShredder documentShredder,
       OperationsConfig operationsConfig,
+      DataVectorizerService dataVectorizerService,
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
@@ -43,7 +46,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
     this.objectMapper = objectMapper;
     this.documentShredder = documentShredder;
     this.operationsConfig = operationsConfig;
-
+    this.dataVectorizerService = dataVectorizerService;
     this.meterRegistry = meterRegistry;
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
@@ -70,6 +73,7 @@ public class UpdateManyCommandResolver extends FilterableResolver<UpdateManyComm
         ctx,
         findCollectionOperation,
         documentUpdater,
+        dataVectorizerService,
         false,
         false,
         upsert,
