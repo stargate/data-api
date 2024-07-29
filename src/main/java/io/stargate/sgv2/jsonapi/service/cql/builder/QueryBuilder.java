@@ -4,10 +4,10 @@ import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cql.ColumnUtils;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -80,8 +80,8 @@ public class QueryBuilder {
 
   public QueryBuilder as(String alias) {
     if (functionCalls.isEmpty()) {
-      throw new IllegalStateException(
-          "The as() method cannot be called without a preceding function call.");
+      throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+          "as() method cannot be called without a preceding function call");
     }
     // the alias is set for the last function call
     FunctionCall functionCall = functionCalls.get(functionCalls.size() - 1);
@@ -188,6 +188,7 @@ public class QueryBuilder {
         }
       }
       case "or" -> {
+        // TODO: this code is basically a duplicate of the match because with OR rather than AND
         // have parenthesis only when having more than one innerExpression
         if (innerExpressions.size() > 1) {
           sb.append("(");
@@ -203,16 +204,18 @@ public class QueryBuilder {
           sb.append(")");
         }
       }
+        // TODO: MAKE THIS AN ENUM or something more than a string !
+        // there is a public Variable.EXPR_TYPE
       case "variable" -> {
         Variable<BuiltCondition> variable = (Variable) outerExpression;
         BuiltCondition condition = variable.getValue();
         condition.lhs.appendToBuilder(sb);
-        condition.jsonTerm.addToCqlValues(values);
+        condition.rhsTerm.appendPositionalValue(values);
         sb.append(" ").append(condition.predicate.toString()).append(" ?");
       }
       default ->
-          throw new IllegalArgumentException(
-              String.format("Unsupported expression type %s", outerExpression.getExprType()));
+          throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+              "Unsupported expression type %s", outerExpression.getExprType());
     }
   }
 
@@ -261,7 +264,7 @@ public class QueryBuilder {
   }
 
   public QueryBuilder similarityFunction(
-      String columnName, CollectionSettings.SimilarityFunction similarityFunction) {
+      String columnName, CollectionSchemaObject.SimilarityFunction similarityFunction) {
     switch (similarityFunction) {
       case COSINE, UNDEFINED ->
           functionCalls.add(FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_COSINE"));
@@ -272,9 +275,8 @@ public class QueryBuilder {
           functionCalls.add(
               FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_DOT_PRODUCT"));
       default ->
-          throw new JsonApiException(
-              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME,
-              ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.getMessage() + similarityFunction);
+          throw ErrorCode.VECTOR_SEARCH_INVALID_FUNCTION_NAME.toApiException(
+              "%s", similarityFunction);
     }
     return this;
   }

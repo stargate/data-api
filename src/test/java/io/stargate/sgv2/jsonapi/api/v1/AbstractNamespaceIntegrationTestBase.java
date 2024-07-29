@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
 import java.util.Base64;
@@ -208,5 +209,10 @@ public abstract class AbstractNamespaceIntegrationTestBase {
                 })
             .toList();
     assertThat(countMetrics.size()).isGreaterThan(0);
+  }
+
+  /** Utility method for reducing boilerplate code for sending JSON commands */
+  protected RequestSpecification givenHeadersAndJson(String json) {
+    return given().headers(getHeaders()).contentType(ContentType.JSON).body(json);
   }
 }

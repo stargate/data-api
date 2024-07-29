@@ -26,8 +26,9 @@ public interface EmbeddingProvidersConfig {
     @JsonProperty
     boolean enabled();
 
+    @Nullable
     @JsonProperty
-    String url();
+    Optional<String> url();
 
     /**
      * A map of supported authentications. HEADER, SHARED_SECRET and NONE are the only techniques
@@ -158,6 +159,14 @@ public interface EmbeddingProvidersConfig {
       @Nullable
       @JsonProperty
       Optional<String> help();
+
+      @Nullable
+      @JsonProperty
+      Optional<String> displayName();
+
+      @Nullable
+      @JsonProperty
+      Optional<String> hint();
     }
 
     enum ValidationType {

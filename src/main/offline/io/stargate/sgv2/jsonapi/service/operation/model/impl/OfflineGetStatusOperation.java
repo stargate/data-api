@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.FileWriterSession;
 import io.stargate.sgv2.jsonapi.service.cqldriver.sstablewriter.OfflineWriterSessionStatus;
-import io.stargate.sgv2.jsonapi.service.operation.model.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;

@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Utf8;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.shredding.model.DocumentId;
-import io.stargate.sgv2.jsonapi.service.shredding.model.JsonExtensionType;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
@@ -245,7 +245,9 @@ public class JsonUtil {
             "'%s' value has to be 36-character UUID String, instead got (%s)",
             etype.encodedName(), value);
     }
-    throw new IllegalStateException("Unrecognized JsonExtensionType: " + etype);
+    // should never happen
+    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        "Unrecognized JsonExtensionType: %s", etype);
   }
 
   /**

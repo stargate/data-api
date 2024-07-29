@@ -11,16 +11,16 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSettings;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Utility class to execute embedding serive to get vector embeddings for the text fields in the
@@ -30,8 +30,8 @@ import java.util.Optional;
 public class DataVectorizer {
   private final EmbeddingProvider embeddingProvider;
   private final JsonNodeFactory nodeFactory;
-  private final Optional<String> embeddingApiKey;
-  private final CollectionSettings collectionSettings;
+  private final EmbeddingCredentials embeddingCredentials;
+  private final SchemaObject schemaObject;
 
   /**
    * Constructor
@@ -39,18 +39,18 @@ public class DataVectorizer {
    * @param embeddingProvider - Service client based on embedding service configuration set for the
    *     table
    * @param nodeFactory - Jackson node factory to create json nodes added to the document
-   * @param embeddingApiKey - Optional override embedding api key came in request header
-   * @param collectionSettings - The collection setting for vectorize call
+   * @param embeddingCredentials - Credentials for the embedding service
+   * @param schemaObject - The collection setting for vectorize call
    */
   public DataVectorizer(
       EmbeddingProvider embeddingProvider,
       JsonNodeFactory nodeFactory,
-      Optional<String> embeddingApiKey,
-      CollectionSettings collectionSettings) {
+      EmbeddingCredentials embeddingCredentials,
+      SchemaObject schemaObject) {
     this.embeddingProvider = embeddingProvider;
     this.nodeFactory = nodeFactory;
-    this.embeddingApiKey = embeddingApiKey;
-    this.collectionSettings = collectionSettings;
+    this.embeddingCredentials = embeddingCredentials;
+    this.schemaObject = schemaObject;
   }
 
   /**
@@ -67,11 +67,8 @@ public class DataVectorizer {
         JsonNode document = documents.get(position);
         if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
           if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-            throw new JsonApiException(
-                ErrorCode.INVALID_USAGE_OF_VECTORIZE,
-                ErrorCode.INVALID_USAGE_OF_VECTORIZE.getMessage()
-                    + ", issue in document at position "
-                    + (position + 1));
+            throw ErrorCode.INVALID_USAGE_OF_VECTORIZE.toApiException(
+                "issue in document at position %d", (position + 1));
           }
           final JsonNode jsonNode =
               document.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
@@ -81,11 +78,8 @@ public class DataVectorizer {
             continue;
           }
           if (!jsonNode.isTextual()) {
-            throw new JsonApiException(
-                ErrorCode.INVALID_VECTORIZE_VALUE_TYPE,
-                ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.getMessage()
-                    + ", issue in document at position "
-                    + (position + 1));
+            throw ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.toApiException(
+                "issue in document at position %s", (position + 1));
           }
 
           String vectorizeData = jsonNode.asText();
@@ -104,14 +98,14 @@ public class DataVectorizer {
       if (!vectorizeTexts.isEmpty()) {
         if (embeddingProvider == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              collectionSettings.collectionName());
+              schemaObject.name.table());
         }
         Uni<List<float[]>> vectors =
             embeddingProvider
                 .vectorize(
                     1,
                     vectorizeTexts,
-                    embeddingApiKey,
+                    embeddingCredentials,
                     EmbeddingProvider.EmbeddingRequestType.INDEX)
                 .map(res -> res.embeddings());
         return vectors
@@ -122,7 +116,7 @@ public class DataVectorizer {
                   if (vectorData.size() != vectorizeTexts.size()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                         "Embedding provider '%s' didn't return the expected number of embeddings. Expect: '%d'. Actual: '%d'",
-                        collectionSettings.vectorConfig().vectorizeConfig().provider(),
+                        schemaObject.vectorConfig().vectorizeConfig().provider(),
                         vectorizeTexts.size(),
                         vectorData.size());
                   }
@@ -133,11 +127,11 @@ public class DataVectorizer {
                     JsonNode document = documents.get(position);
                     float[] vector = vectorData.get(vectorPosition);
                     // check if all vectors have the expected size
-                    if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
+                    if (vector.length != schemaObject.vectorConfig().vectorSize()) {
                       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                           "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                          collectionSettings.vectorConfig().vectorizeConfig().provider(),
-                          collectionSettings.vectorConfig().vectorSize(),
+                          schemaObject.vectorConfig().vectorizeConfig().provider(),
+                          schemaObject.vectorConfig().vectorSize(),
                           vector.length);
                     }
                     final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
@@ -171,14 +165,14 @@ public class DataVectorizer {
         String text = expression.vectorize();
         if (embeddingProvider == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              collectionSettings.collectionName());
+              schemaObject.name.table());
         }
         Uni<List<float[]>> vectors =
             embeddingProvider
                 .vectorize(
                     1,
                     List.of(text),
-                    embeddingApiKey,
+                    embeddingCredentials,
                     EmbeddingProvider.EmbeddingRequestType.SEARCH)
                 .map(res -> res.embeddings());
         return vectors
@@ -187,11 +181,11 @@ public class DataVectorizer {
                 vectorData -> {
                   float[] vector = vectorData.get(0);
                   // check if vector have the expected size
-                  if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
+                  if (vector.length != schemaObject.vectorConfig().vectorSize()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                         "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                        collectionSettings.vectorConfig().vectorizeConfig().provider(),
-                        collectionSettings.vectorConfig().vectorSize(),
+                        schemaObject.vectorConfig().vectorizeConfig().provider(),
+                        schemaObject.vectorConfig().vectorSize(),
                         vector.length);
                   }
                   sortExpressions.clear();
@@ -230,7 +224,7 @@ public class DataVectorizer {
                 if (unsetNode != null
                     && unsetNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
                   if (unsetNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-                    throw new JsonApiException(ErrorCode.INVALID_USAGE_OF_VECTORIZE);
+                    throw ErrorCode.INVALID_USAGE_OF_VECTORIZE.toApiException();
                   }
                   unsetNode.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
                 }
@@ -245,7 +239,7 @@ public class DataVectorizer {
     if (node == null) return Uni.createFrom().item(true);
     if (node.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
       if (node.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
-        throw new JsonApiException(ErrorCode.INVALID_USAGE_OF_VECTORIZE);
+        throw ErrorCode.INVALID_USAGE_OF_VECTORIZE.toApiException();
       }
       final JsonNode jsonNode = node.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
       if (jsonNode.isNull()) {
@@ -254,7 +248,7 @@ public class DataVectorizer {
         final String text = jsonNode.asText();
         if (embeddingProvider == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              collectionSettings.collectionName());
+              schemaObject.name.table());
         }
         if (text.isBlank()) {
           node.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
@@ -264,7 +258,7 @@ public class DataVectorizer {
                   .vectorize(
                       1,
                       List.of(text),
-                      embeddingApiKey,
+                      embeddingCredentials,
                       EmbeddingProvider.EmbeddingRequestType.INDEX)
                   .map(res -> res.embeddings());
           return vectors
@@ -273,11 +267,11 @@ public class DataVectorizer {
                   vectorData -> {
                     float[] vector = vectorData.get(0);
                     // check if vector have the expected size
-                    if (vector.length != collectionSettings.vectorConfig().vectorSize()) {
+                    if (vector.length != schemaObject.vectorConfig().vectorSize()) {
                       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                           "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                          collectionSettings.vectorConfig().vectorizeConfig().provider(),
-                          collectionSettings.vectorConfig().vectorSize(),
+                          schemaObject.vectorConfig().vectorizeConfig().provider(),
+                          schemaObject.vectorConfig().vectorSize(),
                           vector.length);
                     }
                     final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
@@ -290,8 +284,7 @@ public class DataVectorizer {
         }
 
       } else {
-        throw new JsonApiException(
-            ErrorCode.SHRED_BAD_VECTORIZE_VALUE, ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage());
+        throw ErrorCode.SHRED_BAD_VECTORIZE_VALUE.toApiException();
       }
     }
     return Uni.createFrom().item(true);

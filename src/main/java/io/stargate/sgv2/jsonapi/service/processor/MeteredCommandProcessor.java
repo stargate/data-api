@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.processor;
 
+import static io.stargate.sgv2.jsonapi.config.constants.LoggingConstants.*;
+
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -19,7 +21,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.config.constants.LoggingConstants;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
@@ -37,6 +39,7 @@ public class MeteredCommandProcessor {
   private static final Logger logger = LoggerFactory.getLogger(MeteredCommandProcessor.class);
 
   private static final ObjectWriter OBJECT_WRITER = new ObjectMapper().writer();
+
   private static final String UNKNOWN_VALUE = "unknown";
 
   private static final String NA = "NA";
@@ -94,18 +97,12 @@ public class MeteredCommandProcessor {
    * @param <T> Type of the command.
    * @return Uni emitting the result of the command execution.
    */
-  public <T extends Command> Uni<CommandResult> processCommand(
-      DataApiRequestInfo dataApiRequestInfo, CommandContext commandContext, T command) {
+  public <T extends Command, U extends SchemaObject> Uni<CommandResult> processCommand(
+      DataApiRequestInfo dataApiRequestInfo, CommandContext<U> commandContext, T command) {
     Timer.Sample sample = Timer.start(meterRegistry);
     // use MDC to populate logs as needed(namespace,collection,tenantId)
-    if (commandContext.namespace() != null) {
-      // CollectionCommand and NamespaceCommand has namespace context
-      MDC.put("namespace", commandContext.namespace());
-    }
-    if (commandContext.collection() != null) {
-      // CollectionCommand has namespace context
-      MDC.put("collection", commandContext.collection());
-    }
+    commandContext.schemaObject().name.addToMDC();
+
     MDC.put("tenantId", dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     // start by resolving the command, get resolver
     return commandProcessor
@@ -138,14 +135,15 @@ public class MeteredCommandProcessor {
    * @param result Command result
    * @return Command log in string format
    */
-  private String buildCommandLog(
-      CommandContext commandContext, Command command, CommandResult result) {
+  private <T extends SchemaObject> String buildCommandLog(
+      CommandContext<T> commandContext, Command command, CommandResult result) {
     CommandLog commandLog =
         new CommandLog(
             command.getClass().getSimpleName(),
             dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE),
-            commandContext.namespace(),
-            commandContext.collection(),
+            commandContext.schemaObject().name.keyspace(),
+            commandContext.schemaObject().name.table(),
+            commandContext.schemaObject().type.name(),
             getIncomingDocumentsCount(command),
             getOutgoingDocumentsCount(result),
             result != null ? result.errors() : Collections.emptyList());
@@ -198,10 +196,8 @@ public class MeteredCommandProcessor {
       return false;
     }
     Set<String> allowedTenants =
-        commandLevelLoggingConfig
-            .enabledTenants()
-            .orElse(Collections.singleton(LoggingConstants.ALL_TENANTS));
-    if (!allowedTenants.contains(LoggingConstants.ALL_TENANTS)
+        commandLevelLoggingConfig.enabledTenants().orElse(Collections.singleton(ALL_TENANTS));
+    if (!allowedTenants.contains(ALL_TENANTS)
         && !allowedTenants.contains(dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE))) {
       return false;
     }
@@ -223,7 +219,8 @@ public class MeteredCommandProcessor {
    * @param result - response command result
    * @return
    */
-  private Tags getCustomTags(CommandContext commandContext, Command command, CommandResult result) {
+  private <T extends SchemaObject> Tags getCustomTags(
+      CommandContext<T> commandContext, Command command, CommandResult result) {
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
     String tenant = dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE);
     Tag tenantTag = Tag.of(tenantConfig.tenantTag(), tenant);
@@ -247,7 +244,7 @@ public class MeteredCommandProcessor {
       errorCodeTag = Tag.of(jsonApiMetricsConfig.errorCode(), errorCode);
     }
     Tag vectorEnabled =
-        commandContext.isVectorEnabled()
+        commandContext.schemaObject().vectorConfig().vectorEnabled()
             ? Tag.of(jsonApiMetricsConfig.vectorEnabled(), "true")
             : Tag.of(jsonApiMetricsConfig.vectorEnabled(), "false");
     JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(command);

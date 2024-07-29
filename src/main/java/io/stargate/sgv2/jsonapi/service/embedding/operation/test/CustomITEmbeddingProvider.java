@@ -2,11 +2,11 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation.test;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * This is a test implementation of the EmbeddingProvider interface. It is used for
@@ -62,11 +62,12 @@ public class CustomITEmbeddingProvider extends EmbeddingProvider {
   public Uni<Response> vectorize(
       int batchId,
       List<String> texts,
-      Optional<String> apiKey,
+      EmbeddingCredentials embeddingCredentials,
       EmbeddingRequestType embeddingRequestType) {
     List<float[]> response = new ArrayList<>(texts.size());
     if (texts.size() == 0) return Uni.createFrom().item(Response.of(batchId, response));
-    if (!apiKey.isPresent() || !apiKey.get().equals(TEST_API_KEY))
+    if (!embeddingCredentials.apiKey().isPresent()
+        || !embeddingCredentials.apiKey().get().equals(TEST_API_KEY))
       return Uni.createFrom().failure(new RuntimeException("Invalid API Key"));
     for (String text : texts) {
       if (dimension == 5) {

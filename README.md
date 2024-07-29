@@ -62,7 +62,7 @@ If you want to learn more about Quarkus, please visit its [website](https://quar
 It's recommended that you install Quarkus CLI in order to have a better development experience.
 See [CLI Tooling](https://quarkus.io/guides/cli-tooling) for more information.
 
-Note that this project uses Java 17, please ensure that you have the target JDK installed on your system.
+Note that this project uses Java 21, please ensure that you have the target JDK installed on your system.
 
 ### Running the application in dev mode
 
@@ -166,22 +166,6 @@ If you want to build an _über-jar_, execute the following command:
 
 The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
 
-### Creating a native executable
-
-You can create a native executable using: 
-```shell script
-./mvnw package -Pnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using: 
-```shell script
-./mvnw package -Pnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/sgv2-jsonapi-${project.version}-runner`
-
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.
-
 ### Creating a Docker image
 
 You can create a Docker image named `io.stargate/jsonapi` using:
@@ -233,3 +217,33 @@ The OpenAPI definitions are generated and available under `/api/json/openapi` en
 The [StargateJsonApi](src/main/java/io/stargate/sgv2/jsonapi/StargateJsonApi.java) class defines the `@OpenAPIDefinition` annotation.
 This definition defines the default *SecurityScheme* named `Token`, which expects the header based authentication with the HTTP Header `Token`.
 The `info` portions of the Open API definitions are set using the `quarkus.smallrye-openapi.info-` configuration properties.
+
+## Cassandra Backend
+
+The Data API supports running against a Cassandra backend supporting the latest Storage Attached Index (SAI) features, currently available in DataStax Enterprise (DSE) 6.9 and DataStax Hyper-Converged Database (HCD). 
+
+### Updating the DSE/HCD version
+
+We regularly update the integration tests and [Docker compose](docker-compose) scripts to support the latest versions of DSE and HCD. To update the version of DSE or HCD that the Data API runs against, the following prodcedure is recommended:
+
+- Update the `pom.xml` file to reference the correct Docker image. For example, for the `dse69-it` profile, update the `testing.containers.cassandra-image` property to the desired version:
+
+  ```
+  <stargate.int-test.cassandra.image-tag>6.9.0</stargate.int-test.cassandra.image-tag>
+  ```
+
+- Update the `docker-compose` scripts to reference the correct Docker image. 
+  - This includes the `docker-compose/.env` file. For example, you would update the `DSETAG` or `HCDTAG` as follows: 
+
+    ```
+    DSETAG=6.9.0
+    ```
+    
+  - Also update the appropriate `docker-compose/start-dse69.sh` or `docker-compose/start-hcd.sh` script to reference the new version as the default, similar to the update in the `docker-compose/.env` file.
+
+- Merge any changes from the reference configuration file in the DSE/HCD repo to the copies in this repo.
+  - The local copies override the default configuration to set the desired authentication configuration used on the DSE/HCD backend when running in Docker compose or integration tests. 
+  - Sometimes, a new release of DSE/HCD will include new configuration options that we will want to make sure are set in our local configuration, so we don't get out of sync.
+  - We will want to merge any changes in the source configuration file while preserving our own updates to the authentication configuration.
+  - For DSE 6.9, you will want to review/update, the files `src/test/resources/dse.yaml` and `docker-compose/dse.yaml` based on the [latest version](https://github.com/riptano/bdp/blob/6.9-dev/resources/dse/conf/dse.yaml). The two local copies should have the same contents.
+  - For HCD, you will want to review/update, the files `src/test/resources/dse.yaml` and `docker-compose/dse.yaml` based on the [latest version](https://github.com/riptano/bdp/blob/7.0-dev/conf/cassandra.yaml). The two local copies should have the same contents.
