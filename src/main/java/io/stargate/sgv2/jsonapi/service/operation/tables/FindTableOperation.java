@@ -11,10 +11,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
 import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TableFilter;
 import java.util.ArrayList;
@@ -34,15 +32,18 @@ public class FindTableOperation extends TableReadOperation {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FindTableOperation.class);
 
+  private final OperationProjection projection;
   private final FindTableParams params;
 
   public FindTableOperation(
       CommandContext<TableSchemaObject> commandContext,
       LogicalExpression logicalExpression,
+      OperationProjection projection,
       FindTableParams params) {
     super(commandContext, logicalExpression);
 
-    this.params = Objects.requireNonNull(params, "Params must not be null");
+    this.params = Objects.requireNonNull(params, "params must not be null");
+    this.projection = Objects.requireNonNull(projection, "projection must not be null");
   }
 
   @Override
@@ -51,11 +52,10 @@ public class FindTableOperation extends TableReadOperation {
 
     // Start the select
     Select select =
-        selectFrom(
+        projection.forSelect(
+            selectFrom(
                 commandContext.schemaObject().tableMetadata.getKeyspace(),
-                commandContext.schemaObject().tableMetadata.getName())
-            .json()
-            .all(); // TODO: this is where we would do the field selection / projection
+                commandContext.schemaObject().tableMetadata.getName()));
 
     // BUG: this probably break order for nested expressions, for now enough to get this tested
     var tableFilters =
@@ -65,15 +65,15 @@ public class FindTableOperation extends TableReadOperation {
             .toList();
 
     // Add the where clause operations
-    List<Object> positonalValues = new ArrayList<>();
+    List<Object> positionalValues = new ArrayList<>();
     for (TableFilter tableFilter : tableFilters) {
-      select = tableFilter.apply(commandContext.schemaObject(), select, positonalValues);
+      select = tableFilter.apply(commandContext.schemaObject(), select, positionalValues);
     }
 
     select = select.limit(params.limit());
 
     // Building a statement using the positional values added by the TableFilter
-    var statement = select.build(positonalValues.toArray());
+    var statement = select.build(positionalValues.toArray());
 
     // TODO: pageSize for FindTableOperation
     return queryExecutor
@@ -88,17 +88,7 @@ public class FindTableOperation extends TableReadOperation {
 
     var docSources =
         StreamSupport.stream(resultSet.currentPage().spliterator(), false)
-            .map(
-                row ->
-                    (DocumentSource)
-                        () -> {
-                          try {
-                            return objectMapper.readTree(row.getString("[json]"));
-                          } catch (Exception e) {
-                            throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
-                                e, "Failed to parse row JSON: %s", e.getMessage());
-                          }
-                        })
+            .map(projection::toDocument)
             .toList();
 
     return new ReadOperationPage(docSources, params.isSingleResponse(), null, false, null);
