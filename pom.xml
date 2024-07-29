@@ -282,7 +282,6 @@
             </goals>
             <configuration>
               <systemPropertyVariables>
-                <native.image.path>${project.build.directory}/${project.build.finalName}-runner</native.image.path>
                 <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                 <testing.containers.cassandra-image>${stargate.int-test.cassandra.image}:${stargate.int-test.cassandra.image-tag}</testing.containers.cassandra-image>
                 <testing.containers.stargate-image>${stargate.int-test.coordinator.image}:${stargate.int-test.coordinator.image-tag}</testing.containers.stargate-image>
@@ -303,21 +302,6 @@
     </plugins>
   </build>
   <profiles>
-    <profile>
-      <id>native</id>
-      <activation>
-        <property>
-          <name>native</name>
-        </property>
-      </activation>
-      <properties>
-        <skipITs>false</skipITs>
-        <quarkus.package.type>native</quarkus.package.type>
-        <!-- Please update GitHub workflows that build docker images if changing image name -->
-        <quarkus.container-image.name>jsonapi-native</quarkus.container-image.name>
-        <quarkus.native.native-image-xmx>6G</quarkus.native.native-image-xmx>
-      </properties>
-    </profile>
     <profile>
       <!-- This profile needs to be activated while working with offline mode related files such as FileWriterSession.java -->
       <id>offline</id>
