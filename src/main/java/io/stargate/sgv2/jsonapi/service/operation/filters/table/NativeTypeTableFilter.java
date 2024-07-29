@@ -5,6 +5,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
@@ -54,6 +55,7 @@ public abstract class NativeTypeTableFilter<T> extends TableFilter {
    * operator definitions
    */
   public enum Operator {
+    // TODO, other operators like  NE, IN etc.
     EQ(BuiltConditionPredicate.EQ),
     LT(BuiltConditionPredicate.LT),
     GT(BuiltConditionPredicate.GT),
@@ -98,6 +100,8 @@ public abstract class NativeTypeTableFilter<T> extends TableFilter {
       TableSchemaObject tableSchemaObject, Select select, List<Object> positionalValues) {
 
     // TODO: AARON return the correct errors, this is POC work now
+    // TODO: Checking for valid column should be part of request deserializer or to be done in
+    // resolver. Should not be left till operation classes.
     var column =
         tableSchemaObject
             .tableMetadata
@@ -108,17 +112,16 @@ public abstract class NativeTypeTableFilter<T> extends TableFilter {
         JSONCodecRegistry.codecFor(column.getType(), columnValue)
             .orElseThrow(
                 () ->
-                    new RuntimeException(
-                        String.format(
-                            "No Codec for a value of type %s with table column %s it has CQL type %s",
-                            columnValue.getClass(),
-                            column.getName(),
-                            column.getType().asCql(true, false))));
+                    ErrorCode.ERROR_APPLYING_CODEC.toApiException(
+                        "No Codec for a value of type %s with table column %s it has CQL type %s",
+                        columnValue.getClass(),
+                        column.getName(),
+                        column.getType().asCql(true, false)));
 
     try {
       positionalValues.add(codec.apply(columnValue));
     } catch (FromJavaCodecException e) {
-      throw new RuntimeException("Error applying codec", e);
+      throw ErrorCode.ERROR_APPLYING_CODEC.toApiException(e, "Error applying codec");
     }
 
     return select.where(Relation.column(path).build(operator.predicate.cql, bindMarker()));

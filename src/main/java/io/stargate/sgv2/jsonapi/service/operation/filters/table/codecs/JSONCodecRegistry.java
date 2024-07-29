@@ -22,7 +22,7 @@ import java.util.Optional;
  */
 public class JSONCodecRegistry {
 
-  // Internal list of all codes
+  // Internal list of all codecs
   // IMPORTANT: any codec must be added to the list to be available to {@ink #codecFor(DataType,
   // Object)}
   // They are added in a static block at the end of the file

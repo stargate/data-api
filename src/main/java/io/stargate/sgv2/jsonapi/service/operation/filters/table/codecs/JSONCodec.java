@@ -63,7 +63,7 @@ public record JSONCodec<JavaT, CqlT>(
    * @throws FromJavaCodecException if there was an error converting the value.
    */
   public CqlT apply(JavaT value) throws FromJavaCodecException {
-    return fromJava.apply(value, targetCQLType);
+    return fromJava.convert(value, targetCQLType);
   }
 
   @SuppressWarnings("unchecked")
@@ -89,7 +89,7 @@ public record JSONCodec<JavaT, CqlT>(
   public interface FromJava<T, R> {
 
     /**
-     * Convers the current Java value to the type CQL expects.
+     * Converts the current Java value to the type CQL expects.
      *
      * @param t
      * @param targetType The type of the CQL column the value will be written to, passed so it can
@@ -97,7 +97,7 @@ public record JSONCodec<JavaT, CqlT>(
      * @return
      * @throws FromJavaCodecException
      */
-    R apply(T t, DataType targetType) throws FromJavaCodecException;
+    R convert(T t, DataType targetType) throws FromJavaCodecException;
 
     /**
      * Returns an instance that just returns the value passed in, the same as {@link
@@ -108,6 +108,7 @@ public record JSONCodec<JavaT, CqlT>(
      * @return
      * @param <T>
      */
+    // TODO what is the point here? Is it for type-casting purpose or why is this needed?
     static <T> FromJava<T, T> unsafeIdentity() {
       return (t, targetType) -> t;
     }
