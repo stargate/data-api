@@ -7,6 +7,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.text.StringSubstitutor;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * A template for creating an {@link APIException}, that is associated with an Error Code enum so
@@ -131,12 +132,39 @@ public record ErrorTemplate<T extends APIException>(
     var snakeCode =
         CharMatcher.whitespace().replaceFrom(Strings.nullToEmpty(code), '_').toUpperCase();
 
+    String title =
+        ConfigProvider.getConfig()
+            .getValue(
+                "errors"
+                    + "."
+                    + family.name()
+                    + "."
+                    + scope.safeScope()
+                    + "."
+                    + snakeCode
+                    + "."
+                    + "title",
+                String.class);
+    String body =
+        ConfigProvider.getConfig()
+            .getValue(
+                "errors"
+                    + "."
+                    + family.name()
+                    + "."
+                    + scope.safeScope()
+                    + "."
+                    + snakeCode
+                    + "."
+                    + "body",
+                String.class);
+
     return new ErrorTemplate<T>(
         constructor,
         family,
         scope,
         scope.safeScope().isBlank() ? code : String.format("%s_%s", scope.safeScope(), code),
-        "TITLE FROM FILE",
-        "TEMPLATE FROM FILE ${variable}");
+        title,
+        body);
   }
 }
