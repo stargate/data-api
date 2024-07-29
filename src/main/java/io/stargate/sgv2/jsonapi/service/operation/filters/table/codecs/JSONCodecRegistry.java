@@ -133,6 +133,10 @@ public class JSONCodecRegistry {
           DataTypes.BIGINT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::longValueExact),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+  // TODO Tatu For performance reasons we could also consider only converting FP values into
+  // BigDecimal JsonNode -- but converting CQL integer values into long-valued JsonNode.
+  //  I think our internal handling can deal with Integer and Long valued JsonNodes and this avoids
+  // some of BigDecimal overhead (avoids conversion overhead, serialization is faster).
 
   public static final JSONCodec<BigDecimal, BigDecimal> DECIMAL =
       new JSONCodec<>(

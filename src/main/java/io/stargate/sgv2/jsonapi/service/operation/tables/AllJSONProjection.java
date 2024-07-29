@@ -31,7 +31,7 @@ public record AllJSONProjection(ObjectMapper objectMapper) implements OperationP
           try {
             return objectMapper.readTree(row.getString("[json]"));
           } catch (Exception e) {
-            throw new NotImplementedException("BANG " + e.getMessage());
+            throw new NotImplementedException("Not implemented " + e.getMessage());
           }
         };
   }
