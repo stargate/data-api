@@ -10,7 +10,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
@@ -31,6 +34,7 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
   private final DocumentShredder documentShredder;
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
+  private final DataVectorizerService dataVectorizerService;
   private final MeterRegistry meterRegistry;
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
@@ -39,6 +43,8 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
   public FindOneAndReplaceCommandResolver(
       ObjectMapper objectMapper,
       OperationsConfig operationsConfig,
+      DocumentShredder shredder,
+      DataVectorizerService dataVectorizerService,
       DocumentShredder documentShredder,
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
@@ -47,7 +53,7 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
     this.objectMapper = objectMapper;
     this.documentShredder = documentShredder;
     this.operationsConfig = operationsConfig;
-
+    this.dataVectorizerService = dataVectorizerService;
     this.meterRegistry = meterRegistry;
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
@@ -61,6 +67,13 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
   @Override
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindOneAndReplaceCommand command) {
+    // Add $vector and $vectorize replacement validation here
+    if (command.replacementDocument().has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)
+        && command.replacementDocument().has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+      throw ErrorCode.INVALID_USAGE_OF_VECTORIZE.toApiException();
+    }
+
+    //
     FindCollectionOperation findCollectionOperation = getFindOperation(ctx, command);
 
     final DocumentProjector documentProjector = command.buildProjector();
@@ -76,6 +89,7 @@ public class FindOneAndReplaceCommandResolver extends FilterableResolver<FindOne
         ctx,
         findCollectionOperation,
         documentUpdater,
+        dataVectorizerService,
         true,
         returnUpdatedDocument,
         upsert,
