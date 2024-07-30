@@ -108,6 +108,8 @@ public enum ErrorCode {
 
   INVALID_CONTENT_TYPE_HEADER("Invalid Content-Type header"),
 
+  UNSUPPORTED_PROJECTION_DEFINITION("Unsupported projection definition"),
+
   UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
 
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
@@ -182,6 +184,10 @@ public enum ErrorCode {
   SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
   EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
   EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request"),
+  // TODO, add this section so we don't have to throw RuntimeExceptions for table work, and it is
+  // easy to track, should be improved along with error refactor work
+  // Table related
+  ERROR_APPLYING_CODEC("Error applying codec"),
 
   // API Table Error Codes
   TABLE_FEATURE_NOT_ENABLED("API Table feature is not enabled"),

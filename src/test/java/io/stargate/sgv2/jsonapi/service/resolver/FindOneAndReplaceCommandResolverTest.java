@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +14,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
@@ -45,6 +47,26 @@ public class FindOneAndReplaceCommandResolverTest {
   class Resolve {
 
     CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
+
+    @Test
+    public void invalidVectorizeUsage() throws Exception {
+
+      String json =
+          """
+                {
+                  "findOneAndReplace": {
+                    "filter" : {"_id" : "id"},
+                    "replacement" : {"$vectorize" : "vectorize text", "$vector" : [0.1,0.2]}
+                  }
+                }
+                """;
+      FindOneAndReplaceCommand command =
+          objectMapper.readValue(json, FindOneAndReplaceCommand.class);
+      Exception e = catchException(() -> resolver.resolveCommand(commandContext, command));
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasMessageContaining("$vectorize` and `$vector` can't be used together");
+    }
 
     @Test
     public void idFilterCondition() throws Exception {

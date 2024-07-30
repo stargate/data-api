@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
@@ -10,12 +11,13 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
-import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterableResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
@@ -25,20 +27,23 @@ import java.util.List;
 
 /** Resolves the {@link UpdateOneCommand } */
 @ApplicationScoped
-public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneCommand>
-    implements CommandResolver<UpdateOneCommand> {
+public class UpdateOneCommandResolver implements CommandResolver<UpdateOneCommand> {
   private final DocumentShredder documentShredder;
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
+  private final DataVectorizerService dataVectorizerService;
   private final MeterRegistry meterRegistry;
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
+
+  private final CollectionFilterResolver<UpdateOneCommand> collectionFilterResolver;
 
   @Inject
   public UpdateOneCommandResolver(
       ObjectMapper objectMapper,
       OperationsConfig operationsConfig,
       DocumentShredder documentShredder,
+      DataVectorizerService dataVectorizerService,
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
@@ -46,10 +51,12 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
     this.objectMapper = objectMapper;
     this.documentShredder = documentShredder;
     this.operationsConfig = operationsConfig;
-
+    this.dataVectorizerService = dataVectorizerService;
     this.meterRegistry = meterRegistry;
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
+
+    this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
   }
 
   @Override
@@ -73,6 +80,7 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
         ctx,
         findCollectionOperation,
         documentUpdater,
+        dataVectorizerService,
         false,
         false,
         upsert,
@@ -84,13 +92,10 @@ public class UpdateOneCommandResolver extends FilterableResolver<UpdateOneComman
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> ctx, UpdateOneCommand command) {
-    LogicalExpression logicalExpression = resolve(ctx, command);
+    LogicalExpression logicalExpression = collectionFilterResolver.resolve(ctx, command);
 
     final SortClause sortClause = command.sortClause();
-    // validate sort path
-    if (sortClause != null) {
-      sortClause.validate(ctx);
-    }
+    ValidatableCommandClause.maybeValidate(ctx, sortClause);
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 

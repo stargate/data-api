@@ -1,12 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.shredding.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.fasterxml.jackson.core.JacksonException;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.HashMap;
@@ -39,33 +40,40 @@ public class RowShredder {
    * @param document
    * @return
    */
-  public WriteableTableRow shred(JsonNode document) {
-
-    // HACK for now we assume the primary is a field called primary key.
-
-    Object keyObject;
-    try {
-      keyObject = objectMapper.treeToValue(document.get("key"), Object.class);
-    } catch (JacksonException e) {
-      throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
-          e, "Failed to convert row key: %s", e.getMessage());
-    }
+  public WriteableTableRow shred(TableSchemaObject table, JsonNode document) {
 
     Map<CqlIdentifier, Object> columnValues = new HashMap<>();
     document
         .fields()
         .forEachRemaining(
             entry -> {
-              // using fromCQL so it is case-sensitive
-              try {
-                columnValues.put(
-                    CqlIdentifier.fromCql(entry.getKey()),
-                    objectMapper.treeToValue(entry.getValue(), Object.class));
-              } catch (JacksonException e) {
-                throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
-                    e, "Failed to convert row value: %s", e.getMessage());
-              }
+              // using fromCQL so it is case sensitive
+
+              Object value =
+                  switch (entry.getValue().getNodeType()) {
+                    case NUMBER -> entry.getValue().decimalValue();
+                    case STRING -> entry.getValue().textValue();
+                    case BOOLEAN -> entry.getValue().booleanValue();
+                    case NULL -> null;
+                    default -> throw new RuntimeException("Unsupported type");
+                  };
+              columnValues.put(CqlIdentifier.fromCql(entry.getKey()), value);
             });
-    return new WriteableTableRow(new RowId(new Object[] {keyObject}), columnValues);
+
+    // the document should have been validated that all the fields present exist in the table
+    // and that all the primary key fields on the table have been included in the document.
+    var primaryKeyValues =
+        table.tableMetadata.getPrimaryKey().stream()
+            .map(ColumnMetadata::getName)
+            .map(
+                colIdentifier -> {
+                  if (columnValues.containsKey(colIdentifier)) {
+                    return columnValues.get(colIdentifier);
+                  }
+                  throw new UnknownColumnException(table.tableMetadata, colIdentifier);
+                })
+            .toList();
+
+    return new WriteableTableRow(new RowId(primaryKeyValues.toArray()), columnValues);
   }
 }
