@@ -417,6 +417,63 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
+                  name = "createTableCompositePrimaryKey",
+                  summary = "`CreateTable` command with composite primary key",
+                  value =
+                      """
+                    {
+                        "createTable": {
+                            "name": "person",
+                            "definition": {
+                                "columns": {
+                                    "id": {
+                                        "type": "text"
+                                    },
+                                    "age": {
+                                        "type": "int"
+                                    },
+                                    "name": {
+                                        "type": "text"
+                                    }
+                                },
+                                "primaryKey": {
+                                    "partitionBy": [
+                                        "id"
+                                    ],
+                                    "partitionSort" : {
+                                        "name" : 1, "age" : -1
+                                    }
+                                }
+                            }
+                        }
+                    }
+                """),
+              @ExampleObject(
+                  name = "createTableSinglePrimaryKey",
+                  summary = "`CreateTable` command with single primary key",
+                  value =
+                      """
+                        {
+                            "createTable": {
+                                "name": "person",
+                                "definition": {
+                                    "columns": {
+                                        "id": {
+                                            "type": "text"
+                                        },
+                                        "age": {
+                                            "type": "int"
+                                        },
+                                        "name": {
+                                            "type": "text"
+                                        }
+                                    },
+                                    "primaryKey": "id"
+                                }
+                            }
+                        }
+                    """),
+              @ExampleObject(
                   name = "resultCount",
                   summary = "`countDocuments` command result",
                   value =

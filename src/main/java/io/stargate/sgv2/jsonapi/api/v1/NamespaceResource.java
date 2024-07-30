@@ -82,6 +82,8 @@ public class NamespaceResource {
                 @ExampleObject(ref = "createCollectionVectorSearch"),
                 @ExampleObject(ref = "findCollections"),
                 @ExampleObject(ref = "deleteCollection"),
+                @ExampleObject(ref = "createTableSinglePrimaryKey"),
+                @ExampleObject(ref = "createTableCompositePrimaryKey"),
               }))
   @APIResponses(
       @APIResponse(
