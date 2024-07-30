@@ -2,11 +2,9 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
-import com.google.common.base.Preconditions;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -15,14 +13,8 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertOperationPage;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -71,8 +63,9 @@ public class InsertTableOperation extends TableMutationOperation {
     }
 
     // If we did not fail, then we should have a row, test that
-    if (insertAttempt.row().isEmpty()){
-      return Uni.createFrom().failure(new IllegalStateException("InsertAttempt has no row, and no failure"));
+    if (insertAttempt.row().isEmpty()) {
+      return Uni.createFrom()
+          .failure(new IllegalStateException("InsertAttempt has no row, and no failure"));
     }
 
     // bind and execute
@@ -94,14 +87,17 @@ public class InsertTableOperation extends TableMutationOperation {
         .transform((ia, throwable) -> (TableInsertAttempt) ia.maybeAddFailure(throwable));
   }
 
-  private SimpleStatement buildInsertStatement(QueryExecutor queryExecutor, TableInsertAttempt insertAttempt) {
+  private SimpleStatement buildInsertStatement(
+      QueryExecutor queryExecutor, TableInsertAttempt insertAttempt) {
 
-    InsertInto insertInto = insertInto(
+    InsertInto insertInto =
+        insertInto(
             commandContext.schemaObject().tableMetadata.getKeyspace(),
             commandContext.schemaObject().tableMetadata.getName());
 
     List<Object> positionalValues = new ArrayList<>();
-    RegularInsert ongoingInsert = insertAttempt.getInsertValuesBuilder().apply(insertInto, positionalValues);
-    return SimpleStatement.newInstance(ongoingInsert.asCql(), positionalValues.toArray());
+    RegularInsert regularInsert =
+        insertAttempt.getInsertValuesCQLClause().apply(insertInto, positionalValues);
+    return SimpleStatement.newInstance(regularInsert.asCql(), positionalValues.toArray());
   }
 }

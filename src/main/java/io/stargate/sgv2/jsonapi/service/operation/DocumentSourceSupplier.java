@@ -1,14 +1,12 @@
-package io.stargate.sgv2.jsonapi.service.operation.tables;
+package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.core.cql.Row;
-import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
 
 /**
  * POC of what pushing the projection down looks like.
  *
  * <p>The idea is to encapsulate both what columns we pull from the table & how we then convert a
  * row we read into a document into this one interface to a read operation can hand it all off.
- *
  */
 public interface DocumentSourceSupplier {
 
@@ -18,7 +16,7 @@ public interface DocumentSourceSupplier {
    * user.
    *
    * <p>Note: Implementations should not immediately create a JSON document, it should return an
-   * object that defers creating the document until asked. Defering the document creation allows the
+   * object that defers creating the document until asked. Deferring the document creation allows the
    * operation to be more efficient by only creating the document if it is needed.
    *
    * <p>Implementations should use the {@link

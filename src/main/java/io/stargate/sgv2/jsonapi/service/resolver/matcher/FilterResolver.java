@@ -10,28 +10,33 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.resolver.ClauseResolver;
+
+import java.util.Objects;
 
 /**
- * Base for classes that turn a configured {@link
- * io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause} inot a {@link
- * LogicalExpression} using the configured {@link FilterMatchRules}.
- *
- * @param <T> The type od the {@link Command} that is being resolved.
- * @param <U> The typ of the {@link SchemaObject} that {@link Command} command is operating on.
+ * Base for classes that resolve a filter clause on a {@link Command} into something the Operation can
+ * use to filter documents or rows.
+ * <p>
+ * TODO: this is a base for collections and table filters, currently collection uses the LogicalExpression
+ * incorrectly. When we fix that this can return a {@link io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause} for all cases.
+ * <p>
+ * @param <CmdT> The type od the {@link Command} that is being resolved.
+ * @param <SchemaT> The typ of the {@link SchemaObject} that {@link Command} command is operating on.
  */
-public abstract class FilterResolver<T extends Command & Filterable, U extends SchemaObject> {
+public abstract class FilterResolver<
+        CmdT extends Command & Filterable, SchemaT extends SchemaObject>
+    extends ClauseResolver<CmdT, SchemaT, LogicalExpression> {
 
-  protected final OperationsConfig operationsConfig;
-  protected final FilterMatchRules<T> matchRules;
+  protected final FilterMatchRules<CmdT> matchRules;
 
   protected FilterResolver(OperationsConfig operationsConfig) {
-    Preconditions.checkNotNull(operationsConfig, "operationsConfig is required");
-    this.operationsConfig = operationsConfig;
+    super(operationsConfig);
 
-    matchRules = buildMatchRules();
-    Preconditions.checkNotNull(matchRules, "buildMatchRules() must return non null");
-    Preconditions.checkArgument(
-        !matchRules.isEmpty(), "buildMatchRules() must return non empty FilterMatchRules");
+    matchRules = Objects.requireNonNull(buildMatchRules(), "buildMatchRules() must return non null");
+    if (matchRules.isEmpty()){
+      throw new IllegalArgumentException("buildMatchRules() must return non empty FilterMatchRules");
+    }
   }
 
   /**
@@ -39,9 +44,9 @@ public abstract class FilterResolver<T extends Command & Filterable, U extends S
    * match against the {@link io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause}
    * for the type of {@link SchemaObject} this resolver is for.
    *
-   * @return {@link FilterMatchRules<T>}
+   * @return {@link FilterMatchRules< CmdT >}
    */
-  protected abstract FilterMatchRules<T> buildMatchRules();
+  protected abstract FilterMatchRules<CmdT> buildMatchRules();
 
   /**
    * Users of the class should call this function to convert the filer on the command into a {@link
@@ -51,7 +56,7 @@ public abstract class FilterResolver<T extends Command & Filterable, U extends S
    * @param command
    * @return
    */
-  public LogicalExpression resolve(CommandContext<U> commandContext, T command) {
+  public LogicalExpression resolve(CommandContext<SchemaT> commandContext, CmdT command) {
     Preconditions.checkNotNull(commandContext, "commandContext is required");
     Preconditions.checkNotNull(command, "command is required");
 

@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
@@ -20,8 +21,10 @@ public class TableInsertAttempt implements InsertAttempt {
   private final WriteableTableRow row;
   private Throwable failure;
 
-  private TableInsertAttempt(TableSchemaObject tableSchemaObject, int position, RowId rowId, WriteableTableRow row) {
-    this.tableSchemaObject = Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
+  private TableInsertAttempt(
+      TableSchemaObject tableSchemaObject, int position, RowId rowId, WriteableTableRow row) {
+    this.tableSchemaObject =
+        Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     this.position = position;
     this.rowId = rowId;
     this.row = row;
@@ -56,8 +59,8 @@ public class TableInsertAttempt implements InsertAttempt {
         .toList();
   }
 
-  public InsertValuesBuilder getInsertValuesBuilder() {
-    return new TableInsertValuesBuilder(tableSchemaObject, row);
+  public InsertValuesCQLClause getInsertValuesCQLClause() {
+    return new TableInsertValuesCQLClause(tableSchemaObject, row);
   }
 
   public Optional<WriteableTableRow> row() {
