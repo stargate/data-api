@@ -27,9 +27,9 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
    * Method called to apply operation to given document.
    *
    * @param doc Document to apply operation to
-   * @return True if document was modified by operation; false if not.
+   * @return UpdateOperationResult
    */
-  public abstract boolean updateDocument(ObjectNode doc);
+  public abstract UpdateOperationResult updateDocument(ObjectNode doc);
 
   /**
    * Method called to see if update operator should be applied for specific kind of update:
@@ -99,4 +99,12 @@ public abstract class UpdateOperation<A extends ActionWithLocator> {
       return o1.path().compareTo(o2.path());
     }
   }
+
+  /**
+   * Abstract method updateDocument will return a UpdateOperationResult. UpdateOperationResult
+   * indicated the doc is modified or not, also a List of embeddingUpdateOperation, empty is there
+   * is not any embeddingUpdateOperations
+   */
+  public record UpdateOperationResult(
+      boolean modified, List<EmbeddingUpdateOperation> embeddingUpdateOperations) {}
 }

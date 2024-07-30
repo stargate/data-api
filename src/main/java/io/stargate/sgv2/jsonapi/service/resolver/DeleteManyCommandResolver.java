@@ -15,7 +15,7 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOp
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.TruncateCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
-import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterableResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -24,8 +24,7 @@ import jakarta.inject.Inject;
  * records to delete based on the filter condition and deletes it.
  */
 @ApplicationScoped
-public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyCommand>
-    implements CommandResolver<DeleteManyCommand> {
+public class DeleteManyCommandResolver implements CommandResolver<DeleteManyCommand> {
 
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
@@ -34,6 +33,8 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
+  private final CollectionFilterResolver<DeleteManyCommand> collectionFilterResolver;
+
   @Inject
   public DeleteManyCommandResolver(
       OperationsConfig operationsConfig,
@@ -41,12 +42,14 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
-    super();
+
     this.operationsConfig = operationsConfig;
     this.objectMapper = objectMapper;
     this.meterRegistry = meterRegistry;
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
+
+    this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
   }
 
   @Override
@@ -69,8 +72,9 @@ public class DeleteManyCommandResolver extends FilterableResolver<DeleteManyComm
     return DeleteManyCommand.class;
   }
 
-  private FindCollectionOperation getFindOperation(CommandContext ctx, DeleteManyCommand command) {
-    LogicalExpression logicalExpression = resolve(ctx, command);
+  private FindCollectionOperation getFindOperation(
+      CommandContext<CollectionSchemaObject> ctx, DeleteManyCommand command) {
+    LogicalExpression logicalExpression = collectionFilterResolver.resolve(ctx, command);
     // Read One extra document than delete limit so return moreData flag
     addToMetrics(
         meterRegistry,
