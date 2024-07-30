@@ -4,7 +4,6 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.SchemaCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
@@ -107,39 +106,7 @@ public class NamespaceResource {
           @Size(min = 1, max = 48)
           String namespace) {
 
-    if (command instanceof NamespaceCommand) {
-      return namespaceCommand(namespace, (NamespaceCommand) command);
-    } else {
-      return keyspaceCommand(namespace, (KeyspaceCommand) command);
-    }
-  }
-
-  private Uni<RestResponse<CommandResult>> namespaceCommand(
-      String namespace, NamespaceCommand command) {
-
-    // create context
-    // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
-    //    CommandContext commandContext = new CommandContext(namespace, null);
-    // HACK TODO: The above did not set a command name on the command context, how did that work ?
-    CommandContext<KeyspaceSchemaObject> commandContext =
-        new CommandContext<>(new KeyspaceSchemaObject(namespace), null, "", null);
-
-    //     call processor
-    return meteredCommandProcessor
-        .processCommand(dataApiRequestInfo, commandContext, command)
-        // map to 2xx unless overridden by error
-        .map(commandResult -> commandResult.map());
-  }
-
-  private Uni<RestResponse<CommandResult>> keyspaceCommand(
-      String keyspace, KeyspaceCommand command) {
-
-    // create context
-    // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
-    //    CommandContext commandContext = new CommandContext(namespace, null);
-    // HACK TODO: The above did not set a command name on the command context, how did that work ?
-
-    if (!apiTablesConfig.enabled()) {
+    if (command instanceof KeyspaceCommand && !apiTablesConfig.enabled()) {
       return Uni.createFrom()
           .item(
               new ThrowableCommandResultSupplier(
@@ -147,8 +114,12 @@ public class NamespaceResource {
           .map(commandResult -> commandResult.map());
     }
 
+    // create context
+    // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
+    //    CommandContext commandContext = new CommandContext(namespace, null);
+    // HACK TODO: The above did not set a command name on the command context, how did that work ?
     CommandContext<KeyspaceSchemaObject> commandContext =
-        new CommandContext<>(new KeyspaceSchemaObject(keyspace), null, "", null);
+        new CommandContext<>(new KeyspaceSchemaObject(namespace), null, "", null);
 
     //     call processor
     return meteredCommandProcessor
