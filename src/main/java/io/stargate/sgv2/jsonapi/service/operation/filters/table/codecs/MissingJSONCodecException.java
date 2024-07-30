@@ -12,7 +12,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
  */
 public class MissingJSONCodecException extends Exception {
 
-  // TODO: both javTupe and value may be null when going toJSON
+  // TODO: both javaType and value may be null when going toJSON
   public final TableMetadata table;
   public final ColumnMetadata column;
   public final Class<?> javaType;

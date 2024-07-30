@@ -24,12 +24,15 @@ import java.util.function.Function;
  *
  * TODO: expand this idea to be map to and from the CQL representation, we can use it to build the
  * JSON doc from reading a row and to use it for writing a row.
- *
+ *     // TODO Mahesh, The codec looks fine for primitive type. Needs a revisit when we doing complex
+ *     // types where only few fields will need to be returned. Will we be creating custom Codec based
+ *     // on user requests?
  * @param javaType {@link GenericType} of the Java object that needs to be transformed into the type
  *     CQL expects.
  * @param targetCQLType {@link DataType} of the CQL column type the Java object needs to be
  *     transformed into.
  * @param toCQL Function that transforms the Java object into the CQL object
+ * @param toJSON Function that transforms the value returned by CQL into a JsonNode
  * @param <JavaT> The type of the Java object that needs to be transformed into the type CQL expects
  * @param <CqlT> The type Java object the CQL driver expects
  */
@@ -135,7 +138,7 @@ public record JSONCodec<JavaT, CqlT>(
      * Function#identity()}
      *
      * <p>Unsafe because it does not catch any errors from the conversion, because there are none.
-     *
+     *TODO what is the point here? Is it for type-casting purpose or why is this needed?
      * @return
      * @param <JavaT>
      */

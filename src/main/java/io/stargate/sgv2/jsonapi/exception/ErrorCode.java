@@ -183,7 +183,12 @@ public enum ErrorCode {
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
   SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
   EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
-  EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request");
+  EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request"),
+
+  // TODO, add this section so we don't have to throw RuntimeExceptions for table work, and it is
+  // easy to track, should be improved along with error refactor work
+  // Table related
+  ERROR_APPLYING_CODEC("Error applying codec");
 
   private final String message;
 

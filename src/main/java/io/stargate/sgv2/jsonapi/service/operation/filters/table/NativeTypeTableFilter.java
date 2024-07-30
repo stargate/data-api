@@ -56,6 +56,8 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
    * The operations that can be performed to filter a column TIDY: we have operations defined in
    * multiple places, once we have refactored the collection operations we should centralize these
    * operator definitions
+   *
+   * TODO, other operators that apply to scaler / native tyes
    */
   public enum Operator {
     EQ(BuiltConditionPredicate.EQ),

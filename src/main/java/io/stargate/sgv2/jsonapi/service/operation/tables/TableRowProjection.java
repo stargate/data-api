@@ -36,13 +36,14 @@ public record TableRowProjection(
       TableProjectionDefinition projectionDefinition,
       TableSchemaObject table) {
     Map<String, ColumnMetadata> columnsByName = new HashMap<>();
-    table
-        .tableMetadata
+    // TODO: This can also be cached as part of TableSchemaObject than resolving it for every query.
+    table.tableMetadata
         .getColumns()
         .forEach((id, column) -> columnsByName.put(id.asInternal(), column));
 
     List<ColumnMetadata> columns = projectionDefinition.extractSelectedColumns(columnsByName);
 
+    // TODO: A table can't be with empty columns. Think a redundant check.
     if (columns.isEmpty()) {
       throw ErrorCode.UNSUPPORTED_PROJECTION_DEFINITION.toApiException(
           "did not include any Table columns");

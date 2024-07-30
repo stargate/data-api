@@ -19,7 +19,6 @@ env:
 # 1. Runs unit tests
 # 2. Then 2 jobs in parallel
 #  a) Integration tests with docker image
-#  b) Integration tests with native docker image
 jobs:
 
   # builds and pushes the docker image
@@ -30,22 +29,19 @@ jobs:
     # matrix props:
     strategy:
       matrix:
-        type: [ docker, native ]
+        type: [ docker ]
         include:
           - type: docker
             profile: ''
-        exclude:
-          - type: native
-            #profile: '-Pnative'
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
           cache: maven
 
       - name: Set up Docker Buildx
@@ -82,9 +78,8 @@ jobs:
     # matrix props:
     strategy:
       matrix:
-        image: [jsonapi, jsonapi-native ]
-        exclude:
-          - image: jsonapi-native
+        image: [jsonapi ]
+
     env:
       # not a newest version, this reflects riptano action target version
       COSIGN_VERSION: v1.9.0
