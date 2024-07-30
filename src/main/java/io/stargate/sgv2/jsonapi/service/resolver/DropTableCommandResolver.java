@@ -4,7 +4,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.tables.DropTableOperation;
 import jakarta.enterprise.context.ApplicationScoped;
 
 /** Resolver for the {@link DropTableCommand}. */
@@ -18,6 +18,6 @@ public class DropTableCommandResolver implements CommandResolver<DropTableComman
   @Override
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, DropTableCommand command) {
-    return new DeleteCollectionCollectionOperation(ctx, command.name());
+    return new DropTableOperation(ctx, command.name());
   }
 }
