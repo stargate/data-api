@@ -16,8 +16,8 @@ public interface DocumentSourceSupplier {
    * user.
    *
    * <p>Note: Implementations should not immediately create a JSON document, it should return an
-   * object that defers creating the document until asked. Deferring the document creation allows the
-   * operation to be more efficient by only creating the document if it is needed.
+   * object that defers creating the document until asked. Deferring the document creation allows
+   * the operation to be more efficient by only creating the document if it is needed.
    *
    * <p>Implementations should use the {@link
    * io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry} to map the

@@ -18,6 +18,7 @@ import java.util.List;
 
 /**
  * POC for a filter clause resolver that can handle the filter clause for a table.
+ *
  * @param <CmdT>
  */
 public class TableFilterResolver<CmdT extends Command & Filterable>

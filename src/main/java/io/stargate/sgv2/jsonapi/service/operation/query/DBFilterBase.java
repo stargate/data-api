@@ -8,13 +8,16 @@ import java.util.function.Supplier;
 
 /**
  * DB Filters represent a logical filter operation we want to run against a target collection table.
+ *
+ * <p>TODO: NOTE: See {@link TableFilter} for how we are doing this for tables so it uses the Java
+ * driver query builder, when we migrate away from the old gRPC bridge query builder we will move ot
+ * something like that and the {@link CQLClause} interface.
+ *
  * <p>
- * TODO: NOTE: See {@link TableFilter} for how we are doing this for tables so it uses the Java driver query builder,
- * when we migrate away from the old gRPC bridge query builder we will move ot something like that
- * and the {@link CQLClause} interface.
- * <p>
+ *
  * <p>They are logical in that they represent the filter the user wants to apply, e.g. a $in filter
  * for an array in a document will use the @link{InFilter} if the target is a Collection
+ *
  * <p>The DBFilter builds the BuildConditions which represent the actual CQL query conditions to
  * run.
  */

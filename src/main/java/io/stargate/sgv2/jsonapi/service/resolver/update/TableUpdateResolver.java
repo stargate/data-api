@@ -20,11 +20,14 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 /**
- * Resolves the update clause for a command when the target schema object is a {@link TableSchemaObject}
+ * Resolves the update clause for a command when the target schema object is a {@link
+ * TableSchemaObject}
+ *
+ * <p>Resolving the update clause creates a {@link UpdateValuesCQLClause} that has the changes to be
+ * applied to the CQL table.
+ *
  * <p>
- * Resolving the update clause creates a {@link UpdateValuesCQLClause} that has the changes to be applied
- * to the CQL table.
- * <p>
+ *
  * @param <CmdT> The type of the command that has the update clause.
  */
 public class TableUpdateResolver<CmdT extends Command & Updatable>
@@ -32,17 +35,20 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
   // Using map here so we can expose the list of supported operators for validation to check.
   // Keep this immutable, we return the key set in a property below.
-  private static final Map<UpdateOperator, BiFunction<TableSchemaObject, ObjectNode, List<ColumnAssignment>>> supportedOperators = Map.of(
-    UpdateOperator.SET, TableUpdateResolver::resolveSet,
-    UpdateOperator.UNSET, TableUpdateResolver::resolveUnset
-  );
+  private static final Map<
+          UpdateOperator, BiFunction<TableSchemaObject, ObjectNode, List<ColumnAssignment>>>
+      supportedOperators =
+          Map.of(
+              UpdateOperator.SET, TableUpdateResolver::resolveSet,
+              UpdateOperator.UNSET, TableUpdateResolver::resolveUnset);
 
   public TableUpdateResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
   }
 
   /**
-   * The set of {@link UpdateOperator} 's that are supported by Tables, may be referenced for validation of a clause.
+   * The set of {@link UpdateOperator} 's that are supported by Tables, may be referenced for
+   * validation of a clause.
    *
    * @return
    */
@@ -70,8 +76,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
 
       var resolverFunction = supportedOperators.get(updateOperator);
       if (resolverFunction == null) {
-        throw new UnvalidatedClauseException(
-            "Unsupported update operator: " + updateOperator);
+        throw new UnvalidatedClauseException("Unsupported update operator: " + updateOperator);
       }
 
       // TODO : should we assert the list of operations  is non empty here ?
@@ -81,12 +86,14 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
   }
 
   /**
-   * Resolve the {@link  UpdateOperator#SET} operation
-   * <p>
-   * Example:
+   * Resolve the {@link UpdateOperator#SET} operation
+   *
+   * <p>Example:
+   *
    * <pre>
    *    {"$set" : { "age" : 51 , "human" : false}}
    * </pre>
+   *
    * @param table
    * @param arguments
    * @return
@@ -104,12 +111,14 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
   }
 
   /**
-   * Resolve the {@link  UpdateOperator#UNSET} operation
-   * <p>
-   * Example:
+   * Resolve the {@link UpdateOperator#UNSET} operation
+   *
+   * <p>Example:
+   *
    * <pre>
    *    {"$unset" : { "country" : ""}}
    * </pre>
+   *
    * @param table
    * @param arguments
    * @return

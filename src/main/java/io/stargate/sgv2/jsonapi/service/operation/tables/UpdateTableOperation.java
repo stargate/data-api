@@ -22,8 +22,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * POC Updates a Table using a CQL UPDATE statement.
- * <p>
- * TODO: marking POC because this is the first implementation.
+ *
+ * <p>TODO: marking POC because this is the first implementation.
  */
 public class UpdateTableOperation extends TableMutationOperation {
 

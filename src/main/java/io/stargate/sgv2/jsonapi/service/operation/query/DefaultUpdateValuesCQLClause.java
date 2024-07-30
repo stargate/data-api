@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Default implementation of a {@link UpdateValuesCQLClause} that applies a list of {@link ColumnAssignment}s.
- * <p>
- * This class exists for two reasons: want to keep all the {@link CQLClause} immediate subclasses as interfaces,
- * and when we move Collections to the Java driver query builder it may have a more complex implementation.
+ * Default implementation of a {@link UpdateValuesCQLClause} that applies a list of {@link
+ * ColumnAssignment}s.
+ *
+ * <p>This class exists for two reasons: want to keep all the {@link CQLClause} immediate subclasses
+ * as interfaces, and when we move Collections to the Java driver query builder it may have a more
+ * complex implementation.
  */
 public class DefaultUpdateValuesCQLClause implements UpdateValuesCQLClause {
 

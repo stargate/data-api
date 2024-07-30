@@ -15,12 +15,14 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Assigns a single column a value in a CQL Update statement build with the Java Driver Query Builder.
- * <p>
- * NOTE: This class is designed to set scalar column values, basic strings, ints etc. It should be possible to extend
- * it to support more exotic types like collections and UDT's using the appropriate methods on the {@link OngoingAssignment}.
- * <p>
- * Designed to be used with the {@link UpdateValuesCQLClause} to build the full clause.
+ * Assigns a single column a value in a CQL Update statement build with the Java Driver Query
+ * Builder.
+ *
+ * <p>NOTE: This class is designed to set scalar column values, basic strings, ints etc. It should
+ * be possible to extend it to support more exotic types like collections and UDT's using the
+ * appropriate methods on the {@link OngoingAssignment}.
+ *
+ * <p>Designed to be used with the {@link UpdateValuesCQLClause} to build the full clause.
  */
 public class ColumnAssignment implements CQLAssignment {
 
@@ -29,13 +31,13 @@ public class ColumnAssignment implements CQLAssignment {
   private final Object value;
 
   /**
-   * Create a new instance of the class to set the {@code column} to the {@code value} in the specified
-   * {@code tableMetadata}.
+   * Create a new instance of the class to set the {@code column} to the {@code value} in the
+   * specified {@code tableMetadata}.
    *
    * @param tableMetadata The {@link TableMetadata} for the target table.
    * @param column The name of the column to set.
-   * @param value Value to set, may be null. The value is passed through the {@link JSONCodecRegistry} to get the
-   *              appropriate value to pass to the CQL driver.
+   * @param value Value to set, may be null. The value is passed through the {@link
+   *     JSONCodecRegistry} to get the appropriate value to pass to the CQL driver.
    */
   public ColumnAssignment(TableMetadata tableMetadata, CqlIdentifier column, Object value) {
     this.tableMetadata = Objects.requireNonNull(tableMetadata, "tableMetadata cannot be null");
@@ -54,8 +56,9 @@ public class ColumnAssignment implements CQLAssignment {
 
   /**
    * Get the {@link Assignment} for the column and value.
-   * <p>
-   * Is a separate method to support expansion for collections etc in subtypes.
+   *
+   * <p>Is a separate method to support expansion for collections etc in subtypes.
+   *
    * @return
    */
   protected Assignment getAssignment() {
@@ -64,8 +67,9 @@ public class ColumnAssignment implements CQLAssignment {
 
   /**
    * Add the value to the list of positional values to bind to the query.
-   * <p>
-   * Is a separate method to support expansion for collections etc in subtypes.
+   *
+   * <p>Is a separate method to support expansion for collections etc in subtypes.
+   *
    * @param positionalValues
    */
   protected void addPositionalValues(List<Object> positionalValues) {

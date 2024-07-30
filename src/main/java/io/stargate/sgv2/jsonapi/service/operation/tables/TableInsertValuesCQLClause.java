@@ -18,11 +18,14 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * A {@link InsertValuesCQLClause} that builds the VALUES part of the CQL Insert statement when using the
- * Java Driver Query Builder.
+ * A {@link InsertValuesCQLClause} that builds the VALUES part of the CQL Insert statement when
+ * using the Java Driver Query Builder.
+ *
  * <p>
+ *
  * @param tableSchemaObject The target {@link TableSchemaObject} we are inserting into.
- * @param row The {@link WriteableTableRow} shredded document for inserting the document into a table
+ * @param row The {@link WriteableTableRow} shredded document for inserting the document into a
+ *     table
  */
 public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, WriteableTableRow row)
     implements InsertValuesCQLClause {

@@ -72,16 +72,18 @@ public class RowShredder {
   }
 
   /**
-   * Function that will convert a JSONNode value, e.g. '1' into the correct Java type expected
-   * when processing tables, e.g. BigDecimal.
-   * <p>
-   * The types returned here are types that are expected by the
-   * {@link io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry} so we know how to
-   * convert them into the correct Java types expected by the CQL driver.
-   * <p>
-   * The main difference here is that we convert all numbers to BigDecimal, and then defer conversion into the
-   * type defined by the CQL Column until we are building the CQL statement (e.g. insert, or select) where we bind
-   * to the column in the table and use the codec to sort it out.
+   * Function that will convert a JSONNode value, e.g. '1' into the correct Java type expected when
+   * processing tables, e.g. BigDecimal.
+   *
+   * <p>The types returned here are types that are expected by the {@link
+   * io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry} so we know
+   * how to convert them into the correct Java types expected by the CQL driver.
+   *
+   * <p>The main difference here is that we convert all numbers to BigDecimal, and then defer
+   * conversion into the type defined by the CQL Column until we are building the CQL statement
+   * (e.g. insert, or select) where we bind to the column in the table and use the codec to sort it
+   * out.
+   *
    * @param value
    * @return
    */

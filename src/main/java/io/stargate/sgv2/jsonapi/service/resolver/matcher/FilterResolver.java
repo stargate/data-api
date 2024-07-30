@@ -11,18 +11,21 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.resolver.ClauseResolver;
-
 import java.util.Objects;
 
 /**
- * Base for classes that resolve a filter clause on a {@link Command} into something the Operation can
- * use to filter documents or rows.
+ * Base for classes that resolve a filter clause on a {@link Command} into something the Operation
+ * can use to filter documents or rows.
+ *
+ * <p>TODO: this is a base for collections and table filters, currently collection uses the
+ * LogicalExpression incorrectly. When we fix that this can return a {@link
+ * io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause} for all cases.
+ *
  * <p>
- * TODO: this is a base for collections and table filters, currently collection uses the LogicalExpression
- * incorrectly. When we fix that this can return a {@link io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause} for all cases.
- * <p>
+ *
  * @param <CmdT> The type od the {@link Command} that is being resolved.
- * @param <SchemaT> The typ of the {@link SchemaObject} that {@link Command} command is operating on.
+ * @param <SchemaT> The typ of the {@link SchemaObject} that {@link Command} command is operating
+ *     on.
  */
 public abstract class FilterResolver<
         CmdT extends Command & Filterable, SchemaT extends SchemaObject>
@@ -33,9 +36,11 @@ public abstract class FilterResolver<
   protected FilterResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
 
-    matchRules = Objects.requireNonNull(buildMatchRules(), "buildMatchRules() must return non null");
-    if (matchRules.isEmpty()){
-      throw new IllegalArgumentException("buildMatchRules() must return non empty FilterMatchRules");
+    matchRules =
+        Objects.requireNonNull(buildMatchRules(), "buildMatchRules() must return non null");
+    if (matchRules.isEmpty()) {
+      throw new IllegalArgumentException(
+          "buildMatchRules() must return non empty FilterMatchRules");
     }
   }
 

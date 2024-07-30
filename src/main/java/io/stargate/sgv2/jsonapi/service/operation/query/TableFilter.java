@@ -28,9 +28,10 @@ public abstract class TableFilter extends DBFilterBase {
    * java driver.
    *
    * @param tableSchemaObject The table the filter is being applied to.
-   * @param ongoingWhereClause The class from the Java Driver that implements the {@link OngoingWhereClause} that is used
-   *                           to build the WHERE in a CQL clause. This is the type of the statement the where is being
-   *                           added to such {@link Select} or {@link com.datastax.oss.driver.api.querybuilder.update.Update}
+   * @param ongoingWhereClause The class from the Java Driver that implements the {@link
+   *     OngoingWhereClause} that is used to build the WHERE in a CQL clause. This is the type of
+   *     the statement the where is being added to such {@link Select} or {@link
+   *     com.datastax.oss.driver.api.querybuilder.update.Update}
    * @param positionalValues Mutable array of values that are used when the {@link
    *     com.datastax.oss.driver.api.querybuilder.QueryBuilder#bindMarker()} method is used, the
    *     values are added to the select statement using {@link Select#build(Object...)}

@@ -37,7 +37,8 @@ public record TableRowProjection(
       TableSchemaObject table) {
     Map<String, ColumnMetadata> columnsByName = new HashMap<>();
     // TODO: This can also be cached as part of TableSchemaObject than resolving it for every query.
-    table.tableMetadata
+    table
+        .tableMetadata
         .getColumns()
         .forEach((id, column) -> columnsByName.put(id.asInternal(), column));
 

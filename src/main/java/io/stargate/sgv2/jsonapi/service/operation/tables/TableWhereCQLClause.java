@@ -12,15 +12,16 @@ import java.util.Objects;
 
 /**
  * Builds the WHERE clause in a CQL statment when using the Java Driver Query Builder.
- * <p>
- * TODO: this accepts the {@link LogicalExpression} to build the statement, we want to stop handing that down
- * to the operations but keeping for now for POC work.
- * <p>
- * NOTE: Using a class so the ctor can be made private to force use fo the static factories that
+ *
+ * <p>TODO: this accepts the {@link LogicalExpression} to build the statement, we want to stop
+ * handing that down to the operations but keeping for now for POC work.
+ *
+ * <p>NOTE: Using a class so the ctor can be made private to force use fo the static factories that
  * solve the generic typing needed for the {@link OngoingWhereClause}.
  *
- * @param <T> The type of Query Builder stament that the where clause is being added to, use the static factory methods
- *           like {@link #forSelect(TableSchemaObject, LogicalExpression)} to get the correct type.
+ * @param <T> The type of Query Builder stament that the where clause is being added to, use the
+ *     static factory methods like {@link #forSelect(TableSchemaObject, LogicalExpression)} to get
+ *     the correct type.
  */
 public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements WhereCQLClause<T> {
 
@@ -35,7 +36,9 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
 
   /**
    * Build an instance to add the where clause to a {@link Select}.
+   *
    * <p>
+   *
    * @param table
    * @param logicalExpression
    * @return
@@ -47,7 +50,9 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
 
   /**
    * Build an instance to add the where clause to a {@link Update}.
+   *
    * <p>
+   *
    * @param table
    * @param logicalExpression
    * @return
