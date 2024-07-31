@@ -187,6 +187,7 @@ public enum ErrorCode {
   // TODO, add this section so we don't have to throw RuntimeExceptions for table work, and it is
   // easy to track, should be improved along with error refactor work
   // Table related
+  // TODO: AARON - remove this unused error code, we would not want to return this error to the user
   ERROR_APPLYING_CODEC("Error applying codec"),
 
   // API Table Error Codes

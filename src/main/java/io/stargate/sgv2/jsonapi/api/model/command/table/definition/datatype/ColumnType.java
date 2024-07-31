@@ -10,6 +10,8 @@ public interface ColumnType {
 
   // Returns the column type from the string.
   static ColumnType fromString(String type) {
+    // TODO: the name of the type should be a part of the ColumnType interface, and use a map for
+    // the lookup
     switch (type) {
       case "text":
         return PrimitiveTypes.TEXT;
