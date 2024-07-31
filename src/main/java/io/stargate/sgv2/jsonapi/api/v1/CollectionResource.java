@@ -168,10 +168,11 @@ public class CollectionResource {
             (schemaObject, throwable) -> {
               if (throwable != null) {
                 Throwable error = throwable;
+                if (error instanceof JsonApiException jsonApiException) {
+                  return Uni.createFrom().failure(jsonApiException);
+                }
                 if (throwable instanceof RuntimeException && throwable.getCause() != null) {
                   error = throwable.getCause();
-                } else if (error instanceof JsonApiException jsonApiException) {
-                  return Uni.createFrom().failure(jsonApiException);
                 }
                 // otherwise use generic for now
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
