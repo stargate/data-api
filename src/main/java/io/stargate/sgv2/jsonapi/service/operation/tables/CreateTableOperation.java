@@ -23,8 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CreateTableOperation implements Operation {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CreateTableOperation.class);
 
   private final CommandContext<KeyspaceSchemaObject> commandContext;
   private final String tableName;
@@ -51,17 +55,25 @@ public class CreateTableOperation implements Operation {
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
+
     CreateTableStart create =
         createTable(commandContext.schemaObject().name.keyspace(), tableName).ifNotExists();
+
     // Add all primary keys and colunms
     CreateTable createTable = addColumnsAndKeys(create);
+
     // Add comment which has table properties for vectorize
     CreateTableWithOptions createWithOptions = createTable.withComment(comment);
+
     // Add the clustering key order
     createWithOptions = addClusteringOrder(createWithOptions);
+
     final SimpleStatement statement = createWithOptions.build();
+    LOGGER.warn("CREATE TABLE CQL: {}", createWithOptions.asCql());
+
     final Uni<AsyncResultSet> resultSetUni =
         queryExecutor.executeCreateSchemaChange(dataApiRequestInfo, statement);
+
     return resultSetUni.onItem().transform(rs -> new SchemaChangeResult(true));
   }
 
