@@ -8,6 +8,11 @@ import java.util.*;
  * you can do this, compare equals to a literal {"username" : "aaron"} This is a shortcut for
  * {"username" : {"$eq" : "aaron"}} In here we expand the shortcut into a canonical long form, so it
  * is all the same.
+ *
+ * <p>TIDY: this class is part of the public API, and yet it is also getting handed into the
+ * operations and has some serious business logic in it. The is breaking the rules of the
+ * architecture, the public API classes should be basic POJO with some validation. We need another
+ * class to represent the logic in here
  */
 public class LogicalExpression {
 
