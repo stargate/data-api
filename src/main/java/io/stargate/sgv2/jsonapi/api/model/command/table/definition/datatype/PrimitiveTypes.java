@@ -6,6 +6,8 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 /** Interface for primitive column types similar to what is defined in cassandra java driver. */
 public class PrimitiveTypes {
 
+  // TODO: add a private ctor to stop this class from being instantiated or make abstract
+
   public static final ColumnType TEXT = new Text();
   public static final ColumnType INT = new Int();
 

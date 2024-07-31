@@ -61,11 +61,11 @@ public class PrimaryKeyDeserializer extends StdDeserializer<PrimaryKey> {
                       new PrimaryKey.OrderingKey(columnName, PrimaryKey.OrderingKey.Order.DESC);
                 } else {
                   throw ErrorCode.TABLE_PRIMARY_KEY_DEFINITION_INCORRECT.toApiException(
-                      "partitionSort value should be 1 or -1 for ASC or DESC");
+                      "partitionSort value should be 1 or -1");
                 }
               } else {
                 throw ErrorCode.TABLE_PRIMARY_KEY_DEFINITION_INCORRECT.toApiException(
-                    "partitionSort should be ASC or DESC");
+                    "partitionSort should be 1 or -1");
               }
               i++;
             }

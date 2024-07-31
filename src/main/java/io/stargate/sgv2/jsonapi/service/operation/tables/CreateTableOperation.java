@@ -18,8 +18,10 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.SchemaChangeResult;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Supplier;
 
 public class CreateTableOperation implements Operation {
@@ -51,20 +53,20 @@ public class CreateTableOperation implements Operation {
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     CreateTableStart create =
         createTable(commandContext.schemaObject().name.keyspace(), tableName).ifNotExists();
-    CreateTable createTable = addColumnsAndKeys(create, partitionKeys, clusteringKeys, columnTypes);
+    // Add all primary keys and colunms
+    CreateTable createTable = addColumnsAndKeys(create);
+    // Add comment which has table properties for vectorize
     CreateTableWithOptions createWithOptions = createTable.withComment(comment);
-    createWithOptions = addClusteringOrder(createWithOptions, clusteringKeys);
+    // Add the clustering key order
+    createWithOptions = addClusteringOrder(createWithOptions);
     final SimpleStatement statement = createWithOptions.build();
     final Uni<AsyncResultSet> resultSetUni =
         queryExecutor.executeCreateSchemaChange(dataApiRequestInfo, statement);
     return resultSetUni.onItem().transform(rs -> new SchemaChangeResult(true));
   }
 
-  private CreateTable addColumnsAndKeys(
-      CreateTableStart create,
-      List<String> partitionKeys,
-      List<PrimaryKey.OrderingKey> clusteringKeys,
-      Map<String, ColumnType> columnTypes) {
+  private CreateTable addColumnsAndKeys(CreateTableStart create) {
+    Set<String> addedColumns = new HashSet<>();
     CreateTable createTable = null;
     for (String partitionKey : partitionKeys) {
       if (createTable == null) {
@@ -74,23 +76,25 @@ public class CreateTableOperation implements Operation {
         createTable =
             createTable.withPartitionKey(partitionKey, columnTypes.get(partitionKey).getCqlType());
       }
-      columnTypes.remove(partitionKey);
+      addedColumns.add(partitionKey);
     }
     for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
       ColumnType columnType = columnTypes.get(clusteringKey.column());
       createTable =
           createTable.withClusteringColumn(clusteringKey.column(), columnType.getCqlType());
-      columnTypes.remove(clusteringKey.column());
+      addedColumns.add(clusteringKey.column());
     }
 
     for (Map.Entry<String, ColumnType> column : columnTypes.entrySet()) {
+      if (addedColumns.contains(column.getKey())) {
+        continue;
+      }
       createTable = createTable.withColumn(column.getKey(), column.getValue().getCqlType());
     }
     return createTable;
   }
 
-  private CreateTableWithOptions addClusteringOrder(
-      CreateTableWithOptions createTableWithOptions, List<PrimaryKey.OrderingKey> clusteringKeys) {
+  private CreateTableWithOptions addClusteringOrder(CreateTableWithOptions createTableWithOptions) {
     for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
       createTableWithOptions =
           createTableWithOptions.withClusteringOrder(

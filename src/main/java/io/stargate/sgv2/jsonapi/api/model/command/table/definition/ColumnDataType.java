@@ -15,5 +15,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         """
                      {"type": "string"}
                       """)
-public record ColumnDefinition(
+// TODO: this is only the type defintion for the column, maybe want to rename later to avoid
+// confusion
+public record ColumnDataType(
     @NotNull @Schema(description = "Cassandra data type of the column") ColumnType type) {}

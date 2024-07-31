@@ -2,8 +2,8 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnDefinition;
+import io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnDataType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -22,15 +22,15 @@ public record CreateTableCommand(
         @Schema(description = "Name of the table")
         String name,
     @Valid @NotNull @Schema(description = "Table definition") Definition definition)
-    implements KeyspaceCommand {
+    implements TableOnlyCommand {
   public record Definition(
       @Valid
           @Schema(description = "API table columns definitions", type = SchemaType.OBJECT)
           @JsonInclude(JsonInclude.Include.NON_NULL)
-          Map<String, ColumnDefinition> columns,
+          Map<String, ColumnDataType> columns,
       @Valid
           @Schema(
-              description = "Authentication config for chosen embedding service",
+              description = "Primary key definition for the table",
               anyOf = {String.class, PrimaryKey.class})
           @JsonInclude(JsonInclude.Include.NON_NULL)
           PrimaryKey primaryKey) {}
