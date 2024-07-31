@@ -7,17 +7,22 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.filters.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NumberTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TextTableFilter;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
-public class TableFilterResolver<T extends Command & Filterable>
-    extends FilterResolver<T, TableSchemaObject> {
+/**
+ * POC for a filter clause resolver that can handle the filter clause for a table.
+ *
+ * @param <CmdT>
+ */
+public class TableFilterResolver<CmdT extends Command & Filterable>
+    extends FilterResolver<CmdT, TableSchemaObject> {
 
   private static final Object DYNAMIC_TEXT_GROUP = new Object();
   private static final Object DYNAMIC_NUMBER_GROUP = new Object();
@@ -27,8 +32,8 @@ public class TableFilterResolver<T extends Command & Filterable>
   }
 
   @Override
-  protected FilterMatchRules<T> buildMatchRules() {
-    var matchRules = new FilterMatchRules<T>();
+  protected FilterMatchRules<CmdT> buildMatchRules() {
+    var matchRules = new FilterMatchRules<CmdT>();
 
     matchRules.addMatchRule(TableFilterResolver::findNoFilter, FilterMatcher.MatchStrategy.EMPTY);
 
@@ -68,7 +73,7 @@ public class TableFilterResolver<T extends Command & Filterable>
   private static List<DBFilterBase> findDynamic(CaptureExpression captureExpression) {
     List<DBFilterBase> filters = new ArrayList<>();
 
-    // TODO: How do we know what the T of the JsonLiteral<T> from .value() is ?
+    // TODO: How do we know what the CmdT of the JsonLiteral<CmdT> from .value() is ?
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
       if (captureExpression.marker() == DYNAMIC_TEXT_GROUP) {
         filters.add(
