@@ -23,7 +23,9 @@ import java.util.function.Function;
  * </ul>
  *
  * TODO: expand this idea to be map to and from the CQL representation, we can use it to build the
- * JSON doc from reading a row and to use it for writing a row.
+ * JSON doc from reading a row and to use it for writing a row. // TODO Mahesh, The codec looks fine
+ * for primitive type. Needs a revisit when we doing complex // types where only few fields will
+ * need to be returned. Will we be creating custom Codec based // on user requests?
  *
  * @param javaType {@link GenericType} of the Java object that needs to be transformed into the type
  *     CQL expects.
@@ -36,9 +38,6 @@ import java.util.function.Function;
  */
 public record JSONCodec<JavaT, CqlT>(
     GenericType<JavaT> javaType,
-    // TODO Mahesh, The codec looks fine for primitive type. Needs a revisit when we doing complex
-    // types where only few fields will need to be returned. Will we be creating custom Codec based
-    // on user requests?
     DataType targetCQLType,
     ToCQL<JavaT, CqlT> toCQL,
     ToJSON<CqlT> toJSON) {
@@ -139,11 +138,11 @@ public record JSONCodec<JavaT, CqlT>(
      * Function#identity()}
      *
      * <p>Unsafe because it does not catch any errors from the conversion, because there are none.
+     * TODO what is the point here? Is it for type-casting purpose or why is this needed?
      *
      * @return
      * @param <JavaT>
      */
-    // TODO what is the point here? Is it for type-casting purpose or why is this needed?
     static <JavaT> ToCQL<JavaT, JavaT> unsafeIdentity() {
       return (toCQLType, value) -> value;
     }

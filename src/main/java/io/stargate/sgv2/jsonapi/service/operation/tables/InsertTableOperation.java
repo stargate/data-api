@@ -2,11 +2,9 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
-import com.google.common.base.Preconditions;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -15,14 +13,8 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertOperationPage;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -70,8 +62,14 @@ public class InsertTableOperation extends TableMutationOperation {
       return Uni.createFrom().failure(insertAttempt.failure().get());
     }
 
+    // If we did not fail, then we should have a row, test that
+    if (insertAttempt.row().isEmpty()) {
+      return Uni.createFrom()
+          .failure(new IllegalStateException("InsertAttempt has no row, and no failure"));
+    }
+
     // bind and execute
-    var boundStatement = buildInsertStatement(queryExecutor, insertAttempt.row().orElseThrow());
+    var boundStatement = buildInsertStatement(queryExecutor, insertAttempt);
 
     // TODO: AARON What happens to errors here?
     return queryExecutor
@@ -89,45 +87,17 @@ public class InsertTableOperation extends TableMutationOperation {
         .transform((ia, throwable) -> (TableInsertAttempt) ia.maybeAddFailure(throwable));
   }
 
-  private SimpleStatement buildInsertStatement(QueryExecutor queryExecutor, WriteableTableRow row) {
-
-    Preconditions.checkArgument(
-        !row.allColumnValues().isEmpty(), "Row must have at least one column to insert");
+  private SimpleStatement buildInsertStatement(
+      QueryExecutor queryExecutor, TableInsertAttempt insertAttempt) {
 
     InsertInto insertInto =
         insertInto(
             commandContext.schemaObject().tableMetadata.getKeyspace(),
             commandContext.schemaObject().tableMetadata.getName());
 
-    List<Object> positionalValues = new ArrayList<>(row.allColumnValues().size());
-    RegularInsert ongoingInsert = null;
-
-    for (Map.Entry<CqlIdentifier, Object> entry : row.allColumnValues().entrySet()) {
-      try {
-        var codec =
-            JSONCodecRegistry.codecToCQL(
-                commandContext.schemaObject().tableMetadata, entry.getKey(), entry.getValue());
-        positionalValues.add(codec.toCQL(entry.getValue()));
-      } catch (UnknownColumnException e) {
-        // TODO AARON - Handle error
-        throw new RuntimeException(e);
-      } catch (MissingJSONCodecException e) {
-        // TODO AARON - Handle error
-        throw new RuntimeException(e);
-      } catch (ToCQLCodecException e) {
-        // TODO AARON - Handle error
-        throw new RuntimeException(e);
-      }
-
-      // need to switch from the InertInto interface to the RegularInsert to get to the
-      // asCQL() later.
-      ongoingInsert =
-          ongoingInsert == null
-              ? insertInto.value(entry.getKey(), bindMarker())
-              : ongoingInsert.value(entry.getKey(), bindMarker());
-    }
-
-    assert ongoingInsert != null;
-    return SimpleStatement.newInstance(ongoingInsert.asCql(), positionalValues.toArray());
+    List<Object> positionalValues = new ArrayList<>();
+    RegularInsert regularInsert =
+        insertAttempt.getInsertValuesCQLClause().apply(insertInto, positionalValues);
+    return SimpleStatement.newInstance(regularInsert.asCql(), positionalValues.toArray());
   }
 }

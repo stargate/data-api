@@ -3,8 +3,8 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
-import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
+import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +46,9 @@ import org.slf4j.LoggerFactory;
  *                 | varint
  * </pre>
  *
- * @param <T> The JSON Type , BigDecimal, String etc
+ * @param <CqlT> The JSON Type , BigDecimal, String etc
  */
-public abstract class NativeTypeTableFilter<T> extends TableFilter {
+public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(NativeTypeTableFilter.class);
 
@@ -55,9 +56,10 @@ public abstract class NativeTypeTableFilter<T> extends TableFilter {
    * The operations that can be performed to filter a column TIDY: we have operations defined in
    * multiple places, once we have refactored the collection operations we should centralize these
    * operator definitions
+   *
+   * <p>TODO, other operators that apply to scaler / native tyes
    */
   public enum Operator {
-    // TODO, other operators like  NE, IN etc.
     EQ(BuiltConditionPredicate.EQ),
     LT(BuiltConditionPredicate.LT),
     GT(BuiltConditionPredicate.GT),
@@ -83,9 +85,9 @@ public abstract class NativeTypeTableFilter<T> extends TableFilter {
   }
 
   protected final Operator operator;
-  protected final T columnValue;
+  protected final CqlT columnValue;
 
-  protected NativeTypeTableFilter(String path, Operator operator, T columnValue) {
+  protected NativeTypeTableFilter(String path, Operator operator, CqlT columnValue) {
     super(path);
     this.columnValue = columnValue;
     this.operator = operator;
@@ -98,8 +100,10 @@ public abstract class NativeTypeTableFilter<T> extends TableFilter {
   }
 
   @Override
-  public Select apply(
-      TableSchemaObject tableSchemaObject, Select select, List<Object> positionalValues) {
+  public <StmtT extends OngoingWhereClause<StmtT>> StmtT apply(
+      TableSchemaObject tableSchemaObject,
+      StmtT ongoingWhereClause,
+      List<Object> positionalValues) {
 
     try {
       var codec =
@@ -117,6 +121,7 @@ public abstract class NativeTypeTableFilter<T> extends TableFilter {
       throw new RuntimeException(e);
     }
 
-    return select.where(Relation.column(path).build(operator.predicate.cql, bindMarker()));
+    return ongoingWhereClause.where(
+        Relation.column(path).build(operator.predicate.cql, bindMarker()));
   }
 }
