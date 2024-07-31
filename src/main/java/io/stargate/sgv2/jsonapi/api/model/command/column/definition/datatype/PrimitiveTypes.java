@@ -1,0 +1,24 @@
+package io.stargate.sgv2.jsonapi.api.model.command.column.definition.datatype;
+
+import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.DataTypes;
+
+public class PrimitiveTypes {
+
+  public static final ColumnType TEXT = new Text();
+  public static final ColumnType INT = new Int();
+
+  private static class Text implements ColumnType {
+    @Override
+    public DataType getCqlType() {
+      return DataTypes.TEXT;
+    }
+  }
+
+  private static class Int implements ColumnType {
+    @Override
+    public DataType getCqlType() {
+      return DataTypes.TEXT;
+    }
+  }
+}

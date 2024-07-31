@@ -9,4 +9,4 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
   @JsonSubTypes.Type(value = CollectionOnlyCommand.class),
   @JsonSubTypes.Type(value = TableOnlyCommand.class)
 })
-public interface NamespaceCommand extends Command {}
+public interface NamespaceCommand extends SchemaCommand {}
