@@ -68,7 +68,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"SchemaCommand\"s: known commands are [createCollection"));
+                  "Provided command unknown: \"unknownCommand\" not one of \"NamespaceCommand\"s: known commands are [createCollection"));
     }
 
     @Test
