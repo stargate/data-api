@@ -22,8 +22,8 @@ import io.stargate.sgv2.jsonapi.service.resolver.CommandResolver;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = NamespaceCommand.class),
-  @JsonSubTypes.Type(value = KeyspaceCommand.class),
+  @JsonSubTypes.Type(value = CollectionOnlyCommand.class),
+  @JsonSubTypes.Type(value = TableOnlyCommand.class),
   @JsonSubTypes.Type(value = GeneralCommand.class),
   @JsonSubTypes.Type(value = CollectionCommand.class),
 })

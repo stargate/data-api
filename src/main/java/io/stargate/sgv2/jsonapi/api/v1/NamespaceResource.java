@@ -3,8 +3,8 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.SchemaCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
@@ -99,14 +99,14 @@ public class NamespaceResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
-      @NotNull @Valid SchemaCommand command,
+      @NotNull @Valid NamespaceCommand command,
       @PathParam("namespace")
           @NotNull
           @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
           @Size(min = 1, max = 48)
           String namespace) {
 
-    if (command instanceof KeyspaceCommand && !apiTablesConfig.enabled()) {
+    if (command instanceof TableOnlyCommand && !apiTablesConfig.enabled()) {
       return Uni.createFrom()
           .item(
               new ThrowableCommandResultSupplier(
