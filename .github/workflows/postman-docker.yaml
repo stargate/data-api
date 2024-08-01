@@ -53,7 +53,7 @@ jobs:
         run: |
           DATAAPITAG=$(git show -s --format="%H")
           docker pull ${{ secrets.ECR_REPOSITORY }}/stargateio/jsonapi:$DATAAPITAG
-          docker image tag ${{ secrets.ECR_REPOSITORY }}/stargateio/jsonapi:$DATAAPITAG stargateio/jsonapi:$DATAAPITAG
+          docker image tag ${{ secrets.ECR_REPOSITORY }}/stargateio/jsonapi:$DATAAPITAG stargateio/data-api:$DATAAPITAG
           cd docker-compose
           ./start_dse69.sh -j $DATAAPITAG 
 
