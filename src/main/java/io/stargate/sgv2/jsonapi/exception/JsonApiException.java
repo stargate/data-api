@@ -22,7 +22,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
  * directly.
  */
 public class JsonApiException extends RuntimeException implements Supplier<CommandResult> {
-  OperationsConfig operationsConfig;
 
   private final ErrorCode errorCode;
 
