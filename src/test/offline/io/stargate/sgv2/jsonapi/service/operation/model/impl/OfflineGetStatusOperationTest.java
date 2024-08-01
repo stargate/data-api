@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.model.impl;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -22,7 +23,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 public class OfflineGetStatusOperationTest {
