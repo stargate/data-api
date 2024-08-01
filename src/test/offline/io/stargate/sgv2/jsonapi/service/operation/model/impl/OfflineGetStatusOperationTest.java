@@ -22,7 +22,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import io.quarkus.test.junit.QuarkusTest;
 
+@QuarkusTest
 public class OfflineGetStatusOperationTest {
 
   private static String SSTAbleOutputDirectory;
