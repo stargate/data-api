@@ -281,6 +281,12 @@ public interface OperationsConfig {
   boolean vectorizeEnabled();
 
   /**
+   * @return Flag to extend error response with additional information.
+   */
+  @WithDefault("false")
+  boolean extendError();
+
+  /**
    * @return Flag to enable vectorization using embedding-gateway.
    */
   @WithDefault("false")

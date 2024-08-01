@@ -201,17 +201,16 @@ public enum ErrorCode {
   }
 
   public JsonApiException toApiException(String format, Object... args) {
-    return new JsonApiException(this, message + ": " + String.format(format, args));
+    return new JsonApiException(this, String.format(format, args));
   }
 
   public JsonApiException toApiException(
       Response.Status httpStatus, String format, Object... args) {
-    return new JsonApiException(
-        this, message + ": " + String.format(format, args), null, httpStatus);
+    return new JsonApiException(this, String.format(format, args), null, httpStatus);
   }
 
   public JsonApiException toApiException(Throwable cause, String format, Object... args) {
-    return new JsonApiException(this, message + ": " + String.format(format, args), cause);
+    return new JsonApiException(this, String.format(format, args), cause);
   }
 
   public JsonApiException toApiException() {
