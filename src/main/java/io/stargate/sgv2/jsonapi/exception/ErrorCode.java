@@ -1,6 +1,9 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import io.smallrye.config.SmallRyeConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCode {
@@ -191,6 +194,11 @@ public enum ErrorCode {
   ERROR_APPLYING_CODEC("Error applying codec");
 
   private final String message;
+  private final boolean extendError =
+      ConfigProvider.getConfig()
+          .unwrap(SmallRyeConfig.class)
+          .getConfigMapping(OperationsConfig.class)
+          .extendError();
 
   ErrorCode(String message) {
     this.message = message;
@@ -201,16 +209,26 @@ public enum ErrorCode {
   }
 
   public JsonApiException toApiException(String format, Object... args) {
-    return new JsonApiException(this, String.format(format, args));
+    if (extendError) {
+      return new JsonApiException(this, String.format(format, args));
+    }
+    return new JsonApiException(this, message + ": " + String.format(format, args));
   }
 
   public JsonApiException toApiException(
       Response.Status httpStatus, String format, Object... args) {
-    return new JsonApiException(this, String.format(format, args), null, httpStatus);
+    if (extendError) {
+      return new JsonApiException(this, String.format(format, args), null, httpStatus);
+    }
+    return new JsonApiException(
+        this, message + ": " + String.format(format, args), null, httpStatus);
   }
 
   public JsonApiException toApiException(Throwable cause, String format, Object... args) {
-    return new JsonApiException(this, String.format(format, args), cause);
+    if (extendError) {
+      return new JsonApiException(this, String.format(format, args), cause);
+    }
+    return new JsonApiException(this, message + ": " + String.format(format, args), cause);
   }
 
   public JsonApiException toApiException() {

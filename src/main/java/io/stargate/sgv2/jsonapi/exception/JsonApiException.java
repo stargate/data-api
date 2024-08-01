@@ -22,7 +22,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
  * directly.
  */
 public class JsonApiException extends RuntimeException implements Supplier<CommandResult> {
-  private final OperationsConfig operationsConfig;
 
   private final ErrorCode errorCode;
 
@@ -60,10 +59,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     String errorFamily = getErrorFamily();
     this.errorFamily = errorFamily;
     this.errorScope = getErrorScope(errorFamily);
-    this.operationsConfig =
-        ConfigProvider.getConfig()
-            .unwrap(SmallRyeConfig.class)
-            .getConfigMapping(OperationsConfig.class);
   }
 
   /** {@inheritDoc} */
@@ -100,11 +95,12 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     }
     DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
     final boolean debugEnabled = debugModeConfig.enabled();
+    final boolean extendError = config.getConfigMapping(OperationsConfig.class).extendError();
     Map<String, Object> fields = null;
     if (debugEnabled) {
       fields =
           Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
-    } else if (operationsConfig.extendError()) {
+    } else if (extendError) {
       fields =
           Map.of(
               "errorCode",
@@ -155,6 +151,8 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
             add(VECTORIZECONFIG_CHECK_FAIL);
             add(UNAUTHENTICATED_REQUEST);
             add(COLLECTION_CREATION_ERROR);
+            add(INVALID_QUERY);
+            add(NO_INDEX_ERROR);
           }
         };
 
@@ -175,6 +173,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
             add(VECTOR_SEARCH_INVALID_FUNCTION_NAME);
             add(VECTOR_SEARCH_TOO_BIG_VALUE);
             add(INVALID_PARAMETER_VALIDATION_TYPE);
+            add(INVALID_ID_TYPE);
           }
         };
     Set<ErrorCode> embeddingScope =
