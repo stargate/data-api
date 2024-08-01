@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
+import io.stargate.sgv2.jsonapi.service.resolver.UnvalidatedClauseException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.HashMap;
@@ -48,16 +48,7 @@ public class RowShredder {
         .forEachRemaining(
             entry -> {
               // using fromCQL so it is case sensitive
-
-              Object value =
-                  switch (entry.getValue().getNodeType()) {
-                    case NUMBER -> entry.getValue().decimalValue();
-                    case STRING -> entry.getValue().textValue();
-                    case BOOLEAN -> entry.getValue().booleanValue();
-                    case NULL -> null;
-                    default -> throw new RuntimeException("Unsupported type");
-                  };
-              columnValues.put(CqlIdentifier.fromCql(entry.getKey()), value);
+              columnValues.put(CqlIdentifier.fromCql(entry.getKey()), shredValue(entry.getValue()));
             });
 
     // the document should have been validated that all the fields present exist in the table
@@ -70,10 +61,39 @@ public class RowShredder {
                   if (columnValues.containsKey(colIdentifier)) {
                     return columnValues.get(colIdentifier);
                   }
-                  throw new UnknownColumnException(table.tableMetadata, colIdentifier);
+                  throw new UnvalidatedClauseException(
+                      String.format(
+                          "Primary key column %s is missing from the document",
+                          colIdentifier.toString()));
                 })
             .toList();
 
     return new WriteableTableRow(new RowId(primaryKeyValues.toArray()), columnValues);
+  }
+
+  /**
+   * Function that will convert a JSONNode value, e.g. '1' into the correct Java type expected when
+   * processing tables, e.g. BigDecimal.
+   *
+   * <p>The types returned here are types that are expected by the {@link
+   * io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry} so we know
+   * how to convert them into the correct Java types expected by the CQL driver.
+   *
+   * <p>The main difference here is that we convert all numbers to BigDecimal, and then defer
+   * conversion into the type defined by the CQL Column until we are building the CQL statement
+   * (e.g. insert, or select) where we bind to the column in the table and use the codec to sort it
+   * out.
+   *
+   * @param value
+   * @return
+   */
+  public static Object shredValue(JsonNode value) {
+    return switch (value.getNodeType()) {
+      case NUMBER -> value.decimalValue();
+      case STRING -> value.textValue();
+      case BOOLEAN -> value.booleanValue();
+      case NULL -> null;
+      default -> throw new RuntimeException("Unsupported type");
+    };
   }
 }

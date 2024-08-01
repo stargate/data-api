@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
@@ -14,12 +15,16 @@ import java.util.stream.IntStream;
 
 public class TableInsertAttempt implements InsertAttempt {
 
+  private final TableSchemaObject tableSchemaObject;
   private final int position;
   private final RowId rowId;
   private final WriteableTableRow row;
   private Throwable failure;
 
-  private TableInsertAttempt(int position, RowId rowId, WriteableTableRow row) {
+  private TableInsertAttempt(
+      TableSchemaObject tableSchemaObject, int position, RowId rowId, WriteableTableRow row) {
+    this.tableSchemaObject =
+        Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     this.position = position;
     this.rowId = rowId;
     this.row = row;
@@ -31,8 +36,9 @@ public class TableInsertAttempt implements InsertAttempt {
   }
 
   public static List<TableInsertAttempt> create(
-      RowShredder shredder, TableSchemaObject table, List<JsonNode> documents) {
+      RowShredder shredder, TableSchemaObject tableSchemaObject, List<JsonNode> documents) {
     Objects.requireNonNull(shredder, "shredder cannot be null");
+    Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     Objects.requireNonNull(documents, "documents cannot be null");
 
     // TODO, just use a for loop, instead of IntStream
@@ -41,16 +47,20 @@ public class TableInsertAttempt implements InsertAttempt {
             i -> {
               WriteableTableRow row;
               try {
-                row = shredder.shred(table, documents.get(i));
+                row = shredder.shred(tableSchemaObject, documents.get(i));
               } catch (Exception e) {
                 // TODO: need a shredding base excpetion to catch
                 // TODO: we need to get the row id, so we can return it in the response
                 return (TableInsertAttempt)
-                    new TableInsertAttempt(i, null, null).maybeAddFailure(e);
+                    new TableInsertAttempt(tableSchemaObject, i, null, null).maybeAddFailure(e);
               }
-              return new TableInsertAttempt(i, row.id(), row);
+              return new TableInsertAttempt(tableSchemaObject, i, row.id(), row);
             })
         .toList();
+  }
+
+  public InsertValuesCQLClause getInsertValuesCQLClause() {
+    return new TableInsertValuesCQLClause(tableSchemaObject, row);
   }
 
   public Optional<WriteableTableRow> row() {

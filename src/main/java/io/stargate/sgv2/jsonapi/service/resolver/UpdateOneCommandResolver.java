@@ -11,13 +11,20 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tables.UpdateTableOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.update.TableUpdateResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.update.UpdateResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
@@ -36,7 +43,10 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
-  private final CollectionFilterResolver<UpdateOneCommand> collectionFilterResolver;
+  private final FilterResolver<UpdateOneCommand, CollectionSchemaObject> collectionFilterResolver;
+  private final FilterResolver<UpdateOneCommand, TableSchemaObject> tableFilterResolver;
+
+  private final UpdateResolver<UpdateOneCommand, TableSchemaObject> tableUpdateResolver;
 
   @Inject
   public UpdateOneCommandResolver(
@@ -57,11 +67,24 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
+    this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
+    this.tableUpdateResolver = new TableUpdateResolver<>(operationsConfig);
   }
 
   @Override
   public Class<UpdateOneCommand> getCommandClass() {
     return UpdateOneCommand.class;
+  }
+
+  @Override
+  public Operation resolveTableCommand(
+      CommandContext<TableSchemaObject> ctx, UpdateOneCommand command) {
+
+    return new UpdateTableOperation(
+        ctx,
+        tableUpdateResolver.resolve(ctx, command),
+        TableWhereCQLClause.forUpdate(
+            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command)));
   }
 
   @Override

@@ -17,7 +17,9 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.FindTableOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableRowProjection;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -33,8 +35,8 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
-  private final CollectionFilterResolver<FindOneCommand> collectionFilterResolver;
-  private final TableFilterResolver<FindOneCommand> tableFilterResolver;
+  private final FilterResolver<FindOneCommand, CollectionSchemaObject> collectionFilterResolver;
+  private final FilterResolver<FindOneCommand, TableSchemaObject> tableFilterResolver;
 
   @Inject
   public FindOneCommandResolver(
@@ -64,11 +66,16 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, FindOneCommand command) {
 
+    var tableRowProjection =
+        TableRowProjection.fromDefinition(
+            objectMapper, command.tableProjectionDefinition(), ctx.schemaObject());
+
     return new FindTableOperation(
         ctx,
-        tableFilterResolver.resolve(ctx, command),
-        TableRowProjection.fromDefinition(
-            objectMapper, command.tableProjectionDefinition(), ctx.schemaObject()),
+        tableRowProjection,
+        TableWhereCQLClause.forSelect(
+            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command)),
+        tableRowProjection,
         new FindTableOperation.FindTableParams(1));
   }
 

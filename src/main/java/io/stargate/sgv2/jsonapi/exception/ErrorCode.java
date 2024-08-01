@@ -187,12 +187,20 @@ public enum ErrorCode {
   SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
   EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
   EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request"),
-
   // TODO, add this section so we don't have to throw RuntimeExceptions for table work, and it is
   // easy to track, should be improved along with error refactor work
   // Table related
-  ERROR_APPLYING_CODEC("Error applying codec");
+  // TODO: AARON - remove this unused error code, we would not want to return this error to the user
+  ERROR_APPLYING_CODEC("Error applying codec"),
 
+  // API Table Error Codes
+  TABLE_FEATURE_NOT_ENABLED("API Table feature is not enabled"),
+
+  TABLE_COLUMN_TYPE_NOT_PROVIDED("Column data type not provided as part of definition"),
+  TABLE_PRIMARY_KEY_DEFINITION_INCORRECT("Primary key definition is incorrect"),
+  TABLE_MISSING_PARTITIONING_KEYS("Key needs to be provided as part of partitioning definition"),
+  TABLE_COLUMN_DEFINITION_MISSING("Column definition is missing for the provided key field"),
+  TABLE_COLUMN_TYPE_UNSUPPORTED("Unsupported column types");
   private final String message;
   private final boolean extendError =
       ConfigProvider.getConfig()
