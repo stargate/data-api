@@ -4,17 +4,18 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.google.common.base.Preconditions;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.DocumentSourceSupplier;
 import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.TableFilter;
+import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -27,18 +28,26 @@ import java.util.stream.StreamSupport;
  * projections
  */
 public class FindTableOperation extends TableReadOperation {
-  private final OperationProjection projection;
+
+  private final SelectCQLClause selectCQLClause;
+  private final WhereCQLClause<Select> whereCQLClause;
+  private final DocumentSourceSupplier documentSourceSupplier;
   private final FindTableParams params;
 
   public FindTableOperation(
       CommandContext<TableSchemaObject> commandContext,
-      LogicalExpression logicalExpression,
-      OperationProjection projection,
+      SelectCQLClause selectCQLClause,
+      WhereCQLClause<Select> whereCQLClause,
+      DocumentSourceSupplier documentSourceSupplier,
       FindTableParams params) {
-    super(commandContext, logicalExpression);
+    super(commandContext);
 
+    this.selectCQLClause =
+        Objects.requireNonNull(selectCQLClause, "selectCQLClause must not be null");
+    this.whereCQLClause = Objects.requireNonNull(whereCQLClause, "whereCQLClause must not be null");
+    this.documentSourceSupplier =
+        Objects.requireNonNull(documentSourceSupplier, "documentSourceSupplier must not be null");
     this.params = Objects.requireNonNull(params, "params must not be null");
-    this.projection = Objects.requireNonNull(projection, "projection must not be null");
   }
 
   @Override
@@ -46,28 +55,21 @@ public class FindTableOperation extends TableReadOperation {
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
 
     // Start the select
-    Select select =
-        projection.forSelect(
-            selectFrom(
-                commandContext.schemaObject().tableMetadata.getKeyspace(),
-                commandContext.schemaObject().tableMetadata.getName()));
+    SelectFrom selectFrom =
+        selectFrom(
+            commandContext.schemaObject().tableMetadata.getKeyspace(),
+            commandContext.schemaObject().tableMetadata.getName());
 
-    // BUG: this probably break order for nested expressions, for now enough to get this tested
-    var tableFilters =
-        logicalExpression.comparisonExpressions.stream()
-            .flatMap(comparisonExpression -> comparisonExpression.getDbFilters().stream())
-            .map(dbFilter -> (TableFilter) dbFilter)
-            .toList();
+    // Add the columns we want to select
+    Select select = selectCQLClause.apply(selectFrom);
 
-    // Add the where clause operations
+    // Add the where clause
     List<Object> positionalValues = new ArrayList<>();
-    for (TableFilter tableFilter : tableFilters) {
-      select = tableFilter.apply(commandContext.schemaObject(), select, positionalValues);
-    }
+    select = whereCQLClause.apply(select, positionalValues);
 
-    select = select.limit(params.limit());
+    // Add things like limit
+    select = params.options().apply(select);
 
-    // Building a statment using the positional values added by the TableFilter
     var statement = select.build(positionalValues.toArray());
 
     // TODO: pageSize for FindTableOperation
@@ -79,11 +81,9 @@ public class FindTableOperation extends TableReadOperation {
 
   private ReadOperationPage toReadOperationPage(AsyncResultSet resultSet) {
 
-    var objectMapper = new ObjectMapper();
-
     var docSources =
         StreamSupport.stream(resultSet.currentPage().spliterator(), false)
-            .map(projection::toDocument)
+            .map(documentSourceSupplier::documentSource)
             .toList();
 
     return new ReadOperationPage(docSources, params.isSingleResponse(), null, false, null);
@@ -99,6 +99,15 @@ public class FindTableOperation extends TableReadOperation {
 
     public boolean isSingleResponse() {
       return limit == 1;
+    }
+
+    public OptionsBuilder options() {
+      return new OptionsBuilder() {
+        @Override
+        public Select apply(Select select) {
+          return select.limit(limit());
+        }
+      };
     }
   }
 }

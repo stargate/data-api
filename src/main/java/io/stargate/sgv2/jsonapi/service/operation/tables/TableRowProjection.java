@@ -2,17 +2,19 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.querybuilder.select.OngoingSelection;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
+import io.stargate.sgv2.jsonapi.service.operation.DocumentSourceSupplier;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToJSONCodecException;
+import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.projection.TableProjectionDefinition;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +26,7 @@ import java.util.Map;
  */
 public record TableRowProjection(
     ObjectMapper objectMapper, TableSchemaObject table, List<ColumnMetadata> columns)
-    implements OperationProjection {
+    implements SelectCQLClause, DocumentSourceSupplier {
   /**
    * Factory method for construction projection instance, given a projection definition and table
    * schema.
@@ -52,12 +54,12 @@ public record TableRowProjection(
   }
 
   @Override
-  public Select forSelect(SelectFrom selectFrom) {
-    return selectFrom.columnsIds(columns.stream().map(ColumnMetadata::getName).toList());
+  public Select apply(OngoingSelection ongoingSelection) {
+    return ongoingSelection.columnsIds(columns.stream().map(ColumnMetadata::getName).toList());
   }
 
   @Override
-  public DocumentSource toDocument(Row row) {
+  public DocumentSource documentSource(Row row) {
     ObjectNode result = objectMapper.createObjectNode();
     for (int i = 0, len = columns.size(); i < len; ++i) {
       final ColumnMetadata column = columns.get(i);
