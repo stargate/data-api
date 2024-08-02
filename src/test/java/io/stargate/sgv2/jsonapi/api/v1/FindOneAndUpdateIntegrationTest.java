@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
@@ -1713,8 +1712,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .body(
               "errors[0].message",
               is(
-                  ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
-                      + ": Date ($date) needs to have NUMBER value, has STRING (path 'createdAt')"));
+                  "SHRED_BAD_EJSON_VALUE: Date ($date) needs to have NUMBER value, has STRING (path 'createdAt')"));
     }
   }
 

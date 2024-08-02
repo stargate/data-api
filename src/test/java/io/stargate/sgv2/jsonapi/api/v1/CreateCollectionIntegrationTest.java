@@ -216,7 +216,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
+          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
           .body(
               "errors[0].message",
               containsString(
@@ -249,7 +249,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
+          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
           .body(
               "errors[0].message",
               containsString(
