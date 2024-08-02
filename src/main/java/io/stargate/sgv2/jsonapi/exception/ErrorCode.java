@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.exception;
 
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.ConfigProvider;
 
@@ -203,10 +205,16 @@ public enum ErrorCode {
   TABLE_COLUMN_TYPE_UNSUPPORTED("Unsupported column types");
   private final String message;
   private final boolean extendError =
-      ConfigProvider.getConfig()
-          .unwrap(SmallRyeConfig.class)
-          .getConfigMapping(OperationsConfig.class)
-          .extendError();
+      ApiConstants.isOffline()
+          ? new SmallRyeConfigBuilder()
+              .withMapping(OperationsConfig.class)
+              .build()
+              .getConfigMapping(OperationsConfig.class)
+              .extendError()
+          : ConfigProvider.getConfig()
+              .unwrap(SmallRyeConfig.class)
+              .getConfigMapping(OperationsConfig.class)
+              .extendError();
 
   ErrorCode(String message) {
     this.message = message;
