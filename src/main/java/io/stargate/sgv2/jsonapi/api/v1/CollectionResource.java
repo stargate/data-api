@@ -4,9 +4,11 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.AddIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.DropIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.EstimatedDocumentCountCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
@@ -102,7 +104,9 @@ public class CollectionResource {
                         InsertOneCommand.class,
                         InsertManyCommand.class,
                         UpdateManyCommand.class,
-                        UpdateOneCommand.class
+                        UpdateOneCommand.class,
+                        AddIndexCommand.class,
+                        DropIndexCommand.class
                       }),
               examples = {
                 @ExampleObject(ref = "countDocuments"),
