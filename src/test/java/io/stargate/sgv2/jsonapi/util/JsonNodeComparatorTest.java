@@ -5,12 +5,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.POJONode;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
+import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Date;
 import org.junit.jupiter.api.Test;
 
-// No need for injection
+@QuarkusTest
+@TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class JsonNodeComparatorTest {
   private final ObjectMapper mapper = new ObjectMapper();
 

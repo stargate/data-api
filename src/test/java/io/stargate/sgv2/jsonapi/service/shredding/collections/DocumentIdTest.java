@@ -4,13 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.math.BigDecimal;
 import java.util.Date;
 import org.junit.jupiter.api.Test;
 
+@QuarkusTest
+@TestProfile(NoGlobalResourcesTestProfile.Impl.class)
 public class DocumentIdTest {
   private final ObjectMapper mapper = new ObjectMapper();
 
