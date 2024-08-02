@@ -9,13 +9,18 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.TruncateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.tables.DeleteTableOperation;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -33,7 +38,8 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
 
-  private final CollectionFilterResolver<DeleteManyCommand> collectionFilterResolver;
+  private final FilterResolver<DeleteManyCommand, CollectionSchemaObject> collectionFilterResolver;
+  private final FilterResolver<DeleteManyCommand, TableSchemaObject> tableFilterResolver;
 
   @Inject
   public DeleteManyCommandResolver(
@@ -50,6 +56,17 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
 
     this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
+    this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
+  }
+
+  @Override
+  public Operation resolveTableCommand(
+      CommandContext<TableSchemaObject> ctx, DeleteManyCommand command) {
+
+    return new DeleteTableOperation(
+        ctx,
+        TableWhereCQLClause.forDelete(
+            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command)));
   }
 
   @Override
