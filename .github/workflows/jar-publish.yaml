@@ -68,8 +68,8 @@ jobs:
 
       - name: Build
         run: |
-          JAVA_HOME=$JAVA_21 ./mvnw -B -ntp clean package -P offline         
+          JAVA_HOME=$JAVA_21 ./mvnw -B -ntp clean package         
 
       - name: Publish JAR
         run: |
-          JAVA_HOME=$JAVA_21 ./mvnw -B -ntp clean deploy -DskipTests -P offline
+          JAVA_HOME=$JAVA_21 ./mvnw -B -ntp clean deploy -DskipTests
