@@ -11,8 +11,8 @@ on:
 # global env vars, available in all jobs and steps
 env:
   MAVEN_OPTS: '-Xmx4g'
-  DS_ARTIFACTORY_USERNAME: ${{ secrets.DS_ARTIFACTORY_USERNAME }}
-  DS_ARTIFACTORY_PASSWORD: ${{ secrets.DS_ARTIFACTORY_PASSWORD }}
+  ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+  ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
 
 jobs:
 
@@ -32,39 +32,37 @@ jobs:
           cache: maven
 
       - name: Setup Maven
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_TOKEN: ${{ secrets.OSSRH_TOKEN }}
         run: |
           mkdir -p ~/.m2
           cat <<EOF > ~/.m2/settings.xml
           <settings>
             <servers>
               <server>
-                <id>stargate-central</id>
-                <username>${DS_ARTIFACTORY_USERNAME}</username>
-                <password>${DS_ARTIFACTORY_PASSWORD}</password>
-              </server>
-              <server>
-                <id>stargate-snapshots</id>
-                <username>${DS_ARTIFACTORY_USERNAME}</username>
-                <password>${DS_ARTIFACTORY_PASSWORD}</password>
-             </server>
-              <server>
-                <id>artifactory</id>
-                <username>${DS_ARTIFACTORY_USERNAME}</username>
-                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+                <id>ossrh</id>
+                <username>${OSSRH_USERNAME}</username>
+                <password>${OSSRH_TOKEN}</password>
               </server>
               <server>
                 <id>artifactory-snapshots</id>
-                <username>${DS_ARTIFACTORY_USERNAME}</username>
-                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+                <username>${ARTIFACTORY_USERNAME}</username>
+                <password>${ARTIFACTORY_PASSWORD}</password>
               </server>
               <server>
                 <id>artifactory-releases</id>
-                <username>${DS_ARTIFACTORY_USERNAME}</username>
-                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+                <username>${ARTIFACTORY_USERNAME}</username>
+                <password>${ARTIFACTORY_PASSWORD}</password>
              </server>
            </servers>
           </settings>
           EOF
+
+      - id: install-secret-key
+        name: Install gpg secret key
+        run: |
+          cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
 
       - name: Build
         run: |
@@ -72,4 +70,4 @@ jobs:
 
       - name: Publish JAR
         run: |
-          JAVA_HOME=$JAVA_21 ./mvnw -B -ntp clean deploy -DskipTests -P offline
+          JAVA_HOME=$JAVA_21 ./mvnw -B -ntp -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} clean deploy -DskipTests -P offline,deploy
