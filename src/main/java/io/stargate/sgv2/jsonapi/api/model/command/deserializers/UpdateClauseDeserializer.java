@@ -7,11 +7,10 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import java.io.IOException;
-import java.util.EnumMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 /** {@link StdDeserializer} for the {@link UpdateClause}. */
 public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
@@ -52,6 +51,22 @@ public class UpdateClauseDeserializer extends StdDeserializer<UpdateClause> {
       }
       updateDefs.put(oper, (ObjectNode) operationArg);
     }
+    validateUpdateDefs(updateDefs);
     return new UpdateClause(updateDefs);
+  }
+
+  public void validateUpdateDefs(EnumMap<UpdateOperator, ObjectNode> updateDefs) {
+    // check1: can not unset $vectorize and $vector at the same time
+    List<ObjectNode> checkUpdateOperationNodes = new ArrayList<>();
+    checkUpdateOperationNodes.add(updateDefs.get(UpdateOperator.UNSET));
+    checkUpdateOperationNodes.add(updateDefs.get(UpdateOperator.SET));
+    for (ObjectNode checkUpdateOperationNode : checkUpdateOperationNodes) {
+      if (checkUpdateOperationNode != null
+          && checkUpdateOperationNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
+        if (checkUpdateOperationNode.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+          throw ErrorCode.INVALID_USAGE_OF_VECTORIZE.toApiException();
+        }
+      }
+    }
   }
 }

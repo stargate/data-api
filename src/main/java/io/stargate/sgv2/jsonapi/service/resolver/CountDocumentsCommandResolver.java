@@ -10,19 +10,20 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CountCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterableResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 /** Resolves the {@link CountDocumentsCommand } */
 @ApplicationScoped
-public class CountDocumentsCommandResolver extends FilterableResolver<CountDocumentsCommand>
-    implements CommandResolver<CountDocumentsCommand> {
+public class CountDocumentsCommandResolver implements CommandResolver<CountDocumentsCommand> {
 
   private final OperationsConfig operationsConfig;
   private final MeterRegistry meterRegistry;
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
+
+  private final CollectionFilterResolver<CountDocumentsCommand> collectionFilterResolver;
 
   @Inject
   public CountDocumentsCommandResolver(
@@ -35,6 +36,8 @@ public class CountDocumentsCommandResolver extends FilterableResolver<CountDocum
     this.meterRegistry = meterRegistry;
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
+
+    this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
   }
 
   @Override
@@ -45,7 +48,7 @@ public class CountDocumentsCommandResolver extends FilterableResolver<CountDocum
   @Override
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, CountDocumentsCommand command) {
-    LogicalExpression logicalExpression = resolve(ctx, command);
+    LogicalExpression logicalExpression = collectionFilterResolver.resolve(ctx, command);
     addToMetrics(
         meterRegistry,
         dataApiRequestInfo,

@@ -26,13 +26,13 @@ import software.amazon.awssdk.services.bedrockruntime.model.BedrockRuntimeExcept
 import software.amazon.awssdk.services.bedrockruntime.model.InvokeModelResponse;
 
 /** Provider implementation for AWS Bedrock. To start we support only Titan embedding models. */
-public class AwsBedrockEnbeddingProvider extends EmbeddingProvider {
+public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
 
   private static final String providerId = ProviderConstants.BEDROCK;
   private static final ObjectWriter ow = new ObjectMapper().writer();
   private static final ObjectReader or = new ObjectMapper().reader();
 
-  public AwsBedrockEnbeddingProvider(
+  public AwsBedrockEmbeddingProvider(
       EmbeddingProviderConfigStore.RequestProperties requestProperties,
       String baseUrl,
       String modelName,
