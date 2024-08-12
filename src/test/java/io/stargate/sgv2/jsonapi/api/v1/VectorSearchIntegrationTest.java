@@ -802,7 +802,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
-          .body("errors[0].message", contains("$vector value can't be empty"));
+          .body("errors[0].message", is("$vector value can't be empty"));
     }
 
     @Test
@@ -832,7 +832,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
-          .body("errors[0].message", contains("$vector value needs to be array of numbers"));
+          .body("errors[0].message", is("$vector value needs to be array of numbers"));
     }
 
     @Test
@@ -981,7 +981,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
-          .body("errors[0].message", contains("$vector value can't be empty"));
+          .body("errors[0].message", is("$vector value can't be empty"));
     }
 
     @Test
@@ -1040,7 +1040,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
-          .body("errors[0].message", contains("$vector value needs to be array of numbers"));
+          .body("errors[0].message", is("$vector value needs to be array of numbers"));
     }
 
     // Vector columns can only use ANN, not regular filtering

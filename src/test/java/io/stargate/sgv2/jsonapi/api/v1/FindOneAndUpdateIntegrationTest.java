@@ -1712,7 +1712,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .body(
               "errors[0].message",
               is(
-                  "SHRED_BAD_EJSON_VALUE: Date ($date) needs to have NUMBER value, has STRING (path 'createdAt')"));
+                  "Bad JSON Extension value: Date ($date) needs to have NUMBER value, has STRING (path 'createdAt')"));
     }
   }
 
