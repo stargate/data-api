@@ -56,8 +56,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     this.errorCode = errorCode;
     this.httpStatus = httpStatus;
     this.title = errorCode.getMessage();
-    String errorFamily = getErrorFamily();
-    this.errorFamily = errorFamily;
+    this.errorFamily = getErrorFamily();
     this.errorScope = getErrorScope(errorFamily);
   }
 
@@ -97,10 +96,8 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     final boolean debugEnabled = debugModeConfig.enabled();
     final boolean extendError = config.getConfigMapping(OperationsConfig.class).extendError();
     Map<String, Object> fields = null;
-    if (debugEnabled) {
-      fields =
-          Map.of("errorCode", errorCode.name(), "exceptionClass", this.getClass().getSimpleName());
-    } else if (extendError) {
+
+    if (extendError) {
       fields =
           Map.of(
               "errorCode",
@@ -114,6 +111,11 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     } else {
       fields = Map.of("errorCode", errorCode.name());
     }
+
+    if (debugEnabled) {
+      fields.put("exceptionClass", this.getClass().getSimpleName());
+    }
+
     return new CommandResult.Error(message, fieldsForMetricsTag, fields, status);
   }
 
