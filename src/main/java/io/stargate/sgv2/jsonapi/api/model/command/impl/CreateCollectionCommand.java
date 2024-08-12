@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -31,7 +31,7 @@ public record CreateCollectionCommand(
             type = SchemaType.OBJECT,
             implementation = Options.class)
         Options options)
-    implements NamespaceCommand {
+    implements CollectionOnlyCommand {
   public record Options(
       @Nullable
           @Valid

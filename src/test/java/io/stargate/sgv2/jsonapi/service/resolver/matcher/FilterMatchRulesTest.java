@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.service.operation.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.EnumSet;
@@ -87,7 +87,7 @@ public class FilterMatchRulesTest {
               """;
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
-      FilterMatchRules filterMatchRules = new FilterMatchRules<FindOneCommand>();
+      FilterMatchRules<FindOneCommand> filterMatchRules = new FilterMatchRules<>();
       Function<CaptureExpression, List<DBFilterBase>> resolveFunction =
           captureExpression -> filters;
       filterMatchRules
@@ -100,7 +100,7 @@ public class FilterMatchRulesTest {
           .capture("TEST1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
-      assertThat(filterMatchRules.getMatchRules()).hasSize(2);
+      assertThat(filterMatchRules.size()).isEqualTo(2);
     }
   }
 }

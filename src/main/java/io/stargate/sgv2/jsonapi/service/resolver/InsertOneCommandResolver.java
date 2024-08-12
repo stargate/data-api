@@ -51,6 +51,6 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
       CommandContext<TableSchemaObject> ctx, InsertOneCommand command) {
 
     return new InsertTableOperation(
-        ctx, TableInsertAttempt.create(rowShredder, command.document()));
+        ctx, TableInsertAttempt.create(rowShredder, ctx.schemaObject(), command.document()));
   }
 }
