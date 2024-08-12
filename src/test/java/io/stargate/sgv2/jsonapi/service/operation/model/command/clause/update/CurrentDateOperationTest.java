@@ -27,7 +27,7 @@ public class CurrentDateOperationTest extends UpdateOperationTestBase {
           UpdateOperator.CURRENT_DATE.resolveOperation(
               objectFromJson("{ \"createdAt\": true, \"updatedAt\": true}"));
       final long startTime = System.currentTimeMillis();
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       assertThat(doc).hasSize(2);
 
       verifyApproximateDate(startTime, doc.path("createdAt"));
@@ -42,7 +42,7 @@ public class CurrentDateOperationTest extends UpdateOperationTestBase {
           UpdateOperator.CURRENT_DATE.resolveOperation(
               objectFromJson("{ \"item1.a\": true, \"item2.a\":true}"));
       final long startTime = System.currentTimeMillis();
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       assertThat(doc).hasSize(2);
 
       verifyApproximateDate(startTime, doc.at("/item1/a"));
@@ -55,7 +55,7 @@ public class CurrentDateOperationTest extends UpdateOperationTestBase {
       UpdateOperation oper =
           UpdateOperator.CURRENT_DATE.resolveOperation(objectFromJson("{\"a.1\":true }"));
       final long startTime = System.currentTimeMillis();
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       assertThat(doc).hasSize(1);
 
       verifyApproximateDate(startTime, doc.at("/a/1"));

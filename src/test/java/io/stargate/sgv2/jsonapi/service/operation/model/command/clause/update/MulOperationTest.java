@@ -37,7 +37,7 @@ public class MulOperationTest extends UpdateOperationTestBase {
               """
                     { "integer" : 2, "fp" : 0.5, "text" : "value"  }
                     """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -60,7 +60,7 @@ public class MulOperationTest extends UpdateOperationTestBase {
               """
                     { "integer" : 1, "fp" : 0.25, "text" : "value"  }
                     """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -85,7 +85,7 @@ public class MulOperationTest extends UpdateOperationTestBase {
               { "integer" : 5, "fp" : 0.25, "text" : "value"  }
               """);
       ObjectNode expected = doc.deepCopy();
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc).modified()).isFalse();
       // NOTE: need to use "toPrettyString()" since NumberNode types may differ
       assertThat(asPrettyJson(doc)).isEqualTo(asPrettyJson(expected));
     }
@@ -111,7 +111,7 @@ public class MulOperationTest extends UpdateOperationTestBase {
                               "fpArray" : [ 0, 0.25 ]
                             }
                             """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -138,7 +138,7 @@ public class MulOperationTest extends UpdateOperationTestBase {
                               "text" : "value"
                             }"
                             """);
-      assertThat(oper.updateDocument(doc)).isTrue();
+      assertThat(oper.updateDocument(doc).modified()).isTrue();
       ObjectNode expected =
           objectFromJson(
               """
@@ -173,7 +173,7 @@ public class MulOperationTest extends UpdateOperationTestBase {
                             }"
                             """);
       ObjectNode expected = doc.deepCopy();
-      assertThat(oper.updateDocument(doc)).isFalse();
+      assertThat(oper.updateDocument(doc).modified()).isFalse();
       assertThat(doc.toPrettyString()).isEqualTo(expected.toPrettyString());
     }
   }
@@ -221,7 +221,7 @@ public class MulOperationTest extends UpdateOperationTestBase {
       Exception e =
           catchException(
               () -> {
-                oper.updateDocument(doc);
+                oper.updateDocument(doc).modified();
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
@@ -251,7 +251,7 @@ public class MulOperationTest extends UpdateOperationTestBase {
       Exception e =
           catchException(
               () -> {
-                oper.updateDocument(doc);
+                oper.updateDocument(doc).modified();
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
