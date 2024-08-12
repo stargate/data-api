@@ -35,15 +35,13 @@ public class HttpResponseErrorMessageMapper {
 
     // Status code in 4XX other than 429
     if (response.getStatusInfo().getFamily() == CLIENT_ERROR) {
-      var test =
-          EmbeddingProviderException.Code.CLIENT_ERROR.get(
-              "provider",
-              providerName,
-              "httpStatus",
-              String.valueOf(response.getStatus()),
-              "errorMessage",
-              message);
-      return test;
+      return EmbeddingProviderException.Code.CLIENT_ERROR.get(
+          "provider",
+          providerName,
+          "httpStatus",
+          String.valueOf(response.getStatus()),
+          "errorMessage",
+          message);
     }
 
     // Status code in 5XX

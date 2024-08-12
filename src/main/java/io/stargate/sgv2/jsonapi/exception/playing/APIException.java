@@ -111,7 +111,8 @@ public abstract class APIException extends RuntimeException
     final Map<String, Object> fields =
         debugEnabled
             ? Map.of("errorCode", code, "exceptionClass", this.getClass().getSimpleName())
-            : Map.of("errorCode", code);
+            : Map.of(
+                "family", family, "scope", scope, "errorCode", code, "title", title, "id", errorId);
     return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
   }
 

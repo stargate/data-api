@@ -16,7 +16,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.NotSupportedException;
-import io.stargate.sgv2.jsonapi.exception.playing.APIException;
 import jakarta.ws.rs.core.Response;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,9 +45,10 @@ public final class ThrowableToErrorMapper {
           }
           return jae.getCommandResultError(message, jae.getHttpStatus());
         }
-        if (throwable instanceof APIException apiE) {
-          return apiE.getCommandResultError();
-        }
+        // TODO: add back when it's ready
+        //        if (throwable instanceof APIException apiE) {
+        //          return apiE.getCommandResultError();
+        //        }
 
         // General Exception related to JSON handling, thrown by Jackson
         if (throwable instanceof JacksonException jacksonE) {
