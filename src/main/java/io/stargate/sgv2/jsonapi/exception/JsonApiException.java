@@ -99,17 +99,18 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
 
     if (extendError) {
       fields =
-          Map.of(
-              "errorCode",
-              errorCode.name(),
-              "family",
-              errorFamily,
-              "scope",
-              errorScope,
-              "title",
-              title);
+          new HashMap<>(
+              Map.of(
+                  "errorCode",
+                  errorCode.name(),
+                  "family",
+                  errorFamily,
+                  "scope",
+                  errorScope,
+                  "title",
+                  title));
     } else {
-      fields = Map.of("errorCode", errorCode.name());
+      fields = new HashMap<>(Map.of("errorCode", errorCode.name()));
     }
 
     if (debugEnabled) {
