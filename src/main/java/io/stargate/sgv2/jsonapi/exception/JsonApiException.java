@@ -33,6 +33,67 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
 
   private final ErrorScope errorScope;
 
+  // some error codes should be classified as one category but do not have any pattern
+  private static final Set<ErrorCode> serverFamily =
+      new HashSet<>() {
+        {
+          add(COUNT_READ_FAILED);
+          add(CONCURRENCY_FAILURE);
+          add(TOO_MANY_COLLECTIONS);
+          add(VECTOR_SEARCH_NOT_AVAILABLE);
+          add(VECTOR_SEARCH_NOT_SUPPORTED);
+          add(VECTORIZE_FEATURE_NOT_AVAILABLE);
+          add(VECTORIZE_SERVICE_NOT_REGISTERED);
+          add(VECTORIZE_SERVICE_TYPE_UNAVAILABLE);
+          add(VECTORIZE_INVALID_AUTHENTICATION_TYPE);
+          add(VECTORIZE_CREDENTIAL_INVALID);
+          add(VECTORIZECONFIG_CHECK_FAIL);
+          add(UNAUTHENTICATED_REQUEST);
+          add(COLLECTION_CREATION_ERROR);
+          add(INVALID_QUERY);
+          add(NO_INDEX_ERROR);
+        }
+      };
+
+  private static final Set<ErrorCode> schemaScope =
+      new HashSet<>() {
+        {
+          add(INVALID_CREATE_COLLECTION_OPTIONS);
+          add(INVALID_USAGE_OF_VECTORIZE);
+          add(VECTOR_SEARCH_INVALID_FUNCTION_NAME);
+          add(VECTOR_SEARCH_TOO_BIG_VALUE);
+          add(INVALID_PARAMETER_VALIDATION_TYPE);
+          add(INVALID_ID_TYPE);
+          add(INVALID_INDEXING_DEFINITION);
+        }
+      };
+  private static final Set<ErrorCode> embeddingScope =
+      new HashSet<>() {
+        {
+          add(INVALID_REQUEST);
+          add(SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE);
+        }
+      };
+  private static final Set<ErrorCode> filterScope =
+      new HashSet<>() {
+        {
+          add(ID_NOT_INDEXED);
+        }
+      };
+  private static final Set<ErrorCode> sortScope =
+      new HashSet<>() {
+        {
+          add(VECTOR_SEARCH_USAGE_ERROR);
+          add(VECTORIZE_USAGE_ERROR);
+        }
+      };
+  private static final Set<ErrorCode> documentScope =
+      new HashSet<>() {
+        {
+          add(INVALID_VECTORIZE_VALUE_TYPE);
+        }
+      };
+
   protected JsonApiException(ErrorCode errorCode) {
     this(errorCode, errorCode.getMessage(), null);
   }
@@ -137,28 +198,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   }
 
   private ErrorFamily getErrorFamily() {
-    // some error codes should be classified as SERVER errors but do not have any pattern
-    Set<ErrorCode> serverFamily =
-        new HashSet<>() {
-          {
-            add(COUNT_READ_FAILED);
-            add(CONCURRENCY_FAILURE);
-            add(TOO_MANY_COLLECTIONS);
-            add(VECTOR_SEARCH_NOT_AVAILABLE);
-            add(VECTOR_SEARCH_NOT_SUPPORTED);
-            add(VECTORIZE_FEATURE_NOT_AVAILABLE);
-            add(VECTORIZE_SERVICE_NOT_REGISTERED);
-            add(VECTORIZE_SERVICE_TYPE_UNAVAILABLE);
-            add(VECTORIZE_INVALID_AUTHENTICATION_TYPE);
-            add(VECTORIZE_CREDENTIAL_INVALID);
-            add(VECTORIZECONFIG_CHECK_FAIL);
-            add(UNAUTHENTICATED_REQUEST);
-            add(COLLECTION_CREATION_ERROR);
-            add(INVALID_QUERY);
-            add(NO_INDEX_ERROR);
-          }
-        };
-
     if (serverFamily.contains(errorCode)
         || errorCode.name().startsWith("SERVER")
         || errorCode.name().startsWith("EMBEDDING")) {
@@ -168,44 +207,6 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   }
 
   private ErrorScope getErrorScope(ErrorFamily family) {
-    Set<ErrorCode> schemaScope =
-        new HashSet<>() {
-          {
-            add(INVALID_CREATE_COLLECTION_OPTIONS);
-            add(INVALID_USAGE_OF_VECTORIZE);
-            add(VECTOR_SEARCH_INVALID_FUNCTION_NAME);
-            add(VECTOR_SEARCH_TOO_BIG_VALUE);
-            add(INVALID_PARAMETER_VALIDATION_TYPE);
-            add(INVALID_ID_TYPE);
-            add(INVALID_INDEXING_DEFINITION);
-          }
-        };
-    Set<ErrorCode> embeddingScope =
-        new HashSet<>() {
-          {
-            add(INVALID_REQUEST);
-            add(SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE);
-          }
-        };
-    Set<ErrorCode> filterScope =
-        new HashSet<>() {
-          {
-            add(ID_NOT_INDEXED);
-          }
-        };
-    Set<ErrorCode> sortScope =
-        new HashSet<>() {
-          {
-            add(VECTOR_SEARCH_USAGE_ERROR);
-            add(VECTORIZE_USAGE_ERROR);
-          }
-        };
-    Set<ErrorCode> documentScope =
-        new HashSet<>() {
-          {
-            add(INVALID_VECTORIZE_VALUE_TYPE);
-          }
-        };
 
     // first handle special cases
     if (errorCode.name().equals("SERVER_INTERNAL_ERROR")) {
