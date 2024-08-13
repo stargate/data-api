@@ -95,27 +95,7 @@ public abstract class APIException extends RuntimeException
   public CommandResponseError get() {
     return null;
   }
-
-  // TODO: just for test
-  public CommandResult.Error getCommandResultError() {
-    Map<String, Object> fieldsForMetricsTag =
-        Map.of("errorCode", code, "exceptionClass", this.getClass().getSimpleName());
-    SmallRyeConfig config;
-    if (ApiConstants.isOffline()) {
-      config = new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
-    } else {
-      config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-    }
-    DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
-    final boolean debugEnabled = debugModeConfig.enabled();
-    final Map<String, Object> fields =
-        debugEnabled
-            ? Map.of("errorCode", code, "exceptionClass", this.getClass().getSimpleName())
-            : Map.of(
-                "family", family, "scope", scope, "errorCode", code, "title", title, "id", errorId);
-    return new CommandResult.Error(message, fieldsForMetricsTag, fields, Response.Status.OK);
-  }
-
+  
   @Override
   public String getMessage() {
     // TODO: work out the message, is it just the message or a formatted string of all the

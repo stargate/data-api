@@ -45,10 +45,6 @@ public final class ThrowableToErrorMapper {
           }
           return jae.getCommandResultError(message, jae.getHttpStatus());
         }
-        // TODO: add back when it's ready
-        //        if (throwable instanceof APIException apiE) {
-        //          return apiE.getCommandResultError();
-        //        }
 
         // General Exception related to JSON handling, thrown by Jackson
         if (throwable instanceof JacksonException jacksonE) {
