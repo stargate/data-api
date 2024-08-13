@@ -153,11 +153,15 @@ public final class ThrowableToErrorMapper {
           .toApiException()
           .getCommandResultError(ErrorCode.NO_INDEX_ERROR.getMessage(), Response.Status.OK);
     }
-    String errorMessage =
-        message.contains("vector<float,") ? "Mismatched vector dimension" : message;
+    if (message.contains("vector<float,")) {
+      // Alas, it is tricky to find the actual vector dimension from the message
+      return ErrorCode.VECTOR_SIZE_MISMATCH
+          .toApiException("root cause = (%s) %s", throwable.getClass().getSimpleName(), message)
+          .getCommandResultError(Response.Status.OK);
+    }
     return ErrorCode.INVALID_QUERY
         .toApiException()
-        .getCommandResultError(errorMessage, Response.Status.OK);
+        .getCommandResultError(message, Response.Status.OK);
   }
 
   /** Driver AllNodesFailedException a composite exception, peeling the errors from it */
