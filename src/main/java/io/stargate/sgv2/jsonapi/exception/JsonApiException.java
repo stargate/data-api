@@ -29,9 +29,9 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
 
   private final String title;
 
-  private final String errorFamily;
+  private final ErrorFamily errorFamily;
 
-  private final String errorScope;
+  private final ErrorScope errorScope;
 
   protected JsonApiException(ErrorCode errorCode) {
     this(errorCode, errorCode.getMessage(), null);
@@ -136,7 +136,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     return httpStatus;
   }
 
-  private String getErrorFamily() {
+  private ErrorFamily getErrorFamily() {
     // some error codes should be classified as SERVER errors but do not have any pattern
     Set<ErrorCode> serverFamily =
         new HashSet<>() {
@@ -162,12 +162,12 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     if (serverFamily.contains(errorCode)
         || errorCode.name().startsWith("SERVER")
         || errorCode.name().startsWith("EMBEDDING")) {
-      return "SERVER";
+      return ErrorFamily.SERVER;
     }
-    return "REQUEST";
+    return ErrorFamily.REQUEST;
   }
 
-  private String getErrorScope(String family) {
+  private ErrorScope getErrorScope(ErrorFamily family) {
     Set<ErrorCode> schemaScope =
         new HashSet<>() {
           {
@@ -177,6 +177,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
             add(VECTOR_SEARCH_TOO_BIG_VALUE);
             add(INVALID_PARAMETER_VALIDATION_TYPE);
             add(INVALID_ID_TYPE);
+            add(INVALID_INDEXING_DEFINITION);
           }
         };
     Set<ErrorCode> embeddingScope =
@@ -208,61 +209,92 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
 
     // first handle special cases
     if (errorCode.name().equals("SERVER_INTERNAL_ERROR")) {
-      return "";
+      return ErrorScope.EMPTY;
     }
     if (schemaScope.contains(errorCode)) {
-      return "SCHEMA";
+      return ErrorScope.SCHEMA;
     }
     if (embeddingScope.contains(errorCode)) {
-      return "EMBEDDING";
+      return ErrorScope.EMBEDDING;
     }
     if (filterScope.contains(errorCode)) {
-      return "FILTER";
+      return ErrorScope.FILTER;
     }
     if (sortScope.contains(errorCode)) {
-      return "SORT";
+      return ErrorScope.SORT;
     }
     if (documentScope.contains(errorCode)) {
-      return "DOCUMENT";
-    }
-    if (errorCode.name().contains("SCHEMA")) {
-      return "SCHEMA";
+      return ErrorScope.DOCUMENT;
     }
 
     // decide the scope based in error code pattern
+    if (errorCode.name().contains("SCHEMA")) {
+      return ErrorScope.SCHEMA;
+    }
     if (errorCode.name().startsWith("EMBEDDING") || errorCode.name().startsWith("VECTORIZE")) {
-      return "EMBEDDING";
+      return ErrorScope.EMBEDDING;
     }
     if (errorCode.name().contains("FILTER")) {
-      return "FILTER";
+      return ErrorScope.FILTER;
     }
     if (errorCode.name().contains("SORT")) {
-      return "SORT";
+      return ErrorScope.SORT;
     }
     if (errorCode.name().contains("INDEX")) {
-      return "INDEX";
+      return ErrorScope.INDEX;
     }
     if (errorCode.name().contains("UPDATE")) {
-      return "UPDATE";
+      return ErrorScope.UPDATE;
     }
     if (errorCode.name().contains("SHRED") || errorCode.name().contains("DOCUMENT")) {
-      return "DOCUMENT";
+      return ErrorScope.DOCUMENT;
     }
     if (errorCode.name().contains("PROJECTION")) {
-      return "PROJECTION";
+      return ErrorScope.PROJECTION;
     }
     if (errorCode.name().contains("AUTHENTICATION")) {
-      return "AUTHENTICATION";
+      return ErrorScope.AUTHENTICATION;
     }
     if (errorCode.name().contains("OFFLINE")) {
-      return "DATA_LOADER";
+      return ErrorScope.DATA_LOADER;
     }
 
     // decide the scope based on family
-    if (family.equals("SERVER")) {
-      return "DATABASE";
+    if (family == ErrorFamily.SERVER) {
+      return ErrorScope.DATABASE;
     }
 
-    return "";
+    return ErrorScope.EMPTY;
+  }
+
+  enum ErrorFamily {
+    SERVER,
+    REQUEST
+  }
+
+  enum ErrorScope {
+    AUTHENTICATION("AUTHENTICATION"),
+    DATA_LOADER("DATA_LOADER"),
+    DATABASE("DATABASE"),
+    DOCUMENT("DOCUMENT"),
+    EMBEDDING("EMBEDDING"),
+    EMPTY(""),
+    FILTER("FILTER"),
+    INDEX("INDEX"),
+    PROJECTION("PROJECTION"),
+    SCHEMA("SCHEMA"),
+    SORT("SORT"),
+    UPDATE("UPDATE");
+
+    private final String scope;
+
+    ErrorScope(String scope) {
+      this.scope = scope;
+    }
+
+    @Override
+    public String toString() {
+      return this.scope;
+    }
   }
 }
