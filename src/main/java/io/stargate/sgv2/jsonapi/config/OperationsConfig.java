@@ -61,6 +61,18 @@ public interface OperationsConfig {
   int defaultSortPageSize();
 
   /**
+   * @return Flag to enable vectorization using embedding-gateway.
+   */
+  @WithDefault("false")
+  boolean enableEmbeddingGateway();
+
+  /**
+   * @return Flag to extend error response with additional information.
+   */
+  @WithDefault("false")
+  boolean extendError();
+
+  /**
    * @return Defines the maximum limit of document read to perform in memory sorting <code>10000
    *     </code>.
    */
@@ -279,12 +291,6 @@ public interface OperationsConfig {
    */
   @WithDefault("false")
   boolean vectorizeEnabled();
-
-  /**
-   * @return Flag to enable vectorization using embedding-gateway.
-   */
-  @WithDefault("false")
-  boolean enableEmbeddingGateway();
 
   /** Offline mode configuration. */
   @NotNull
