@@ -168,7 +168,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   }
 
   private String getErrorScope(String family) {
-    Set<ErrorCode> schemeScope =
+    Set<ErrorCode> schemaScope =
         new HashSet<>() {
           {
             add(INVALID_CREATE_COLLECTION_OPTIONS);
@@ -210,8 +210,8 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     if (errorCode.name().equals("SERVER_INTERNAL_ERROR")) {
       return "";
     }
-    if (schemeScope.contains(errorCode)) {
-      return "SCHEME";
+    if (schemaScope.contains(errorCode)) {
+      return "SCHEMA";
     }
     if (embeddingScope.contains(errorCode)) {
       return "EMBEDDING";
@@ -225,8 +225,8 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     if (documentScope.contains(errorCode)) {
       return "DOCUMENT";
     }
-    if (errorCode.name().contains("SCHEME")) {
-      return "SCHEME";
+    if (errorCode.name().contains("SCHEMA")) {
+      return "SCHEMA";
     }
 
     // decide the scope based in error code pattern
