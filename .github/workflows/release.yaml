@@ -25,8 +25,8 @@ on:
 # global env vars, available in all jobs and steps
 env:
   MAVEN_OPTS: '-Xmx4g'
-  ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-  ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+  DS_ARTIFACTORY_USERNAME: ${{ secrets.DS_ARTIFACTORY_USERNAME }}
+  DS_ARTIFACTORY_PASSWORD: ${{ secrets.DS_ARTIFACTORY_PASSWORD }}
 
 jobs:
 
@@ -99,13 +99,13 @@ jobs:
               </server>
               <server>
                 <id>artifactory-snapshots</id>
-                <username>${ARTIFACTORY_USERNAME}</username>
-                <password>${ARTIFACTORY_PASSWORD}</password>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
               </server>
               <server>
                 <id>artifactory-releases</id>
-                <username>${ARTIFACTORY_USERNAME}</username>
-                <password>${ARTIFACTORY_PASSWORD}</password>
+                <username>${DS_ARTIFACTORY_USERNAME}</username>
+                <password>${DS_ARTIFACTORY_PASSWORD}</password>
              </server>
            </servers>
           </settings>
@@ -123,12 +123,12 @@ jobs:
 
       - name: Build
         run: |
-          ./mvnw -B -ntp clean package -P offline
+          ./mvnw -B -ntp clean package
 
       - name: Publish JAR
         if: ${{ !inputs.skipPublish }}
         run: |
-          ./mvnw -B -ntp clean -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} deploy -DskipTests -P offline,deploy
+          ./mvnw -B -ntp clean -Dgpg.passphrase=${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }} deploy -DskipTests
 
   # publishes the docker image to docker hub
   publish-image-dockerhub:
