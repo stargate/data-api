@@ -11,8 +11,8 @@ on:
 # global env vars, available in all jobs and steps
 env:
   MAVEN_OPTS: '-Xmx4g'
-  DS_ARTIFACTORY_USERNAME: ${{ secrets.DS_ARTIFACTORY_USERNAME }}
-  DS_ARTIFACTORY_PASSWORD: ${{ secrets.DS_ARTIFACTORY_PASSWORD }}
+  ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+  ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
 
 jobs:
 
@@ -47,13 +47,13 @@ jobs:
               </server>
               <server>
                 <id>artifactory-snapshots</id>
-                <username>${DS_ARTIFACTORY_USERNAME}</username>
-                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+                <username>${ARTIFACTORY_USERNAME}</username>
+                <password>${ARTIFACTORY_PASSWORD}</password>
               </server>
               <server>
                 <id>artifactory-releases</id>
-                <username>${DS_ARTIFACTORY_USERNAME}</username>
-                <password>${DS_ARTIFACTORY_PASSWORD}</password>
+                <username>${ARTIFACTORY_USERNAME}</username>
+                <password>${ARTIFACTORY_PASSWORD}</password>
              </server>
            </servers>
           </settings>
