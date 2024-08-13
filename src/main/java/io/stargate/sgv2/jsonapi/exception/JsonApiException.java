@@ -161,11 +161,11 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     DebugModeConfig debugModeConfig = config.getConfigMapping(DebugModeConfig.class);
     final boolean debugEnabled = debugModeConfig.enabled();
     final boolean extendError = config.getConfigMapping(OperationsConfig.class).extendError();
-    Map<String, Object> fields = null;
+    Map<String, Object> fields;
 
     if (extendError) {
       fields =
-          new HashMap<String, Object>(
+          new HashMap<>(
               Map.of(
                   "id",
                   id,
@@ -178,7 +178,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
                   "title",
                   title));
     } else {
-      fields = new HashMap<String, Object>(Map.of("errorCode", errorCode.name()));
+      fields = new HashMap<>(Map.of("errorCode", errorCode.name()));
     }
 
     if (debugEnabled) {
