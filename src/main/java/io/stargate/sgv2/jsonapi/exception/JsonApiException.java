@@ -33,7 +33,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
 
   private final ErrorScope errorScope;
 
-  // some error codes should be classified as one category but do not have any pattern
+  // some error codes should be classified as "SERVER" family but do not have any pattern
   private static final Set<ErrorCode> serverFamily =
       new HashSet<>() {
         {
@@ -55,44 +55,47 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
         }
       };
 
-  private static final Set<ErrorCode> schemaScope =
-      new HashSet<>() {
-        {
-          add(INVALID_CREATE_COLLECTION_OPTIONS);
-          add(INVALID_USAGE_OF_VECTORIZE);
-          add(VECTOR_SEARCH_INVALID_FUNCTION_NAME);
-          add(VECTOR_SEARCH_TOO_BIG_VALUE);
-          add(INVALID_PARAMETER_VALIDATION_TYPE);
-          add(INVALID_ID_TYPE);
-          add(INVALID_INDEXING_DEFINITION);
-        }
-      };
-  private static final Set<ErrorCode> embeddingScope =
-      new HashSet<>() {
-        {
-          add(INVALID_REQUEST);
-          add(SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE);
-        }
-      };
-  private static final Set<ErrorCode> filterScope =
-      new HashSet<>() {
-        {
-          add(ID_NOT_INDEXED);
-        }
-      };
-  private static final Set<ErrorCode> sortScope =
-      new HashSet<>() {
-        {
-          add(VECTOR_SEARCH_USAGE_ERROR);
-          add(VECTORIZE_USAGE_ERROR);
-        }
-      };
-  private static final Set<ErrorCode> documentScope =
-      new HashSet<>() {
-        {
-          add(INVALID_VECTORIZE_VALUE_TYPE);
-        }
-      };
+  // map of error codes to error scope
+  private static final Map<Set<ErrorCode>, ErrorScope> errorCodeScopeMap =
+      Map.of(
+          new HashSet<>() {
+            {
+              add(INVALID_CREATE_COLLECTION_OPTIONS);
+              add(INVALID_USAGE_OF_VECTORIZE);
+              add(VECTOR_SEARCH_INVALID_FUNCTION_NAME);
+              add(VECTOR_SEARCH_TOO_BIG_VALUE);
+              add(INVALID_PARAMETER_VALIDATION_TYPE);
+              add(INVALID_ID_TYPE);
+              add(INVALID_INDEXING_DEFINITION);
+            }
+          },
+          ErrorScope.SCHEMA,
+          new HashSet<>() {
+            {
+              add(INVALID_REQUEST);
+              add(SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE);
+            }
+          },
+          ErrorScope.EMBEDDING,
+          new HashSet<>() {
+            {
+              add(ID_NOT_INDEXED);
+            }
+          },
+          ErrorScope.FILTER,
+          new HashSet<>() {
+            {
+              add(VECTOR_SEARCH_USAGE_ERROR);
+              add(VECTORIZE_USAGE_ERROR);
+            }
+          },
+          ErrorScope.SORT,
+          new HashSet<>() {
+            {
+              add(INVALID_VECTORIZE_VALUE_TYPE);
+            }
+          },
+          ErrorScope.DOCUMENT);
 
   protected JsonApiException(ErrorCode errorCode) {
     this(errorCode, errorCode.getMessage(), null);
@@ -160,7 +163,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
 
     if (extendError) {
       fields =
-          new HashMap<>(
+          new HashMap<String, Object>(
               Map.of(
                   "errorCode",
                   errorCode.name(),
@@ -171,7 +174,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
                   "title",
                   title));
     } else {
-      fields = new HashMap<>(Map.of("errorCode", errorCode.name()));
+      fields = new HashMap<String, Object>(Map.of("errorCode", errorCode.name()));
     }
 
     if (debugEnabled) {
@@ -207,25 +210,14 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   }
 
   private ErrorScope getErrorScope(ErrorFamily family) {
-
     // first handle special cases
-    if (errorCode.name().equals("SERVER_INTERNAL_ERROR")) {
+    if (errorCode == SERVER_INTERNAL_ERROR) {
       return ErrorScope.EMPTY;
     }
-    if (schemaScope.contains(errorCode)) {
-      return ErrorScope.SCHEMA;
-    }
-    if (embeddingScope.contains(errorCode)) {
-      return ErrorScope.EMBEDDING;
-    }
-    if (filterScope.contains(errorCode)) {
-      return ErrorScope.FILTER;
-    }
-    if (sortScope.contains(errorCode)) {
-      return ErrorScope.SORT;
-    }
-    if (documentScope.contains(errorCode)) {
-      return ErrorScope.DOCUMENT;
+    for (Map.Entry<Set<ErrorCode>, ErrorScope> entry : errorCodeScopeMap.entrySet()) {
+      if (entry.getKey().contains(errorCode)) {
+        return entry.getValue();
+      }
     }
 
     // decide the scope based in error code pattern
