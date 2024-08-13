@@ -22,6 +22,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
  * directly.
  */
 public class JsonApiException extends RuntimeException implements Supplier<CommandResult> {
+  private final UUID id;
 
   private final ErrorCode errorCode;
 
@@ -117,6 +118,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   protected JsonApiException(
       ErrorCode errorCode, String message, Throwable cause, Response.Status httpStatus) {
     super(message, cause);
+    this.id = UUID.randomUUID();
     this.errorCode = errorCode;
     this.httpStatus = httpStatus;
     this.title = errorCode.getMessage();
@@ -165,6 +167,8 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       fields =
           new HashMap<String, Object>(
               Map.of(
+                  "id",
+                  id,
                   "errorCode",
                   errorCode.name(),
                   "family",
