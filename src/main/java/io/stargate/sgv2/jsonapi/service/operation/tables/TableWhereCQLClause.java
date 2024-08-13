@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
+import com.datastax.oss.driver.api.querybuilder.delete.Delete;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
@@ -58,6 +59,20 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
    * @return
    */
   public static TableWhereCQLClause<Update> forUpdate(
+      TableSchemaObject table, LogicalExpression logicalExpression) {
+    return new TableWhereCQLClause<>(table, logicalExpression);
+  }
+
+  /**
+   * Build an instance to add the where clause to a {@link Delete}.
+   *
+   * <p>
+   *
+   * @param table
+   * @param logicalExpression
+   * @return
+   */
+  public static TableWhereCQLClause<Delete> forDelete(
       TableSchemaObject table, LogicalExpression logicalExpression) {
     return new TableWhereCQLClause<>(table, logicalExpression);
   }
