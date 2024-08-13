@@ -1621,7 +1621,10 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .statusCode(200)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body("errors[0].message", startsWith("Length of vector parameter different from declared '$vector' dimension: root cause ="));
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
 
       // Insert data with $vector array size greater than vector index defined size.
       final String vectorStrCount7 = buildVectorElements(0, 7);
@@ -1650,7 +1653,10 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .statusCode(200)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body("errors[0].message", startsWith("Length of vector parameter different from declared '$vector' dimension: root cause ="));
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
     }
 
     @Test
@@ -1681,7 +1687,10 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .statusCode(200)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body("errors[0].message", startsWith("Length of vector parameter different from declared '$vector' dimension: root cause ="));
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
 
       // Insert data with $vector array size greater than vector index defined size.
       final String vectorStrCount7 = buildVectorElements(0, 7);
@@ -1708,7 +1717,10 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .statusCode(200)
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
-          .body("errors[0].message", startsWith("Length of vector parameter different from declared '$vector' dimension: root cause ="));
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
     }
   }
 

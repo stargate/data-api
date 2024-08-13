@@ -154,7 +154,7 @@ public final class ThrowableToErrorMapper {
           .getCommandResultError(ErrorCode.NO_INDEX_ERROR.getMessage(), Response.Status.OK);
     }
     if (message.contains("vector<float,")) {
-      // Alas, it is tricky to find the actual vector dimension from the message
+      // It is tricky to find the actual vector dimension from the message, include as-is
       return ErrorCode.VECTOR_SIZE_MISMATCH
           .toApiException("root cause = (%s) %s", throwable.getClass().getSimpleName(), message)
           .getCommandResultError(Response.Status.OK);
