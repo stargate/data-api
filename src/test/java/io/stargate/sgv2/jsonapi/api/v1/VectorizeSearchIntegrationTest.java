@@ -7,7 +7,6 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.List;
 import org.junit.jupiter.api.ClassOrderer;
@@ -299,8 +298,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body("status", is(nullValue()))
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
-          .body(
-              "errors[0].message", startsWith(ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.getMessage()))
+          .body("errors[0].message", startsWith("$vectorize value needs to be text value"))
           .body("errors[0].errorCode", is("INVALID_VECTORIZE_VALUE_TYPE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -730,7 +728,8 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
-          .body("errors[0].message", is(ErrorCode.SHRED_BAD_VECTORIZE_VALUE.getMessage()));
+          .body(
+              "errors[0].message", is("$vectorize search clause needs to be non-blank text value"));
     }
   }
 

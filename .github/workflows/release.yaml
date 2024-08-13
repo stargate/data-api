@@ -125,11 +125,11 @@ jobs:
 
       - name: Build
         run: |
-          ./mvnw -B -ntp clean package -P offline
+          ./mvnw -B -ntp clean package
 
       - name: Publish JAR
         run: |
-          ./mvnw -B -ntp clean deploy -DskipTests -P offline
+          ./mvnw -B -ntp clean deploy -DskipTests
 
   # publishes the docker image to docker hub
   publish-image-dockerhub:
