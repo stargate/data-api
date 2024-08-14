@@ -1,5 +1,78 @@
 # Changelog
 
+## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.15...HEAD)
+
+**Closed issues:**
+
+- Should be able to use column names like `\_id` with API Tables too [\#1334](https://github.com/stargate/data-api/issues/1334)
+
+## [v1.0.15](https://github.com/stargate/data-api/tree/v1.0.15) (2024-08-14)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.14...v1.0.15)
+
+**Implemented enhancements:**
+
+- Bridge Removal - separate Data API Logging from Quarkus Common Module [\#978](https://github.com/stargate/data-api/issues/978)
+- Bridge Removal - separate Data API Metrics from Quarkus Common Module [\#974](https://github.com/stargate/data-api/issues/974)
+
+**Closed issues:**
+
+- Create and use new `ErrorCode` for Vector-size-mismatch case of `INVALID\_QUERY` [\#1332](https://github.com/stargate/data-api/issues/1332)
+- Misspelt class name AwsBedrockEnbeddingProvider [\#1308](https://github.com/stargate/data-api/issues/1308)
+- Remove unnecessary \(if so\) `equals\(\)`, `hashCode\(\)` implementations from `IDFilterBase` sub-classes [\#1288](https://github.com/stargate/data-api/issues/1288)
+- Convert internal "assert"-style `RuntimeException` into `JsonApiException` with `ErrorCode.SERVER\_INTERNAL\_ERROR` [\#1287](https://github.com/stargate/data-api/issues/1287)
+- Update Data API to HCD 1.0.0 [\#1285](https://github.com/stargate/data-api/issues/1285)
+- Update Data API to DSE 6.9.0 [\#1284](https://github.com/stargate/data-api/issues/1284)
+- Re-factor: use `ErrorCode.toApiException\(\)` everywhere instead of `new JsonApiException` [\#1283](https://github.com/stargate/data-api/issues/1283)
+- Remove dse-next persistence from ITs [\#1282](https://github.com/stargate/data-api/issues/1282)
+- Remove `url` requirement in `EmbeddingProvidersConfig` yaml config matching  [\#1231](https://github.com/stargate/data-api/issues/1231)
+- Log error codes and messages  [\#1197](https://github.com/stargate/data-api/issues/1197)
+- Create a nightly run CI to test all vectorize models for all providers [\#1196](https://github.com/stargate/data-api/issues/1196)
+- Hugging Face Serverless arbitrary model choice [\#1145](https://github.com/stargate/data-api/issues/1145)
+- Provider side embedding model choice  [\#1144](https://github.com/stargate/data-api/issues/1144)
+- Bridge Removal - fix tests with whatever profile and resources that tests relied on [\#1140](https://github.com/stargate/data-api/issues/1140)
+- Remove dependency for Stargate bridge - quarkus commons [\#920](https://github.com/stargate/data-api/issues/920)
+- Postman Collection workflow run failing [\#840](https://github.com/stargate/data-api/issues/840)
+
+**Merged pull requests:**
+
+- Allow use of `\_id` for "insertOne" [\#1338](https://github.com/stargate/data-api/pull/1338) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix jar publishing workflows [\#1337](https://github.com/stargate/data-api/pull/1337) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Fixes \#1332: separate out ErrorCode.VECTOR\_SIZE\_MISMATCH from INVALID\_QUERY [\#1333](https://github.com/stargate/data-api/pull/1333) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Removed offline mode code [\#1330](https://github.com/stargate/data-api/pull/1330) ([kathirsvn](https://github.com/kathirsvn))
+- Offline mode fix [\#1329](https://github.com/stargate/data-api/pull/1329) ([kathirsvn](https://github.com/kathirsvn))
+- workaround to fix docker-compose in postman GH workflow [\#1328](https://github.com/stargate/data-api/pull/1328) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- rename bedrock embedding provider to fix spelling error [\#1327](https://github.com/stargate/data-api/pull/1327) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Extend error response with additional information [\#1325](https://github.com/stargate/data-api/pull/1325) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- POC for deleteOne and deleteMany for tables [\#1324](https://github.com/stargate/data-api/pull/1324) ([amorton](https://github.com/amorton))
+- FindMany bug fix and extra logging for Tables POC [\#1323](https://github.com/stargate/data-api/pull/1323) ([amorton](https://github.com/amorton))
+- Drop table command implementation [\#1321](https://github.com/stargate/data-api/pull/1321) ([maheshrajamani](https://github.com/maheshrajamani))
+-  POC for updateOne on a table [\#1318](https://github.com/stargate/data-api/pull/1318) ([amorton](https://github.com/amorton))
+- PoC for Projection implementation for API Tables [\#1315](https://github.com/stargate/data-api/pull/1315) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- POC for table projections and using JSONCodec [\#1314](https://github.com/stargate/data-api/pull/1314) ([amorton](https://github.com/amorton))
+- POC for table filters with codecs for findOne [\#1313](https://github.com/stargate/data-api/pull/1313) ([amorton](https://github.com/amorton))
+- Added ValidatableCommandClause POC [\#1309](https://github.com/stargate/data-api/pull/1309) ([amorton](https://github.com/amorton))
+- Remove native image support [\#1307](https://github.com/stargate/data-api/pull/1307) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Use Stargate v2.1.0-BETA-14 [\#1306](https://github.com/stargate/data-api/pull/1306) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Create table command implementation [\#1303](https://github.com/stargate/data-api/pull/1303) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix \#1287: convert internal assertion exceptions to use JsonApiException.SERVER\_INTERNAL\_ERROR [\#1301](https://github.com/stargate/data-api/pull/1301) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- update project to use JDK 21 [\#1300](https://github.com/stargate/data-api/pull/1300) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- update openjdk base image [\#1299](https://github.com/stargate/data-api/pull/1299) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- 415 for invalid Content-Type header, remove redundant Token Filter [\#1298](https://github.com/stargate/data-api/pull/1298) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Unify JsonApiException construction for easier management [\#1297](https://github.com/stargate/data-api/pull/1297) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- disabling IT with dse-next from CI workflow [\#1296](https://github.com/stargate/data-api/pull/1296) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Convert Delete\*IntegrationTests to compact code [\#1295](https://github.com/stargate/data-api/pull/1295) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Initial refactoring for API Tables feature \(complete\) [\#1292](https://github.com/stargate/data-api/pull/1292) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- update to DSE 6.9.0, HCD 1.0.0 [\#1286](https://github.com/stargate/data-api/pull/1286) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Fix Nvidia header problem [\#1280](https://github.com/stargate/data-api/pull/1280) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- fix stargate log level to info [\#1279](https://github.com/stargate/data-api/pull/1279) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- run unit and integration tests in parallel in CI [\#1278](https://github.com/stargate/data-api/pull/1278) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Bumping version for next data-api release [\#1277](https://github.com/stargate/data-api/pull/1277) ([github-actions[bot]](https://github.com/apps/github-actions))
+- vectorization on demand [\#1258](https://github.com/stargate/data-api/pull/1258) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- CreateCollection: Check if a table follows Data API collection pattern [\#1249](https://github.com/stargate/data-api/pull/1249) ([Yuqi-Du](https://github.com/Yuqi-Du))
+
 ## [v1.0.14](https://github.com/stargate/data-api/tree/v1.0.14) (2024-07-15)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.13...v1.0.14)
