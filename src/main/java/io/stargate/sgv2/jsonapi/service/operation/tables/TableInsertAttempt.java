@@ -8,10 +8,10 @@ import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.IntStream;
 
 public class TableInsertAttempt implements InsertAttempt {
 
@@ -41,22 +41,20 @@ public class TableInsertAttempt implements InsertAttempt {
     Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     Objects.requireNonNull(documents, "documents cannot be null");
 
-    // TODO, just use a for loop, instead of IntStream
-    return IntStream.range(0, documents.size())
-        .mapToObj(
-            i -> {
-              WriteableTableRow row;
-              try {
-                row = shredder.shred(tableSchemaObject, documents.get(i));
-              } catch (Exception e) {
-                // TODO: need a shredding base excpetion to catch
-                // TODO: we need to get the row id, so we can return it in the response
-                return (TableInsertAttempt)
-                    new TableInsertAttempt(tableSchemaObject, i, null, null).maybeAddFailure(e);
-              }
-              return new TableInsertAttempt(tableSchemaObject, i, row.id(), row);
-            })
-        .toList();
+    final List<TableInsertAttempt> attempts = new ArrayList<>(documents.size());
+    for (int i = 0; i < documents.size(); i++) {
+      try {
+        WriteableTableRow row = shredder.shred(tableSchemaObject, documents.get(i));
+        attempts.add(new TableInsertAttempt(tableSchemaObject, i, row.id(), row));
+      } catch (Exception e) {
+        // TODO: need a shredding base exception to catch
+        // TODO: we need to get the row id, so we can return it in the response
+        attempts.add(
+            (TableInsertAttempt)
+                new TableInsertAttempt(tableSchemaObject, i, null, null).maybeAddFailure(e));
+      }
+    }
+    return attempts;
   }
 
   public InsertValuesCQLClause getInsertValuesCQLClause() {

@@ -58,8 +58,9 @@ public class RowShredder {
             .map(ColumnMetadata::getName)
             .map(
                 colIdentifier -> {
-                  if (columnValues.containsKey(colIdentifier)) {
-                    return columnValues.get(colIdentifier);
+                  Object value = columnValues.get(colIdentifier);
+                  if (value != null) {
+                    return value;
                   }
                   throw new UnvalidatedClauseException(
                       String.format(
