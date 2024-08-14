@@ -71,6 +71,9 @@ public class InsertTableOperation extends TableMutationOperation {
     // bind and execute
     var boundStatement = buildInsertStatement(queryExecutor, insertAttempt);
 
+    LOGGER.warn("INSERT CQL: {}", boundStatement.getQuery());
+    LOGGER.warn("INSERT VALUES: {}", boundStatement.getPositionalValues());
+
     // TODO: AARON What happens to errors here?
     return queryExecutor
         .executeWrite(dataApiRequestInfo, boundStatement)

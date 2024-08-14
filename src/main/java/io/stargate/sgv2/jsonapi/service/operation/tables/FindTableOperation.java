@@ -22,12 +22,16 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TODO: this is still a POC class, showing how we can build a filter still to do is order and
  * projections
  */
 public class FindTableOperation extends TableReadOperation {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(TableReadOperation.class);
 
   private final SelectCQLClause selectCQLClause;
   private final WhereCQLClause<Select> whereCQLClause;
@@ -71,6 +75,9 @@ public class FindTableOperation extends TableReadOperation {
     select = params.options().apply(select);
 
     var statement = select.build(positionalValues.toArray());
+
+    LOGGER.warn("FIND CQL: {}", select.asCql());
+    LOGGER.warn("FIND VALUES: {}", positionalValues);
 
     // TODO: pageSize for FindTableOperation
     return queryExecutor
