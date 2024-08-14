@@ -265,7 +265,8 @@ public class QueryExecutor {
           .failure(ErrorCode.NAMESPACE_DOES_NOT_EXIST.toApiException("%s", namespace));
     }
     // else get the table
-    // TODO: this should probably use CqlIdentifier.fromCql() if we want to be case sensitive
+    // TODO: this should probably use CqlIdentifier.fromCql() (or .fromInternal())
+    // if we want to support case-sensitive names
     return Uni.createFrom().item(keyspaceMetadata.getTable("\"" + collectionName + "\""));
   }
 

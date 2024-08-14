@@ -22,8 +22,8 @@ public class MissingJSONCodecException extends Exception {
       TableMetadata table, ColumnMetadata column, Class<?> javaType, Object value) {
     super(
         String.format(
-            "No JSONCodec found for table %s column %s with java type %s and value %s",
-            table.getName(), column.getName(), javaType, value));
+            "No JSONCodec found for table '%s' column '%s' column type %s with java type %s and value %s",
+            table.getName(), column.getName(), column.getType(), javaType, value));
     this.table = table;
     this.column = column;
     this.javaType = javaType;
