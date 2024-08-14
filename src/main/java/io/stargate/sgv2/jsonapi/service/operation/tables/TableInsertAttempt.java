@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertAttempt;
-import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
@@ -57,7 +56,7 @@ public class TableInsertAttempt implements InsertAttempt {
     return attempts;
   }
 
-  public InsertValuesCQLClause getInsertValuesCQLClause() {
+  public TableInsertValuesCQLClause getInsertValuesCQLClause() {
     return new TableInsertValuesCQLClause(tableSchemaObject, row);
   }
 

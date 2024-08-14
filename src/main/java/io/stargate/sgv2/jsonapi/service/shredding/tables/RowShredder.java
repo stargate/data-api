@@ -47,8 +47,9 @@ public class RowShredder {
         .fields()
         .forEachRemaining(
             entry -> {
-              // using fromCQL so it is case sensitive
-              columnValues.put(CqlIdentifier.fromCql(entry.getKey()), shredValue(entry.getValue()));
+              // using fromInternal to preserve case-sensitivity
+              columnValues.put(
+                  CqlIdentifier.fromInternal(entry.getKey()), shredValue(entry.getValue()));
             });
 
     // the document should have been validated that all the fields present exist in the table

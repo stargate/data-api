@@ -105,7 +105,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
             entry ->
                 new ColumnAssignment(
                     table.tableMetadata,
-                    CqlIdentifier.fromCql(entry.getKey()),
+                    CqlIdentifier.fromInternal(entry.getKey()),
                     RowShredder.shredValue(entry.getValue())))
         .toList();
   }
@@ -132,7 +132,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
         .map(
             entry ->
                 new ColumnAssignment(
-                    table.tableMetadata, CqlIdentifier.fromCql(entry.getKey()), null))
+                    table.tableMetadata, CqlIdentifier.fromInternal(entry.getKey()), null))
         .toList();
   }
 }
