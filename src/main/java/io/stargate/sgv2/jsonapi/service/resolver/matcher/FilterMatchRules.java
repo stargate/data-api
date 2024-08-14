@@ -53,7 +53,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
   }
 
   /**
-   * Applies all the rules to to return an Operation or throw.
+   * Applies all the rules to return an Operation or throw.
    *
    * @param commandContext
    * @param command
