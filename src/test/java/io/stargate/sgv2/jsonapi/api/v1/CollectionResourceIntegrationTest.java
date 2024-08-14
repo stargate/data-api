@@ -8,16 +8,15 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @QuarkusTestResource(DseTestResource.class)
 class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
-
   @Nested
   class ClientErrors {
-
     String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
 
     @Test
