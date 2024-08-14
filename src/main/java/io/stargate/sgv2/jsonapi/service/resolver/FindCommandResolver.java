@@ -83,7 +83,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
         TableWhereCQLClause.forSelect(
             ctx.schemaObject(), tableFilterResolver.resolve(ctx, command)),
         tableRowProjection,
-        new FindTableOperation.FindTableParams(Integer.MAX_VALUE));
+        new FindTableOperation.FindTableParams(limit));
   }
 
   @Override
