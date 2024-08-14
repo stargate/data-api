@@ -49,8 +49,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           //  as JSON is unparseable) but right now this is not working for some reason.
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_REQUEST_NOT_JSON"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_REQUEST_NOT_JSON"))
           .body(
               "errors[0].message",
               startsWith("Request invalid, cannot parse as JSON: underlying problem:"))
@@ -76,8 +76,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body(
               "errors[0].message",
               startsWith(
@@ -104,8 +104,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_REQUEST_UNKNOWN_FIELD"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_REQUEST_UNKNOWN_FIELD"))
           .body("errors[0].message", startsWith("Request invalid, unrecognized JSON field"))
           .body("errors[0].message", containsString("\"unknown\" not one of known fields"))
           .body(
@@ -133,8 +133,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body(
               "errors[0].message",
               startsWith(
@@ -161,8 +161,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body(
               "errors[0].message",
               startsWith(
@@ -179,8 +179,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body(
               "errors[0].message",
               startsWith("Request invalid: field 'command' value `null` not valid"));
