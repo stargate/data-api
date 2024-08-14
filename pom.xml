@@ -333,4 +333,18 @@
       </properties>
     </profile>
   </profiles>
+  <distributionManagement>
+    <repository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>stargate-central</id>
+      <name>stargate-releases</name>
+      <url>https://repo.datastax.com/artifactory/stargate-private</url>
+    </repository>
+    <snapshotRepository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>stargate-snapshots</id>
+      <name>stargate-snapshots</name>
+      <url>https://repo.datastax.com/artifactory/stargate-private</url>
+    </snapshotRepository>
+  </distributionManagement>
 </project>

@@ -145,6 +145,7 @@ public enum ErrorCode {
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name"),
 
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
+  VECTOR_SIZE_MISMATCH("Length of vector parameter different from declared '$vector' dimension"),
 
   VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
