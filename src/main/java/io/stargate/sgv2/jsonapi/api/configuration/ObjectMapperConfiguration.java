@@ -25,6 +25,10 @@ public class ObjectMapperConfiguration {
       customizer.customize(mapper);
     }
 
+    // 14-Aug-2024, tatu: Our error handling assumes that by default we do fail on
+    //    unrecognized properties: ensure it's not disabled
+    mapper.enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+
     return mapper;
   }
 
