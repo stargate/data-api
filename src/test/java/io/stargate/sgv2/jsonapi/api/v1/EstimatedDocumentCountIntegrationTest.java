@@ -4,7 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(DseTestResource.class)
+@WithTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 @Disabled("Disabled for CI, requires a test configuration where system.size_estimates is enabled")
 public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionIntegrationTestBase {

@@ -4,7 +4,7 @@ import static io.restassured.RestAssured.given;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(DseTestResource.class)
+@WithTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 

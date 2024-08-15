@@ -9,7 +9,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -23,7 +23,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(DseTestResource.class)
+@WithTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 

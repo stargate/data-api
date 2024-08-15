@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -11,7 +11,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(DseTestResource.class)
+@WithTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   @Nested

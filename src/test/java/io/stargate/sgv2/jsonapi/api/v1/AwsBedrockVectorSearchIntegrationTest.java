@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
@@ -22,7 +22,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
     named = AwsBedrockVectorSearchIntegrationTest.BEDROCK_ACCESS_KEY_ID,
     matches = ".+")
 @QuarkusIntegrationTest
-@QuarkusTestResource(DseTestResource.class)
+@WithTestResource(DseTestResource.class)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class AwsBedrockVectorSearchIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   static final String BEDROCK_ACCESS_KEY_ID = "BEDROCK_ACCESS_KEY_ID";
