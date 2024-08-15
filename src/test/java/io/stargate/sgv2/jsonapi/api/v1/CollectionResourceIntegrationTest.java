@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
-@WithTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   @Nested
   class ClientErrors {

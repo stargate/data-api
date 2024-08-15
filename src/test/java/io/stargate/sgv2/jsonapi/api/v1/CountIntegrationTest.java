@@ -16,7 +16,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 /**
  * To run this test DseTestResource is updated to have maxCountLimit to `5` and getCountPageSize to

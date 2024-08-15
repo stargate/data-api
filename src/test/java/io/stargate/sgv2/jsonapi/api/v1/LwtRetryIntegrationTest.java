@@ -15,7 +15,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.RepeatedTest;
 
 @QuarkusIntegrationTest
-@WithTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 public class LwtRetryIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
   @RepeatedTest(10)

@@ -13,7 +13,7 @@ import net.javacrumbs.jsonunit.ConfigurableJsonMatcher;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@WithTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
 

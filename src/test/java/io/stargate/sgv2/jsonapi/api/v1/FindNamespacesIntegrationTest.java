@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
-@WithTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class FindNamespacesIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 

@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @QuarkusIntegrationTest
-@WithTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 @Disabled("Disabled for CI, requires a test configuration where system.size_estimates is enabled")
 public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionIntegrationTestBase {

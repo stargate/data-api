@@ -11,7 +11,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@WithTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   @Nested

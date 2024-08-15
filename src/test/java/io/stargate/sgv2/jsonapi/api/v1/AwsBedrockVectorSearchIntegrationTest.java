@@ -22,7 +22,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
     named = AwsBedrockVectorSearchIntegrationTest.BEDROCK_ACCESS_KEY_ID,
     matches = ".+")
 @QuarkusIntegrationTest
-@WithTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class AwsBedrockVectorSearchIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   static final String BEDROCK_ACCESS_KEY_ID = "BEDROCK_ACCESS_KEY_ID";

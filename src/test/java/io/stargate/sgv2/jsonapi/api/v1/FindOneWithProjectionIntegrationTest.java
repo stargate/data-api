@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
-@WithTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 public class FindOneWithProjectionIntegrationTest extends AbstractCollectionIntegrationTestBase {
   private static final String DOC1_JSON =
       """

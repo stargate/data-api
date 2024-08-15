@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@WithTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrationTestBase {
   @Nested

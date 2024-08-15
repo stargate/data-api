@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@WithTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class PaginationIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
