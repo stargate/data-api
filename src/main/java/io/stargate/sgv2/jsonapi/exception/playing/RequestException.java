@@ -18,11 +18,6 @@ public class RequestException extends APIException {
     super(errorInstance);
   }
 
-  public RequestException(
-      ErrorFamily family, ErrorScope scope, String code, String title, String message) {
-    super(family, scope, code, title, message);
-  }
-
   public enum Scope implements ErrorScope {
     /** See {@link FilterException} */
     FILTER;
@@ -33,8 +28,8 @@ public class RequestException extends APIException {
     }
   }
 
-  // TODO: this is here to show how we would handle a request error that does not have a scope.
   public enum Code implements ErrorCode<RequestException> {
+    // TODO: remove fake error code, just here so it compiles
     FAKE_CODE;
 
     private final ErrorTemplate<RequestException> template;

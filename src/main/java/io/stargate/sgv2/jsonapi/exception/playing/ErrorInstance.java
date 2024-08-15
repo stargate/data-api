@@ -21,12 +21,7 @@ import java.util.UUID;
  * @param scope
  * @param code
  * @param title
- * @param message
+ * @param body
  */
 public record ErrorInstance(
-    UUID errorId,
-    ErrorFamily family,
-    ErrorScope scope,
-    String code,
-    String title,
-    String message) {}
+    UUID errorId, ErrorFamily family, ErrorScope scope, String code, String title, String body) {}
