@@ -1,51 +1,79 @@
-# Data API Error Messages
+# Data API Error Objects V2
+#
 # This file contain the error messages that are returned by the Data API
 #
-# Error Messages have the following hierarchy:
+# The error descriptions in this file are ready by the APIException classes to create the content for the errors.
+# That is, only errors defined in the code are read from this file, see the APIException class in the code
+# for a description of how the errors are defined and manged.
+#
+# Errors have the following hierarchy:
 # Family -> (optional) Scope -> Code
+#
 # Where
-# * Family: Identifies if the error relates to the client request or the processing, analogous to the 4XX and 5XX HTTP status codes
-# * Scope: Optionally identifies the part of the request or server processing that caused the fault, for example "FILTER".
-#          Use "NONE" for no scope. Scope generally map to a concrete Exception class such as FilterException.
-# * Code: A unique string identifying the error
+# * Family: Identifies if the error relates to the client request or the server processing, analogous
+#           to the 4XX and 5XX HTTP status codes. Supported values are REQUEST or SERVER. In this file they are
+#           represented by the request_errors and server_errors keys.
+# * Scope: Optionally identifies the part of the request or server processing that caused the fault, for example "FILTER"
+#          when there is a problem in the filter clause. Scope generally map to a concrete APIException class such as
+#          FilterException.
+# * Code: A unique string identifying the error.
 #
-# All values are strings and must be SNAKE_CASE, all upper case and using _ for space.
+# All values are strings and must be UPPER_SNAKE_CASE_1 supporting upper case alpha and digits.
 #
-# All values are defined in code see the following:
-# * ErrorFamily - A single enum definition of all families.
-# * ErrorScope - Each family has its own list of scopes, see this interface and it's implementations for the list of scopes.
-# * ErrorCode - Each exception class such as FilterException represents a Scope, and has a list of error codes in an enum.
-#              See this interface for information and it's implementations for the list of error codes.
+# FILE LAYOUT
+# ===========
 #
-# For each error code we define:
-# * title: A short title for the error, that must not change between instances of the error.
-# * body: A longer message that may contain {vars} and be multi line that are replaced by the error handling code.
+# "snippets" is a list of text snippets than can be included in any error body, the snippets are included in the
+# variables when running the tempalte for the body of the error. Snippets are referenced using `${SNIPET.<NAME>}`
+# where <NAME> is the name of the snippet key.
+# Each snippet has:
+# - name: UPPER_SNAKE_CASE_1
+# - body: A string with the text of the snippet, recommend using the `|-` to trim trailing newlines.
 #
-# Snippets can be used to include common text in multiple error messages.
-# The snippet is defined at the top of the file and then referenced in the error message body.
-# Snippets are referenced using `$(snippet.<NAME>}` where <NAME> is the name of the snippet key.
+# "request_errors" and "server_errors" are lists of error objects, for the REQUEST and SERVER family respectively.
+# Each error object has:
+# - scope: UPPER_SNAKE_CASE_1
+# - code: UPPER_SNAKE_CASE_1
+# - title: A short title for the error, that must not change between instances of the error.
+# - body: A longer body that may contain ${vars} to be passed by the code when created, and references to snippets.
+#         This can be a multi line string, recommend using the `|-` to trim trailing newlines.
+#
+# NOTE: Please keep the entries sorted on their name for snippets, or scope and code for errors. Please add a
+#       new line after each entry, using the `|-` to trim trailing newlines.
 
-snippet:
-  contact_support: |
-    Please contact support if the issue persists.
+snippets:
+  - name: CONTACT_SUPPORT
+    body: |-
+      Please contact support if the issue persists.
 
-errors:
-  REQUEST:
-    FILTER:
-      MULTIPLE_ID_FILTER:
-        title: the title for the error
-        body: |
-          big long message with {vars} in it
-    NONE:
-      DOCUMENT_UNPARSEABLE:
-        title: Unable to parse the document
-        body: | 
-          big long message with {vars} in it.
-          
-          ${snippet.contact_support}
-  SERVER:
-    DATABASE:
-      SERVER_READ_FAILED:
-        title: the title for the error
-        body: big long message with {vars} in it
+request_errors:
+  - scope: FILTER
+    code: MULTIPLE_ID_FILTER
+    title: the title for the error
+    body: |-
+      big long message with ${vars} in it
+  - scope:
+    code: DOCUMENT_UNPARSEABLE
+    title: Unable to parse the document
+    body: |-
+      big long message with ${vars} in it.
+        
+      ${SNIPPET.CONTACT_SUPPORT}
 
+server_errors:
+  - scope: DATABASE
+    code: SERVER_READ_FAILED
+    title: the title for the error
+    body: big long body with ${vars} in it
+
+  - scope: EMBEDDING_PROVIDER
+    code: CLIENT_ERROR
+    title: The Embedding Provider returned a HTTP client error
+    body: |-
+      Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}
+
+  - scope: EMBEDDING_PROVIDER
+    code: SERVER_ERROR
+    title: The Embedding Provider returned a HTTP client error
+    body: |-
+      Provider: ${provider}; HTTP Status: ${httpStatus}; Error Message: ${errorMessage}

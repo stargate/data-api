@@ -12,9 +12,15 @@ public class ServerException extends APIException {
 
   public static final ErrorFamily FAMILY = ErrorFamily.SERVER;
 
+  public ServerException(ErrorInstance errorInstance) {
+    super(errorInstance);
+  }
+
   public enum Scope implements ErrorScope {
     /** See {@link DatabaseException} */
-    DATABASE;
+    DATABASE,
+    /** See {@link EmbeddingProviderException} */
+    EMBEDDING_PROVIDER;
 
     @Override
     public String scope() {
@@ -22,12 +28,19 @@ public class ServerException extends APIException {
     }
   }
 
-  public ServerException(ErrorInstance errorInstance) {
-    super(errorInstance);
-  }
+  public enum Code implements ErrorCode<ServerException> {
+    // TODO: remove fake error code, just here so it compiles
+    FAKE_CODE;
 
-  public ServerException(
-      ErrorFamily family, ErrorScope scope, String code, String title, String message) {
-    super(family, scope, code, title, message);
+    private final ErrorTemplate<ServerException> template;
+
+    Code() {
+      template = ErrorTemplate.load(ServerException.class, FAMILY, ErrorScope.NONE, name());
+    }
+
+    @Override
+    public ErrorTemplate<ServerException> template() {
+      return template;
+    }
   }
 }

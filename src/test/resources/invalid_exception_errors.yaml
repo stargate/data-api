@@ -1,0 +1,14 @@
+# For use when testing the exception classes that do not have ctor or break etc.
+
+request_errors:
+  - scope: MISSING_CTOR
+    code: EXCEPTION_MISSING_CTOR
+    title: test for exception class missing the ctor needed for templating
+    body: |-
+      Scopes are represented by Exception classes, so needs a new scope 
+
+  - scope: FAILING_CTOR
+    code: EXCEPTION_FAILING_CTOR
+    title: test for exception class that throws error on construction
+    body: |-
+      Scopes are represented by Exception classes, so needs a new scope 
