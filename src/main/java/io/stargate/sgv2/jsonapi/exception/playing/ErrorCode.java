@@ -27,7 +27,7 @@ public interface ErrorCode<T extends APIException> {
 
   /**
    * Gets an instance of the {@link APIException} the error code represents without providing any
-   * substitution values for the error message.
+   * substitution values for the error body.
    *
    * @return Instance of {@link APIException} the error code represents.
    */
@@ -37,10 +37,10 @@ public interface ErrorCode<T extends APIException> {
 
   /**
    * Gets an instance of the {@link APIException} the error code represents, providing substitution
-   * values for the error message as a param array.
+   * values for the error body as a param array.
    *
-   * @param values Substitution values for the error message. The array length must be a multiple of
-   *     2, each pair of strings is treated as a key-value pair for example ["key-1", "value-1",
+   * @param values Substitution values for the error body. The array length must be a multiple of 2,
+   *     each pair of strings is treated as a key-value pair for example ["key-1", "value-1",
    *     "key-2", "value-2"]
    * @return Instance of {@link APIException} the error code represents.
    */
@@ -56,9 +56,9 @@ public interface ErrorCode<T extends APIException> {
 
   /**
    * Gets an instance of the {@link APIException} the error code represents, providing substitution
-   * values for the error message as a param array.
+   * values for the error body as a param array.
    *
-   * @param values May of substitution values for the error message.
+   * @param values May of substitution values for the error body.
    * @return Instance of {@link APIException} the error code represents.
    */
   default T get(Map<String, String> values) {

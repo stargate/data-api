@@ -1,15 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception.playing;
 
-import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.SmallRyeConfigBuilder;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
-import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
-import jakarta.ws.rs.core.Response;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * Base for any exceptions from the API.
@@ -20,7 +12,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
  * ErrorCode} that is unique within the family and scope.
  *
  * <p>To facilitate better error messages we template the messages in a {@link ErrorTemplate} that
- * is loaded from a properties file. The message for the error may change with each instance of the
+ * is loaded from a properties file. The body for the error may change with each instance of the
  * exception, for example to include the number of filters that were included in a request.
  *
  * <p>The process of adding a new Error Code is:
@@ -33,8 +25,8 @@ import org.eclipse.microprofile.config.ConfigProvider;
  *       it does not then use {@link ErrorScope#NONE}.
  *   <li>Decide on the {@link ErrorCode}, it should be unique within the Family and Scope
  *       combination.
- *   <li>Add the error to file read by {@link ErrorTemplate} to define the title and templated
- *       message body.
+ *   <li>Add the error to file read by {@link ErrorTemplate} to define the title and templated body
+ *       body.
  *   <li>Add the error code to the Code enum for the Exception class, such as {@link
  *       FilterException.Code} or {@link RequestException.Code} with the same name. When the enum is
  *       instantiated at JVM start the error template is loaded.
@@ -68,44 +60,51 @@ public abstract class APIException extends RuntimeException
   public final String title;
 
   /**
-   * Message for this instance of the error.
+   * Message body for this instance of the error.
    *
    * <p>Messages may be unique for each instance of the error code, they are typically driven from
    * the {@link ErrorTemplate}.
    *
-   * <p>This is the processed message to be returned to the client.
+   * <p>This is the processed body to be returned to the client. NOT called body to avoid confusion
+   * with getMessage() on the RuntimeException
    */
-  public final String message;
+  public final String body;
 
   public APIException(ErrorInstance errorInstance) {
     this.errorId = errorInstance.errorId();
     this.family = errorInstance.family();
-    this.scope = errorInstance.scope().safeScope();
+    this.scope = errorInstance.scope().scope();
     this.code = errorInstance.code();
     this.title = errorInstance.title();
-    this.message = errorInstance.message();
+    this.body = errorInstance.body();
   }
 
   public APIException(
-      ErrorFamily family, ErrorScope scope, String code, String title, String message) {
-    this(new ErrorInstance(UUID.randomUUID(), family, scope, code, title, message));
+      ErrorFamily family, ErrorScope scope, String code, String title, String body) {
+    this(new ErrorInstance(UUID.randomUUID(), family, scope, code, title, body));
   }
 
   @Override
   public CommandResponseError get() {
     return null;
   }
-  
+
+  /**
+   * Overrides to return the {@link #body} of the error. Using the body as this is effectively the
+   * message, the structure we want to return to the in the API is the {@link CommandResponseError}
+   * from {@link #get()}
+   *
+   * @return
+   */
   @Override
   public String getMessage() {
-    // TODO: work out the message, is it just the message or a formatted string of all the
-    // properties ?
-    return super.getMessage();
+    return body;
   }
 
   @Override
   public String toString() {
-    // TODO: make a nice string for error logging etc.
-    return super.toString();
+    return String.format(
+        "%s{errorId=%s, family=%s, scope='%s', code='%s', title='%s', body='%s'}",
+        getClass().getSimpleName(), errorId, family, scope, code, title, body);
   }
 }

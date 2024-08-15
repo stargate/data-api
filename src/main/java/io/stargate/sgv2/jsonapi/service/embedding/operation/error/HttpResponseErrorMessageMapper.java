@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation.error;
 import static jakarta.ws.rs.core.Response.Status.Family.CLIENT_ERROR;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.playing.EmbeddingProviderException;
 import jakarta.ws.rs.core.Response;
 
 public class HttpResponseErrorMessageMapper {

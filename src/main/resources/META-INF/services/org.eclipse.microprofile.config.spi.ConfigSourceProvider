@@ -1,2 +1,1 @@
 io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingConfigSourceProvider
-io.stargate.sgv2.jsonapi.exception.playing.ErrorCodeConfigSourceProvider
