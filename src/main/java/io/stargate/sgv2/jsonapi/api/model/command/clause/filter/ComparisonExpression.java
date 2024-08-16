@@ -17,7 +17,7 @@ import org.bson.types.ObjectId;
  * {"username" : {"$eq" : "aaron"}} In here we expand the shortcut into a canonical long form, so it
  * is all the same.
  */
-public class ComparisonExpression {
+public class ComparisonExpression implements Invertible {
 
   private final String path;
 
@@ -33,8 +33,12 @@ public class ComparisonExpression {
     return filterOperations;
   }
 
-  /** This method will be called when not operation is pushed down */
-  public void flip() {
+  /**
+   * implements Invertible, method to invert a ComparisonExpression this method will be called when
+   * $not operator is pushed down
+   */
+  @Override
+  public Object invert() {
     List<FilterOperation<?>> filterOperations = new ArrayList<>(this.filterOperations.size());
     for (FilterOperation<?> filterOperation : this.filterOperations) {
       final FilterOperator flippedOperator = filterOperation.operator().flip();
@@ -43,6 +47,7 @@ public class ComparisonExpression {
       filterOperations.add(new ValueComparisonOperation<>(flippedOperator, operand));
     }
     this.filterOperations = filterOperations;
+    return this;
   }
 
   /**

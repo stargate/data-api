@@ -1,10 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
 import com.google.common.base.Preconditions;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
-import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -64,9 +61,8 @@ public abstract class FilterResolver<
   public LogicalExpression resolve(CommandContext<SchemaT> commandContext, CmdT command) {
     Preconditions.checkNotNull(commandContext, "commandContext is required");
     Preconditions.checkNotNull(command, "command is required");
-
     ValidatableCommandClause.maybeValidate(commandContext, command.filterClause());
-
+    InvertibleCommandClause.maybeInvert(commandContext, command.filterClause());
     LogicalExpression filter = matchRules.apply(commandContext, command);
     if (filter.getTotalComparisonExpressionCount() > operationsConfig.maxFilterObjectProperties()) {
       throw new JsonApiException(
