@@ -115,7 +115,11 @@ public class MeteredCommandProcessor {
               sample.stop(meterRegistry.timer(jsonApiMetricsConfig.metricsName(), tags));
 
               if (isCommandLevelLoggingEnabled(result, false)) {
-                logger.info(buildCommandLog(commandContext, command, result));
+                if (result == null && result.errors() != null && !result.errors().isEmpty()) {
+                  logger.error(buildCommandLog(commandContext, command, result));
+                } else {
+                  logger.info(buildCommandLog(commandContext, command, result));
+                }
               }
             })
         .onFailure()
