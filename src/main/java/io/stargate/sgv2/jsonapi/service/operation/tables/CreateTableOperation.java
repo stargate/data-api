@@ -55,9 +55,9 @@ public class CreateTableOperation implements Operation {
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-
-    CreateTableStart create =
-        createTable(commandContext.schemaObject().name.keyspace(), tableName).ifNotExists();
+    String keyspaceQuoted = "\"%s\"".formatted(commandContext.schemaObject().name.keyspace());
+    String tableNameQuoted = "\"%s\"".formatted(tableName);
+    CreateTableStart create = createTable(keyspaceQuoted, tableNameQuoted).ifNotExists();
 
     // Add all primary keys and colunms
     CreateTable createTable = addColumnsAndKeys(create);
