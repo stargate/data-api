@@ -57,7 +57,9 @@ public record UpdateCollectionOperationPage(
                       ERROR, documentIds, updatedDocuments.stream().findFirst().get().error()));
             });
     EnumMap<CommandStatus, Object> updateStatus = new EnumMap<>(CommandStatus.class);
-    if (upsertedId[0] != null) updateStatus.put(CommandStatus.UPSERTED_ID, upsertedId[0]);
+    if (upsertedId[0] != null) {
+      updateStatus.put(CommandStatus.UPSERTED_ID, upsertedId[0]);
+    }
     updateStatus.put(CommandStatus.MATCHED_COUNT, matchedCount());
     updateStatus.put(CommandStatus.MODIFIED_COUNT, modifiedCount());
 

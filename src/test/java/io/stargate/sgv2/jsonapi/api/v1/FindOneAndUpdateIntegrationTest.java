@@ -12,10 +12,9 @@ import static org.hamcrest.Matchers.startsWith;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.ClassOrderer;
@@ -25,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrationTestBase {
 
@@ -1713,8 +1712,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .body(
               "errors[0].message",
               is(
-                  ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
-                      + ": Date ($date) needs to have NUMBER value, has STRING (path 'createdAt')"));
+                  "Bad JSON Extension value: Date ($date) needs to have NUMBER value, has STRING (path 'createdAt')"));
     }
   }
 

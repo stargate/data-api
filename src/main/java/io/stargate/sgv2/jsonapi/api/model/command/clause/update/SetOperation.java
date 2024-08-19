@@ -3,14 +3,11 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Implementation of {@code $set} update operation used to assign values to document fields; also
@@ -89,27 +86,48 @@ public class SetOperation extends UpdateOperation<SetOperation.Action> {
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public UpdateOperationResult updateDocument(ObjectNode doc) {
     boolean modified = false;
     Set<String> setPaths = new HashSet<>();
     actions.stream().forEach(action -> setPaths.add(action.locator().path()));
+    List<EmbeddingUpdateOperation> embeddingUpdateOperationList = new ArrayList<>();
+
     for (Action action : actions) {
       PathMatch target = action.locator().findOrCreate(doc);
       JsonNode newValue = action.value();
       JsonNode oldValue = target.valueNode();
       // Modify if no old value OR new value differs, as per Mongo-equality rules
       if ((oldValue == null) || !JsonUtil.equalsOrdered(oldValue, newValue)) {
+        // replace old value with matched path new value
         target.replaceValue(newValue);
-        // $vector is updated and $vectorize is not updated, remove the $vectorize field in the
-        // document
+
+        // $vector is updated and $vectorize is not updated, remove $vectorize in the document
         if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(action.locator().path())
             && !setPaths.contains(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
           doc.remove(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
         }
+
+        // $vectorize
+        if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(action.locator().path())) {
+          if (newValue.isNull()) {
+            // if $vectorize is null value, update $vector as null
+            doc.put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
+            doc.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+          } else if (!newValue.isTextual()) {
+            // if $vectorize is not textual value
+            throw ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.toApiException();
+          } else if (newValue.asText().isBlank()) {
+            // $vectorize is blank text value, set $vector as null value, no need to vectorize
+            doc.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
+          } else {
+            // if $vectorize is textual and not blank, create embeddingUpdateOperation
+            embeddingUpdateOperationList.add(new EmbeddingUpdateOperation(newValue.asText()));
+          }
+        }
         modified = true;
       }
     }
-    return modified;
+    return new UpdateOperationResult(modified, embeddingUpdateOperationList);
   }
 
   // Needed because some unit tests check for equality

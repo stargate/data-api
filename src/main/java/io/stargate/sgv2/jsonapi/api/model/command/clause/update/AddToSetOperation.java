@@ -91,7 +91,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
   }
 
   @Override
-  public boolean updateDocument(ObjectNode doc) {
+  public UpdateOperationResult updateDocument(ObjectNode doc) {
     boolean modified = false;
     for (Action action : actions) {
       PathMatch target = action.locator().findOrCreate(doc);
@@ -120,7 +120,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
       }
     }
 
-    return modified;
+    return new UpdateOperationResult(modified, List.of());
   }
 
   private boolean addToSet(ArrayNode set, JsonNode elementToAdd) {

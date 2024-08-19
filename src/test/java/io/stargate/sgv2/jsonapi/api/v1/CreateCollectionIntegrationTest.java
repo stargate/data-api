@@ -3,16 +3,15 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   @Nested
@@ -174,7 +173,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
+          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
           .body(
               "errors[0].message",
               containsString(
@@ -216,7 +215,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
+          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
           .body(
               "errors[0].message",
               containsString(
@@ -249,7 +248,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
+          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
           .body(
               "errors[0].message",
               containsString(
@@ -267,7 +266,7 @@ class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is(ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.name()))
+          .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
           .body(
               "errors[0].message",
               containsString(

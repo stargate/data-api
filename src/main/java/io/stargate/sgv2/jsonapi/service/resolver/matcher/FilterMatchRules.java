@@ -1,13 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -54,7 +53,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
   }
 
   /**
-   * Applies all the rules to to return an Operation or throw.
+   * Applies all the rules to return an Operation or throw.
    *
    * @param commandContext
    * @param command
@@ -72,8 +71,11 @@ public class FilterMatchRules<T extends Command & Filterable> {
                     "Filter type not supported, unable to resolve to a filtering strategy"));
   }
 
-  @VisibleForTesting
-  protected List<BiFunction<CommandContext, T, Optional<LogicalExpression>>> getMatchRules() {
-    return matchRules;
+  public boolean isEmpty() {
+    return matchRules.isEmpty();
+  }
+
+  public int size() {
+    return matchRules.size();
   }
 }
