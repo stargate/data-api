@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -12,12 +12,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
-
   @Nested
   class ClientErrors {
-
     String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
 
     @Test
@@ -49,8 +47,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           //  as JSON is unparseable) but right now this is not working for some reason.
           .statusCode(400)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_REQUEST_NOT_JSON"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_REQUEST_NOT_JSON"))
           .body(
               "errors[0].message",
               startsWith("Request invalid, cannot parse as JSON: underlying problem:"))
@@ -76,12 +74,12 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"CollectionCommand\"s: known commands are [countDocuments,"));
+                  "Provided command unknown: \"unknownCommand\" not one of \"CollectionCommand\"s: known commands are [addIndex, countDocuments,"));
     }
 
     @Test
@@ -104,8 +102,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("INVALID_REQUEST_UNKNOWN_FIELD"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("INVALID_REQUEST_UNKNOWN_FIELD"))
           .body("errors[0].message", startsWith("Request invalid, unrecognized JSON field"))
           .body("errors[0].message", containsString("\"unknown\" not one of known fields"))
           .body(
@@ -133,8 +131,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body(
               "errors[0].message",
               startsWith(
@@ -161,8 +159,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body(
               "errors[0].message",
               startsWith(
@@ -179,8 +177,8 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body(
               "errors[0].message",
               startsWith("Request invalid: field 'command' value `null` not valid"));

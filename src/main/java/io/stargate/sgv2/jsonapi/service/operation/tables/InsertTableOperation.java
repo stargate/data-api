@@ -1,8 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
-
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import io.smallrye.mutiny.Multi;
@@ -94,7 +93,7 @@ public class InsertTableOperation extends TableMutationOperation {
       QueryExecutor queryExecutor, TableInsertAttempt insertAttempt) {
 
     InsertInto insertInto =
-        insertInto(
+        QueryBuilder.insertInto(
             commandContext.schemaObject().tableMetadata.getKeyspace(),
             commandContext.schemaObject().tableMetadata.getName());
 
