@@ -47,7 +47,7 @@ class DropTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
   @Nested
   @Order(1)
-  class dropIndexSuccess {
+  class DropIndexSuccess {
 
     @Test
     @Order(1)

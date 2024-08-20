@@ -48,7 +48,7 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
   @Nested
   @Order(1)
-  class addIndexSuccess {
+  class AddIndexSuccess {
 
     @Test
     @Order(1)
@@ -76,7 +76,7 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
   @Nested
   @Order(2)
-  class addIndexFailure {
+  class AddIndexFailure {
     @Test
     public void addIndex() {
       String json =
