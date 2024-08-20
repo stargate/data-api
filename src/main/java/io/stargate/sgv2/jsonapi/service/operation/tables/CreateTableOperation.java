@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.*;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
@@ -55,9 +56,10 @@ public class CreateTableOperation implements Operation {
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    String keyspaceQuoted = "\"%s\"".formatted(commandContext.schemaObject().name.keyspace());
-    String tableNameQuoted = "\"%s\"".formatted(tableName);
-    CreateTableStart create = createTable(keyspaceQuoted, tableNameQuoted).ifNotExists();
+    CqlIdentifier keyspaceIdentifier =
+        CqlIdentifier.fromInternal(commandContext.schemaObject().name.keyspace());
+    CqlIdentifier tableIdentifier = CqlIdentifier.fromInternal(tableName);
+    CreateTableStart create = createTable(keyspaceIdentifier, tableIdentifier).ifNotExists();
 
     // Add all primary keys and colunms
     CreateTable createTable = addColumnsAndKeys(create);
