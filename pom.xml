@@ -1,15 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>io.stargate</groupId>
-    <artifactId>sgv2-api-parent</artifactId>
-    <version>2.1.0-BETA-14</version>
-  </parent>
   <artifactId>sgv2-jsonapi</artifactId>
   <version>1.0.16-SNAPSHOT</version>
   <properties>
-    <stargate.version>${project.parent.version}</stargate.version>
     <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->
     <!-- 16-Aug-2024, tatu: Quarkus depends on 2.17 already, but keep explicit -->
     <jackson.version>2.17.2</jackson.version>
@@ -30,7 +24,7 @@
     <!-- from Stargate persistence, latest as of 2024-01-24: -->
     <stargate.int-test.cassandra.image-tag>${cassandra.version}</stargate.int-test.cassandra.image-tag>
     <stargate.int-test.coordinator.image>stargateio/coordinator-dse-next</stargate.int-test.coordinator.image>
-    <stargate.int-test.coordinator.image-tag>v${stargate.version}</stargate.int-test.coordinator.image-tag>
+    <stargate.int-test.coordinator.image-tag>v2.1.0-BETA-14</stargate.int-test.coordinator.image-tag>
     <stargate.int-test.cluster.name>dse-next-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
     <stargate.int-test.cluster.persistence>persistence-dse-next</stargate.int-test.cluster.persistence>
     <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
