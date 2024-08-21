@@ -13,7 +13,6 @@
     <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.version>3.13.2</quarkus.platform.version>
     <!-- miscellaneous -->
-    <surefire-plugin.version>3.3.0</surefire-plugin.version>
     <wiremock.version>3.4.2</wiremock.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
@@ -21,7 +20,6 @@
     <quarkus.container-image.name>jsonapi</quarkus.container-image.name>
     <quarkus.container-image.tag>v${project.version}</quarkus.container-image.tag>
     <quarkus.container-image.additional-tags>v1</quarkus.container-image.additional-tags>
-    <skipITs>false</skipITs>
     <cassandra.version>4.0.11-591d171ac9c9</cassandra.version>
     <!-- Integration test props -->
     <!-- When updating please change defaults in the DseTestResource class -->
@@ -43,6 +41,16 @@
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.release>17</maven.compiler.release>
+    <!-- Encoding -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!-- Testing -->
+    <skipTests>false</skipTests>
+    <skipUnitTests>${skipTests}</skipUnitTests>
+    <surefire-plugin.version>3.3.0</surefire-plugin.version>
+    <skipITs>false</skipITs>
+
+
 
   </properties>
   <dependencyManagement>
@@ -258,6 +266,23 @@
           <compilerArgs>
             <arg>-parameters</arg>
           </compilerArgs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${surefire-plugin.version}</version>
+        <configuration>
+          <argLine>-Xmx4g</argLine>
+          <systemPropertyVariables>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <maven.home>${maven.home}</maven.home>
+          </systemPropertyVariables>
+          <excludes>
+            <exclude>**/*EndToEndTest.*</exclude>
+            <exclude>**/*IntegrationTest.*</exclude>
+            <exclude>**/*IT.*</exclude>
+          </excludes>
+          <skip>${skipUnitTests}</skip>
         </configuration>
       </plugin>
       <plugin>
