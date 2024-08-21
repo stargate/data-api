@@ -1,14 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
   <version>1.0.16-SNAPSHOT</version>
   <properties>
     <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->
     <!-- 16-Aug-2024, tatu: Quarkus depends on 2.17 already, but keep explicit -->
     <jackson.version>2.17.2</jackson.version>
-    <!-- 14-Aug-2024, tatu: override here until Stargate gets to this version too -->
+    <!-- Quarkus -->
+    <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+    <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
     <quarkus.platform.version>3.13.2</quarkus.platform.version>
+    <!-- miscellaneous -->
+    <surefire-plugin.version>3.3.0</surefire-plugin.version>
     <wiremock.version>3.4.2</wiremock.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
@@ -31,6 +36,14 @@
     <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
     <stargate.int-test.use-coordinator>true</stargate.int-test.use-coordinator>
+    <!-- driver -->
+    <driver.version>4.17.0</driver.version>
+    <!-- Compiler -->
+    <compiler-plugin.version>3.11.0</compiler-plugin.version>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.release>17</maven.compiler.release>
+
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -210,6 +223,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+      <version>3.22.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -237,6 +251,28 @@
   </dependencies>
   <build>
     <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${compiler-plugin.version}</version>
+        <configuration>
+          <compilerArgs>
+            <arg>-parameters</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.spotify.fmt</groupId>
+        <artifactId>fmt-maven-plugin</artifactId>
+        <version>2.23</version>
+        <executions>
+          <execution>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>io.smallrye</groupId>
         <artifactId>jandex-maven-plugin</artifactId>
