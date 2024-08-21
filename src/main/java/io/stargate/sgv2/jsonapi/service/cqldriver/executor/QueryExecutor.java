@@ -143,7 +143,14 @@ public class QueryExecutor {
                         .setConsistencyLevel(
                             operationsConfig.queriesConfig().consistency().writes())
                         .setSerialConsistencyLevel(
-                            operationsConfig.queriesConfig().serialConsistency())));
+                            operationsConfig.queriesConfig().serialConsistency())))
+        .onFailure()
+        .invoke(
+            result -> {
+              // Here you can log or inspect the result
+              System.out.println("AsyncResultSet: " + result);
+              // Add a breakpoint here to inspect 'result' during debugging
+            });
   }
 
   /**
