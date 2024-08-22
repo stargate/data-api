@@ -172,5 +172,36 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
               "errors[0].message",
               containsString("Column unknown: No column with name 'unknown' found in table"));
     }
+
+    @Test
+    @Order(2)
+    public void failOnNonKeyColumn() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                                  {
+                                    "findOne": {
+                                      "filter": {
+                                        "age": 80
+                                      }
+                                    }
+                                  }
+                              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+          .then()
+          // Not like it should be, but until fixed let's verify current behavior
+          .statusCode(200)
+          .body("data", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          // 22-Aug-2024, tatu: Not optimal, leftovers from Collections... but has to do
+          //    on short term
+          .body("errors[0].errorCode", is("NO_INDEX_ERROR"))
+          .body("errors[0].message", containsString("Faulty collection (missing indexes)."));
+    }
   }
 }
