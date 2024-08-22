@@ -9,20 +9,14 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
  *
  * <p>Code that wants to invert a clause should call {@link #maybeInvert(CommandContext,
  * InvertibleCommandClause)} with the clause.
- *
- * <p>Example:
- *
- * <pre>
- *  ValidatableCommandClause.maybeValidate(commandContext, command.filterClause());
- * </pre>
  */
 public interface InvertibleCommandClause {
 
   /**
-   * Calls the supplied validatable clause to validate against the {@link SchemaObject} from the
-   * {@link CommandContext} using one of the dedicated validate*Command methods on the interface.
+   * Calls the supplied invertible clause to invert against the {@link SchemaObject} from the {@link
+   * CommandContext} using one of the dedicated invert*Command methods on the interface.
    *
-   * <p>NOTE: Classes that want to validate a clause should call this method, not the non-static
+   * <p>NOTE: Classes that want to invertible a clause should call this method, not the non-static
    * methods on the interface directly.
    *
    * @param commandContext The context the command is running against, including the {@link
@@ -55,32 +49,32 @@ public interface InvertibleCommandClause {
    * <p>Only implement this method if the clause supports Collections, the default implementation is
    * to fail.
    *
-   * @param commandContext {@link CommandContext<CollectionSchemaObject>} to validate against
+   * @param commandContext {@link CommandContext<CollectionSchemaObject>} to invert against
    */
   default void invertForCollectionCommand(CommandContext<CollectionSchemaObject> commandContext) {
     // there error is a fallback to make sure it is implemented if it should be
     // commands are tested well
     throw new UnsupportedOperationException(
         String.format(
-            "%s Clause does not support validating for Collections, target was %s",
+            "%s Clause does not support invert for Collections, target was %s",
             getClass().getSimpleName(), commandContext.schemaObject().name));
   }
 
   /**
-   * Implementations should implement this method if they support validation against a {@link
+   * Implementations should implement this method if they support invert against a {@link
    * TableSchemaObject}.
    *
    * <p>Only implement this method if the clause supports Tables, the default implementation is to
    * fail.
    *
-   * @param commandContext {@link CommandContext<TableSchemaObject>} to validate against
+   * @param commandContext {@link CommandContext<TableSchemaObject>} to invert against
    */
   default void invertForTableCommand(CommandContext<TableSchemaObject> commandContext) {
     // there error is a fallback to make sure it is implemented if it should be
     // commands are tested well
     throw new UnsupportedOperationException(
         String.format(
-            "%s Clause does not support validating for Tables, target was %s",
+            "%s Clause does not support invert for Tables, target was %s",
             getClass().getSimpleName(), commandContext.schemaObject().name));
   }
 }
