@@ -26,7 +26,7 @@ public enum ValueComparisonOperator implements FilterOperator {
   }
 
   @Override
-  public FilterOperator flip() {
+  public FilterOperator invert() {
     switch (this) {
       case EQ:
         return NE;
