@@ -7,8 +7,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 /**
  * Interface for filter clause to implement if it can be inverted
  *
- * <p>Code that wants to invert a clause should call {@link #maybeValidate(CommandContext,
- * ValidatableCommandClause)} with the clause.
+ * <p>Code that wants to invert a clause should call {@link #maybeInvert(CommandContext,
+ * InvertibleCommandClause)} with the clause.
  *
  * <p>Example:
  *
@@ -27,7 +27,7 @@ public interface InvertibleCommandClause {
    *
    * @param commandContext The context the command is running against, including the {@link
    *     SchemaObject}
-   * @param validatable An object that implements {@link ValidatableCommandClause}, may be null
+   * @param invertible An object that implements {@link InvertibleCommandClause}, may be null
    * @param <T> Type of the {@link SchemaObject}
    */
   static <T extends SchemaObject> void maybeInvert(

@@ -26,7 +26,7 @@ public class LogicalExpression {
     }
 
     @Override
-    public LogicalOperator invert() {
+    public Invertible invert() {
       if (this == AND) {
         return OR;
       } else if (this == OR) {
@@ -121,7 +121,7 @@ public class LogicalExpression {
     return logicalRelation;
   }
 
-  public void setLogicalRelation(LogicalOperator logicalRelation) {
+  protected void setLogicalRelation(LogicalOperator logicalRelation) {
     this.logicalRelation = logicalRelation;
   }
 

@@ -38,13 +38,13 @@ public class ComparisonExpression implements Invertible {
    * $not operator is pushed down
    */
   @Override
-  public Object invert() {
+  public Invertible invert() {
     List<FilterOperation<?>> filterOperations = new ArrayList<>(this.filterOperations.size());
     for (FilterOperation<?> filterOperation : this.filterOperations) {
-      final FilterOperator flippedOperator = filterOperation.operator().flip();
+      final FilterOperator invertedOperator = filterOperation.operator().invert();
       JsonLiteral<?> operand =
           getFlippedOperandValue(filterOperation.operator(), filterOperation.operand());
-      filterOperations.add(new ValueComparisonOperation<>(flippedOperator, operand));
+      filterOperations.add(new ValueComparisonOperation<>(invertedOperator, operand));
     }
     this.filterOperations = filterOperations;
     return this;

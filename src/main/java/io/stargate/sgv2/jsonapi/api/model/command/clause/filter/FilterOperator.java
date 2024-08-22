@@ -13,7 +13,7 @@ public interface FilterOperator {
    *
    * @return
    */
-  FilterOperator flip();
+  FilterOperator invert();
 
   class FilterOperatorUtils {
     private static Map<String, FilterOperator> operatorMap = new HashMap<>();

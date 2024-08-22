@@ -219,7 +219,8 @@ public record FilterClause(LogicalExpression logicalExpression)
    * @param logicalExpression logicalExpression
    */
   private void flip(LogicalExpression logicalExpression) {
-    logicalExpression.setLogicalRelation(logicalExpression.getLogicalRelation().invert());
+    logicalExpression.setLogicalRelation(
+        (LogicalExpression.LogicalOperator) logicalExpression.getLogicalRelation().invert());
     // flip child LogicalExpressions
     for (LogicalExpression childLogicalExpression : logicalExpression.logicalExpressions) {
       flip(childLogicalExpression);
