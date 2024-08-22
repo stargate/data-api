@@ -11,19 +11,6 @@ import io.stargate.sgv2.jsonapi.api.v1.NamespaceResource;
 
 /** Abstract class for all table int tests that needs a collection to execute tests in. */
 public class AbstractTableIntegrationTestBase extends AbstractNamespaceIntegrationTestBase {
-
-  protected void createTable(String tableName, String createTableJSON) {
-    given()
-        .port(getTestPort())
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(createTableJSON.formatted().formatted(tableName))
-        .when()
-        .post(NamespaceResource.BASE_PATH, namespaceName)
-        .then()
-        .statusCode(200);
-  }
-
   protected void createTable(String createTableJSON) {
     given()
         .port(getTestPort())
