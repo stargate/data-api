@@ -68,7 +68,7 @@ public interface ValidatableCommandClause {
     // commands are tested well
     throw new UnsupportedOperationException(
         String.format(
-            "%s Clause does not support validating for Collections, target was %s",
+            "validateCollectionCommand: %s Clause does not support validating for Collections, target was %s",
             getClass().getSimpleName(), commandContext.schemaObject().name));
   }
 
@@ -86,7 +86,7 @@ public interface ValidatableCommandClause {
     // commands are tested well
     throw new UnsupportedOperationException(
         String.format(
-            "%s Clause does not support validating for Tables, target was %s",
+            "validateTableCommand: %s Clause does not support validating for Tables, target was %s",
             getClass().getSimpleName(), commandContext.schemaObject().name));
   }
 
@@ -104,7 +104,7 @@ public interface ValidatableCommandClause {
     // commands are tested well
     throw new UnsupportedOperationException(
         String.format(
-            "%s Clause does not support validating for Namespaces, target was %s",
+            "validateNamespaceCommand: %s Clause does not support validating for Namespaces, target was %s",
             getClass().getSimpleName(), commandContext.schemaObject().name));
   }
 
@@ -122,7 +122,7 @@ public interface ValidatableCommandClause {
     // commands are tested well
     throw new UnsupportedOperationException(
         String.format(
-            "%s Clause does not support validating for Databases, target was %s",
+            "validateDatabaseCommand: %s Clause does not support validating for Databases, target was %s",
             getClass().getSimpleName(), commandContext.schemaObject().name));
   }
 }

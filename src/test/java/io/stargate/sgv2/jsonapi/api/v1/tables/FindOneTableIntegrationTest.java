@@ -40,22 +40,21 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
         "id");
   }
 
+  // On-empty tests to be run before ones that populate tables
   @Nested
   @Order(1)
-  class FindOneSuccess {
+  class FindOneOnEmpty {
     @Test
-    // Must be run first, before any other test
-    @Order(1)
-    public void findOnEmpty() {
+    public void findOnEmptyNoFilter() {
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(
               """
-                  {
-                    "findOne": { }
-                  }
-              """)
+                                  {
+                                    "findOne": { }
+                                  }
+                              """)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .then()
@@ -66,7 +65,35 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     }
 
     @Test
-    @Order(2)
+    public void findOnEmptyNonMatchingFilter() {
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                                  {
+                                    "findOne": {
+                                        "filter": {
+                                            "id": "nosuchkey"
+                                        }
+                                    }
+                                  }
+                              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+          .then()
+          .statusCode(200)
+          .body("errors", is(nullValue()))
+          .body("data.document", is(nullValue()))
+          .body("status", is(nullValue()));
+    }
+  }
+
+  @Nested
+  @Order(2)
+  class FindOneSuccess {
+    @Test
+    @Order(1)
     public void findOneSingleStringKey() {
       // First, insert 2 documents:
       insertOneInTable(
@@ -87,11 +114,32 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                           "name": "Bob"
                       }
                       """);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                          {
+                            "findOne": {
+                                "filter": {
+                                    "id": "b"
+                                }
+                            }
+                          }
+                      """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+          .then()
+          .statusCode(200)
+          .body("data.document", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()));
     }
   }
 
   @Nested
-  @Order(2)
+  @Order(3)
   class FindOneFail {
     @Test
     @Order(1)
