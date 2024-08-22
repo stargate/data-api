@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.restassured.RestAssured.given;
+import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -105,15 +106,15 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                           "name": "John"
                       }
                       """);
-      insertOneInTable(
-          TABLE_WITH_STRING_ID_AGE_NAME,
+      final String DOC_B_JSON =
           """
-                      {
-                          "id": "b",
-                          "age": 40,
-                          "name": "Bob"
-                      }
-                      """);
+                          {
+                              "id": "b",
+                              "age": 40,
+                              "name": "Bob"
+                          }
+                          """;
+      insertOneInTable(TABLE_WITH_STRING_ID_AGE_NAME, DOC_B_JSON);
 
       given()
           .headers(getHeaders())
@@ -132,9 +133,9 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .then()
           .statusCode(200)
-          .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("errors", is(nullValue()))
+          .body("data.document", jsonEquals(DOC_B_JSON));
     }
   }
 
