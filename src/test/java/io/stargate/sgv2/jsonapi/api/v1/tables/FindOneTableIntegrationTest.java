@@ -162,15 +162,15 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
           .post(CollectionResource.BASE_PATH, namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .then()
           // Not like it should be, but until fixed let's verify current behavior
-          .statusCode(500)
+          .statusCode(200)
           .body("data", is(nullValue()))
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("SERVER_UNHANDLED_ERROR"))
+          .body("errors[0].errorCode", is("TABLE_COLUMN_UNKNOWN"))
           .body(
               "errors[0].message",
-              containsString("FilterClause Clause does not support validating for Tables"));
+              containsString("Column unknown: No column with name 'unknown' found in table"));
     }
   }
 }

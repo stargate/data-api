@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
@@ -111,8 +112,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
               tableSchemaObject.tableMetadata, CqlIdentifier.fromCql(path), columnValue);
       positionalValues.add(codec.toCQL(columnValue));
     } catch (UnknownColumnException e) {
-      // TODO AARON - Handle error
-      throw new RuntimeException(e);
+      throw ErrorCode.TABLE_COLUMN_UNKNOWN.toApiException(e.getMessage());
     } catch (MissingJSONCodecException e) {
       // TODO AARON - Handle error
       throw new RuntimeException(e);

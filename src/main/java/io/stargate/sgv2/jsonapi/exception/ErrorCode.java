@@ -203,7 +203,9 @@ public enum ErrorCode {
   TABLE_PRIMARY_KEY_DEFINITION_INCORRECT("Primary key definition is incorrect"),
   TABLE_MISSING_PARTITIONING_KEYS("Key needs to be provided as part of partitioning definition"),
   TABLE_COLUMN_DEFINITION_MISSING("Column definition is missing for the provided key field"),
-  TABLE_COLUMN_TYPE_UNSUPPORTED("Unsupported column types");
+  TABLE_COLUMN_TYPE_UNSUPPORTED("Unsupported column types"),
+  TABLE_COLUMN_UNKNOWN("Column unknown");
+
   private final String message;
   private final boolean extendError =
       ApiConstants.isOffline()
