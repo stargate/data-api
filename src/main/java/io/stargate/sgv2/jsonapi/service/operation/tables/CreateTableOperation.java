@@ -85,17 +85,22 @@ public class CreateTableOperation implements Operation {
     for (String partitionKey : partitionKeys) {
       if (createTable == null) {
         createTable =
-            create.withPartitionKey(partitionKey, columnTypes.get(partitionKey).getCqlType());
+            create.withPartitionKey(
+                CqlIdentifier.fromInternal(partitionKey),
+                columnTypes.get(partitionKey).getCqlType());
       } else {
         createTable =
-            createTable.withPartitionKey(partitionKey, columnTypes.get(partitionKey).getCqlType());
+            createTable.withPartitionKey(
+                CqlIdentifier.fromInternal(partitionKey),
+                columnTypes.get(partitionKey).getCqlType());
       }
       addedColumns.add(partitionKey);
     }
     for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
       ColumnType columnType = columnTypes.get(clusteringKey.column());
       createTable =
-          createTable.withClusteringColumn(clusteringKey.column(), columnType.getCqlType());
+          createTable.withClusteringColumn(
+              CqlIdentifier.fromInternal(clusteringKey.column()), columnType.getCqlType());
       addedColumns.add(clusteringKey.column());
     }
 
@@ -103,7 +108,9 @@ public class CreateTableOperation implements Operation {
       if (addedColumns.contains(column.getKey())) {
         continue;
       }
-      createTable = createTable.withColumn(column.getKey(), column.getValue().getCqlType());
+      createTable =
+          createTable.withColumn(
+              CqlIdentifier.fromInternal(column.getKey()), column.getValue().getCqlType());
     }
     return createTable;
   }

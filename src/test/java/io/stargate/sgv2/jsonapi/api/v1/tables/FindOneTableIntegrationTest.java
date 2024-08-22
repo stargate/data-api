@@ -137,6 +137,55 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
           .body("errors", is(nullValue()))
           .body("data.document", jsonEquals(DOC_B_JSON));
     }
+
+    @Test
+    @Order(2)
+    public void findOneDocIdKey() {
+      final String TABLE_WITH_DOC_ID_VALUE = "findOneDocIdKeyTable";
+      createTableWithColumns(
+          TABLE_WITH_DOC_ID_VALUE,
+          Map.of("_id", Map.of("type", "int"), "value", Map.of("type", "text")),
+          "_id");
+
+      // First, insert 2 documents:
+      insertOneInTable(
+          TABLE_WITH_DOC_ID_VALUE,
+          """
+                          {
+                              "_id": 1,
+                              "value": "a"
+                          }
+                          """);
+      final String DOC_B_JSON =
+          """
+                          {
+                              "_id": 2,
+                              "value": "b"
+                          }
+                              """;
+      insertOneInTable(TABLE_WITH_DOC_ID_VALUE, DOC_B_JSON);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                                  {
+                                    "findOne": {
+                                        "filter": {
+                                            "_id": 2
+                                        }
+                                    }
+                                  }
+                              """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.document", jsonEquals(DOC_B_JSON));
+    }
   }
 
   @Nested
