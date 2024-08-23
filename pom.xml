@@ -34,7 +34,7 @@
     <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
     <stargate.int-test.use-coordinator>true</stargate.int-test.use-coordinator>
-    <!-- driver -->
+    <!-- Cassandra driver -->
     <driver.version>4.17.0</driver.version>
     <!-- Compiler -->
     <compiler-plugin.version>3.11.0</compiler-plugin.version>
@@ -278,9 +278,7 @@
             <maven.home>${maven.home}</maven.home>
           </systemPropertyVariables>
           <excludes>
-            <exclude>**/*EndToEndTest.*</exclude>
             <exclude>**/*IntegrationTest.*</exclude>
-            <exclude>**/*IT.*</exclude>
           </excludes>
           <skip>${skipUnitTests}</skip>
         </configuration>
