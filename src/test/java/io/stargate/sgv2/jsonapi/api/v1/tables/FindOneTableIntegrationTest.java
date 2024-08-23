@@ -186,9 +186,6 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
           .body("data.document", jsonEquals(DOC_B_JSON));
     }
 
-    // 22-Aug-2024, tatu: Disabled until we can figure out why it fails
-    // (added in https://github.com/stargate/data-api/pull/1355)
-    @Disabled
     @Test
     @Order(3)
     public void findOneDocIdKey() {
