@@ -140,30 +140,28 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
 
     @Test
     @Order(2)
-    public void findOneDocIdKey() {
-      final String TABLE_WITH_DOC_ID_VALUE = "findOneDocIdKeyTable";
+    public void findOneDocUpperCaseKey() {
+      final String TABLE_NAME = "findOneDocUpperCaseKey";
       createTableWithColumns(
-          TABLE_WITH_DOC_ID_VALUE,
-          Map.of("_id", Map.of("type", "int"), "value", Map.of("type", "text")),
-          "_id");
+          TABLE_NAME, Map.of("Id", Map.of("type", "int"), "value", Map.of("type", "text")), "Id");
 
-      // First, insert 2 documents:
+      // Insert 2 documents:
       insertOneInTable(
-          TABLE_WITH_DOC_ID_VALUE,
+          TABLE_NAME,
           """
                           {
-                              "_id": 1,
+                              "Id": 1,
                               "value": "a"
                           }
                           """);
       final String DOC_B_JSON =
           """
                           {
-                              "_id": 2,
+                              "Id": 2,
                               "value": "b"
                           }
                               """;
-      insertOneInTable(TABLE_WITH_DOC_ID_VALUE, DOC_B_JSON);
+      insertOneInTable(TABLE_NAME, DOC_B_JSON);
 
       given()
           .headers(getHeaders())
@@ -173,13 +171,60 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                                   {
                                     "findOne": {
                                         "filter": {
-                                            "_id": 2
+                                            "Id": 2
                                         }
                                     }
                                   }
                               """)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_NAME)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.document", jsonEquals(DOC_B_JSON));
+    }
+
+    @Test
+    @Order(3)
+    public void findOneDocIdKey() {
+      final String TABLE_NAME = "findOneDocIdKeyTable";
+      createTableWithColumns(
+          TABLE_NAME, Map.of("_id", Map.of("type", "int"), "value", Map.of("type", "text")), "_id");
+
+      // First, insert 2 documents:
+      insertOneInTable(
+          TABLE_NAME,
+          """
+                              {
+                                  "_id": 1,
+                                  "value": "a"
+                              }
+                              """);
+      final String DOC_B_JSON =
+          """
+                              {
+                                  "_id": 2,
+                                  "value": "b"
+                              }
+                                  """;
+      insertOneInTable(TABLE_NAME, DOC_B_JSON);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(
+              """
+                                          {
+                                            "findOne": {
+                                                "filter": {
+                                                    "_id": 2
+                                                }
+                                            }
+                                          }
+                                      """)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_NAME)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
