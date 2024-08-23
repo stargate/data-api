@@ -13,8 +13,7 @@ import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-// TODO hide openapi schema, do not expose table details before it goes public
-@Schema(description = "Command that creates an api table.", hidden = true)
+@Schema(description = "Command that creates an api table.")
 @JsonTypeName("createTable")
 public record CreateTableCommand(
     @NotNull

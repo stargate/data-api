@@ -13,8 +13,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  *
  * @param name Name of the table
  */
-// TODO hide openapi schema, do not expose table details before it goes public
-@Schema(description = "Command that drops a table if one exists.", hidden = true)
+@Schema(description = "Command that drops a table if one exists.")
 @JsonTypeName("dropTable")
 public record DropTableCommand(
     @NotNull

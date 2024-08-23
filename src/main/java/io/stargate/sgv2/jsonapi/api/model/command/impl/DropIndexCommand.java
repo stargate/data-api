@@ -8,8 +8,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-// TODO hide openapi schema, do not expose table details before it goes public
-@Schema(description = "Command that drops an index for a column.", hidden = true)
+@Schema(description = "Command that drops an index for a column.")
 @JsonTypeName("dropIndex")
 public record DropIndexCommand(
     @NotNull
