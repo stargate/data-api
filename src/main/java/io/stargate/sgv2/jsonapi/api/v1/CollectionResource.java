@@ -4,19 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.EstimatedDocumentCountCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateManyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
@@ -103,9 +91,8 @@ public class CollectionResource {
                         InsertManyCommand.class,
                         UpdateManyCommand.class,
                         UpdateOneCommand.class,
-                        // Comment out, do not expose table commands before it goes public
-                        //                        CreateIndexCommand.class,
-                        //                        DropIndexCommand.class
+                        CreateIndexCommand.class,
+                        DropIndexCommand.class
                       }),
               examples = {
                 @ExampleObject(ref = "countDocuments"),

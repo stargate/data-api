@@ -18,6 +18,7 @@ public record PrimaryKey(
         String[] keys,
     @Nullable @Schema(description = "Columns that make the ordering keys", type = SchemaType.ARRAY)
         OrderingKey[] orderingKeys) {
+
   public record OrderingKey(String column, Order order) {
     public enum Order {
       @JsonProperty("1")
