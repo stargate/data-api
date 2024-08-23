@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.v1.tableIntegrationTest;
+package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.is;

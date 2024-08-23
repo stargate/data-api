@@ -131,6 +131,10 @@ public record FilterClause(LogicalExpression logicalExpression)
     }
   }
 
+  public void invertForTableCommand(CommandContext<TableSchemaObject> commandContext) {
+    invertLogicalExpression(this.logicalExpression(), null);
+  }
+
   public void invertForCollectionCommand(CommandContext<CollectionSchemaObject> commandContext) {
     invertLogicalExpression(this.logicalExpression(), null);
   }
