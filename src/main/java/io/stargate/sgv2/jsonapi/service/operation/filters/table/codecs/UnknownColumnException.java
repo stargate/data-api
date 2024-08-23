@@ -18,7 +18,7 @@ public class UnknownColumnException extends Exception {
   public UnknownColumnException(TableMetadata table, CqlIdentifier column) {
     super(
         String.format(
-            "No column found for table %s with name %s", table.getName(), column.asInternal()));
+            "No column with name '%s' found in table '%s'", column.asInternal(), table.getName()));
     this.table = table;
     this.column = column;
   }
