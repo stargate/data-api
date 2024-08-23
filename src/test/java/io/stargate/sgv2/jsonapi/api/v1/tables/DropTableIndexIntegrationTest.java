@@ -52,10 +52,10 @@ class DropTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     @Order(1)
     public void dropIndex() {
-      String addIndexJson =
+      String createIndexJson =
           """
                                 {
-                                    "addIndex": {
+                                    "createIndex": {
                                         "column": "age",
                                         "indexName": "age_index"
                                     }
@@ -64,7 +64,7 @@ class DropTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
-          .body(addIndexJson)
+          .body(createIndexJson)
           .when()
           .post(CollectionResource.BASE_PATH, namespaceName, simpleTableName)
           .then()

@@ -29,7 +29,7 @@ public record DropIndexOperation(CommandContext<TableSchemaObject> context, Stri
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     logger.info(
-        "Executing AddIndexOperation for {} {} {}",
+        "Executing CreateIndexOperation for {} {} {}",
         context.schemaObject().name.keyspace(),
         context.schemaObject().name.table(),
         indexName);

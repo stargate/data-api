@@ -8,13 +8,15 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @JsonDeserialize(using = ColumnDefinitionDeserializer.class)
+// TODO hide openapi schema, do not expose table details before it goes public
 @Schema(
     type = SchemaType.OBJECT,
     implementation = Object.class,
     example =
         """
                      {"type": "string"}
-                      """)
+                      """,
+    hidden = true)
 // TODO: this is only the type defintion for the column, maybe want to rename later to avoid
 // confusion
 public record ColumnDataType(

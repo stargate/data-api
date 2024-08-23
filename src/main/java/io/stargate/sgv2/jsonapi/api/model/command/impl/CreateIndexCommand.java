@@ -8,9 +8,10 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "Command that creates an index for a column in a table.")
-@JsonTypeName("addIndex")
-public record AddIndexCommand(
+// TODO hide openapi schema, do not expose table details before it goes public
+@Schema(description = "Command that creates an index for a column in a table.", hidden = true)
+@JsonTypeName("createIndex")
+public record CreateIndexCommand(
     @NotNull
         @Size(min = 1, max = 48)
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")

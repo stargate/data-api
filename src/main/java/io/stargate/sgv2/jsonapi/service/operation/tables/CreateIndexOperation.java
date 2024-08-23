@@ -20,10 +20,10 @@ import org.slf4j.LoggerFactory;
  * @param columnName Name of the column to create the index on.
  * @param indexName Unique name for the index.
  */
-public record AddIndexOperation(
+public record CreateIndexOperation(
     CommandContext<TableSchemaObject> context, String columnName, String indexName)
     implements Operation {
-  private static final Logger logger = LoggerFactory.getLogger(AddIndexOperation.class);
+  private static final Logger logger = LoggerFactory.getLogger(CreateIndexOperation.class);
 
   private static final String ADD_INDEX_TEMPLATE =
       "CREATE CUSTOM INDEX IF NOT EXISTS \"%s\" ON  %s.%s (%s) USING 'StorageAttachedIndex'";
@@ -32,7 +32,7 @@ public record AddIndexOperation(
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     logger.info(
-        "Executing AddIndexOperation for {} {} {} {}",
+        "Executing CreateIndexOperation for {} {} {} {}",
         context.schemaObject().name.keyspace(),
         context.schemaObject().name.table(),
         columnName,

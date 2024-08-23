@@ -14,9 +14,9 @@ import org.junit.jupiter.api.*;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-// TODO, it is currently called AddIndex, do we want to change to createIndex
-class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
-  String simpleTableName = "simpleTableForAddIndexTest";
+// TODO, it is currently called CreateIndex, do we want to change to createIndex
+class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
+  String simpleTableName = "simpleTableForCreateIndexTest";
 
   @BeforeAll
   public final void createSimpleTable() {
@@ -48,15 +48,15 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
   @Nested
   @Order(1)
-  class AddIndexSuccess {
+  class CreateIndexSuccess {
 
     @Test
     @Order(1)
-    public void addIndex() {
+    public void createIndex() {
       String json =
           """
                       {
-                          "addIndex": {
+                          "createIndex": {
                               "column": "age",
                               "indexName": "age_index"
                           }
@@ -76,13 +76,13 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
   @Nested
   @Order(2)
-  class AddIndexFailure {
+  class CreateIndexFailure {
     @Test
-    public void addIndex() {
+    public void createIndex() {
       String json =
           """
                       {
-                          "addIndex": {
+                          "createIndex": {
                               "column": "city",
                               "indexName": "city_index"
                           }

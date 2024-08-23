@@ -9,16 +9,17 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @JsonDeserialize(using = PrimaryKeyDeserializer.class)
+// TODO hide openapi schema, do not expose table details before it goes public
 @Schema(
     type = SchemaType.OBJECT,
     implementation = Object.class,
-    description = "Represents the table primary key")
+    description = "Represents the table primary key",
+    hidden = true)
 public record PrimaryKey(
     @NotNull @Schema(description = "Columns that make the partition keys", type = SchemaType.ARRAY)
         String[] keys,
     @Nullable @Schema(description = "Columns that make the ordering keys", type = SchemaType.ARRAY)
         OrderingKey[] orderingKeys) {
-
   public record OrderingKey(String column, Order order) {
     public enum Order {
       @JsonProperty("1")
