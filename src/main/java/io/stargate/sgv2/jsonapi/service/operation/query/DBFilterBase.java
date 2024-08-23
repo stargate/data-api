@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.IndexUsage;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import java.util.function.Supplier;
@@ -30,6 +31,8 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
 
   public final IndexUsage indexUsage;
 
+  private transient CqlIdentifier pathAsIdentifier;
+
   protected DBFilterBase(String path, IndexUsage indexUsage) {
     this.path = path;
     this.indexUsage = indexUsage;
@@ -42,5 +45,12 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
    */
   protected String getPath() {
     return path;
+  }
+
+  protected CqlIdentifier getPathAsCqlIdentifier() {
+    if (pathAsIdentifier == null) {
+      pathAsIdentifier = CqlIdentifier.fromInternal(path);
+    }
+    return pathAsIdentifier;
   }
 }

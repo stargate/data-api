@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
@@ -109,7 +108,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
     try {
       var codec =
           JSONCodecRegistry.codecToCQL(
-              tableSchemaObject.tableMetadata, CqlIdentifier.fromInternal(path), columnValue);
+              tableSchemaObject.tableMetadata, getPathAsCqlIdentifier(), columnValue);
       positionalValues.add(codec.toCQL(columnValue));
     } catch (UnknownColumnException e) {
       throw ErrorCode.TABLE_COLUMN_UNKNOWN.toApiException(e.getMessage());
@@ -122,6 +121,6 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
     }
 
     return ongoingWhereClause.where(
-        Relation.column(path).build(operator.predicate.cql, bindMarker()));
+        Relation.column(getPathAsCqlIdentifier()).build(operator.predicate.cql, bindMarker()));
   }
 }

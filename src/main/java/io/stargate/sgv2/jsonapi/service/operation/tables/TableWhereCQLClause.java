@@ -79,7 +79,8 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
 
   @Override
   public T apply(T tOngoingWhereClause, List<Object> objects) {
-    // TODO BUG: this probably break order for nested expressions, for now enough to get this tested
+    // TODO BUG: this probably breaks order for nested expressions, for now enough to get this
+    // tested
     var tableFilters =
         logicalExpression.comparisonExpressions.stream()
             .flatMap(comparisonExpression -> comparisonExpression.getDbFilters().stream())
