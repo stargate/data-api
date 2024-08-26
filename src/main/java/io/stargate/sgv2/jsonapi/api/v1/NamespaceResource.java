@@ -6,9 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.ApiTablesConfig;
@@ -73,9 +71,10 @@ public class NamespaceResource {
                       anyOf = {
                         CreateCollectionCommand.class,
                         FindCollectionsCommand.class,
-                        DeleteCollectionCommand.class,
-                        CreateTableCommand.class,
-                        DropTableCommand.class
+                        DeleteCollectionCommand.class
+                        // TODO, hide table feature detail before it goes public
+                        //                        CreateTableCommand.class,
+                        //                        DropTableCommand.class
                       }),
               examples = {
                 @ExampleObject(ref = "createCollection"),
