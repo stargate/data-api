@@ -57,6 +57,14 @@
         <scope>import</scope>
       </dependency>
       <dependency>
+        <!-- Support for Optional used when loading error config seehttps://github.com/FasterXML/jackson-modules-java8/tree/2.18/datatypes -->
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-jdk8</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>${quarkus.platform.artifact-id}</artifactId>
         <version>${quarkus.platform.version}</version>
