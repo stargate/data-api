@@ -18,14 +18,14 @@ public class JSONCodecRegistryTest {
 
   private final JSONCodecRegistryTestData TEST_DATA = new JSONCodecRegistryTestData();
 
-  /** Helper to get a codec when we only car about the CQL type and the fromValue */
+  /** Helper to get a codec when we only care about the CQL type and the fromValue */
   private <JavaT, CqlT> JSONCodec<JavaT, CqlT> assertGetCodecToCQL(
       DataType cqlType, Object fromValue) {
     return assertGetCodecToCQL(cqlType, TEST_DATA.COLUMN_NAME, fromValue);
   }
 
   /**
-   * Helper to get a codec when we only car about the CQL type, Column name, and the fromValue
+   * Helper to get a codec when we only care about the CQL type, Column name, and the fromValue
    *
    * <p>Asserts the codec says it can work with the CQL type and the fromValue class
    */
@@ -132,7 +132,7 @@ public class JSONCodecRegistryTest {
                     TEST_DATA.RANDOM_CQL_IDENTIFIER,
                     TEST_DATA.RANDOM_STRING),
             String.format(
-                "Get codec for unknown column named %s", TEST_DATA.RANDOM_CQL_IDENTIFIER));
+                "Get codec for unknown column named '%s'", TEST_DATA.RANDOM_CQL_IDENTIFIER));
 
     assertThat(error)
         .satisfies(
@@ -156,7 +156,7 @@ public class JSONCodecRegistryTest {
             ToCQLCodecException.class,
             () -> codec.toCQL(TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT),
             String.format(
-                "Throw ToCQLCodecException for out of range tiny int %s",
+                "Throw ToCQLCodecException for out of range `tinyint` %s",
                 TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT));
 
     assertThat(error)

@@ -24,8 +24,7 @@ public class JSONCodecRegistryTestData {
 
   // Just a random string to use when needed
   public final String RANDOM_STRING = "random-" + System.currentTimeMillis();
-  public final CqlIdentifier RANDOM_CQL_IDENTIFIER =
-      CqlIdentifier.fromInternal("random-" + System.currentTimeMillis());
+  public final CqlIdentifier RANDOM_CQL_IDENTIFIER = CqlIdentifier.fromInternal(RANDOM_STRING);
 
   public final BigDecimal OUT_OF_RANGE_FOR_TINY_INT = BigDecimal.valueOf(Short.MAX_VALUE + 1);
 
