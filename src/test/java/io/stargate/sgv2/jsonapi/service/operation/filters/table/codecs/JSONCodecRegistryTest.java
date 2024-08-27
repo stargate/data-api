@@ -8,6 +8,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -82,12 +83,18 @@ public class JSONCodecRegistryTest {
 
   private static Stream<Arguments> codecToCQLTestCases() {
     // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
+    // Note: all Numeric types accept 3 Java types: Long, BigInteger, BigDecimal
     return Stream.of(
-        // Arguments.of(DataTypes.BIGINT, 123, 123L),
-        // Arguments.of(DataTypes.BIGINT, 999L, 999L),
+        // Integer types:
+        Arguments.of(DataTypes.BIGINT, -456L, -456L),
+        Arguments.of(DataTypes.BIGINT, BigInteger.valueOf(123), 123L),
         Arguments.of(DataTypes.BIGINT, BigDecimal.valueOf(999), 999L),
-        Arguments.of(DataTypes.INT, BigDecimal.valueOf(100), 100) // second 100 is an int
-        );
+        Arguments.of(DataTypes.INT, -42L, -42), // second 42 is an int
+        Arguments.of(DataTypes.INT, BigInteger.valueOf(12), 12),
+        Arguments.of(DataTypes.INT, BigDecimal.valueOf(100), 100),
+        // Floating-point types:
+        Arguments.of(DataTypes.DECIMAL, BigDecimal.valueOf(0.25), BigDecimal.valueOf(0.25))
+    );
   }
 
   @Test
