@@ -2,22 +2,23 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 
 import com.datastax.oss.driver.api.core.type.DataType;
 
+/**
+ * Checked exception thrown when we cannot convert a value to the type CQL expects.
+ *
+ * <p>Not intended to be returned on the API, usage of the JSONCodec's should catch this and turn it
+ * into the appropriate API error.
+ */
 public class ToCQLCodecException extends Exception {
 
   public final Object value;
   public final DataType targetCQLType;
 
-  /**
-   * TODO: confirm we want / need this, the idea is to encapsulate any exception when doing the
-   * conversion to to the type CQL expects. This would be a checked exception, and not something we
-   * expect to return to the user
-   *
-   * @param value
-   * @param targetCQLType
-   * @param cause
-   */
   public ToCQLCodecException(Object value, DataType targetCQLType, Exception cause) {
-    super("Error trying to convert value " + value + " to " + targetCQLType, cause);
+    super(
+        String.format(
+            "Error trying to convert to targetCQLType %s from value.class %s and value %s",
+            targetCQLType, value.getClass().getName(), value),
+        cause);
     this.value = value;
     this.targetCQLType = targetCQLType;
   }
