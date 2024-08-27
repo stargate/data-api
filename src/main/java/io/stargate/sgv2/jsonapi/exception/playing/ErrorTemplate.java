@@ -4,6 +4,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.apache.commons.text.StringSubstitutor;
 
@@ -38,6 +39,7 @@ import org.apache.commons.text.StringSubstitutor;
  *   }
  * </pre>
  *
+ * @param <T> The type of the {@link APIException} the template creates.
  * @param constructor A constructor accepts a single parameter of {@link ErrorInstance} and returns
  *     an instance of the `T` type.
  * @param family {@link ErrorFamily} the error belongs to.
@@ -46,7 +48,7 @@ import org.apache.commons.text.StringSubstitutor;
  * @param title Title of the error, does not change between instances.
  * @param messageTemplate A template for the error body, with variables to be replaced at runtime
  *     using the {@link StringSubstitutor} from Apache Commons Text.
- * @param <T> The type of the {@link APIException} the template creates.
+ * @param httpResponseOverride If present, overrides the default HTTP 200 response code for errors.
  */
 public record ErrorTemplate<T extends APIException>(
     Constructor<T> constructor,
@@ -54,7 +56,8 @@ public record ErrorTemplate<T extends APIException>(
     ErrorScope scope,
     String code,
     String title,
-    String messageTemplate) {
+    String messageTemplate,
+    Optional<Integer> httpResponseOverride) {
 
   public T toException(Map<String, String> values) {
     var errorInstance = toInstance(values);
@@ -100,7 +103,8 @@ public record ErrorTemplate<T extends APIException>(
       throw new UnresolvedErrorTemplateVariable(this, e.getMessage());
     }
 
-    return new ErrorInstance(UUID.randomUUID(), family, scope, code, title, msg);
+    return new ErrorInstance(
+        UUID.randomUUID(), family, scope, code, title, msg, httpResponseOverride);
   }
 
   /**
@@ -146,6 +150,12 @@ public record ErrorTemplate<T extends APIException>(
                             family, scope, code)));
 
     return new ErrorTemplate<T>(
-        constructor, family, scope, code, errorConfig.title(), errorConfig.body());
+        constructor,
+        family,
+        scope,
+        code,
+        errorConfig.title(),
+        errorConfig.body(),
+        errorConfig.httpResponseOverride());
   }
 }
