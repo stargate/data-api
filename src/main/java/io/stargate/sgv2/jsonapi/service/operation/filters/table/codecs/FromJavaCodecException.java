@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 
 import com.datastax.oss.driver.api.core.type.DataType;
 
-public class ToCQLCodecException extends Exception {
+public class FromJavaCodecException extends Exception {
 
   public final Object value;
   public final DataType targetCQLType;
@@ -16,7 +16,7 @@ public class ToCQLCodecException extends Exception {
    * @param targetCQLType
    * @param cause
    */
-  public ToCQLCodecException(Object value, DataType targetCQLType, Exception cause) {
+  public FromJavaCodecException(Object value, DataType targetCQLType, Exception cause) {
     super("Error trying to convert value " + value + " to " + targetCQLType, cause);
     this.value = value;
     this.targetCQLType = targetCQLType;
