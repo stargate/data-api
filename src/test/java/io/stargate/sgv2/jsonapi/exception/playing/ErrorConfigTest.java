@@ -213,7 +213,7 @@ public class ErrorConfigTest {
             s -> {
               assertThat(s.name()).isEqualTo("SNIPPET_1");
               assertThat(s.body()).isEqualTo("Snippet 1 body");
-              assertThat(errorConfig.getSnippetVars()).containsKey(s.name());
+              assertThat(errorConfig.getSnippetVars()).containsKey(s.variableName());
             });
     assertThat(
             errorConfig.snippets().stream().filter(e -> e.name().equals("SNIPPET_2")).findFirst())
@@ -223,7 +223,7 @@ public class ErrorConfigTest {
             s -> {
               assertThat(s.name()).isEqualTo("SNIPPET_2");
               assertThat(s.body()).isEqualTo("Snippet 2 body\n\nmulti line");
-              assertThat(errorConfig.getSnippetVars()).containsKey(s.name());
+              assertThat(errorConfig.getSnippetVars()).containsKey(s.variableName());
             });
   }
 

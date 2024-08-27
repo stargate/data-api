@@ -62,7 +62,7 @@ public class ErrorConfig {
   private Map<String, String> snippetVars;
 
   // Prefix used when adding snippets to the variables for a template.
-  private static final String SNIPPET_VAR_PREFIX = "SNIPPET.";
+  public static final String SNIPPET_VAR_PREFIX = "SNIPPET.";
 
   // TIDY: move this to the config sections
   public static final String DEFAULT_ERROR_CONFIG_FILE = "errors.yaml";
@@ -148,6 +148,15 @@ public class ErrorConfig {
         throw new IllegalArgumentException("body cannot be blank");
       }
     }
+
+    /**
+     * Name to use for this snippet when substituting into templates.
+     *
+     * @return
+     */
+    public String variableName(){
+      return SNIPPET_VAR_PREFIX + name;
+    }
   }
 
   /**
@@ -215,7 +224,7 @@ public class ErrorConfig {
       snippetVars =
           Map.copyOf(
               snippets.stream()
-                  .collect(Collectors.toMap(s -> SNIPPET_VAR_PREFIX + s.name(), Snippet::body)));
+                  .collect(Collectors.toMap(s -> s.variableName(), Snippet::body)));
     }
     return snippetVars;
   }
