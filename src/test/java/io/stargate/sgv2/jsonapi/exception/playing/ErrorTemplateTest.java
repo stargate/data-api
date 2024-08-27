@@ -57,6 +57,43 @@ public class ErrorTemplateTest {
     return error;
   }
 
+  /**
+   * Re-usable to Test various properties on an error
+   *
+   * @param error
+   * @param family
+   * @param scope
+   * @param code
+   * @param title
+   * @param httpResponseOverride
+   * @param <T>
+   */
+  private <T extends APIException> void assertError(
+      T error,
+      ErrorFamily family,
+      String scope,
+      String code,
+      String title,
+      Integer httpResponseOverride) {
+    // Does not accept a template because that would not catch the template being wrong
+    // pass in the values that error should have given the code etc.
+
+    assertThat(error)
+        .isNotNull()
+        .satisfies(
+            e -> {
+              assertThat(e.family).isEqualTo(family);
+              assertThat(e.scope).isEqualTo(scope);
+              assertThat(e.code).isEqualTo(code);
+              assertThat(e.title).isEqualTo(title);
+              if (null == httpResponseOverride) {
+                assertThat(e.httpResponse).isEqualTo(APIException.DEFAULT_HTTP_RESPONSE);
+              } else {
+                assertThat(e.httpResponse).isEqualTo(httpResponseOverride);
+              }
+            });
+  }
+
   @Test
   public void scopedRequestError() {
 
@@ -65,10 +102,13 @@ public class ErrorTemplateTest {
         .isNotNull()
         .satisfies(
             e -> {
-              assertThat(e.family).isEqualTo(ErrorFamily.REQUEST);
-              assertThat(e.scope).isEqualTo(TestRequestException.Scope.TEST_REQUEST_SCOPE.name());
-              assertThat(e.code).isEqualTo(TestScopeException.Code.SCOPED_REQUEST_ERROR.name());
-              assertThat(e.title).isEqualTo("A scoped request error");
+              assertError(
+                  e,
+                  TestScopeException.FAMILY,
+                  TestScopeException.SCOPE.name(),
+                  TestScopeException.Code.SCOPED_REQUEST_ERROR.name(),
+                  "A scoped request error",
+                  null);
               assertThat(e.body)
                   .contains(
                       "long body with "
@@ -87,10 +127,13 @@ public class ErrorTemplateTest {
         .isNotNull()
         .satisfies(
             e -> {
-              assertThat(e.family).isEqualTo(ErrorFamily.REQUEST);
-              assertThat(e.scope).isBlank();
-              assertThat(e.code).isEqualTo(TestRequestException.Code.UNSCOPED_REQUEST_ERROR.name());
-              assertThat(e.title).isEqualTo("An unscoped request error");
+              assertError(
+                  e,
+                  TestRequestException.FAMILY,
+                  "",
+                  TestRequestException.Code.UNSCOPED_REQUEST_ERROR.name(),
+                  "An unscoped request error",
+                  null);
               assertThat(e.body)
                   .contains(
                       "Multi line with "
@@ -174,5 +217,23 @@ public class ErrorTemplateTest {
             String.format(
                 "Could not find error config for family=%s, scope=%s, code=%s",
                 TestScopeException.FAMILY, TestScopeException.SCOPE, TEST_DATA.RANDOM_STRING));
+  }
+
+  @Test
+  public void httpResponseOverride() {
+    var error = createException(TestRequestException.Code.HTTP_OVERRIDE);
+
+    assertThat(error)
+        .isNotNull()
+        .satisfies(
+            e -> {
+              assertError(
+                  e,
+                  TestRequestException.FAMILY,
+                  "",
+                  TestRequestException.Code.HTTP_OVERRIDE.name(),
+                  "An error that overrides the HTTP response",
+                  500);
+            });
   }
 }

@@ -34,6 +34,10 @@
 # Each error object has:
 # - scope: UPPER_SNAKE_CASE_1
 # - code: UPPER_SNAKE_CASE_1
+# - http_response_override: (optional) The HTTP status code to return when this error is thrown. If not present, the
+#                           default status code is 200 for most things. This is not returned in the error object JSON
+#                           It is used to override the HTTP status code in the response.
+#                           NOTE: NO checking is done to confirm this is a valid HTTP status code.
 # - title: A short title for the error, that must not change between instances of the error.
 # - body: A longer body that may contain ${vars} to be passed by the code when created, and references to snippets.
 #         This can be a multi line string, recommend using the `|-` to trim trailing newlines.
