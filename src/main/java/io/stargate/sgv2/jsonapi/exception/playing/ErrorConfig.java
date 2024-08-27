@@ -154,7 +154,7 @@ public class ErrorConfig {
      *
      * @return
      */
-    public String variableName(){
+    public String variableName() {
       return SNIPPET_VAR_PREFIX + name;
     }
   }
@@ -223,8 +223,7 @@ public class ErrorConfig {
       // want the map to be immutable because we hand it out
       snippetVars =
           Map.copyOf(
-              snippets.stream()
-                  .collect(Collectors.toMap(s -> s.variableName(), Snippet::body)));
+              snippets.stream().collect(Collectors.toMap(s -> s.variableName(), Snippet::body)));
     }
     return snippetVars;
   }
