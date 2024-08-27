@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception.playing;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -14,7 +15,8 @@ import java.util.UUID;
  * <p>Will make it easier if / when we add more info to an error such as links to documentation.
  * They can be passed from the template through the ErrorInstance into to the APIException.
  *
- * <p>
+ * <p><b>NOTE:</b> keeping variable checking out of this class for now, it's just a way to pass a
+ * single param rather than many.
  *
  * @param errorId
  * @param family
@@ -22,6 +24,13 @@ import java.util.UUID;
  * @param code
  * @param title
  * @param body
+ * @param httpResponseOverride
  */
 public record ErrorInstance(
-    UUID errorId, ErrorFamily family, ErrorScope scope, String code, String title, String body) {}
+    UUID errorId,
+    ErrorFamily family,
+    ErrorScope scope,
+    String code,
+    String title,
+    String body,
+    Optional<Integer> httpResponseOverride) {}

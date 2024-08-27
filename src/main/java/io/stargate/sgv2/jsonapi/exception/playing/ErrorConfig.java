@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
@@ -61,7 +62,7 @@ public class ErrorConfig {
   private Map<String, String> snippetVars;
 
   // Prefix used when adding snippets to the variables for a template.
-  private static final String SNIPPET_VAR_PREFIX = "SNIPPET.";
+  public static final String SNIPPET_VAR_PREFIX = "SNIPPET.";
 
   // TIDY: move this to the config sections
   public static final String DEFAULT_ERROR_CONFIG_FILE = "errors.yaml";
@@ -71,6 +72,7 @@ public class ErrorConfig {
       @JsonProperty("snippets") List<Snippet> snippets,
       @JsonProperty("request_errors") List<ErrorDetail> requestErrors,
       @JsonProperty("server_errors") List<ErrorDetail> serverErrors) {
+
     // defensive immutable copies because this config can be shared
     this.snippets = snippets == null ? List.of() : List.copyOf(snippets);
     this.requestErrors = requestErrors == null ? List.of() : List.copyOf(requestErrors);
@@ -87,8 +89,19 @@ public class ErrorConfig {
    * @param code
    * @param title
    * @param body
+   * @param httpResponseOverride Optional override for the HTTP response code for this error, only
+   *     needs to be set if different from {@link APIException#DEFAULT_HTTP_RESPONSE}. <b>NOTE:</b>
+   *     there is no checking that this is a well known HTTP status code, as we do not want to
+   *     depend on classes like {@link jakarta.ws.rs.core.Response.Status} in this class and if we
+   *     want to return a weird status this class should not limit that. It would be handled higher
+   *     up the stack and tracked with Integration Tests.
    */
-  public record ErrorDetail(String scope, String code, String title, String body) {
+  public record ErrorDetail(
+      String scope,
+      String code,
+      String title,
+      String body,
+      Optional<Integer> httpResponseOverride) {
 
     public ErrorDetail {
       if (scope == null) {
@@ -111,6 +124,8 @@ public class ErrorConfig {
       if (body.isBlank()) {
         throw new IllegalArgumentException("body cannot be blank");
       }
+
+      Objects.requireNonNull(httpResponseOverride, "httpResponseOverride cannot be null");
     }
   }
 
@@ -132,6 +147,15 @@ public class ErrorConfig {
       if (body.isBlank()) {
         throw new IllegalArgumentException("body cannot be blank");
       }
+    }
+
+    /**
+     * Name to use for this snippet when substituting into templates.
+     *
+     * @return
+     */
+    public String variableName() {
+      return SNIPPET_VAR_PREFIX + name;
     }
   }
 
@@ -199,8 +223,7 @@ public class ErrorConfig {
       // want the map to be immutable because we hand it out
       snippetVars =
           Map.copyOf(
-              snippets.stream()
-                  .collect(Collectors.toMap(s -> SNIPPET_VAR_PREFIX + s.name(), Snippet::body)));
+              snippets.stream().collect(Collectors.toMap(s -> s.variableName(), Snippet::body)));
     }
     return snippetVars;
   }
@@ -246,6 +269,9 @@ public class ErrorConfig {
 
     // This is only going to happen once at system start, ok to create a new mapper
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    // module for Optional support see
+    // https://github.com/FasterXML/jackson-modules-java8/tree/2.18/datatypes
+    mapper.registerModule(new Jdk8Module());
     mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     return mapper.readValue(yaml, ErrorConfig.class);
   }

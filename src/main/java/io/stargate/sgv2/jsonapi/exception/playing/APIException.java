@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception.playing;
 
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -40,6 +42,17 @@ import java.util.function.Supplier;
 public abstract class APIException extends RuntimeException
     implements Supplier<CommandResponseError> {
 
+  // All errors default to 200 HTTP status code, because we have partial failure modes.
+  // There are some overrides, e.g. a server timeout may be a 500, this is managed in the
+  // error config. See ErrorTemplate.
+  public static final int DEFAULT_HTTP_RESPONSE = 200;
+
+  /**
+   * HTTP Response code for this error. NOTE: Not using enum from quarkus because do not want
+   * references to the HTTP framework this deep into the command processing
+   */
+  public final int httpResponse;
+
   /** Unique identifier for this error instance. */
   public final UUID errorId;
 
@@ -71,17 +84,22 @@ public abstract class APIException extends RuntimeException
   public final String body;
 
   public APIException(ErrorInstance errorInstance) {
+    Objects.requireNonNull(errorInstance, "ErrorInstance cannot be null");
+
     this.errorId = errorInstance.errorId();
     this.family = errorInstance.family();
     this.scope = errorInstance.scope().scope();
     this.code = errorInstance.code();
     this.title = errorInstance.title();
     this.body = errorInstance.body();
+    Objects.requireNonNull(
+        errorInstance.httpResponseOverride(), "httpResponseOverride cannot be null");
+    this.httpResponse = errorInstance.httpResponseOverride().orElse(DEFAULT_HTTP_RESPONSE);
   }
 
   public APIException(
       ErrorFamily family, ErrorScope scope, String code, String title, String body) {
-    this(new ErrorInstance(UUID.randomUUID(), family, scope, code, title, body));
+    this(new ErrorInstance(UUID.randomUUID(), family, scope, code, title, body, Optional.empty()));
   }
 
   @Override

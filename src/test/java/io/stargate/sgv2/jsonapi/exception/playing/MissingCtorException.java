@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception.playing;
 
+import java.util.Optional;
+
 /**
  * An exception that is missing the CTOR we need for the templating system.
  *
@@ -14,7 +16,9 @@ public class MissingCtorException extends TestRequestException {
 
   // This ctor is just here to make it compile
   public MissingCtorException() {
-    super(new ErrorInstance(null, ErrorFamily.REQUEST, SCOPE, "FAKE", "title", "body"));
+    super(
+        new ErrorInstance(
+            null, ErrorFamily.REQUEST, SCOPE, "FAKE", "title", "body", Optional.empty()));
   }
 
   // This is the CTOR that is missing, kept commented out to show what is missing

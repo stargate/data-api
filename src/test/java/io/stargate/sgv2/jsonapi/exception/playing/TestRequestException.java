@@ -37,7 +37,8 @@ public class TestRequestException extends APIException {
 
   public enum Code implements ErrorCode<TestRequestException> {
     UNSCOPED_REQUEST_ERROR,
-    NO_VARIABLES_TEMPLATE;
+    NO_VARIABLES_TEMPLATE,
+    HTTP_OVERRIDE;
 
     private final ErrorTemplate<TestRequestException> template;
 

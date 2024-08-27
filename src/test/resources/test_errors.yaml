@@ -31,3 +31,10 @@ request_errors:
     title: A body with no template variables
     body: |-
       Body with no variables.
+
+  - scope:
+    code: HTTP_OVERRIDE
+    http_response_override: 500
+    title: An error that overrides the HTTP response
+    body: |-
+      body with ${name} and ${value} in it

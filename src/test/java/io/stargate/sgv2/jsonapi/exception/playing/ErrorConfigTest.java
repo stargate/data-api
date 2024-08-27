@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.FileNotFoundException;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,6 +45,7 @@ public class ErrorConfigTest {
           - scope: TEST_SCOPE_1
             code: TEST_ERROR_ID_1
             title: the title for the error
+            http_response_override: 501
             body: |-
               big long body with ${vars} in it
           - scope:
@@ -70,6 +72,7 @@ public class ErrorConfigTest {
               assertThat(e.code()).isEqualTo("TEST_ERROR_ID_1");
               assertThat(e.title()).isEqualTo("the title for the error");
               assertThat(e.body()).isEqualTo("big long body with ${vars} in it");
+              assertThat(e.httpResponseOverride()).isPresent().get().isEqualTo(501);
             });
 
     assertThat(errorConfig.getErrorDetail(ErrorFamily.REQUEST, "", "TEST_ERROR_ID_2"))
@@ -81,6 +84,7 @@ public class ErrorConfigTest {
               assertThat(e.code()).isEqualTo("TEST_ERROR_ID_2");
               assertThat(e.title()).isEqualTo("This error has no scope");
               assertThat(e.body()).isEqualTo("Line 1 of body\n\nLine 2 of body");
+              assertThat(e.httpResponseOverride()).isEmpty();
             });
 
     assertThat(errorConfig.getErrorDetail(ErrorFamily.SERVER, "TEST_SCOPE_3", "TEST_ERROR_ID_2"))
@@ -92,17 +96,26 @@ public class ErrorConfigTest {
               assertThat(e.code()).isEqualTo("TEST_ERROR_ID_2");
               assertThat(e.title()).isEqualTo("the title for the error");
               assertThat(e.body()).isEqualTo("big long body with ${vars} in it");
+              assertThat(e.httpResponseOverride()).isEmpty();
             });
   }
 
   @ParameterizedTest
   @MethodSource("errorDetailTestCases")
   public <T extends Throwable> void errorDetailValidation(
-      String scope, String code, String title, String body, Class<T> errorClass, String message) {
+      String scope,
+      String code,
+      String title,
+      String body,
+      Optional<Integer> httpStatusOverride,
+      Class<T> errorClass,
+      String message) {
 
     T error =
         assertThrows(
-            errorClass, () -> new ErrorConfig.ErrorDetail(scope, code, title, body), "Error Type");
+            errorClass,
+            () -> new ErrorConfig.ErrorDetail(scope, code, title, body, httpStatusOverride),
+            "Error Type");
 
     assertThat(error.getMessage()).as("Error Message").isEqualTo(message);
   }
@@ -114,25 +127,65 @@ public class ErrorConfigTest {
             "CODE",
             "title",
             "body",
+            Optional.empty(),
             IllegalArgumentException.class,
             "scope must be in UPPER_SNAKE_CASE_1 format, got: not_snake_scope"),
         Arguments.of(
-            "SCOPE", null, "title", "body", NullPointerException.class, "code cannot be null"),
+            "SCOPE",
+            null,
+            "title",
+            "body",
+            Optional.empty(),
+            NullPointerException.class,
+            "code cannot be null"),
         Arguments.of(
             "SCOPE",
             "not snake code",
             "title",
             "body",
+            Optional.empty(),
             IllegalArgumentException.class,
             "code must be in UPPER_SNAKE_CASE_1 format, got: not snake code"),
         Arguments.of(
-            "SCOPE", "CODE", null, "body", NullPointerException.class, "title cannot be null"),
+            "SCOPE",
+            "CODE",
+            null,
+            "body",
+            Optional.empty(),
+            NullPointerException.class,
+            "title cannot be null"),
         Arguments.of(
-            "SCOPE", "CODE", "", "body", IllegalArgumentException.class, "title cannot be blank"),
+            "SCOPE",
+            "CODE",
+            "",
+            "body",
+            Optional.empty(),
+            IllegalArgumentException.class,
+            "title cannot be blank"),
         Arguments.of(
-            "SCOPE", "CODE", "title", null, NullPointerException.class, "body cannot be null"),
+            "SCOPE",
+            "CODE",
+            "title",
+            null,
+            Optional.empty(),
+            NullPointerException.class,
+            "body cannot be null"),
         Arguments.of(
-            "SCOPE", "CODE", "title", "", IllegalArgumentException.class, "body cannot be blank"));
+            "SCOPE",
+            "CODE",
+            "title",
+            "",
+            Optional.empty(),
+            IllegalArgumentException.class,
+            "body cannot be blank"),
+        Arguments.of(
+            "SCOPE",
+            "CODE",
+            "title",
+            "body",
+            null,
+            NullPointerException.class,
+            "httpResponseOverride cannot be null"));
   }
 
   @Test
@@ -160,6 +213,7 @@ public class ErrorConfigTest {
             s -> {
               assertThat(s.name()).isEqualTo("SNIPPET_1");
               assertThat(s.body()).isEqualTo("Snippet 1 body");
+              assertThat(errorConfig.getSnippetVars()).containsKey(s.variableName());
             });
     assertThat(
             errorConfig.snippets().stream().filter(e -> e.name().equals("SNIPPET_2")).findFirst())
@@ -169,6 +223,7 @@ public class ErrorConfigTest {
             s -> {
               assertThat(s.name()).isEqualTo("SNIPPET_2");
               assertThat(s.body()).isEqualTo("Snippet 2 body\n\nmulti line");
+              assertThat(errorConfig.getSnippetVars()).containsKey(s.variableName());
             });
   }
 
