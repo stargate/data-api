@@ -127,7 +127,7 @@ public class JSONCodecRegistry {
   }
 
   // Boolean
-  public static final JSONCodec<Boolean, Boolean> BOOLEAN =
+  private static final JSONCodec<Boolean, Boolean> BOOLEAN =
       new JSONCodec<>(
           GenericType.BOOLEAN,
           DataTypes.BOOLEAN,
@@ -135,21 +135,21 @@ public class JSONCodecRegistry {
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::booleanNode));
 
   // Numeric Codecs
-  public static final JSONCodec<BigDecimal, Long> BIGINT_FROM_BIG_DECIMAL =
+  private static final JSONCodec<BigDecimal, Long> BIGINT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.BIGINT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::longValueExact),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigInteger, Long> BIGINT_FROM_BIG_INTEGER =
+  private static final JSONCodec<BigInteger, Long> BIGINT_FROM_BIG_INTEGER =
       new JSONCodec<>(
           GenericType.BIG_INTEGER,
           DataTypes.BIGINT,
           JSONCodec.ToCQL.safeNumber(BigInteger::longValueExact),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<Long, Long> BIGINT_FROM_LONG =
+  private static final JSONCodec<Long, Long> BIGINT_FROM_LONG =
       new JSONCodec<>(
           GenericType.LONG,
           DataTypes.BIGINT,
@@ -177,11 +177,25 @@ public class JSONCodecRegistry {
           JSONCodec.ToCQL.safeNumber(BigDecimal::floatValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, Integer> INT =
+  public static final JSONCodec<BigDecimal, Integer> INT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.INT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::intValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<BigInteger, Integer> INT_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.INT,
+          JSONCodec.ToCQL.safeNumber(BigInteger::intValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<Long, Integer> INT_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.INT,
+          JSONCodec.ToCQL.safeNumber(Long::intValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, Short> SMALLINT =
@@ -231,7 +245,9 @@ public class JSONCodecRegistry {
             DECIMAL,
             DOUBLE,
             FLOAT,
-            INT,
+            INT_FROM_BIG_DECIMAL,
+            INT_FROM_BIG_INTEGER,
+            INT_FROM_LONG,
             SMALLINT,
             TINYINT,
             VARINT,
