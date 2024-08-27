@@ -41,11 +41,11 @@ public class ErrorConfigTest {
   public void readErrorsYaml() throws JsonProcessingException {
     String yaml =
         """
-        request_errors:
+        request-errors:
           - scope: TEST_SCOPE_1
             code: TEST_ERROR_ID_1
             title: the title for the error
-            http_response_override: 501
+            http-response-override: 501
             body: |-
               big long body with ${vars} in it
           - scope:
@@ -55,7 +55,7 @@ public class ErrorConfigTest {
               Line 1 of body
 
               Line 2 of body
-        server_errors:
+        server-errors:
           - scope: TEST_SCOPE_3
             code: TEST_ERROR_ID_2
             title: the title for the error

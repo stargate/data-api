@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -70,8 +70,8 @@ public class ErrorConfig {
   @JsonCreator
   public ErrorConfig(
       @JsonProperty("snippets") List<Snippet> snippets,
-      @JsonProperty("request_errors") List<ErrorDetail> requestErrors,
-      @JsonProperty("server_errors") List<ErrorDetail> serverErrors) {
+      @JsonProperty("request-errors") List<ErrorDetail> requestErrors,
+      @JsonProperty("server-errors") List<ErrorDetail> serverErrors) {
 
     // defensive immutable copies because this config can be shared
     this.snippets = snippets == null ? List.of() : List.copyOf(snippets);
@@ -268,11 +268,11 @@ public class ErrorConfig {
   public static ErrorConfig readFromYamlString(String yaml) throws JsonProcessingException {
 
     // This is only going to happen once at system start, ok to create a new mapper
-    ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    ObjectMapper mapper = new YAMLMapper();
     // module for Optional support see
     // https://github.com/FasterXML/jackson-modules-java8/tree/2.18/datatypes
     mapper.registerModule(new Jdk8Module());
-    mapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+    mapper.setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
     return mapper.readValue(yaml, ErrorConfig.class);
   }
 

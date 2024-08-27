@@ -12,7 +12,7 @@
 # Where
 # * Family: Identifies if the error relates to the client request or the server processing, analogous
 #           to the 4XX and 5XX HTTP status codes. Supported values are REQUEST or SERVER. In this file they are
-#           represented by the request_errors and server_errors keys.
+#           represented by the request-errors and server-errors keys.
 # * Scope: Optionally identifies the part of the request or server processing that caused the fault, for example "FILTER"
 #          when there is a problem in the filter clause. Scope generally map to a concrete APIException class such as
 #          FilterException.
@@ -30,11 +30,11 @@
 # - name: UPPER_SNAKE_CASE_1
 # - body: A string with the text of the snippet, recommend using the `|-` to trim trailing newlines.
 #
-# "request_errors" and "server_errors" are lists of error objects, for the REQUEST and SERVER family respectively.
+# "request-errors" and "server-errors" are lists of error objects, for the REQUEST and SERVER family respectively.
 # Each error object has:
 # - scope: UPPER_SNAKE_CASE_1
 # - code: UPPER_SNAKE_CASE_1
-# - http_response_override: (optional) The HTTP status code to return when this error is thrown. If not present, the
+# - http-response-override: (optional) The HTTP status code to return when this error is thrown. If not present, the
 #                           default status code is 200 for most things. This is not returned in the error object JSON
 #                           It is used to override the HTTP status code in the response.
 #                           NOTE: NO checking is done to confirm this is a valid HTTP status code.
@@ -50,7 +50,7 @@ snippets:
     body: |-
       Please contact support if the issue persists.
 
-request_errors:
+request-errors:
   - scope: FILTER
     code: MULTIPLE_ID_FILTER
     title: the title for the error
@@ -64,7 +64,7 @@ request_errors:
         
       ${SNIPPET.CONTACT_SUPPORT}
 
-server_errors:
+server-errors:
   - scope: DATABASE
     code: SERVER_READ_FAILED
     title: the title for the error

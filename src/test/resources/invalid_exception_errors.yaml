@@ -1,6 +1,6 @@
 # For use when testing the exception classes that do not have ctor or break etc.
 
-request_errors:
+request-errors:
   - scope: MISSING_CTOR
     code: EXCEPTION_MISSING_CTOR
     title: test for exception class missing the ctor needed for templating
