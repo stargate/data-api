@@ -135,17 +135,26 @@ public class JSONCodecRegistry {
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::booleanNode));
 
   // Numeric Codecs
-  public static final JSONCodec<BigDecimal, Long> BIGINT =
+  public static final JSONCodec<BigDecimal, Long> BIGINT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.BIGINT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::longValueExact),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  // TODO Tatu For performance reasons we could also consider only converting FP values into
-  // BigDecimal JsonNode -- but converting CQL integer values into long-valued JsonNode.
-  //  I think our internal handling can deal with Integer and Long valued JsonNodes and this avoids
-  // some of BigDecimal overhead (avoids conversion overhead, serialization is faster).
+  public static final JSONCodec<BigInteger, Long> BIGINT_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.BIGINT,
+          JSONCodec.ToCQL.safeNumber(BigInteger::longValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<Long, Long> BIGINT_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.BIGINT,
+          JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, BigDecimal> DECIMAL =
       new JSONCodec<>(
@@ -215,6 +224,18 @@ public class JSONCodecRegistry {
   static {
     CODECS =
         List.of(
-            BOOLEAN, BIGINT, DECIMAL, DOUBLE, FLOAT, INT, SMALLINT, TINYINT, VARINT, ASCII, TEXT);
+            BOOLEAN,
+            BIGINT_FROM_BIG_DECIMAL,
+            BIGINT_FROM_BIG_INTEGER,
+            BIGINT_FROM_LONG,
+            DECIMAL,
+            DOUBLE,
+            FLOAT,
+            INT,
+            SMALLINT,
+            TINYINT,
+            VARINT,
+            ASCII,
+            TEXT);
   }
 }
