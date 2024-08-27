@@ -82,7 +82,7 @@ public class JSONCodecRegistryTest {
 
   private static Stream<Arguments> codecToCQLTestCases() {
     return Stream.of(
-        Arguments.of(DataTypes.INT, BigDecimal.valueOf(100), "100") // second 100 is an int
+        Arguments.of(DataTypes.INT, BigDecimal.valueOf(100), 100) // second 100 is an int
         );
   }
 
