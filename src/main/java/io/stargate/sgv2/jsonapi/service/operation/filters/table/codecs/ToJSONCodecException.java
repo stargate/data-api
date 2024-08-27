@@ -16,7 +16,7 @@ public class ToJSONCodecException extends Exception {
   public ToJSONCodecException(Object value, DataType fromCqlType, Exception cause) {
     super(
         String.format(
-            "Error trying to convert fromCqlType %s from value.class %s and value %s",
+            "Error trying to convert fromCqlType `%s` from value.class `%s` and value: %s",
             fromCqlType, value.getClass().getName(), value),
         cause);
     this.value = value;
