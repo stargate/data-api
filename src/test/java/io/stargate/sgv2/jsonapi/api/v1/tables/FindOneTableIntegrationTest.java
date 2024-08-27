@@ -16,7 +16,6 @@ import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -186,9 +185,6 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
           .body("data.document", jsonEquals(DOC_B_JSON));
     }
 
-    // 22-Aug-2024, tatu: Disabled until we can figure out why it fails
-    // (added in https://github.com/stargate/data-api/pull/1355)
-    @Disabled
     @Test
     @Order(3)
     public void findOneDocIdKey() {

@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableF
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NumberTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TextTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -24,6 +25,7 @@ import java.util.List;
 public class TableFilterResolver<CmdT extends Command & Filterable>
     extends FilterResolver<CmdT, TableSchemaObject> {
 
+  private static final Object DYNAMIC_DOCID_GROUP = new Object();
   private static final Object DYNAMIC_TEXT_GROUP = new Object();
   private static final Object DYNAMIC_NUMBER_GROUP = new Object();
 
@@ -61,7 +63,20 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                 ValueComparisonOperator.GTE,
                 ValueComparisonOperator.LT,
                 ValueComparisonOperator.LTE),
-            JsonType.NUMBER);
+            JsonType.NUMBER)
+        // Although Tables does not have special handling for _id, our FilterClauseDeserializer
+        // does, so we need to capture it here.
+        .capture(DYNAMIC_DOCID_GROUP)
+        .compareValues(
+            "_id",
+            EnumSet.of(
+                ValueComparisonOperator.EQ,
+                //                ValueComparisonOperator.NE, // TODO: not sure this is supported
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.DOCUMENT_ID);
 
     return matchRules;
   }
@@ -75,20 +90,44 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
 
     // TODO: How do we know what the CmdT of the JsonLiteral<CmdT> from .value() is ?
     for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
+      final Object rhsValue = filterOperation.operand().value();
       if (captureExpression.marker() == DYNAMIC_TEXT_GROUP) {
         filters.add(
             new TextTableFilter(
                 captureExpression.path(),
                 NativeTypeTableFilter.Operator.from(
                     (ValueComparisonOperator) filterOperation.operator()),
-                (String) filterOperation.operand().value()));
+                (String) rhsValue));
       } else if (captureExpression.marker() == DYNAMIC_NUMBER_GROUP) {
         filters.add(
             new NumberTableFilter(
                 captureExpression.path(),
                 NativeTypeTableFilter.Operator.from(
                     (ValueComparisonOperator) filterOperation.operator()),
-                (BigDecimal) filterOperation.operand().value()));
+                (BigDecimal) rhsValue));
+      } else if (captureExpression.marker() == DYNAMIC_DOCID_GROUP) {
+        Object actualValue = ((DocumentId) rhsValue).value();
+        if (actualValue instanceof String) {
+          filters.add(
+              new TextTableFilter(
+                  captureExpression.path(),
+                  NativeTypeTableFilter.Operator.from(
+                      (ValueComparisonOperator) filterOperation.operator()),
+                  (String) actualValue));
+        } else if (actualValue instanceof BigDecimal) {
+          filters.add(
+              new NumberTableFilter(
+                  captureExpression.path(),
+                  NativeTypeTableFilter.Operator.from(
+                      (ValueComparisonOperator) filterOperation.operator()),
+                  (BigDecimal) actualValue));
+        } else {
+          throw new UnsupportedOperationException(
+              "Unsupported DocumentId type: " + rhsValue.getClass().getName());
+        }
+      } else {
+        throw new UnsupportedOperationException(
+            "Unsupported dynamic filter type: " + filterOperation);
       }
     }
 
