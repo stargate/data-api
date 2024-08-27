@@ -81,7 +81,11 @@ public class JSONCodecRegistryTest {
   }
 
   private static Stream<Arguments> codecToCQLTestCases() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
     return Stream.of(
+        // Arguments.of(DataTypes.BIGINT, 123, 123L),
+        // Arguments.of(DataTypes.BIGINT, 999L, 999L),
+        Arguments.of(DataTypes.BIGINT, BigDecimal.valueOf(999), 999L),
         Arguments.of(DataTypes.INT, BigDecimal.valueOf(100), 100) // second 100 is an int
         );
   }

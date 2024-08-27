@@ -105,7 +105,7 @@ public record JSONCodec<JavaT, CqlT>(
   }
 
   /**
-   * Function interface that is used by the codec to convert the Java value to the value CQL
+   * Functional interface that is used by the codec to convert the Java value to the value CQL
    * expects.
    *
    * <p>The interface is used so the conversation function can throw the checked {@link
@@ -170,7 +170,7 @@ public record JSONCodec<JavaT, CqlT>(
   }
 
   /**
-   * Function interface that is used by the codec to convert value returned by CQL into a {@link
+   * Functional interface that is used by the codec to convert value returned by CQL into a {@link
    * JsonNode} that can be used to construct the response document for a row.
    *
    * <p>The interface is used so the conversation function can throw the checked {@link

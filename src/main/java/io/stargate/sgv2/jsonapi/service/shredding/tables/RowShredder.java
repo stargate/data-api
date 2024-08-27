@@ -91,11 +91,24 @@ public class RowShredder {
    */
   public static Object shredValue(JsonNode value) {
     return switch (value.getNodeType()) {
-      case NUMBER -> value.decimalValue();
+      case NUMBER -> shredNumber(value);
       case STRING -> value.textValue();
       case BOOLEAN -> value.booleanValue();
       case NULL -> null;
       default -> throw new RuntimeException("Unsupported type");
     };
+  }
+
+  private static Object shredNumber(JsonNode number) {
+    if (number.isIntegralNumber()) {
+      // Return as BigInteger if one required (won't fit in 64-bit Long)
+      if (number.isBigInteger()) {
+        return number.bigIntegerValue();
+      }
+      // Otherwise as Long (possibly upgrading from Integer)
+      return number.longValue();
+    }
+    // But all FPs are returned as BigDecimal
+    return number.decimalValue();
   }
 }
