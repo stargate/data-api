@@ -93,8 +93,7 @@ public class JSONCodecRegistryTest {
         Arguments.of(DataTypes.INT, BigInteger.valueOf(12), 12),
         Arguments.of(DataTypes.INT, BigDecimal.valueOf(100), 100),
         // Floating-point types:
-        Arguments.of(DataTypes.DECIMAL, BigDecimal.valueOf(0.25), BigDecimal.valueOf(0.25))
-    );
+        Arguments.of(DataTypes.DECIMAL, BigDecimal.valueOf(0.25), BigDecimal.valueOf(0.25)));
   }
 
   @Test
