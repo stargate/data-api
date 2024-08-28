@@ -1,47 +1,83 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
+import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
+
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.datastax.oss.driver.api.querybuilder.select.Select;
+import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.google.common.base.Preconditions;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
+import io.stargate.sgv2.jsonapi.service.operation.DocumentSourceSupplier;
 import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
+import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.StreamSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * TODO: this is still a POC class, showing how we can build a filter still to do is order and
+ * projections
+ */
 public class FindTableOperation extends TableReadOperation {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(TableReadOperation.class);
+
+  private final SelectCQLClause selectCQLClause;
+  private final WhereCQLClause<Select> whereCQLClause;
+  private final DocumentSourceSupplier documentSourceSupplier;
   private final FindTableParams params;
 
   public FindTableOperation(
       CommandContext<TableSchemaObject> commandContext,
-      LogicalExpression logicalExpression,
+      SelectCQLClause selectCQLClause,
+      WhereCQLClause<Select> whereCQLClause,
+      DocumentSourceSupplier documentSourceSupplier,
       FindTableParams params) {
-    super(commandContext, logicalExpression);
+    super(commandContext);
 
-    this.params = Objects.requireNonNull(params, "Params must not be null");
+    this.selectCQLClause =
+        Objects.requireNonNull(selectCQLClause, "selectCQLClause must not be null");
+    this.whereCQLClause = Objects.requireNonNull(whereCQLClause, "whereCQLClause must not be null");
+    this.documentSourceSupplier =
+        Objects.requireNonNull(documentSourceSupplier, "documentSourceSupplier must not be null");
+    this.params = Objects.requireNonNull(params, "params must not be null");
   }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    var cql =
-        "select JSON * from %s.%s limit %s;"
-            .formatted(
-                commandContext.schemaObject().name.keyspace(),
-                commandContext.schemaObject().name.table(),
-                params.limit());
-    var statement = SimpleStatement.newInstance(cql);
+
+    // Start the select
+    SelectFrom selectFrom =
+        selectFrom(
+            commandContext.schemaObject().tableMetadata.getKeyspace(),
+            commandContext.schemaObject().tableMetadata.getName());
+
+    // Add the columns we want to select
+    Select select = selectCQLClause.apply(selectFrom);
+
+    // Add the where clause
+    List<Object> positionalValues = new ArrayList<>();
+    select = whereCQLClause.apply(select, positionalValues);
+
+    // Add things like limit
+    select = params.options().apply(select);
+
+    var statement = select.build(positionalValues.toArray());
+
+    LOGGER.warn("FIND CQL: {}", select.asCql());
+    LOGGER.warn("FIND VALUES: {}", positionalValues);
 
     // TODO: pageSize for FindTableOperation
     return queryExecutor
@@ -52,21 +88,9 @@ public class FindTableOperation extends TableReadOperation {
 
   private ReadOperationPage toReadOperationPage(AsyncResultSet resultSet) {
 
-    var objectMapper = new ObjectMapper();
-
     var docSources =
         StreamSupport.stream(resultSet.currentPage().spliterator(), false)
-            .map(
-                row ->
-                    (DocumentSource)
-                        () -> {
-                          try {
-                            return objectMapper.readTree(row.getString("[json]"));
-                          } catch (Exception e) {
-                            throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
-                                e, "Failed to parse row JSON: %s", e.getMessage());
-                          }
-                        })
+            .map(documentSourceSupplier::documentSource)
             .toList();
 
     return new ReadOperationPage(docSources, params.isSingleResponse(), null, false, null);
@@ -82,6 +106,15 @@ public class FindTableOperation extends TableReadOperation {
 
     public boolean isSingleResponse() {
       return limit == 1;
+    }
+
+    public OptionsBuilder options() {
+      return new OptionsBuilder() {
+        @Override
+        public Select apply(Select select) {
+          return select.limit(limit());
+        }
+      };
     }
   }
 }

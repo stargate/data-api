@@ -4,12 +4,11 @@ import static io.restassured.RestAssured.given;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
-import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -20,7 +19,7 @@ import org.junit.jupiter.api.TestClassOrder;
 import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
-@QuarkusTestResource(DseTestResource.class)
+@WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
@@ -803,7 +802,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
-          .body("errors[0].message", is(ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage()));
+          .body("errors[0].message", is("$vector value can't be empty"));
     }
 
     @Test
@@ -833,7 +832,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
-          .body("errors[0].message", is(ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage()));
+          .body("errors[0].message", is("$vector value needs to be array of numbers"));
     }
 
     @Test
@@ -982,11 +981,11 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_SIZE"))
-          .body("errors[0].message", is(ErrorCode.SHRED_BAD_VECTOR_SIZE.getMessage()));
+          .body("errors[0].message", is("$vector value can't be empty"));
     }
 
     @Test
-    @Order(4)
+    @Order(5)
     public void failWithZerosVector() {
       String json =
           """
@@ -1017,7 +1016,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
     }
 
     @Test
-    @Order(5)
+    @Order(6)
     public void failWithInvalidVectorElements() {
       String json =
           """
@@ -1041,12 +1040,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
-          .body("errors[0].message", is(ErrorCode.SHRED_BAD_VECTOR_VALUE.getMessage()));
+          .body("errors[0].message", is("$vector value needs to be array of numbers"));
     }
 
     // Vector columns can only use ANN, not regular filtering
     @Test
-    @Order(6)
+    @Order(7)
     public void failWithVectorFilter() {
       String json =
           """
@@ -1203,7 +1202,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .body("errors[0].errorCode", is("UNSUPPORTED_UPDATE_FOR_VECTOR"))
           .body(
               "errors[0].message",
-              is(ErrorCode.UNSUPPORTED_UPDATE_FOR_VECTOR.getMessage() + ": " + "$push"));
+              is("Cannot use operator with '$vector' property" + ": " + "$push"));
     }
 
     @Test
@@ -1620,8 +1619,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, vectorSizeTestCollectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors[0].message", endsWith("Mismatched vector dimension"));
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
 
       // Insert data with $vector array size greater than vector index defined size.
       final String vectorStrCount7 = buildVectorElements(0, 7);
@@ -1648,8 +1651,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, vectorSizeTestCollectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors[0].message", endsWith("Mismatched vector dimension"));
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
     }
 
     @Test
@@ -1678,8 +1685,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, vectorSizeTestCollectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors[0].message", endsWith("Mismatched vector dimension"));
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
 
       // Insert data with $vector array size greater than vector index defined size.
       final String vectorStrCount7 = buildVectorElements(0, 7);
@@ -1704,8 +1715,12 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .post(CollectionResource.BASE_PATH, namespaceName, vectorSizeTestCollectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors[0].message", endsWith("Mismatched vector dimension"));
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Length of vector parameter different from declared '$vector' dimension: root cause ="));
     }
   }
 

@@ -19,7 +19,7 @@ public class DseTestResource extends StargateTestResource {
       // 07-Dec-2023, tatu: For some reason floating tag "v2.1" does not seem to work so
       //    use specific version. Needs to be kept up to date:
       System.setProperty(
-          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1.0-BETA-8");
+          "testing.containers.stargate-image", "stargateio/coordinator-dse-next:v2.1.0-BETA-14");
     }
 
     if (null == System.getProperty("testing.containers.cluster-persistence")) {
@@ -71,6 +71,7 @@ public class DseTestResource extends StargateTestResource {
     ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
     propsBuilder.putAll(env);
     propsBuilder.put("stargate.jsonapi.custom.embedding.enabled", "true");
+    propsBuilder.put("stargate.tables.enabled", "true");
     propsBuilder.put(
         "stargate.jsonapi.custom.embedding.clazz",
         "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider");

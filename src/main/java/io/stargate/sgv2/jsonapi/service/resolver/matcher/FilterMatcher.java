@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
-import io.stargate.sgv2.jsonapi.service.operation.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -109,7 +109,7 @@ public class FilterMatcher<T extends Command & Filterable> {
   /**
    * Capture provides a fluent API to build the matchers to apply to the filter.
    *
-   * <p>**NOTE:** Is a non static class, it is bound to an instance of FilterMatcher to provide the
+   * <p>**NOTE:** Is a non-static class, it is bound to an instance of FilterMatcher to provide the
    * fluent API.
    */
   public final class Capture {

@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -9,6 +10,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
+import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -147,6 +149,32 @@ public class UpdateClauseDeserializerTest {
                               """));
       UpdateClause updateClause = objectMapper.readValue(json, UpdateClause.class);
       assertThat(updateClause.buildOperations()).hasSize(1).contains(operation);
+    }
+
+    @Test
+    public void invalid_set_vectorize_vector() {
+      String json =
+          """
+                        {"$set" : {"$vectorize": "$vectorize string", "$vector" : [0.1,0.2] }}
+                        """;
+
+      Exception e = catchException(() -> objectMapper.readValue(json, UpdateClause.class));
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasMessageContaining("$vectorize` and `$vector` can't be used together");
+    }
+
+    @Test
+    public void invalid_unset_vectorize_vector() {
+      String json =
+          """
+                        {"$unset" : {"$vectorize": "$vectorize string", "$vector" : [0.1,0.2] }}
+                        """;
+
+      Exception e = catchException(() -> objectMapper.readValue(json, UpdateClause.class));
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasMessageContaining("$vectorize` and `$vector` can't be used together");
     }
   }
 }

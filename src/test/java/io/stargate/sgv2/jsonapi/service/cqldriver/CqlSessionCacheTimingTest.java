@@ -11,11 +11,13 @@ import io.micrometer.core.instrument.FunctionCounter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +29,8 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(CqlSessionCacheTimingTest.TestProfile.class)
+// Since Quarkus 3.13, will not automatically get global test resources so need this:
+@WithTestResource(DseTestResource.class)
 public class CqlSessionCacheTimingTest {
   public static class TestProfile implements QuarkusTestProfile {
     // Alas, we do need actual DB backend so cannot do:

@@ -1,6 +1,11 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.config.ConfigProvider;
 
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
 public enum ErrorCode {
@@ -108,6 +113,8 @@ public enum ErrorCode {
 
   INVALID_CONTENT_TYPE_HEADER("Invalid Content-Type header"),
 
+  UNSUPPORTED_PROJECTION_DEFINITION("Unsupported projection definition"),
+
   UNSUPPORTED_PROJECTION_PARAM("Unsupported projection parameter"),
 
   UNSUPPORTED_UPDATE_DATA_TYPE("Unsupported update data type"),
@@ -138,6 +145,7 @@ public enum ErrorCode {
   VECTOR_SEARCH_INVALID_FUNCTION_NAME("Invalid vector search function name"),
 
   VECTOR_SEARCH_TOO_BIG_VALUE("Vector embedding property '$vector' length too big"),
+  VECTOR_SIZE_MISMATCH("Length of vector parameter different from declared '$vector' dimension"),
 
   VECTORIZE_FEATURE_NOT_AVAILABLE("Vectorize feature is not available in the environment"),
   VECTORIZE_SERVICE_NOT_REGISTERED("Vectorize service name provided is not registered : "),
@@ -181,9 +189,35 @@ public enum ErrorCode {
   INVALID_PARAMETER_VALIDATION_TYPE("Invalid Parameter Validation Type"),
   SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE("Embedding Gateway is not available"),
   EMBEDDING_GATEWAY_ERROR_RATE_LIMIT("Embedding Gateway error rate limit reached for the tenant"),
-  EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request");
+  EMBEDDING_GATEWAY_PROCESSING_ERROR("Embedding Gateway failed to process request"),
+  // TODO, add this section so we don't have to throw RuntimeExceptions for table work, and it is
+  // easy to track, should be improved along with error refactor work
+  // Table related
+  // TODO: AARON - remove this unused error code, we would not want to return this error to the user
+  ERROR_APPLYING_CODEC("Error applying codec"),
+
+  // API Table Error Codes
+  TABLE_FEATURE_NOT_ENABLED("API Table feature is not enabled"),
+
+  TABLE_COLUMN_TYPE_NOT_PROVIDED("Column data type not provided as part of definition"),
+  TABLE_PRIMARY_KEY_DEFINITION_INCORRECT("Primary key definition is incorrect"),
+  TABLE_MISSING_PARTITIONING_KEYS("Key needs to be provided as part of partitioning definition"),
+  TABLE_COLUMN_DEFINITION_MISSING("Column definition is missing for the provided key field"),
+  TABLE_COLUMN_TYPE_UNSUPPORTED("Unsupported column types"),
+  TABLE_COLUMN_UNKNOWN("Column unknown");
 
   private final String message;
+  private final boolean extendError =
+      ApiConstants.isOffline()
+          ? new SmallRyeConfigBuilder()
+              .withMapping(OperationsConfig.class)
+              .build()
+              .getConfigMapping(OperationsConfig.class)
+              .extendError()
+          : ConfigProvider.getConfig()
+              .unwrap(SmallRyeConfig.class)
+              .getConfigMapping(OperationsConfig.class)
+              .extendError();
 
   ErrorCode(String message) {
     this.message = message;
@@ -194,17 +228,23 @@ public enum ErrorCode {
   }
 
   public JsonApiException toApiException(String format, Object... args) {
-    return new JsonApiException(this, message + ": " + String.format(format, args));
+    return new JsonApiException(this, getErrorMessage(format, args));
   }
 
   public JsonApiException toApiException(
       Response.Status httpStatus, String format, Object... args) {
-    return new JsonApiException(
-        this, message + ": " + String.format(format, args), null, httpStatus);
+    return new JsonApiException(this, getErrorMessage(format, args), null, httpStatus);
   }
 
   public JsonApiException toApiException(Throwable cause, String format, Object... args) {
-    return new JsonApiException(this, message + ": " + String.format(format, args), cause);
+    return new JsonApiException(this, getErrorMessage(format, args), cause);
+  }
+
+  private String getErrorMessage(String format, Object... args) {
+    if (extendError) {
+      return String.format(format, args);
+    }
+    return message + ": " + String.format(format, args);
   }
 
   public JsonApiException toApiException() {

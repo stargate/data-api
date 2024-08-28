@@ -72,6 +72,6 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
       CommandContext<TableSchemaObject> ctx, InsertManyCommand command) {
 
     return new InsertTableOperation(
-        ctx, TableInsertAttempt.create(rowShredder, command.documents()));
+        ctx, TableInsertAttempt.create(rowShredder, ctx.schemaObject(), command.documents()));
   }
 }

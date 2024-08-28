@@ -1,20 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>io.stargate</groupId>
-    <artifactId>sgv2-api-parent</artifactId>
-    <version>2.1.0-BETA-14</version>
-  </parent>
+  <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.15-SNAPSHOT</version>
+  <version>1.0.16-SNAPSHOT</version>
   <properties>
-    <stargate.version>${project.parent.version}</stargate.version>
     <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->
-    <!-- 16-Nov-2023, tatu: but may use 2.16 now that it's available -->
-    <jackson.version>2.16.2</jackson.version>
-    <!-- 09-Jul-2024, tatu: temporary override here until SG 2.0.28 -->
-    <quarkus.platform.version>3.9.5</quarkus.platform.version>
+    <!-- 16-Aug-2024, tatu: Quarkus depends on 2.17 already, but keep explicit -->
+    <jackson.version>2.17.2</jackson.version>
+    <!-- Quarkus -->
+    <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+    <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
+    <quarkus.platform.version>3.13.2</quarkus.platform.version>
+    <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
@@ -22,7 +20,6 @@
     <quarkus.container-image.name>jsonapi</quarkus.container-image.name>
     <quarkus.container-image.tag>v${project.version}</quarkus.container-image.tag>
     <quarkus.container-image.additional-tags>v1</quarkus.container-image.additional-tags>
-    <skipITs>false</skipITs>
     <cassandra.version>4.0.11-591d171ac9c9</cassandra.version>
     <!-- Integration test props -->
     <!-- When updating please change defaults in the DseTestResource class -->
@@ -30,13 +27,31 @@
     <!-- from Stargate persistence, latest as of 2024-01-24: -->
     <stargate.int-test.cassandra.image-tag>${cassandra.version}</stargate.int-test.cassandra.image-tag>
     <stargate.int-test.coordinator.image>stargateio/coordinator-dse-next</stargate.int-test.coordinator.image>
-    <stargate.int-test.coordinator.image-tag>v${stargate.version}</stargate.int-test.coordinator.image-tag>
+    <stargate.int-test.coordinator.image-tag>v2.1.0-BETA-14</stargate.int-test.coordinator.image-tag>
     <stargate.int-test.cluster.name>dse-next-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
     <stargate.int-test.cluster.persistence>persistence-dse-next</stargate.int-test.cluster.persistence>
     <stargate.int-test.cluster.dse>false</stargate.int-test.cluster.dse>
     <stargate.int-test.cluster.hcd>false</stargate.int-test.cluster.hcd>
     <stargate.int-test.cassandra.auth-enabled>true</stargate.int-test.cassandra.auth-enabled>
     <stargate.int-test.use-coordinator>true</stargate.int-test.use-coordinator>
+    <!-- Cassandra driver -->
+    <driver.version>4.17.0</driver.version>
+    <!-- Compiler -->
+    <compiler-plugin.version>3.11.0</compiler-plugin.version>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.release>17</maven.compiler.release>
+    <!-- Encoding -->
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <!-- Testing -->
+    <skipTests>false</skipTests>
+    <skipUnitTests>${skipTests}</skipUnitTests>
+    <surefire-plugin.version>3.3.0</surefire-plugin.version>
+    <skipITs>false</skipITs>
+
+
+
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -236,6 +251,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
+      <version>3.22.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -263,6 +279,43 @@
   </dependencies>
   <build>
     <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${compiler-plugin.version}</version>
+        <configuration>
+          <compilerArgs>
+            <arg>-parameters</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${surefire-plugin.version}</version>
+        <configuration>
+          <argLine>-Xmx4g</argLine>
+          <systemPropertyVariables>
+            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+            <maven.home>${maven.home}</maven.home>
+          </systemPropertyVariables>
+          <excludes>
+            <exclude>**/*IntegrationTest.*</exclude>
+          </excludes>
+          <skip>${skipUnitTests}</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.spotify.fmt</groupId>
+        <artifactId>fmt-maven-plugin</artifactId>
+        <version>2.23</version>
+        <executions>
+          <execution>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>io.smallrye</groupId>
         <artifactId>jandex-maven-plugin</artifactId>
@@ -323,109 +376,6 @@
   </build>
   <profiles>
     <profile>
-      <!-- This profile needs to be activated while working with offline mode related files such as FileWriterSession.java -->
-      <id>offline</id>
-      <repositories>
-        <repository>
-          <id>artifactory</id>
-          <url>https://repo.datastax.com/dse</url>
-          <releases>
-            <enabled>true</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-          </snapshots>
-        </repository>
-      </repositories>
-      <dependencies>
-        <dependency>
-          <groupId>com.datastax.dse</groupId>
-          <artifactId>dse-db-all</artifactId>
-          <version>${cassandra.version}</version>
-        </dependency>
-      </dependencies>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <version>3.0.0-M6</version>
-            <configuration>
-              <argLine>-Djdk.attach.allowAttachSelf --add-opens java.base/jdk.internal.module=ALL-UNNAMED --add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/jdk.internal.ref=ALL-UNNAMED --add-exports java.base/jdk.internal.perf=ALL-UNNAMED --add-exports java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.management.rmi/com.sun.jmx.remote.internal.rmi=ALL-UNNAMED --add-exports java.rmi/sun.rmi.registry=ALL-UNNAMED --add-exports java.rmi/sun.rmi.server=ALL-UNNAMED --add-opens jdk.management/com.sun.management.internal=ALL-UNNAMED --add-opens java.base/java.lang.module=ALL-UNNAMED --add-opens java.base/java.net=ALL-UNNAMED --add-exports jdk.naming.dns/com.sun.jndi.dns=java.naming --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED</argLine>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>com.spotify.fmt</groupId>
-            <artifactId>fmt-maven-plugin</artifactId>
-            <version>2.23</version>
-            <executions>
-              <execution>
-                <phase>process-sources</phase>
-                <goals>
-                  <goal>check</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <sourceDirectory>src/main/java</sourceDirectory>
-              <testSourceDirectory>src/test/java</testSourceDirectory>
-              <additionalSourceDirectories>
-                <param>src/main/offline</param>
-                <param>src/test/offline</param>
-              </additionalSourceDirectories>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>build-helper-maven-plugin</artifactId>
-            <version>3.2.0</version>
-            <executions>
-              <execution>
-                <id>add-source</id>
-                <phase>generate-sources</phase>
-                <goals>
-                  <goal>add-source</goal>
-                </goals>
-                <configuration>
-                  <sources>
-                    <source>src/main/java/</source>
-                    <source>src/main/offline/</source>
-                  </sources>
-                </configuration>
-              </execution>
-              <execution>
-                <id>add-test-source</id>
-                <phase>generate-test-sources</phase>
-                <goals>
-                  <goal>add-test-source</goal>
-                </goals>
-                <configuration>
-                  <sources>
-                    <source>src/test/java/</source>
-                    <source>src/test/offline/</source>
-                  </sources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-      <distributionManagement>
-        <repository>
-          <uniqueVersion>false</uniqueVersion>
-          <id>stargate-central</id>
-          <name>stargate-releases</name>
-          <url>https://repo.datastax.com/artifactory/stargate-private</url>
-        </repository>
-        <snapshotRepository>
-          <uniqueVersion>false</uniqueVersion>
-          <id>stargate-snapshots</id>
-          <name>stargate-snapshots</name>
-          <url>https://repo.datastax.com/artifactory/stargate-private</url>
-        </snapshotRepository>
-      </distributionManagement>
-    </profile>
-    <profile>
       <id>dse69-it</id>
       <activation>
         <property>
@@ -434,7 +384,7 @@
       </activation>
       <properties>
         <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-        <stargate.int-test.cassandra.image-tag>6.9.0</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.cassandra.image-tag>6.9.1</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>
@@ -456,4 +406,18 @@
       </properties>
     </profile>
   </profiles>
+  <distributionManagement>
+    <repository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>stargate-central</id>
+      <name>stargate-releases</name>
+      <url>https://repo.datastax.com/artifactory/stargate-private</url>
+    </repository>
+    <snapshotRepository>
+      <uniqueVersion>false</uniqueVersion>
+      <id>stargate-snapshots</id>
+      <name>stargate-snapshots</name>
+      <url>https://repo.datastax.com/artifactory/stargate-private</url>
+    </snapshotRepository>
+  </distributionManagement>
 </project>

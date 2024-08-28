@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
@@ -15,7 +16,11 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.FindTableOperation;
-import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterableResolver;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableRowProjection;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -23,13 +28,15 @@ import java.util.List;
 
 /** Resolves the {@link FindOneCommand } */
 @ApplicationScoped
-public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
-    implements CommandResolver<FindOneCommand> {
+public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   private final ObjectMapper objectMapper;
   private final OperationsConfig operationsConfig;
   private final MeterRegistry meterRegistry;
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
+
+  private final FilterResolver<FindOneCommand, CollectionSchemaObject> collectionFilterResolver;
+  private final FilterResolver<FindOneCommand, TableSchemaObject> tableFilterResolver;
 
   @Inject
   public FindOneCommandResolver(
@@ -45,6 +52,9 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
     this.meterRegistry = meterRegistry;
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
+
+    this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
+    this.tableFilterResolver = new TableFilterResolver<>(operationsConfig);
   }
 
   @Override
@@ -56,20 +66,26 @@ public class FindOneCommandResolver extends FilterableResolver<FindOneCommand>
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, FindOneCommand command) {
 
+    var tableRowProjection =
+        TableRowProjection.fromDefinition(
+            objectMapper, command.tableProjectionDefinition(), ctx.schemaObject());
+
     return new FindTableOperation(
-        ctx, LogicalExpression.and(), new FindTableOperation.FindTableParams(1));
+        ctx,
+        tableRowProjection,
+        TableWhereCQLClause.forSelect(
+            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command)),
+        tableRowProjection,
+        new FindTableOperation.FindTableParams(1));
   }
 
   @Override
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindOneCommand command) {
 
-    LogicalExpression logicalExpression = resolve(ctx, command);
+    LogicalExpression logicalExpression = collectionFilterResolver.resolve(ctx, command);
     final SortClause sortClause = command.sortClause();
-    // validate sort path
-    if (sortClause != null) {
-      sortClause.validate(ctx);
-    }
+    ValidatableCommandClause.maybeValidate(ctx, sortClause);
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 

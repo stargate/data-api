@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.service.operation.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -17,7 +17,7 @@ import org.bson.types.ObjectId;
  * {"username" : {"$eq" : "aaron"}} In here we expand the shortcut into a canonical long form, so it
  * is all the same.
  */
-public class ComparisonExpression {
+public class ComparisonExpression implements Invertible {
 
   private final String path;
 
@@ -33,16 +33,21 @@ public class ComparisonExpression {
     return filterOperations;
   }
 
-  /** This method will be called when not operation is pushed down */
-  public void flip() {
+  /**
+   * implements Invertible, method to invert a ComparisonExpression this method will be called when
+   * $not operator is pushed down
+   */
+  @Override
+  public Invertible invert() {
     List<FilterOperation<?>> filterOperations = new ArrayList<>(this.filterOperations.size());
     for (FilterOperation<?> filterOperation : this.filterOperations) {
-      final FilterOperator flippedOperator = filterOperation.operator().flip();
+      final FilterOperator invertedOperator = filterOperation.operator().invert();
       JsonLiteral<?> operand =
           getFlippedOperandValue(filterOperation.operator(), filterOperation.operand());
-      filterOperations.add(new ValueComparisonOperation<>(flippedOperator, operand));
+      filterOperations.add(new ValueComparisonOperation<>(invertedOperator, operand));
     }
     this.filterOperations = filterOperations;
+    return this;
   }
 
   /**

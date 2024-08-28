@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOper
 import java.util.List;
 import java.util.stream.Collectors;
 
+// TIDY : rename or refactor to remove a "Util" class, this probably has a better home
 public class SortClauseUtil {
   public static List<FindCollectionOperation.OrderBy> resolveOrderBy(SortClause sortClause) {
     if (sortClause == null || sortClause.sortExpressions().isEmpty()) return null;

@@ -29,23 +29,7 @@ public abstract class AbstractCollectionIntegrationTestBase
   }
 
   protected void createSimpleCollection(String collectionToCreate) {
-    given()
-        .port(getTestPort())
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(
-                """
-              {
-                "createCollection": {
-                  "name": "%s"
-                }
-              }
-              """
-                .formatted(collectionToCreate))
-        .when()
-        .post(NamespaceResource.BASE_PATH, namespaceName)
-        .then()
-        .statusCode(200);
+    createCollection(this.namespaceName, collectionToCreate);
   }
 
   protected void createComplexCollection(String collectionSetting) {

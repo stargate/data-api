@@ -20,5 +20,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
   @JsonSubTypes.Type(value = InsertManyCommand.class),
   @JsonSubTypes.Type(value = UpdateManyCommand.class),
   @JsonSubTypes.Type(value = UpdateOneCommand.class),
+  @JsonSubTypes.Type(value = AddIndexCommand.class),
+  @JsonSubTypes.Type(value = DropIndexCommand.class),
 })
 public interface CollectionCommand extends Command {}

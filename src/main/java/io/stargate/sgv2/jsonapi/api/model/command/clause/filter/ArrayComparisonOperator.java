@@ -22,7 +22,7 @@ public enum ArrayComparisonOperator implements FilterOperator {
   }
 
   @Override
-  public FilterOperator flip() {
+  public FilterOperator invert() {
     switch (this) {
       case ALL:
         return NOTANY;
