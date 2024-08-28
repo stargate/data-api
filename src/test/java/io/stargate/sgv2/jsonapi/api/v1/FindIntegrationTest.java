@@ -2077,6 +2077,58 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .body("data.documents", hasSize(1))
           .body("data.documents", containsInAnyOrder(jsonEquals(expected)));
     }
+
+    @Test
+    public void notWithComparisonExpressionAndLogicalExpression() {
+      // exclude all the username by using a combination of logicalExpression and
+      // comparisonExpression
+      String json =
+          """
+                        {
+                            "find": {
+                                "filter": {
+                                    "$not": {
+                                        "$or": [
+                                            {
+                                                "username": "user2"
+                                            },
+                                            {
+                                                "username": "user3"
+                                            },
+                                            {
+                                                "username": "user4"
+                                            },
+                                            {
+                                                "username": "user5"
+                                            },
+                                            {
+                                                "user-name": "user6"
+                                            }
+                                        ],
+                                        "username": {"$ne": "user1"}
+                                    }
+                                }
+                            }
+                        }
+                      """;
+
+      String expected =
+          """
+                                  {"_id":"doc1", "username":"user1", "active_user":true, "date" : {"$date": 1672531200000}, "age" : 20, "null_column": null}
+                                  """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(1))
+          .body("data.documents", containsInAnyOrder(jsonEquals(expected)));
+    }
   }
 
   @Nested

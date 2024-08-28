@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.*;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
@@ -55,9 +56,10 @@ public class CreateTableOperation implements Operation {
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-
-    CreateTableStart create =
-        createTable(commandContext.schemaObject().name.keyspace(), tableName).ifNotExists();
+    CqlIdentifier keyspaceIdentifier =
+        CqlIdentifier.fromInternal(commandContext.schemaObject().name.keyspace());
+    CqlIdentifier tableIdentifier = CqlIdentifier.fromInternal(tableName);
+    CreateTableStart create = createTable(keyspaceIdentifier, tableIdentifier).ifNotExists();
 
     // Add all primary keys and colunms
     CreateTable createTable = addColumnsAndKeys(create);
@@ -83,17 +85,22 @@ public class CreateTableOperation implements Operation {
     for (String partitionKey : partitionKeys) {
       if (createTable == null) {
         createTable =
-            create.withPartitionKey(partitionKey, columnTypes.get(partitionKey).getCqlType());
+            create.withPartitionKey(
+                CqlIdentifier.fromInternal(partitionKey),
+                columnTypes.get(partitionKey).getCqlType());
       } else {
         createTable =
-            createTable.withPartitionKey(partitionKey, columnTypes.get(partitionKey).getCqlType());
+            createTable.withPartitionKey(
+                CqlIdentifier.fromInternal(partitionKey),
+                columnTypes.get(partitionKey).getCqlType());
       }
       addedColumns.add(partitionKey);
     }
     for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
       ColumnType columnType = columnTypes.get(clusteringKey.column());
       createTable =
-          createTable.withClusteringColumn(clusteringKey.column(), columnType.getCqlType());
+          createTable.withClusteringColumn(
+              CqlIdentifier.fromInternal(clusteringKey.column()), columnType.getCqlType());
       addedColumns.add(clusteringKey.column());
     }
 
@@ -101,7 +108,9 @@ public class CreateTableOperation implements Operation {
       if (addedColumns.contains(column.getKey())) {
         continue;
       }
-      createTable = createTable.withColumn(column.getKey(), column.getValue().getCqlType());
+      createTable =
+          createTable.withColumn(
+              CqlIdentifier.fromInternal(column.getKey()), column.getValue().getCqlType());
     }
     return createTable;
   }

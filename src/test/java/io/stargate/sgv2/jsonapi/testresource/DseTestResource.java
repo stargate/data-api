@@ -71,6 +71,7 @@ public class DseTestResource extends StargateTestResource {
     ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
     propsBuilder.putAll(env);
     propsBuilder.put("stargate.jsonapi.custom.embedding.enabled", "true");
+    propsBuilder.put("stargate.tables.enabled", "true");
     propsBuilder.put(
         "stargate.jsonapi.custom.embedding.clazz",
         "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider");

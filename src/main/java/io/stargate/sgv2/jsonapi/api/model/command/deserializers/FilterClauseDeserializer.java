@@ -44,6 +44,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   @Override
   public FilterClause deserialize(
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+
     JsonNode filterNode = deserializationContext.readTree(jsonParser);
     if (!filterNode.isObject()) {
       throw ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE.toApiException();
@@ -52,8 +53,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     LogicalExpression implicitAnd = LogicalExpression.and();
     populateExpression(implicitAnd, filterNode);
     validate(implicitAnd);
-    // push down not operator
-    implicitAnd.traverseForNot(null);
 
     return new FilterClause(implicitAnd);
   }
