@@ -164,7 +164,7 @@ public class ErrorConfig {
    * @return
    */
   @VisibleForTesting
-  protected List<Snippet> snippets() {
+  List<Snippet> snippets() {
     return snippets;
   }
 
@@ -244,7 +244,7 @@ public class ErrorConfig {
    * <p><b>NOTE:</b> does not "initialize" the class, just creates a new instance with the data from
    * the YAML string. Use the initializeFrom methods for that, or let the default behaviour kicking.
    */
-  protected static ErrorConfig readFromYamlString(String yaml) throws JacksonException {
+  static ErrorConfig readFromYamlString(String yaml) throws JacksonException {
 
     // This is only going to happen once at system start, ok to create a new mapper
     final ObjectMapper mapper =
@@ -283,25 +283,18 @@ public class ErrorConfig {
   /**
    * Create a new {@link ErrorConfig} using the YAML contents of the resource file and initialise it
    * as the static config.
-   *
-   * @param path
-   * @return
-   * @throws IOException
    */
-  public static ErrorConfig initializeFromYamlResource(String path) throws IOException {
+  @VisibleForTesting
+  static ErrorConfig initializeFromYamlResource(String path) throws IOException {
     return maybeCacheErrorConfig(readFromYamlResource(path));
   }
 
   /**
    * Clears the current config and replaces it with the file at <code>path</code>. <b>DO NOT USE</b>
    * in regular code, only for testing.
-   *
-   * @param path
-   * @return
-   * @throws IOException
    */
   @VisibleForTesting
-  public static ErrorConfig unsafeInitializeFromYamlResource(String path) throws IOException {
+  static ErrorConfig unsafeInitializeFromYamlResource(String path) throws IOException {
     CACHE.invalidate(CACHE_KEY);
     return initializeFromYamlResource(path);
   }
