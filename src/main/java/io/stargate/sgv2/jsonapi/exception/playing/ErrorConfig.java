@@ -10,7 +10,6 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
@@ -233,8 +232,7 @@ public class ErrorConfig {
       Pattern.compile("^[A-Z0-9]+(_[A-Z0-9]+)*$");
 
   private static void requireSnakeCase(String value, String name) {
-
-    if (!UPPER_SNAKE_CASE_PATTERN.matcher(Strings.nullToEmpty(value)).matches()) {
+    if (!UPPER_SNAKE_CASE_PATTERN.matcher(value).matches()) {
       throw new IllegalArgumentException(
           name + " must be in UPPER_SNAKE_CASE_1 format, got: " + value);
     }
