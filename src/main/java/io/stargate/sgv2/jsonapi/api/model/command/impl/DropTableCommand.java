@@ -13,7 +13,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  *
  * @param name Name of the table
  */
-// TODO, hide table feature detail before it goes public
+// TODO, hide table feature detail before it goes public,
+// https://github.com/stargate/data-api/pull/1360
 // @Schema(description = "Command that drops a table if one exists.")
 @JsonTypeName("dropTable")
 public record DropTableCommand(

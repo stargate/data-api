@@ -7,7 +7,8 @@ import jakarta.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @JsonDeserialize(using = ColumnDefinitionDeserializer.class)
-// TODO, hide table feature detail before it goes public
+// TODO, hide table feature detail before it goes public,
+// https://github.com/stargate/data-api/pull/1360
 // @Schema(
 //    type = SchemaType.OBJECT,
 //    implementation = Object.class,

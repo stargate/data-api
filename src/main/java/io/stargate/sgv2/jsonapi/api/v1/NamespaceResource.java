@@ -72,7 +72,8 @@ public class NamespaceResource {
                         CreateCollectionCommand.class,
                         FindCollectionsCommand.class,
                         DeleteCollectionCommand.class
-                        // TODO, hide table feature detail before it goes public
+                        // TODO, hide table feature detail before it goes public,
+                        // https://github.com/stargate/data-api/pull/1360
                         //                        CreateTableCommand.class,
                         //                        DropTableCommand.class
                       }),

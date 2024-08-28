@@ -103,7 +103,8 @@ public class CollectionResource {
                         InsertManyCommand.class,
                         UpdateManyCommand.class,
                         UpdateOneCommand.class
-                        // TODO, hide table feature detail before it goes public
+                        // TODO, hide table feature detail before it goes public,
+                        // https://github.com/stargate/data-api/pull/1360
                         //                        AddIndexCommand.class,
                         //                        DropIndexCommand.class
                       }),

@@ -8,7 +8,8 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-// TODO, hide table feature detail before it goes public
+// TODO, hide table feature detail before it goes public,
+// https://github.com/stargate/data-api/pull/1360
 // @Schema(description = "Command that drops an index for a column.")
 @JsonTypeName("dropIndex")
 public record DropIndexCommand(
