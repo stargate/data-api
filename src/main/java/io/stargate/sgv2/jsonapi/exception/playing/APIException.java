@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception.playing;
 
+import jakarta.ws.rs.core.Response;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,7 +46,7 @@ public abstract class APIException extends RuntimeException
   // All errors default to 200 HTTP status code, because we have partial failure modes.
   // There are some overrides, e.g. a server timeout may be a 500, this is managed in the
   // error config. See ErrorTemplate.
-  public static final int DEFAULT_HTTP_RESPONSE = 200;
+  public static final int DEFAULT_HTTP_RESPONSE = Response.Status.OK.getStatusCode();
 
   /**
    * HTTP Response code for this error. NOTE: Not using enum from quarkus because do not want
