@@ -215,7 +215,7 @@ public class ErrorConfig {
    *
    * @return
    */
-  public Map<String, String> getSnippetVars() {
+  protected Map<String, String> getSnippetVars() {
 
     if (snippetVars == null) {
       // NOTE: Potential race condition, should be OK because the data won't change and we are only
@@ -265,7 +265,7 @@ public class ErrorConfig {
    * <p><b>NOTE:</b> does not "initialize" the class, just creates a new instance with the data from
    * the YAML string. Use the initializeFrom methods for that, or let the default behaviour kicking.
    */
-  public static ErrorConfig readFromYamlString(String yaml) throws JacksonException {
+  protected static ErrorConfig readFromYamlString(String yaml) throws JacksonException {
 
     // This is only going to happen once at system start, ok to create a new mapper
     final ObjectMapper mapper =
