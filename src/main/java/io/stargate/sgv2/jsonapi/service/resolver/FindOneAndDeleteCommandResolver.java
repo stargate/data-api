@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndDeleteCommand;
@@ -15,7 +16,7 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
-import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterableResolver;
+import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -24,14 +25,15 @@ import java.util.List;
 
 /** Resolves the {@link FindOneAndDeleteCommand } */
 @ApplicationScoped
-public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneAndDeleteCommand>
-    implements CommandResolver<FindOneAndDeleteCommand> {
+public class FindOneAndDeleteCommandResolver implements CommandResolver<FindOneAndDeleteCommand> {
   private final DocumentShredder documentShredder;
   private final OperationsConfig operationsConfig;
   private final ObjectMapper objectMapper;
   private final MeterRegistry meterRegistry;
   private final DataApiRequestInfo dataApiRequestInfo;
   private final JsonApiMetricsConfig jsonApiMetricsConfig;
+
+  private final CollectionFilterResolver<FindOneAndDeleteCommand> collectionFilterResolver;
 
   @Inject
   public FindOneAndDeleteCommandResolver(
@@ -41,7 +43,6 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig) {
-    super();
     this.objectMapper = objectMapper;
     this.documentShredder = documentShredder;
     this.operationsConfig = operationsConfig;
@@ -49,6 +50,8 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
     this.meterRegistry = meterRegistry;
     this.dataApiRequestInfo = dataApiRequestInfo;
     this.jsonApiMetricsConfig = jsonApiMetricsConfig;
+
+    this.collectionFilterResolver = new CollectionFilterResolver<>(operationsConfig);
   }
 
   @Override
@@ -68,13 +71,10 @@ public class FindOneAndDeleteCommandResolver extends FilterableResolver<FindOneA
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> commandContext, FindOneAndDeleteCommand command) {
-    LogicalExpression logicalExpression = resolve(commandContext, command);
+    LogicalExpression logicalExpression = collectionFilterResolver.resolve(commandContext, command);
 
     final SortClause sortClause = command.sortClause();
-    // validate sort path
-    if (sortClause != null) {
-      sortClause.validate(commandContext);
-    }
+    ValidatableCommandClause.maybeValidate(commandContext, sortClause);
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
     var indexUsage = commandContext.schemaObject().newCollectionIndexUsage();

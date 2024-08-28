@@ -16,7 +16,7 @@ public enum ElementComparisonOperator implements FilterOperator {
   }
 
   @Override
-  public FilterOperator flip() {
+  public FilterOperator invert() {
     return this;
   }
 }

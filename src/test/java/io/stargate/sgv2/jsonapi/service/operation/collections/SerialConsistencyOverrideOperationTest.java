@@ -28,8 +28,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
-import io.stargate.sgv2.jsonapi.service.operation.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -60,6 +61,8 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
   @Inject ObjectMapper objectMapper;
   @Inject DocumentShredder documentShredder;
+
+  @Inject DataVectorizerService dataVectorizerService;
 
   public static class SerialConsistencyOverrideProfile implements QuarkusTestProfile {
     @Override
@@ -346,6 +349,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               COMMAND_CONTEXT,
               findCollectionOperation,
               documentUpdater,
+              dataVectorizerService,
               true,
               false,
               false,

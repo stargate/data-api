@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.filters.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import java.util.Objects;
 
 /**
@@ -53,9 +53,8 @@ public interface CommandResolver<C extends Command> {
    * @param commandContext Context the command is running in
    * @param command The command to resolve into an opertion
    * @return Operation, must not be <code>null</code>
-   * @param <T>
+   * @param <T> The type of the schema object the command is operating on.
    */
-  @SuppressWarnings("unchecked")
   default <T extends SchemaObject> Operation resolveCommand(
       CommandContext<T> commandContext, C command) {
     Objects.requireNonNull(commandContext, "commandContext must not be null");
@@ -129,8 +128,6 @@ public interface CommandResolver<C extends Command> {
 
   static final String UNKNOWN_VALUE = "unknown";
   static final String TENANT_TAG = "tenant";
-
-  /** Added count metrics for index column usage */
 
   /**
    * Call to track metrics for the index usage, this method is called after the command is resolved

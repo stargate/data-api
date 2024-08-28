@@ -1,12 +1,14 @@
 package io.stargate.sgv2.jsonapi.exception.playing;
 
+import jakarta.ws.rs.core.Response;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * Base for any exceptions from the API.
+ * Base for all exceptions returned from the API for external use (as opposed to ones only used
+ * internally)
  *
  * <p>All errors are of a {@link ErrorFamily}, this class should not be used directly, one of the
  * subclasses should be used. There are further categorised to be errors have an optional {@link
@@ -45,7 +47,7 @@ public abstract class APIException extends RuntimeException
   // All errors default to 200 HTTP status code, because we have partial failure modes.
   // There are some overrides, e.g. a server timeout may be a 500, this is managed in the
   // error config. See ErrorTemplate.
-  public static final int DEFAULT_HTTP_RESPONSE = 200;
+  public static final int DEFAULT_HTTP_RESPONSE = Response.Status.OK.getStatusCode();
 
   /**
    * HTTP Response code for this error. NOTE: Not using enum from quarkus because do not want
@@ -62,7 +64,7 @@ public abstract class APIException extends RuntimeException
   /**
    * Optional scope of the error, inside the family.
    *
-   * <p>Always none null, uses "" for no scope. See {@link ErrorScope}
+   * <p>Never {@code null}, uses "" for no scope. See {@link ErrorScope}
    */
   public final String scope;
 

@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -21,4 +21,4 @@ public record DeleteCollectionCommand(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the collection")
         String name)
-    implements NamespaceCommand, NoOptionsCommand {}
+    implements CollectionOnlyCommand, NoOptionsCommand {}

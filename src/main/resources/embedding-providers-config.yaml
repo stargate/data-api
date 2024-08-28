@@ -25,13 +25,13 @@ stargate:
             - name: organizationId
               type: string
               required: false
-              help: "Optional, OpenAI Organization ID. If provided passed as `OpenAI-Organization` header."
+              help: "Organization ID will be passed as an OpenAI organization"
               display-name: "Organization ID"
               hint: "Add an (optional) organization ID"
             - name: projectId
               type: string
               required: false
-              help: "Optional, OpenAI Project ID. If provided passed as `OpenAI-Project` header."
+              help: "Project ID will be passed as an OpenAI project header"
               display-name: "Project ID"
               hint: "Add an (optional) project ID"
           properties:
@@ -217,19 +217,19 @@ stargate:
             - name: "endpointName"
               type: string
               required: true
-              help: "The name of your Hugging Face dedicated endpoint, the first part of the Endpoint URL."
+              help: "Add the first part of the dedicated endpoint URL"
               display-name: "Endpoint name"
               hint: "Add endpoint name"
             - name: "regionName"
               type: string
               required: true
-              help: "The region your Hugging Face dedicated endpoint is deployed to, the second part of the Endpoint URL."
+              help: "Add the second part of the dedicated endpoint URL"
               display-name: "Region name"
               hint: "Add region name"
             - name: "cloudName"
               type: string
               required: true
-              help: "The cloud your Hugging Face dedicated endpoint is deployed to, the third part of the Endpoint URL."
+              help: "Add the third part of the dedicated endpoint URL"
               display-name: "Cloud provider where the dedicated endpoint is deployed"
               hint: "Add cloud name"
         # OUT OF SCOPE FOR INITIAL PREVIEW

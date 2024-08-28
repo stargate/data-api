@@ -88,7 +88,7 @@ public class CQLSessionCache {
                           LOGGER.trace(
                               "Removing session for tenant : {}", sessionCacheKey.tenantId());
                         }
-                        if (session != null) {
+                        if (this.schemaCache != null && session != null) {
                           // When a sessionCache entry expires
                           // Evict all corresponding entire NamespaceCaches for the tenant
                           // This is to ensure there is no offset for sessionCache and schemaCache

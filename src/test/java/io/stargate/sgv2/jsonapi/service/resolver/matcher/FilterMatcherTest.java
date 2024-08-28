@@ -35,7 +35,8 @@ public class FilterMatcherTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.EMPTY, FilterableResolver::findNoFilter);
+          new FilterMatcher<>(
+              FilterMatcher.MatchStrategy.EMPTY, CollectionFilterResolver::findNoFilter);
       final Optional<LogicalExpression> response = matcher.apply(findOneCommand);
       assertThat(response.isPresent()).isTrue();
     }
@@ -54,7 +55,8 @@ public class FilterMatcherTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.EMPTY, FilterableResolver::findNoFilter);
+          new FilterMatcher<>(
+              FilterMatcher.MatchStrategy.EMPTY, CollectionFilterResolver::findNoFilter);
       final Optional<LogicalExpression> response = matcher.apply(findOneCommand);
       assertThat(response.isPresent()).isFalse();
     }
@@ -75,7 +77,7 @@ public class FilterMatcherTest {
         FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
         FilterMatcher<FindOneCommand> matcher =
             new FilterMatcher<>(
-                FilterMatcher.MatchStrategy.STRICT, FilterableResolver::findDynamic);
+                FilterMatcher.MatchStrategy.STRICT, CollectionFilterResolver::findDynamic);
         matcher
             .capture("TEST")
             .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
@@ -98,7 +100,8 @@ public class FilterMatcherTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.STRICT, FilterableResolver::findDynamic);
+          new FilterMatcher<>(
+              FilterMatcher.MatchStrategy.STRICT, CollectionFilterResolver::findDynamic);
       matcher
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
@@ -123,7 +126,8 @@ public class FilterMatcherTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.STRICT, FilterableResolver::findDynamic);
+          new FilterMatcher<>(
+              FilterMatcher.MatchStrategy.STRICT, CollectionFilterResolver::findDynamic);
       matcher
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
@@ -150,7 +154,8 @@ public class FilterMatcherTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY, FilterableResolver::findDynamic);
+          new FilterMatcher<>(
+              FilterMatcher.MatchStrategy.GREEDY, CollectionFilterResolver::findDynamic);
       matcher
           .capture("TEST")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
@@ -172,7 +177,8 @@ public class FilterMatcherTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY, FilterableResolver::findDynamic);
+          new FilterMatcher<>(
+              FilterMatcher.MatchStrategy.GREEDY, CollectionFilterResolver::findDynamic);
       matcher
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
@@ -197,7 +203,8 @@ public class FilterMatcherTest {
 
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY, FilterableResolver::findDynamic);
+          new FilterMatcher<>(
+              FilterMatcher.MatchStrategy.GREEDY, CollectionFilterResolver::findDynamic);
       matcher
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);

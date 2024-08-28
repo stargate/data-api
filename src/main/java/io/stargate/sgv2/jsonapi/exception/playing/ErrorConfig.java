@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.exception.playing;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
@@ -10,7 +10,6 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Strings;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
@@ -48,7 +47,7 @@ public class ErrorConfig {
   /**
    * Method to get the configured ErrorConfig instance that has the data from the file
    *
-   * @return
+   * @return Configured ErrorConfig instance
    */
   public static ErrorConfig getInstance() {
     return CACHE.get(CACHE_KEY);
@@ -62,7 +61,7 @@ public class ErrorConfig {
   private Map<String, String> snippetVars;
 
   // Prefix used when adding snippets to the variables for a template.
-  public static final String SNIPPET_VAR_PREFIX = "SNIPPET.";
+  private static final String SNIPPET_VAR_PREFIX = "SNIPPET.";
 
   // TIDY: move this to the config sections
   public static final String DEFAULT_ERROR_CONFIG_FILE = "errors.yaml";
@@ -164,28 +163,9 @@ public class ErrorConfig {
    *
    * @return
    */
-  public List<Snippet> snippets() {
+  @VisibleForTesting
+  List<Snippet> snippets() {
     return snippets;
-  }
-
-  /**
-   * See {@link #getErrorDetail(ErrorFamily, String, String)} to get a template for a specific error
-   * code.
-   *
-   * @return
-   */
-  public List<ErrorDetail> requestErrors() {
-    return requestErrors;
-  }
-
-  /**
-   * See {@link #getErrorDetail(ErrorFamily, String, String)} to get a template for a specific error
-   * code.
-   *
-   * @return
-   */
-  public List<ErrorDetail> serverErrors() {
-    return serverErrors;
   }
 
   /**
@@ -213,7 +193,7 @@ public class ErrorConfig {
    *
    * <p>The map is cached, recommend us this rather than call {@link #snippets()} for every error
    *
-   * @return
+   * @return Map of snippets for use in templates
    */
   public Map<String, String> getSnippetVars() {
 
@@ -234,19 +214,19 @@ public class ErrorConfig {
 
   private static void requireSnakeCase(String value, String name) {
 
-    if (!UPPER_SNAKE_CASE_PATTERN.matcher(Strings.nullToEmpty(value)).matches()) {
+    if (!UPPER_SNAKE_CASE_PATTERN.matcher(value).matches()) {
       throw new IllegalArgumentException(
           name + " must be in UPPER_SNAKE_CASE_1 format, got: " + value);
     }
   }
 
   // there is a single item in the cache
-  private static final String CACHE_KEY = "key";
+  private static final Object CACHE_KEY = new Object();
 
-  // Using a caffine cache even though there is a single instance of the ErrorConfig read from disk
+  // Using a Caffeine cache even though there is a single instance of the ErrorConfig read from disk
   // so we can either lazy load when we first need it using default file or load from a
   // different file or yaml string for tests etc.
-  private static final LoadingCache<String, ErrorConfig> CACHE =
+  private static final LoadingCache<Object, ErrorConfig> CACHE =
       Caffeine.newBuilder().build(key -> readFromYamlResource(DEFAULT_ERROR_CONFIG_FILE));
 
   private static ErrorConfig maybeCacheErrorConfig(ErrorConfig errorConfig) {
@@ -263,16 +243,18 @@ public class ErrorConfig {
    * Configures a new {@link ErrorConfig} using the data in the YAML string.
    *
    * <p><b>NOTE:</b> does not "initialize" the class, just creates a new instance with the data from
-   * the YAML string. Use the initializeFrom methods for that, or let the default behaviour kickin.
+   * the YAML string. Use the initializeFrom methods for that, or let the default behaviour kicking.
    */
-  public static ErrorConfig readFromYamlString(String yaml) throws JsonProcessingException {
+  static ErrorConfig readFromYamlString(String yaml) throws JacksonException {
 
     // This is only going to happen once at system start, ok to create a new mapper
-    ObjectMapper mapper = new YAMLMapper();
-    // module for Optional support see
-    // https://github.com/FasterXML/jackson-modules-java8/tree/2.18/datatypes
-    mapper.registerModule(new Jdk8Module());
-    mapper.setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+    final ObjectMapper mapper =
+        YAMLMapper.builder()
+            // module for Optional support see
+            // https://github.com/FasterXML/jackson-modules-java8/tree/2.18/datatypes
+            .addModule(new Jdk8Module())
+            .propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+            .build();
     return mapper.readValue(yaml, ErrorConfig.class);
   }
 
@@ -302,25 +284,18 @@ public class ErrorConfig {
   /**
    * Create a new {@link ErrorConfig} using the YAML contents of the resource file and initialise it
    * as the static config.
-   *
-   * @param path
-   * @return
-   * @throws IOException
    */
-  public static ErrorConfig initializeFromYamlResource(String path) throws IOException {
+  @VisibleForTesting
+  static ErrorConfig initializeFromYamlResource(String path) throws IOException {
     return maybeCacheErrorConfig(readFromYamlResource(path));
   }
 
   /**
    * Clears the current config and replaces it with the file at <code>path</code>. <b>DO NOT USE</b>
    * in regular code, only for testing.
-   *
-   * @param path
-   * @return
-   * @throws IOException
    */
   @VisibleForTesting
-  public static ErrorConfig unsafeInitializeFromYamlResource(String path) throws IOException {
+  static ErrorConfig unsafeInitializeFromYamlResource(String path) throws IOException {
     CACHE.invalidate(CACHE_KEY);
     return initializeFromYamlResource(path);
   }

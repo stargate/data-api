@@ -22,7 +22,12 @@ import java.math.BigDecimal;
 import java.util.*;
 import org.eclipse.microprofile.config.ConfigProvider;
 
-/** {@link StdDeserializer} for the {@link FilterClause}. */
+/**
+ * {@link StdDeserializer} for the {@link FilterClause}.
+ *
+ * <p>TIDY: this class has a lot of string constants for filter operations that we have defined as
+ * constants elsewhere
+ */
 public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   private final OperationsConfig operationsConfig;
 
@@ -39,6 +44,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
   @Override
   public FilterClause deserialize(
       JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+
     JsonNode filterNode = deserializationContext.readTree(jsonParser);
     if (!filterNode.isObject()) {
       throw ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE.toApiException();
@@ -47,8 +53,6 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     LogicalExpression implicitAnd = LogicalExpression.and();
     populateExpression(implicitAnd, filterNode);
     validate(implicitAnd);
-    // push down not operator
-    implicitAnd.traverseForNot(null);
 
     return new FilterClause(implicitAnd);
   }

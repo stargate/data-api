@@ -1,10 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
-
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.querybuilder.term.Term;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
+import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -13,14 +12,15 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertOperationPage;
-import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class InsertTableOperation extends TableMutationOperation {
+  private static final Logger LOGGER = LoggerFactory.getLogger(InsertTableOperation.class);
 
   private final List<TableInsertAttempt> insertAttempts;
 
@@ -61,8 +61,17 @@ public class InsertTableOperation extends TableMutationOperation {
       return Uni.createFrom().failure(insertAttempt.failure().get());
     }
 
+    // If we did not fail, then we should have a row, test that
+    if (insertAttempt.row().isEmpty()) {
+      return Uni.createFrom()
+          .failure(new IllegalStateException("InsertAttempt has no row, and no failure"));
+    }
+
     // bind and execute
-    var boundStatement = buildInsertStatement(queryExecutor, insertAttempt.row().orElseThrow());
+    var boundStatement = buildInsertStatement(queryExecutor, insertAttempt);
+
+    LOGGER.warn("INSERT CQL: {}", boundStatement.getQuery());
+    LOGGER.warn("INSERT VALUES: {}", boundStatement.getPositionalValues());
 
     // TODO: AARON What happens to errors here?
     return queryExecutor
@@ -80,16 +89,17 @@ public class InsertTableOperation extends TableMutationOperation {
         .transform((ia, throwable) -> (TableInsertAttempt) ia.maybeAddFailure(throwable));
   }
 
-  private SimpleStatement buildInsertStatement(QueryExecutor queryExecutor, WriteableTableRow row) {
+  private SimpleStatement buildInsertStatement(
+      QueryExecutor queryExecutor, TableInsertAttempt insertAttempt) {
 
-    Map<CqlIdentifier, Term> colValues =
-        row.allColumnValues().entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> literal(e.getValue())));
+    InsertInto insertInto =
+        QueryBuilder.insertInto(
+            commandContext.schemaObject().tableMetadata.getKeyspace(),
+            commandContext.schemaObject().tableMetadata.getName());
 
-    return insertInto(
-            commandContext.schemaObject().name.keyspace(),
-            commandContext.schemaObject().name.table())
-        .valuesByIds(colValues)
-        .build();
+    List<Object> positionalValues = new ArrayList<>();
+    RegularInsert regularInsert =
+        insertAttempt.getInsertValuesCQLClause().apply(insertInto, positionalValues);
+    return SimpleStatement.newInstance(regularInsert.asCql(), positionalValues.toArray());
   }
 }

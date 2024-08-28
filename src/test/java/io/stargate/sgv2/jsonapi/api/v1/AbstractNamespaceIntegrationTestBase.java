@@ -95,6 +95,26 @@ public abstract class AbstractNamespaceIntegrationTestBase {
         .body("errors", is(nullValue()));
   }
 
+  protected void createCollection(String namespace, String collectionToCreate) {
+    given()
+        .port(getTestPort())
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body(
+                """
+                  {
+                    "createCollection": {
+                      "name": "%s"
+                    }
+                  }
+                  """
+                .formatted(collectionToCreate))
+        .when()
+        .post(NamespaceResource.BASE_PATH, namespace)
+        .then()
+        .statusCode(200);
+  }
+
   protected int getTestPort() {
     try {
       return ConfigProvider.getConfig().getValue("quarkus.http.test-port", Integer.class);
