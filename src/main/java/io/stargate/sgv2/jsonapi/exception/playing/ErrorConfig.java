@@ -163,28 +163,9 @@ public class ErrorConfig {
    *
    * @return
    */
-  public List<Snippet> snippets() {
+  @VisibleForTesting
+  protected List<Snippet> snippets() {
     return snippets;
-  }
-
-  /**
-   * See {@link #getErrorDetail(ErrorFamily, String, String)} to get a template for a specific error
-   * code.
-   *
-   * @return
-   */
-  public List<ErrorDetail> requestErrors() {
-    return requestErrors;
-  }
-
-  /**
-   * See {@link #getErrorDetail(ErrorFamily, String, String)} to get a template for a specific error
-   * code.
-   *
-   * @return
-   */
-  public List<ErrorDetail> serverErrors() {
-    return serverErrors;
   }
 
   /**
@@ -210,9 +191,9 @@ public class ErrorConfig {
   /**
    * Returns a map of the snippets for use in the templates.
    *
-   * <p>The map is cached, recommend us this rather than call {@link #snippets()} for every error
+   * <p>The map is cached, recommend use this rather than call {@link #snippets()} for every error
    *
-   * @return
+   * @return Map of snippets for use in templates
    */
   protected Map<String, String> getSnippetVars() {
 
