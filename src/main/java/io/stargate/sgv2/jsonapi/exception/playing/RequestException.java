@@ -12,8 +12,6 @@ package io.stargate.sgv2.jsonapi.exception.playing;
  */
 public class RequestException extends APIException {
 
-  public static final ErrorFamily FAMILY = ErrorFamily.REQUEST;
-
   public RequestException(ErrorInstance errorInstance) {
     super(errorInstance);
   }
@@ -35,7 +33,8 @@ public class RequestException extends APIException {
     private final ErrorTemplate<RequestException> template;
 
     Code() {
-      template = ErrorTemplate.load(RequestException.class, FAMILY, ErrorScope.NONE, name());
+      template =
+          ErrorTemplate.load(RequestException.class, ErrorFamily.REQUEST, ErrorScope.NONE, name());
     }
 
     @Override

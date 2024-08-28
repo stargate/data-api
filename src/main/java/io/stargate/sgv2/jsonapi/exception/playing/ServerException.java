@@ -9,9 +9,6 @@ package io.stargate.sgv2.jsonapi.exception.playing;
  * <p>See {@link APIException}
  */
 public class ServerException extends APIException {
-
-  public static final ErrorFamily FAMILY = ErrorFamily.SERVER;
-
   public ServerException(ErrorInstance errorInstance) {
     super(errorInstance);
   }
@@ -35,7 +32,8 @@ public class ServerException extends APIException {
     private final ErrorTemplate<ServerException> template;
 
     Code() {
-      template = ErrorTemplate.load(ServerException.class, FAMILY, ErrorScope.NONE, name());
+      template =
+          ErrorTemplate.load(ServerException.class, ErrorFamily.SERVER, ErrorScope.NONE, name());
     }
 
     @Override
