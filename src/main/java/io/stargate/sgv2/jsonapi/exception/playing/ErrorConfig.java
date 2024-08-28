@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.exception.playing;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
@@ -48,7 +48,7 @@ public class ErrorConfig {
   /**
    * Method to get the configured ErrorConfig instance that has the data from the file
    *
-   * @return
+   * @return Configured ErrorConfig instance
    */
   public static ErrorConfig getInstance() {
     return CACHE.get(CACHE_KEY);
@@ -62,7 +62,7 @@ public class ErrorConfig {
   private Map<String, String> snippetVars;
 
   // Prefix used when adding snippets to the variables for a template.
-  public static final String SNIPPET_VAR_PREFIX = "SNIPPET.";
+  private static final String SNIPPET_VAR_PREFIX = "SNIPPET.";
 
   // TIDY: move this to the config sections
   public static final String DEFAULT_ERROR_CONFIG_FILE = "errors.yaml";
@@ -241,12 +241,12 @@ public class ErrorConfig {
   }
 
   // there is a single item in the cache
-  private static final String CACHE_KEY = "key";
+  private static final Object CACHE_KEY = new Object();
 
-  // Using a caffine cache even though there is a single instance of the ErrorConfig read from disk
+  // Using a Caffeine cache even though there is a single instance of the ErrorConfig read from disk
   // so we can either lazy load when we first need it using default file or load from a
   // different file or yaml string for tests etc.
-  private static final LoadingCache<String, ErrorConfig> CACHE =
+  private static final LoadingCache<Object, ErrorConfig> CACHE =
       Caffeine.newBuilder().build(key -> readFromYamlResource(DEFAULT_ERROR_CONFIG_FILE));
 
   private static ErrorConfig maybeCacheErrorConfig(ErrorConfig errorConfig) {
@@ -263,9 +263,9 @@ public class ErrorConfig {
    * Configures a new {@link ErrorConfig} using the data in the YAML string.
    *
    * <p><b>NOTE:</b> does not "initialize" the class, just creates a new instance with the data from
-   * the YAML string. Use the initializeFrom methods for that, or let the default behaviour kickin.
+   * the YAML string. Use the initializeFrom methods for that, or let the default behaviour kicking.
    */
-  public static ErrorConfig readFromYamlString(String yaml) throws JsonProcessingException {
+  public static ErrorConfig readFromYamlString(String yaml) throws JacksonException {
 
     // This is only going to happen once at system start, ok to create a new mapper
     ObjectMapper mapper = new YAMLMapper();

@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.FileNotFoundException;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -16,7 +15,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class ErrorConfigTest {
 
   @Test
-  public void initializeFromResource() throws JsonProcessingException {
+  public void initializeFromResource() {
 
     // test that we load from a resource, and that it can only happen once
     // we will assume other tests that just look for an exception from normal code will cause the
@@ -38,7 +37,7 @@ public class ErrorConfigTest {
   }
 
   @Test
-  public void readErrorsYaml() throws JsonProcessingException {
+  public void readErrorsYaml() throws Exception {
     String yaml =
         """
         request-errors:
@@ -189,7 +188,7 @@ public class ErrorConfigTest {
   }
 
   @Test
-  public void readSnippetYaml() throws JsonProcessingException {
+  public void readSnippetYaml() throws Exception {
     String yaml =
         """
         snippets:
