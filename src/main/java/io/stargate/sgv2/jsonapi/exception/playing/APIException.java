@@ -63,7 +63,7 @@ public abstract class APIException extends RuntimeException
   /**
    * Optional scope of the error, inside the family.
    *
-   * <p>Always none null, uses "" for no scope. See {@link ErrorScope}
+   * <p>Never {@code null}, uses "" for no scope. See {@link ErrorScope}
    */
   public final String scope;
 
