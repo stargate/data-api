@@ -134,6 +134,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     if (message == null) {
       message = errorCode.getMessage();
     }
+
     // construct and return
     CommandResult.Error error = getCommandResultError(message, httpStatus);
 

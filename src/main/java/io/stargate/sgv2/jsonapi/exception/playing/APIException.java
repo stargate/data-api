@@ -7,7 +7,8 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 /**
- * Base for any exceptions from the API.
+ * Base for all exceptions returned from the API for external use (as opposed to ones only used
+ * internally)
  *
  * <p>All errors are of a {@link ErrorFamily}, this class should not be used directly, one of the
  * subclasses should be used. There are further categorised to be errors have an optional {@link
