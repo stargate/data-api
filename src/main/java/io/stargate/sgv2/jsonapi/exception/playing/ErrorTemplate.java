@@ -129,7 +129,7 @@ public record ErrorTemplate<T extends APIException>(
   public static <T extends APIException> ErrorTemplate<T> load(
       Class<T> exceptionClass, ErrorFamily family, ErrorScope scope, String code) {
 
-    Constructor<T> constructor;
+    final Constructor<T> constructor;
     try {
       constructor = exceptionClass.getConstructor(ErrorInstance.class);
     } catch (NoSuchMethodException | SecurityException e) {
@@ -149,7 +149,7 @@ public record ErrorTemplate<T extends APIException>(
                             "Could not find error config for family=%s, scope=%s, code=%s",
                             family, scope, code)));
 
-    return new ErrorTemplate<T>(
+    return new ErrorTemplate<>(
         constructor,
         family,
         scope,

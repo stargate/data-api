@@ -46,7 +46,7 @@ public interface ErrorCode<T extends APIException> {
    */
   default T get(String... values) {
     Preconditions.checkArgument(
-        values.length % 2 == 0, "Length of hte values must be a multiple of 2");
+        values.length % 2 == 0, "Length of the values must be a multiple of 2");
     Map<String, String> valuesMap = new HashMap<>(values.length / 2);
     for (int i = 0; i < values.length; i += 2) {
       valuesMap.put(values[i], values[i + 1]);

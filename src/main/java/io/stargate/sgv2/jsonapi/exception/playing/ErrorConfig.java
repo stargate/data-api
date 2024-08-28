@@ -204,7 +204,7 @@ public class ErrorConfig {
           case SERVER -> serverErrors;
         };
     return errors.stream()
-        .filter(e -> e.scope().equals(scope) && e.code().equals(code))
+        .filter(e -> e.code().equals(code) && e.scope().equals(scope))
         .findFirst();
   }
 
@@ -268,11 +268,13 @@ public class ErrorConfig {
   public static ErrorConfig readFromYamlString(String yaml) throws JacksonException {
 
     // This is only going to happen once at system start, ok to create a new mapper
-    ObjectMapper mapper = new YAMLMapper();
-    // module for Optional support see
-    // https://github.com/FasterXML/jackson-modules-java8/tree/2.18/datatypes
-    mapper.registerModule(new Jdk8Module());
-    mapper.setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+    final ObjectMapper mapper =
+        YAMLMapper.builder()
+            // module for Optional support see
+            // https://github.com/FasterXML/jackson-modules-java8/tree/2.18/datatypes
+            .addModule(new Jdk8Module())
+            .propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+            .build();
     return mapper.readValue(yaml, ErrorConfig.class);
   }
 
