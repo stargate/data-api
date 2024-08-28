@@ -116,13 +116,13 @@ public abstract class EmbeddingProvider {
   }
 
   /**
-   * Helper method to replace parameters in a template string with values from a map: placeholders
-   * are of form {@code {parameterName}} and matching value to look for in the map is String {@code
-   * "parameterName"}.
+   * Helper method to replace parameters in a messageTemplate string with values from a map:
+   * placeholders are of form {@code {parameterName}} and matching value to look for in the map is
+   * String {@code "parameterName"}.
    *
    * @param template Template with placeholders to replace
-   * @param parameters Parameters to replace in the template
-   * @return Processed template with replaced parameters
+   * @param parameters Parameters to replace in the messageTemplate
+   * @return Processed messageTemplate with replaced parameters
    */
   protected String replaceParameters(String template, Map<String, Object> parameters) {
     final int len = template.length();
