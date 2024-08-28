@@ -8,7 +8,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "Command that creates an index for a column in a table.")
+// TODO, hide table feature detail before it goes public,
+// https://github.com/stargate/data-api/pull/1360
+// @Schema(description = "Command that creates an index for a column in a table.")
 @JsonTypeName("addIndex")
 public record AddIndexCommand(
     @NotNull

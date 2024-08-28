@@ -9,10 +9,12 @@ import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @JsonDeserialize(using = PrimaryKeyDeserializer.class)
-@Schema(
-    type = SchemaType.OBJECT,
-    implementation = Object.class,
-    description = "Represents the table primary key")
+// TODO, hide table feature detail before it goes public,
+// https://github.com/stargate/data-api/pull/1360
+// @Schema(
+//    type = SchemaType.OBJECT,
+//    implementation = Object.class,
+//    description = "Represents the table primary key")
 public record PrimaryKey(
     @NotNull @Schema(description = "Columns that make the partition keys", type = SchemaType.ARRAY)
         String[] keys,
