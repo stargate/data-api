@@ -161,7 +161,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(exception.getMessage())
                     .isEqualTo(
                         "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.schemaObject().name.table());
+                            + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
                 assertThat(exception.getErrorCode())
                     .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
@@ -343,7 +343,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(exception.getMessage())
                     .isEqualTo(
                         "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.schemaObject().name.table());
+                            + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
                 assertThat(exception.getErrorCode())
                     .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
@@ -560,7 +560,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(exception.getMessage())
                     .isEqualTo(
                         "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.schemaObject().name.table());
+                            + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
                 assertThat(exception.getErrorCode())
                     .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });

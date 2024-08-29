@@ -29,7 +29,7 @@ public interface InvertibleCommandClause {
     if (invertible == null) {
       return;
     }
-    switch (commandContext.schemaObject().type) {
+    switch (commandContext.schemaObject().type()) {
       case COLLECTION:
         invertible.invertForCollectionCommand(commandContext.asCollectionContext());
         break;
@@ -38,7 +38,7 @@ public interface InvertibleCommandClause {
         break;
       default:
         throw new UnsupportedOperationException(
-            String.format("Unsupported schema type: %s", commandContext.schemaObject().type));
+            String.format("Unsupported schema type: %s", commandContext.schemaObject().type()));
     }
   }
 
@@ -57,7 +57,7 @@ public interface InvertibleCommandClause {
     throw new UnsupportedOperationException(
         String.format(
             "%s Clause does not support invert for Collections, target was %s",
-            getClass().getSimpleName(), commandContext.schemaObject().name));
+            getClass().getSimpleName(), commandContext.schemaObject().name()));
   }
 
   /**
@@ -75,6 +75,6 @@ public interface InvertibleCommandClause {
     throw new UnsupportedOperationException(
         String.format(
             "%s Clause does not support invert for Tables, target was %s",
-            getClass().getSimpleName(), commandContext.schemaObject().name));
+            getClass().getSimpleName(), commandContext.schemaObject().name()));
   }
 }

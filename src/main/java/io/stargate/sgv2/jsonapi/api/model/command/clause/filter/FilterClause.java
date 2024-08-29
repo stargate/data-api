@@ -3,12 +3,12 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.InvertibleCommandClause;
-import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -26,16 +26,16 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
              {"name": "Aaron", "country": "US"}
               """)
 public record FilterClause(LogicalExpression logicalExpression)
-    implements ValidatableCommandClause, InvertibleCommandClause {
+    implements SchemaValidatable, InvertibleCommandClause {
 
   @Override
-  public void validateTableCommand(CommandContext<TableSchemaObject> commandContext) {
+  public void validateTable(CommandContext<TableSchemaObject> commandContext) {
     // TODO HACK AARON - this is a temporary fix to allow the tests to pass
     return;
   }
 
   @Override
-  public void validateCollectionCommand(CommandContext<CollectionSchemaObject> commandContext) {
+  public void validateCollection(CommandContext<CollectionSchemaObject> commandContext) {
 
     IndexingProjector indexingProjector = commandContext.schemaObject().indexingProjector();
 

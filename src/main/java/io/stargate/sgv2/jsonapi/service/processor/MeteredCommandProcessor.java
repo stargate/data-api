@@ -101,7 +101,7 @@ public class MeteredCommandProcessor {
       DataApiRequestInfo dataApiRequestInfo, CommandContext<U> commandContext, T command) {
     Timer.Sample sample = Timer.start(meterRegistry);
     // use MDC to populate logs as needed(namespace,collection,tenantId)
-    commandContext.schemaObject().name.addToMDC();
+    commandContext.schemaObject().name().addToMDC();
 
     MDC.put("tenantId", dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     // start by resolving the command, get resolver
@@ -141,9 +141,9 @@ public class MeteredCommandProcessor {
         new CommandLog(
             command.getClass().getSimpleName(),
             dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE),
-            commandContext.schemaObject().name.keyspace(),
-            commandContext.schemaObject().name.table(),
-            commandContext.schemaObject().type.name(),
+            commandContext.schemaObject().name().keyspace(),
+            commandContext.schemaObject().name().table(),
+            commandContext.schemaObject().type().name(),
             getIncomingDocumentsCount(command),
             getOutgoingDocumentsCount(result),
             result != null ? result.errors() : Collections.emptyList());

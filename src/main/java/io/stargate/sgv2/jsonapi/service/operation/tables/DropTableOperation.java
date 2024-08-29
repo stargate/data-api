@@ -29,7 +29,7 @@ public record DropTableOperation(CommandContext<KeyspaceSchemaObject> context, S
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     logger.info("Executing DropTableOperation for {}", name);
-    String cql = DROP_TABLE_CQL.formatted(context.schemaObject().name.keyspace(), name);
+    String cql = DROP_TABLE_CQL.formatted(context.schemaObject().name().keyspace(), name);
     SimpleStatement query = SimpleStatement.newInstance(cql);
     // execute
     return queryExecutor

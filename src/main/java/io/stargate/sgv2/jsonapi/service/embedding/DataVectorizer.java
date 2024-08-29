@@ -96,7 +96,7 @@ public class DataVectorizer {
       if (!vectorizeTexts.isEmpty()) {
         if (embeddingProvider == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              schemaObject.name.table());
+              schemaObject.name().table());
         }
         Uni<List<float[]>> vectors =
             embeddingProvider
@@ -196,7 +196,7 @@ public class DataVectorizer {
         String text = expression.vectorize();
         if (embeddingProvider == null) {
           throw ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED.toApiException(
-              schemaObject.name.table());
+              schemaObject.name().table());
         }
         Uni<List<float[]>> vectors =
             embeddingProvider

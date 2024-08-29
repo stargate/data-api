@@ -30,10 +30,10 @@ public record DropIndexOperation(CommandContext<TableSchemaObject> context, Stri
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     logger.info(
         "Executing AddIndexOperation for {} {} {}",
-        context.schemaObject().name.keyspace(),
-        context.schemaObject().name.table(),
+        context.schemaObject().name().keyspace(),
+        context.schemaObject().name().table(),
         indexName);
-    String cql = DROP_INDEX_TEMPLATE.formatted(context.schemaObject().name.keyspace(), indexName);
+    String cql = DROP_INDEX_TEMPLATE.formatted(context.schemaObject().name().keyspace(), indexName);
     SimpleStatement query = SimpleStatement.newInstance(cql);
     // execute
     return queryExecutor
