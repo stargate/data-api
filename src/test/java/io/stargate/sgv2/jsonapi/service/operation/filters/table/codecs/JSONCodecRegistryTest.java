@@ -17,7 +17,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class JSONCodecRegistryTest {
 
-  private final JSONCodecRegistryTestData TEST_DATA = new JSONCodecRegistryTestData();
+  private static final JSONCodecRegistryTestData TEST_DATA = new JSONCodecRegistryTestData();
 
   /** Helper to get a codec when we only care about the CQL type and the fromValue */
   private <JavaT, CqlT> JSONCodec<JavaT, CqlT> assertGetCodecToCQL(
@@ -167,29 +167,45 @@ public class JSONCodecRegistryTest {
             });
   }
 
-  @Test
-  public void toCQLCodecException() {
-
-    var codec = assertGetCodecToCQL(DataTypes.TINYINT, TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT);
+  @ParameterizedTest
+  @MethodSource("outOfRangeOfCqlNumberTestCases")
+  public void outOfRangeOfCqlNumber(DataType typeToTest, Number valueToTest) {
+    var codec = assertGetCodecToCQL(typeToTest, valueToTest);
 
     var error =
         assertThrowsExactly(
             ToCQLCodecException.class,
-            () -> codec.toCQL(TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT),
-            String.format(
-                "Throw ToCQLCodecException for out of range `tinyint` %s",
-                TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT));
+            () -> codec.toCQL(valueToTest),
+            String.format("Throw ToCQLCodecException for out of range `tinyint` %s", valueToTest));
 
     assertThat(error)
         .satisfies(
             e -> {
-              assertThat(e.targetCQLType).isEqualTo(DataTypes.TINYINT);
-              assertThat(e.value).isEqualTo(TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT);
+              assertThat(e.targetCQLType).isEqualTo(typeToTest);
+              assertThat(e.value).isEqualTo(valueToTest);
 
               assertThat(e.getMessage())
-                  .contains(DataTypes.TINYINT.toString())
-                  .contains(TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT.getClass().getName())
-                  .contains(TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT.toPlainString());
+                  .contains(typeToTest.toString())
+                  .contains(valueToTest.getClass().getName())
+                  .contains(valueToTest.toString());
             });
+  }
+
+  private static Stream<Arguments> outOfRangeOfCqlNumberTestCases() {
+    // Arguments: (DataType, Number-outside-range)
+    return Stream.of(
+        Arguments.of(DataTypes.BIGINT, TEST_DATA.OUT_OF_RANGE_FOR_BIGINT),
+        Arguments.of(DataTypes.BIGINT, TEST_DATA.OUT_OF_RANGE_FOR_BIGINT.toBigIntegerExact()),
+        // Arguments.of(DataTypes.BIGINT, TEST_DATA.OUT_OF_RANGE_FOR_BIGINT.longValueExact()),
+        Arguments.of(DataTypes.INT, TEST_DATA.OUT_OF_RANGE_FOR_INT),
+        Arguments.of(DataTypes.INT, TEST_DATA.OUT_OF_RANGE_FOR_INT.toBigIntegerExact()),
+        // Arguments.of(DataTypes.INT, TEST_DATA.OUT_OF_RANGE_FOR_INT.longValueExact()),
+        Arguments.of(DataTypes.SMALLINT, TEST_DATA.OUT_OF_RANGE_FOR_SMALLINT),
+        Arguments.of(DataTypes.SMALLINT, TEST_DATA.OUT_OF_RANGE_FOR_SMALLINT.toBigIntegerExact()),
+        // Arguments.of(DataTypes.SMALLINT, TEST_DATA.OUT_OF_RANGE_FOR_SMALL_INT.longValueExact()),
+        Arguments.of(DataTypes.TINYINT, TEST_DATA.OUT_OF_RANGE_FOR_TINYINT),
+        Arguments.of(DataTypes.TINYINT, TEST_DATA.OUT_OF_RANGE_FOR_TINYINT.toBigIntegerExact())
+        // Arguments.of(DataTypes.TINYINT, TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT.longValueExact()));
+        );
   }
 }
