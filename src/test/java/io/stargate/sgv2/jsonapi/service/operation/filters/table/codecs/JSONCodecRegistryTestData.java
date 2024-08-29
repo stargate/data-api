@@ -32,6 +32,8 @@ public class JSONCodecRegistryTestData {
   public final BigDecimal OUT_OF_RANGE_FOR_SMALLINT = BigDecimal.valueOf(Short.MAX_VALUE + 1L);
   public final BigDecimal OUT_OF_RANGE_FOR_TINYINT = BigDecimal.valueOf(Byte.MAX_VALUE + 1L);
 
+  public final BigDecimal NOT_EXACT_AS_INTEGER = new BigDecimal("1.25");
+
   /**
    * Returns a mocked {@link TableMetadata} that has a column of the specified type.
    *

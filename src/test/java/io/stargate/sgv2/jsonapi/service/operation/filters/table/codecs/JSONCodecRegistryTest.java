@@ -169,14 +169,15 @@ public class JSONCodecRegistryTest {
 
   @ParameterizedTest
   @MethodSource("outOfRangeOfCqlNumberTestCases")
-  public void outOfRangeOfCqlNumber(DataType typeToTest, Number valueToTest) {
+  public void outOfRangeOfCqlNumber(DataType typeToTest, Number valueToTest, String rootCause) {
     var codec = assertGetCodecToCQL(typeToTest, valueToTest);
 
     var error =
         assertThrowsExactly(
             ToCQLCodecException.class,
             () -> codec.toCQL(valueToTest),
-            String.format("Throw ToCQLCodecException for out of range `tinyint` %s", valueToTest));
+            String.format(
+                "Throw ToCQLCodecException for out of range `%s` %s", typeToTest, valueToTest));
 
     assertThat(error)
         .satisfies(
@@ -187,25 +188,77 @@ public class JSONCodecRegistryTest {
               assertThat(e.getMessage())
                   .contains(typeToTest.toString())
                   .contains(valueToTest.getClass().getName())
-                  .contains(valueToTest.toString());
+                  .contains(valueToTest.toString())
+                  .contains("Root cause: " + rootCause);
             });
   }
 
   private static Stream<Arguments> outOfRangeOfCqlNumberTestCases() {
     // Arguments: (DataType, Number-outside-range)
     return Stream.of(
-        Arguments.of(DataTypes.BIGINT, TEST_DATA.OUT_OF_RANGE_FOR_BIGINT),
-        Arguments.of(DataTypes.BIGINT, TEST_DATA.OUT_OF_RANGE_FOR_BIGINT.toBigIntegerExact()),
-        // Arguments.of(DataTypes.BIGINT, TEST_DATA.OUT_OF_RANGE_FOR_BIGINT.longValueExact()),
-        Arguments.of(DataTypes.INT, TEST_DATA.OUT_OF_RANGE_FOR_INT),
-        Arguments.of(DataTypes.INT, TEST_DATA.OUT_OF_RANGE_FOR_INT.toBigIntegerExact()),
-        // Arguments.of(DataTypes.INT, TEST_DATA.OUT_OF_RANGE_FOR_INT.longValueExact()),
-        Arguments.of(DataTypes.SMALLINT, TEST_DATA.OUT_OF_RANGE_FOR_SMALLINT),
-        Arguments.of(DataTypes.SMALLINT, TEST_DATA.OUT_OF_RANGE_FOR_SMALLINT.toBigIntegerExact()),
-        // Arguments.of(DataTypes.SMALLINT, TEST_DATA.OUT_OF_RANGE_FOR_SMALL_INT.longValueExact()),
-        Arguments.of(DataTypes.TINYINT, TEST_DATA.OUT_OF_RANGE_FOR_TINYINT),
-        Arguments.of(DataTypes.TINYINT, TEST_DATA.OUT_OF_RANGE_FOR_TINYINT.toBigIntegerExact())
-        // Arguments.of(DataTypes.TINYINT, TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT.longValueExact()));
+        Arguments.of(DataTypes.BIGINT, TEST_DATA.OUT_OF_RANGE_FOR_BIGINT, "Overflow"),
+        Arguments.of(
+            DataTypes.BIGINT,
+            TEST_DATA.OUT_OF_RANGE_FOR_BIGINT.toBigIntegerExact(),
+            "BigInteger out of long range"),
+        // Arguments.of(DataTypes.BIGINT, TEST_DATA.OUT_OF_RANGE_FOR_BIGINT.longValueExact(),
+        // "Overflow"),
+        Arguments.of(DataTypes.INT, TEST_DATA.OUT_OF_RANGE_FOR_INT, "Overflow"),
+        Arguments.of(
+            DataTypes.INT,
+            TEST_DATA.OUT_OF_RANGE_FOR_INT.toBigIntegerExact(),
+            "BigInteger out of int range"),
+        // Arguments.of(DataTypes.INT, TEST_DATA.OUT_OF_RANGE_FOR_INT.longValueExact(), "Overflow"),
+        Arguments.of(DataTypes.SMALLINT, TEST_DATA.OUT_OF_RANGE_FOR_SMALLINT, "Overflow"),
+        Arguments.of(
+            DataTypes.SMALLINT,
+            TEST_DATA.OUT_OF_RANGE_FOR_SMALLINT.toBigIntegerExact(),
+            "BigInteger out of short range"),
+        // Arguments.of(DataTypes.SMALLINT, TEST_DATA.OUT_OF_RANGE_FOR_SMALL_INT.longValueExact(),
+        // "Overflow"),
+        Arguments.of(DataTypes.TINYINT, TEST_DATA.OUT_OF_RANGE_FOR_TINYINT, "Overflow"),
+        Arguments.of(
+            DataTypes.TINYINT,
+            TEST_DATA.OUT_OF_RANGE_FOR_TINYINT.toBigIntegerExact(),
+            "BigInteger out of byte range")
+        // Arguments.of(DataTypes.TINYINT, TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT.longValueExact()),
+        // "Overflow");
         );
+  }
+
+  @ParameterizedTest
+  @MethodSource("nonExactToCqlIntegerTestCases")
+  public void nonExactToCqlInteger(DataType typeToTest, Number valueToTest) {
+    var codec = assertGetCodecToCQL(typeToTest, valueToTest);
+
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest),
+            String.format(
+                "Throw ToCQLCodecException for out of range `%s` %s", typeToTest, valueToTest));
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(typeToTest);
+              assertThat(e.value).isEqualTo(valueToTest);
+
+              assertThat(e.getMessage())
+                  .contains(typeToTest.toString())
+                  .contains(valueToTest.getClass().getName())
+                  .contains(valueToTest.toString())
+                  .contains("Root cause: Rounding necessary");
+            });
+  }
+
+  private static Stream<Arguments> nonExactToCqlIntegerTestCases() {
+    // Arguments: (DataType, Number-not-exact-as-integer)
+    return Stream.of(
+        Arguments.of(DataTypes.BIGINT, TEST_DATA.NOT_EXACT_AS_INTEGER),
+        Arguments.of(DataTypes.INT, TEST_DATA.NOT_EXACT_AS_INTEGER),
+        Arguments.of(DataTypes.SMALLINT, TEST_DATA.NOT_EXACT_AS_INTEGER),
+        Arguments.of(DataTypes.TINYINT, TEST_DATA.NOT_EXACT_AS_INTEGER),
+        Arguments.of(DataTypes.VARINT, TEST_DATA.NOT_EXACT_AS_INTEGER));
   }
 }
