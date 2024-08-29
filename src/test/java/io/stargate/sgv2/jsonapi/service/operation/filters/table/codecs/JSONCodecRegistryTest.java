@@ -236,7 +236,8 @@ public class JSONCodecRegistryTest {
             ToCQLCodecException.class,
             () -> codec.toCQL(valueToTest),
             String.format(
-                "Throw ToCQLCodecException for out of range `%s` %s", typeToTest, valueToTest));
+                "Throw ToCQLCodecException when attempting to convert `%s` from non-integer value %s",
+                typeToTest, valueToTest));
 
     assertThat(error)
         .satisfies(

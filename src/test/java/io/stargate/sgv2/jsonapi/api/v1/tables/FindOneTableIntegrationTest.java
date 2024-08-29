@@ -11,6 +11,7 @@ import static org.hamcrest.Matchers.nullValue;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.restassured.response.ValidatableResponse;
 import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
@@ -47,19 +48,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
   class FindOneOnEmpty {
     @Test
     public void findOnEmptyNoFilter() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
-              """
-                                  {
-                                    "findOne": { }
-                                  }
-                              """)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
-          .then()
-          .statusCode(200)
+      givenFindOneArgPost(TABLE_WITH_STRING_ID_AGE_NAME, 200, "{ }")
           .body("data.document", is(nullValue()))
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()));
@@ -67,23 +56,16 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
 
     @Test
     public void findOnEmptyNonMatchingFilter() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenFindOneArgPost(
+              TABLE_WITH_STRING_ID_AGE_NAME,
+              200,
               """
                                   {
-                                    "findOne": {
-                                        "filter": {
-                                            "id": "nosuchkey"
-                                        }
+                                    "filter": {
+                                        "id": "nosuchkey"
                                     }
                                   }
                               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
-          .then()
-          .statusCode(200)
           .body("errors", is(nullValue()))
           .body("data.document", is(nullValue()))
           .body("status", is(nullValue()));
@@ -116,23 +98,16 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                           """;
       insertOneInTable(TABLE_WITH_STRING_ID_AGE_NAME, DOC_B_JSON);
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenFindOneArgPost(
+              TABLE_WITH_STRING_ID_AGE_NAME,
+              200,
               """
                           {
-                            "findOne": {
-                                "filter": {
-                                    "id": "b"
-                                }
-                            }
+                              "filter": {
+                                  "id": "b"
+                              }
                           }
                       """)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
-          .then()
-          .statusCode(200)
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
           .body("data.document", jsonEquals(DOC_B_JSON));
@@ -163,23 +138,16 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                               """;
       insertOneInTable(TABLE_NAME, DOC_B_JSON);
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenFindOneArgPost(
+              TABLE_NAME,
+              200,
               """
-                                  {
-                                    "findOne": {
-                                        "filter": {
-                                            "Id": 2
-                                        }
-                                    }
-                                  }
-                              """)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_NAME)
-          .then()
-          .statusCode(200)
+              {
+                    "filter": {
+                        "Id": 2
+                    }
+              }
+          """)
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
           .body("data.document", jsonEquals(DOC_B_JSON));
@@ -210,23 +178,16 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                                   """;
       insertOneInTable(TABLE_NAME, DOC_B_JSON);
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenFindOneArgPost(
+              TABLE_NAME,
+              200,
               """
                                           {
-                                            "findOne": {
                                                 "filter": {
                                                     "_id": 2
                                                 }
-                                            }
                                           }
                                       """)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_NAME)
-          .then()
-          .statusCode(200)
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
           .body("data.document", jsonEquals(DOC_B_JSON));
@@ -239,24 +200,16 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     @Test
     @Order(1)
     public void failOnUnknownColumn() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenFindOneArgPost(
+              TABLE_WITH_STRING_ID_AGE_NAME,
+              200,
               """
                           {
-                            "findOne": {
                               "filter": {
                                 "unknown": "a"
                               }
-                            }
                           }
                       """)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
-          .then()
-          // Not like it should be, but until fixed let's verify current behavior
-          .statusCode(200)
           .body("data", is(nullValue()))
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
@@ -270,24 +223,16 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     @Test
     @Order(2)
     public void failOnNonKeyColumn() {
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(
+      givenFindOneArgPost(
+              TABLE_WITH_STRING_ID_AGE_NAME,
+              200,
               """
                                   {
-                                    "findOne": {
                                       "filter": {
                                         "age": 80
-                                      }
                                     }
                                   }
                               """)
-          .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
-          .then()
-          // Not like it should be, but until fixed let's verify current behavior
-          .statusCode(200)
           .body("data", is(nullValue()))
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
@@ -297,5 +242,16 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
           .body("errors[0].errorCode", is("NO_INDEX_ERROR"))
           .body("errors[0].message", containsString("Faulty collection (missing indexes)."));
     }
+  }
+
+  private ValidatableResponse givenFindOneArgPost(String table, int expStatus, String findOneArg) {
+    return given()
+        .headers(getHeaders())
+        .contentType(ContentType.JSON)
+        .body("{ \"findOne\": %s }".formatted(findOneArg))
+        .when()
+        .post(CollectionResource.BASE_PATH, namespaceName, table)
+        .then()
+        .statusCode(expStatus);
   }
 }
