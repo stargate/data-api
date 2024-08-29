@@ -20,7 +20,6 @@ package io.stargate.sgv2.jsonapi.api.security;
 import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME;
 import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.DEPRECATED_AUTHENTICATION_TOKEN_HEADER_NAME;
 
-import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
@@ -32,6 +31,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.security.challenge.impl.ErrorChallengeSender;
 import io.vertx.ext.web.RoutingContext;
 import jakarta.enterprise.inject.Instance;
+import jakarta.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
@@ -84,7 +84,7 @@ public class HeaderBasedAuthenticationMechanism implements HttpAuthenticationMec
   @Override
   public Uni<ChallengeData> getChallenge(RoutingContext context) {
     return Uni.createFrom()
-        .item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(), null, null));
+        .item(new ChallengeData(Response.Status.UNAUTHORIZED.getStatusCode(), null, null));
   }
 
   /**

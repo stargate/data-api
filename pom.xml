@@ -136,12 +136,21 @@
       <artifactId>quarkus-hibernate-validator</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-logging-json</artifactId>
+    </dependency>
+    <dependency>
       <groupId>jakarta.validation</groupId>
       <artifactId>jakarta.validation-api</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <version>1.12.0</version>
     </dependency>
     <dependency>
       <groupId>com.bpodgursky</groupId>
@@ -189,10 +198,18 @@
       <artifactId>java-driver-query-builder</artifactId>
       <version>${driver.version}</version>
     </dependency>
+    <!-- Jackson YAML module for config file loading
+      -->
     <dependency>
-      <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-logging-json</artifactId>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
     </dependency>
+    <dependency>
+      <!-- Support for Optional used when loading error config seehttps://github.com/FasterXML/jackson-modules-java8/tree/2.18/datatypes -->
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jdk8</artifactId>
+    </dependency>
+
     <!-- Dependencies for _id auto-generation -->
     <dependency>
       <!-- for generating UUIDs of versions not supported by JDK -->
