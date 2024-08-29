@@ -88,10 +88,21 @@ public class JSONCodecRegistryTest {
         // Integer types:
         Arguments.of(DataTypes.BIGINT, -456L, -456L),
         Arguments.of(DataTypes.BIGINT, BigInteger.valueOf(123), 123L),
-        Arguments.of(DataTypes.BIGINT, BigDecimal.valueOf(999), 999L),
-        Arguments.of(DataTypes.INT, -42L, -42), // second 42 is an int
-        Arguments.of(DataTypes.INT, BigInteger.valueOf(12), 12),
-        Arguments.of(DataTypes.INT, BigDecimal.valueOf(100), 100),
+        Arguments.of(DataTypes.BIGINT, BigDecimal.valueOf(999.0), 999L),
+        Arguments.of(DataTypes.INT, -42000L, -42000),
+        Arguments.of(DataTypes.INT, BigInteger.valueOf(19000), 19000),
+        Arguments.of(DataTypes.INT, BigDecimal.valueOf(23456.0), 23456),
+        Arguments.of(DataTypes.SMALLINT, -3999L, (short) -3999),
+        Arguments.of(DataTypes.SMALLINT, BigInteger.valueOf(1234), (short) 1234),
+        Arguments.of(DataTypes.SMALLINT, BigDecimal.valueOf(10911.0), (short) 10911),
+        Arguments.of(DataTypes.TINYINT, -39L, (byte) -39),
+        Arguments.of(DataTypes.TINYINT, BigInteger.valueOf(123), (byte) 123),
+        Arguments.of(DataTypes.TINYINT, BigDecimal.valueOf(109.0), (byte) 109),
+        Arguments.of(DataTypes.VARINT, -39999L, BigInteger.valueOf(-39999)),
+        Arguments.of(DataTypes.VARINT, BigInteger.valueOf(1), BigInteger.valueOf(1)),
+        Arguments.of(
+            DataTypes.VARINT, BigDecimal.valueOf(123456789.0), BigInteger.valueOf(123456789)),
+
         // Floating-point types:
         Arguments.of(DataTypes.DECIMAL, BigDecimal.valueOf(0.25), BigDecimal.valueOf(0.25)));
   }

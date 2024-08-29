@@ -198,25 +198,67 @@ public class JSONCodecRegistry {
           JSONCodec.ToCQL.safeNumber(Long::intValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, Short> SMALLINT =
+  public static final JSONCodec<BigDecimal, Short> SMALLINT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.SMALLINT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::shortValueExact),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, Byte> TINYINT =
+  public static final JSONCodec<BigInteger, Short> SMALLINT_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.SMALLINT,
+          JSONCodec.ToCQL.safeNumber(BigInteger::shortValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<Long, Short> SMALLINT_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.SMALLINT,
+          JSONCodec.ToCQL.safeNumber(Long::shortValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<BigDecimal, Byte> TINYINT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.TINYINT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::byteValueExact),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, BigInteger> VARINT =
+  public static final JSONCodec<BigInteger, Byte> TINYINT_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.TINYINT,
+          JSONCodec.ToCQL.safeNumber(BigInteger::byteValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<Long, Byte> TINYINT_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.TINYINT,
+          JSONCodec.ToCQL.safeNumber(Long::byteValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<BigDecimal, BigInteger> VARINT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.VARINT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::toBigIntegerExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<BigInteger, BigInteger> VARINT_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.VARINT,
+          JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<Long, BigInteger> VARINT_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.VARINT,
+          JSONCodec.ToCQL.safeNumber(BigInteger::valueOf),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   // Text Codecs
@@ -238,20 +280,30 @@ public class JSONCodecRegistry {
   static {
     CODECS =
         List.of(
-            BOOLEAN,
+            // Numeric Codecs, integer types
             BIGINT_FROM_BIG_DECIMAL,
             BIGINT_FROM_BIG_INTEGER,
             BIGINT_FROM_LONG,
-            DECIMAL,
-            DOUBLE,
-            FLOAT,
             INT_FROM_BIG_DECIMAL,
             INT_FROM_BIG_INTEGER,
             INT_FROM_LONG,
-            SMALLINT,
-            TINYINT,
-            VARINT,
+            SMALLINT_FROM_BIG_DECIMAL,
+            SMALLINT_FROM_BIG_INTEGER,
+            SMALLINT_FROM_LONG,
+            TINYINT_FROM_BIG_DECIMAL,
+            TINYINT_FROM_BIG_INTEGER,
+            TINYINT_FROM_LONG,
+            VARINT_FROM_BIG_DECIMAL,
+            VARINT_FROM_BIG_INTEGER,
+            VARINT_FROM_LONG,
+            // Numeric Codecs, floating-point types
+            DECIMAL,
+            DOUBLE,
+            FLOAT,
+            // Text Codecs
             ASCII,
-            TEXT);
+            TEXT,
+            // Other codecs
+            BOOLEAN);
   }
 }
