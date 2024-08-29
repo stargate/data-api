@@ -158,7 +158,17 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     public void findOneDocIdKey() {
       final String TABLE_NAME = "findOneDocIdKeyTable";
       createTableWithColumns(
-          TABLE_NAME, Map.of("_id", Map.of("type", "int"), "value", Map.of("type", "text")), "_id");
+          TABLE_NAME,
+          Map.of(
+              "_id",
+              Map.of("type", "int"),
+              "desc",
+              Map.of("type", "text"),
+              "valueLong",
+              Map.of("type", "bigint"),
+              "valueDouble",
+              Map.of("type", "double")),
+          "_id");
 
       // First, insert 2 documents:
       insertOneInTable(
@@ -166,14 +176,18 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
           """
                               {
                                   "_id": 1,
-                                  "value": "a"
+                                  "desc": "a",
+                                  "valueLong": 1234567890,
+                                  "valueDouble": -1.25
                               }
                               """);
       final String DOC_B_JSON =
           """
                               {
                                   "_id": 2,
-                                  "value": "b"
+                                  "desc": "b",
+                                  "valueLong": 42,
+                                  "valueDouble": 0.5
                               }
                                   """;
       insertOneInTable(TABLE_NAME, DOC_B_JSON);
