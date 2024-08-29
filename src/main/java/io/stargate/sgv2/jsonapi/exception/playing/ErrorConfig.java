@@ -88,19 +88,15 @@ public class ErrorConfig {
    * @param code
    * @param title
    * @param body
-   * @param httpResponseOverride Optional override for the HTTP response code for this error, only
-   *     needs to be set if different from {@link APIException#DEFAULT_HTTP_RESPONSE}. <b>NOTE:</b>
+   * @param httpStatusOverride Optional override for the HTTP response code for this error, only
+   *     needs to be set if different from {@link APIException#DEFAULT_HTTP_STATUS}. <b>NOTE:</b>
    *     there is no checking that this is a well known HTTP status code, as we do not want to
    *     depend on classes like {@link jakarta.ws.rs.core.Response.Status} in this class and if we
    *     want to return a weird status this class should not limit that. It would be handled higher
    *     up the stack and tracked with Integration Tests.
    */
   public record ErrorDetail(
-      String scope,
-      String code,
-      String title,
-      String body,
-      Optional<Integer> httpResponseOverride) {
+      String scope, String code, String title, String body, Optional<Integer> httpStatusOverride) {
 
     public ErrorDetail {
       if (scope == null) {
@@ -124,7 +120,7 @@ public class ErrorConfig {
         throw new IllegalArgumentException("body cannot be blank");
       }
 
-      Objects.requireNonNull(httpResponseOverride, "httpResponseOverride cannot be null");
+      Objects.requireNonNull(httpStatusOverride, "httpStatusOverride cannot be null");
     }
   }
 

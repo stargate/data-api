@@ -43,7 +43,7 @@ public class ErrorConfigTest {
           - scope: TEST_SCOPE_1
             code: TEST_ERROR_ID_1
             title: the title for the error
-            http-response-override: 501
+            http-status-override: 501
             body: |-
               big long body with ${vars} in it
           - scope:
@@ -70,7 +70,7 @@ public class ErrorConfigTest {
               assertThat(e.code()).isEqualTo("TEST_ERROR_ID_1");
               assertThat(e.title()).isEqualTo("the title for the error");
               assertThat(e.body()).isEqualTo("big long body with ${vars} in it");
-              assertThat(e.httpResponseOverride()).isPresent().get().isEqualTo(501);
+              assertThat(e.httpStatusOverride()).isPresent().get().isEqualTo(501);
             });
 
     assertThat(errorConfig.getErrorDetail(ErrorFamily.REQUEST, "", "TEST_ERROR_ID_2"))
@@ -82,7 +82,7 @@ public class ErrorConfigTest {
               assertThat(e.code()).isEqualTo("TEST_ERROR_ID_2");
               assertThat(e.title()).isEqualTo("This error has no scope");
               assertThat(e.body()).isEqualTo("Line 1 of body\n\nLine 2 of body");
-              assertThat(e.httpResponseOverride()).isEmpty();
+              assertThat(e.httpStatusOverride()).isEmpty();
             });
 
     assertThat(errorConfig.getErrorDetail(ErrorFamily.SERVER, "TEST_SCOPE_3", "TEST_ERROR_ID_2"))
@@ -94,7 +94,7 @@ public class ErrorConfigTest {
               assertThat(e.code()).isEqualTo("TEST_ERROR_ID_2");
               assertThat(e.title()).isEqualTo("the title for the error");
               assertThat(e.body()).isEqualTo("big long body with ${vars} in it");
-              assertThat(e.httpResponseOverride()).isEmpty();
+              assertThat(e.httpStatusOverride()).isEmpty();
             });
   }
 
@@ -183,7 +183,7 @@ public class ErrorConfigTest {
             "body",
             null,
             NullPointerException.class,
-            "httpResponseOverride cannot be null"));
+            "httpStatusOverride cannot be null"));
   }
 
   @Test
