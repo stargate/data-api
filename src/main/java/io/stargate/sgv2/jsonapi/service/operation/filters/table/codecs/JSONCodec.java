@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 
 import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -166,6 +167,45 @@ public record JSONCodec<JavaT, CqlT>(
           throw new ToCQLCodecException(value, toCQLType, e);
         }
       };
+    }
+
+    static Integer safeLongToInt(Long value) {
+      long l = value.longValue();
+      if (l < Integer.MIN_VALUE) {
+        throwUnderflow(DataTypes.INT, value);
+      } else if (l > Integer.MAX_VALUE) {
+        throwOverflow(DataTypes.INT, value);
+      }
+      return (int) l;
+    }
+
+    static Short safeLongToSmallint(Long value) {
+      long l = value.longValue();
+      if (l < Short.MIN_VALUE) {
+        throwUnderflow(DataTypes.SMALLINT, value);
+      } else if (l > Short.MAX_VALUE) {
+        throwOverflow(DataTypes.SMALLINT, value);
+      }
+      return (short) l;
+    }
+
+    static Byte safeLongToTinyint(Long value) {
+      long l = value.longValue();
+      if (l < Byte.MIN_VALUE) {
+        throwUnderflow(DataTypes.TINYINT, value);
+      } else if (l > Byte.MAX_VALUE) {
+        throwOverflow(DataTypes.TINYINT, value);
+      }
+      return (byte) l;
+    }
+
+    static void throwOverflow(DataType targetCQLType, Number value) {
+      throw new ArithmeticException(String.format("Overflow, value too big for %s", targetCQLType));
+    }
+
+    static void throwUnderflow(DataType targetCQLType, Number value) {
+      throw new ArithmeticException(
+          String.format("Underflow, value too small for %s", targetCQLType));
     }
   }
 

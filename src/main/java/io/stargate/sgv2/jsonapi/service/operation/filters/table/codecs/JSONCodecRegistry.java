@@ -195,7 +195,7 @@ public class JSONCodecRegistry {
       new JSONCodec<>(
           GenericType.LONG,
           DataTypes.INT,
-          JSONCodec.ToCQL.safeNumber(Long::intValue),
+          JSONCodec.ToCQL.safeNumber(JSONCodec.ToCQL::safeLongToInt),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, Short> SMALLINT_FROM_BIG_DECIMAL =
@@ -216,7 +216,7 @@ public class JSONCodecRegistry {
       new JSONCodec<>(
           GenericType.LONG,
           DataTypes.SMALLINT,
-          JSONCodec.ToCQL.safeNumber(Long::shortValue),
+          JSONCodec.ToCQL.safeNumber(JSONCodec.ToCQL::safeLongToSmallint),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, Byte> TINYINT_FROM_BIG_DECIMAL =
@@ -237,7 +237,7 @@ public class JSONCodecRegistry {
       new JSONCodec<>(
           GenericType.LONG,
           DataTypes.TINYINT,
-          JSONCodec.ToCQL.safeNumber(Long::byteValue),
+          JSONCodec.ToCQL.safeNumber(JSONCodec.ToCQL::safeLongToTinyint),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, BigInteger> VARINT_FROM_BIG_DECIMAL =

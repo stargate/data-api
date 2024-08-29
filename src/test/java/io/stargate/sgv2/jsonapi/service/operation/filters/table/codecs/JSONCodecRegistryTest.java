@@ -177,7 +177,8 @@ public class JSONCodecRegistryTest {
             ToCQLCodecException.class,
             () -> codec.toCQL(valueToTest),
             String.format(
-                "Throw ToCQLCodecException for out of range `%s` %s", typeToTest, valueToTest));
+                "Throw ToCQLCodecException for out of range `%s` value: %s",
+                typeToTest, valueToTest));
 
     assertThat(error)
         .satisfies(
@@ -201,29 +202,31 @@ public class JSONCodecRegistryTest {
             DataTypes.BIGINT,
             TEST_DATA.OUT_OF_RANGE_FOR_BIGINT.toBigIntegerExact(),
             "BigInteger out of long range"),
-        // Arguments.of(DataTypes.BIGINT, TEST_DATA.OUT_OF_RANGE_FOR_BIGINT.longValueExact(),
-        // "Overflow"),
-        Arguments.of(DataTypes.INT, TEST_DATA.OUT_OF_RANGE_FOR_INT, "Overflow"),
+        Arguments.of(DataTypes.INT, TEST_DATA.OVERFLOW_FOR_INT, "Overflow"),
         Arguments.of(
             DataTypes.INT,
-            TEST_DATA.OUT_OF_RANGE_FOR_INT.toBigIntegerExact(),
+            TEST_DATA.OVERFLOW_FOR_INT.toBigIntegerExact(),
             "BigInteger out of int range"),
-        // Arguments.of(DataTypes.INT, TEST_DATA.OUT_OF_RANGE_FOR_INT.longValueExact(), "Overflow"),
-        Arguments.of(DataTypes.SMALLINT, TEST_DATA.OUT_OF_RANGE_FOR_SMALLINT, "Overflow"),
+        Arguments.of(DataTypes.INT, TEST_DATA.OVERFLOW_FOR_INT.longValueExact(), "Overflow"),
+        Arguments.of(DataTypes.INT, TEST_DATA.UNDERFLOW_FOR_INT.longValueExact(), "Underflow"),
+        Arguments.of(DataTypes.SMALLINT, TEST_DATA.OVERFLOW_FOR_SMALLINT, "Overflow"),
         Arguments.of(
             DataTypes.SMALLINT,
-            TEST_DATA.OUT_OF_RANGE_FOR_SMALLINT.toBigIntegerExact(),
+            TEST_DATA.OVERFLOW_FOR_SMALLINT.toBigIntegerExact(),
             "BigInteger out of short range"),
-        // Arguments.of(DataTypes.SMALLINT, TEST_DATA.OUT_OF_RANGE_FOR_SMALL_INT.longValueExact(),
-        // "Overflow"),
-        Arguments.of(DataTypes.TINYINT, TEST_DATA.OUT_OF_RANGE_FOR_TINYINT, "Overflow"),
+        Arguments.of(
+            DataTypes.SMALLINT, TEST_DATA.OVERFLOW_FOR_SMALLINT.longValueExact(), "Overflow"),
+        Arguments.of(
+            DataTypes.SMALLINT, TEST_DATA.UNDERFLOW_FOR_SMALLINT.longValueExact(), "Underflow"),
+        Arguments.of(DataTypes.TINYINT, TEST_DATA.OVERFLOW_FOR_TINYINT, "Overflow"),
         Arguments.of(
             DataTypes.TINYINT,
-            TEST_DATA.OUT_OF_RANGE_FOR_TINYINT.toBigIntegerExact(),
-            "BigInteger out of byte range")
-        // Arguments.of(DataTypes.TINYINT, TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT.longValueExact()),
-        // "Overflow");
-        );
+            TEST_DATA.OVERFLOW_FOR_TINYINT.toBigIntegerExact(),
+            "BigInteger out of byte range"),
+        Arguments.of(
+            DataTypes.TINYINT, TEST_DATA.OVERFLOW_FOR_TINYINT.longValueExact(), "Overflow"),
+        Arguments.of(
+            DataTypes.TINYINT, TEST_DATA.UNDERFLOW_FOR_TINYINT.longValueExact(), "Underflow"));
   }
 
   @ParameterizedTest
