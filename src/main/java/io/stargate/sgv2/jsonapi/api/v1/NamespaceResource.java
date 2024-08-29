@@ -111,7 +111,7 @@ public class NamespaceResource {
           .item(
               new ThrowableCommandResultSupplier(
                   ErrorCode.TABLE_FEATURE_NOT_ENABLED.toApiException()))
-          .map(commandResult -> commandResult.map());
+          .map(commandResult -> commandResult.toRestResponse());
     }
 
     // create context
@@ -125,6 +125,6 @@ public class NamespaceResource {
     return meteredCommandProcessor
         .processCommand(dataApiRequestInfo, commandContext, command)
         // map to 2xx unless overridden by error
-        .map(commandResult -> commandResult.map());
+        .map(commandResult -> commandResult.toRestResponse());
   }
 }

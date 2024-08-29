@@ -89,7 +89,7 @@ public class InvalidCredentialsTest {
         ThrowableToErrorMapper.getMapperWithMessageFunction().apply(t, t.getMessage());
     assertThat(error).isNotNull();
     assertThat(error.message()).contains("UNAUTHENTICATED: Invalid token");
-    assertThat(error.status()).isEqualTo(Response.Status.UNAUTHORIZED);
+    assertThat(error.httpStatus()).isEqualTo(Response.Status.UNAUTHORIZED);
     assertThat(cqlSessionCacheForTest.cacheSize()).isEqualTo(0);
     // metrics test
     Gauge cacheSizeMetric =

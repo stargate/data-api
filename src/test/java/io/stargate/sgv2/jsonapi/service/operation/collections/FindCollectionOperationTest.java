@@ -3025,7 +3025,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
           .isEqualTo("SERVER_READ_FAILED");
       AssertionsForClassTypes.assertThat(error.fields().get("exceptionClass"))
           .isEqualTo("JsonApiException");
-      AssertionsForClassTypes.assertThat(error.status())
+      AssertionsForClassTypes.assertThat(error.httpStatus())
           .isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
     }
   }

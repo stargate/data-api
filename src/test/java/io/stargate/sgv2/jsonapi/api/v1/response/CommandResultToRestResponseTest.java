@@ -22,7 +22,7 @@ public class CommandResultToRestResponseTest {
     @Test
     public void happyPath() {
       CommandResult result = new CommandResult(Map.of(CommandStatus.OK, 1));
-      final RestResponse mappedResult = result.map();
+      final RestResponse mappedResult = result.toRestResponse();
       assertThat(mappedResult.getStatus()).isEqualTo(RestResponse.Status.OK.getStatusCode());
     }
 
@@ -36,7 +36,7 @@ public class CommandResultToRestResponseTest {
                       Map.of("field", "value"),
                       Map.of("field", "value"),
                       Response.Status.OK)));
-      final RestResponse mappedResult = result.map();
+      final RestResponse mappedResult = result.toRestResponse();
       assertThat(mappedResult.getStatus()).isEqualTo(RestResponse.Status.OK.getStatusCode());
     }
 
@@ -50,7 +50,7 @@ public class CommandResultToRestResponseTest {
                       Map.of("field", "value"),
                       Map.of("field", "value"),
                       Response.Status.UNAUTHORIZED)));
-      final RestResponse mappedResult = result.map();
+      final RestResponse mappedResult = result.toRestResponse();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.UNAUTHORIZED.getStatusCode());
     }
@@ -65,7 +65,7 @@ public class CommandResultToRestResponseTest {
                       Map.of("field", "value"),
                       Map.of("field", "value"),
                       Response.Status.BAD_GATEWAY)));
-      final RestResponse mappedResult = result.map();
+      final RestResponse mappedResult = result.toRestResponse();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.BAD_GATEWAY.getStatusCode());
     }
@@ -80,7 +80,7 @@ public class CommandResultToRestResponseTest {
                       Map.of("field", "value"),
                       Map.of("field", "value"),
                       Response.Status.INTERNAL_SERVER_ERROR)));
-      final RestResponse mappedResult = result.map();
+      final RestResponse mappedResult = result.toRestResponse();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     }
@@ -95,7 +95,7 @@ public class CommandResultToRestResponseTest {
                       Map.of("field", "value"),
                       Map.of("field", "value"),
                       Response.Status.GATEWAY_TIMEOUT)));
-      final RestResponse mappedResult = result.map();
+      final RestResponse mappedResult = result.toRestResponse();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.GATEWAY_TIMEOUT.getStatusCode());
     }

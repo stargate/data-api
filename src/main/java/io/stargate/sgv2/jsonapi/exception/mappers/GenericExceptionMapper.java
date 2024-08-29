@@ -20,6 +20,6 @@ public class GenericExceptionMapper {
   })
   public RestResponse<CommandResult> genericExceptionMapper(Throwable e) {
     CommandResult commandResult = new ThrowableCommandResultSupplier(e).get();
-    return commandResult.map();
+    return commandResult.toRestResponse();
   }
 }

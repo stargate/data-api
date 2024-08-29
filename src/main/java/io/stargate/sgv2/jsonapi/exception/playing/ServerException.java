@@ -29,8 +29,8 @@ public class ServerException extends APIException {
   }
 
   public enum Code implements ErrorCode<ServerException> {
-    // TODO: remove fake error code, just here so it compiles
-    FAKE_CODE;
+    // Error code for any unknown / unexpected server error
+    UNEXPECTED_SERVER_ERROR;
 
     private final ErrorTemplate<ServerException> template;
 

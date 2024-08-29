@@ -34,7 +34,7 @@
 # Each error object has:
 # - scope: UPPER_SNAKE_CASE_1
 # - code: UPPER_SNAKE_CASE_1
-# - http-response-override: (optional) The HTTP status code to return when this error is thrown. If not present, the
+# - http-status-override: (optional) The HTTP status code to return when this error is thrown. If not present, the
 #                           default status code is 200 for most things. This is not returned in the error object JSON
 #                           It is used to override the HTTP status code in the response.
 #                           NOTE: NO checking is done to confirm this is a valid HTTP status code.
@@ -65,11 +65,25 @@ request-errors:
       ${SNIPPET.CONTACT_SUPPORT}
 
 server-errors:
+  # UNSCOPED server errors
+  - scope:
+    code: UNEXPECTED_SERVER_ERROR
+    http-status-override: 500
+    title: Unexpected server error
+    body: |-
+      An unexpected server error occurred while processing the request. 
+      
+      Error Class: ${errorClass}
+      Error Message: ${errorMessage}
+
+  # DATABASE scope server errors
   - scope: DATABASE
     code: SERVER_READ_FAILED
     title: the title for the error
-    body: big long body with ${vars} in it
+    body: |-
+      big long body with ${vars} in it
 
+  # EMBEDDING scope server errors
   - scope: EMBEDDING_PROVIDER
     code: CLIENT_ERROR
     title: The Embedding Provider returned a HTTP client error
