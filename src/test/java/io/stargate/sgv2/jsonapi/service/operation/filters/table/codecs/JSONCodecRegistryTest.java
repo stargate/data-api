@@ -61,7 +61,7 @@ public class JSONCodecRegistryTest {
    * @param expectedCqlValue The value we expect to pass to the CQL driver
    */
   @ParameterizedTest
-  @MethodSource("codecToCQLTestCases")
+  @MethodSource("validCodecToCQLTestCases")
   public void codecToCQL(DataType cqlType, Object fromValue, Object expectedCqlValue) {
 
     var codec = assertGetCodecToCQL(cqlType, fromValue);
@@ -81,7 +81,7 @@ public class JSONCodecRegistryTest {
         .isEqualTo(expectedCqlValue);
   }
 
-  private static Stream<Arguments> codecToCQLTestCases() {
+  private static Stream<Arguments> validCodecToCQLTestCases() {
     // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
     // Note: all Numeric types accept 3 Java types: Long, BigInteger, BigDecimal
     return Stream.of(

@@ -33,14 +33,6 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
   }
 
   public DataApiResponseValidator postInsertOne(String docAsJSON) {
-    return postRaw(
-            """
-            {
-              "insertOne": {
-                "document": %s
-              }
-            }
-            """
-            .formatted(docAsJSON));
+    return postCommand("insertOne", "{ \"document\": %s }".formatted(docAsJSON));
   }
 }
