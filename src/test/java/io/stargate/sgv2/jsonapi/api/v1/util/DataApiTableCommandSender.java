@@ -31,7 +31,7 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
             .when()
             .post(CollectionResource.BASE_PATH, namespace, tableName)
             .then()
-            .statusCode(expectedHttpStatus);
+            .statusCode(expectedHttpStatus.getStatusCode());
     return new DataApiResponseValidator(response);
   }
 

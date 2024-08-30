@@ -33,14 +33,14 @@ public class AbstractTableIntegrationTestBase extends AbstractNamespaceIntegrati
   }
 
   protected void createTable(String tableDefAsJSON) {
-    DataApiCommandSenders.namespaceCommand(namespaceName)
+    DataApiCommandSenders.assertNamespaceCommand(namespaceName)
         .postCreateTable(tableDefAsJSON)
         .hasNoErrors()
         .body("status.ok", is(1));
   }
 
   protected void insertOneInTable(String tableName, String documentJSON) {
-    DataApiCommandSenders.tableCommand(namespaceName, tableName)
+    DataApiCommandSenders.assertTableCommand(namespaceName, tableName)
         .postInsertOne(documentJSON)
         .hasNoErrors()
         .body("status.insertedIds", hasSize(1));

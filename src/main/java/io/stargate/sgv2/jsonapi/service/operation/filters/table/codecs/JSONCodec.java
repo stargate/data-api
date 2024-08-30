@@ -228,7 +228,7 @@ public record JSONCodec<JavaT, CqlT>(
    * <p>The interface is used so the conversation function can throw the checked {@link
    * ToJSONCodecException}, it is also given the CQL data type to make better exceptions.
    *
-   * <p>Use the static constructors on the interface to get instances, see it's use in the {@link
+   * <p>Use the static constructors on the interface to get instances, see its use in the {@link
    * JSONCodecRegistry}
    *
    * @param <CqlT> The type Java object the CQL driver expects

@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getCassa
 
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
+import jakarta.ws.rs.core.Response;
 import java.util.Base64;
 import java.util.Map;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -17,7 +18,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBase> {
   protected final String namespace;
 
-  protected int expectedHttpStatus = 200;
+  protected Response.Status expectedHttpStatus = Response.Status.OK;
 
   protected DataApiCommandSenderBase(String namespace) {
     this.namespace = namespace;
@@ -29,7 +30,7 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
    * @param expectedHttpStatus Status to expect
    * @return Type-safe "this" sender for call chaining
    */
-  public T expectHttpStatus(int expectedHttpStatus) {
+  public T expectHttpStatus(Response.Status expectedHttpStatus) {
     this.expectedHttpStatus = expectedHttpStatus;
     return _this();
   }

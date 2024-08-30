@@ -29,7 +29,7 @@ public class DataApiNamespaceCommandSender
             .when()
             .post(NamespaceResource.BASE_PATH, namespace)
             .then()
-            .statusCode(expectedHttpStatus);
+            .statusCode(expectedHttpStatus.getStatusCode());
     return new DataApiResponseValidator(response);
   }
 
