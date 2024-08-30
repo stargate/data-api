@@ -46,4 +46,16 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
   public DataApiResponseValidator postFindOne(String findOneClause) {
     return postRaw("{ \"findOne\": %s }".formatted(findOneClause));
   }
+
+  public DataApiResponseValidator postInsertOne(String docAsJSON) {
+    return postRaw(
+            """
+            {
+              "insertOne": {
+                "document": %s
+              }
+            }
+            """
+            .formatted(docAsJSON));
+  }
 }

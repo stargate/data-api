@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.api.v1.AbstractNamespaceIntegrationTestBase;
 import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
-import io.stargate.sgv2.jsonapi.api.v1.NamespaceResource;
+import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import java.io.IOException;
 import java.util.Map;
 
@@ -21,54 +21,29 @@ public class AbstractTableIntegrationTestBase extends AbstractNamespaceIntegrati
       String tableName, Map<String, Object> columns, Object primaryKeyDef) {
     createTable(
             """
-                  {
-                      "createTable": {
-                          "name": "%s",
-                          "definition": {
-                              "columns": %s,
-                              "primaryKey": %s
-                          }
-                      }
-                  }
+            {
+                "name": "%s",
+                "definition": {
+                    "columns": %s,
+                    "primaryKey": %s
+                }
+            }
             """
             .formatted(tableName, asJSON(columns), asJSON(primaryKeyDef)));
   }
 
-  protected void createTable(String createTableJSON) {
-    given()
-        .port(getTestPort())
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(createTableJSON)
-        .when()
-        .post(NamespaceResource.BASE_PATH, namespaceName)
-        .then()
-        .statusCode(200)
+  protected void createTable(String tableDefAsJSON) {
+    DataApiCommandSenders.namespaceCommand(namespaceName)
+        .postCreateTable(tableDefAsJSON)
+        .hasNoErrors()
         .body("status.ok", is(1));
   }
 
   protected void insertOneInTable(String tableName, String documentJSON) {
-    final String requestJSON =
-            """
-            {
-              "insertOne": {
-                "document": %s
-              }
-            }
-            """
-            .formatted(documentJSON);
-    given()
-        .port(getTestPort())
-        .headers(getHeaders())
-        .contentType(ContentType.JSON)
-        .body(requestJSON)
-        .when()
-        .post(CollectionResource.BASE_PATH, namespaceName, tableName)
-        .then()
-        .statusCode(200)
-        .body("status.insertedIds", hasSize(1))
-        .body("data", is(nullValue()))
-        .body("errors", is(nullValue()));
+    DataApiCommandSenders.tableCommand(namespaceName, tableName)
+        .postInsertOne(documentJSON)
+        .hasNoErrors()
+        .body("status.insertedIds", hasSize(1));
   }
 
   protected void deleteAllRowsFromTable(String tableName) {
