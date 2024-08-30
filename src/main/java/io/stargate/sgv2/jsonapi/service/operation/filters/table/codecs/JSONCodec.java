@@ -5,19 +5,21 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import java.util.function.Function;
 
 /**
- * Handles the conversation between the in memory Java representation of a value from a JSON
+ * Handles the conversation between the in-memory Java representation of a value from a JSON
  * document and the Java type that the driver expects for the CQL type of the column.
  *
  * <p>This is codec sitting above the codec the Java C* driver uses.
  *
- * <p>The path is:
+ * <p>The path for converting values contained in incoming JSON Document into values sent to C* is:
  *
  * <ul>
- *   <li>JSON Document
- *   <li>Jackson parses and turns into Java Object (e.g. BigInteger)
+ *   <li>JSON Document parsed by Jackson into a {@link JsonNode}
+ *   <li>{@link RowShredder} converts the Jackson {@JsonNode}s values into Java Objects (from {@code
+ *       TextNode} into {@code String}, {@code BooleanNode} into {@code Boolean}, etc.)
  *   <li>JSONCodec (this class) turns Java Object into the Java type the C* driver expects (e.g.
  *       Short
  *   <li>C* driver codec turns Java type into C* type
@@ -27,6 +29,16 @@ import java.util.function.Function;
  * JSON doc from reading a row and to use it for writing a row. // TODO Mahesh, The codec looks fine
  * for primitive type. Needs a revisit when we doing complex // types where only few fields will
  * need to be returned. Will we be creating custom Codec based // on user requests?
+ *
+ * <p>Note on Jackson conversion of JSON Numbers: Jackson is used to first read JSON content as
+ * {@link JsonNode}s, and then values are converted to "natural" Java types: conversion is done in
+ * {@link RowShredder#shredValue} and results in one of the following types:
+ *
+ * <ul>
+ *   <li>{@link java.math.BigDecimal} for numbers that are not integers in JSON
+ *   <li>{@link java.math.BigInteger} for integers that are too big for {@link Long}
+ *   <li>{@link java.lang.Long} for integers that fit in 64-bit signed {@code Long}
+ * </ul>
  *
  * @param javaType {@link GenericType} of the Java object that needs to be transformed into the type
  *     CQL expects.
