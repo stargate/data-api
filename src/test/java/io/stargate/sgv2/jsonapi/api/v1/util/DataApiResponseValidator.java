@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import org.hamcrest.Matcher;
 
 public class DataApiResponseValidator {
-  private ValidatableResponse response;
+  protected final ValidatableResponse response;
 
   public DataApiResponseValidator(ValidatableResponse response) {
     this.response = response;
@@ -24,8 +24,7 @@ public class DataApiResponseValidator {
   }
 
   public DataApiResponseValidator body(String path, Matcher<?> matcher, Object... args) {
-    response = response.body(path, matcher, args);
-    return this;
+    return new DataApiResponseValidator(response.body(path, matcher, args));
   }
 
   // // // API-aware validation: status, error codes // // //
