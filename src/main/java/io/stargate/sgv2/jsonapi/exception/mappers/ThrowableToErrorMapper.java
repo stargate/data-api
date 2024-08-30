@@ -41,6 +41,7 @@ public final class ThrowableToErrorMapper {
         // if our own exception, shortcut
         if (throwable instanceof JsonApiException jae) {
           if (jae.getErrorCode().equals(ErrorCode.SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE)) {
+            // 30-Aug-2021: [data-api#1383] Why is this special case here?
             return jae.getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
           }
           return jae.getCommandResultError(message, jae.getHttpStatus());
@@ -88,17 +89,21 @@ public final class ThrowableToErrorMapper {
       return handleAllNodesFailedException((AllNodesFailedException) throwable, message);
     } else if (throwable instanceof ClosedConnectionException) {
       return ErrorCode.SERVER_CLOSED_CONNECTION
-          .toApiException(message)
-          .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
+          .toApiException("(DriverException/ClosedConnectionException) %s", message)
+          .getCommandResultError(Response.Status.GATEWAY_TIMEOUT);
     } else if (throwable instanceof CoordinatorException) {
       return handleCoordinatorException((CoordinatorException) throwable, message);
     } else if (throwable instanceof DriverTimeoutException) {
       return ErrorCode.SERVER_DRIVER_TIMEOUT
-          .toApiException(message)
-          .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
+          .toApiException("(DriverException/DriverTimeoutException) %s", message)
+          .getCommandResultError(Response.Status.GATEWAY_TIMEOUT);
     } else {
+      // Leave this as 500 since we do not recognize the exception: should add new cases
+      // when we encounter new exceptions
       return ErrorCode.SERVER_DRIVER_FAILURE
-          .toApiException("root cause: (%s) %s", throwable.getClass().getName(), message)
+          .toApiException(
+              "(DriverException/unrecognized) root cause: (%s) %s",
+              throwable.getClass().getName(), message)
           .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
     }
   }
@@ -110,8 +115,12 @@ public final class ThrowableToErrorMapper {
     } else if (throwable instanceof QueryExecutionException) {
       return handleQueryExecutionException((QueryExecutionException) throwable, message);
     } else {
+      // Leave this as 500 since we do not recognize the exception: should add new cases
+      // when we encounter new exceptions
       return ErrorCode.SERVER_COORDINATOR_FAILURE
-          .toApiException("root cause: (%s) %s", throwable.getClass().getName(), message)
+          .toApiException(
+              "(CoordinatorException/unrecognized) root cause: (%s) %s",
+              throwable.getClass().getName(), message)
           .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
     }
   }
@@ -121,20 +130,29 @@ public final class ThrowableToErrorMapper {
     if (throwable instanceof QueryConsistencyException e) {
       if (e instanceof WriteTimeoutException || e instanceof ReadTimeoutException) {
         return ErrorCode.SERVER_DRIVER_TIMEOUT
-            .toApiException(message)
-            .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
+            .toApiException(
+                "(QueryConsistencyException/%s) %s", e.getClass().getSimpleName(), message)
+            .getCommandResultError(Response.Status.GATEWAY_TIMEOUT);
       } else if (e instanceof ReadFailureException) {
         return ErrorCode.SERVER_READ_FAILED
-            .toApiException("root cause: (%s) %s", e.getClass().getName(), message)
-            .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
+            .toApiException("(QueryConsistencyException/ReadFailureException) %s", message)
+            .getCommandResultError(Response.Status.BAD_GATEWAY);
       } else {
+        // Leave this as 500 since we do not recognize the exception: should add new cases
+        // when we encounter new exceptions
         return ErrorCode.SERVER_QUERY_CONSISTENCY_FAILURE
-            .toApiException("root cause: (%s) %s", e.getClass().getName(), message)
+            .toApiException(
+                "(QueryConsistencyException/unrecognized) root cause: (%s) %s",
+                throwable.getClass().getName(), message)
             .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
       }
     } else {
+      // Leave this as 500 since we do not recognize the exception: should add new cases
+      // when we encounter new exceptions
       return ErrorCode.SERVER_QUERY_EXECUTION_FAILURE
-          .toApiException("root cause: (%s) %s", throwable.getClass().getName(), message)
+          .toApiException(
+              "(QueryExecutionException/unrecognized) root cause: (%s) %s",
+              throwable.getClass().getName(), message)
           .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);
     }
   }
@@ -196,12 +214,15 @@ public final class ThrowableToErrorMapper {
           // Driver NoNodeAvailableException -> ErrorCode.NO_NODE_AVAILABLE
         } else if (error instanceof NoNodeAvailableException) {
           return ErrorCode.SERVER_NO_NODE_AVAILABLE
-              .toApiException()
-              .getCommandResultError(message, Response.Status.INTERNAL_SERVER_ERROR);
+              .toApiException("(AllNodesFailedException/NoNodeAvailableException) %s", message)
+              .getCommandResultError(message, Response.Status.BAD_GATEWAY);
         } else if (error instanceof DriverTimeoutException) {
           // [data-api#1205] Need to map DriverTimeoutException as well
           return ErrorCode.SERVER_DRIVER_TIMEOUT
-              .toApiException(Response.Status.INTERNAL_SERVER_ERROR, message)
+              .toApiException(
+                  Response.Status.GATEWAY_TIMEOUT,
+                  "(AllNodesFailedException/DriverTimeoutException) %s",
+                  message)
               .getCommandResultError();
         }
       }
