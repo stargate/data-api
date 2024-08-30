@@ -97,8 +97,8 @@ public class CommandProcessor {
               // But other exception types are unexpected, so log for now
               logger.warn(
                   String.format(
-                      "Command '%s' failed with %s",
-                      command.getClass().getSimpleName(), t.getClass().getSimpleName()),
+                      "Command '%s' failed with %s: %s",
+                      command.getClass().getSimpleName(), t.getClass().getName(), t.getMessage()),
                   t);
               return new ThrowableCommandResultSupplier(t);
             })
