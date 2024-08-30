@@ -35,6 +35,14 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return new DataApiResponseValidator(response);
   }
 
+  public DataApiResponseValidator postCommand(String command, String commandClause) {
+    return postRaw("{ \"%s\": %s }".formatted(command, commandClause));
+  }
+
+  public DataApiResponseValidator postDeleteMany(String deleteManyClause) {
+    return postCommand("deleteMany", deleteManyClause);
+  }
+
   /**
    * Partially typed method for sending a POST command to the Data API: caller is responsible for
    * formatting the clause to include as (JSON Object) argument of "finOne" command.
@@ -44,7 +52,7 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
    * @return Response validator for further assertions
    */
   public DataApiResponseValidator postFindOne(String findOneClause) {
-    return postRaw("{ \"findOne\": %s }".formatted(findOneClause));
+    return postCommand("findOne", findOneClause);
   }
 
   public DataApiResponseValidator postInsertOne(String docAsJSON) {
