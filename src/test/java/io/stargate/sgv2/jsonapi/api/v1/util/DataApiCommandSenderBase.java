@@ -1,9 +1,13 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
+import static io.restassured.RestAssured.given;
 import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getAuthToken;
 import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getCassandraPassword;
 import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.getCassandraUsername;
 
+import io.restassured.http.ContentType;
+import io.restassured.response.ValidatableResponse;
+import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
 import jakarta.ws.rs.core.Response;
@@ -38,6 +42,32 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
   protected T _this() {
     return (T) this;
   }
+
+  /**
+   * "Untyped" method for sending a POST command to the Data API: caller is responsible for
+   * formatting the JSON body correctly.
+   *
+   * @param jsonBody JSON body to POST
+   * @return Response validator for further assertions
+   */
+  public final DataApiResponseValidator postRaw(String jsonBody) {
+    RequestSpecification request =
+        given()
+            .port(getTestPort())
+            .headers(getHeaders())
+            .contentType(ContentType.JSON)
+            .body(jsonBody)
+            .when();
+    ValidatableResponse response =
+        postInternal(request).then().statusCode(expectedHttpStatus.getStatusCode());
+    return new DataApiResponseValidator(response);
+  }
+
+  public DataApiResponseValidator postCommand(String command, String commandClause) {
+    return postRaw("{ \"%s\": %s }".formatted(command, commandClause));
+  }
+
+  protected abstract io.restassured.response.Response postInternal(RequestSpecification request);
 
   protected Map<String, ?> getHeaders() {
     if (useCoordinator()) {

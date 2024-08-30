@@ -1,9 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
-import static io.restassured.RestAssured.given;
-
-import io.restassured.http.ContentType;
-import io.restassured.response.ValidatableResponse;
+import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
 
 public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiTableCommandSender> {
@@ -14,29 +11,9 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     this.tableName = tableName;
   }
 
-  /**
-   * "Untyped" method for sending a POST command to the Data API: caller is responsible for
-   * formatting the JSON body correctly.
-   *
-   * @param jsonBody JSON body to POST
-   * @return Response validator for further assertions
-   */
-  public DataApiResponseValidator postRaw(String jsonBody) {
-    ValidatableResponse response =
-        given()
-            .port(getTestPort())
-            .headers(getHeaders())
-            .contentType(ContentType.JSON)
-            .body(jsonBody)
-            .when()
-            .post(CollectionResource.BASE_PATH, namespace, tableName)
-            .then()
-            .statusCode(expectedHttpStatus.getStatusCode());
-    return new DataApiResponseValidator(response);
-  }
-
-  public DataApiResponseValidator postCommand(String command, String commandClause) {
-    return postRaw("{ \"%s\": %s }".formatted(command, commandClause));
+  @Override
+  protected io.restassured.response.Response postInternal(RequestSpecification request) {
+    return request.post(CollectionResource.BASE_PATH, namespace, tableName);
   }
 
   public DataApiResponseValidator postDeleteMany(String deleteManyClause) {
