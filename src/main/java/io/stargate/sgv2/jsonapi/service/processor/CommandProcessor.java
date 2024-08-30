@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.Optional;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,8 +96,12 @@ public class CommandProcessor {
                 return jsonApiException;
               }
               // But other exception types are unexpected, so log for now
+              final String message = Optional.ofNullable(t.getMessage()).orElse("[no message]");
               logger.warn(
-                  "Command '{}' failed with exception", command.getClass().getSimpleName(), t);
+                  String.format(
+                      "Command '%s' failed with %s: %s",
+                      command.getClass().getSimpleName(), t.getClass().getName(), message),
+                  t);
               return new ThrowableCommandResultSupplier(t);
             })
 
