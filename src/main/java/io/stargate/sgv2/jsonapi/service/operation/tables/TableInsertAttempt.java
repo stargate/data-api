@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertAttempt;
+import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
@@ -44,6 +45,9 @@ public class TableInsertAttempt implements InsertAttempt {
     for (int i = 0; i < documents.size(); i++) {
       try {
         WriteableTableRow row = shredder.shred(tableSchemaObject, documents.get(i));
+
+        // validating may throw
+        SchemaValidatable.maybeValidate(tableSchemaObject, row);
         attempts.add(new TableInsertAttempt(tableSchemaObject, i, row.id(), row));
       } catch (Exception e) {
         // TODO: need a shredding base exception to catch

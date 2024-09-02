@@ -19,7 +19,7 @@ import java.util.Objects;
  * are validating. This interface should make it easier / clearer to find where the Data API
  * validates requests and what it checks.
  *
- * <p>Code that wants to validate an object should call {@link #maybeValidate(CommandContext,
+ * <p>Code that wants to validate an object should call {@link #maybeValidate(SchemaObject,
  * SchemaValidatable)} with the object to validate. This will then call the appropriate validate
  * method
  *
@@ -39,31 +39,35 @@ public interface SchemaValidatable {
    * <p>NOTE: Code that wants to validate an object should call this static method with the context
    * rather than the instance methods directly.
    *
-   * @param commandContext The context the command is running against, including the {@link
-   *     SchemaObject}
-   * @param validatable An object that implements {@link SchemaValidatable}, may be null
    * @param <T> Type of the {@link SchemaObject}
+   * @param schemaObject The schema object to validate against
+   * @param validatable An object that implements {@link SchemaValidatable}, may be null
    */
   static <T extends SchemaObject> void maybeValidate(
-      CommandContext<T> commandContext, SchemaValidatable validatable) {
+      T schemaObject, SchemaValidatable validatable) {
 
     if (validatable == null) {
       return;
     }
 
-    Objects.requireNonNull(commandContext, "commandContext must not be null");
-    switch (commandContext.schemaObject()) {
-      case CollectionSchemaObject ignored ->
-          validatable.validateCollection(commandContext.asCollectionContext());
-      case TableSchemaObject ignored -> validatable.validateTable(commandContext.asTableContext());
-      case KeyspaceSchemaObject ignored ->
-          validatable.validateKeyspace(commandContext.asKeyspaceContext());
-      case DatabaseSchemaObject ignored ->
-          validatable.validateDatabase(commandContext.asDatabaseContext());
+    Objects.requireNonNull(schemaObject, "schemaObject must not be null");
+    switch (schemaObject) {
+      case DatabaseSchemaObject database -> validatable.validate(database);
+      case KeyspaceSchemaObject keyspace -> validatable.validate(keyspace);
+      case CollectionSchemaObject collection -> validatable.validate(collection);
+      case TableSchemaObject table -> validatable.validate(table);
       default ->
           throw new UnsupportedOperationException(
-              String.format("Unsupported schema type: %s", commandContext.schemaObject().type()));
+              String.format("Unsupported schema object class: %s", schemaObject.getClass()));
     }
+  }
+
+  /** See {@link #maybeValidate(SchemaObject, SchemaValidatable)} */
+  static <T extends SchemaObject> void maybeValidate(
+      CommandContext<T> commandContext, SchemaValidatable validatable) {
+
+    Objects.requireNonNull(commandContext, "commandContext must not be null");
+    maybeValidate(commandContext.schemaObject(), validatable);
   }
 
   /**
@@ -75,8 +79,8 @@ public interface SchemaValidatable {
    *
    * @param commandContext {@link CommandContext<CollectionSchemaObject>} to validate against
    */
-  default void validateCollection(CommandContext<CollectionSchemaObject> commandContext) {
-    throw new UnsupportedOperationException(unsupportedMessage(commandContext.schemaObject()));
+  default void validate(CollectionSchemaObject collection) {
+    throw new UnsupportedOperationException(unsupportedMessage(collection));
   }
 
   /**
@@ -86,10 +90,10 @@ public interface SchemaValidatable {
    * <p>Only implement this method if the object supports Tables, the default implementation is to
    * fail.
    *
-   * @param commandContext {@link CommandContext<TableSchemaObject>} to validate against
+   * @param table {@link CommandContext<TableSchemaObject>} to validate against
    */
-  default void validateTable(CommandContext<TableSchemaObject> commandContext) {
-    throw new UnsupportedOperationException(unsupportedMessage(commandContext.schemaObject()));
+  default void validate(TableSchemaObject table) {
+    throw new UnsupportedOperationException(unsupportedMessage(table));
   }
 
   /**
@@ -101,8 +105,8 @@ public interface SchemaValidatable {
    *
    * @param commandContext {@link CommandContext<KeyspaceSchemaObject>} to validate against
    */
-  default void validateKeyspace(CommandContext<KeyspaceSchemaObject> commandContext) {
-    throw new UnsupportedOperationException(unsupportedMessage(commandContext.schemaObject()));
+  default void validate(KeyspaceSchemaObject keyspace) {
+    throw new UnsupportedOperationException(unsupportedMessage(keyspace));
   }
 
   /**
@@ -114,8 +118,8 @@ public interface SchemaValidatable {
    *
    * @param commandContext {@link CommandContext<DatabaseSchemaObject>} to validate against
    */
-  default void validateDatabase(CommandContext<DatabaseSchemaObject> commandContext) {
-    throw new UnsupportedOperationException(unsupportedMessage(commandContext.schemaObject()));
+  default void validate(DatabaseSchemaObject databaase) {
+    throw new UnsupportedOperationException(unsupportedMessage(databaase));
   }
 
   /** Helper to return the string used in the exception message when schema type not supported. */

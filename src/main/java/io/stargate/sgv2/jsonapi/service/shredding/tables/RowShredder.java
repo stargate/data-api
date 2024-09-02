@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.resolver.UnvalidatedClauseException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.HashMap;
@@ -47,27 +46,16 @@ public class RowShredder {
         .fields()
         .forEachRemaining(
             entry -> {
-              // using fromInternal to preserve case-sensitivity
-              columnValues.put(
-                  CqlIdentifier.fromInternal(entry.getKey()), shredValue(entry.getValue()));
+              columnValues.put(CqlIdentifier.fromCql(entry.getKey()), shredValue(entry.getValue()));
             });
 
-    // the document should have been validated that all the fields present exist in the table
-    // and that all the primary key fields on the table have been included in the document.
+    // get all the primary key values that are in the document, this does not check if all are present, that happens
+    // when we do the WriteableTableRow is validated.
     var primaryKeyValues =
         table.tableMetadata.getPrimaryKey().stream()
             .map(ColumnMetadata::getName)
             .map(
-                colIdentifier -> {
-                  Object value = columnValues.get(colIdentifier);
-                  if (value != null) {
-                    return value;
-                  }
-                  throw new UnvalidatedClauseException(
-                      String.format(
-                          "Primary key column %s is missing from the document",
-                          colIdentifier.toString()));
-                })
+                columnValues::get)
             .toList();
 
     return new WriteableTableRow(new RowId(primaryKeyValues.toArray()), columnValues);

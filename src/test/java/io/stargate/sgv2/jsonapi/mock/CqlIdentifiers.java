@@ -1,0 +1,34 @@
+package io.stargate.sgv2.jsonapi.mock;
+
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+
+/**
+ * Interface for a class that returns {@link CqlIdentifier} that can be used when create a {@link
+ * TableMetadataFixture}
+ *
+ * <p>Interface allows for testing different combinations of identifiers, e.g. quoted, unquoted,
+ * spaces etc. Use the <code>get*</code> function to get an identifier that will be same the same
+ * for the same index. Use <code>random*</code> to get an identifier that will be different from
+ * each call.
+ *
+ * <p>Implementations should include something in the identifier to make it clear if it is a column
+ * or key etc.
+ */
+public interface CqlIdentifiers {
+
+  CqlIdentifier getKey(int index);
+
+  CqlIdentifier randomKey();
+
+  CqlIdentifier getColumn(int index);
+
+  CqlIdentifier randomColumn();
+
+  CqlIdentifier getTable(int index);
+
+  CqlIdentifier randomTable();
+
+  CqlIdentifier getKeyspace(int index);
+
+  CqlIdentifier randomKeyspace();
+}

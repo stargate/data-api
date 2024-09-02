@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.SortClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
@@ -45,9 +44,8 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
   }
 
   @Override
-  public void validateCollection(CommandContext<CollectionSchemaObject> commandContext) {
-    IndexingProjector indexingProjector =
-        commandContext.asCollectionContext().schemaObject().indexingProjector();
+  public void validate(CollectionSchemaObject collection) {
+    IndexingProjector indexingProjector = collection.indexingProjector();
     // If nothing specified, everything indexed
     if (indexingProjector.isIdentityProjection()) {
       return;

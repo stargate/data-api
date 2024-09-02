@@ -51,18 +51,55 @@ snippets:
       Please contact support if the issue persists.
 
 request-errors:
-  - scope: FILTER
-    code: MULTIPLE_ID_FILTER
-    title: the title for the error
-    body: |-
-      big long message with ${vars} in it
+  # UNSCOPED request errors
   - scope:
     code: DOCUMENT_UNPARSEABLE
     title: Unable to parse the document
     body: |-
       big long message with ${vars} in it.
-        
+      
       ${SNIPPET.CONTACT_SUPPORT}
+
+ # DOCUMENT request errors
+  - scope: DOCUMENT
+    code: MISSING_PRIMARY_KEY_COLUMNS
+    title: Missing table primary key columns in document
+    body: |-
+      All primary key columns must be provided when inserting a document into a table. 
+      
+      The table ${keyspace}.${table} defines the primary key columns: ${primaryKeys}.
+      
+      The request included values for primary key columns: ${providedKeys}.
+      The request did not include values for primary key columns: ${missingKeys}.
+      
+      Resend the request with the missing primary key columns.
+
+  - scope: DOCUMENT
+    code: UNKNOWN_TABLE_COLUMNS
+    title: Unknown table columns in document
+    body: |-
+      Only columns defined in the table schema can be included when inserted a document into a table.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included the following unknown columns: ${unknownColumns}.
+      
+      Resend the request using only defined columns.
+
+  # FILTER request errors
+  - scope: FILTER
+    code: INVALID_FILTER
+    title: Invalid filter
+    body: |-
+      The filter clause is invalid. ${filter}
+      
+      ${SNIPPET.CONTACT_SUPPORT}
+ # FILTER request errors
+  - scope: FILTER
+    code: MULTIPLE_ID_FILTER
+    title: the title for the error
+    body: |-
+      big long message with ${vars} in it
+
 
 server-errors:
   # UNSCOPED server errors

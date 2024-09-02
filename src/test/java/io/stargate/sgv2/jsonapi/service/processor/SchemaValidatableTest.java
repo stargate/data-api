@@ -4,6 +4,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -20,14 +21,33 @@ public class SchemaValidatableTest {
   @Test
   public void nullVerifiable() {
     // command context is not used if verifiable is null
-    assertDoesNotThrow(() -> SchemaValidatable.maybeValidate(null, null));
+    assertDoesNotThrow(
+        () -> SchemaValidatable.maybeValidate(SCHEMA_TEST_DATA.MOCK_COLLECTION, null));
   }
 
   @Test
   public void nullCommandContext() {
-    // command context is not used if verifiable is null
-    assertThrows(
-        NullPointerException.class, () -> SchemaValidatable.maybeValidate(null, mockValidatable()));
+
+    var e =
+        assertThrows(
+            NullPointerException.class,
+            () ->
+                SchemaValidatable.maybeValidate(
+                    (CommandContext<CollectionSchemaObject>) null, mockValidatable()));
+
+    assertThat(e).hasMessage("commandContext must not be null");
+  }
+
+  @Test
+  public void nullSchemaObjectContext() {
+
+    var e =
+        assertThrows(
+            NullPointerException.class,
+            () ->
+                SchemaValidatable.maybeValidate((CollectionSchemaObject) null, mockValidatable()));
+
+    assertThat(e).hasMessage("schemaObject must not be null");
   }
 
   @ParameterizedTest
@@ -65,12 +85,12 @@ public class SchemaValidatableTest {
 
     // Verify that method1 was called exactly once
     var verifying = verify(validatable, times(1));
-    switch (schemaObject.type()) {
-      case DATABASE -> verifying.validateDatabase(context.asDatabaseContext());
-      case KEYSPACE -> verifying.validateKeyspace(context.asKeyspaceContext());
-      case COLLECTION -> verifying.validateCollection(context.asCollectionContext());
-      case TABLE -> verifying.validateTable(context.asTableContext());
-      default -> fail("Unknown schema object type: " + schemaObject.type());
+    switch (schemaObject) {
+      case DatabaseSchemaObject database -> verifying.validate(database);
+      case KeyspaceSchemaObject keyspace -> verifying.validate(keyspace);
+      case CollectionSchemaObject collection -> verifying.validate(collection);
+      case TableSchemaObject table -> verifying.validate(table);
+      default -> fail("Unknown schema object class: " + schemaObject.getClass());
     }
 
     // Verify that no other methods were called

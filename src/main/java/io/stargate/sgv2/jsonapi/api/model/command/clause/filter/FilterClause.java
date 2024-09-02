@@ -29,15 +29,15 @@ public record FilterClause(LogicalExpression logicalExpression)
     implements SchemaValidatable, InvertibleCommandClause {
 
   @Override
-  public void validateTable(CommandContext<TableSchemaObject> commandContext) {
+  public void validate(TableSchemaObject table) {
     // TODO HACK AARON - this is a temporary fix to allow the tests to pass
     return;
   }
 
   @Override
-  public void validateCollection(CommandContext<CollectionSchemaObject> commandContext) {
+  public void validate(CollectionSchemaObject collection) {
 
-    IndexingProjector indexingProjector = commandContext.schemaObject().indexingProjector();
+    IndexingProjector indexingProjector = collection.indexingProjector();
 
     // If nothing specified, everything indexed
     if (indexingProjector.isIdentityProjection()) {
