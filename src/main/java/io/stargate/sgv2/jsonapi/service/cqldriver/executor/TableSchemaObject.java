@@ -15,7 +15,6 @@ public class TableSchemaObject extends SchemaObject {
         new SchemaObjectName(
             tableMetadata.getKeyspace().asCql(true), tableMetadata.getName().asCql(true)));
     this.tableMetadata = tableMetadata;
-
   }
 
   @Override

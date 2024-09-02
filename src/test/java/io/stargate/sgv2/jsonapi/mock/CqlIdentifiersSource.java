@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.mock;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.internal.core.util.Strings;
 import java.util.List;
 import java.util.Random;
 
@@ -54,6 +55,8 @@ public abstract class CqlIdentifiersSource implements CqlIdentifiers {
    */
   protected abstract CqlIdentifier generateIdentifier(IdentifierUse use, int index);
 
+  protected abstract CqlIdentifier mask(String unquotedOriginal);
+
   /** Get a positive int so the toString() only has numbers, negative will have "-" */
   private int nextPositiveInt() {
     return random.nextInt(Integer.MAX_VALUE);
@@ -99,6 +102,11 @@ public abstract class CqlIdentifiersSource implements CqlIdentifiers {
     return generateIdentifier(IdentifierUse.KEYSPACE, nextPositiveInt());
   }
 
+  public CqlIdentifier mask(CqlIdentifier identifier) {
+    // neem to remove the double quotes so the source can mask and then quote the whole thing
+    return mask(Strings.unDoubleQuote(identifier.asCql(true)));
+  }
+
   /** Override so in the tests the toString() only has the class name of the identifier class. */
   @Override
   public String toString() {
@@ -116,6 +124,11 @@ public abstract class CqlIdentifiersSource implements CqlIdentifiers {
         case KEYSPACE -> CqlIdentifier.fromCql("keyspace" + index);
       };
     }
+
+    @Override
+    public CqlIdentifier mask(String unquotedOriginal) {
+      return CqlIdentifier.fromCql("masked" + unquotedOriginal);
+    }
   }
 
   public static class UnquotedMixedCaseAlphaNum extends CqlIdentifiersSource {
@@ -128,6 +141,11 @@ public abstract class CqlIdentifiersSource implements CqlIdentifiers {
         case TABLE -> CqlIdentifier.fromCql("Table" + index);
         case KEYSPACE -> CqlIdentifier.fromCql("Keyspace" + index);
       };
+    }
+
+    @Override
+    public CqlIdentifier mask(String unquotedOriginal) {
+      return CqlIdentifier.fromCql("Masked" + unquotedOriginal);
     }
   }
 
@@ -142,6 +160,11 @@ public abstract class CqlIdentifiersSource implements CqlIdentifiers {
         case KEYSPACE -> CqlIdentifier.fromCql(quote("Keyspace" + index));
       };
     }
+
+    @Override
+    public CqlIdentifier mask(String unquotedOriginal) {
+      return CqlIdentifier.fromCql(quote("Masked" + unquotedOriginal));
+    }
   }
 
   public static class QuotedMixedCaseAllChar extends CqlIdentifiersSource {
@@ -154,6 +177,11 @@ public abstract class CqlIdentifiersSource implements CqlIdentifiers {
         case TABLE -> CqlIdentifier.fromCql(quote("Table - " + index));
         case KEYSPACE -> CqlIdentifier.fromCql(quote("Keyspace - " + index));
       };
+    }
+
+    @Override
+    public CqlIdentifier mask(String unquotedOriginal) {
+      return CqlIdentifier.fromCql(quote("Masked - " + unquotedOriginal));
     }
   }
 }

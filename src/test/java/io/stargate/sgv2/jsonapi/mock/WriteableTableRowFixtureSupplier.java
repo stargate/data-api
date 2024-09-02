@@ -93,6 +93,20 @@ public abstract class WriteableTableRowFixtureSupplier
     return new WriteableTableRow(new RowId(keyValues.toArray()), columnValues);
   }
 
+  /** See {@link #fixture(List, List, List, List, List)} */
+  protected WriteableTableRowFixture fixture(
+      List<ColumnMetadata> setKeysMetadata,
+      List<ColumnMetadata> setNonKeyMetadata,
+      List<ColumnMetadata> missingKeysMetadata,
+      List<ColumnMetadata> missingNonKeyMetadata) {
+    return fixture(
+        setKeysMetadata,
+        setNonKeyMetadata,
+        missingKeysMetadata,
+        missingNonKeyMetadata,
+        Collections.emptyList());
+  }
+
   /**
    * Helper to generate a {@link WriteableTableRowFixture}, values are set using the {@link
    * CqlFixture} data generator.
@@ -101,13 +115,15 @@ public abstract class WriteableTableRowFixtureSupplier
    * @param setNonKeyMetadata the non-primary key columns to set a value for
    * @param missingKeysMetadata the primary key columns that are missing from the row
    * @param missingNonKeyMetadata the non-primary key columns that are missing from the row
+   * @param unknownAllColumns the non-primary key columns that are missing from the row
    * @return configured WriteableTableRowFixture
    */
   protected WriteableTableRowFixture fixture(
       List<ColumnMetadata> setKeysMetadata,
       List<ColumnMetadata> setNonKeyMetadata,
       List<ColumnMetadata> missingKeysMetadata,
-      List<ColumnMetadata> missingNonKeyMetadata) {
+      List<ColumnMetadata> missingNonKeyMetadata,
+      List<ColumnMetadata> unknownAllColumns) {
     return new WriteableTableRowFixture(
         getClass(),
         cqlFixture,
@@ -115,7 +131,8 @@ public abstract class WriteableTableRowFixtureSupplier
         columnNames(setKeysMetadata),
         columnNames(setNonKeyMetadata),
         columnNames(missingKeysMetadata),
-        columnNames(missingNonKeyMetadata));
+        columnNames(missingNonKeyMetadata),
+        columnNames(unknownAllColumns));
   }
 
   /** Generates one fixture for each missing primary key */
@@ -183,6 +200,71 @@ public abstract class WriteableTableRowFixtureSupplier
                         setNonKeyMetadata,
                         missingKeysMetadata,
                         missingNonKeyMetadata));
+              });
+      return fixtures;
+    }
+  }
+
+  /**
+   * Generates one fixture for each non-primary key column and gets the name wrong in the row
+   *
+   * <p>i.e. if the col in the table is called "foo", the row will have column called
+   * "SOME_PREFIXfoo" the prefix is generated using {@link CqlIdentifiers#randomColumn()} so it
+   * follows the rules.
+   */
+  public static class UnknownColumns extends WriteableTableRowFixtureSupplier {
+
+    public UnknownColumns(CqlFixture cqlFixture) {
+      super(cqlFixture);
+    }
+
+    @Override
+    protected List<WriteableTableRowFixture> getInternal(
+        List<ColumnMetadata> allColumnsMetadata,
+        List<ColumnMetadata> keysMetadata,
+        List<ColumnMetadata> nonKeyMetadata) {
+
+      List<WriteableTableRowFixture> fixtures = new ArrayList<>();
+
+      // We set all the primary keys
+      var setKeysMetadata = keysMetadata;
+      var missingKeysMetadata = difference(keysMetadata, setKeysMetadata);
+
+      // a row will all non key columns unknown
+      var allUnknownColumns = nonKeyMetadata.stream()
+          .map(columnMetadata -> {
+            var maskedIdentifier = cqlFixture.identifiers().mask(columnMetadata.getName());
+            return TableMetadataBuilder.renameColumn(columnMetadata, maskedIdentifier);
+          })
+          .toList();
+      fixtures.add(
+          fixture(
+              setKeysMetadata,
+              allUnknownColumns,
+              missingKeysMetadata,
+              difference(nonKeyMetadata, allUnknownColumns),
+              allUnknownColumns));
+
+      //  row for each non key column in the table, with one column name changed
+      testReplicated(nonKeyMetadata)
+          .forEach(
+              entry -> {
+                var setNonKeyMetadata = entry.getValue();
+                // change the name of the column we are up to, so we have an unknown column
+                var originalMetadata = setNonKeyMetadata.get(entry.getKey());
+                var maskedIdentifier = cqlFixture.identifiers().mask(originalMetadata.getName());
+                var maskedMetadata =
+                    TableMetadataBuilder.renameColumn(originalMetadata, maskedIdentifier);
+                setNonKeyMetadata.set(entry.getKey(), maskedMetadata);
+                var missingNonKeyMetadata = difference(nonKeyMetadata, setNonKeyMetadata);
+
+                fixtures.add(
+                    fixture(
+                        setKeysMetadata,
+                        setNonKeyMetadata,
+                        missingKeysMetadata,
+                        missingNonKeyMetadata,
+                        List.of(maskedMetadata)));
               });
       return fixtures;
     }

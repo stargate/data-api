@@ -24,7 +24,9 @@ public record WriteableTableRowFixture(
     // Primary key columns that are missing from the row
     List<CqlIdentifier> missingKeys,
     // Non-primary keys columns that are missing from the row
-    List<CqlIdentifier> missingNonKeyColumns) {
+    List<CqlIdentifier> missingNonKeyColumns,
+    // Any columns in the row that are not in the table (PK and non PK)
+    List<CqlIdentifier> unknownAllColumns) {
 
   /** All the primary key and non-primary key columns that are set in the row */
   public List<CqlIdentifier> allSetColumns() {
@@ -41,7 +43,7 @@ public record WriteableTableRowFixture(
     // This is used in the test output, reducing the verbosity
     // do not want to print the row, it is too verbose
     return String.format(
-        "%s{table=%s, identifiers=%s, data=%s, setKeys=%s, missingKeys=%s, setNonKeyColumns=%s, missingNonKeyColumns=%s}",
+        "%s{table=%s, identifiers=%s, data=%s, setKeys=%s, missingKeys=%s, setNonKeyColumns=%s, missingNonKeyColumns=%s, unknownAllColumns=%s}",
         supplier.getSimpleName(),
         cqlFixture.table(),
         cqlFixture.identifiers(),
@@ -49,6 +51,7 @@ public record WriteableTableRowFixture(
         setKeys,
         missingKeys,
         setNonKeyColumns,
-        missingNonKeyColumns);
+        missingNonKeyColumns,
+        unknownAllColumns);
   }
 }

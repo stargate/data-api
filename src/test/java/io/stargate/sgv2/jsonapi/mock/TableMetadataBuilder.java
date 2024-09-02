@@ -40,6 +40,19 @@ public class TableMetadataBuilder<T extends TableMetadataBuilder> {
   private List<ClusteringDef> clusteringKeys = new ArrayList<>();
   private List<ColumnDef> nonKeyColumns = new ArrayList<>();
 
+  /**
+   * Helper for renaming a column in a {@link ColumnMetadata} object, here just to keep the work
+   * with driver metadata in this class.
+   */
+  public static ColumnMetadata renameColumn(ColumnMetadata columnMetadata, CqlIdentifier newName) {
+    return new DefaultColumnMetadata(
+        columnMetadata.getKeyspace(),
+        columnMetadata.getParent(),
+        newName,
+        columnMetadata.getType(),
+        columnMetadata.isStatic());
+  }
+
   @SuppressWarnings("unchecked")
   protected T _this() {
     return (T) this;

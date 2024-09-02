@@ -49,13 +49,13 @@ public class RowShredder {
               columnValues.put(CqlIdentifier.fromCql(entry.getKey()), shredValue(entry.getValue()));
             });
 
-    // get all the primary key values that are in the document, this does not check if all are present, that happens
+    // get all the primary key values that are in the document, this does not check if all are
+    // present, that happens
     // when we do the WriteableTableRow is validated.
     var primaryKeyValues =
         table.tableMetadata.getPrimaryKey().stream()
             .map(ColumnMetadata::getName)
-            .map(
-                columnValues::get)
+            .map(columnValues::get)
             .toList();
 
     return new WriteableTableRow(new RowId(primaryKeyValues.toArray()), columnValues);

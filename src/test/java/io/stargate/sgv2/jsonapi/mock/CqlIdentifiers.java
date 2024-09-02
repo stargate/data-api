@@ -31,4 +31,13 @@ public interface CqlIdentifiers {
   CqlIdentifier getKeyspace(int index);
 
   CqlIdentifier randomKeyspace();
+
+  /**
+   * Return an identifier that is prefixed with in a way that follows the CQL rules for this type of
+   * identifier. Used when we want to test using a column name that may be wrong.
+   *
+   * @param identifier
+   * @return
+   */
+  CqlIdentifier mask(CqlIdentifier identifier);
 }

@@ -66,6 +66,31 @@ public class TestListUtil {
     return combinations;
   }
 
+  /**
+   * Returns a list that has as many enties as the source list, and each entry is a copy of the
+   * source list.
+   *
+   * <p>Example: <code>
+   *   source = [1, 2, 3]
+   *   output = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
+   * </code>
+   * useful when we have a list of columns, and we want to do run tests that change one
+   * column at a time.
+   *
+   * @param source the source list to replicate
+   * @return A list of {@link Map.Entry} the key is the index of the item in the source list to
+   *     change. The value is a mutable copy of the source list.
+   * @param <T>
+   */
+  public static <T> List<Map.Entry<Integer, List<T>>> testReplicated(List<T> source) {
+
+    List<Map.Entry<Integer, List<T>>> lists = new ArrayList<>();
+    for (int i = 0; i < source.size(); i++) {
+      lists.add(Map.entry(i, new ArrayList<>(source)));
+    }
+    return lists;
+  }
+
   @SafeVarargs
   public static <T> List<T> join(Collection<T>... lists) {
     return Arrays.stream(lists).flatMap(Collection::stream).toList();

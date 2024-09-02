@@ -83,4 +83,45 @@ public class WriteableTableRowTest {
 
     return testCases.stream();
   }
+
+  @ParameterizedTest
+  @MethodSource("unknownColumnsFixtures")
+  public void unknownColumns(WriteableTableRowFixture fixture) {
+
+    var tableSchemaObject = new TableSchemaObject(fixture.cqlFixture().tableMetadata());
+
+    var e =
+        assertThrowsExactly(
+            DocumentException.class,
+            () -> SchemaValidatable.maybeValidate(tableSchemaObject, fixture.row()),
+            String.format(
+                "Throw exception when row has missing primary keys using fixture", fixture));
+
+    assertThat(e.code)
+        .as("Using correct error code")
+        .isEqualTo(DocumentException.Code.UNKNOWN_TABLE_COLUMNS.name());
+
+    fixture
+        .unknownAllColumns()
+        .forEach(
+            unknonwnColumn -> {
+              assertThat(e)
+                  .as("Unknown column included in message %s", unknonwnColumn)
+                  .hasMessageContaining(errFmt(unknonwnColumn));
+            });
+  }
+
+  private static Stream<Arguments> unknownColumnsFixtures() {
+    List<Arguments> testCases = new ArrayList<>();
+
+
+    CqlFixture.allFixtures()
+        .forEach(
+            cqlFixture -> {
+              new WriteableTableRowFixtureSupplier.UnknownColumns(cqlFixture)
+                  .get()
+                  .forEach(fixture -> testCases.add(Arguments.of(fixture)));
+            });
+    return testCases.stream();
+  }
 }
