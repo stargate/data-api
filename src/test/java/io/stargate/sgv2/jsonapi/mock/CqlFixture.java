@@ -8,7 +8,8 @@ import java.util.List;
  * Once combination of CQL configuration to test against.
  *
  * <p>Call {@link #allFixtures()} to get all the possible combinations of CQL configurations of the
- * {@link CqlIdentifiers}, {@link CqlData} and {@link TableMetadataFixture} that are available.
+ * {@link CqlIdentifiers}, {@link CqlData} and {@link TableMetadataFixture} that are available. Use
+ * the overloads if you want to control the combinations, such as testing unsupported data types.
  *
  * <p>So every table fixture is run with every combination of identifiers and data.Add a new table,
  * and it will be tested in all combinations.
@@ -22,11 +23,22 @@ public class CqlFixture {
    * {@link CqlData} and {@link TableMetadataFixture} that are available.
    */
   public static List<CqlFixture> allFixtures() {
+    return allFixtures(
+        CqlIdentifiersSource.ALL_CLASSES,
+        CqlDataSource.SUPPORTED_SOURCES,
+        TableMetadataFixtureSource.ALL_SUPPORTED_SOURCES);
+  }
+
+  /** See {@link #allFixtures()} */
+  public static List<CqlFixture> allFixtures(
+      List<CqlIdentifiers> allIdentifiers,
+      List<CqlData> allCqlData,
+      List<TableMetadataFixture> allTableFixture) {
     List<CqlFixture> fixtures = new ArrayList<>();
 
-    for (CqlIdentifiers identifiers : CqlIdentifiersSource.ALL_CLASSES) {
-      for (CqlData cqlData : CqlDataSource.ALL_SOURCES) {
-        for (TableMetadataFixture tableFixture : TableMetadataFixtureSource.ALL_SOURCES) {
+    for (CqlIdentifiers identifiers : allIdentifiers) {
+      for (CqlData cqlData : allCqlData) {
+        for (TableMetadataFixture tableFixture : allTableFixture) {
           fixtures.add(new CqlFixture(identifiers, cqlData, tableFixture));
         }
       }

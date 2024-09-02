@@ -8,17 +8,22 @@ import java.util.List;
  * Provides implementations of the {@link TableMetadataFixture} that generate tables of specified
  * designs.
  *
- * <p>Create inner sub-classes that extend this class and add to the {@link #ALL_SOURCES} list to
- * have them included in the test runs by the {@link CqlFixture}
+ * <p>Create inner subclasses that extend this class and add to the {@link #ALL_SUPPORTED_SOURCES}
+ * list to have them included in the test runs by the {@link CqlFixture}. If you create tables that
+ * are supported do not add them to the list.
  *
  * <p>The name of the subclass is used in the test description.
  */
 public abstract class TableMetadataFixtureSource implements TableMetadataFixture {
 
-  public static final List<TableMetadataFixture> ALL_SOURCES;
+  /**
+   * All the table fixtures than generate table schemas we should support, unsupported ones are not
+   * in this list.
+   */
+  public static final List<TableMetadataFixture> ALL_SUPPORTED_SOURCES;
 
   static {
-    ALL_SOURCES =
+    ALL_SUPPORTED_SOURCES =
         List.of(
             new KeyValue(),
             new KeyValueTwoPrimaryKeys(),
@@ -90,7 +95,25 @@ public abstract class TableMetadataFixtureSource implements TableMetadataFixture
       var builder = builder(identifiers).partitionKey(identifiers.getKey(0), DataTypes.TEXT);
 
       int i = 1;
-      for (var type : CqlTypes.ALL_NUMERIC_TYPES) {
+      for (var type : CqlTypesForTesting.NUMERIC_TYPES) {
+        builder.nonKeyColumn(identifiers.getColumn(i++), type);
+      }
+      return builder.build();
+    }
+  }
+
+  /**
+   * Table with a single primary key and all unsupported supported types NOTE: this generates a
+   * table that the API does not support.
+   */
+  public static class AllUnsupportedTypes extends TableMetadataFixtureSource {
+
+    @Override
+    public TableMetadata tableMetadata(CqlIdentifiers identifiers) {
+      var builder = builder(identifiers).partitionKey(identifiers.getKey(0), DataTypes.TEXT);
+
+      int i = 1;
+      for (var type : CqlTypesForTesting.UNSUPPORTED_FOR_INSERT) {
         builder.nonKeyColumn(identifiers.getColumn(i++), type);
       }
       return builder.build();

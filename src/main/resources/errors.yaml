@@ -85,6 +85,17 @@ request-errors:
       
       Resend the request using only defined columns.
 
+  - scope: DOCUMENT
+    code: UNSUPPORTED_COLUMN_TYPES
+    title: Unsupported table column data types in document
+    body: |-
+      Only supported column types can be included when inserting a document into a table.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included the following columns that have unsupported data types: ${unsupportedColumns}.
+      
+      Resend the request using only supported column types.
+
   # FILTER request errors
   - scope: FILTER
     code: INVALID_FILTER

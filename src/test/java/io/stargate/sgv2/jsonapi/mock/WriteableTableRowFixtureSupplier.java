@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Classes that implement that generate a list of {@link WriteableTableRowFixture} for a {@link
@@ -18,7 +17,7 @@ import java.util.stream.Collectors;
  * <p>Create inner subclasses, there is no list of all suppliers it would not make sense. i.e. we
  * have a supplier that generates rows that are missing primary keys, and another that generates
  * row's with PK's and diff combinations of columns. See {@link MissingPrimaryKeys} and {@link
- * MissingColumns}.
+ * MissingNonKeyColumns}.
  *
  * <p>The name of the subclass is used in the test description.
  */
@@ -68,10 +67,12 @@ public abstract class WriteableTableRowFixtureSupplier
 
   /** Generate values for the given list of columns using the {@link CqlFixture} data generator. */
   protected Map<CqlIdentifier, Object> columnValues(List<ColumnMetadata> columns) {
-    return columns.stream()
-        .collect(
-            Collectors.toMap(
-                ColumnMetadata::getName, column -> cqlFixture.data().fromJSON(column.getType())));
+    // Collectors.toMap does not handle a null value in a map.
+
+    Map<CqlIdentifier, Object> values = new HashMap<>();
+    columns.forEach(
+        column -> values.put(column.getName(), cqlFixture.data().fromJSON(column.getType())));
+    return values;
   }
 
   /**
@@ -93,37 +94,38 @@ public abstract class WriteableTableRowFixtureSupplier
     return new WriteableTableRow(new RowId(keyValues.toArray()), columnValues);
   }
 
-  /** See {@link #fixture(List, List, List, List, List)} */
-  protected WriteableTableRowFixture fixture(
-      List<ColumnMetadata> setKeysMetadata,
-      List<ColumnMetadata> setNonKeyMetadata,
-      List<ColumnMetadata> missingKeysMetadata,
-      List<ColumnMetadata> missingNonKeyMetadata) {
-    return fixture(
-        setKeysMetadata,
-        setNonKeyMetadata,
-        missingKeysMetadata,
-        missingNonKeyMetadata,
-        Collections.emptyList());
-  }
-
   /**
    * Helper to generate a {@link WriteableTableRowFixture}, values are set using the {@link
    * CqlFixture} data generator.
+   *
+   * <p>The unknownAllColumns and unsupportedAllColumns are generated based on the values that are
+   * set.
    *
    * @param setKeysMetadata the primary key columns to set a value for
    * @param setNonKeyMetadata the non-primary key columns to set a value for
    * @param missingKeysMetadata the primary key columns that are missing from the row
    * @param missingNonKeyMetadata the non-primary key columns that are missing from the row
-   * @param unknownAllColumns the non-primary key columns that are missing from the row
    * @return configured WriteableTableRowFixture
    */
   protected WriteableTableRowFixture fixture(
       List<ColumnMetadata> setKeysMetadata,
       List<ColumnMetadata> setNonKeyMetadata,
       List<ColumnMetadata> missingKeysMetadata,
-      List<ColumnMetadata> missingNonKeyMetadata,
-      List<ColumnMetadata> unknownAllColumns) {
+      List<ColumnMetadata> missingNonKeyMetadata) {
+
+    var allSetMetadata = join(setKeysMetadata, setNonKeyMetadata);
+    var unknownAllColumns =
+        allSetMetadata.stream()
+            .filter(
+                columnMetadata ->
+                    !cqlFixture.tableMetadata().getColumns().containsKey(columnMetadata.getName()))
+            .toList();
+
+    var unsupportedAllColumns =
+        allSetMetadata.stream()
+            .filter(columnMetadata -> !CqlTypesForTesting.isSupportedForInsert(columnMetadata))
+            .toList();
+
     return new WriteableTableRowFixture(
         getClass(),
         cqlFixture,
@@ -132,7 +134,38 @@ public abstract class WriteableTableRowFixtureSupplier
         columnNames(setNonKeyMetadata),
         columnNames(missingKeysMetadata),
         columnNames(missingNonKeyMetadata),
-        columnNames(unknownAllColumns));
+        columnNames(unknownAllColumns),
+        columnNames(unsupportedAllColumns));
+  }
+
+  /**
+   * Generates one fixture for the table that includes all columns
+   *
+   * <p>Supported data types are checked, and added to the unsupported list
+   */
+  public static class AllColumns extends WriteableTableRowFixtureSupplier {
+
+    public AllColumns(CqlFixture cqlFixture) {
+      super(cqlFixture);
+    }
+
+    @Override
+    protected List<WriteableTableRowFixture> getInternal(
+        List<ColumnMetadata> allColumnsMetadata,
+        List<ColumnMetadata> keysMetadata,
+        List<ColumnMetadata> nonKeyMetadata) {
+      List<WriteableTableRowFixture> fixtures = new ArrayList<>();
+
+      var setKeysMetadata = keysMetadata;
+      var missingKeysMetadata = difference(keysMetadata, setKeysMetadata);
+
+      var setNonKeyMetadata = nonKeyMetadata;
+      var missingNonKeyMetadata = difference(nonKeyMetadata, setNonKeyMetadata);
+
+      fixtures.add(
+          fixture(setKeysMetadata, setNonKeyMetadata, missingKeysMetadata, missingNonKeyMetadata));
+      return fixtures;
+    }
   }
 
   /** Generates one fixture for each missing primary key */
@@ -170,9 +203,9 @@ public abstract class WriteableTableRowFixtureSupplier
   }
 
   /** Generates one fixture for each combination of the non-primary key columns */
-  public static class MissingColumns extends WriteableTableRowFixtureSupplier {
+  public static class MissingNonKeyColumns extends WriteableTableRowFixtureSupplier {
 
-    public MissingColumns(CqlFixture cqlFixture) {
+    public MissingNonKeyColumns(CqlFixture cqlFixture) {
       super(cqlFixture);
     }
 
@@ -188,7 +221,7 @@ public abstract class WriteableTableRowFixtureSupplier
       var setKeysMetadata = keysMetadata;
       var missingKeysMetadata = difference(keysMetadata, setKeysMetadata);
 
-      testCombinations(nonKeyMetadata, true, true)
+      testCombinations(nonKeyMetadata, true, false)
           .forEach(
               combination -> {
                 var setNonKeyMetadata = combination;
@@ -206,11 +239,10 @@ public abstract class WriteableTableRowFixtureSupplier
   }
 
   /**
-   * Generates one fixture for each non-primary key column and gets the name wrong in the row
+   * Generates one fixture for each non-primary key column and gets the name wrong in the row, only
+   * do it for the non-pk because errors for missing pk are different
    *
-   * <p>i.e. if the col in the table is called "foo", the row will have column called
-   * "SOME_PREFIXfoo" the prefix is generated using {@link CqlIdentifiers#randomColumn()} so it
-   * follows the rules.
+   * <p>The name of the column is changed using {@link CqlIdentifiers#mask(CqlIdentifier)}
    */
   public static class UnknownColumns extends WriteableTableRowFixtureSupplier {
 
@@ -231,19 +263,20 @@ public abstract class WriteableTableRowFixtureSupplier
       var missingKeysMetadata = difference(keysMetadata, setKeysMetadata);
 
       // a row will all non key columns unknown
-      var allUnknownColumns = nonKeyMetadata.stream()
-          .map(columnMetadata -> {
-            var maskedIdentifier = cqlFixture.identifiers().mask(columnMetadata.getName());
-            return TableMetadataBuilder.renameColumn(columnMetadata, maskedIdentifier);
-          })
-          .toList();
+      var allUnknownColumns =
+          nonKeyMetadata.stream()
+              .map(
+                  columnMetadata -> {
+                    var maskedIdentifier = cqlFixture.identifiers().mask(columnMetadata.getName());
+                    return TableMetadataBuilder.renameColumn(columnMetadata, maskedIdentifier);
+                  })
+              .toList();
       fixtures.add(
           fixture(
               setKeysMetadata,
               allUnknownColumns,
               missingKeysMetadata,
-              difference(nonKeyMetadata, allUnknownColumns),
-              allUnknownColumns));
+              difference(nonKeyMetadata, allUnknownColumns)));
 
       //  row for each non key column in the table, with one column name changed
       testReplicated(nonKeyMetadata)
@@ -263,8 +296,7 @@ public abstract class WriteableTableRowFixtureSupplier
                         setKeysMetadata,
                         setNonKeyMetadata,
                         missingKeysMetadata,
-                        missingNonKeyMetadata,
-                        List.of(maskedMetadata)));
+                        missingNonKeyMetadata));
               });
       return fixtures;
     }

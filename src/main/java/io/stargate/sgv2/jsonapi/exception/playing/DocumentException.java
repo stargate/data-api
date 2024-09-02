@@ -16,7 +16,8 @@ public class DocumentException extends RequestException {
 
   public enum Code implements ErrorCode<DocumentException> {
     MISSING_PRIMARY_KEY_COLUMNS,
-    UNKNOWN_TABLE_COLUMNS;
+    UNKNOWN_TABLE_COLUMNS,
+    UNSUPPORTED_COLUMN_TYPES;
 
     private final ErrorTemplate<DocumentException> template;
 

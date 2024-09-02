@@ -12,17 +12,19 @@ import java.util.List;
  * Implementations fo the {@link CqlData} interface that provide test data for use by the {@link
  * CqlFixture}.
  *
- * <p>Add implementations as inner subclasses and add them to the {@link #ALL_SOURCES} list, so they
- * are picked up.
+ * <p>Add implementations as inner subclasses and add them to the {@link #SUPPORTED_SOURCES} list,
+ * so they are picked up. Do not add unsupported datatyes to this list :) Just add it as a source
+ * and use it as needed see {@link UnsupportedData} for an example.
  *
  * <p>The name of the subclass is used in the test description.
  */
 public abstract class CqlDataSource implements CqlData {
 
-  public static final List<CqlData> ALL_SOURCES;
+  public static final List<CqlData> SUPPORTED_SOURCES;
 
   static {
-    ALL_SOURCES = List.of(new DefaultData(), new MaxNumericData(), new MinNumericData());
+    SUPPORTED_SOURCES =
+        List.of(new DefaultData(), new MaxNumericData(), new MinNumericData(), new AllNullValues());
   }
 
   @Override
@@ -69,7 +71,7 @@ public abstract class CqlDataSource implements CqlData {
   private static class DefaultData extends CqlDataSource {}
 
   /** Numerics with the max value */
-  private static class MaxNumericData extends CqlDataSource {
+  public static class MaxNumericData extends CqlDataSource {
     @Override
     protected JsonNode getJsonNode(DataType type) {
       if (DataTypes.BIGINT.equals(type)) {
@@ -96,7 +98,7 @@ public abstract class CqlDataSource implements CqlData {
   }
 
   /** Numerics with the min value */
-  private static class MinNumericData extends CqlDataSource {
+  public static class MinNumericData extends CqlDataSource {
     @Override
     protected JsonNode getJsonNode(DataType type) {
       if (DataTypes.BIGINT.equals(type)) {
@@ -117,6 +119,42 @@ public abstract class CqlDataSource implements CqlData {
       } else if (DataTypes.VARINT.equals(type)) {
         // No max, use max Long
         return JsonNodeFactory.instance.numberNode(BigDecimal.valueOf(Long.MIN_VALUE));
+      }
+      return super.getJsonNode(type);
+    }
+  }
+
+  /** All values are returned as null */
+  public static class AllNullValues extends CqlDataSource {
+    @Override
+    protected JsonNode getJsonNode(DataType type) {
+      return JsonNodeFactory.instance.nullNode();
+    }
+  }
+
+  /**
+   * Returns data for the unsupported types, and then falls back to the default for the supported
+   * Kept out of the regular list of testing, so it can be used as needed.
+   *
+   * <p>Is in sync with {@link CqlTypesForTesting#UNSUPPORTED_FOR_INSERT}
+   */
+  public static class UnsupportedData extends CqlDataSource {
+    @Override
+    protected JsonNode getJsonNode(DataType type) {
+      if (DataTypes.COUNTER.equals(type)) {
+        return JsonNodeFactory.instance.numberNode(1L);
+      } else if (DataTypes.listOf(DataTypes.INT).equals(type)) {
+        return JsonNodeFactory.instance.arrayNode().add(1);
+      } else if (DataTypes.listOf(DataTypes.INT, true).equals(type)) {
+        return JsonNodeFactory.instance.arrayNode().add(1);
+      } else if (DataTypes.setOf(DataTypes.TEXT).equals(type)) {
+        return JsonNodeFactory.instance.arrayNode().add("text");
+      } else if (DataTypes.setOf(DataTypes.TEXT, true).equals(type)) {
+        return JsonNodeFactory.instance.arrayNode().add("text");
+      } else if (DataTypes.mapOf(DataTypes.TEXT, DataTypes.DOUBLE).equals(type)) {
+        return JsonNodeFactory.instance.objectNode().put("text", 1.1);
+      } else if (DataTypes.mapOf(DataTypes.TEXT, DataTypes.DOUBLE, true).equals(type)) {
+        return JsonNodeFactory.instance.objectNode().put("text", 1.1);
       }
       return super.getJsonNode(type);
     }

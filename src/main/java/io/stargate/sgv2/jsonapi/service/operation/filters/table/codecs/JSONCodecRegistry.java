@@ -52,7 +52,6 @@ public class JSONCodecRegistry {
 
     Preconditions.checkNotNull(table, "table must not be null");
     Preconditions.checkNotNull(column, "column must not be null");
-    Preconditions.checkNotNull(value, "value must not be null");
 
     // BUG: needs to handle NULl value
     var columnMetadata =

@@ -4,12 +4,16 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /** AARON TODO shreds docs for rows */
@@ -83,7 +87,23 @@ public class RowShredder {
       case STRING -> value.textValue();
       case BOOLEAN -> value.booleanValue();
       case NULL -> null;
-      default -> throw new RuntimeException("Unsupported type");
+      case ARRAY -> {
+        ArrayNode arrayNode = (ArrayNode) value;
+        List<Object> list = new ArrayList<>();
+        for (JsonNode node : arrayNode) {
+          list.add(shredValue(node));
+        }
+        yield list;
+      }
+      case OBJECT -> {
+        ObjectNode objectNode = (ObjectNode) value;
+        Map<String, Object> map = new HashMap<>();
+        for (var entry : objectNode.properties()) {
+          map.put(entry.getKey(), shredValue(entry.getValue()));
+        }
+        yield map;
+      }
+      default -> throw new RuntimeException("Unsupported JsonNode type " + value.getNodeType());
     };
   }
 }

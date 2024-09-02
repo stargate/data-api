@@ -6,11 +6,16 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import io.stargate.sgv2.jsonapi.exception.playing.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.playing.ServerException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.WritableDocRow;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * The data extracted from a JSON document that can be written to a table row.
@@ -41,6 +46,7 @@ public record WriteableTableRow(RowId id, Map<CqlIdentifier, Object> allColumnVa
 
     checkAllPrimaryKeys(tableMetadata);
     checkUnknownColumns(tableMetadata);
+    checkUnsupportedColumnType(tableMetadata);
   }
 
   private boolean contains(CqlIdentifier column) {
@@ -51,6 +57,7 @@ public record WriteableTableRow(RowId id, Map<CqlIdentifier, Object> allColumnVa
     return contains(column.getName());
   }
 
+  /** Checks if the row has all the primary key columns that are part of the table. */
   private void checkAllPrimaryKeys(TableMetadata tableMetadata) {
 
     var missingPrimaryKeys =
@@ -69,6 +76,7 @@ public record WriteableTableRow(RowId id, Map<CqlIdentifier, Object> allColumnVa
     }
   }
 
+  /** Checks if the row has any columns that are not part of the table. */
   private void checkUnknownColumns(TableMetadata tableMetadata) {
     var unknownColumns =
         allColumnValues().keySet().stream()
@@ -82,6 +90,48 @@ public record WriteableTableRow(RowId id, Map<CqlIdentifier, Object> allColumnVa
               "table", errFmt(tableMetadata.getName()),
               "allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()),
               "unknownColumns", errFmtCqlIdentifier(unknownColumns)));
+    }
+  }
+
+  /**
+   * Checks if the row has any columns that are in the table but have a type that is not supported.
+   *
+   * <p>NOTE: AARON 3 aug 2024 - debatable if we do this here or in the operation, doing here
+   * because we started adding detailed errors and tests, can be moved later
+   *
+   * <p>NOTE: CHECK FOR UNKNOWN COLUMNS MUST GO FIRST, this will raise server error if there is an
+   * unknown colums
+   *
+   * @param tableMetadata
+   */
+  private void checkUnsupportedColumnType(TableMetadata tableMetadata) {
+
+    var unsupportedMetadata =
+        allColumnValues().entrySet().stream()
+            .filter(
+                entry -> {
+                  try {
+                    JSONCodecRegistry.codecToCQL(tableMetadata, entry.getKey(), entry.getValue());
+                  } catch (UnknownColumnException e) {
+                    throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(
+                        "errorClass", e.getClass().getSimpleName(),
+                        "errorMessage", e.getMessage());
+                  } catch (MissingJSONCodecException e) {
+                    return true;
+                  }
+                  return false;
+                })
+            .map(entry -> tableMetadata.getColumn(entry.getKey()))
+            .map(Optional::get) // we know it is present
+            .toList();
+
+    if (!unsupportedMetadata.isEmpty()) {
+      throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
+          Map.of(
+              "keyspace", errFmt(tableMetadata.getKeyspace()),
+              "table", errFmt(tableMetadata.getName()),
+              "allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()),
+              "unsupportedColumns", errFmtColumnMetadata(unsupportedMetadata)));
     }
   }
 }

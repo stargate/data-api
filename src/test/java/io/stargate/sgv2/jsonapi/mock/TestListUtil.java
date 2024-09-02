@@ -73,8 +73,7 @@ public class TestListUtil {
    * <p>Example: <code>
    *   source = [1, 2, 3]
    *   output = [[1, 2, 3], [1, 2, 3], [1, 2, 3]]
-   * </code>
-   * useful when we have a list of columns, and we want to do run tests that change one
+   * </code> useful when we have a list of columns, and we want to do run tests that change one
    * column at a time.
    *
    * @param source the source list to replicate
