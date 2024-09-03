@@ -22,7 +22,6 @@ class DropTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     String tableJson =
             """
                               {
-                                  "createTable": {
                                       "name": "%s",
                                       "definition": {
                                           "columns": {
@@ -38,8 +37,7 @@ class DropTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                           },
                                           "primaryKey": "id"
                                       }
-                                  }
-                              }
+                            }
                         """
             .formatted(simpleTableName);
     createTable(tableJson);

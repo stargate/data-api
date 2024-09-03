@@ -8,6 +8,7 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,7 +17,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class JSONCodecRegistryTest {
 
-  private final JSONCodecRegistryTestData TEST_DATA = new JSONCodecRegistryTestData();
+  private static final JSONCodecRegistryTestData TEST_DATA = new JSONCodecRegistryTestData();
 
   /** Helper to get a codec when we only care about the CQL type and the fromValue */
   private <JavaT, CqlT> JSONCodec<JavaT, CqlT> assertGetCodecToCQL(
@@ -60,7 +61,7 @@ public class JSONCodecRegistryTest {
    * @param expectedCqlValue The value we expect to pass to the CQL driver
    */
   @ParameterizedTest
-  @MethodSource("codecToCQLTestCases")
+  @MethodSource("validCodecToCQLTestCases")
   public void codecToCQL(DataType cqlType, Object fromValue, Object expectedCqlValue) {
 
     var codec = assertGetCodecToCQL(cqlType, fromValue);
@@ -80,10 +81,30 @@ public class JSONCodecRegistryTest {
         .isEqualTo(expectedCqlValue);
   }
 
-  private static Stream<Arguments> codecToCQLTestCases() {
+  private static Stream<Arguments> validCodecToCQLTestCases() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
+    // Note: all Numeric types accept 3 Java types: Long, BigInteger, BigDecimal
     return Stream.of(
-        Arguments.of(DataTypes.INT, BigDecimal.valueOf(100), 100) // second 100 is an int
-        );
+        // Integer types:
+        Arguments.of(DataTypes.BIGINT, -456L, -456L),
+        Arguments.of(DataTypes.BIGINT, BigInteger.valueOf(123), 123L),
+        Arguments.of(DataTypes.BIGINT, BigDecimal.valueOf(999.0), 999L),
+        Arguments.of(DataTypes.INT, -42000L, -42000),
+        Arguments.of(DataTypes.INT, BigInteger.valueOf(19000), 19000),
+        Arguments.of(DataTypes.INT, BigDecimal.valueOf(23456.0), 23456),
+        Arguments.of(DataTypes.SMALLINT, -3999L, (short) -3999),
+        Arguments.of(DataTypes.SMALLINT, BigInteger.valueOf(1234), (short) 1234),
+        Arguments.of(DataTypes.SMALLINT, BigDecimal.valueOf(10911.0), (short) 10911),
+        Arguments.of(DataTypes.TINYINT, -39L, (byte) -39),
+        Arguments.of(DataTypes.TINYINT, BigInteger.valueOf(123), (byte) 123),
+        Arguments.of(DataTypes.TINYINT, BigDecimal.valueOf(109.0), (byte) 109),
+        Arguments.of(DataTypes.VARINT, -39999L, BigInteger.valueOf(-39999)),
+        Arguments.of(DataTypes.VARINT, BigInteger.valueOf(1), BigInteger.valueOf(1)),
+        Arguments.of(
+            DataTypes.VARINT, BigDecimal.valueOf(123456789.0), BigInteger.valueOf(123456789)),
+
+        // Floating-point types:
+        Arguments.of(DataTypes.DECIMAL, BigDecimal.valueOf(0.25), BigDecimal.valueOf(0.25)));
   }
 
   @Test
@@ -146,29 +167,102 @@ public class JSONCodecRegistryTest {
             });
   }
 
-  @Test
-  public void toCQLCodecException() {
-
-    var codec = assertGetCodecToCQL(DataTypes.TINYINT, TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT);
+  @ParameterizedTest
+  @MethodSource("outOfRangeOfCqlNumberTestCases")
+  public void outOfRangeOfCqlNumber(DataType typeToTest, Number valueToTest, String rootCause) {
+    var codec = assertGetCodecToCQL(typeToTest, valueToTest);
 
     var error =
         assertThrowsExactly(
             ToCQLCodecException.class,
-            () -> codec.toCQL(TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT),
+            () -> codec.toCQL(valueToTest),
             String.format(
-                "Throw ToCQLCodecException for out of range `tinyint` %s",
-                TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT));
+                "Throw ToCQLCodecException for out of range `%s` value: %s",
+                typeToTest, valueToTest));
 
     assertThat(error)
         .satisfies(
             e -> {
-              assertThat(e.targetCQLType).isEqualTo(DataTypes.TINYINT);
-              assertThat(e.value).isEqualTo(TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT);
+              assertThat(e.targetCQLType).isEqualTo(typeToTest);
+              assertThat(e.value).isEqualTo(valueToTest);
 
               assertThat(e.getMessage())
-                  .contains(DataTypes.TINYINT.toString())
-                  .contains(TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT.getClass().getName())
-                  .contains(TEST_DATA.OUT_OF_RANGE_FOR_TINY_INT.toPlainString());
+                  .contains(typeToTest.toString())
+                  .contains(valueToTest.getClass().getName())
+                  .contains(valueToTest.toString())
+                  .contains("Root cause: " + rootCause);
             });
+  }
+
+  private static Stream<Arguments> outOfRangeOfCqlNumberTestCases() {
+    // Arguments: (DataType, Number-outside-range)
+    return Stream.of(
+        Arguments.of(DataTypes.BIGINT, TEST_DATA.OUT_OF_RANGE_FOR_BIGINT, "Overflow"),
+        Arguments.of(
+            DataTypes.BIGINT,
+            TEST_DATA.OUT_OF_RANGE_FOR_BIGINT.toBigIntegerExact(),
+            "BigInteger out of long range"),
+        Arguments.of(DataTypes.INT, TEST_DATA.OVERFLOW_FOR_INT, "Overflow"),
+        Arguments.of(
+            DataTypes.INT,
+            TEST_DATA.OVERFLOW_FOR_INT.toBigIntegerExact(),
+            "BigInteger out of int range"),
+        Arguments.of(DataTypes.INT, TEST_DATA.OVERFLOW_FOR_INT.longValueExact(), "Overflow"),
+        Arguments.of(DataTypes.INT, TEST_DATA.UNDERFLOW_FOR_INT.longValueExact(), "Underflow"),
+        Arguments.of(DataTypes.SMALLINT, TEST_DATA.OVERFLOW_FOR_SMALLINT, "Overflow"),
+        Arguments.of(
+            DataTypes.SMALLINT,
+            TEST_DATA.OVERFLOW_FOR_SMALLINT.toBigIntegerExact(),
+            "BigInteger out of short range"),
+        Arguments.of(
+            DataTypes.SMALLINT, TEST_DATA.OVERFLOW_FOR_SMALLINT.longValueExact(), "Overflow"),
+        Arguments.of(
+            DataTypes.SMALLINT, TEST_DATA.UNDERFLOW_FOR_SMALLINT.longValueExact(), "Underflow"),
+        Arguments.of(DataTypes.TINYINT, TEST_DATA.OVERFLOW_FOR_TINYINT, "Overflow"),
+        Arguments.of(
+            DataTypes.TINYINT,
+            TEST_DATA.OVERFLOW_FOR_TINYINT.toBigIntegerExact(),
+            "BigInteger out of byte range"),
+        Arguments.of(
+            DataTypes.TINYINT, TEST_DATA.OVERFLOW_FOR_TINYINT.longValueExact(), "Overflow"),
+        Arguments.of(
+            DataTypes.TINYINT, TEST_DATA.UNDERFLOW_FOR_TINYINT.longValueExact(), "Underflow"));
+  }
+
+  @ParameterizedTest
+  @MethodSource("nonExactToCqlIntegerTestCases")
+  public void nonExactToCqlInteger(DataType typeToTest, Number valueToTest) {
+    var codec = assertGetCodecToCQL(typeToTest, valueToTest);
+
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest),
+            String.format(
+                "Throw ToCQLCodecException when attempting to convert `%s` from non-integer value %s",
+                typeToTest, valueToTest));
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(typeToTest);
+              assertThat(e.value).isEqualTo(valueToTest);
+
+              assertThat(e.getMessage())
+                  .contains(typeToTest.toString())
+                  .contains(valueToTest.getClass().getName())
+                  .contains(valueToTest.toString())
+                  .contains("Root cause: Rounding necessary");
+            });
+  }
+
+  private static Stream<Arguments> nonExactToCqlIntegerTestCases() {
+    // Arguments: (DataType, Number-not-exact-as-integer)
+    return Stream.of(
+        Arguments.of(DataTypes.BIGINT, TEST_DATA.NOT_EXACT_AS_INTEGER),
+        Arguments.of(DataTypes.INT, TEST_DATA.NOT_EXACT_AS_INTEGER),
+        Arguments.of(DataTypes.SMALLINT, TEST_DATA.NOT_EXACT_AS_INTEGER),
+        Arguments.of(DataTypes.TINYINT, TEST_DATA.NOT_EXACT_AS_INTEGER),
+        Arguments.of(DataTypes.VARINT, TEST_DATA.NOT_EXACT_AS_INTEGER));
   }
 }

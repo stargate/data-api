@@ -16,8 +16,8 @@ public class ToCQLCodecException extends Exception {
   public ToCQLCodecException(Object value, DataType targetCQLType, Exception cause) {
     super(
         String.format(
-            "Error trying to convert to targetCQLType `%s` from value.class `%s` and value: %s",
-            targetCQLType, value.getClass().getName(), value),
+            "Error trying to convert to targetCQLType `%s` from value.class `%s`, value %s. Root cause: %s",
+            targetCQLType, value.getClass().getName(), value, cause.getMessage()),
         cause);
     this.value = value;
     this.targetCQLType = targetCQLType;

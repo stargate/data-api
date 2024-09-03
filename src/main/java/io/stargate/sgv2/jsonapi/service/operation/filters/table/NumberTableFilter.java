@@ -1,11 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.table;
 
-import java.math.BigDecimal;
-
 /** Filter to use any JSON number against a table column. */
-public class NumberTableFilter extends NativeTypeTableFilter<BigDecimal> {
+public class NumberTableFilter extends NativeTypeTableFilter<Number> {
 
-  public NumberTableFilter(String path, Operator operator, BigDecimal value) {
+  public NumberTableFilter(String path, Operator operator, Number value) {
     super(path, operator, value);
   }
 }
