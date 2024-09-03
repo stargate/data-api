@@ -113,8 +113,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
     } catch (UnknownColumnException e) {
       throw ErrorCode.TABLE_COLUMN_UNKNOWN.toApiException(e.getMessage());
     } catch (MissingJSONCodecException e) {
-      // TODO AARON - Handle error
-      throw new RuntimeException(e);
+      throw ErrorCode.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException(e.getMessage());
     } catch (ToCQLCodecException e) {
       // TODO AARON - Handle error
       throw new RuntimeException(e);
