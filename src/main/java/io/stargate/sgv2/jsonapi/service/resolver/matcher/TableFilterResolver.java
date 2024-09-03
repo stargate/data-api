@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableF
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NumberTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TextTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
 import java.util.EnumSet;
 import java.util.function.BiConsumer;
@@ -121,7 +122,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
           if (dynamicDocIDGroup != null) {
             dynamicDocIDGroup.consumeAllCaptures(
                 expression -> {
-                  Object rhsValue = expression.value();
+                  Object rhsValue = ((DocumentId) expression.value()).value();
                   if (rhsValue instanceof String) {
                     dbFilterLogicalExpression.addInnerDBFilter(
                         new TextTableFilter(
@@ -129,13 +130,13 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                             NativeTypeTableFilter.Operator.from(
                                 (ValueComparisonOperator) expression.operator()),
                             (String) rhsValue));
-                  } else if (rhsValue instanceof BigDecimal) {
+                  } else if (rhsValue instanceof Number) {
                     dbFilterLogicalExpression.addInnerDBFilter(
                         new NumberTableFilter(
                             expression.path(),
                             NativeTypeTableFilter.Operator.from(
                                 (ValueComparisonOperator) expression.operator()),
-                            (BigDecimal) rhsValue));
+                            (Number) rhsValue));
                   } else {
                     throw new UnsupportedOperationException(
                         "Unsupported DocumentId type: " + rhsValue.getClass().getName());
