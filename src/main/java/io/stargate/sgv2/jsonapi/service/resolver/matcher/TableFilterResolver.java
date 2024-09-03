@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -10,11 +9,10 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NumberTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TextTableFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
-import java.util.ArrayList;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import java.math.BigDecimal;
 import java.util.EnumSet;
-import java.util.List;
+import java.util.function.BiConsumer;
 
 /**
  * POC for a filter clause resolver that can handle the filter clause for a table.
@@ -80,56 +78,73 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
     return matchRules;
   }
 
-  private static List<DBFilterBase> findNoFilter(CaptureExpression captureExpression) {
-    return List.of();
+  public static DBFilterLogicalExpression findNoFilter(
+      DBFilterLogicalExpression dbFilterLogicalExpression, CaptureGroups currentCaptureGroups) {
+    return dbFilterLogicalExpression;
   }
 
-  private static List<DBFilterBase> findDynamic(CaptureExpression captureExpression) {
-    List<DBFilterBase> filters = new ArrayList<>();
+  public static DBFilterLogicalExpression findDynamic(
+      DBFilterLogicalExpression currentDBFilterLogicalExpression,
+      CaptureGroups currentCaptureGroups) {
 
     // TODO: How do we know what the CmdT of the JsonLiteral<CmdT> from .value() is ?
-    for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
-      final Object rhsValue = filterOperation.operand().value();
-      if (captureExpression.marker() == DYNAMIC_TEXT_GROUP) {
-        filters.add(
-            new TextTableFilter(
-                captureExpression.path(),
-                NativeTypeTableFilter.Operator.from(
-                    (ValueComparisonOperator) filterOperation.operator()),
-                (String) rhsValue));
-      } else if (captureExpression.marker() == DYNAMIC_NUMBER_GROUP) {
-        filters.add(
-            new NumberTableFilter(
-                captureExpression.path(),
-                NativeTypeTableFilter.Operator.from(
-                    (ValueComparisonOperator) filterOperation.operator()),
-                (Number) rhsValue));
-      } else if (captureExpression.marker() == DYNAMIC_DOCID_GROUP) {
-        Object actualValue = ((DocumentId) rhsValue).value();
-        if (actualValue instanceof String) {
-          filters.add(
-              new TextTableFilter(
-                  captureExpression.path(),
-                  NativeTypeTableFilter.Operator.from(
-                      (ValueComparisonOperator) filterOperation.operator()),
-                  (String) actualValue));
-        } else if (actualValue instanceof Number) {
-          filters.add(
-              new NumberTableFilter(
-                  captureExpression.path(),
-                  NativeTypeTableFilter.Operator.from(
-                      (ValueComparisonOperator) filterOperation.operator()),
-                  (Number) actualValue));
-        } else {
-          throw new UnsupportedOperationException(
-              "Unsupported DocumentId type: " + rhsValue.getClass().getName());
-        }
-      } else {
-        throw new UnsupportedOperationException(
-            "Unsupported dynamic filter type: " + filterOperation);
-      }
-    }
+    BiConsumer<CaptureGroups, DBFilterLogicalExpression> consumer =
+        (captureGroups, dbFilterLogicalExpression) -> {
+          final CaptureGroup<String> dynamicTextGroup =
+              (CaptureGroup<String>) captureGroups.getGroupIfPresent(DYNAMIC_TEXT_GROUP);
+          if (dynamicTextGroup != null) {
+            dynamicTextGroup.consumeAllCaptures(
+                expression -> {
+                  dbFilterLogicalExpression.addInnerDBFilter(
+                      new TextTableFilter(
+                          expression.path(),
+                          NativeTypeTableFilter.Operator.from(
+                              (ValueComparisonOperator) expression.operator()),
+                          (String) expression.value()));
+                });
+          }
+          final CaptureGroup<BigDecimal> dynamicNumberGroup =
+              (CaptureGroup<BigDecimal>) captureGroups.getGroupIfPresent(DYNAMIC_NUMBER_GROUP);
+          if (dynamicNumberGroup != null) {
+            dynamicNumberGroup.consumeAllCaptures(
+                expression -> {
+                  dbFilterLogicalExpression.addInnerDBFilter(
+                      new NumberTableFilter(
+                          expression.path(),
+                          NativeTypeTableFilter.Operator.from(
+                              (ValueComparisonOperator) expression.operator()),
+                          (BigDecimal) expression.value()));
+                });
+          }
+          final CaptureGroup<Object> dynamicDocIDGroup =
+              (CaptureGroup<Object>) captureGroups.getGroupIfPresent(DYNAMIC_DOCID_GROUP);
+          if (dynamicDocIDGroup != null) {
+            dynamicDocIDGroup.consumeAllCaptures(
+                expression -> {
+                  Object rhsValue = expression.value();
+                  if (rhsValue instanceof String) {
+                    dbFilterLogicalExpression.addInnerDBFilter(
+                        new TextTableFilter(
+                            expression.path(),
+                            NativeTypeTableFilter.Operator.from(
+                                (ValueComparisonOperator) expression.operator()),
+                            (String) rhsValue));
+                  } else if (rhsValue instanceof BigDecimal) {
+                    dbFilterLogicalExpression.addInnerDBFilter(
+                        new NumberTableFilter(
+                            expression.path(),
+                            NativeTypeTableFilter.Operator.from(
+                                (ValueComparisonOperator) expression.operator()),
+                            (BigDecimal) rhsValue));
+                  } else {
+                    throw new UnsupportedOperationException(
+                        "Unsupported DocumentId type: " + rhsValue.getClass().getName());
+                  }
+                });
+          }
+        };
 
-    return filters;
+    currentCaptureGroups.recursiveConsume(currentDBFilterLogicalExpression, consumer);
+    return currentDBFilterLogicalExpression;
   }
 }
