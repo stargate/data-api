@@ -90,7 +90,7 @@ public final class ThrowableToErrorMapper {
     } else if (throwable instanceof ClosedConnectionException) {
       return ErrorCode.SERVER_CLOSED_CONNECTION
           .toApiException("(DriverException/ClosedConnectionException) %s", message)
-          .getCommandResultError(Response.Status.GATEWAY_TIMEOUT);
+          .getCommandResultError(Response.Status.BAD_GATEWAY);
     } else if (throwable instanceof CoordinatorException) {
       return handleCoordinatorException((CoordinatorException) throwable, message);
     } else if (throwable instanceof DriverTimeoutException) {
