@@ -113,9 +113,7 @@ public record WriteableTableRow(RowId id, Map<CqlIdentifier, Object> allColumnVa
                   try {
                     JSONCodecRegistry.codecToCQL(tableMetadata, entry.getKey(), entry.getValue());
                   } catch (UnknownColumnException e) {
-                    throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(
-                        "errorClass", e.getClass().getSimpleName(),
-                        "errorMessage", e.getMessage());
+                    throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errFmt(e));
                   } catch (MissingJSONCodecException e) {
                     return true;
                   }

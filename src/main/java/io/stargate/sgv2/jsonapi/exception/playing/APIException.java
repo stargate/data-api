@@ -38,8 +38,8 @@ import java.util.UUID;
  *
  * To get the Error to be returned in the {@link
  * io.stargate.sgv2.jsonapi.api.model.command.CommandResult} use a {@link
- * APIExceptionCommandResultSupplier} all the logic for mapping to the API is in there to keep it
- * out of the core exception classes.
+ * APIExceptionCommandErrorBuilder} all the logic for mapping to the API is in there to keep it out
+ * of the core exception classes.
  */
 public abstract class APIException extends RuntimeException {
 
@@ -121,7 +121,7 @@ public abstract class APIException extends RuntimeException {
   /**
    * Overrides to return the {@link #body} of the error. Using the body as this is effectively the
    * message, the structure we want to return to the in the API JSON comes from {@link
-   * APIExceptionCommandResultSupplier}
+   * APIExceptionCommandErrorBuilder}
    *
    * @return
    */

@@ -5,8 +5,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
+import io.stargate.sgv2.jsonapi.exception.playing.APIException;
+import io.stargate.sgv2.jsonapi.exception.playing.APIExceptionCommandErrorBuilder;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -35,13 +38,32 @@ public class InsertOperationPage implements Supplier<CommandResult> {
   private final List<InsertAttempt> successfulInsertions;
   private final List<InsertAttempt> failedInsertions;
 
+  // If the debug mode is enabled, errors include the errorclass
+  private final boolean debugMode;
+  // Flagged true to include the new error object v2
+  private final boolean extendedErrors;
+  // Created in the Ctor
+  private final Function<APIException, CommandResult.Error> apiExceptionToError;
+
   public InsertOperationPage(
       List<? extends InsertAttempt> allAttemptedInsertions, boolean returnDocumentResponses) {
+    this(allAttemptedInsertions, returnDocumentResponses, false, false);
+  }
+
+  public InsertOperationPage(
+      List<? extends InsertAttempt> allAttemptedInsertions,
+      boolean returnDocumentResponses,
+      boolean debugMode,
+      boolean extendedErrors) {
+
     this.allInsertions = List.copyOf(allAttemptedInsertions);
     this.returnDocumentResponses = returnDocumentResponses;
 
     this.successfulInsertions = new ArrayList<>(allAttemptedInsertions.size());
     this.failedInsertions = new ArrayList<>(allAttemptedInsertions.size());
+    this.debugMode = debugMode;
+    this.extendedErrors = extendedErrors;
+    this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode, extendedErrors);
   }
 
   enum InsertionStatus {
@@ -64,23 +86,21 @@ public class InsertOperationPage implements Supplier<CommandResult> {
     // TODO AARON used to only sort the success list when not returning detaile responses, check OK
     Collections.sort(successfulInsertions);
 
-    if (!returnDocumentResponses) { // legacy output, limited to ids, error messages
-      List<CommandResult.Error> errors =
-          failedInsertions.isEmpty()
-              ? null
-              : failedInsertions.stream().map(InsertOperationPage::getOldStyleError).toList();
-
-      // Note: See DocRowIdentifer, it has an attribute that will be called for JSON serialization
-      List<DocRowIdentifer> insertedIds =
-          successfulInsertions.stream()
-              .map(InsertAttempt::docRowID)
-              .map(Optional::orElseThrow)
-              .toList();
-      return new CommandResult(null, Map.of(CommandStatus.INSERTED_IDS, insertedIds), errors);
+    if (!returnDocumentResponses) {
+      return nonPerDocumentResult();
     }
 
-    // UPTO THIS AARON
+    return perDocumentResult();
+  }
 
+  /**
+   * Returns a insert command result in the newer style of detailed results per document
+   *
+   * <p>aaron - 3 sept -2024 - code moved from the get() method
+   *
+   * @return Command result
+   */
+  private CommandResult perDocumentResult() {
     // New style output: detailed responses.
     InsertionResult[] results = new InsertionResult[allInsertions.size()];
     List<CommandResult.Error> errors = new ArrayList<>();
@@ -93,7 +113,7 @@ public class InsertOperationPage implements Supplier<CommandResult> {
     // Second: failed insertions; output in order of insertion
     for (InsertAttempt failedInsertion : failedInsertions) {
       // TODO AARON - confirm the null handling in the getError
-      CommandResult.Error error = getError(failedInsertion.failure().orElse(null));
+      CommandResult.Error error = getErrorObject(failedInsertion);
 
       // We want to avoid adding the same error multiple times, so we keep track of the index:
       // either one exists, use it; or if not, add it and use the new index.
@@ -120,7 +140,53 @@ public class InsertOperationPage implements Supplier<CommandResult> {
         null, Map.of(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results)), errors);
   }
 
-  private static CommandResult.Error getOldStyleError(InsertAttempt insertAttempt) {
+  /**
+   * Returns a insert command result in the original style, without detailed document responses.
+   *
+   * <p>aaron - 3 sept -2024 - code moved from the get() method
+   *
+   * @return Command result
+   */
+  private CommandResult nonPerDocumentResult() {
+
+    List<CommandResult.Error> errors =
+        failedInsertions.isEmpty()
+            ? null
+            : failedInsertions.stream().map(this::getErrorObject).toList();
+
+    // Note: See DocRowIdentifer, it has an attribute that will be called for JSON serialization
+    List<DocRowIdentifer> insertedIds =
+        successfulInsertions.stream()
+            .map(InsertAttempt::docRowID)
+            .map(Optional::orElseThrow)
+            .toList();
+    return new CommandResult(null, Map.of(CommandStatus.INSERTED_IDS, insertedIds), errors);
+  }
+
+  /**
+   * Gets the appropriately formatted error given {@link #extendedErrors} and {@link #debugMode}.
+   */
+  private CommandResult.Error getErrorObject(InsertAttempt insertAttempt) {
+
+    var throwable = insertAttempt.failure().orElse(null);
+    if (throwable instanceof APIException apiException) {
+      // new v2 error object, with family etc.
+      // the builder will handle the debug mode and extended errors settings to return a V1 or V2
+      // error
+      return apiExceptionToError.apply(apiException);
+    }
+    if (extendedErrors) {
+      return getErrorObjectV2(throwable);
+    }
+
+    return getErrorObjectV1(insertAttempt);
+  }
+
+  /**
+   * Original error object V1, before the family etc, when the exception is not a ApiException aaron
+   * - 3 sept 2024 - old code, moved but mostly left alone
+   */
+  private CommandResult.Error getErrorObjectV1(InsertAttempt insertAttempt) {
     String message =
         "Failed to insert document with _id %s: %s"
             .formatted(
@@ -132,11 +198,16 @@ public class InsertOperationPage implements Supplier<CommandResult> {
 
     /// TODO: confirm the null handling in the getMapperWithMessageFunction
     // passing null is what would have happened before changing to optional
+    // BUG: this does not handle is the debug flag is set.
     return ThrowableToErrorMapper.getMapperWithMessageFunction()
         .apply(insertAttempt.failure().orElse(null), message);
   }
 
-  private static CommandResult.Error getError(Throwable throwable) {
+  /**
+   * aaron - I think this generating the V2 messages, but it does not look like it. copied from what
+   * was here and left alone
+   */
+  private static CommandResult.Error getErrorObjectV2(Throwable throwable) {
     // TODO AARON - confirm we have two different error message paths
     return ThrowableToErrorMapper.getMapperWithMessageFunction()
         .apply(throwable, throwable.getMessage());

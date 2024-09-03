@@ -4,43 +4,32 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import jakarta.ws.rs.core.Response;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 /**
- * Supplier that creates a {@link CommandResult.Error} from an {@link APIException}.
+ * Builder that creates a {@link CommandResult.Error} from an {@link APIException}.
  *
  * <p>This class encapsulates the mapping between the APIException and the API tier to keep it out
  * of the core exception classes.
  */
-public class APIExceptionCommandResultSupplier implements Supplier<CommandResult> {
+public class APIExceptionCommandErrorBuilder
+    implements Function<APIException, CommandResult.Error> {
 
-  private final APIException apiException;
   private final boolean debugEnabled;
-  private boolean returnErrorObjectV2;
+  private final boolean returnErrorObjectV2;
 
-  public APIExceptionCommandResultSupplier(APIException apiException) {
-    this(apiException, false, true);
-  }
+  public APIExceptionCommandErrorBuilder(boolean debugEnabled, boolean returnErrorObjectV2) {
 
-  public APIExceptionCommandResultSupplier(
-      APIException apiException, boolean debugEnabled, boolean returnErrorObjectV2) {
-    this.apiException = Objects.requireNonNull(apiException, "APIException must not be null");
     this.debugEnabled = debugEnabled;
     this.returnErrorObjectV2 = returnErrorObjectV2;
   }
 
   @Override
-  public CommandResult get() {
+  public CommandResult.Error apply(APIException apiException) {
     // Note, in the old JsonApiException the code also traverses the cause, we do not want to do
     // that in
     // error objects V2 because the proper error is created by the template etc.
-    return new CommandResult(List.of(commandResultError()));
-  }
-
-  private CommandResult.Error commandResultError() {
 
     // aaron - 28 aug 2024 - This should change when we improve the APi classes that handle errors,
     // for now have
@@ -66,12 +55,12 @@ public class APIExceptionCommandResultSupplier implements Supplier<CommandResult
 
     return new CommandResult.Error(
         apiException.body,
-        tagsForMetrics(),
+        tagsForMetrics(apiException),
         errorFields,
         Response.Status.fromStatusCode(apiException.httpStatus));
   }
 
-  private Map<String, Object> tagsForMetrics() {
+  private Map<String, Object> tagsForMetrics(APIException apiException) {
     // These tags must be backwards compatible with how we tracked before
     return Map.of(
         ErrorObjectV2Constants.MetricTags.ERROR_CODE, apiException.fullyQualifiedCode(),

@@ -9,7 +9,8 @@ public class DatabaseException extends ServerException {
   }
 
   public enum Code implements ErrorCode<DatabaseException> {
-    FAKE;
+    TABLE_WRITE_TIMEOUT,
+    CLOSED_CONNECTION;
 
     private final ErrorTemplate<DatabaseException> template;
 

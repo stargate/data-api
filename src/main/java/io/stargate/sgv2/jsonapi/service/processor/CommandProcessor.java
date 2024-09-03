@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.exception.playing.APIException;
-import io.stargate.sgv2.jsonapi.exception.playing.APIExceptionCommandResultSupplier;
+import io.stargate.sgv2.jsonapi.exception.playing.APIExceptionCommandErrorBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.List;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,12 +92,17 @@ public class CommandProcessor {
         .recoverWithItem(
             t ->
                 switch (t) {
-                  case APIException apiException ->
-                      // new error object V2
-                      new APIExceptionCommandResultSupplier(
-                          apiException,
-                          commandContext.getConfig(DebugModeConfig.class).enabled(),
-                          commandContext.getConfig(OperationsConfig.class).extendError());
+                  case APIException apiException -> {
+                    // new error object V2
+                    var errorBuilder =
+                        new APIExceptionCommandErrorBuilder(
+                            commandContext.getConfig(DebugModeConfig.class).enabled(),
+                            commandContext.getConfig(OperationsConfig.class).extendError());
+
+                    // yet more mucking about with suppliers everywhere :(
+                    yield (Supplier<CommandResult>)
+                        () -> new CommandResult(List.of(errorBuilder.apply(apiException)));
+                  }
                   case JsonApiException jsonApiException ->
                       // old error objects, old comment below
                       // Note: JsonApiException means that JSON API itself handled the situation

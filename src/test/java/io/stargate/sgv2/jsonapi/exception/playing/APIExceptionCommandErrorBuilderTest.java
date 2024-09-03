@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import org.junit.jupiter.api.Test;
 
-public class APIExceptionCommandResultSupplierTest extends ConfiguredErrorTest {
+public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
 
   private final ErrorTestData TEST_DATA = new ErrorTestData();
 
@@ -18,25 +18,25 @@ public class APIExceptionCommandResultSupplierTest extends ConfiguredErrorTest {
   @Test
   public void productionModeCommandResult() {
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result = new APIExceptionCommandResultSupplier(exception, false, true).get();
-    assertCommandResult(exception, result, 4, true);
+    var result = new APIExceptionCommandErrorBuilder(false, true).apply(exception);
+    assertCommandError(exception, result, 4, true);
   }
 
   @Test
   public void preErrorV2ModeCommandResult() {
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result = new APIExceptionCommandResultSupplier(exception, false, true).get();
-    assertCommandResult(exception, result, 1, false);
+    var result = new APIExceptionCommandErrorBuilder(false, true).apply(exception);
+    assertCommandError(exception, result, 1, false);
   }
 
   @Test
   public void debugModeCommandResult() {
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result = new APIExceptionCommandResultSupplier(exception, true, true).get();
-    assertCommandResult(exception, result, 5, true);
+    var result = new APIExceptionCommandErrorBuilder(true, true).apply(exception);
+    assertCommandError(exception, result, 5, true);
 
-    assertThat(result.errors())
-        .singleElement()
+    assertThat(result)
+        .isNotNull()
         .satisfies(
             e ->
                 assertThat(e.fields())
@@ -45,15 +45,15 @@ public class APIExceptionCommandResultSupplierTest extends ConfiguredErrorTest {
                         exception.getClass().getSimpleName()));
   }
 
-  private void assertCommandResult(
-      APIException exception, CommandResult result, int fieldSize, boolean errorObjectV2) {
-    assertThat(result.data()).as("CommandResult has no data when there is an error").isNull();
+  private void assertCommandError(
+      APIException exception,
+      CommandResult.Error commandError,
+      int fieldSize,
+      boolean errorObjectV2) {
 
-    assertThat(result.status()).as("CommandResult has no status when there is an error").isNull();
-
-    assertThat(result.errors())
-        .as("CommandResult has a single error when there is an error")
-        .singleElement()
+    assertThat(commandError)
+        .as("CommandResult.Error matches ApiException %s", exception)
+        .isNotNull()
         .satisfies(
             e -> {
               assertThat(e.message()).isEqualTo(exception.body);
