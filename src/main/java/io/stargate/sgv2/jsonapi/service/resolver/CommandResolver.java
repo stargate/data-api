@@ -5,14 +5,13 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
 import java.util.Objects;
 
 /**
@@ -137,18 +136,19 @@ public interface CommandResolver<C extends Command> {
    * @param dataApiRequestInfo
    * @param jsonApiMetricsConfig
    * @param command
-   * @param logicalExpression
+   * @param
    * @param baseIndexUsage Callers should pass an initial {@link IndexUsage} object that will be
-   *     merged with those from the {@link DBFilterBase} used in the {@link LogicalExpression}. This
-   *     means the caller can set some things the filter may not have, like using ANN in a sort. Use
-   *     {@link SchemaObject#newIndexUsage()} to get the correct type of IndexUsage.
+   *     merged with those from the {@link DBFilterBase} used in the {@link
+   *     DBFilterLogicalExpression}. This means the caller can set some things the filter may not
+   *     have, like using ANN in a sort. Use {@link SchemaObject#newIndexUsage()} to get the correct
+   *     type of IndexUsage.
    */
   default void addToMetrics(
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       Command command,
-      LogicalExpression logicalExpression,
+      DBFilterLogicalExpression dbFilterLogicalExpression,
       IndexUsage baseIndexUsage) {
     // TODO: this functions hould not be on the CommandResolver interface, it has nothing to do with
     // that
@@ -157,24 +157,24 @@ public interface CommandResolver<C extends Command> {
     Tag tenantTag = Tag.of(TENANT_TAG, dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     Tags tags = Tags.of(commandTag, tenantTag);
 
-    getIndexUsageTags(logicalExpression, baseIndexUsage);
+    getIndexUsageTags(dbFilterLogicalExpression, baseIndexUsage);
     tags = tags.and(baseIndexUsage.getTags());
 
     meterRegistry.counter(jsonApiMetricsConfig.indexUsageCounterMetrics(), tags).increment();
   }
 
-  private void getIndexUsageTags(LogicalExpression logicalExpression, IndexUsage indexUsage) {
-    for (ComparisonExpression comparisonExpression : logicalExpression.comparisonExpressions) {
-      getIndexUsageTags(comparisonExpression, indexUsage);
+  private void getIndexUsageTags(
+      DBFilterLogicalExpression dbFilterLogicalExpression, IndexUsage indexUsage) {
+    for (DBFilterBase dbFilter : dbFilterLogicalExpression.getDbFilterList()) {
+      getIndexUsageTags(dbFilter, indexUsage);
     }
-    for (LogicalExpression innerLogicalExpression : logicalExpression.logicalExpressions) {
-      getIndexUsageTags(innerLogicalExpression, indexUsage);
+    for (DBFilterLogicalExpression innerDbFilterLogicalExpression :
+        dbFilterLogicalExpression.getDbFilterLogicalExpressionList()) {
+      getIndexUsageTags(innerDbFilterLogicalExpression, indexUsage);
     }
   }
 
-  private void getIndexUsageTags(ComparisonExpression comparisonExpression, IndexUsage indexUsage) {
-    for (DBFilterBase dbFilterBase : comparisonExpression.getDbFilters()) {
-      indexUsage.merge(dbFilterBase.indexUsage);
-    }
+  private void getIndexUsageTags(DBFilterBase dbFilter, IndexUsage indexUsage) {
+    indexUsage.merge(dbFilter.indexUsage);
   }
 }

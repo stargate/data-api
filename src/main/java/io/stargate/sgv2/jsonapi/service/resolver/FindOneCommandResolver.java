@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -15,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.FindTableOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableRowProjection;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
@@ -83,7 +83,8 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindOneCommand command) {
 
-    LogicalExpression logicalExpression = collectionFilterResolver.resolve(ctx, command);
+    final DBFilterLogicalExpression dbFilterLogicalExpression =
+        collectionFilterResolver.resolve(ctx, command);
     final SortClause sortClause = command.sortClause();
     ValidatableCommandClause.maybeValidate(ctx, sortClause);
 
@@ -103,12 +104,12 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
-        logicalExpression,
+        dbFilterLogicalExpression,
         indexUsage);
     if (vector != null) {
       return FindCollectionOperation.vsearchSingle(
           ctx,
-          logicalExpression,
+          dbFilterLogicalExpression,
           command.buildProjector(includeSimilarity),
           CollectionReadType.DOCUMENT,
           objectMapper,
@@ -121,7 +122,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     if (orderBy != null) {
       return FindCollectionOperation.sortedSingle(
           ctx,
-          logicalExpression,
+          dbFilterLogicalExpression,
           command.buildProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
@@ -136,7 +137,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     } else {
       return FindCollectionOperation.unsortedSingle(
           ctx,
-          logicalExpression,
+          dbFilterLogicalExpression,
           command.buildProjector(),
           CollectionReadType.DOCUMENT,
           objectMapper,

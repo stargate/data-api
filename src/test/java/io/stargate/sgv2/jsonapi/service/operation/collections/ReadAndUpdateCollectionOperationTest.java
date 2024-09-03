@@ -21,8 +21,6 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
@@ -33,7 +31,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
@@ -205,13 +203,10 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(
-              new IDCollectionFilter(
-                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+      DBFilterLogicalExpression implicitAnd =
+          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addInnerDBFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
           FindCollectionOperation.unsortedSingle(
@@ -314,13 +309,11 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(
-              new IDCollectionFilter(
-                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+      DBFilterLogicalExpression implicitAnd =
+          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addInnerDBFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
+
       CommandContext commandContext = createCommandContextWithCommandName("ReadNoWriteCommand");
 
       FindCollectionOperation findCollectionOperation =
@@ -611,11 +604,11 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results2);
               });
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+      DBFilterLogicalExpression implicitAnd =
+          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addInnerDBFilter(
+          new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
+
       CommandContext commandContext = createCommandContextWithCommandName("ReadAndWriteCommand");
 
       FindCollectionOperation findCollectionOperation =
@@ -821,13 +814,10 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(
-              new IDCollectionFilter(
-                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+      DBFilterLogicalExpression implicitAnd =
+          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addInnerDBFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
           FindCollectionOperation.unsortedSingle(
@@ -931,13 +921,10 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(
-              new IDCollectionFilter(
-                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+      DBFilterLogicalExpression implicitAnd =
+          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addInnerDBFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
           FindCollectionOperation.unsortedSingle(
@@ -1109,11 +1096,10 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results2);
               });
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+      DBFilterLogicalExpression implicitAnd =
+          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addInnerDBFilter(
+          new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
 
       FindCollectionOperation findCollectionOperation =
           FindCollectionOperation.sortedSingle(
@@ -1276,11 +1262,10 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results2);
               });
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+      DBFilterLogicalExpression implicitAnd =
+          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addInnerDBFilter(
+          new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
 
       FindCollectionOperation findCollectionOperation =
           FindCollectionOperation.sortedSingle(
@@ -1356,13 +1341,10 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(
-              new IDCollectionFilter(
-                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+      DBFilterLogicalExpression implicitAnd =
+          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addInnerDBFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
           FindCollectionOperation.unsortedSingle(
@@ -1455,13 +1437,10 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(
-              new IDCollectionFilter(
-                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+      DBFilterLogicalExpression implicitAnd =
+          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addInnerDBFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
           FindCollectionOperation.unsortedSingle(
@@ -1605,11 +1584,11 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results3);
               });
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+      DBFilterLogicalExpression implicitAnd =
+          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addInnerDBFilter(
+          new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
+
       FindCollectionOperation findCollectionOperation =
           FindCollectionOperation.unsorted(
               COMMAND_CONTEXT,
@@ -1703,13 +1682,10 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results2);
               });
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(
-              new IDCollectionFilter(
-                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+      DBFilterLogicalExpression implicitAnd =
+          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addInnerDBFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
           FindCollectionOperation.unsorted(
@@ -1783,11 +1759,10 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters =
-          List.of(new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters);
+      DBFilterLogicalExpression implicitAnd =
+          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addInnerDBFilter(
+          new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
 
       FindCollectionOperation findCollectionOperation =
           FindCollectionOperation.unsorted(

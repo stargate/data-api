@@ -3,15 +3,13 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * Applies a series of {@link FilterMatchRule}'s to either create an {@link Operation}
@@ -21,8 +19,8 @@ import java.util.function.Function;
 public class FilterMatchRules<T extends Command & Filterable> {
 
   // use the interface rather than MatchRule class so the streaming works.
-  private final List<BiFunction<CommandContext, T, Optional<LogicalExpression>>> matchRules =
-      new ArrayList<>();
+  private final List<BiFunction<CommandContext, T, Optional<DBFilterLogicalExpression>>>
+      matchRules = new ArrayList<>();
 
   /**
    * Adds a rule that will result in the specified resolveFunction being called.
@@ -44,10 +42,11 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @return
    */
   public FilterMatchRule<T> addMatchRule(
-      Function<CaptureExpression, List<DBFilterBase>> resolveFunction,
+      BiFunction<DBFilterLogicalExpression, CaptureGroups<T>, DBFilterLogicalExpression>
+          resolveFunction,
       FilterMatcher.MatchStrategy matchStrategy) {
     FilterMatchRule<T> rule =
-        new FilterMatchRule<T>(new FilterMatcher<T>(matchStrategy, resolveFunction));
+        new FilterMatchRule<T>(new FilterMatcher<>(matchStrategy), resolveFunction);
     matchRules.add(rule);
     return rule;
   }
@@ -59,7 +58,8 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @param command
    * @return
    */
-  public LogicalExpression apply(CommandContext commandContext, T command) {
+  public DBFilterLogicalExpression apply(CommandContext commandContext, T command) {
+
     return matchRules.stream()
         .map(e -> e.apply(commandContext, command))
         .filter(Optional::isPresent)

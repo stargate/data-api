@@ -5,12 +5,12 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -19,7 +19,10 @@ import java.util.function.Supplier;
  * assumption that all variables to be indexed.
  */
 public record CountCollectionOperation(
-    CommandContext commandContext, LogicalExpression logicalExpression, int pageSize, int limit)
+    CommandContext commandContext,
+    DBFilterLogicalExpression dbFilterLogicalExpression,
+    int pageSize,
+    int limit)
     implements CollectionReadOperation {
 
   @Override
@@ -47,7 +50,7 @@ public record CountCollectionOperation(
 
   private SimpleStatement buildSelectQuery() {
     final List<Expression<BuiltCondition>> expressions =
-        ExpressionBuilder.buildExpressions(logicalExpression, null);
+        ExpressionBuilder.buildExpressions(dbFilterLogicalExpression, null);
     Query query = null;
     if (limit == -1) {
       query =

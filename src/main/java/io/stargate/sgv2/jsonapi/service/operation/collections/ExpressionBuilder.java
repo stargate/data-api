@@ -2,13 +2,12 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cql.ExpressionUtils;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,9 +16,9 @@ import java.util.stream.Collectors;
 public class ExpressionBuilder {
 
   public static List<Expression<BuiltCondition>> buildExpressions(
-      LogicalExpression logicalExpression, IDCollectionFilter additionalIdFilter) {
+      DBFilterLogicalExpression dbLogicalExpression, IDCollectionFilter additionalIdFilter) {
     // an empty filter should find everything
-    if (logicalExpression.isEmpty() && additionalIdFilter == null) {
+    if (dbLogicalExpression.isEmpty() && additionalIdFilter == null) {
       return Collections.singletonList(null);
     }
     // after validate in FilterClauseDeserializer,
@@ -29,7 +28,7 @@ public class ExpressionBuilder {
     // expressionWithoutId must be a And(if not null)
     // since we have outer implicit and in the filter
     Expression<BuiltCondition> expressionWithoutId =
-        buildExpressionRecursive(logicalExpression, additionalIdFilter, idFilters);
+        buildExpressionRecursive(dbLogicalExpression, additionalIdFilter, idFilters);
     List<Expression<BuiltCondition>> expressions =
         buildExpressionWithId(additionalIdFilter, expressionWithoutId, idFilters);
     return expressions;
@@ -82,13 +81,14 @@ public class ExpressionBuilder {
   }
 
   private static Expression<BuiltCondition> buildExpressionRecursive(
-      LogicalExpression logicalExpression,
+      DBFilterLogicalExpression dbLogicalExpression,
       IDCollectionFilter additionalIdFilter,
       List<IDCollectionFilter> idConditionExpressions) {
     List<Expression<BuiltCondition>> conditionExpressions = new ArrayList<>();
     // first for loop, is to iterate all subLogicalExpression
     // each iteration goes into another recursive build
-    for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
+    for (DBFilterLogicalExpression subLogicalExpression :
+        dbLogicalExpression.getDbFilterLogicalExpressionList()) {
       final Expression<BuiltCondition> subExpressionCondition =
           buildExpressionRecursive(
               subLogicalExpression, additionalIdFilter, idConditionExpressions);
@@ -105,58 +105,58 @@ public class ExpressionBuilder {
     boolean inFilterThisLevelWithEmptyArray = true;
     boolean ninFilterThisLevelWithEmptyArray = true;
 
-    // second for loop, is to iterate all subComparisonExpression
-    for (ComparisonExpression comparisonExpression : logicalExpression.comparisonExpressions) {
-      for (DBFilterBase dbFilter : comparisonExpression.getDbFilters()) {
-        if (dbFilter instanceof AllCollectionFilter allFilter) {
-          List<BuiltCondition> allFilterConditions = allFilter.getAll();
-          List<Variable<BuiltCondition>> allFilterVariables =
-              allFilterConditions.stream().map(Variable::of).toList();
-          conditionExpressions.add(
-              allFilter.isNegation()
-                  ? ExpressionUtils.orOf(allFilterVariables)
-                  : ExpressionUtils.andOf(allFilterVariables));
-        } else if (dbFilter instanceof InCollectionFilter inFilter) {
-          if (inFilter.operator.equals(InCollectionFilter.Operator.IN)) {
-            hasInFilterThisLevel = true;
-          } else if (inFilter.operator.equals(InCollectionFilter.Operator.NIN)) {
-            hasNinFilterThisLevel = true;
-          }
-          List<BuiltCondition> inFilterConditions = inFilter.getAll();
-          if (!inFilterConditions.isEmpty()) {
-            // store information of an empty array happens with $in or $nin
-            if (inFilter.operator.equals(InCollectionFilter.Operator.IN)) {
-              inFilterThisLevelWithEmptyArray = false;
-            } else if (inFilter.operator.equals(InCollectionFilter.Operator.NIN)) {
-              ninFilterThisLevelWithEmptyArray = false;
-            }
-            List<Variable<BuiltCondition>> inConditionsVariables =
-                inFilterConditions.stream().map(Variable::of).toList();
-            // non_id $in:["A","B"] -> array_contains contains A or array_contains contains B
-            // non_id $nin:["A","B"] -> array_contains not contains A and array_contains not
-            // contains B
-            // _id $nin: ["A","B"] -> query_text_values['_id'] != A and query_text_values['_id'] !=
-            // B
-            conditionExpressions.add(
-                inFilter.operator.equals(InCollectionFilter.Operator.IN)
-                    ? ExpressionUtils.orOf(inConditionsVariables)
-                    : ExpressionUtils.andOf(inConditionsVariables));
-          }
-        } else if (dbFilter instanceof IDCollectionFilter idFilter) {
-          if (additionalIdFilter == null) {
-            idConditionExpressions.add(idFilter);
-          }
-        } else {
-          conditionExpressions.add(Variable.of(dbFilter.get()));
+    // second for loop, is to iterate dbFilters
+    for (DBFilterBase dbFilter : dbLogicalExpression.getDbFilterList()) {
+      if (dbFilter instanceof AllCollectionFilter allFilter) {
+        List<BuiltCondition> allFilterConditions = allFilter.getAll();
+        List<Variable<BuiltCondition>> allFilterVariables =
+            allFilterConditions.stream().map(Variable::of).toList();
+        conditionExpressions.add(
+            allFilter.isNegation()
+                ? ExpressionUtils.orOf(allFilterVariables)
+                : ExpressionUtils.andOf(allFilterVariables));
+      } else if (dbFilter instanceof InCollectionFilter inFilter) {
+        if (inFilter.operator.equals(InCollectionFilter.Operator.IN)) {
+          hasInFilterThisLevel = true;
+        } else if (inFilter.operator.equals(InCollectionFilter.Operator.NIN)) {
+          hasNinFilterThisLevel = true;
         }
+        List<BuiltCondition> inFilterConditions = inFilter.getAll();
+        if (!inFilterConditions.isEmpty()) {
+          // store information of an empty array happens with $in or $nin
+          if (inFilter.operator.equals(InCollectionFilter.Operator.IN)) {
+            inFilterThisLevelWithEmptyArray = false;
+          } else if (inFilter.operator.equals(InCollectionFilter.Operator.NIN)) {
+            ninFilterThisLevelWithEmptyArray = false;
+          }
+          List<Variable<BuiltCondition>> inConditionsVariables =
+              inFilterConditions.stream().map(Variable::of).toList();
+          // non_id $in:["A","B"] -> array_contains contains A or array_contains contains B
+          // non_id $nin:["A","B"] -> array_contains not contains A and array_contains not
+          // contains B
+          // _id $nin: ["A","B"] -> query_text_values['_id'] != A and query_text_values['_id'] !=
+          // B
+          conditionExpressions.add(
+              inFilter.operator.equals(InCollectionFilter.Operator.IN)
+                  ? ExpressionUtils.orOf(inConditionsVariables)
+                  : ExpressionUtils.andOf(inConditionsVariables));
+        }
+      } else if (dbFilter instanceof IDCollectionFilter idFilter) {
+        if (additionalIdFilter == null) {
+          idConditionExpressions.add(idFilter);
+        }
+      } else {
+        conditionExpressions.add(Variable.of(dbFilter.get()));
       }
     }
 
-    // when having an empty array $nin, if $nin occurs within an $or logic, entire $or should match
+    // when having an empty array $nin, if $nin occurs within an or logic, entire or should match
     // everything
     if (hasNinFilterThisLevel
         && ninFilterThisLevelWithEmptyArray
-        && logicalExpression.getLogicalRelation().equals(LogicalExpression.LogicalOperator.OR)) {
+        && dbLogicalExpression
+            .getDbLogicalOperator()
+            .equals(DBFilterLogicalExpression.DBLogicalOperator.OR)) {
       // TODO: find a better CQL TRUE placeholder
       conditionExpressions.clear();
       conditionExpressions.add(
@@ -165,14 +165,16 @@ public class ExpressionBuilder {
                       "something user never use", SetCollectionFilter.Operator.NOT_CONTAINS)
                   .get()));
       return ExpressionUtils.buildExpression(
-          conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
+          conditionExpressions, dbLogicalExpression.getDbLogicalOperator());
     }
 
-    // when having an empty array $in, if $in occurs within an $and logic, entire $and should match
+    // when having an empty array $in, if $in occurs within an and logic, entire and should match
     // nothing
     if (hasInFilterThisLevel
         && inFilterThisLevelWithEmptyArray
-        && logicalExpression.getLogicalRelation().equals(LogicalExpression.LogicalOperator.AND)) {
+        && dbLogicalExpression
+            .getDbLogicalOperator()
+            .equals(DBFilterLogicalExpression.DBLogicalOperator.AND)) {
       // TODO: find a better CQL FALSE placeholder
       conditionExpressions.clear();
       conditionExpressions.add(
@@ -181,16 +183,16 @@ public class ExpressionBuilder {
                       "something user never use", SetCollectionFilter.Operator.CONTAINS)
                   .get()));
       return ExpressionUtils.buildExpression(
-          conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
+          conditionExpressions, dbLogicalExpression.getDbLogicalOperator());
     }
 
-    // current logicalExpression is empty (implies sub-logicalExpression and
-    // sub-comparisonExpression are all empty)
+    // current dbLogicalExpression is empty (implies nested dbLogicalExpression and dbFilters are
+    // all empty)
     if (conditionExpressions.isEmpty()) {
       return null;
     }
 
     return ExpressionUtils.buildExpression(
-        conditionExpressions, logicalExpression.getLogicalRelation().getOperator());
+        conditionExpressions, dbLogicalExpression.getDbLogicalOperator());
   }
 }

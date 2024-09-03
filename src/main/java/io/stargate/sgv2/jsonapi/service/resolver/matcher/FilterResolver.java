@@ -2,11 +2,11 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.resolver.ClauseResolver;
 import java.util.Objects;
 
@@ -20,13 +20,13 @@ import java.util.Objects;
  *
  * <p>
  *
- * @param <CmdT> The type od the {@link Command} that is being resolved.
- * @param <SchemaT> The typ of the {@link SchemaObject} that {@link Command} command is operating
+ * @param <CmdT> The type of the {@link Command} that is being resolved.
+ * @param <SchemaT> The type of the {@link SchemaObject} that {@link Command} command is operating
  *     on.
  */
 public abstract class FilterResolver<
         CmdT extends Command & Filterable, SchemaT extends SchemaObject>
-    extends ClauseResolver<CmdT, SchemaT, LogicalExpression> {
+    extends ClauseResolver<CmdT, SchemaT, DBFilterLogicalExpression> {
 
   protected final FilterMatchRules<CmdT> matchRules;
 
@@ -35,10 +35,6 @@ public abstract class FilterResolver<
 
     matchRules =
         Objects.requireNonNull(buildMatchRules(), "buildMatchRules() must return non null");
-    if (matchRules.isEmpty()) {
-      throw new IllegalArgumentException(
-          "buildMatchRules() must return non empty FilterMatchRules");
-    }
   }
 
   /**
@@ -52,27 +48,34 @@ public abstract class FilterResolver<
 
   /**
    * Users of the class should call this function to convert the filer on the command into a {@link
-   * LogicalExpression}.
+   * DBFilterLogicalExpression}.
    *
    * @param commandContext
    * @param command
-   * @return
+   * @return DBFilterLogicalExpression
    */
-  public LogicalExpression resolve(CommandContext<SchemaT> commandContext, CmdT command) {
+  public DBFilterLogicalExpression resolve(CommandContext<SchemaT> commandContext, CmdT command) {
     Preconditions.checkNotNull(commandContext, "commandContext is required");
     Preconditions.checkNotNull(command, "command is required");
+
     ValidatableCommandClause.maybeValidate(commandContext, command.filterClause());
     InvertibleCommandClause.maybeInvert(commandContext, command.filterClause());
-    LogicalExpression filter = matchRules.apply(commandContext, command);
-    if (filter.getTotalComparisonExpressionCount() > operationsConfig.maxFilterObjectProperties()) {
+
+    final DBFilterLogicalExpression dbFilterLogicalExpression =
+        matchRules.apply(commandContext, command);
+
+    // TODO, why validate here?
+    if (command.filterClause() != null
+        && command.filterClause().logicalExpression().getTotalComparisonExpressionCount()
+            > operationsConfig.maxFilterObjectProperties()) {
       throw new JsonApiException(
           ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION,
           String.format(
               "%s: filter has %d fields, exceeds maximum allowed %s",
               ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION.getMessage(),
-              filter.getTotalComparisonExpressionCount(),
+              command.filterClause().logicalExpression().getTotalComparisonExpressionCount(),
               operationsConfig.maxFilterObjectProperties()));
     }
-    return filter;
+    return dbFilterLogicalExpression;
   }
 }
