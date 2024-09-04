@@ -9,8 +9,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.config.ApiTablesConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
+import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatureConfig;
+import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatureFlag;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
@@ -51,7 +52,7 @@ public class NamespaceResource {
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
 
-  @Inject ApiTablesConfig apiTablesConfig;
+  @Inject DataApiFeatureConfig apiFeatureConfig;
 
   @Inject
   public NamespaceResource(MeteredCommandProcessor meteredCommandProcessor) {
@@ -106,7 +107,8 @@ public class NamespaceResource {
           @Size(min = 1, max = 48)
           String namespace) {
 
-    if (command instanceof TableOnlyCommand && !apiTablesConfig.enabled()) {
+    if (command instanceof TableOnlyCommand
+        && !apiFeatureConfig.isFeatureEnabled(DataApiFeatureFlag.TABLES)) {
       return Uni.createFrom()
           .item(
               new ThrowableCommandResultSupplier(

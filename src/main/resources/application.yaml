@@ -27,6 +27,7 @@ stargate:
 
   feature:
     flags:
+      # null value means "disabled but may be enabled by request override"
       TABLES: null
 
   # custom grpc settings
