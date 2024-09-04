@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatureConfig;
 import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatureFlag;
+import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
@@ -107,6 +108,8 @@ public class NamespaceResource {
           @Size(min = 1, max = 48)
           String namespace) {
 
+    final DataApiFeatures features = DataApiFeatures.fromConfigOnly(apiFeatureConfig);
+
     // create context
     // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
     //    CommandContext commandContext = new CommandContext(namespace, null);
@@ -116,7 +119,7 @@ public class NamespaceResource {
 
     // Need context first to check if feature is enabled
     if (command instanceof TableOnlyCommand
-        && !apiFeatureConfig.isFeatureEnabled(DataApiFeatureFlag.TABLES)) {
+        && !features.isFeatureEnabled(DataApiFeatureFlag.TABLES)) {
       return Uni.createFrom()
           .item(
               new ThrowableCommandResultSupplier(

@@ -20,9 +20,14 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
+import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatureConfig;
+import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatureFlag;
+import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatures;
+import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
@@ -67,6 +72,8 @@ public class CollectionResource {
   @Inject private EmbeddingProviderFactory embeddingProviderFactory;
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
+
+  @Inject DataApiFeatureConfig apiFeatureConfig;
 
   @Inject private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 
@@ -181,6 +188,12 @@ public class CollectionResource {
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
                 // TODO No need for the else clause here, simplify
+                final DataApiFeatures features = DataApiFeatures.fromConfigOnly(apiFeatureConfig);
+                if ((schemaObject.type == SchemaObject.SchemaObjectType.TABLE)
+                    && !features.isFeatureEnabled(DataApiFeatureFlag.TABLES)) {
+                  return Uni.createFrom()
+                      .failure(ErrorCode.TABLE_FEATURE_NOT_ENABLED.toApiException());
+                }
                 // TODO: refactor this code to be cleaner so it assigns on one line
                 EmbeddingProvider embeddingProvider = null;
                 final VectorConfig.VectorizeConfig vectorizeConfig =

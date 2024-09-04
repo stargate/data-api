@@ -4,7 +4,10 @@ import io.smallrye.config.ConfigMapping;
 import java.util.Map;
 import java.util.Optional;
 
-/** Configuration mapping for Data API Feature flags. */
+/**
+ * Configuration mapping for Data API Feature flags as read from main application configuration
+ * (with possible properety / sysenv overrides).
+ */
 @ConfigMapping(prefix = "stargate.feature")
 public interface DataApiFeatureConfig {
   Map<DataApiFeatureFlag, Boolean> flags();
