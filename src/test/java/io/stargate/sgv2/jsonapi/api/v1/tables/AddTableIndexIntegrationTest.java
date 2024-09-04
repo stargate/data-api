@@ -23,7 +23,6 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     String tableJson =
             """
                           {
-                              "createTable": {
                                   "name": "%s",
                                   "definition": {
                                       "columns": {
@@ -39,7 +38,6 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                       },
                                       "primaryKey": "id"
                                   }
-                              }
                           }
                     """
             .formatted(simpleTableName);
