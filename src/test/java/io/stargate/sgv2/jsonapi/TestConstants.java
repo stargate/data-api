@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatures;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import org.apache.commons.lang3.RandomStringUtils;
 
@@ -40,15 +41,21 @@ public final class TestConstants {
 
   // CommandContext for working on the schema objects above
 
+  public static final DataApiFeatures DEFAULT_API_FEATURES_FOR_TESTS = DataApiFeatures.empty();
+
   public static final CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT =
-      new CommandContext<>(COLLECTION_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null);
+      new CommandContext<>(
+          COLLECTION_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null, DEFAULT_API_FEATURES_FOR_TESTS);
 
   public static final CommandContext<CollectionSchemaObject> VECTOR_COLLECTION_CONTEXT =
-      new CommandContext<>(VECTOR_COLLECTION_SCHEMA_OBJECT, null, null, null);
+      new CommandContext<>(
+          VECTOR_COLLECTION_SCHEMA_OBJECT, null, null, null, DEFAULT_API_FEATURES_FOR_TESTS);
 
   public static final CommandContext<KeyspaceSchemaObject> KEYSPACE_CONTEXT =
-      new CommandContext<>(KEYSPACE_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null);
+      new CommandContext<>(
+          KEYSPACE_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null, DEFAULT_API_FEATURES_FOR_TESTS);
 
   public static final CommandContext<DatabaseSchemaObject> DATABASE_CONTEXT =
-      new CommandContext<>(DATABASE_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null);
+      new CommandContext<>(
+          DATABASE_SCHEMA_OBJECT, null, TEST_COMMAND_NAME, null, DEFAULT_API_FEATURES_FOR_TESTS);
 }

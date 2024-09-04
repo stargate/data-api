@@ -108,18 +108,18 @@ public class NamespaceResource {
           @Size(min = 1, max = 48)
           String namespace) {
 
-    final DataApiFeatures features = DataApiFeatures.fromConfigOnly(apiFeatureConfig);
+    final DataApiFeatures apiFeatures = DataApiFeatures.fromConfigOnly(apiFeatureConfig);
 
     // create context
     // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
     //    CommandContext commandContext = new CommandContext(namespace, null);
     // HACK TODO: The above did not set a command name on the command context, how did that work ?
     CommandContext<KeyspaceSchemaObject> commandContext =
-        new CommandContext<>(new KeyspaceSchemaObject(namespace), null, "", null);
+        new CommandContext<>(new KeyspaceSchemaObject(namespace), null, "", null, apiFeatures);
 
     // Need context first to check if feature is enabled
     if (command instanceof TableOnlyCommand
-        && !features.isFeatureEnabled(DataApiFeatureFlag.TABLES)) {
+        && !apiFeatures.isFeatureEnabled(DataApiFeatureFlag.TABLES)) {
       return Uni.createFrom()
           .item(
               new ThrowableCommandResultSupplier(

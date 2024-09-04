@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -16,7 +17,8 @@ public record CommandContext<T extends SchemaObject>(
     T schemaObject,
     EmbeddingProvider embeddingProvider,
     String commandName,
-    JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+    JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+    DataApiFeatures apiFeatures) {
 
   // TODO: this is what the original EMPTY had, no idea why the name of the command is missing
   // this is used by the GeneralResource
@@ -79,9 +81,10 @@ public record CommandContext<T extends SchemaObject>(
       CollectionSchemaObject schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      DataApiFeatures apiFeatures) {
     return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
   }
 
   /**
@@ -98,9 +101,10 @@ public record CommandContext<T extends SchemaObject>(
       TableSchemaObject schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      DataApiFeatures apiFeatures) {
     return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
   }
 
   /**
@@ -117,9 +121,10 @@ public record CommandContext<T extends SchemaObject>(
       KeyspaceSchemaObject schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      DataApiFeatures apiFeatures) {
     return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
   }
 
   /**
@@ -136,9 +141,10 @@ public record CommandContext<T extends SchemaObject>(
       DatabaseSchemaObject schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      DataApiFeatures apiFeatures) {
     return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
   }
 
   @SuppressWarnings("unchecked")
