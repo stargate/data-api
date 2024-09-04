@@ -127,7 +127,7 @@ public class JSONCodecRegistry {
   }
 
   // Boolean
-  public static final JSONCodec<Boolean, Boolean> BOOLEAN =
+  private static final JSONCodec<Boolean, Boolean> BOOLEAN =
       new JSONCodec<>(
           GenericType.BOOLEAN,
           DataTypes.BOOLEAN,
@@ -135,17 +135,26 @@ public class JSONCodecRegistry {
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::booleanNode));
 
   // Numeric Codecs
-  public static final JSONCodec<BigDecimal, Long> BIGINT =
+  private static final JSONCodec<BigDecimal, Long> BIGINT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.BIGINT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::longValueExact),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  // TODO Tatu For performance reasons we could also consider only converting FP values into
-  // BigDecimal JsonNode -- but converting CQL integer values into long-valued JsonNode.
-  //  I think our internal handling can deal with Integer and Long valued JsonNodes and this avoids
-  // some of BigDecimal overhead (avoids conversion overhead, serialization is faster).
+  private static final JSONCodec<BigInteger, Long> BIGINT_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.BIGINT,
+          JSONCodec.ToCQL.safeNumber(BigInteger::longValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  private static final JSONCodec<Long, Long> BIGINT_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.BIGINT,
+          JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, BigDecimal> DECIMAL =
       new JSONCodec<>(
@@ -168,32 +177,88 @@ public class JSONCodecRegistry {
           JSONCodec.ToCQL.safeNumber(BigDecimal::floatValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, Integer> INT =
+  public static final JSONCodec<BigDecimal, Integer> INT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.INT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::intValueExact),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, Short> SMALLINT =
+  public static final JSONCodec<BigInteger, Integer> INT_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.INT,
+          JSONCodec.ToCQL.safeNumber(BigInteger::intValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<Long, Integer> INT_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.INT,
+          JSONCodec.ToCQL.safeNumber(JSONCodec.ToCQL::safeLongToInt),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<BigDecimal, Short> SMALLINT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.SMALLINT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::shortValueExact),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, Byte> TINYINT =
+  public static final JSONCodec<BigInteger, Short> SMALLINT_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.SMALLINT,
+          JSONCodec.ToCQL.safeNumber(BigInteger::shortValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<Long, Short> SMALLINT_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.SMALLINT,
+          JSONCodec.ToCQL.safeNumber(JSONCodec.ToCQL::safeLongToSmallint),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<BigDecimal, Byte> TINYINT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.TINYINT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::byteValueExact),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, BigInteger> VARINT =
+  public static final JSONCodec<BigInteger, Byte> TINYINT_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.TINYINT,
+          JSONCodec.ToCQL.safeNumber(BigInteger::byteValueExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<Long, Byte> TINYINT_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.TINYINT,
+          JSONCodec.ToCQL.safeNumber(JSONCodec.ToCQL::safeLongToTinyint),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<BigDecimal, BigInteger> VARINT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.VARINT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::toBigIntegerExact),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<BigInteger, BigInteger> VARINT_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.VARINT,
+          JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<Long, BigInteger> VARINT_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.VARINT,
+          JSONCodec.ToCQL.safeNumber(BigInteger::valueOf),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   // Text Codecs
@@ -215,6 +280,30 @@ public class JSONCodecRegistry {
   static {
     CODECS =
         List.of(
-            BOOLEAN, BIGINT, DECIMAL, DOUBLE, FLOAT, INT, SMALLINT, TINYINT, VARINT, ASCII, TEXT);
+            // Numeric Codecs, integer types
+            BIGINT_FROM_BIG_DECIMAL,
+            BIGINT_FROM_BIG_INTEGER,
+            BIGINT_FROM_LONG,
+            INT_FROM_BIG_DECIMAL,
+            INT_FROM_BIG_INTEGER,
+            INT_FROM_LONG,
+            SMALLINT_FROM_BIG_DECIMAL,
+            SMALLINT_FROM_BIG_INTEGER,
+            SMALLINT_FROM_LONG,
+            TINYINT_FROM_BIG_DECIMAL,
+            TINYINT_FROM_BIG_INTEGER,
+            TINYINT_FROM_LONG,
+            VARINT_FROM_BIG_DECIMAL,
+            VARINT_FROM_BIG_INTEGER,
+            VARINT_FROM_LONG,
+            // Numeric Codecs, floating-point types
+            DECIMAL,
+            DOUBLE,
+            FLOAT,
+            // Text Codecs
+            ASCII,
+            TEXT,
+            // Other codecs
+            BOOLEAN);
   }
 }

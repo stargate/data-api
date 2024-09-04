@@ -26,7 +26,17 @@ public class JSONCodecRegistryTestData {
   public final String RANDOM_STRING = "random-" + System.currentTimeMillis();
   public final CqlIdentifier RANDOM_CQL_IDENTIFIER = CqlIdentifier.fromInternal(RANDOM_STRING);
 
-  public final BigDecimal OUT_OF_RANGE_FOR_TINY_INT = BigDecimal.valueOf(Short.MAX_VALUE + 1);
+  public final BigDecimal OUT_OF_RANGE_FOR_BIGINT =
+      BigDecimal.valueOf(Long.MAX_VALUE).add(BigDecimal.ONE);
+
+  public final BigDecimal OVERFLOW_FOR_INT = BigDecimal.valueOf(Integer.MAX_VALUE + 1L);
+  public final BigDecimal UNDERFLOW_FOR_INT = BigDecimal.valueOf(Integer.MIN_VALUE - 1L);
+  public final BigDecimal OVERFLOW_FOR_SMALLINT = BigDecimal.valueOf(Short.MAX_VALUE + 1L);
+  public final BigDecimal UNDERFLOW_FOR_SMALLINT = BigDecimal.valueOf(Short.MIN_VALUE - 1L);
+  public final BigDecimal OVERFLOW_FOR_TINYINT = BigDecimal.valueOf(Byte.MAX_VALUE + 1L);
+  public final BigDecimal UNDERFLOW_FOR_TINYINT = BigDecimal.valueOf(Byte.MIN_VALUE - 1L);
+
+  public final BigDecimal NOT_EXACT_AS_INTEGER = new BigDecimal("1.25");
 
   /**
    * Returns a mocked {@link TableMetadata} that has a column of the specified type.
