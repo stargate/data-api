@@ -371,6 +371,6 @@ public class NamespaceCacheTest {
   }
 
   private NamespaceCache createNamespaceCache(QueryExecutor qe) {
-    return new NamespaceCache("ks", false, qe, objectMapper);
+    return new NamespaceCache("ks", qe, objectMapper);
   }
 }

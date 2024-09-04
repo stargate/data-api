@@ -22,8 +22,6 @@ public class NamespaceCache {
 
   private final ObjectMapper objectMapper;
 
-  private final boolean apiTablesEnabled;
-
   // TODO: move the settings to config
   // TODO: set the cache loader when creating the cache
   private static final long CACHE_TTL_SECONDS = 300;
@@ -34,15 +32,10 @@ public class NamespaceCache {
           .maximumSize(CACHE_MAX_SIZE)
           .build();
 
-  public NamespaceCache(
-      String namespace,
-      boolean apiTablesEnabled,
-      QueryExecutor queryExecutor,
-      ObjectMapper objectMapper) {
+  public NamespaceCache(String namespace, QueryExecutor queryExecutor, ObjectMapper objectMapper) {
     this.namespace = namespace;
     this.queryExecutor = queryExecutor;
     this.objectMapper = objectMapper;
-    this.apiTablesEnabled = apiTablesEnabled;
   }
 
   protected Uni<SchemaObject> getSchemaObject(
@@ -108,13 +101,8 @@ public class NamespaceCache {
                     optionalTable.get(), objectMapper);
               }
 
-              if (apiTablesEnabled) {
-                return new TableSchemaObject(table);
-              }
-
-              // Target is not a collection and we are not supporting tables
-              throw ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA.toApiException(
-                  "%s", collectionName);
+              // 04-Sep-2024, tatu: Used to check that API Tables enabled; no longer checked here
+              return new TableSchemaObject(table);
             });
   }
 
