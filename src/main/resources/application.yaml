@@ -25,6 +25,10 @@ stargate:
   exception-mappers:
     enabled: false
 
+  feature:
+    flags:
+      TABLES: null
+
   # custom grpc settings
   grpc:
 
