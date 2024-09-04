@@ -71,7 +71,11 @@ public class DseTestResource extends StargateTestResource {
     ImmutableMap.Builder<String, String> propsBuilder = ImmutableMap.builder();
     propsBuilder.putAll(env);
     propsBuilder.put("stargate.jsonapi.custom.embedding.enabled", "true");
-    propsBuilder.put("stargate.tables.enabled", "true");
+
+    // 04-Sep-2024, tatu: [data-api#1335] Enable Tables using new Feature Flag:
+    // propsBuilder.put("stargate.tables.enabled", "true");
+    propsBuilder.put("stargate.feature.flags.TABLES", "true");
+
     propsBuilder.put(
         "stargate.jsonapi.custom.embedding.clazz",
         "io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider");
