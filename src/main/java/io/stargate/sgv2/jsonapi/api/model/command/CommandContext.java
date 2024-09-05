@@ -42,26 +42,31 @@ public record CommandContext<T extends SchemaObject>(
       T schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      DataApiFeatures apiFeatures) {
 
     // TODO: upgrade to use the modern switch statements
     // TODO: how to remove the unchecked cast ? Had to use unchecked cast to get back to the
     // CommandContext<T>
     if (schemaObject instanceof CollectionSchemaObject cso) {
       return (CommandContext<T>)
-          forSchemaObject(cso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+          forSchemaObject(
+              cso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
     }
     if (schemaObject instanceof TableSchemaObject tso) {
       return (CommandContext<T>)
-          forSchemaObject(tso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+          forSchemaObject(
+              tso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
     }
     if (schemaObject instanceof KeyspaceSchemaObject kso) {
       return (CommandContext<T>)
-          forSchemaObject(kso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+          forSchemaObject(
+              kso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
     }
     if (schemaObject instanceof DatabaseSchemaObject dso) {
       return (CommandContext<T>)
-          forSchemaObject(dso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+          forSchemaObject(
+              dso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
     }
     throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
         "Unknown schema object type: %s", schemaObject.getClass().getName());

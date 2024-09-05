@@ -18,6 +18,7 @@ public class DataApiRequestInfo {
   private final Optional<String> tenantId;
   private final Optional<String> cassandraToken;
   private final EmbeddingCredentials embeddingCredentials;
+  private final HttpHeaderAccess httpHeaders;
 
   /**
    * Constructor that will be useful in the offline library mode, where only the tenant will be set
@@ -29,6 +30,7 @@ public class DataApiRequestInfo {
     this.tenantId = tenantId;
     this.cassandraToken = Optional.empty();
     this.embeddingCredentials = null;
+    httpHeaders = null;
   }
 
   @Inject
@@ -41,6 +43,7 @@ public class DataApiRequestInfo {
     this.embeddingCredentials = apiKeysResolver.get().resolveEmbeddingCredentials(routingContext);
     this.tenantId = (tenantResolver.get()).resolve(routingContext, securityContext);
     this.cassandraToken = (tokenResolver.get()).resolve(routingContext, securityContext);
+    httpHeaders = new HttpHeaderAccess(routingContext.request().headers());
   }
 
   public Optional<String> getTenantId() {
@@ -53,5 +56,40 @@ public class DataApiRequestInfo {
 
   public EmbeddingCredentials getEmbeddingCredentials() {
     return this.embeddingCredentials;
+  }
+
+  public HttpHeaderAccess getHttpHeaders() {
+    return this.httpHeaders;
+  }
+
+  /**
+   * Simple wrapper around internal HTTP header container, providing safe(r) access to typed header
+   * values. Minimal API, currently mainly used for feature flags.
+   */
+  public static class HttpHeaderAccess {
+    private final io.vertx.core.MultiMap headers;
+
+    public HttpHeaderAccess(io.vertx.core.MultiMap headers) {
+      this.headers = headers;
+    }
+
+    /**
+     * Accessor for getting value of given header (case-insensitive), as {@code Boolean} if (and
+     * only if!) value is one of "true" or "false".
+     *
+     * @param headerName Name of header to check
+     * @return Boolean.TRUE if header value is "true", Boolean.FALSE if "false", or null if not
+     */
+    public Boolean getHeaderAsBoolean(String headerName) {
+      String str = headers.get(headerName);
+      // Only consider strict "true" and "false"; ignore other values
+      if ("true".equals(str)) {
+        return Boolean.TRUE;
+      }
+      if ("false".equals(str)) {
+        return Boolean.FALSE;
+      }
+      return null;
+    }
   }
 }

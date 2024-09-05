@@ -188,9 +188,11 @@ public class CollectionResource {
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
                 // TODO No need for the else clause here, simplify
-                final DataApiFeatures features = DataApiFeatures.fromConfigOnly(apiFeatureConfig);
+                final DataApiFeatures apiFeatures =
+                    DataApiFeatures.fromConfigAndRequest(
+                        apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
                 if ((schemaObject.type == SchemaObject.SchemaObjectType.TABLE)
-                    && !features.isFeatureEnabled(DataApiFeatureFlag.TABLES)) {
+                    && !apiFeatures.isFeatureEnabled(DataApiFeatureFlag.TABLES)) {
                   return Uni.createFrom()
                       .failure(ErrorCode.TABLE_FEATURE_NOT_ENABLED.toApiException());
                 }
@@ -216,7 +218,8 @@ public class CollectionResource {
                         schemaObject,
                         embeddingProvider,
                         command.getClass().getSimpleName(),
-                        jsonProcessingMetricsReporter);
+                        jsonProcessingMetricsReporter,
+                        apiFeatures);
 
                 return meteredCommandProcessor.processCommand(
                     dataApiRequestInfo, commandContext, command);

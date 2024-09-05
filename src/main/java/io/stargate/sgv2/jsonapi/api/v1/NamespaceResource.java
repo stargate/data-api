@@ -108,7 +108,8 @@ public class NamespaceResource {
           @Size(min = 1, max = 48)
           String namespace) {
 
-    final DataApiFeatures apiFeatures = DataApiFeatures.fromConfigOnly(apiFeatureConfig);
+    final DataApiFeatures apiFeatures =
+        DataApiFeatures.fromConfigAndRequest(apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
 
     // create context
     // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
