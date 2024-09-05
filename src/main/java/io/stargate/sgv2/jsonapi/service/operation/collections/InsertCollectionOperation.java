@@ -214,7 +214,8 @@ public record InsertCollectionOperation(
                 if (doc.nextTxID().equals(txId)) {
                   return Uni.createFrom().item(doc.id());
                 }
-                return Uni.createFrom().failure(ErrorCodeV1.DOCUMENT_ALREADY_EXISTS.toApiException());
+                return Uni.createFrom()
+                    .failure(ErrorCodeV1.DOCUMENT_ALREADY_EXISTS.toApiException());
               }
             });
   }

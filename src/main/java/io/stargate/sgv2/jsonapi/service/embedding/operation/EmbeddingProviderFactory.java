@@ -100,7 +100,8 @@ public class EmbeddingProviderFactory {
     if (configuration.serviceProvider().equals(ProviderConstants.CUSTOM)) {
       Optional<Class<?>> clazz = configuration.implementationClass();
       if (!clazz.isPresent()) {
-        throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException("custom class undefined");
+        throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+            "custom class undefined");
       }
       try {
         return (EmbeddingProvider) clazz.get().getConstructor(int.class).newInstance(dimension);

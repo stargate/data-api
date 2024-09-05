@@ -362,7 +362,8 @@ public class NamespaceCacheTest {
           .isInstanceOfSatisfying(
               JsonApiException.class,
               s -> {
-                assertThat(s.getErrorCode()).isEqualTo(ErrorCodeV1.INVALID_JSONAPI_COLLECTION_SCHEMA);
+                assertThat(s.getErrorCode())
+                    .isEqualTo(ErrorCodeV1.INVALID_JSONAPI_COLLECTION_SCHEMA);
                 assertThat(s.getMessage())
                     .isEqualTo(
                         ErrorCodeV1.INVALID_JSONAPI_COLLECTION_SCHEMA.getMessage() + ": table");

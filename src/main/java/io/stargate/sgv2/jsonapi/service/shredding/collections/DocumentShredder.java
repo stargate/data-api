@@ -313,7 +313,8 @@ public class DocumentShredder {
       return;
     }
     if (!value.isArray()) {
-      throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(value.getNodeType().toString());
+      throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
+          value.getNodeType().toString());
     }
     ArrayNode arr = (ArrayNode) value;
     if (arr.size() == 0) {
