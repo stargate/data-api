@@ -1,12 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import static io.stargate.sgv2.jsonapi.exception.playing.ErrorFormatters.errFmt;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
-import io.stargate.sgv2.jsonapi.exception.playing.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;

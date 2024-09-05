@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 /** An exception throws an error when you try to create it See {@link BadExceptionTemplateTest} */
 public class FailingCtorScopeException extends TestRequestException {
