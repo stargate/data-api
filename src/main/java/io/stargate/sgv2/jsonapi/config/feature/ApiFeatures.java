@@ -8,27 +8,27 @@ import java.util.Map;
  * Accessor for combined state of feature flags; typically based on static configuration (with its
  * overrides) and possible per-request settings.
  */
-public class DataApiFeatures {
-  private final Map<DataApiFeatureFlag, Boolean> fromConfig;
+public class ApiFeatures {
+  private final Map<ApiFeature, Boolean> fromConfig;
   private final DataApiRequestInfo.HttpHeaderAccess httpHeaders;
 
-  DataApiFeatures(
-      Map<DataApiFeatureFlag, Boolean> fromConfig,
+  ApiFeatures(
+      Map<ApiFeature, Boolean> fromConfig,
       DataApiRequestInfo.HttpHeaderAccess httpHeaders) {
     this.fromConfig = (fromConfig == null) ? Collections.emptyMap() : fromConfig;
     this.httpHeaders = httpHeaders;
   }
 
-  public static DataApiFeatures empty() {
-    return new DataApiFeatures(Collections.emptyMap(), null);
+  public static ApiFeatures empty() {
+    return new ApiFeatures(Collections.emptyMap(), null);
   }
 
-  public static DataApiFeatures fromConfigAndRequest(
-      DataApiFeatureConfig config, DataApiRequestInfo.HttpHeaderAccess httpHeaders) {
-    return new DataApiFeatures(config.flags(), httpHeaders);
+  public static ApiFeatures fromConfigAndRequest(
+          FeaturesConfig config, DataApiRequestInfo.HttpHeaderAccess httpHeaders) {
+    return new ApiFeatures(config.flags(), httpHeaders);
   }
 
-  public boolean isFeatureEnabled(DataApiFeatureFlag flag) {
+  public boolean isFeatureEnabled(ApiFeature flag) {
     // First check if there is definition from configuration
     Boolean b = fromConfig.get(flag);
 

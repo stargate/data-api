@@ -20,9 +20,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatureConfig;
-import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatureFlag;
-import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatures;
+import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
@@ -73,7 +73,8 @@ public class CollectionResource {
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
 
-  @Inject DataApiFeatureConfig apiFeatureConfig;
+  @Inject
+  FeaturesConfig apiFeatureConfig;
 
   @Inject private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 
@@ -188,11 +189,11 @@ public class CollectionResource {
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
                 // TODO No need for the else clause here, simplify
-                final DataApiFeatures apiFeatures =
-                    DataApiFeatures.fromConfigAndRequest(
+                final ApiFeatures apiFeatures =
+                    ApiFeatures.fromConfigAndRequest(
                         apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
                 if ((schemaObject.type == SchemaObject.SchemaObjectType.TABLE)
-                    && !apiFeatures.isFeatureEnabled(DataApiFeatureFlag.TABLES)) {
+                    && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
                   return Uni.createFrom()
                       .failure(ErrorCode.TABLE_FEATURE_NOT_ENABLED.toApiException());
                 }

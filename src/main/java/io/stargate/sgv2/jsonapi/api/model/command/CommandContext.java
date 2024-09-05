@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatures;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -18,7 +18,7 @@ public record CommandContext<T extends SchemaObject>(
     EmbeddingProvider embeddingProvider,
     String commandName,
     JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-    DataApiFeatures apiFeatures) {
+    ApiFeatures apiFeatures) {
 
   // TODO: this is what the original EMPTY had, no idea why the name of the command is missing
   // this is used by the GeneralResource
@@ -43,7 +43,7 @@ public record CommandContext<T extends SchemaObject>(
       EmbeddingProvider embeddingProvider,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      DataApiFeatures apiFeatures) {
+      ApiFeatures apiFeatures) {
 
     // TODO: upgrade to use the modern switch statements
     // TODO: how to remove the unchecked cast ? Had to use unchecked cast to get back to the
@@ -87,7 +87,7 @@ public record CommandContext<T extends SchemaObject>(
       EmbeddingProvider embeddingProvider,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      DataApiFeatures apiFeatures) {
+      ApiFeatures apiFeatures) {
     return new CommandContext<>(
         schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
   }
@@ -107,7 +107,7 @@ public record CommandContext<T extends SchemaObject>(
       EmbeddingProvider embeddingProvider,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      DataApiFeatures apiFeatures) {
+      ApiFeatures apiFeatures) {
     return new CommandContext<>(
         schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
   }
@@ -127,7 +127,7 @@ public record CommandContext<T extends SchemaObject>(
       EmbeddingProvider embeddingProvider,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      DataApiFeatures apiFeatures) {
+      ApiFeatures apiFeatures) {
     return new CommandContext<>(
         schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
   }
@@ -147,7 +147,7 @@ public record CommandContext<T extends SchemaObject>(
       EmbeddingProvider embeddingProvider,
       String commandName,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
-      DataApiFeatures apiFeatures) {
+      ApiFeatures apiFeatures) {
     return new CommandContext<>(
         schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
   }

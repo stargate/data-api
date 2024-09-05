@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
  * <p>NOTE: although flag names are in upper case (like {@code TABLES}), the actual configuration
  * uses lower-case names (like {@code tables}) (with proper prefix).
  */
-public enum DataApiFeatureFlag {
+public enum ApiFeature {
   /**
    * API Tables feature flag: if enabled, the API will expose table-specific Namespace resource
    * commands, and support Collection commands on Tables. If disabled, those operations will fail
@@ -30,7 +30,7 @@ public enum DataApiFeatureFlag {
    */
   private final String featureNameAsHeader;
 
-  DataApiFeatureFlag(String featureName, boolean enabledByDefault) {
+  ApiFeature(String featureName, boolean enabledByDefault) {
     this.featureName = featureName;
     featureNameAsHeader = "x-stargate-feature-" + featureName;
     this.enabledByDefault = enabledByDefault;

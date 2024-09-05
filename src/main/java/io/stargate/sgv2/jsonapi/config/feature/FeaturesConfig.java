@@ -8,6 +8,6 @@ import java.util.Map;
  * (with possible property / sysenv overrides).
  */
 @ConfigMapping(prefix = "stargate.feature")
-public interface DataApiFeatureConfig {
-  Map<DataApiFeatureFlag, Boolean> flags();
+public interface FeaturesConfig {
+  Map<ApiFeature, Boolean> flags();
 }

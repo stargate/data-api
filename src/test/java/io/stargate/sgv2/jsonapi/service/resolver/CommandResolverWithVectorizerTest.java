@@ -19,7 +19,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatures;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.ErrorCode;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
@@ -85,7 +85,7 @@ public class CommandResolverWithVectorizerTest {
             null,
             null,
             null,
-            DataApiFeatures.empty());
+            ApiFeatures.empty());
 
     @Test
     public void find() throws Exception {

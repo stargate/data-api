@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.config.feature.DataApiFeatures;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import org.apache.commons.lang3.RandomStringUtils;
 
@@ -41,7 +41,7 @@ public final class TestConstants {
 
   // CommandContext for working on the schema objects above
 
-  public static final DataApiFeatures DEFAULT_API_FEATURES_FOR_TESTS = DataApiFeatures.empty();
+  public static final ApiFeatures DEFAULT_API_FEATURES_FOR_TESTS = ApiFeatures.empty();
 
   public static final CommandContext<CollectionSchemaObject> COLLECTION_CONTEXT =
       new CommandContext<>(

@@ -80,7 +80,7 @@ Other Quarkus properties that are specifically relevant for the service:
 | `stargate.jsonapi.logging.enabled-tenants`          | `string`  | `ALL`   | Comma separated list of tenants for which command level logging should be enabled. Default is a special keyword called `ALL` which prints this log for all tenants |
 
 ## API Feature enabling configuration
-*Configuration for enabling Features, defined by [DataApiFeatureConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/CommandLoggingConfig.java).*
+*Configuration for enabling Features, defined by [FeaturesConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/CommandLoggingConfig.java).*
 
 | Property                        | Type      | Default | Description                                                                                                          |
 |---------------------------------|-----------|---------|----------------------------------------------------------------------------------------------------------------------|
