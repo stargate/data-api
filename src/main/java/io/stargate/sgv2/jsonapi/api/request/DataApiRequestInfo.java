@@ -74,8 +74,9 @@ public class DataApiRequestInfo {
     }
 
     /**
-     * Accessor for getting value of given header (case-insensitive), as {@code Boolean} if (and
-     * only if!) value is one of "true" or "false".
+     * Accessor for getting value of given header, as {@code Boolean} if (and only if!) value is one
+     * of "true" or "false". Access by name is (and has to be) case-insensitive as per HTTP
+     * standard.
      *
      * @param headerName Name of header to check
      * @return Boolean.TRUE if header value is "true", Boolean.FALSE if "false", or null if not

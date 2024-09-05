@@ -12,10 +12,9 @@ public class ApiFeatures {
   private final Map<ApiFeature, Boolean> fromConfig;
   private final DataApiRequestInfo.HttpHeaderAccess httpHeaders;
 
-  ApiFeatures(
-      Map<ApiFeature, Boolean> fromConfig,
-      DataApiRequestInfo.HttpHeaderAccess httpHeaders) {
-    this.fromConfig = (fromConfig == null) ? Collections.emptyMap() : fromConfig;
+  private ApiFeatures(
+      Map<ApiFeature, Boolean> fromConfig, DataApiRequestInfo.HttpHeaderAccess httpHeaders) {
+    this.fromConfig = fromConfig;
     this.httpHeaders = httpHeaders;
   }
 
@@ -24,8 +23,12 @@ public class ApiFeatures {
   }
 
   public static ApiFeatures fromConfigAndRequest(
-          FeaturesConfig config, DataApiRequestInfo.HttpHeaderAccess httpHeaders) {
-    return new ApiFeatures(config.flags(), httpHeaders);
+      FeaturesConfig config, DataApiRequestInfo.HttpHeaderAccess httpHeaders) {
+    Map<ApiFeature, Boolean> fromConfig = config.flags();
+    if (fromConfig == null) {
+      fromConfig = Collections.emptyMap();
+    }
+    return new ApiFeatures(fromConfig, httpHeaders);
   }
 
   public boolean isFeatureEnabled(ApiFeature flag) {

@@ -31,6 +31,10 @@ public enum ApiFeature {
   private final String featureNameAsHeader;
 
   ApiFeature(String featureName, boolean enabledByDefault) {
+    if (!featureName.equals(featureName.toLowerCase())) {
+      throw new IllegalStateException(
+          "Internal error: 'featureName' must be lower-case, was: \"" + featureName + "\"");
+    }
     this.featureName = featureName;
     featureNameAsHeader = "x-stargate-feature-" + featureName;
     this.enabledByDefault = enabledByDefault;
