@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;

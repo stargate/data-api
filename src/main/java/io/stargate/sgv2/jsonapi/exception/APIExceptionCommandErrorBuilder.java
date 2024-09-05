@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
@@ -19,12 +19,27 @@ public class APIExceptionCommandErrorBuilder
   private final boolean debugEnabled;
   private final boolean returnErrorObjectV2;
 
+  /**
+   * Create a new instance that will create a {@link CommandResult.Error} with the given options.
+   *
+   * @param debugEnabled if <code>true</code> the {@link CommandResult.Error} will include the
+   *     {@link ErrorObjectV2Constants.Fields#EXCEPTION_CLASSEXCEPTION_CLASS} field.
+   * @param returnErrorObjectV2 if <code>true</code> will include the fields for the V2 error object
+   *     such as family etc
+   */
   public APIExceptionCommandErrorBuilder(boolean debugEnabled, boolean returnErrorObjectV2) {
 
     this.debugEnabled = debugEnabled;
     this.returnErrorObjectV2 = returnErrorObjectV2;
   }
 
+  /**
+   * Create a new instance that will create a {@link CommandResult.Error} that represnets the <code>
+   * apiException</code>.
+   *
+   * @param apiException the exception that is going to be returned.
+   * @return a {@link CommandResult.Error} that represents the <code>apiException</code>.
+   */
   @Override
   public CommandResult.Error apply(APIException apiException) {
     // Note, in the old JsonApiException the code also traverses the cause, we do not want to do
@@ -32,8 +47,7 @@ public class APIExceptionCommandErrorBuilder
     // error objects V2 because the proper error is created by the template etc.
 
     // aaron - 28 aug 2024 - This should change when we improve the APi classes that handle errors,
-    // for now have
-    // to work with what we have
+    // for now have to work with what we have
     Map<String, Object> errorFields = new HashMap<>();
     // AJM - 28 aug 2024 - for now, the CommandResult.Error checks thats message is not in the
     // fields we send

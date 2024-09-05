@@ -11,7 +11,7 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.*;
@@ -345,7 +345,7 @@ public class DocumentShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
           .hasMessageContaining(
               "'$objectId' value has to be 24-digit hexadecimal ObjectId, instead got (\"not-an-oid\")");
     }
@@ -363,7 +363,7 @@ public class DocumentShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
           .hasMessageContaining(
               "'$uuid' value has to be 36-character UUID String, instead got (\"not-a-uuid\")");
 
@@ -375,7 +375,7 @@ public class DocumentShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
           .hasMessageContaining(
               "'$uuid' value has to be 36-character UUID String, instead got ({})");
     }
@@ -390,9 +390,9 @@ public class DocumentShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
           .hasMessage(
-              ErrorCode.SHRED_BAD_DOCID_TYPE.getMessage()
+              ErrorCodeV1.SHRED_BAD_DOCID_TYPE.getMessage()
                   + ": unrecognized JSON extension type '$unknown'");
     }
   }
@@ -409,9 +409,9 @@ public class DocumentShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_EJSON_VALUE)
           .hasMessageStartingWith(
-              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
+              ErrorCodeV1.SHRED_BAD_EJSON_VALUE.getMessage()
                   + ": invalid value (\"abc\") for extended JSON type '$objectId' (path 'value')");
     }
 
@@ -425,9 +425,9 @@ public class DocumentShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_EJSON_VALUE)
           .hasMessageStartingWith(
-              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
+              ErrorCodeV1.SHRED_BAD_EJSON_VALUE.getMessage()
                   + ": invalid value (\"foobar\") for extended JSON type '$uuid' (path 'value')");
     }
 
@@ -441,8 +441,8 @@ public class DocumentShredderWithExtendedTypesTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION)
-          .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage());
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION)
+          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage());
     }
   }
 

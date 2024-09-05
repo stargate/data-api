@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import jakarta.validation.Valid;
@@ -143,7 +143,7 @@ public class ComparisonExpression implements Invertible {
     if (value instanceof UUID || value instanceof ObjectId) {
       return new JsonLiteral<>(value.toString(), JsonType.STRING);
     }
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "Unsupported filter value type `%s`", value.getClass().getName());
   }
 

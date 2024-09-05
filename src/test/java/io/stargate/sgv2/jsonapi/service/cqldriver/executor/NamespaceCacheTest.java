@@ -18,7 +18,7 @@ import io.quarkus.test.junit.mockito.InjectMock;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -362,10 +362,11 @@ public class NamespaceCacheTest {
           .isInstanceOfSatisfying(
               JsonApiException.class,
               s -> {
-                assertThat(s.getErrorCode()).isEqualTo(ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA);
+                assertThat(s.getErrorCode())
+                    .isEqualTo(ErrorCodeV1.INVALID_JSONAPI_COLLECTION_SCHEMA);
                 assertThat(s.getMessage())
                     .isEqualTo(
-                        ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA.getMessage() + ": table");
+                        ErrorCodeV1.INVALID_JSONAPI_COLLECTION_SCHEMA.getMessage() + ": table");
               });
     }
   }

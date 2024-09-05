@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.ApiTablesConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
@@ -110,7 +110,7 @@ public class NamespaceResource {
       return Uni.createFrom()
           .item(
               new ThrowableCommandResultSupplier(
-                  ErrorCode.TABLE_FEATURE_NOT_ENABLED.toApiException()))
+                  ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException()))
           .map(commandResult -> commandResult.toRestResponse());
     }
 

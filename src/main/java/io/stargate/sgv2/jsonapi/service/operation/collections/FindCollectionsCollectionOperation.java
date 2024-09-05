@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
@@ -64,7 +64,7 @@ public record FindCollectionsCollectionOperation(
     if (keyspaceMetadata == null) {
       return Uni.createFrom()
           .failure(
-              ErrorCode.NAMESPACE_DOES_NOT_EXIST.toApiException(
+              ErrorCodeV1.NAMESPACE_DOES_NOT_EXIST.toApiException(
                   "Unknown namespace '%s', you must create it first",
                   commandContext.schemaObject().name().keyspace()));
     }

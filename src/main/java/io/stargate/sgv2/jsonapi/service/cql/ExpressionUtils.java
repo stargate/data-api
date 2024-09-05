@@ -18,7 +18,7 @@ package io.stargate.sgv2.jsonapi.service.cql;
 import com.bpodgursky.jbool_expressions.And;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Or;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.util.List;
 
 /**
@@ -61,7 +61,7 @@ public class ExpressionUtils<K> {
         return orOf(expressions);
       }
       default ->
-          throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
               "Invalid logical operator '%s'", logicOperator);
     }
   }

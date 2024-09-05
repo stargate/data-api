@@ -7,7 +7,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.restassured.response.ValidatableResponse;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import org.hamcrest.Matcher;
 
 public class DataApiResponseValidator {
@@ -37,18 +37,18 @@ public class DataApiResponseValidator {
     return body("errors", is(nullValue()));
   }
 
-  public DataApiResponseValidator hasSingleApiError(ErrorCode errorCode) {
+  public DataApiResponseValidator hasSingleApiError(ErrorCodeV1 errorCode) {
     return body("errors", hasSize(1))
         .body("errors[0].exceptionClass", is("JsonApiException"))
         .body("errors[0].errorCode", is(errorCode.name()));
   }
 
-  public DataApiResponseValidator hasSingleApiError(ErrorCode errorCode, String messageSnippet) {
+  public DataApiResponseValidator hasSingleApiError(ErrorCodeV1 errorCode, String messageSnippet) {
     return hasSingleApiError(errorCode, containsString(messageSnippet));
   }
 
   public DataApiResponseValidator hasSingleApiError(
-      ErrorCode errorCode, Matcher<String> messageMatcher) {
+      ErrorCodeV1 errorCode, Matcher<String> messageMatcher) {
     return hasSingleApiError(errorCode).body("errors[0].message", messageMatcher);
   }
 

@@ -1,10 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import static io.stargate.sgv2.jsonapi.exception.playing.ErrorFormatters.errFmt;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 
-import com.datastax.oss.driver.api.core.DriverException;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
-import io.stargate.sgv2.jsonapi.exception.playing.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 
 /**
  * Default implementation of the {@link DriverExceptionHandler} interface, we keep the interface so
@@ -16,25 +15,20 @@ import io.stargate.sgv2.jsonapi.exception.playing.DatabaseException;
  * in a table specific (or other schema object) way. e.g. if we have different error codes for a
  * timeout for a table and a collection.
  *
- * <p>Subclasses should only override the <code>handle()</code> functions they need to and let the
- * defaults in this class handle the rest. Also, the {@link
- * DriverExceptionHandler#handleUnhandled(SchemaObject, DriverException)} will kick in if there is
- * no handler for the specific error type.
- *
  * <p><b>NOTE:</b> Try to keep the <code>handle()</code> functions grouped like they are in the
  * interface.
  *
- * @param <T> The type of schema object this handler is for.
+ * @param <SchemaT> The type of schema object this handler is for.
  */
-public class DefaultDriverExceptionHandler<T extends SchemaObject>
-    implements DriverExceptionHandler<T> {
+public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
+    implements DriverExceptionHandler<SchemaT> {
 
   // ========================================================================
   // Direct subclasses of DriverException with no child
   // ========================================================================
 
   @Override
-  public RuntimeException handle(T schemaObject, ClosedConnectionException exception) {
+  public RuntimeException handle(SchemaT schemaObject, ClosedConnectionException exception) {
     return DatabaseException.Code.CLOSED_CONNECTION.get(
         errFmt(schemaObject, map -> map.put("errorMessage", exception.getMessage())));
   }

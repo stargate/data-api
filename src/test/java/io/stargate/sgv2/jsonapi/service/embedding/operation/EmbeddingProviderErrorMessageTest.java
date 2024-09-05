@@ -6,7 +6,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
@@ -49,7 +49,7 @@ public class EmbeddingProviderErrorMessageTest {
               .getFailure();
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_RATE_LIMITED)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED)
           .hasFieldOrPropertyWithValue(
               "message",
               "The Embedding Provider rate limited the request: Provider: nvidia; HTTP Status: 429; Error Message: {\"object\":\"list\"}");
@@ -76,7 +76,7 @@ public class EmbeddingProviderErrorMessageTest {
               .getFailure();
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_CLIENT_ERROR)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_CLIENT_ERROR)
           .hasFieldOrPropertyWithValue(
               "message",
               "The Embedding Provider returned a HTTP client error: Provider: nvidia; HTTP Status: 400; Error Message: {\"object\":\"list\"}");
@@ -103,7 +103,7 @@ public class EmbeddingProviderErrorMessageTest {
               .getFailure();
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_SERVER_ERROR)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_SERVER_ERROR)
           .hasFieldOrPropertyWithValue(
               "message",
               "The Embedding Provider returned a HTTP server error: Provider: nvidia; HTTP Status: 503; Error Message: {\"object\":\"list\"}");
@@ -130,7 +130,7 @@ public class EmbeddingProviderErrorMessageTest {
               .getFailure();
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT)
           .hasFieldOrPropertyWithValue(
               "message",
               "The Embedding Provider timed out: Provider: nvidia; HTTP Status: 408; Error Message: {\"object\":\"list\"}");
@@ -182,7 +182,7 @@ public class EmbeddingProviderErrorMessageTest {
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
+              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
               "The Embedding Provider returned an unexpected response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'application/xml'; HTTP Status: 200; The response body is: '<object>list</object>'.");
@@ -210,7 +210,7 @@ public class EmbeddingProviderErrorMessageTest {
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
+              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
               "The Embedding Provider returned an unexpected response: Expected response Content-Type ('application/json' or 'text/json') from the embedding provider but found 'text/plain;charset=UTF-8'; HTTP Status: 500; The response body is: 'Not Found'.");
@@ -238,7 +238,7 @@ public class EmbeddingProviderErrorMessageTest {
       assertThat(exception)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
+              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
               "The Embedding Provider returned an unexpected response: No response body from the embedding provider");

@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 /**
  * Re-usable test data for tests on the exceptions, so we dont need to use inheritance where it may

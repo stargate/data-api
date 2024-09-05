@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import org.junit.jupiter.api.Test;
 
+/** tests for {@link APIExceptionCommandErrorBuilder} */
 public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
 
   private final ErrorTestData TEST_DATA = new ErrorTestData();

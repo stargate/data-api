@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.util;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import java.util.regex.Pattern;
 
@@ -226,7 +226,7 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
     String[] result = DOT.split(dotPath);
     for (String segment : result) {
       if (segment.isEmpty()) {
-        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
             "empty segment ('') in path '%s'", dotPath);
       }
     }
@@ -241,7 +241,7 @@ public class PathMatchLocator implements Comparable<PathMatchLocator> {
   }
 
   private JsonApiException cantCreatePropertyPath(String fullPath, String prop, JsonNode context) {
-    return ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
+    return ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
         "cannot create field ('%s') in path '%s'; only OBJECT nodes have properties (got %s)",
         prop, fullPath, context.getNodeType());
   }

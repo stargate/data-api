@@ -1,0 +1,173 @@
+package io.stargate.sgv2.jsonapi.exception;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
+import com.datastax.oss.driver.api.core.ConsistencyLevel;
+import com.datastax.oss.driver.api.core.DriverException;
+import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
+import com.datastax.oss.driver.api.core.servererrors.WriteType;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import java.nio.channels.WritePendingException;
+import org.junit.jupiter.api.Test;
+
+/**
+ * Tests for the {@link ExceptionHandler} interface only.
+ *
+ * <p>Not using mocks because want all the defaults in the interface to kick in
+ */
+public class ExceptionHandlerTest {
+
+  @Test
+  public void handleNull() {
+
+    var handler =
+        new ExceptionHandler<TableSchemaObject, UnsupportedOperationException>() {
+          @Override
+          public Class<UnsupportedOperationException> getExceptionClass() {
+            return UnsupportedOperationException.class;
+          }
+        };
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, null));
+
+    assertThat(actualEx).as("When handling null, returns null").isNull();
+  }
+
+  @Test
+  public void handleNoneBaseTypeReturnsSame() {
+
+    var originalEx = new IllegalStateException("original");
+
+    // UnsupportedOperationException and IllegalStateException are both direct subclasses of
+    // RuntimeException
+    // a handler for one should not be called for the other
+    var handler =
+        new ExceptionHandler<TableSchemaObject, UnsupportedOperationException>() {
+          @Override
+          public Class<UnsupportedOperationException> getExceptionClass() {
+            return UnsupportedOperationException.class;
+          }
+        };
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
+
+    assertThat(actualEx)
+        .as("When handling non BaseT exception, returns the exception object passed")
+        .isSameAs(originalEx);
+  }
+
+  /**
+   * IllegalStateException is a subclass of RuntimeException, and WritePendingException is a
+   * subclass of IllegalStateException. A handler for IllegalStateException should handle both of
+   * them correctly.
+   */
+  @Test
+  public void handleHierarchyType() {
+
+    var originalParentEx = new IllegalStateException("original parent");
+    var originalChildEx = new WritePendingException();
+    var expectedParentEx = new RuntimeException("expected parent");
+    var expectedChildEx = new RuntimeException("expected child");
+
+    final Object[] calledWith = new Object[2];
+    var handler =
+        new ExceptionHandler<TableSchemaObject, IllegalStateException>() {
+          @Override
+          public Class<IllegalStateException> getExceptionClass() {
+            return IllegalStateException.class;
+          }
+
+          @Override
+          public RuntimeException handle(
+              TableSchemaObject schemaObject, IllegalStateException exception) {
+            if (exception instanceof WritePendingException writePendingException) {
+              return handle(schemaObject, writePendingException);
+            }
+            calledWith[0] = exception;
+            return expectedParentEx;
+          }
+
+          public RuntimeException handle(
+              TableSchemaObject schemaObject, WritePendingException exception) {
+            calledWith[1] = exception;
+            return expectedChildEx;
+          }
+        };
+
+    // First test, with the parent exception
+    var actualParentTest = assertDoesNotThrow(() -> handler.maybeHandle(null, originalParentEx));
+
+    assertThat(actualParentTest)
+        .as(
+            "When handling BaseT exception, returns object from handler() for BaseT - exception=%s",
+            originalParentEx)
+        .isSameAs(expectedParentEx);
+
+    assertThat(calledWith[0])
+        .as("When handling BaseT exception, passes the original exception to handler() for BaseT")
+        .isSameAs(originalParentEx);
+
+    assertThat(calledWith[1])
+        .as(
+            "When handling BaseT exception, does not pass the original exception to handler() for ChildT")
+        .isNull();
+
+    // reset to run with the child ex
+    calledWith[0] = null;
+    calledWith[1] = null;
+
+    // Second test, with the parent exception
+    var actualChildTest = assertDoesNotThrow(() -> handler.maybeHandle(null, originalChildEx));
+
+    assertThat(actualChildTest)
+        .as(
+            "When handling ChildT exception, returns object from handler() for ChildT - exception=%s",
+            originalChildEx)
+        .isSameAs(expectedChildEx);
+
+    assertThat(calledWith[0])
+        .as(
+            "When handling BaseT exception, does not pass the original exception to handler() for BaseT")
+        .isNull();
+
+    assertThat(calledWith[1])
+        .as("When handling BaseT exception, passes the original exception to handler() for ChildT")
+        .isSameAs(originalChildEx);
+  }
+
+  /**
+   * If no error handler called, returns a {@link APIException} with code {@link
+   * ServerException.Code#UNEXPECTED_SERVER_ERROR}
+   */
+  @Test
+  public void defaultErrorHandler() {
+
+    var originalEx =
+        new WriteTimeoutException(null, ConsistencyLevel.QUORUM, 1, 2, WriteType.SIMPLE);
+
+    // Not using mocks because want all the defaults in the interface to kick in
+    var handler =
+        new ExceptionHandler<TableSchemaObject, DriverException>() {
+          @Override
+          public Class<DriverException> getExceptionClass() {
+            return DriverException.class;
+          }
+        };
+
+    var actualEx = assertDoesNotThrow(() -> handler.maybeHandle(null, originalEx));
+
+    assertThat(actualEx)
+        .as(
+            "When no handlers for original exceptions default handled to ServerException code=%s",
+            ServerException.Code.UNEXPECTED_SERVER_ERROR.name())
+        .isNotNull()
+        .isInstanceOf(ServerException.class)
+        .hasMessageContaining(originalEx.getClass().getSimpleName())
+        .hasMessageContaining(originalEx.getMessage())
+        .satisfies(
+            e -> {
+              var apiError = (APIException) e;
+              assertThat(apiError.code)
+                  .isEqualTo(ServerException.Code.UNEXPECTED_SERVER_ERROR.name());
+            });
+  }
+}

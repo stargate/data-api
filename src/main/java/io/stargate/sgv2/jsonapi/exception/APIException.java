@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 import jakarta.ws.rs.core.Response;
 import java.util.Objects;

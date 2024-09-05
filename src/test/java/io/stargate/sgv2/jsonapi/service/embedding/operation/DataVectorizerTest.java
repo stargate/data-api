@@ -13,7 +13,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -114,7 +114,7 @@ public class DataVectorizerTest {
                 .getFailure();
         assertThat(failure)
             .isInstanceOf(JsonApiException.class)
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_VECTORIZE_VALUE_TYPE)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE)
             .hasFieldOrPropertyWithValue(
                 "message",
                 "$vectorize value needs to be text value: issue in document at position 1");
@@ -169,7 +169,7 @@ public class DataVectorizerTest {
             .isInstanceOf(JsonApiException.class)
             .withFailMessage(
                 "$vectorize` and `$vector` can't be used together, issue in document at position 1")
-            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_USAGE_OF_VECTORIZE);
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.INVALID_USAGE_OF_VECTORIZE);
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -213,7 +213,7 @@ public class DataVectorizerTest {
       assertThat(failure)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
+              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
               "The Embedding Provider returned an unexpected response: Embedding provider 'custom' didn't return the expected number of embeddings. Expect: '2'. Actual: '3'");
@@ -251,7 +251,7 @@ public class DataVectorizerTest {
       assertThat(failure)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue(
-              "errorCode", ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
+              "errorCode", ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE)
           .hasFieldOrPropertyWithValue(
               "message",
               "The Embedding Provider returned an unexpected response: Embedding provider 'custom' did not return expected embedding length. Expect: '4'. Actual: '3'");

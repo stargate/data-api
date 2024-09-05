@@ -7,7 +7,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -260,7 +260,7 @@ public record ReadAndUpdateCollectionOperation(
               if (result.wasApplied()) {
                 return Uni.createFrom().item(writableShreddedDocument.id());
               } else {
-                throw new LWTException(ErrorCode.CONCURRENCY_FAILURE);
+                throw new LWTException(ErrorCodeV1.CONCURRENCY_FAILURE);
               }
             });
   }

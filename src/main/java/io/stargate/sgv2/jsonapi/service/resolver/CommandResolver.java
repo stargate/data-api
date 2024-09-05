@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
@@ -78,7 +78,7 @@ public interface CommandResolver<C extends Command> {
   default Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Collections, target was %s",
         command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
@@ -93,7 +93,7 @@ public interface CommandResolver<C extends Command> {
    */
   default Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Tables, target was %s",
         command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
@@ -107,7 +107,7 @@ public interface CommandResolver<C extends Command> {
    */
   default Operation resolveKeyspaceCommand(CommandContext<KeyspaceSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Keyspaces, target was %s",
         command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
@@ -121,7 +121,7 @@ public interface CommandResolver<C extends Command> {
    */
   default Operation resolveDatabaseCommand(CommandContext<DatabaseSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Databases, target was %s",
         command.getClass().getSimpleName(), ctx.schemaObject().name());
   }

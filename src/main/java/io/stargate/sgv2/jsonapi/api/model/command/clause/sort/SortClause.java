@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.SortClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
@@ -53,7 +53,7 @@ public record SortClause(@Valid List<SortExpression> sortExpressions) implements
     // validate each path in sortExpressions
     for (SortExpression sortExpression : sortExpressions) {
       if (!indexingProjector.isPathIncluded(sortExpression.path())) {
-        throw ErrorCode.UNINDEXED_SORT_PATH.toApiException(
+        throw ErrorCodeV1.UNINDEXED_SORT_PATH.toApiException(
             "sort path '%s' is not indexed", sortExpression.path());
       }
     }

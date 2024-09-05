@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 import java.io.IOException;
 import org.junit.jupiter.api.AfterAll;

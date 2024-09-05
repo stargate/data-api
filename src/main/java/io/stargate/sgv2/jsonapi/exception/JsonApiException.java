@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorCode.*;
+import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.*;
 
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
- * Our own {@link RuntimeException} that uses {@link ErrorCode} to describe the exception cause.
+ * Our own {@link RuntimeException} that uses {@link ErrorCodeV1} to describe the exception cause.
  * Supports specification of the custom message.
  *
  * <p>Implements {@link Supplier< CommandResult >} so this exception can be mapped to command result
@@ -24,7 +24,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 public class JsonApiException extends RuntimeException implements Supplier<CommandResult> {
   private final UUID id;
 
-  private final ErrorCode errorCode;
+  private final ErrorCodeV1 errorCode;
 
   private final Response.Status httpStatus;
 
@@ -35,7 +35,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
   private final ErrorScope errorScope;
 
   // some error codes should be classified as "SERVER" family but do not have any pattern
-  private static final Set<ErrorCode> serverFamily =
+  private static final Set<ErrorCodeV1> serverFamily =
       new HashSet<>() {
         {
           add(COUNT_READ_FAILED);
@@ -57,7 +57,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
       };
 
   // map of error codes to error scope
-  private static final Map<Set<ErrorCode>, ErrorScope> errorCodeScopeMap =
+  private static final Map<Set<ErrorCodeV1>, ErrorScope> errorCodeScopeMap =
       Map.of(
           new HashSet<>() {
             {
@@ -98,25 +98,25 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
           },
           ErrorScope.DOCUMENT);
 
-  protected JsonApiException(ErrorCode errorCode) {
+  protected JsonApiException(ErrorCodeV1 errorCode) {
     this(errorCode, errorCode.getMessage(), null);
   }
 
   // Still needed by EmbeddingGatewayClient for gRPC, needs to remain public
-  public JsonApiException(ErrorCode errorCode, String message) {
+  public JsonApiException(ErrorCodeV1 errorCode, String message) {
     this(errorCode, message, null);
   }
 
-  protected JsonApiException(ErrorCode errorCode, Throwable cause) {
+  protected JsonApiException(ErrorCodeV1 errorCode, Throwable cause) {
     this(errorCode, null, cause);
   }
 
-  protected JsonApiException(ErrorCode errorCode, String message, Throwable cause) {
+  protected JsonApiException(ErrorCodeV1 errorCode, String message, Throwable cause) {
     this(errorCode, message, cause, Response.Status.OK);
   }
 
   protected JsonApiException(
-      ErrorCode errorCode, String message, Throwable cause, Response.Status httpStatus) {
+      ErrorCodeV1 errorCode, String message, Throwable cause, Response.Status httpStatus) {
     super(message, cause);
     this.id = UUID.randomUUID();
     this.errorCode = errorCode;
@@ -195,7 +195,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     return getCommandResultError(getMessage(), httpStatus);
   }
 
-  public ErrorCode getErrorCode() {
+  public ErrorCodeV1 getErrorCode() {
     return errorCode;
   }
 
@@ -217,7 +217,7 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     if (errorCode == SERVER_INTERNAL_ERROR) {
       return ErrorScope.EMPTY;
     }
-    for (Map.Entry<Set<ErrorCode>, ErrorScope> entry : errorCodeScopeMap.entrySet()) {
+    for (Map.Entry<Set<ErrorCodeV1>, ErrorScope> entry : errorCodeScopeMap.entrySet()) {
       if (entry.getKey().contains(errorCode)) {
         return entry.getValue();
       }

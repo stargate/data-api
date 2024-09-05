@@ -9,7 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.MulOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import org.junit.jupiter.api.Nested;
@@ -193,9 +193,9 @@ public class MulOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessageStartingWith(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
                   + ": $mul requires numeric parameter, got: STRING");
     }
 
@@ -209,8 +209,9 @@ public class MulOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessageStartingWith(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $mul");
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID)
+          .hasMessageStartingWith(
+              ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $mul");
     }
 
     @Test
@@ -225,9 +226,9 @@ public class MulOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET)
           .hasMessageStartingWith(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                   + ": $mul requires target to be Number; value at 'prop' of type STRING");
     }
 
@@ -255,9 +256,9 @@ public class MulOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET)
           .hasMessageStartingWith(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                   + ": $mul requires target to be Number; value at 'subdoc.prop' of type NULL");
     }
 
@@ -275,9 +276,10 @@ public class MulOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
           .hasMessage(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
                   + ": $mul does not support modifiers");
     }
   }

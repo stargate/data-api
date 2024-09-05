@@ -9,7 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.PushOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import org.junit.jupiter.api.MethodOrderer;
@@ -124,9 +124,9 @@ public class PushOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET)
           .hasMessageStartingWith(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.getMessage()
                   + ": $push requires target to be ARRAY");
     }
 
@@ -144,9 +144,10 @@ public class PushOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
           .hasMessage(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
                   + ": $push only supports $each and $position currently; trying to use '$sort'");
     }
 
@@ -165,9 +166,9 @@ public class PushOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessage(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
                   + ": $push requires field names at main level, found modifier: $each");
     }
 
@@ -180,8 +181,8 @@ public class PushOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $push");
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID)
+          .hasMessage(ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $push");
     }
   }
 
@@ -320,9 +321,9 @@ public class PushOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessageStartingWith(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
                   + ": $push modifier $each requires ARRAY argument, found: NUMBER");
     }
 
@@ -341,9 +342,10 @@ public class PushOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
           .hasMessageStartingWith(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
                   + ": $push only supports $each and $position currently; trying to use 'value'");
     }
   }
@@ -452,9 +454,9 @@ public class PushOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessageStartingWith(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
                   + ": $push modifier $position requires (integral) NUMBER argument, found: BOOLEAN");
     }
 
@@ -468,9 +470,9 @@ public class PushOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessageStartingWith(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
                   + ": $push modifier $position requires Integer NUMBER argument, instead got: 1.5");
     }
 
@@ -484,9 +486,9 @@ public class PushOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessageStartingWith(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
                   + ": $push modifiers can only be used with $each modifier; none included");
     }
   }
