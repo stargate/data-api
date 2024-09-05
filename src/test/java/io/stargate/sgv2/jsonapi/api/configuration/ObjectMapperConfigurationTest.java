@@ -26,7 +26,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -278,7 +278,7 @@ class ObjectMapperConfigurationTest {
       assertThat(e)
           .isInstanceOf(JsonMappingException.class)
           .hasMessageStartingWith(
-              ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": `InsertOneCommand`");
+              ErrorCodeV1.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": `InsertOneCommand`");
     }
 
     @Test
@@ -367,7 +367,7 @@ class ObjectMapperConfigurationTest {
       assertThat(e)
           .isInstanceOf(JsonMappingException.class)
           .hasMessageStartingWith(
-              ErrorCode.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": `DeleteOneCommand`");
+              ErrorCodeV1.COMMAND_ACCEPTS_NO_OPTIONS.getMessage() + ": `DeleteOneCommand`");
     }
   }
 

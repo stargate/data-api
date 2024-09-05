@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -28,7 +28,7 @@ public class DocumentProjectorTest {
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage("Unsupported projection parameter: definition must be OBJECT, was ARRAY");
     }
 
@@ -46,7 +46,7 @@ public class DocumentProjectorTest {
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
               "Unsupported projection parameter: empty paths (and path segments) not allowed");
     }
@@ -64,7 +64,7 @@ public class DocumentProjectorTest {
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
               "Unsupported projection parameter: cannot include 'include.me' on exclusion projection");
     }
@@ -82,7 +82,7 @@ public class DocumentProjectorTest {
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
               "Unsupported projection parameter: projection path conflict between 'branch' and 'branch.x.leaf'");
 
@@ -98,7 +98,7 @@ public class DocumentProjectorTest {
       Throwable t2 = catchThrowable(() -> DocumentProjector.createFromDefinition(def2));
       assertThat(t2)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
               "Unsupported projection parameter: projection path conflict between 'a' and 'a.y.leaf'");
     }
@@ -121,7 +121,7 @@ public class DocumentProjectorTest {
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
               "Unsupported projection parameter: cannot exclude 'misc.nested.dont' on inclusion projection");
     }
@@ -164,7 +164,7 @@ public class DocumentProjectorTest {
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
               "Unsupported projection parameter: '$vector'/'$vectorize' are the only allowed paths that can start with '$'");
     }
@@ -185,7 +185,7 @@ public class DocumentProjectorTest {
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
               "Unsupported projection parameter: unrecognized/unsupported projection operator '$set' (only '$slice' supported)");
     }
@@ -205,7 +205,7 @@ public class DocumentProjectorTest {
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
               "Unsupported projection parameter: projection path conflict between 'branch.x' and 'branch.x.leaf'");
     }
@@ -220,7 +220,7 @@ public class DocumentProjectorTest {
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
               "Unsupported projection parameter: '$vector'/'$vectorize' are the only allowed paths that can start with '$'");
     }
@@ -239,7 +239,7 @@ public class DocumentProjectorTest {
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessageStartingWith(
               "Unsupported projection parameter: path ('include') has unsupported parameter for '$slice' (STRING)");
     }
@@ -258,7 +258,7 @@ public class DocumentProjectorTest {
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessageStartingWith(
               "Unsupported projection parameter: path ('include') has unsupported parameter for '$slice' (ARRAY): second NUMBER");
     }
@@ -1006,7 +1006,7 @@ public class DocumentProjectorTest {
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
               "Unsupported projection parameter: path ('*') value must be NUMBER or BOOLEAN, was STRING");
     }
@@ -1018,7 +1018,7 @@ public class DocumentProjectorTest {
       Throwable t = catchThrowable(() -> DocumentProjector.createFromDefinition(def));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_PROJECTION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM)
           .hasMessage(
               "Unsupported projection parameter: wildcard ('*') only allowed as the only root-level path");
     }

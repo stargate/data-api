@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.*;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -98,7 +98,7 @@ public record DocumentUpdater(
     if (replaceDocumentId != null && idNode != null) {
       if (!JsonUtil.equalsOrdered(replaceDocumentId, idNode)) {
         // throw error id cannot be different
-        throw ErrorCode.DOCUMENT_REPLACE_DIFFERENT_DOCID.toApiException(
+        throw ErrorCodeV1.DOCUMENT_REPLACE_DIFFERENT_DOCID.toApiException(
             "'%s' vs '%s'", idNode, replaceDocumentId);
       }
     }
@@ -115,7 +115,7 @@ public record DocumentUpdater(
         replaceDocument.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
       } else if (!vectorizeNode.isTextual()) {
         // if $vectorize is not textual value
-        throw ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.toApiException();
+        throw ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE.toApiException();
       } else if (vectorizeNode.asText().isBlank()) {
         // $vectorize is blank text value, set $vector as null value, no need to vectorize
         replaceDocument.putNull(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);

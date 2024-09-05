@@ -4,7 +4,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableOperation;
@@ -26,12 +26,12 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
     List<String> partitionKeys = Arrays.stream(command.definition().primaryKey().keys()).toList();
 
     if (partitionKeys.isEmpty()) {
-      throw ErrorCode.TABLE_MISSING_PARTITIONING_KEYS.toApiException();
+      throw ErrorCodeV1.TABLE_MISSING_PARTITIONING_KEYS.toApiException();
     }
     partitionKeys.forEach(
         key -> {
           if (!columnTypes.containsKey(key)) {
-            throw ErrorCode.TABLE_COLUMN_DEFINITION_MISSING.toApiException("%s", key);
+            throw ErrorCodeV1.TABLE_COLUMN_DEFINITION_MISSING.toApiException("%s", key);
           }
         });
 
@@ -43,7 +43,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
     clusteringKeys.forEach(
         key -> {
           if (!columnTypes.containsKey(key.column())) {
-            throw ErrorCode.TABLE_COLUMN_DEFINITION_MISSING.toApiException("%s", key.column());
+            throw ErrorCodeV1.TABLE_COLUMN_DEFINITION_MISSING.toApiException("%s", key.column());
           }
         });
 

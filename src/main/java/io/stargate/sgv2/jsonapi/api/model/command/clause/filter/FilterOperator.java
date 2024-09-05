@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,7 +44,7 @@ public interface FilterOperator {
     public static FilterOperator getComparisonOperator(String operator) {
       final FilterOperator filterOperator = findComparisonOperator(operator);
       if (filterOperator == null) {
-        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(operator);
+        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(operator);
       }
       return filterOperator;
     }

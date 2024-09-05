@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 import io.quarkus.grpc.GrpcClient;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
@@ -100,12 +100,12 @@ public class EmbeddingProviderFactory {
     if (configuration.serviceProvider().equals(ProviderConstants.CUSTOM)) {
       Optional<Class<?>> clazz = configuration.implementationClass();
       if (!clazz.isPresent()) {
-        throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException("custom class undefined");
+        throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException("custom class undefined");
       }
       try {
         return (EmbeddingProvider) clazz.get().getConstructor(int.class).newInstance(dimension);
       } catch (Exception e) {
-        throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+        throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
             "custom class provided ('%s') does not resolve to EmbeddingProvider",
             clazz.get().getCanonicalName());
       }
@@ -113,7 +113,7 @@ public class EmbeddingProviderFactory {
 
     ProviderConstructor ctor = providersMap.get(configuration.serviceProvider());
     if (ctor == null) {
-      throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
+      throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(
           "unknown service provider '%s'", configuration.serviceProvider());
     }
     return ctor.create(

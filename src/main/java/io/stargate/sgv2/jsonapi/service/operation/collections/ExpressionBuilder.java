@@ -4,7 +4,7 @@ import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cql.ExpressionUtils;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
@@ -41,7 +41,7 @@ public class ExpressionBuilder {
       Expression<BuiltCondition> expressionWithoutId,
       List<IDCollectionFilter> idFilters) {
     if (idFilters.size() > 1) {
-      throw ErrorCode.FILTER_MULTIPLE_ID_FILTER.toApiException();
+      throw ErrorCodeV1.FILTER_MULTIPLE_ID_FILTER.toApiException();
     }
     if (idFilters.isEmpty()
         && additionalIdFilter == null) { // no idFilters in filter clause and no additionalIdFilter

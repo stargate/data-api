@@ -8,7 +8,7 @@ import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 /** ErrorCode is our internal enum that provides codes and a default message for that error code. */
-public enum ErrorCode {
+public enum ErrorCodeV1 {
   /** Command error codes. */
   COUNT_READ_FAILED("Unable to count documents"),
   COMMAND_UNKNOWN("Provided command unknown"),
@@ -208,7 +208,7 @@ public enum ErrorCode {
 
   private final String message;
 
-  ErrorCode(String message) {
+  ErrorCodeV1(String message) {
     this.message = message;
   }
 

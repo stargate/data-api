@@ -13,7 +13,7 @@ import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.JsonApiStartUp;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -184,7 +184,7 @@ public class CQLSessionCache {
       //      }
       return cqlSession;
     }
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "Unsupported database type: %s", databaseConfig.type());
   }
 
@@ -233,7 +233,7 @@ public class CQLSessionCache {
     String fixedToken;
     if ((fixedToken = getFixedToken()) != null
         && !dataApiRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
-      throw new UnauthorizedException(ErrorCode.UNAUTHENTICATED_REQUEST.getMessage());
+      throw new UnauthorizedException(ErrorCodeV1.UNAUTHENTICATED_REQUEST.getMessage());
     }
     if (!OFFLINE_WRITER.equals(operationsConfig.databaseConfig().type())) {
       return sessionCache.get(getSessionCacheKey(dataApiRequestInfo));
@@ -265,7 +265,7 @@ public class CQLSessionCache {
               dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
               new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
         } else {
-          throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
               "Missing/Invalid authentication credentials provided for type: %s",
               operationsConfig.databaseConfig().type());
         }
@@ -279,7 +279,7 @@ public class CQLSessionCache {
         return new SessionCacheKey(dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT), null);
       }
     }
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "Unsupported database type: %s", operationsConfig.databaseConfig().type());
   }
 

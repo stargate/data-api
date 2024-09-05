@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.shredding.collections;
 
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.util.Objects;
 
 /**
@@ -145,7 +145,7 @@ public final class JsonPath implements Comparable<JsonPath> {
     public Builder nestedArrayBuilder() {
       // Must not be called unless we are pointing to a property or element:
       if (childPath == null) {
-        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
             "Shredder path being built does not point to a property or element (basePath: '%s')",
             basePath);
       }
@@ -156,7 +156,7 @@ public final class JsonPath implements Comparable<JsonPath> {
     public Builder nestedObjectBuilder() {
       // Must not be called unless we are pointing to a property or element:
       if (childPath == null) {
-        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
             "Shredder path being built does not point to a property or element (basePath: '%s')",
             basePath);
       }
@@ -176,7 +176,7 @@ public final class JsonPath implements Comparable<JsonPath> {
 
     public Builder property(String propName) {
       if (inArray) {
-        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
             "Cannot add property '%s' when in array context: %s", propName, build());
       }
       childPath = (basePath == null) ? propName : (basePath + '.' + propName);
@@ -185,7 +185,7 @@ public final class JsonPath implements Comparable<JsonPath> {
 
     public Builder index(int index) {
       if (!inArray) {
-        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
             "Cannot add index (%d) when not in array context: %s", index, build());
       }
       StringBuilder sb;

@@ -8,7 +8,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
@@ -1188,7 +1188,7 @@ public class FilterClauseDeserializerTest {
           .satisfies(
               t -> {
                 assertThat(t.getMessage())
-                    .isEqualTo(ErrorCode.FILTER_MULTIPLE_ID_FILTER.getMessage());
+                    .isEqualTo(ErrorCodeV1.FILTER_MULTIPLE_ID_FILTER.getMessage());
               });
     }
 

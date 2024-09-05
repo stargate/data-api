@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Optional;
@@ -12,7 +12,7 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
 
   @Override
   public void saveConfiguration(Optional<String> tenant, ServiceConfig serviceConfig) {
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "PropertyBasedEmbeddingProviderConfigStore.saveConfiguration() not implemented");
   }
 
@@ -25,7 +25,7 @@ public class PropertyBasedEmbeddingProviderConfigStore implements EmbeddingProvi
     }
     if (config.providers().get(serviceName) == null
         || !config.providers().get(serviceName).enabled()) {
-      throw ErrorCode.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(serviceName);
+      throw ErrorCodeV1.VECTORIZE_SERVICE_TYPE_UNAVAILABLE.toApiException(serviceName);
     }
     final var properties = config.providers().get(serviceName).properties();
     return ServiceConfig.provider(
