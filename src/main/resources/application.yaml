@@ -27,7 +27,7 @@ stargate:
 
   feature: # See io.stargate.sgv2.jsonapi.config.feature.DataApiFeatureConfig
     flags:  # Ok to leave out features that have no default value (enabled or disabled)
-      TABLES:
+      tables:
 
   # custom grpc settings
   grpc:

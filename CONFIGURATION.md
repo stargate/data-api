@@ -71,10 +71,17 @@ Other Quarkus properties that are specifically relevant for the service:
 
 
 ## Command level logging configuration
-*Configuration for command level logging, defined by [CommandLoggingConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/CommandLoggingConfig.java).*
+*Configuration for command level logging, defined by [CommandLevelLoggingConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/CommandLoggingConfig.java).*
 
 | Property                                            | Type      | Default | Description                                                                                                                                                        |
 |-----------------------------------------------------|-----------|---------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `stargate.jsonapi.logging.enabled`                  | `boolean` | `false` | Setting it to `true` enables command level logging.                                                                                                                |
 | `stargate.jsonapi.logging.only-results-with-errors` | `boolean` | `true`  | Setting it to `true` prints the command level info only for the commands where the command result has errors.                                                      |
 | `stargate.jsonapi.logging.enabled-tenants`          | `string`  | `ALL`   | Comma separated list of tenants for which command level logging should be enabled. Default is a special keyword called `ALL` which prints this log for all tenants |
+
+## API Feature enabling configuration
+*Configuration for enabling Features, defined by [DataApiFeatureConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/CommandLoggingConfig.java).*
+
+| Property                        | Type      | Default | Description                                                                                                          |
+|---------------------------------|-----------|---------|----------------------------------------------------------------------------------------------------------------------|
+| `stargate.feature.flags.tables` | `boolean` | `null`   | Setting it to `true` enables Tables functionality; `false` disables; leaving as `null` allowes per-request override. |

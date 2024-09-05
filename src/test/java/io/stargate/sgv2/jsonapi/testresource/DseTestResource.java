@@ -74,7 +74,7 @@ public class DseTestResource extends StargateTestResource {
 
     // 04-Sep-2024, tatu: [data-api#1335] Enable Tables using new Feature Flag:
     // propsBuilder.put("stargate.tables.enabled", "true");
-    propsBuilder.put("stargate.feature.flags.TABLES", "true");
+    propsBuilder.put("stargate.feature.flags.tables", "true");
 
     propsBuilder.put(
         "stargate.jsonapi.custom.embedding.clazz",
