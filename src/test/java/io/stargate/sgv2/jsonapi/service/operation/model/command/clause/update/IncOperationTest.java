@@ -226,7 +226,8 @@ public class IncOperationTest extends UpdateOperationTestBase {
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
           .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessageStartingWith(ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $inc");
+          .hasMessageStartingWith(
+              ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $inc");
     }
 
     @Test
@@ -325,7 +326,8 @@ public class IncOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
           .hasMessage(
               ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
                   + ": $inc does not support modifiers");

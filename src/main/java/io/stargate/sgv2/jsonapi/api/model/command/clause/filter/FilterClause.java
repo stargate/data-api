@@ -74,7 +74,8 @@ public record FilterClause(LogicalExpression logicalExpression)
         return;
       }
       // otherwise throw JsonApiException
-      throw ErrorCodeV1.ID_NOT_INDEXED.toApiException("you can only use $eq or $in as the operator");
+      throw ErrorCodeV1.ID_NOT_INDEXED.toApiException(
+          "you can only use $eq or $in as the operator");
     }
 
     // If path is not indexed, throw error

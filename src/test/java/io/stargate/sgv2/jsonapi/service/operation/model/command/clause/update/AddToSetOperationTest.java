@@ -196,7 +196,8 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
           .hasMessage(
               ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
                   + ": $addToSet only supports $each modifier; trying to use '$sort'");
@@ -383,7 +384,8 @@ public class AddToSetOperationTest extends UpdateOperationTestBase {
               });
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
+          .hasFieldOrPropertyWithValue(
+              "errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER)
           .hasMessageStartingWith(
               ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.getMessage()
                   + ": $addToSet only supports $each modifier; trying to use 'value'");

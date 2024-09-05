@@ -73,7 +73,8 @@ public class NamespaceCache {
                   // TODO: DO NOT do a string starts with, use proper error structures
                   // again, why is this here, looks like it returns the same error code ?
                   if (error instanceof RuntimeException rte
-                      && rte.getMessage().startsWith(ErrorCodeV1.COLLECTION_NOT_EXIST.getMessage())) {
+                      && rte.getMessage()
+                          .startsWith(ErrorCodeV1.COLLECTION_NOT_EXIST.getMessage())) {
                     return Uni.createFrom()
                         .failure(
                             ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
