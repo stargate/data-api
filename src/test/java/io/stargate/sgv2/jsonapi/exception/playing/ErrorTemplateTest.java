@@ -4,28 +4,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.IOException;
 import java.util.Map;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
  * Test creating the new API Exceptions using YAML templating in the file {@link
  * ErrorTestData#TEST_ERROR_CONFIG_FILE}
  */
-public class ErrorTemplateTest {
+public class ErrorTemplateTest extends ConfiguredErrorTest {
 
   private final ErrorTestData TEST_DATA = new ErrorTestData();
 
-  @BeforeAll
-  public static void setup() throws IOException {
-    ErrorConfig.unsafeInitializeFromYamlResource(ErrorTestData.TEST_ERROR_CONFIG_FILE);
-  }
-
-  @AfterAll
-  public static void teardown() throws IOException {
-    ErrorConfig.unsafeInitializeFromYamlResource(ErrorConfig.DEFAULT_ERROR_CONFIG_FILE);
+  @Override
+  String getErrorConfigResource() {
+    return TEST_DATA.TEST_ERROR_CONFIG_FILE;
   }
 
   /**
@@ -57,24 +49,14 @@ public class ErrorTemplateTest {
     return error;
   }
 
-  /**
-   * Re-usable to Test various properties on an error
-   *
-   * @param error
-   * @param family
-   * @param scope
-   * @param code
-   * @param title
-   * @param httpResponseOverride
-   * @param <T>
-   */
+  /** Re-usable to Test various properties on an error */
   private <T extends APIException> void assertError(
       T error,
       ErrorFamily family,
       String scope,
       String code,
       String title,
-      Integer httpResponseOverride) {
+      Integer httpStatusOverride) {
     // Does not accept a template because that would not catch the template being wrong
     // pass in the values that error should have given the code etc.
 
@@ -86,10 +68,10 @@ public class ErrorTemplateTest {
               assertThat(e.scope).isEqualTo(scope);
               assertThat(e.code).isEqualTo(code);
               assertThat(e.title).isEqualTo(title);
-              if (null == httpResponseOverride) {
-                assertThat(e.httpResponse).isEqualTo(APIException.DEFAULT_HTTP_RESPONSE);
+              if (null == httpStatusOverride) {
+                assertThat(e.httpStatus).isEqualTo(APIException.DEFAULT_HTTP_STATUS);
               } else {
-                assertThat(e.httpResponse).isEqualTo(httpResponseOverride);
+                assertThat(e.httpStatus).isEqualTo(httpStatusOverride);
               }
             });
   }
@@ -220,7 +202,7 @@ public class ErrorTemplateTest {
   }
 
   @Test
-  public void httpResponseOverride() {
+  public void httpStatusOverride() {
     var error = createException(TestRequestException.Code.HTTP_OVERRIDE);
 
     assertThat(error)

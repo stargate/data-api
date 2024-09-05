@@ -35,7 +35,7 @@ class ThrowableCommandResultSupplierTest {
                 assertThat(error.message())
                     .isEqualTo(
                         "Server failed: root cause: (java.lang.RuntimeException) With dedicated message");
-                assertThat(error.status()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
+                assertThat(error.httpStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
                 assertThat(error.fields())
                     .hasSize(2)
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
@@ -60,7 +60,7 @@ class ThrowableCommandResultSupplierTest {
                 assertThat(error.message())
                     .isEqualTo(
                         "Server failed: root cause: (java.lang.RuntimeException) With dedicated message");
-                assertThat(error.status()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
+                assertThat(error.httpStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
                 assertThat(error.fields())
                     .hasSize(2)
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
@@ -94,7 +94,7 @@ class ThrowableCommandResultSupplierTest {
                 assertThat(error.message())
                     .isEqualTo(
                         "Server failed: root cause: (io.grpc.StatusRuntimeException) ALREADY_EXISTS");
-                assertThat(error.status()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
+                assertThat(error.httpStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
                 assertThat(error.fields())
                     .hasSize(2)
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")

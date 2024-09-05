@@ -14,6 +14,7 @@
     <quarkus.platform.version>3.13.2</quarkus.platform.version>
     <!-- miscellaneous -->
     <wiremock.version>3.4.2</wiremock.version>
+    <mockito.version>5.12.0</mockito.version>
     <failsafe.useModulePath>false</failsafe.useModulePath>
     <!-- Please update github workflows that build docker images if changing image/additional tags -->
     <quarkus.container-image.group>stargateio</quarkus.container-image.group>
@@ -38,9 +39,9 @@
     <driver.version>4.17.0</driver.version>
     <!-- Compiler -->
     <compiler-plugin.version>3.11.0</compiler-plugin.version>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <maven.compiler.release>17</maven.compiler.release>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.release>21</maven.compiler.release>
     <!-- Encoding -->
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -60,6 +61,21 @@
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.dataformat</groupId>
+        <artifactId>jackson-dataformat-yaml</artifactId>
+        <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <!-- Support for Optional used when loading error config seehttps://github.com/FasterXML/jackson-modules-java8/tree/2.18/datatypes -->
+        <groupId>com.fasterxml.jackson.datatype</groupId>
+        <artifactId>jackson-datatype-jdk8</artifactId>
         <version>${jackson.version}</version>
         <type>pom</type>
         <scope>import</scope>
@@ -259,6 +275,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
+      <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

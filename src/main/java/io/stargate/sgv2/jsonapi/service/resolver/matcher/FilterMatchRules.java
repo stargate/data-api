@@ -29,7 +29,9 @@ public class FilterMatchRules<T extends Command & Filterable> {
    *
    * <p>Rules are applied in the order they are added, so add most specific first.
    *
-   * <p>Caller should then configure the rule as they want, e.g. <code>
+   * <p>Caller should then configure the rule as they want, e.g.
+   *
+   * <pre>
    *      private final FilterMatchRules<FindOneCommand> matchRules = new FilterMatchRules<>();
    *      matchRules.addMatchRule(FindOneCommandResolver::findById).matcher
    *        .capture(ID_GROUP).eq("_id", JsonType.STRING);
@@ -38,7 +40,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
    *          CaptureGroup captureGroup = captures.getCapture(ID_GROUP);
    *          return new FindByIdOperation(commandContext, captureGroup.getSingleJsonLiteral().getTypedValue());
    *      }
-   * </code>
+   * </pre>
    *
    * @param resolveFunction
    * @return

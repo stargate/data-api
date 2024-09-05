@@ -88,19 +88,15 @@ public class ErrorConfig {
    * @param code
    * @param title
    * @param body
-   * @param httpResponseOverride Optional override for the HTTP response code for this error, only
-   *     needs to be set if different from {@link APIException#DEFAULT_HTTP_RESPONSE}. <b>NOTE:</b>
+   * @param httpStatusOverride Optional override for the HTTP response code for this error, only
+   *     needs to be set if different from {@link APIException#DEFAULT_HTTP_STATUS}. <b>NOTE:</b>
    *     there is no checking that this is a well known HTTP status code, as we do not want to
    *     depend on classes like {@link jakarta.ws.rs.core.Response.Status} in this class and if we
    *     want to return a weird status this class should not limit that. It would be handled higher
    *     up the stack and tracked with Integration Tests.
    */
   public record ErrorDetail(
-      String scope,
-      String code,
-      String title,
-      String body,
-      Optional<Integer> httpResponseOverride) {
+      String scope, String code, String title, String body, Optional<Integer> httpStatusOverride) {
 
     public ErrorDetail {
       if (scope == null) {
@@ -124,7 +120,7 @@ public class ErrorConfig {
         throw new IllegalArgumentException("body cannot be blank");
       }
 
-      Objects.requireNonNull(httpResponseOverride, "httpResponseOverride cannot be null");
+      Objects.requireNonNull(httpStatusOverride, "httpStatusOverride cannot be null");
     }
   }
 
@@ -184,18 +180,18 @@ public class ErrorConfig {
           case SERVER -> serverErrors;
         };
     return errors.stream()
-        .filter(e -> e.code().equals(code) && e.scope().equals(scope))
+        .filter(e -> e.scope().equals(scope) && e.code().equals(code))
         .findFirst();
   }
 
   /**
    * Returns a map of the snippets for use in the templates.
    *
-   * <p>The map is cached, recommend use this rather than call {@link #snippets()} for every error
+   * <p>The map is cached, recommend us this rather than call {@link #snippets()} for every error
    *
    * @return Map of snippets for use in templates
    */
-  protected Map<String, String> getSnippetVars() {
+  public Map<String, String> getSnippetVars() {
 
     if (snippetVars == null) {
       // NOTE: Potential race condition, should be OK because the data won't change and we are only
@@ -213,6 +209,7 @@ public class ErrorConfig {
       Pattern.compile("^[A-Z0-9]+(_[A-Z0-9]+)*$");
 
   private static void requireSnakeCase(String value, String name) {
+
     if (!UPPER_SNAKE_CASE_PATTERN.matcher(value).matches()) {
       throw new IllegalArgumentException(
           name + " must be in UPPER_SNAKE_CASE_1 format, got: " + value);
