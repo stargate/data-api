@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
@@ -208,7 +208,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                       """)
           .hasNoData()
           .hasSingleApiError(
-              ErrorCode.TABLE_COLUMN_UNKNOWN,
+              ErrorCodeV1.TABLE_COLUMN_UNKNOWN,
               "Column unknown: No column with name 'unknown' found in table");
     }
 
@@ -226,7 +226,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
           """)
           .hasNoData()
           // 22-Aug-2024, tatu: Not optimal, leftovers from Collections... but has to do
-          .hasSingleApiError(ErrorCode.NO_INDEX_ERROR, "Faulty collection (missing indexes).");
+          .hasSingleApiError(ErrorCodeV1.NO_INDEX_ERROR, "Faulty collection (missing indexes).");
     }
   }
 }

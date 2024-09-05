@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.InvertibleCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.FilterClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
@@ -74,12 +74,12 @@ public record FilterClause(LogicalExpression logicalExpression)
         return;
       }
       // otherwise throw JsonApiException
-      throw ErrorCode.ID_NOT_INDEXED.toApiException("you can only use $eq or $in as the operator");
+      throw ErrorCodeV1.ID_NOT_INDEXED.toApiException("you can only use $eq or $in as the operator");
     }
 
     // If path is not indexed, throw error
     if (!isPathIndexed) {
-      throw ErrorCode.UNINDEXED_FILTER_PATH.toApiException(
+      throw ErrorCodeV1.UNINDEXED_FILTER_PATH.toApiException(
           "filter path '%s' is not indexed", comparisonExpression.getPath());
     }
 
@@ -100,7 +100,7 @@ public record FilterClause(LogicalExpression logicalExpression)
     for (Map.Entry<?, ?> entry : map.entrySet()) {
       String incrementalPath = currentPath + "." + entry.getKey();
       if (!indexingProjector.isPathIncluded(incrementalPath)) {
-        throw ErrorCode.UNINDEXED_FILTER_PATH.toApiException(
+        throw ErrorCodeV1.UNINDEXED_FILTER_PATH.toApiException(
             "filter path '%s' is not indexed", incrementalPath);
       }
       // continue build the incremental path if the value is a map
@@ -124,7 +124,7 @@ public record FilterClause(LogicalExpression logicalExpression)
       } else if (element instanceof String) {
         // no need to build incremental path, validate current path
         if (!indexingProjector.isPathIncluded(currentPath)) {
-          throw ErrorCode.UNINDEXED_FILTER_PATH.toApiException(
+          throw ErrorCodeV1.UNINDEXED_FILTER_PATH.toApiException(
               "filter path '%s' is not indexed", currentPath);
         }
       }

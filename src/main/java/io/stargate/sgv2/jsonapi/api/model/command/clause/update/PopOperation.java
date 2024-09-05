@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
 
       // Argument must be -1 (remove first) or 1 (remove last)
       if (!arg.isNumber()) {
-        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
             "$pop requires NUMBER argument (-1 or 1), instead got: %s", arg.getNodeType());
       }
       boolean first;
@@ -41,7 +41,7 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
           first = false;
           break;
         default:
-          throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+          throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
               "$pop requires argument of -1 or 1, instead got: %s", arg.intValue());
       }
       actions.add(new Action(PathMatchLocator.forPath(path), first));
@@ -73,7 +73,7 @@ public class PopOperation extends UpdateOperation<PopOperation.Action> {
           changes = true;
         }
       } else { // Something else? fail
-        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.toApiException(
             "$pop requires target to be ARRAY; value at '%s' of type %s",
             target.fullPath(), value.getNodeType());
       }

@@ -5,7 +5,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
@@ -63,20 +63,20 @@ public class NamespaceCache {
                   // TODO: Explain why this changes the error code
                   if (error instanceof JsonApiException
                       && ((JsonApiException) error).getErrorCode()
-                          == ErrorCode.VECTORIZECONFIG_CHECK_FAIL) {
+                          == ErrorCodeV1.VECTORIZECONFIG_CHECK_FAIL) {
                     return Uni.createFrom()
                         .failure(
-                            ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA.toApiException(
+                            ErrorCodeV1.INVALID_JSONAPI_COLLECTION_SCHEMA.toApiException(
                                 "%s", collectionName));
                   }
                   // collection does not exist
                   // TODO: DO NOT do a string starts with, use proper error structures
                   // again, why is this here, looks like it returns the same error code ?
                   if (error instanceof RuntimeException rte
-                      && rte.getMessage().startsWith(ErrorCode.COLLECTION_NOT_EXIST.getMessage())) {
+                      && rte.getMessage().startsWith(ErrorCodeV1.COLLECTION_NOT_EXIST.getMessage())) {
                     return Uni.createFrom()
                         .failure(
-                            ErrorCode.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
+                            ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
                   }
                   return Uni.createFrom().failure(error);
                 } else {
@@ -99,7 +99,7 @@ public class NamespaceCache {
               // TODO: error code here needs to be for collections and tables
               var table =
                   optionalTable.orElseThrow(
-                      () -> ErrorCode.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
+                      () -> ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
 
               // check if its a valid json api table
               // TODO: re-use the table matcher this is on the request hot path
@@ -113,7 +113,7 @@ public class NamespaceCache {
               }
 
               // Target is not a collection and we are not supporting tables
-              throw ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA.toApiException(
+              throw ErrorCodeV1.INVALID_JSONAPI_COLLECTION_SCHEMA.toApiException(
                   "%s", collectionName);
             });
   }

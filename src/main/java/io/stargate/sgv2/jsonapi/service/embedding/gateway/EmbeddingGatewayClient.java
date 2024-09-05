@@ -6,7 +6,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -176,7 +176,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
       embeddingResponse = embeddingService.embed(providerEmbedRequest);
     } catch (StatusRuntimeException e) {
       if (e.getStatus().getCode().equals(Status.Code.DEADLINE_EXCEEDED)) {
-        throw ErrorCode.EMBEDDING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
+        throw ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT.toApiException(e, e.getMessage());
       }
       throw e;
     }
@@ -186,7 +186,7 @@ public class EmbeddingGatewayClient extends EmbeddingProvider {
             resp -> {
               if (resp.hasError()) {
                 throw new JsonApiException(
-                    ErrorCode.valueOf(resp.getError().getErrorCode()),
+                    ErrorCodeV1.valueOf(resp.getError().getErrorCode()),
                     resp.getError().getErrorMessage());
               }
               if (resp.getEmbeddingsList() == null) {

@@ -13,7 +13,7 @@ import io.smallrye.config.SmallRyeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -47,7 +47,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
 
     JsonNode filterNode = deserializationContext.readTree(jsonParser);
     if (!filterNode.isObject()) {
-      throw ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE.toApiException();
+      throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException();
     }
     // implicit and
     LogicalExpression implicitAnd = LogicalExpression.and();
@@ -72,14 +72,14 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       for (JsonNode next : arrayNode) {
         if (!next.isObject()) {
           // nodes in $and/$or array must be objects
-          throw ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE.toApiException(
+          throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException(
               "Unsupported NodeType %s in $%s",
               next.getNodeType(), logicalExpression.getLogicalRelation());
         }
         populateExpression(logicalExpression, next);
       }
     } else {
-      throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
           "Cannot filter on '%s' field using operator '$eq': only '$exists' is supported",
           DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD);
     }
@@ -107,11 +107,11 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
           break;
         case DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD:
         case DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD:
-          throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
               "Cannot filter on '%s' field using operator '$eq': only '$exists' is supported",
               entry.getKey());
         default:
-          throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
               "Cannot filter on '%s' by array type", entry.getKey());
       }
       ArrayNode arrayNode = (ArrayNode) entry.getValue();
@@ -122,7 +122,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
     } else {
       // the key should match pattern
       if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
-        throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
             "filter clause path ('%s') contains character(s) not allowed", entry.getKey());
       }
       logicalExpression.addComparisonExpressions(
@@ -134,7 +134,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
 
   private void validate(LogicalExpression logicalExpression) {
     if (logicalExpression.getTotalIdComparisonExpressionCount() > 1) {
-      throw ErrorCode.FILTER_MULTIPLE_ID_FILTER.toApiException();
+      throw ErrorCodeV1.FILTER_MULTIPLE_ID_FILTER.toApiException();
     }
     for (LogicalExpression subLogicalExpression : logicalExpression.logicalExpressions) {
       validate(subLogicalExpression);
@@ -157,7 +157,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       LogicalExpression.LogicalOperator fromLogicalRelation) {
     if (fromLogicalRelation.equals(LogicalExpression.LogicalOperator.OR)
         && path.equals(DocumentConstants.Fields.DOC_ID)) {
-      throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+      throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
           "Cannot filter on '%s' field within '%s', ID field can not be used with $or operator",
           DocumentConstants.Fields.DOC_ID, LogicalExpression.LogicalOperator.OR.getOperator());
     }
@@ -167,24 +167,24 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         case IN -> {
           if (filterOperation.operand().value() instanceof List<?> list) {
             if (list.size() > operationsConfig.maxInOperatorValueSize()) {
-              throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                   "$in operator must have at most %d values",
                   operationsConfig.maxInOperatorValueSize());
             }
           } else {
-            throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                 "$in operator must have `ARRAY`");
           }
         }
         case NIN -> {
           if (filterOperation.operand().value() instanceof List<?> list) {
             if (list.size() > operationsConfig.maxInOperatorValueSize()) {
-              throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                   "$nin operator must have at most %d values",
                   operationsConfig.maxInOperatorValueSize());
             }
           } else {
-            throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                 "$nin operator must have `ARRAY`");
           }
         }
@@ -195,7 +195,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       switch (elementComparisonOperator) {
         case EXISTS:
           if (!(filterOperation.operand().value() instanceof Boolean)) {
-            throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                 "$exists operator must have `BOOLEAN`");
           }
           break;
@@ -207,27 +207,27 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         case ALL:
           if (filterOperation.operand().value() instanceof List<?> list) {
             if (list.isEmpty()) {
-              throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                   "$all operator must have at least one value");
             }
           } else {
-            throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                 "$all operator must have `ARRAY` value");
           }
           break;
         case SIZE:
           if (filterOperation.operand().value() instanceof BigDecimal i) {
             if (i.intValue() < 0) {
-              throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                   "$size operator must have integer value >= 0");
             }
             // Check if the value is an integer by comparing its scale.
             if (i.stripTrailingZeros().scale() > 0) {
-              throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                   "$size operator must have an integer value");
             }
           } else {
-            throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+            throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                 "$size operator must have integer");
           }
           break;
@@ -261,10 +261,10 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
       if (operator == null) {
         JsonExtensionType etype = JsonUtil.findJsonExtensionType(updateKey);
         if ((etype == null) && updateKey.startsWith("$")) {
-          throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(updateKey);
+          throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(updateKey);
         }
         if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(entry.getKey()).matches()) {
-          throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
               "filter clause path ('%s') contains character(s) not allowed", entry.getKey());
         }
         // JSON Extension type needs to be explicitly handled:
@@ -290,7 +290,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               && updateField.getKey().equals("$exists"))
           || (entry.getKey().equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)
               && updateField.getKey().equals("$exists")))) {
-        throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
             "filter clause path ('%s') contains character(s) not allowed", entry.getKey());
       }
       JsonNode value = updateField.getValue();
@@ -302,7 +302,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         if (!(valueObject instanceof Date
             || valueObject instanceof BigDecimal
             || (valueObject instanceof DocumentId && (value.isObject() || value.isNumber())))) {
-          throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+          throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
               "%s operator must have `DATE` or `NUMBER` value", operator.getOperator());
         }
       }
@@ -374,7 +374,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
               if (value.isIntegralNumber() && value.canConvertToLong()) {
                 return new Date(value.longValue());
               }
-              throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                   "$date value has to be sent as epoch time");
             } else if (etype != null) {
               // This will convert to Java value if valid value; we'll just convert back to String
@@ -384,7 +384,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
             } else {
               // handle an invalid filter use case:
               // { "address": { "street": { "$xx": xxx } } }
-              throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+              throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
                   "Invalid use of %s operator", node.fieldNames().next());
             }
           } else {
@@ -399,7 +399,7 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
           }
         }
       default:
-        throw ErrorCode.INVALID_FILTER_EXPRESSION.toApiException(
+        throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
             "Unsupported NodeType %s", node.getNodeType());
     }
   }

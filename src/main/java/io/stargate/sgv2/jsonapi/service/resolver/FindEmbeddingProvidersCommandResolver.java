@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindEmbeddingProvidersCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProvidersConfig;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -30,7 +30,7 @@ public class FindEmbeddingProvidersCommandResolver
   public Operation resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, FindEmbeddingProvidersCommand command) {
     if (!operationsConfig.vectorizeEnabled()) {
-      throw ErrorCode.VECTORIZE_FEATURE_NOT_AVAILABLE.toApiException();
+      throw ErrorCodeV1.VECTORIZE_FEATURE_NOT_AVAILABLE.toApiException();
     }
     return new FindEmbeddingProvidersOperation(embeddingProvidersConfig);
   }

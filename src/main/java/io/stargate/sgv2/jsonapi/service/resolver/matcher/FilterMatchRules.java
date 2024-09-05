@@ -4,7 +4,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import java.util.ArrayList;
@@ -69,7 +69,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
         .findFirst() // unwraps the Optional from the resolver function.
         .orElseThrow(
             () ->
-                ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+                ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
                     "Filter type not supported, unable to resolve to a filtering strategy"));
   }
 

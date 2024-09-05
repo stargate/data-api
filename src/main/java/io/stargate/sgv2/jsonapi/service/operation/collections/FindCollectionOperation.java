@@ -11,7 +11,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
@@ -306,7 +306,7 @@ public record FindCollectionOperation(
     if (vector() != null && !vectorEnabled) {
       return Uni.createFrom()
           .failure(
-              ErrorCode.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
+              ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
                   "%s", commandContext().schemaObject().name.table()));
     }
     // get FindResponse
@@ -380,7 +380,7 @@ public record FindCollectionOperation(
       }
       default -> {
         JsonApiException failure =
-            ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+            ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
                 "Unsupported find operation read type `%s`", readType);
         return Uni.createFrom().failure(failure);
       }
@@ -419,7 +419,7 @@ public record FindCollectionOperation(
             f.updateForNewDocument(objectMapper().getNodeFactory())
                 .ifPresent(setOperation -> setOperation.updateDocument(rootNode));
           } else {
-            throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+            throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
                 "Unsupported filter type in getNewDocument: %s", filter.getClass().getName());
           }
         }

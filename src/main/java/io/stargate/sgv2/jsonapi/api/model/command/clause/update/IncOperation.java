@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ public class IncOperation extends UpdateOperation<IncOperation.Action> {
       name = validateUpdatePath(UpdateOperator.INC, name);
       JsonNode value = entry.getValue();
       if (!value.isNumber()) {
-        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
             "$inc requires numeric parameter, got: %s", value.getNodeType());
       }
       updates.add(new Action(PathMatchLocator.forPath(name), (NumericNode) value));
@@ -63,7 +63,7 @@ public class IncOperation extends UpdateOperation<IncOperation.Action> {
           modified |= !newValue.equals(oldValue);
         }
       } else { // Non-number existing value? Fail
-        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.toApiException(
             "$inc requires target to be Number; value at '%s' of type %s",
             target.fullPath(), oldValue.getNodeType());
       }
