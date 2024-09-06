@@ -34,7 +34,7 @@ request-errors:
 
   - scope:
     code: HTTP_OVERRIDE
-    http-response-override: 500
+    http-status-override: 500
     title: An error that overrides the HTTP response
     body: |-
       body with ${name} and ${value} in it

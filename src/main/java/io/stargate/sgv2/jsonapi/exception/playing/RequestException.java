@@ -12,14 +12,18 @@ package io.stargate.sgv2.jsonapi.exception.playing;
  */
 public class RequestException extends APIException {
 
+  public static final ErrorFamily FAMILY = ErrorFamily.REQUEST;
+
   public RequestException(ErrorInstance errorInstance) {
     super(errorInstance);
   }
 
   public enum Scope implements ErrorScope {
-    /** See {@link FilterException} */
+    DOCUMENT,
+    /** See {@link DocumentException} */
     FILTER;
 
+    /** See {@link FilterException} */
     @Override
     public String scope() {
       return name();
@@ -33,8 +37,7 @@ public class RequestException extends APIException {
     private final ErrorTemplate<RequestException> template;
 
     Code() {
-      template =
-          ErrorTemplate.load(RequestException.class, ErrorFamily.REQUEST, ErrorScope.NONE, name());
+      template = ErrorTemplate.load(RequestException.class, FAMILY, ErrorScope.NONE, name());
     }
 
     @Override

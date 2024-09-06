@@ -48,7 +48,7 @@ import org.apache.commons.text.StringSubstitutor;
  * @param title Title of the error, does not change between instances.
  * @param messageTemplate A template for the error body, with variables to be replaced at runtime
  *     using the {@link StringSubstitutor} from Apache Commons Text.
- * @param httpResponseOverride If present, overrides the default HTTP 200 response code for errors.
+ * @param httpStatusOverride If present, overrides the default HTTP 200 response code for errors.
  */
 public record ErrorTemplate<T extends APIException>(
     Constructor<T> constructor,
@@ -57,7 +57,7 @@ public record ErrorTemplate<T extends APIException>(
     String code,
     String title,
     String messageTemplate,
-    Optional<Integer> httpResponseOverride) {
+    Optional<Integer> httpStatusOverride) {
 
   public T toException(Map<String, String> values) {
     var errorInstance = toInstance(values);
@@ -104,7 +104,7 @@ public record ErrorTemplate<T extends APIException>(
     }
 
     return new ErrorInstance(
-        UUID.randomUUID(), family, scope, code, title, msg, httpResponseOverride);
+        UUID.randomUUID(), family, scope, code, title, msg, httpStatusOverride);
   }
 
   /**
@@ -156,6 +156,6 @@ public record ErrorTemplate<T extends APIException>(
         code,
         errorConfig.title(),
         errorConfig.body(),
-        errorConfig.httpResponseOverride());
+        errorConfig.httpStatusOverride());
   }
 }

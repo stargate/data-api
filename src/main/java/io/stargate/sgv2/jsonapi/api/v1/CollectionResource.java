@@ -209,6 +209,6 @@ public class CollectionResource {
                     dataApiRequestInfo, commandContext, command);
               }
             })
-        .map(commandResult -> commandResult.map());
+        .map(commandResult -> commandResult.toRestResponse());
   }
 }

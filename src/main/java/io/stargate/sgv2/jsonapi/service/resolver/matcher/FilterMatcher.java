@@ -130,9 +130,11 @@ public class FilterMatcher<T extends Command & Filterable> {
     /**
      * The path is compared using an operator against a value of a type
      *
-     * <p>e.g. <code>
+     * <p>e.g.
+     *
+     * <pre>
      *  .compare("*", ValueComparisonOperator.GT, JsonType.NUMBER);
-     * </code>
+     * </pre>
      *
      * @param path
      * @param type

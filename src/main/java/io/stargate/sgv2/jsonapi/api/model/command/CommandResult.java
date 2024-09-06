@@ -175,7 +175,7 @@ public record CommandResult(
       @JsonIgnore @Schema(hidden = true) Map<String, Object> fieldsForMetricsTag,
       @JsonAnyGetter @Schema(hidden = true) Map<String, Object> fields,
       // Http status to be used in the response, defaulted to 200
-      @JsonIgnore Response.Status status) {
+      @JsonIgnore Response.Status httpStatus) {
 
     // this is a compact constructor for records
     // ensure message is not set in the fields key
@@ -188,18 +188,22 @@ public record CommandResult(
   }
 
   /**
-   * Maps CommandResult to RestResponse. Except for few selective errors, all errors are mapped to
-   * http status 200. In case of 401, 500, 502 and 504 response is sent with appropriate status
-   * code.
+   * Create the {@link RestResponse} Maps CommandResult to RestResponse. Except for few selective
+   * errors, all errors are mapped to http status 200. In case of 401, 500, 502 and 504 response is
+   * sent with appropriate status code.
    *
    * @return
    */
-  public RestResponse map() {
+  public RestResponse<CommandResult> toRestResponse() {
+
     if (null != this.errors()) {
       final Optional<Error> first =
-          this.errors().stream().filter(error -> error.status() != Response.Status.OK).findFirst();
+          this.errors().stream()
+              .filter(error -> error.httpStatus() != Response.Status.OK)
+              .findFirst();
+
       if (first.isPresent()) {
-        return RestResponse.ResponseBuilder.create(first.get().status(), this).build();
+        return RestResponse.ResponseBuilder.create(first.get().httpStatus(), this).build();
       }
     }
     return RestResponse.ok(this);
