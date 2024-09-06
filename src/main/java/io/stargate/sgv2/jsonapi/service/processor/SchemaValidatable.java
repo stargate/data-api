@@ -10,7 +10,7 @@ import java.util.Objects;
  * <p>Implementations <b>must</b> cascade validation to other objects in their state if they are
  * also validatable. This is to ensure that the entire object graph is validated. If an object is
  * not valid it should throw an exception, normally a {@link
- * io.stargate.sgv2.jsonapi.exception.playing.APIException}. Implement only the <code>validate*
+ * io.stargate.sgv2.jsonapi.exception.APIException}. Implement only the <code>validate*
  * </code> functions that are relevant to the object, the default behaviour will be the throw a
  * {@link UnsupportedOperationException} when not implemented. This is desirable as it will detect
  * situations where code is going down a path using a type of schema object we do not expect.

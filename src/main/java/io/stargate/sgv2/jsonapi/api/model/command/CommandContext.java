@@ -5,7 +5,7 @@ import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.ApiConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -65,7 +65,7 @@ public record CommandContext<T extends SchemaObject>(
       return (CommandContext<T>)
           forSchemaObject(dso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
     }
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "Unknown schema object type: %s", schemaObject.getClass().getName());
   }
 

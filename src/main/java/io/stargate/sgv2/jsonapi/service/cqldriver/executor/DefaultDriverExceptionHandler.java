@@ -1,8 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 
 /**
@@ -30,6 +31,6 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   @Override
   public RuntimeException handle(SchemaT schemaObject, ClosedConnectionException exception) {
     return DatabaseException.Code.CLOSED_CONNECTION.get(
-        errFmt(schemaObject, map -> map.put("errorMessage", exception.getMessage())));
+        errVars(schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
   }
 }

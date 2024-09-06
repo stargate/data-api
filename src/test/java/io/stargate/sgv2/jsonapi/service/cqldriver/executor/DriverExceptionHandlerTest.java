@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteType;
-import io.stargate.sgv2.jsonapi.exception.playing.APIException;
-import io.stargate.sgv2.jsonapi.exception.playing.ServerException;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import org.junit.jupiter.api.Test;
 
 /** Tests for {@link DriverExceptionHandler} interface only */

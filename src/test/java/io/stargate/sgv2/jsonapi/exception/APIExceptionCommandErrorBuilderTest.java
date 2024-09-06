@@ -77,7 +77,7 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
 
   private void assertErrorFields(
       APIException exception, CommandResult.Error error, int fieldSize, boolean errorObjectV2) {
-    // always has code, only te othes when it is the v2 schema
+    // always has code, only the other fields when it is the v2 schema
     assertThat(error.fields())
         .as("Error fields - common fields for v1 and v2 schema")
         .hasSize(fieldSize)

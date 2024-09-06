@@ -1,12 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.shredding.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.playing.ErrorFormatters.*;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import io.stargate.sgv2.jsonapi.exception.playing.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.playing.ServerException;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
@@ -113,7 +113,7 @@ public record WriteableTableRow(RowId id, Map<CqlIdentifier, Object> allColumnVa
                   try {
                     JSONCodecRegistry.codecToCQL(tableMetadata, entry.getKey(), entry.getValue());
                   } catch (UnknownColumnException e) {
-                    throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errFmt(e));
+                    throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
                   } catch (MissingJSONCodecException e) {
                     return true;
                   }

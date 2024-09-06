@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.shredding.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.playing.ErrorFormatters.errFmt;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
-import io.stargate.sgv2.jsonapi.exception.playing.DocumentException;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.mock.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;

@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmt;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
@@ -12,7 +12,7 @@ public class TableDriverExceptionHandler extends DefaultDriverExceptionHandler<T
   @Override
   public RuntimeException handle(TableSchemaObject schemaObject, WriteTimeoutException exception) {
     return DatabaseException.Code.TABLE_WRITE_TIMEOUT.get(
-        errFmt(
+        errVars(
             schemaObject,
             m -> {
               m.put("blockFor", String.valueOf(exception.getBlockFor()));

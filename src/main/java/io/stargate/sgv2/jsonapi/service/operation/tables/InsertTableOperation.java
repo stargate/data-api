@@ -48,10 +48,10 @@ public class InsertTableOperation extends TableMutationOperation {
    *     com.datastax.oss.driver.api.core.DriverException} or there is no special handling for it,
    *     it will be returned as is.
    * @return Handler error, turning into a {@link
-   *     io.stargate.sgv2.jsonapi.exception.playing.APIException} or the provided <code>throwable
+   *     io.stargate.sgv2.jsonapi.exception.APIException} or the provided <code>throwable
    *     </code>.
    */
-  protected Throwable maybeHandleDriverError(Throwable throwable) {
+  protected RuntimeException maybeHandleDriverError(RuntimeException throwable) {
     return driverExceptionHandler.maybeHandle(commandContext.schemaObject(), throwable);
   }
 
@@ -108,12 +108,12 @@ public class InsertTableOperation extends TableMutationOperation {
         .onItemOrFailure()
         .transform(
             (result, t) -> {
-              if (t != null) {
-                return (TableInsertAttempt)
-                    insertAttempt.maybeAddFailure(maybeHandleDriverError(t));
-              }
-              // This is where to check result.wasApplied() if this was a LWT
-              return insertAttempt;
+              return switch (t) {
+                case null -> insertAttempt;
+                case RuntimeException runtimeException ->
+                    (TableInsertAttempt) insertAttempt.maybeAddFailure(maybeHandleDriverError(runtimeException));
+                default -> (TableInsertAttempt) insertAttempt.maybeAddFailure(t);
+              };
             })
         .onItemOrFailure()
         .transform((ia, throwable) -> (TableInsertAttempt) ia.maybeAddFailure(throwable));
