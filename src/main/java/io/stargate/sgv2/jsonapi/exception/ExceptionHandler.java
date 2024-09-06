@@ -1,6 +1,6 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
-import static io.stargate.sgv2.jsonapi.exception.playing.ErrorFormatters.errVars;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
