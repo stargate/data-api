@@ -65,6 +65,11 @@ public class DseTestResource extends StargateTestResource {
     return 100L;
   }
 
+  // By default, we enable the feature flag for tables
+  public String getFeatureFlagTables() {
+    return "true";
+  }
+
   @Override
   public Map<String, String> start() {
     Map<String, String> env = super.start();
@@ -73,8 +78,10 @@ public class DseTestResource extends StargateTestResource {
     propsBuilder.put("stargate.jsonapi.custom.embedding.enabled", "true");
 
     // 04-Sep-2024, tatu: [data-api#1335] Enable Tables using new Feature Flag:
-    // propsBuilder.put("stargate.tables.enabled", "true");
-    propsBuilder.put("stargate.feature.flags.tables", "true");
+    String tableFeatureSetting = getFeatureFlagTables();
+    if (tableFeatureSetting != null) {
+      propsBuilder.put("stargate.feature.flags.tables", tableFeatureSetting);
+    }
 
     propsBuilder.put(
         "stargate.jsonapi.custom.embedding.clazz",
