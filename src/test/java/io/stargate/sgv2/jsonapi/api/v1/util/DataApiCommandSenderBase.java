@@ -50,7 +50,7 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
    * @param jsonBody JSON body to POST
    * @return Response validator for further assertions
    */
-  public final DataApiResponseValidator postRaw(String jsonBody) {
+  public final DataApiResponseValidator postJSON(String jsonBody) {
     RequestSpecification request =
         given()
             .port(getTestPort())
@@ -64,7 +64,7 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
   }
 
   public DataApiResponseValidator postCommand(String command, String commandClause) {
-    return postRaw("{ \"%s\": %s }".formatted(command, commandClause));
+    return postJSON("{ \"%s\": %s }".formatted(command, commandClause));
   }
 
   protected abstract io.restassured.response.Response postInternal(RequestSpecification request);
