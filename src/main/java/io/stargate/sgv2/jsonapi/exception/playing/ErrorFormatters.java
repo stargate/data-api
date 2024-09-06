@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.exception.playing;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.util.Collection;
 import java.util.HashMap;
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
  * <p>This is a utility class and should not be instantiated, do static function imports to make it
  * easier to use.
  *
- * <p>Probably want to use the {@link #errFmt(SchemaObject, Consumer)} normally, and then call the
+ * <p>Probably want to use the {@link #errVars(SchemaObject, Consumer)} normally, and then call the
  * others from the see consumer.
  */
 public abstract class ErrorFormatters {
@@ -52,8 +53,8 @@ public abstract class ErrorFormatters {
     return dataType.asCql(true, true);
   }
 
-  public static Map<String, String> errFmt(SchemaObject schemaObject) {
-    return errFmt(schemaObject, null);
+  public static Map<String, String> errVars(SchemaObject schemaObject) {
+    return errVars(schemaObject, null);
   }
 
   /**
@@ -82,22 +83,30 @@ public abstract class ErrorFormatters {
    * @return Map with the basic schema object variables and any additional variables added by the
    *     consumer.
    */
-  public static Map<String, String> errFmt(
+  public static Map<String, String> errVars(
       SchemaObject schemaObject, Consumer<Map<String, String>> consumer) {
     Map<String, String> map = new HashMap<>();
-    map.put("schemaType", schemaObject.type.name());
-    map.put("keyspace", schemaObject.name.keyspace());
-    map.put("table", schemaObject.name.table());
+    map.put(TemplateVars.SCHEMA_TYPE, schemaObject.type.name());
+    map.put(TemplateVars.KEYSPACE, schemaObject.name.keyspace());
+    map.put(TemplateVars.TABLE, schemaObject.name.table());
     if (consumer != null) {
       consumer.accept(map);
     }
     return map;
   }
 
-  public static Map<String, String> errFmt(Throwable runtimeException) {
+  public static Map<String, String> errVars(Throwable runtimeException) {
+    return errVars(runtimeException, null);
+  }
+
+  public static Map<String, String> errVars(
+      Throwable runtimeException, Consumer<Map<String, String>> consumer) {
     Map<String, String> map = new HashMap<>();
-    map.put("errorClass", runtimeException.getClass().getSimpleName());
-    map.put("errorMessage", runtimeException.getMessage());
+    map.put(TemplateVars.ERROR_CLASS, runtimeException.getClass().getSimpleName());
+    map.put(TemplateVars.ERROR_MESSAGE, runtimeException.getMessage());
+    if (consumer != null) {
+      consumer.accept(map);
+    }
     return map;
   }
 }

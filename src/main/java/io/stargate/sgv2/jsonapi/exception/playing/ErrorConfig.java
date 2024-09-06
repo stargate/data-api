@@ -180,18 +180,18 @@ public class ErrorConfig {
           case SERVER -> serverErrors;
         };
     return errors.stream()
-        .filter(e -> e.scope().equals(scope) && e.code().equals(code))
+        .filter(e -> e.code().equals(code) && e.scope().equals(scope))
         .findFirst();
   }
 
   /**
    * Returns a map of the snippets for use in the templates.
    *
-   * <p>The map is cached, recommend us this rather than call {@link #snippets()} for every error
+   * <p>The map is cached, recommend use this rather than call {@link #snippets()} for every error
    *
    * @return Map of snippets for use in templates
    */
-  public Map<String, String> getSnippetVars() {
+  Map<String, String> getSnippetVars() {
 
     if (snippetVars == null) {
       // NOTE: Potential race condition, should be OK because the data won't change and we are only
@@ -199,7 +199,7 @@ public class ErrorConfig {
       // want the map to be immutable because we hand it out
       snippetVars =
           Map.copyOf(
-              snippets.stream().collect(Collectors.toMap(s -> s.variableName(), Snippet::body)));
+              snippets.stream().collect(Collectors.toMap(Snippet::variableName, Snippet::body)));
     }
     return snippetVars;
   }

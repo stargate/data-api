@@ -6,11 +6,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 
 /**
- * Base for tests that use one of the test resource files for configuring the {@linbk ErrorConfig}
+ * Base for tests that use one of the test resource files for configuring the {@link ErrorConfig}
  * and {@link ErrorTemplate} classes.
  *
- * <p>Using <code>@TestInstance(TestInstance.Lifecycle.PER_CLASS)</code> allows the <code>
- *  @BeforeAll</code> to be instance method rather than static,
+ * <p>Using <code>@TestInstance(TestInstance.Lifecycle.PER_CLASS)</code> allows the <code>@BeforeAll
+ * </code> to be instance method rather than static,
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class ConfiguredErrorTest {

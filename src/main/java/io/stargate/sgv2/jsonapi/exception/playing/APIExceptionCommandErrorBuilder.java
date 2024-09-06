@@ -23,7 +23,7 @@ public class APIExceptionCommandErrorBuilder
    * Create a new instance that will create a {@link CommandResult.Error} with the given options.
    *
    * @param debugEnabled if <code>true</code> the {@link CommandResult.Error} will include the
-   *     {@link ErrorObjectV2Constants.Fields#EXCEPTION_CLASSEXCEPTION_CLASS} field.
+   *     {@link ErrorObjectV2Constants.Fields#EXCEPTION_CLASS} field.
    * @param returnErrorObjectV2 if <code>true</code> will include the fields for the V2 error object
    *     such as family etc
    */
@@ -34,7 +34,7 @@ public class APIExceptionCommandErrorBuilder
   }
 
   /**
-   * Create a new instance that will create a {@link CommandResult.Error} that represnets the <code>
+   * Create a new instance that will create a {@link CommandResult.Error} that represents the <code>
    * apiException</code>.
    *
    * @param apiException the exception that is going to be returned.

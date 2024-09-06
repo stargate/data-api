@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception.playing;
 
-import static io.stargate.sgv2.jsonapi.exception.playing.ErrorFormatters.errFmt;
+import static io.stargate.sgv2.jsonapi.exception.playing.ErrorFormatters.errVars;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DefaultDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -131,6 +131,6 @@ public interface ExceptionHandler<SchemaT extends SchemaObject, BaseT extends Ru
    * @return A {@link ServerException.Code#UNEXPECTED_SERVER_ERROR}.
    */
   default RuntimeException handleUnhandled(SchemaT schemaObject, BaseT exception) {
-    return ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errFmt(exception));
+    return ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(exception));
   }
 }

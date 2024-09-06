@@ -18,4 +18,13 @@ public interface ErrorObjectV2Constants {
     String ERROR_CODE = "errorCode";
     String EXCEPTION_CLASS = "exceptionClass";
   }
+
+  /** Standard names for message template variables */
+  interface TemplateVars {
+    String SCHEMA_TYPE = "schemaType";
+    String KEYSPACE = "keyspace";
+    String TABLE = "table";
+    String ERROR_CLASS = "errorClass";
+    String ERROR_MESSAGE = "errorMessage";
+  }
 }
