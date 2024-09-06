@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import com.fasterxml.jackson.core.exc.StreamConstraintsException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.NotAllowedException;
 import jakarta.ws.rs.NotFoundException;
@@ -26,7 +26,7 @@ public class WebApplicationExceptionMapper {
     // and if we have StreamConstraintsException, re-create as ApiException
     if (toReport instanceof StreamConstraintsException) {
       // but leave out the root cause, as it is not useful
-      toReport = ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(toReport.getMessage());
+      toReport = ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(toReport.getMessage());
     }
     CommandResult commandResult = new ThrowableCommandResultSupplier(toReport).get();
     if (toReport instanceof JsonApiException jae) {

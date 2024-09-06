@@ -6,7 +6,7 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderResponseValidation;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
@@ -127,7 +127,7 @@ public class UpstageAIEmbeddingProvider extends EmbeddingProvider {
     // of 1 String, fail for others
     if (texts.size() != 1) {
       // Temporary fail message: with re-batching will give better information
-      throw ErrorCode.INVALID_VECTORIZE_VALUE_TYPE.toApiException(
+      throw ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE.toApiException(
           "UpstageAI only supports vectorization of 1 text at a time, got " + texts.size());
     }
     // Another oddity: model name used as prefix

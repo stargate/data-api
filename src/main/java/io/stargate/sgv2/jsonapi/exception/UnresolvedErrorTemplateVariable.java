@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 /**
  * Raised by the Exception code when a template used to build an error message has a variable in it

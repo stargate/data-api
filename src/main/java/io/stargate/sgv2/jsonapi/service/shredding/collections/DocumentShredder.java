@@ -12,7 +12,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -123,7 +123,7 @@ public class DocumentShredder {
     // Although we could otherwise allow non-Object documents, requirement
     // to have the _id (or at least place for it) means we cannot allow that.
     if (!doc.isObject()) {
-      throw ErrorCode.SHRED_BAD_DOCUMENT_TYPE.toApiException(
+      throw ErrorCodeV1.SHRED_BAD_DOCUMENT_TYPE.toApiException(
           "document to shred must be a JSON Object, instead got %s", doc.getNodeType());
     }
 
@@ -147,7 +147,7 @@ public class DocumentShredder {
       // (to use configuration we specify wrt serialization)
       docJson = objectMapper.writeValueAsString(docWithId);
     } catch (JacksonException e) { // should never happen but signature exposes it
-      throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
           e, "Failed to serialize document: %s", e.getMessage());
     }
 
@@ -302,7 +302,7 @@ public class DocumentShredder {
       } else if (value.isNull()) {
         callback.shredNull(path);
       } else {
-        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
             "Unsupported `JsonNodeType` in input document, `%s`", value.getNodeType());
       }
     }
@@ -313,11 +313,12 @@ public class DocumentShredder {
       return;
     }
     if (!value.isArray()) {
-      throw ErrorCode.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(value.getNodeType().toString());
+      throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
+          value.getNodeType().toString());
     }
     ArrayNode arr = (ArrayNode) value;
     if (arr.size() == 0) {
-      throw ErrorCode.SHRED_BAD_VECTOR_SIZE.toApiException();
+      throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
     }
     callback.shredVector(path, arr);
   }
@@ -332,7 +333,7 @@ public class DocumentShredder {
   private void validateDocumentSize(DocumentLimitsConfig limits, String docJson) {
     // First: is the resulting document size (as serialized) too big?
     if (docJson.length() > limits.maxSize()) {
-      throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
+      throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
           "document size (%d chars) exceeds maximum allowed (%d)",
           docJson.length(), limits.maxSize());
     }
@@ -392,7 +393,7 @@ public class DocumentShredder {
           if (value.isTextual() || value.isIntegralNumber()) {
             return;
           }
-          throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+          throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
               "type '%s' has invalid JSON value of type %s",
               extType.encodedName(), value.getNodeType());
         }
@@ -419,7 +420,7 @@ public class DocumentShredder {
     private void validateObjectKey(String key, JsonNode value, int depth, int parentPathLength) {
       if (key.length() == 0) {
         // NOTE: validity failure, not size limit
-        throw ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.toApiException("empty names not allowed");
+        throw ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.toApiException("empty names not allowed");
       }
       if (!DocumentConstants.Fields.VALID_NAME_PATTERN.matcher(key).matches()) {
         // Special names are accepted in some cases:
@@ -428,14 +429,14 @@ public class DocumentShredder {
                 || key.equals(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD))) {
           ;
         } else {
-          throw ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
+          throw ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.toApiException(
               "field name ('%s') contains invalid character(s), can contain only letters (a-z/A-Z), numbers (0-9), underscores (_), and hyphens (-)",
               key);
         }
       }
       int totalPathLength = parentPathLength + key.length();
       if (totalPathLength > limits.maxPropertyPathLength()) {
-        throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
+        throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
             "property path length (%d) exceeds maximum allowed (%d) (path ends with '%s')",
             totalPathLength, limits.maxPropertyPathLength(), key);
       }
@@ -443,7 +444,7 @@ public class DocumentShredder {
 
     private void validateDocDepth(DocumentLimitsConfig limits, int depth) {
       if (depth > limits.maxDepth()) {
-        throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
+        throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
             "document depth exceeds maximum allowed (%s)", limits.maxDepth());
       }
     }
@@ -466,7 +467,7 @@ public class DocumentShredder {
     public void validate(ObjectNode doc) {
       validateObjectValue(null, doc);
       if (totalProperties.get() > limits.maxDocumentProperties()) {
-        throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
+        throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
             "total number of indexed properties (%d) in document exceeds maximum allowed (%d)",
             totalProperties.get(), limits.maxDocumentProperties());
       }
@@ -487,12 +488,12 @@ public class DocumentShredder {
         // One special case: vector embeddings allow larger size
         if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(referringPropertyName)) {
           if (arrayValue.size() > limits.maxVectorEmbeddingLength()) {
-            throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
+            throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
                 "number of elements Vector embedding (property '%s') has (%d) exceeds maximum allowed (%d)",
                 referringPropertyName, arrayValue.size(), limits.maxVectorEmbeddingLength());
           }
         } else {
-          throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
+          throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
               "number of elements an indexable Array (property '%s') has (%d) exceeds maximum allowed (%d)",
               referringPropertyName, arrayValue.size(), limits.maxArrayLength());
         }
@@ -506,7 +507,7 @@ public class DocumentShredder {
     private void validateObjectValue(String referringPropertyName, JsonNode objectValue) {
       final int propCount = objectValue.size();
       if (propCount > limits.maxObjectProperties()) {
-        throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
+        throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
             "number of properties an indexable Object (property '%s') has (%d) exceeds maximum allowed (%s)",
             referringPropertyName, objectValue.size(), limits.maxObjectProperties());
       }
@@ -525,7 +526,7 @@ public class DocumentShredder {
       OptionalInt encodedLength =
           JsonUtil.lengthInBytesIfAbove(value, limits.maxStringLengthInBytes());
       if (encodedLength.isPresent()) {
-        throw ErrorCode.SHRED_DOC_LIMIT_VIOLATION.toApiException(
+        throw ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(
             "indexed String value (property '%s') length (%d bytes) exceeds maximum allowed (%d bytes)",
             referringPropertyName, encodedLength.getAsInt(), limits.maxStringLengthInBytes());
       }

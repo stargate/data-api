@@ -4,13 +4,12 @@ import com.datastax.oss.driver.api.core.*;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.servererrors.*;
 import com.datastax.oss.driver.api.core.type.codec.CodecNotFoundException;
-import io.stargate.sgv2.jsonapi.exception.playing.ExceptionHandler;
+import io.stargate.sgv2.jsonapi.exception.ExceptionHandler;
 
 /**
  * Interface for handling exceptions from the Java driver.
  *
- * <p>See docs for {@link io.stargate.sgv2.jsonapi.exception.playing.ExceptionHandler} for more
- * details.
+ * <p>See docs for {@link ExceptionHandler} for more details.
  *
  * <p>The interface encapsulates all the different driver errors (there are a lot) and provides a
  * type specific <code>handle()</code> functions for all the ones we could possibly care about. Kept

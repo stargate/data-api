@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -307,7 +307,7 @@ class ProjectionLayer {
   }
 
   void reportPathConflict(String fullPath1, String fullPath2) {
-    throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+    throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
         "projection path conflict between '%s' and '%s'", fullPath1, fullPath2);
   }
 

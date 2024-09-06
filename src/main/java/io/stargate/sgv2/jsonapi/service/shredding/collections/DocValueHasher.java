@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.shredding.collections;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -45,7 +45,7 @@ public class DocValueHasher {
       case STRING -> stringValue(value.textValue()).hash();
 
       default -> // case BINARY, MISSING, POJO -- should these ever occur?
-          throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
               "Unsupported `JsonNodeType` in input document, `%s`", value.getNodeType());
     };
   }
@@ -204,6 +204,6 @@ public class DocValueHasher {
     } else if (value instanceof Byte b) {
       return booleanValue(Byte.compare(true_byte, b) == 0).hash();
     }
-    throw ErrorCode.UNSUPPORTED_FILTER_DATA_TYPE.toApiException("%s", value.getClass());
+    throw ErrorCodeV1.UNSUPPORTED_FILTER_DATA_TYPE.toApiException("%s", value.getClass());
   }
 }

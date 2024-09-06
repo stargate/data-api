@@ -1,10 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import static io.stargate.sgv2.jsonapi.exception.playing.ErrorFormatters.errVars;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
-import io.stargate.sgv2.jsonapi.exception.playing.DatabaseException;
+import io.stargate.sgv2.jsonapi.exception.DatabaseException;
 
 /**
  * Default implementation of the {@link DriverExceptionHandler} interface, we keep the interface so

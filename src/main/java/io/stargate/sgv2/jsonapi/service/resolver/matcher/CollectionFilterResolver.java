@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
@@ -189,7 +189,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     (DocumentId) filterOperation.operand().value()));
             break;
           default:
-            throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+            throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
                 "%s", filterOperation.operator().getOperator());
         }
       }
@@ -209,7 +209,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     (List<Object>) filterOperation.operand().value()));
             break;
           default:
-            throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+            throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
                 "%s", filterOperation.operator().getOperator());
         }
       }
@@ -357,7 +357,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case LTE:
         return MapCollectionFilter.Operator.LTE;
       default:
-        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
             "%s", filterOperator.getOperator());
     }
   }
@@ -370,7 +370,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case NIN:
         return InCollectionFilter.Operator.NIN;
       default:
-        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
             "%s", filterOperator.getOperator());
     }
   }
@@ -383,7 +383,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case NE:
         return SetCollectionFilter.Operator.NOT_CONTAINS;
       default:
-        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
             "%s", filterOperator.getOperator());
     }
   }

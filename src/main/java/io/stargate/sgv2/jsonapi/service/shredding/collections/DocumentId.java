@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -78,10 +78,10 @@ public interface DocumentId extends DocRowIdentifer {
               return fromExtensionType(extType, valueNode);
           }
         }
-        throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+        throw ErrorCodeV1.SHRED_BAD_DOCID_TYPE.toApiException(
             "unrecognized JSON extension type '%s'", node.fieldNames().next());
     }
-    throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+    throw ErrorCodeV1.SHRED_BAD_DOCID_TYPE.toApiException(
         "Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got %s",
         node.getNodeType());
   }
@@ -89,7 +89,7 @@ public interface DocumentId extends DocRowIdentifer {
   static DocumentId fromDatabase(int typeId, String documentIdAsText) {
     JsonType type = DocumentConstants.KeyTypeId.getJsonType(typeId);
     if (type == null) {
-      throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+      throw ErrorCodeV1.SHRED_BAD_DOCID_TYPE.toApiException(
           "Document Id must be a JSON String(1), Number(2), Boolean(3), NULL(4) or Date(5) instead got %d",
           typeId);
     }
@@ -101,7 +101,7 @@ public interface DocumentId extends DocRowIdentifer {
           case "false":
             return fromBoolean(false);
         }
-        throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+        throw ErrorCodeV1.SHRED_BAD_DOCID_TYPE.toApiException(
             "Document Id type Boolean stored as invalid String '%s' (must be 'true' or 'false')",
             documentIdAsText);
       }
@@ -112,7 +112,7 @@ public interface DocumentId extends DocRowIdentifer {
         try {
           return fromNumber(new BigDecimal(documentIdAsText));
         } catch (NumberFormatException e) {
-          throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+          throw ErrorCodeV1.SHRED_BAD_DOCID_TYPE.toApiException(
               "Document Id type Number stored as invalid String '%s' (not a valid Number)",
               documentIdAsText);
         }
@@ -125,13 +125,13 @@ public interface DocumentId extends DocRowIdentifer {
           long ts = Long.parseLong(documentIdAsText);
           return fromTimestamp(ts);
         } catch (NumberFormatException e) {
-          throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(
+          throw ErrorCodeV1.SHRED_BAD_DOCID_TYPE.toApiException(
               "Document Id type Date stored as invalid String '%s' (needs to be Number)",
               documentIdAsText);
         }
       }
     }
-    throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException();
+    throw ErrorCodeV1.SHRED_BAD_DOCID_TYPE.toApiException();
   }
 
   static DocumentId fromBoolean(boolean key) {
@@ -150,7 +150,7 @@ public interface DocumentId extends DocRowIdentifer {
   static DocumentId fromString(String key) {
     key = Objects.requireNonNull(key);
     if (key.isEmpty()) {
-      throw ErrorCode.SHRED_BAD_DOCID_EMPTY_STRING.toApiException();
+      throw ErrorCodeV1.SHRED_BAD_DOCID_EMPTY_STRING.toApiException();
     }
     return new StringId(key);
   }
@@ -172,7 +172,7 @@ public interface DocumentId extends DocRowIdentifer {
       Object rawId = JsonUtil.extractExtendedValueUnwrapped(extType, valueNode);
       return new ExtensionTypeId(extType, String.valueOf(rawId));
     } catch (JsonApiException e) {
-      throw ErrorCode.SHRED_BAD_DOCID_TYPE.toApiException(e.getMessage());
+      throw ErrorCodeV1.SHRED_BAD_DOCID_TYPE.toApiException(e.getMessage());
     }
   }
 

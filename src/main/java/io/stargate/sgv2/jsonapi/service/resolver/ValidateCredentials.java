@@ -6,7 +6,7 @@ import io.quarkus.runtime.ShutdownEvent;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingServiceGrpc;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -39,7 +39,7 @@ public class ValidateCredentials {
     final EmbeddingGateway.ValidateCredentialResponse validateCredentialResponse =
         embeddingService.validateCredential(validateCredentialRequest.build());
     if (validateCredentialResponse.hasError()) {
-      throw ErrorCode.VECTORIZE_CREDENTIAL_INVALID.toApiException(
+      throw ErrorCodeV1.VECTORIZE_CREDENTIAL_INVALID.toApiException(
           " with error: %s", validateCredentialResponse.getError().getErrorMessage());
     }
     return validateCredentialResponse.getValidity();

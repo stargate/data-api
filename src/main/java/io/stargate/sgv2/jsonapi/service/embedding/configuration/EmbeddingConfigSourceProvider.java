@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
 import io.quarkus.runtime.annotations.StaticInitSafe;
 import io.smallrye.config.source.yaml.YamlConfigSource;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -25,7 +25,7 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
       if (configPath != null && !configPath.isEmpty()) {
         File file = new File(configPath);
         if (!file.exists()) {
-          throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
               "Config file does not exist at the path: %s", file.getCanonicalPath());
         }
         URL fileUrl = file.toURI().toURL();
@@ -37,7 +37,7 @@ public class EmbeddingConfigSourceProvider implements ConfigSourceProvider {
       YamlConfigSource configSource = new YamlConfigSource(resourceURL);
       return Collections.singletonList(configSource);
     } catch (IOException e) {
-      throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
           e,
           "Failed to load embedding provider config from 'embedding-providers-config.yaml': %s",
           e.getMessage());

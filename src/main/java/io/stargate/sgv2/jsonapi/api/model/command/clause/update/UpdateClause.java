@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.UpdateClauseDeserializer;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -54,7 +54,7 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
               for (ActionWithLocator action : actions) {
                 UpdateOperator prevType = actionMap.put(action.locator(), type);
                 if (prevType != null) {
-                  throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+                  throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
                       "update operators '%s' and '%s' must not refer to same path: '%s'",
                       prevType.operator(), type.operator(), action.locator());
                 }
@@ -76,7 +76,7 @@ public record UpdateClause(EnumMap<UpdateOperator, ObjectNode> updateOperationDe
         PathMatchLocator currLoc = curr.getKey();
         // So, if parent/child, parent always first so this check is enough
         if (currLoc.isSubPathOf(prevLoc)) {
-          throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+          throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
               "Update operator path conflict due to overlap: '%s' (%s) vs '%s' (%s)",
               prevLoc, prev.getValue().operator(), currLoc, curr.getValue().operator());
         }

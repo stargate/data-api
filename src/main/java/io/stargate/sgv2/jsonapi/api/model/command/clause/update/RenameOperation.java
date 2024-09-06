@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
 import java.util.ArrayList;
@@ -22,12 +22,12 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
       String srcPath = validateUpdatePath(UpdateOperator.RENAME, entry.getKey());
       JsonNode value = entry.getValue();
       if (!value.isTextual()) {
-        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
             "$rename requires STRING parameter for 'to', got: %s", value.getNodeType());
       }
       String dstPath = validateUpdatePath(UpdateOperator.RENAME, value.textValue());
       if (srcPath.equals(dstPath)) {
-        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
             "$rename requires that 'source' and `destination` differ ('%s')", srcPath);
       }
       actions.add(new Action(PathMatchLocator.forPath(srcPath), PathMatchLocator.forPath(dstPath)));
@@ -44,7 +44,7 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
       if (value != null) {
         // $rename does not allow renaming of Array elements
         if (src.contextNode().isArray()) {
-          throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
+          throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
               "$rename does not allow ARRAY field as source ('%s')", action.sourceLocator());
         }
 
@@ -55,7 +55,7 @@ public class RenameOperation extends UpdateOperation<RenameOperation.Action> {
 
         // Also not allowed: destination as Array element:
         if (dst.contextNode().isArray()) {
-          throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
+          throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.toApiException(
               "$rename does not allow ARRAY field as destination ('%s')", action.targetLocator());
         }
 

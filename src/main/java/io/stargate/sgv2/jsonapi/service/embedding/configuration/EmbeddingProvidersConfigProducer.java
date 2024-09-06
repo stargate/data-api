@@ -5,7 +5,7 @@ import io.quarkus.runtime.Startup;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingServiceGrpc;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import java.time.temporal.ChronoUnit;
@@ -49,7 +49,7 @@ public class EmbeddingProvidersConfigProducer {
           embeddingService.getSupportedProviders(getSupportedProvidersRequest);
       return grpcResponseToConfig(supportedProvidersResponse, customConfig);
     } catch (Exception e) {
-      throw ErrorCode.SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE.toApiException();
+      throw ErrorCodeV1.SERVER_EMBEDDING_GATEWAY_NOT_AVAILABLE.toApiException();
     }
   }
 

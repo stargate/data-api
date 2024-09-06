@@ -13,7 +13,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -248,7 +248,7 @@ public interface CollectionReadOperation extends CollectionOperation {
               int remaining = resultSet.remaining();
               int count = documentCounter.addAndGet(remaining);
               if (count == errorLimit) {
-                throw ErrorCode.DATASET_TOO_BIG.toApiException(
+                throw ErrorCodeV1.DATASET_TOO_BIG.toApiException(
                     "maximum sortable count = %d", errorLimit);
               }
               List<ReadDocument> documents = new ArrayList<>(remaining);
@@ -431,7 +431,7 @@ public interface CollectionReadOperation extends CollectionOperation {
 
   private void getCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
     if (error != null) {
-      throw ErrorCode.COUNT_READ_FAILED.toApiException();
+      throw ErrorCodeV1.COUNT_READ_FAILED.toApiException();
     } else {
       counter.addAndGet(rs.remaining());
       if (rs.hasMorePages()) {
@@ -471,7 +471,7 @@ public interface CollectionReadOperation extends CollectionOperation {
 
   private void getEstimatedCount(AsyncResultSet rs, Throwable error, AtomicLong counter) {
     if (error != null) {
-      throw ErrorCode.COUNT_READ_FAILED.toApiException("root cause: %s", error.getMessage());
+      throw ErrorCodeV1.COUNT_READ_FAILED.toApiException("root cause: %s", error.getMessage());
     } else {
 
       // calculate the total range size and total partitions count for each range
@@ -518,6 +518,6 @@ public interface CollectionReadOperation extends CollectionOperation {
    * Helper method to handle details of exactly how much information to include in error message.
    */
   static JsonApiException parsingExceptionToApiException(JacksonException e) {
-    return ErrorCode.DOCUMENT_UNPARSEABLE.toApiException("%s", e.getOriginalMessage());
+    return ErrorCodeV1.DOCUMENT_UNPARSEABLE.toApiException("%s", e.getOriginalMessage());
   }
 }

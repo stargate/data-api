@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.update;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import io.stargate.sgv2.jsonapi.util.PathMatch;
 import io.stargate.sgv2.jsonapi.util.PathMatchLocator;
@@ -30,7 +30,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
       final String name = validateUpdatePath(UpdateOperator.ADD_TO_SET, entry.getKey());
       // At main level we must have field name (no modifiers)
       if (looksLikeModifier(name)) {
-        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
             "$addToSet requires field names at main level, found modifier: %s", name);
       }
       // But within field value modifiers are allowed: if there's one, all must be modifiers
@@ -60,20 +60,20 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
         case "$each":
           eachArg = arg;
           if (!eachArg.isArray()) {
-            throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+            throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
                 "$addToSet modifier $each requires ARRAY argument, found: %s",
                 eachArg.getNodeType());
           }
           break;
 
         default:
-          throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.toApiException(
+          throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_MODIFIER.toApiException(
               "$addToSet only supports $each modifier; trying to use '%s'", modifier);
       }
     }
     // For now should not be possible to occur but once we add other modifiers could:
     if (eachArg == null) {
-      throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
+      throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.toApiException(
           "$addToSet modifiers can only be used with $each modifier; none included");
     }
 
@@ -105,7 +105,7 @@ public class AddToSetOperation extends UpdateOperation<AddToSetOperation.Action>
       } else if (node.isArray()) { // Already array? Append
         array = (ArrayNode) node;
       } else { // Something else? fail
-        throw ErrorCode.UNSUPPORTED_UPDATE_OPERATION_TARGET.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_TARGET.toApiException(
             "$addToSet requires target to be ARRAY; value at '%s' of type %s",
             action.locator().path(), node.getNodeType());
       }
