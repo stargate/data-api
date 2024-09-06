@@ -1,28 +1,21 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
  * Test creating the new API Exceptions using YAML templating in the file {@link
  * ErrorTestData#TEST_ERROR_CONFIG_FILE}
  */
-public class BadExceptionTemplateTest {
+public class BadExceptionTemplateTest extends ConfiguredErrorTest {
+  private final ErrorTestData TEST_DATA = new ErrorTestData();
 
-  @BeforeAll
-  public static void setup() throws IOException {
-    ErrorConfig.unsafeInitializeFromYamlResource(ErrorTestData.MISSING_CTOR_ERROR_CONFIG_FILE);
-  }
-
-  @AfterAll
-  public static void teardown() throws IOException {
-    ErrorConfig.unsafeInitializeFromYamlResource(ErrorConfig.DEFAULT_ERROR_CONFIG_FILE);
+  @Override
+  String getErrorConfigResource() {
+    return TEST_DATA.MISSING_CTOR_ERROR_CONFIG_FILE;
   }
 
   @Test

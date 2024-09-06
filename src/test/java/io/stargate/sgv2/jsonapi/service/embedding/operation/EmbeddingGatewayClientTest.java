@@ -12,7 +12,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.embedding.gateway.EmbeddingGateway;
 import io.stargate.embedding.gateway.EmbeddingService;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import io.stargate.sgv2.jsonapi.service.embedding.gateway.EmbeddingGatewayClient;
@@ -116,7 +116,7 @@ public class EmbeddingGatewayClientTest {
     EmbeddingGateway.EmbeddingResponse.ErrorResponse.Builder errorResponseBuilder =
         EmbeddingGateway.EmbeddingResponse.ErrorResponse.newBuilder();
     final JsonApiException apiException =
-        ErrorCode.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
+        ErrorCodeV1.EMBEDDING_PROVIDER_RATE_LIMITED.toApiException(
             "Error Code : %s response description : %s", 429, "Too Many Requests");
     errorResponseBuilder
         .setErrorCode(apiException.getErrorCode().name())

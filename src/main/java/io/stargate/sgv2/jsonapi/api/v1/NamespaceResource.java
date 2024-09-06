@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
@@ -123,14 +123,14 @@ public class NamespaceResource {
       return Uni.createFrom()
           .item(
               new ThrowableCommandResultSupplier(
-                  ErrorCode.TABLE_FEATURE_NOT_ENABLED.toApiException()))
-          .map(commandResult -> commandResult.map());
+                  ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException()))
+          .map(commandResult -> commandResult.toRestResponse());
     }
 
     // call processor
     return meteredCommandProcessor
         .processCommand(dataApiRequestInfo, commandContext, command)
         // map to 2xx unless overridden by error
-        .map(commandResult -> commandResult.map());
+        .map(commandResult -> commandResult.toRestResponse());
   }
 }

@@ -1,12 +1,9 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-import java.io.IOException;
 import java.util.Map;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -14,18 +11,13 @@ import org.junit.jupiter.api.Test;
  *
  * <p>Uses config in {@link ErrorTestData#TEST_ERROR_CONFIG_FILE}
  */
-public class ErrorCodeTest {
+public class ErrorCodeTest extends ConfiguredErrorTest {
 
   private final ErrorTestData TEST_DATA = new ErrorTestData();
 
-  @BeforeAll
-  public static void setup() throws IOException {
-    ErrorConfig.unsafeInitializeFromYamlResource(ErrorTestData.TEST_ERROR_CONFIG_FILE);
-  }
-
-  @AfterAll
-  public static void teardown() throws IOException {
-    ErrorConfig.unsafeInitializeFromYamlResource(ErrorConfig.DEFAULT_ERROR_CONFIG_FILE);
+  @Override
+  String getErrorConfigResource() {
+    return TEST_DATA.TEST_ERROR_CONFIG_FILE;
   }
 
   @Test

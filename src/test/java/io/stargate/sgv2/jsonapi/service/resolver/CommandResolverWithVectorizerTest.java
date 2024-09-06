@@ -20,7 +20,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
@@ -165,7 +165,7 @@ public class CommandResolverWithVectorizerTest {
                         "Unable to vectorize data, embedding service not configured for the collection : "
                             + VECTOR_COMMAND_CONTEXT.schemaObject().name.table());
                 assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
+                    .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
     }
 
@@ -347,7 +347,7 @@ public class CommandResolverWithVectorizerTest {
                         "Unable to vectorize data, embedding service not configured for the collection : "
                             + VECTOR_COMMAND_CONTEXT.schemaObject().name.table());
                 assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
+                    .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
     }
 
@@ -564,7 +564,7 @@ public class CommandResolverWithVectorizerTest {
                         "Unable to vectorize data, embedding service not configured for the collection : "
                             + VECTOR_COMMAND_CONTEXT.schemaObject().name.table());
                 assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
+                    .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
     }
 

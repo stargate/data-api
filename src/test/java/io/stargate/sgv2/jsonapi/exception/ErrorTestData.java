@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 /**
  * Re-usable test data for tests on the exceptions, so we dont need to use inheritance where it may
@@ -6,9 +6,9 @@ package io.stargate.sgv2.jsonapi.exception.playing;
  */
 public class ErrorTestData {
 
-  public static final String TEST_ERROR_CONFIG_FILE = "test_errors.yaml";
+  public final String TEST_ERROR_CONFIG_FILE = "test_errors.yaml";
 
-  public static final String MISSING_CTOR_ERROR_CONFIG_FILE = "invalid_exception_errors.yaml";
+  public final String MISSING_CTOR_ERROR_CONFIG_FILE = "invalid_exception_errors.yaml";
 
   // Variables for templates
   public final String VAR_NAME = "name-" + System.currentTimeMillis();

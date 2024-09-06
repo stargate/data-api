@@ -9,7 +9,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import org.junit.jupiter.api.Nested;
@@ -82,9 +82,9 @@ public class CurrentDateOperationTest extends UpdateOperationTestBase {
                       objectFromJson("{ \"x\": \"foobar\"}")));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessageStartingWith(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
                   + ": $currentDate requires argument of either `true` or `{\"$type\":\"date\"}`, got: `\"foobar\"`");
     }
 
@@ -96,9 +96,9 @@ public class CurrentDateOperationTest extends UpdateOperationTestBase {
                   UpdateOperator.CURRENT_DATE.resolveOperation(objectFromJson("{ \"x\": false}")));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessageStartingWith(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
                   + ": $currentDate requires argument of either `true` or `{\"$type\":\"date\"}`, got: `false`");
     }
 
@@ -111,9 +111,9 @@ public class CurrentDateOperationTest extends UpdateOperationTestBase {
                       objectFromJson("{ \"x\": {\"value\":1}}")));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessageStartingWith(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM.getMessage()
                   + ": $currentDate requires argument of either `true` or `{\"$type\":\"date\"}`, got: `{\"value\":1}`");
     }
   }

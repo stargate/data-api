@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionIndexUsage;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
@@ -110,7 +110,7 @@ public abstract class CollectionFilter extends DBFilterBase {
     } else if (value == null) {
       return nodeFactory.nullNode();
     } else {
-      throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
           "Unexpected Object class for CollectionFilter: %s", value.getClass().getName());
     }
   }

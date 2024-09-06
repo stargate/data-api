@@ -3023,7 +3023,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
           .isEqualTo("SERVER_READ_FAILED");
       AssertionsForClassTypes.assertThat(error.fields().get("exceptionClass"))
           .isEqualTo("JsonApiException");
-      AssertionsForClassTypes.assertThat(error.status()).isEqualTo(Response.Status.BAD_GATEWAY);
+      AssertionsForClassTypes.assertThat(error.httpStatus()).isEqualTo(Response.Status.BAD_GATEWAY);
       AssertionsForClassTypes.assertThat(error.message())
           .startsWith("Database read failed")
           .endsWith(

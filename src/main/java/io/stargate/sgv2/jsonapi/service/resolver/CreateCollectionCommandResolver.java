@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
@@ -193,7 +193,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       CreateCollectionCommand.Options.VectorSearchConfig vector) {
 
     if (vector.vectorizeConfig() != null && !operationsConfig.vectorizeEnabled()) {
-      throw ErrorCode.VECTORIZE_FEATURE_NOT_AVAILABLE.toApiException();
+      throw ErrorCodeV1.VECTORIZE_FEATURE_NOT_AVAILABLE.toApiException();
     }
 
     Integer vectorDimension = vector.dimension();
@@ -209,11 +209,11 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     } else {
       // Ensure vector dimension is provided when service configuration is absent.
       if (vectorDimension == null) {
-        throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "The 'dimension' can not be null if 'service' is not provided");
       }
       if (vectorDimension > documentLimitsConfig.maxVectorEmbeddingLength()) {
-        throw ErrorCode.VECTOR_SEARCH_TOO_BIG_VALUE.toApiException(
+        throw ErrorCodeV1.VECTOR_SEARCH_TOO_BIG_VALUE.toApiException(
             "%d (max %d)", vectorDimension, documentLimitsConfig.maxVectorEmbeddingLength());
       }
     }
@@ -273,7 +273,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig =
         embeddingProvidersConfig.providers().get(userConfig.provider());
     if (providerConfig == null || !providerConfig.enabled()) {
-      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "Service provider '%s' is not supported", userConfig.provider());
     }
     return providerConfig;
@@ -351,7 +351,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
       // If neither 'NONE' nor 'HEADER' authentication type is enabled, throw an exception
       if (!noneEnabled && !headerEnabled) {
-        throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "Service provider '%s' does not support either 'NONE' or 'HEADER' authentication types.",
             userConfig.provider());
       }
@@ -361,7 +361,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       for (Map.Entry<String, String> userAuth : userConfig.authentication().entrySet()) {
         // Check if the key is accepted by the provider
         if (!acceptedKeys.contains(userAuth.getKey())) {
-          throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
               "Service provider '%s' does not support authentication key '%s'",
               userConfig.provider(), userAuth.getKey());
         }
@@ -429,7 +429,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         .forEach(
             userParamName -> {
               if (!expectedParamNames.contains(userParamName)) {
-                throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+                throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
                     "Unexpected parameter '%s' for the provider '%s' provided",
                     userParamName, userConfig.provider());
               }
@@ -443,7 +443,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         expectedParamConfig -> {
           if (expectedParamConfig.required()
               && !userParameters.containsKey(expectedParamConfig.name())) {
-            throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+            throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
                 "Required parameter '%s' for the provider '%s' missing",
                 expectedParamConfig.name(), userConfig.provider());
           }
@@ -487,7 +487,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
                 && !(userParamValue instanceof Boolean);
 
     if (typeMismatch) {
-      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "The provided parameter '%s' type is incorrect. Expected: '%s'",
           expectedParamConfig.name(), expectedParamType);
     }
@@ -511,13 +511,13 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
     // 1. huggingfaceDedicated does not require model, but requires dimension
     if (userConfig.provider().equals(ProviderConstants.HUGGINGFACE_DEDICATED)) {
       if (userVectorDimension == null) {
-        throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "'dimension' is needed for provider %s", ProviderConstants.HUGGINGFACE_DEDICATED);
       }
     }
     // 2. other providers do require model
     if (userConfig.modelName() == null) {
-      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "'modelName' is needed for provider %s", userConfig.provider());
     }
     EmbeddingProvidersConfig.EmbeddingProviderConfig.ModelConfig model =
@@ -526,7 +526,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
             .findFirst()
             .orElseThrow(
                 () ->
-                    ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+                    ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
                         "Model name '%s' for provider '%s' is not supported",
                         userConfig.modelName(), userConfig.provider()));
 
@@ -536,7 +536,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       if (userVectorDimension == null) {
         return configVectorDimension; // Use model's dimension if user hasn't specified any
       } else if (!configVectorDimension.equals(userVectorDimension)) {
-        throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+        throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
             "The provided dimension value '%s' doesn't match the model's supported dimension value '%s'",
             userVectorDimension, configVectorDimension);
       }
@@ -579,7 +579,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       case NUMERIC_RANGE -> {
         if (userVectorDimension < validationValues.get(0)
             || userVectorDimension > validationValues.get(1)) {
-          throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
               "The provided dimension value (%d) is not within the supported numeric range [%d, %d]",
               userVectorDimension, validationValues.get(0), validationValues.get(1));
         }
@@ -589,7 +589,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           String validatedValuesStr =
               String.join(
                   ", ", validationValues.stream().map(Object::toString).toArray(String[]::new));
-          throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+          throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
               "The provided dimension value '%s' is not within the supported options [%s]",
               userVectorDimension, validatedValuesStr);
         }

@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -205,7 +205,7 @@ class CreateCollectionCommandResolverTest {
                     .isEqualTo(
                         "Invalid indexing definition: `allow` and `deny` cannot be used together");
                 assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCode.INVALID_INDEXING_DEFINITION);
+                    .isEqualTo(ErrorCodeV1.INVALID_INDEXING_DEFINITION);
               });
     }
 

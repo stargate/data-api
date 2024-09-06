@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.collection;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.builder.ConditionLHS;
@@ -54,7 +54,7 @@ public abstract class SetCollectionFilter<T> extends CollectionFilter {
             BuiltConditionPredicate.NOT_CONTAINS,
             new JsonTerm(value));
       default:
-        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
             "Set operation '%s' on column '%s'", operator, columnName);
     }
   }

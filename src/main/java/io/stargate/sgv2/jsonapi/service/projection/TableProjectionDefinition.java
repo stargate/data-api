@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.projection;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,7 +36,7 @@ public class TableProjectionDefinition {
       return INCLUDE_ALL_PROJECTOR;
     }
     if (!projectionDefinition.isObject()) {
-      throw ErrorCode.UNSUPPORTED_PROJECTION_DEFINITION.toApiException(
+      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_DEFINITION.toApiException(
           "must be OBJECT, was %s", projectionDefinition.getNodeType());
     }
     // Special cases: "star-include/exclude"
@@ -63,13 +63,13 @@ public class TableProjectionDefinition {
       String path = entry.getKey();
 
       if (path.isEmpty()) {
-        throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
             "empty paths (and path segments) not allowed");
       }
 
       // Special rule for "*": only allowed as single root-level entry;
       if ("*".equals(path)) {
-        throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
             "wildcard ('*') only allowed as the only root-level path");
       }
       JsonNode value = entry.getValue();
@@ -81,10 +81,10 @@ public class TableProjectionDefinition {
         inclusionProjection = addInclusion;
       } else if (inclusionProjection != addInclusion) {
         if (addInclusion) {
-          throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
               "cannot include '%s' on exclusion projection", path);
         } else {
-          throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
               "cannot exclude '%s' on inclusion projection", path);
         }
       }
@@ -141,12 +141,12 @@ public class TableProjectionDefinition {
       return value.booleanValue();
     }
     if (value.isObject()) {
-      throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
           "path ('%s') value cannot be OBJECT: nesting not supported for Tables", path);
     }
 
     // Unknown JSON node type; error
-    throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+    throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
         "path ('%s') value must be NUMBER or BOOLEAN, was %s", path, value.getNodeType());
   }
 }

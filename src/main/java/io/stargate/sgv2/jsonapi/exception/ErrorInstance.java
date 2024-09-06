@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -24,7 +24,7 @@ import java.util.UUID;
  * @param code
  * @param title
  * @param body
- * @param httpResponseOverride
+ * @param httpStatusOverride
  */
 public record ErrorInstance(
     UUID errorId,
@@ -33,4 +33,4 @@ public record ErrorInstance(
     String code,
     String title,
     String body,
-    Optional<Integer> httpResponseOverride) {}
+    Optional<Integer> httpStatusOverride) {}

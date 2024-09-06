@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 /**
  * Base for any errors that are from the {@link ErrorFamily#REQUEST} family, these are errors

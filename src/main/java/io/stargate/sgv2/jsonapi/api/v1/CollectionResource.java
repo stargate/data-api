@@ -23,7 +23,7 @@ import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
@@ -194,7 +194,7 @@ public class CollectionResource {
                 if ((schemaObject.type == SchemaObject.SchemaObjectType.TABLE)
                     && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
                   return Uni.createFrom()
-                      .failure(ErrorCode.TABLE_FEATURE_NOT_ENABLED.toApiException());
+                      .failure(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException());
                 }
                 // TODO: refactor this code to be cleaner so it assigns on one line
                 EmbeddingProvider embeddingProvider = null;
@@ -225,6 +225,6 @@ public class CollectionResource {
                     dataApiRequestInfo, commandContext, command);
               }
             })
-        .map(commandResult -> commandResult.map());
+        .map(commandResult -> commandResult.toRestResponse());
   }
 }

@@ -1,10 +1,9 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 import jakarta.ws.rs.core.Response;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 /**
  * Base for all exceptions returned from the API for external use (as opposed to ones only used
@@ -38,22 +37,22 @@ import java.util.function.Supplier;
  * </ul>
  *
  * To get the Error to be returned in the {@link
- * io.stargate.sgv2.jsonapi.api.model.command.CommandResult} call the {@link #get()} method to get a
- * {@link CommandResponseError} that contains the subset of information we want to return.
+ * io.stargate.sgv2.jsonapi.api.model.command.CommandResult} use a {@link
+ * APIExceptionCommandErrorBuilder} all the logic for mapping to the API is in there to keep it out
+ * of the core exception classes.
  */
-public abstract class APIException extends RuntimeException
-    implements Supplier<CommandResponseError> {
+public abstract class APIException extends RuntimeException {
 
   // All errors default to 200 HTTP status code, because we have partial failure modes.
   // There are some overrides, e.g. a server timeout may be a 500, this is managed in the
   // error config. See ErrorTemplate.
-  public static final int DEFAULT_HTTP_RESPONSE = Response.Status.OK.getStatusCode();
+  public static final int DEFAULT_HTTP_STATUS = Response.Status.OK.getStatusCode();
 
   /**
    * HTTP Response code for this error. NOTE: Not using enum from quarkus because do not want
    * references to the HTTP framework this deep into the command processing
    */
-  public final int httpResponse;
+  public final int httpStatus;
 
   /** Unique identifier for this error instance. */
   public final UUID errorId;
@@ -94,9 +93,8 @@ public abstract class APIException extends RuntimeException
     this.code = errorInstance.code();
     this.title = errorInstance.title();
     this.body = errorInstance.body();
-    Objects.requireNonNull(
-        errorInstance.httpResponseOverride(), "httpResponseOverride cannot be null");
-    this.httpResponse = errorInstance.httpResponseOverride().orElse(DEFAULT_HTTP_RESPONSE);
+    Objects.requireNonNull(errorInstance.httpStatusOverride(), "httpStatusOverride cannot be null");
+    this.httpStatus = errorInstance.httpStatusOverride().orElse(DEFAULT_HTTP_STATUS);
   }
 
   public APIException(
@@ -104,15 +102,26 @@ public abstract class APIException extends RuntimeException
     this(new ErrorInstance(UUID.randomUUID(), family, scope, code, title, body, Optional.empty()));
   }
 
-  @Override
-  public CommandResponseError get() {
-    return null;
+  /**
+   * Gets the fully qualified code of FAMILY_SCOPE_CODE
+   *
+   * <p>This is somewhwat backwards compatible with previous error codes, and may be used to group
+   * errors of the same "type". Note that when grouping errors, the body may still be different even
+   * if the fully qualified code is the same.
+   *
+   * @return qualified code of FAMILY_SCOPE_CODE , or when SCOPE is empty will be FAMILY_CODE
+   */
+  public String fullyQualifiedCode() {
+    if (scope.isEmpty()) {
+      return family.name() + "_" + code;
+    }
+    return family.name() + "_" + scope + "_" + code;
   }
 
   /**
    * Overrides to return the {@link #body} of the error. Using the body as this is effectively the
-   * message, the structure we want to return to the in the API is the {@link CommandResponseError}
-   * from {@link #get()}
+   * message, the structure we want to return to the in the API JSON comes from {@link
+   * APIExceptionCommandErrorBuilder}
    *
    * @return
    */

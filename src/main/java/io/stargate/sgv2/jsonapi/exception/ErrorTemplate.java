@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -10,8 +10,7 @@ import org.apache.commons.text.StringSubstitutor;
 
 /**
  * A template for creating an {@link APIException}, that is associated with an Error Code enum so
- * the {@link io.stargate.sgv2.jsonapi.exception.ErrorCode} interface can easily create the
- * exception.
+ * the {@link ErrorCodeV1} interface can easily create the exception.
  *
  * <p>Instances are normally created by reading a config file, see {@link #load(Class, ErrorFamily,
  * ErrorScope, String)}
@@ -48,7 +47,7 @@ import org.apache.commons.text.StringSubstitutor;
  * @param title Title of the error, does not change between instances.
  * @param messageTemplate A template for the error body, with variables to be replaced at runtime
  *     using the {@link StringSubstitutor} from Apache Commons Text.
- * @param httpResponseOverride If present, overrides the default HTTP 200 response code for errors.
+ * @param httpStatusOverride If present, overrides the default HTTP 200 response code for errors.
  */
 public record ErrorTemplate<T extends APIException>(
     Constructor<T> constructor,
@@ -57,7 +56,7 @@ public record ErrorTemplate<T extends APIException>(
     String code,
     String title,
     String messageTemplate,
-    Optional<Integer> httpResponseOverride) {
+    Optional<Integer> httpStatusOverride) {
 
   public T toException(Map<String, String> values) {
     var errorInstance = toInstance(values);
@@ -104,7 +103,7 @@ public record ErrorTemplate<T extends APIException>(
     }
 
     return new ErrorInstance(
-        UUID.randomUUID(), family, scope, code, title, msg, httpResponseOverride);
+        UUID.randomUUID(), family, scope, code, title, msg, httpStatusOverride);
   }
 
   /**
@@ -120,8 +119,8 @@ public record ErrorTemplate<T extends APIException>(
    * @param family The {@link ErrorFamily} the error belongs to.
    * @param scope The {@link ErrorScope} the error belongs to.
    * @param code The SNAKE_CASE error code for the error.
-   * @return {@link ErrorTemplate} that the Error Code num can provide to the {@link
-   *     io.stargate.sgv2.jsonapi.exception.ErrorCode} interface.
+   * @return {@link ErrorTemplate} that the Error Code num can provide to the {@link ErrorCodeV1}
+   *     interface.
    * @param <T> Type of the {@link APIException} the error code creates.
    * @throws IllegalArgumentException if the <code>exceptionClass</code> does not have the
    *     constructor needed.
@@ -156,6 +155,6 @@ public record ErrorTemplate<T extends APIException>(
         code,
         errorConfig.title(),
         errorConfig.body(),
-        errorConfig.httpResponseOverride());
+        errorConfig.httpStatusOverride());
   }
 }

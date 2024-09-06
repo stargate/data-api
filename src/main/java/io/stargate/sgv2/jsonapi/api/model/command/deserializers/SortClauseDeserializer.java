@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,7 +37,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
 
     // otherwise, if it's not object throw exception
     if (!node.isObject()) {
-      throw ErrorCode.INVALID_SORT_CLAUSE.toApiException(
+      throw ErrorCodeV1.INVALID_SORT_CLAUSE.toApiException(
           "Sort clause must be submitted as json object");
     }
 
@@ -53,20 +53,20 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
         // Vector search can't be used with other sort clause
         if (totalFields > 1) {
-          throw ErrorCode.VECTOR_SEARCH_USAGE_ERROR.toApiException();
+          throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
         }
         if (!inner.getValue().isArray()) {
-          throw ErrorCode.SHRED_BAD_VECTOR_VALUE.toApiException();
+          throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
         } else {
           ArrayNode arrayNode = (ArrayNode) inner.getValue();
           float[] arrayVals = new float[arrayNode.size()];
           if (arrayNode.size() == 0) {
-            throw ErrorCode.SHRED_BAD_VECTOR_SIZE.toApiException();
+            throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
           }
           for (int i = 0; i < arrayNode.size(); i++) {
             JsonNode element = arrayNode.get(i);
             if (!element.isNumber()) {
-              throw ErrorCode.SHRED_BAD_VECTOR_VALUE.toApiException();
+              throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
             }
             arrayVals[i] = element.floatValue();
           }
@@ -78,14 +78,14 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
         // Vector search can't be used with other sort clause
         if (totalFields > 1) {
-          throw ErrorCode.VECTOR_SEARCH_USAGE_ERROR.toApiException();
+          throw ErrorCodeV1.VECTOR_SEARCH_USAGE_ERROR.toApiException();
         }
         if (!inner.getValue().isTextual()) {
-          throw ErrorCode.SHRED_BAD_VECTORIZE_VALUE.toApiException();
+          throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
         }
         String vectorizeData = inner.getValue().textValue();
         if (vectorizeData.isBlank()) {
-          throw ErrorCode.SHRED_BAD_VECTORIZE_VALUE.toApiException();
+          throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
         }
         SortExpression exp = SortExpression.vectorizeSearch(vectorizeData);
         sortExpressions.clear();
@@ -93,18 +93,18 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         break;
       } else {
         if (path.isBlank()) {
-          throw ErrorCode.INVALID_SORT_CLAUSE_PATH.toApiException(
+          throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
               "sort clause path must be represented as not-blank string");
         }
 
         if (!DocumentConstants.Fields.VALID_PATH_PATTERN.matcher(path).matches()) {
-          throw ErrorCode.INVALID_SORT_CLAUSE_PATH.toApiException(
+          throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
               "sort clause path ('%s') contains character(s) not allowed", path);
         }
 
         if (!inner.getValue().isInt()
             || !(inner.getValue().intValue() == 1 || inner.getValue().intValue() == -1)) {
-          throw ErrorCode.INVALID_SORT_CLAUSE_VALUE.toApiException(
+          throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
               "Sort ordering value can only be `1` for ascending or `-1` for descending (not `%s`)",
               inner.getValue());
         }

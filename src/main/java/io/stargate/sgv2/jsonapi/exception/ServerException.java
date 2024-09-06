@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 /**
  * Base for any errors that are from the {@link ErrorFamily#SERVER} family, these are server side
@@ -9,6 +9,9 @@ package io.stargate.sgv2.jsonapi.exception.playing;
  * <p>See {@link APIException}
  */
 public class ServerException extends APIException {
+
+  public static final ErrorFamily FAMILY = ErrorFamily.SERVER;
+
   public ServerException(ErrorInstance errorInstance) {
     super(errorInstance);
   }
@@ -26,14 +29,13 @@ public class ServerException extends APIException {
   }
 
   public enum Code implements ErrorCode<ServerException> {
-    // TODO: remove fake error code, just here so it compiles
-    FAKE_CODE;
+    // Error code for any unknown / unexpected server error
+    UNEXPECTED_SERVER_ERROR;
 
     private final ErrorTemplate<ServerException> template;
 
     Code() {
-      template =
-          ErrorTemplate.load(ServerException.class, ErrorFamily.SERVER, ErrorScope.NONE, name());
+      template = ErrorTemplate.load(ServerException.class, FAMILY, ErrorScope.NONE, name());
     }
 
     @Override

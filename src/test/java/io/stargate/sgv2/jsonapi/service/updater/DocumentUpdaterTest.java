@@ -13,7 +13,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.TestEmbeddingProvider;
@@ -262,7 +262,7 @@ public class DocumentUpdaterTest {
       assertThat(t)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION)
           .hasMessageStartingWith(
               "Unsupported update operation: Invalid update operator 'location' (must start with '$')");
     }
@@ -281,7 +281,7 @@ public class DocumentUpdaterTest {
       assertThat(t)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION)
           .hasMessageStartingWith(
               "Unsupported update operation: Unsupported update operator '$pullAll'");
     }
@@ -301,8 +301,8 @@ public class DocumentUpdaterTest {
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
           .withFailMessage("Should throw exception on $set of _id")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $set");
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID)
+          .hasMessage(ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $set");
     }
 
     @Test
@@ -319,8 +319,8 @@ public class DocumentUpdaterTest {
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
           .withFailMessage("Should throw exception on $unset of _id")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $unset");
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID)
+          .hasMessage(ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $unset");
     }
 
     @Test
@@ -337,7 +337,7 @@ public class DocumentUpdaterTest {
               });
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessageContaining(
               "update operators '$set' and '$unset' must not refer to same path: 'common'");
     }
@@ -355,7 +355,7 @@ public class DocumentUpdaterTest {
                           (ObjectNode) objectMapper.readTree("{\"root.mul\":3, \"root.x\":2}"))));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessageContaining(
               "update operators '$inc' and '$mul' must not refer to same path: 'root.x'");
     }
@@ -371,7 +371,7 @@ public class DocumentUpdaterTest {
                           (ObjectNode) objectMapper.readTree("{\"root.1\":-7, \"root\":[ ]}"))));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessageContaining(
               "Update operator path conflict due to overlap: 'root' ($set) vs 'root.1' ($set)");
     }
@@ -397,7 +397,7 @@ public class DocumentUpdaterTest {
           """))));
       assertThat(t)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PARAM)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PARAM)
           .hasMessageContaining(
               "Update operator path conflict due to overlap: 'root' ($set) vs 'root.a' ($set)");
     }
@@ -497,8 +497,8 @@ public class DocumentUpdaterTest {
       assertThat(t)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
-          .withFailMessage(ErrorCode.DOCUMENT_REPLACE_DIFFERENT_DOCID.getMessage())
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.DOCUMENT_REPLACE_DIFFERENT_DOCID);
+          .withFailMessage(ErrorCodeV1.DOCUMENT_REPLACE_DIFFERENT_DOCID.getMessage())
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.DOCUMENT_REPLACE_DIFFERENT_DOCID);
     }
 
     @Test
@@ -910,7 +910,7 @@ public class DocumentUpdaterTest {
               });
       assertThat(failure)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_VECTORIZE_VALUE_TYPE)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE)
           .hasFieldOrPropertyWithValue("message", "$vectorize value needs to be text value");
     }
   }
@@ -1083,7 +1083,7 @@ public class DocumentUpdaterTest {
               });
       assertThat(failure)
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.INVALID_VECTORIZE_VALUE_TYPE)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.INVALID_VECTORIZE_VALUE_TYPE)
           .hasFieldOrPropertyWithValue("message", "$vectorize value needs to be text value");
     }
 

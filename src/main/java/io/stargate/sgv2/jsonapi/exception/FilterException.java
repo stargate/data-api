@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.playing;
+package io.stargate.sgv2.jsonapi.exception;
 
 /**
  * Errors related to the filter clause in a request.
@@ -6,6 +6,9 @@ package io.stargate.sgv2.jsonapi.exception.playing;
  * <p>See {@link APIException} for steps to add a new code.
  */
 public class FilterException extends RequestException {
+
+  public static final Scope SCOPE = Scope.FILTER;
+
   public FilterException(ErrorInstance errorInstance) {
     super(errorInstance);
   }
@@ -17,8 +20,7 @@ public class FilterException extends RequestException {
     private final ErrorTemplate<FilterException> template;
 
     Code() {
-      template =
-          ErrorTemplate.load(FilterException.class, ErrorFamily.SERVER, Scope.FILTER, name());
+      template = ErrorTemplate.load(FilterException.class, FAMILY, SCOPE, name());
     }
 
     @Override

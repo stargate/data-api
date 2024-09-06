@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.math.BigDecimal;
@@ -79,7 +79,7 @@ public class DocumentIdTest {
     assertThat(e)
         .isNotNull()
         .isInstanceOf(JsonApiException.class)
-        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
+        .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
         .hasMessageStartingWith(
             "Bad type for '_id' property: Document Id must be a JSON String(1), Number(2), Boolean(3), NULL(4) or Date(5) instead got 99");
 
@@ -91,7 +91,7 @@ public class DocumentIdTest {
     assertThat(e)
         .isNotNull()
         .isInstanceOf(JsonApiException.class)
-        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
+        .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
         .hasMessageStartingWith(
             "Bad type for '_id' property: Document Id type Boolean stored as invalid String 'abc' (must be 'true' or 'false')");
 
@@ -103,7 +103,7 @@ public class DocumentIdTest {
     assertThat(e)
         .isNotNull()
         .isInstanceOf(JsonApiException.class)
-        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
+        .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
         .hasMessageStartingWith(
             "Bad type for '_id' property: Document Id type Number stored as invalid String 'abc' (not a valid Number)");
 
@@ -115,7 +115,7 @@ public class DocumentIdTest {
     assertThat(e)
         .isNotNull()
         .isInstanceOf(JsonApiException.class)
-        .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE)
+        .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE)
         .hasMessageStartingWith(
             "Bad type for '_id' property: Document Id type Date stored as invalid String 'abc' (needs to be Number)");
   }
