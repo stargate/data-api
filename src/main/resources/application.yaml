@@ -25,7 +25,7 @@ stargate:
   exception-mappers:
     enabled: false
 
-  feature: # See io.stargate.sgv2.jsonapi.config.feature.DataApiFeatureConfig
+  feature: # See io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig
     flags:  # Ok to leave out features that have no default value (enabled or disabled)
       tables:
 

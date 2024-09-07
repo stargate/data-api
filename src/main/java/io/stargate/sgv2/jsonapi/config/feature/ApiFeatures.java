@@ -6,7 +6,10 @@ import java.util.Map;
 
 /**
  * Accessor for combined state of feature flags; typically based on static configuration (with its
- * overrides) and possible per-request settings.
+ * overrides) and possible per-request settings. For code that wants to check whether given feature
+ * is enabled or not, method to use is {@link ApiFeatures#isFeatureEnabled(ApiFeature)}. For details
+ * on how configuration settings and request headers are combined, see {@link ApiFeature} and {@link
+ * FeaturesConfig}
  */
 public class ApiFeatures {
   private final Map<ApiFeature, Boolean> fromConfig;
