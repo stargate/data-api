@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.config.constants.HttpConstants;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.test.CustomITEmbeddingProvider;
 import jakarta.ws.rs.core.Response;
 import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import org.eclipse.microprofile.config.ConfigProvider;
 
@@ -24,8 +25,11 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
 
   protected Response.Status expectedHttpStatus = Response.Status.OK;
 
+  protected final Map<String, String> headers;
+
   protected DataApiCommandSenderBase(String namespace) {
     this.namespace = namespace;
+    headers = DefaultHeaders.mutableCopy();
   }
 
   /**
@@ -36,6 +40,22 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
    */
   public T expectHttpStatus(Response.Status expectedHttpStatus) {
     this.expectedHttpStatus = expectedHttpStatus;
+    return _this();
+  }
+
+  /**
+   * Fluent method for adding/overriding/removing a header in the request.
+   *
+   * @param name Name of header to set
+   * @param value Value of header to set; if null, header is removed, otherwise added or overridden
+   * @return Type-safe "this" sender for call chaining
+   */
+  public T header(String name, String value) {
+    if (value == null) {
+      headers.remove(name);
+    } else {
+      headers.put(name, value);
+    }
     return _this();
   }
 
@@ -54,7 +74,7 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
     RequestSpecification request =
         given()
             .port(getTestPort())
-            .headers(getHeaders())
+            .headers(headers)
             .contentType(ContentType.JSON)
             .body(jsonBody)
             .when();
@@ -69,36 +89,41 @@ public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBas
 
   protected abstract io.restassured.response.Response postInternal(RequestSpecification request);
 
-  protected Map<String, ?> getHeaders() {
-    if (useCoordinator()) {
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          getAuthToken(),
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    } else {
-      String credential =
-          "Cassandra:"
-              + Base64.getEncoder().encodeToString(getCassandraUsername().getBytes())
-              + ":"
-              + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
-      return Map.of(
-          HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
-          credential,
-          HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
-          CustomITEmbeddingProvider.TEST_API_KEY);
-    }
-  }
-
-  private boolean useCoordinator() {
-    return Boolean.getBoolean("testing.containers.use-coordinator");
-  }
-
-  protected int getTestPort() {
+  protected static int getTestPort() {
     try {
       return ConfigProvider.getConfig().getValue("quarkus.http.test-port", Integer.class);
     } catch (Exception e) {
       return Integer.parseInt(System.getProperty("quarkus.http.test-port"));
+    }
+  }
+
+  private static class DefaultHeaders {
+    private static final Map<String, String> HEADERS = collectDefaultHeaders();
+
+    public static Map<String, String> mutableCopy() {
+      return new LinkedHashMap<>(HEADERS);
+    }
+
+    private static Map<String, String> collectDefaultHeaders() {
+      final boolean useCoordinator = Boolean.getBoolean("testing.containers.use-coordinator");
+      if (useCoordinator) {
+        return Map.of(
+            HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+            getAuthToken(),
+            HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+            CustomITEmbeddingProvider.TEST_API_KEY);
+      } else {
+        String credential =
+            "Cassandra:"
+                + Base64.getEncoder().encodeToString(getCassandraUsername().getBytes())
+                + ":"
+                + Base64.getEncoder().encodeToString(getCassandraPassword().getBytes());
+        return Map.of(
+            HttpConstants.AUTHENTICATION_TOKEN_HEADER_NAME,
+            credential,
+            HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME,
+            CustomITEmbeddingProvider.TEST_API_KEY);
+      }
     }
   }
 }
