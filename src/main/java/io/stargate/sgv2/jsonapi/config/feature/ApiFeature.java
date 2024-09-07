@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.config.feature;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 
 /**
  * Set of "Feature Flags" that can be used to enable/disable certain features in the Data API.
@@ -9,16 +9,29 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCode;
  *
  * <p>NOTE: although flag names are in upper case (like {@code TABLES}), the actual configuration
  * uses lower-case names (like {@code tables}) (with proper prefix).
+ *
+ * <p>Usage: Features may be enabled via configuration: see {@link FeaturesConfig}; if defined at
+ * that level, they are either enabled or disabled for all requests. If not defined (left as empty
+ * or {@code null}}, HTTP Request headers can be used to enable/disable features on per-request
+ * basis. Finally, if neither configuration nor request headers are used, {@link
+ * ApiFeature#enabledByDefault()} value is used.
  */
 public enum ApiFeature {
   /**
    * API Tables feature flag: if enabled, the API will expose table-specific Namespace resource
    * commands, and support Collection commands on Tables. If disabled, those operations will fail
-   * with {@link ErrorCode#TABLE_FEATURE_NOT_ENABLED}.
+   * with {@link ErrorCodeV1#TABLE_FEATURE_NOT_ENABLED}.
    *
    * <p>If no configuration specified (config or request), the feature will be Disabled.
    */
   TABLES("tables", false);
+
+  /**
+   * Prefix for HTTP headers used to override feature flags for specific requests: prepended before
+   * {@link #featureName}, so f.ex for {@link #TABLES} flag, the header name would be {@code
+   * Feature-Flag-tables}.
+   */
+  public static final String HTTP_HEADER_PREFIX = "Feature-Flag-";
 
   private final String featureName;
 
@@ -36,7 +49,7 @@ public enum ApiFeature {
           "Internal error: 'featureName' must be lower-case, was: \"" + featureName + "\"");
     }
     this.featureName = featureName;
-    featureNameAsHeader = "x-stargate-feature-" + featureName;
+    featureNameAsHeader = HTTP_HEADER_PREFIX + featureName;
     this.enabledByDefault = enabledByDefault;
   }
 
