@@ -68,7 +68,7 @@ public abstract class ErrorFormatters {
    * <pre>
    *     public RuntimeException handle(TableSchemaObject schemaObject, WriteTimeoutException exception) {
    *     return DatabaseException.Code.TABLE_WRITE_TIMEOUT.get(
-   *         errFmt(
+   *         errVars(
    *             schemaObject,
    *             m -> {
    *               m.put("blockFor", String.valueOf(exception.getBlockFor()));
