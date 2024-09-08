@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
+import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
@@ -31,6 +32,12 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   @Override
   public RuntimeException handle(SchemaT schemaObject, ClosedConnectionException exception) {
     return DatabaseException.Code.CLOSED_CONNECTION.get(
+        errVars(schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, DriverTimeoutException exception) {
+    return DatabaseException.Code.DRIVER_TIMEOUT.get(
         errVars(schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
   }
 }
