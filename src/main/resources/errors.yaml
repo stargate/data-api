@@ -142,6 +142,7 @@ server-errors:
   # DATABASE scope server errors
   - scope: DATABASE
     code: CLOSED_CONNECTION
+    http-status-override: 502
     title: Database connection was closed while processing the request
     body: |-
       The Data API connection to the database was closed by the database while processing the request.
