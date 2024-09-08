@@ -7,10 +7,8 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -74,7 +72,7 @@ public class ColumnAssignment implements CQLAssignment {
    */
   protected void addPositionalValues(List<Object> positionalValues) {
     try {
-      positionalValues.add(JSONCodecRegistry.codecToCQL(tableMetadata, column, value).toCQL(value));
+      positionalValues.add(JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(tableMetadata, column, value).toCQL(value));
     } catch (MissingJSONCodecException e) {
       // TODO: Better error handling
       throw new RuntimeException(e);

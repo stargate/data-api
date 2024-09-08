@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.mock;
+package io.stargate.sgv2.jsonapi.fixtures;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;

@@ -6,14 +6,18 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObjec
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tables.InsertTableOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertAttemptProvider;
+import io.stargate.sgv2.jsonapi.service.operation.tables.WriteableTableRowBuilder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+
+import java.util.List;
 
 /** Resolves the {@link InsertOneCommand}. */
 @ApplicationScoped
@@ -51,9 +55,14 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, InsertOneCommand command) {
 
+    var tableInsertAttemptProvider = new TableInsertAttemptProvider(
+        rowShredder,
+        new WriteableTableRowBuilder(ctx.schemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY));
+    var attempts = List.of(tableInsertAttemptProvider.apply(command.document()));
+
     return new InsertTableOperation(
         ctx,
         new TableDriverExceptionHandler(),
-        TableInsertAttempt.create(rowShredder, ctx.schemaObject(), command.document()));
+        attempts);
   }
 }

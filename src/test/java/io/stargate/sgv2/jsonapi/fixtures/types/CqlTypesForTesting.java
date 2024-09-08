@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.mock;
+package io.stargate.sgv2.jsonapi.fixtures.types;
 
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
@@ -21,6 +21,9 @@ public abstract class CqlTypesForTesting {
   public static final List<DataType> SUPPORTED_FOR_INSERT;
   public static final List<DataType> UNSUPPORTED_FOR_INSERT;
 
+  public static final List<DataType> OVERFLOW_TYPES;
+  public static final List<DataType> UNDERFLOW_TYPES;
+  public static final List<DataType> INFINITY_TYPES = List.of(DataTypes.DOUBLE, DataTypes.FLOAT);
   static {
     NUMERIC_TYPES =
         List.of(
@@ -52,6 +55,14 @@ public abstract class CqlTypesForTesting {
             DataTypes.mapOf(DataTypes.TEXT, DataTypes.DOUBLE, true));
 
     SUPPORTED_FOR_INSERT = new ArrayList<>(SCALAR_TYPES);
+
+    OVERFLOW_TYPES = List.of(
+        DataTypes.DOUBLE,
+        DataTypes.FLOAT,
+        DataTypes.INT,
+        DataTypes.SMALLINT,
+        DataTypes.TINYINT);
+    UNDERFLOW_TYPES = List.copyOf(OVERFLOW_TYPES);
   }
 
   // Helper method that is easier to use in filter()

@@ -33,7 +33,7 @@ public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, Wr
   public TableInsertValuesCQLClause {
     Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     Objects.requireNonNull(row, "row cannot be null");
-    if (row.allColumnValues().isEmpty()) {
+    if (row.allColumns().isEmpty()) {
       throw new UnvalidatedClauseException("Row must have at least one column to insert");
     }
   }
@@ -45,26 +45,12 @@ public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, Wr
 
     RegularInsert regularInsert = null;
 
-    for (Map.Entry<CqlIdentifier, Object> entry : row.allColumnValues().entrySet()) {
-      try {
-        var codec =
-            JSONCodecRegistry.codecToCQL(
-                tableSchemaObject.tableMetadata, entry.getKey(), entry.getValue());
-        positionalValues.add(codec.toCQL(entry.getValue()));
-      } catch (UnknownColumnException e) {
-        // TODO AARON - Handle error
-        throw new RuntimeException(e);
-      } catch (MissingJSONCodecException e) {
-        // TODO AARON - Handle error
-        throw new RuntimeException(e);
-      } catch (ToCQLCodecException e) {
-        // TODO AARON - Handle error
-        throw new RuntimeException(e);
-      }
+    for (var cqlNamedValue : row.allColumns().values()) {
+      positionalValues.add(cqlNamedValue.value());
       regularInsert =
           regularInsert == null
-              ? ongoingValues.value(entry.getKey(), bindMarker())
-              : regularInsert.value(entry.getKey(), bindMarker());
+              ? ongoingValues.value(cqlNamedValue.name().getName(), bindMarker())
+              : regularInsert.value(cqlNamedValue.name().getName(), bindMarker());
     }
 
     return regularInsert;

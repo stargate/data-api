@@ -1,6 +1,6 @@
-package io.stargate.sgv2.jsonapi.mock;
+package io.stargate.sgv2.jsonapi.fixtures.tables;
 
-import static io.stargate.sgv2.jsonapi.mock.TestListUtil.join;
+import static io.stargate.sgv2.jsonapi.fixtures.TestListUtil.join;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
@@ -9,6 +9,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultColumnMetadata;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultTableMetadata;
+
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -17,7 +18,7 @@ import java.util.stream.Collectors;
  * Builder for creating a {@link TableMetadata} from the C* java driver, creates an instance of the
  * {@link DefaultTableMetadata} the driver uses.
  *
- * <p>Used by the {@link TableMetadataFixtureSource} to create tables with specific designs, e.g.
+ * <p>Used by the {@link BaseTableFixture} to create tables with specific designs, e.g.
  * <code>
  *   return new TableMetadataBuilder<>()
  *         .keyspace(identifiers.randomKeyspace())
@@ -36,9 +37,9 @@ public class TableMetadataBuilder<T extends TableMetadataBuilder> {
 
   private CqlIdentifier keyspace;
   private CqlIdentifier table;
-  private List<ColumnDef> partitionKeys = new ArrayList<>();
-  private List<ClusteringDef> clusteringKeys = new ArrayList<>();
-  private List<ColumnDef> nonKeyColumns = new ArrayList<>();
+  private final List<ColumnDef> partitionKeys = new ArrayList<>();
+  private final List<ClusteringDef> clusteringKeys = new ArrayList<>();
+  private final List<ColumnDef> nonKeyColumns = new ArrayList<>();
 
   /**
    * Helper for renaming a column in a {@link ColumnMetadata} object, here just to keep the work

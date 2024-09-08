@@ -1,21 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.shredding.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
-
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import io.stargate.sgv2.jsonapi.exception.DocumentException;
-import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
-import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
-import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
-import io.stargate.sgv2.jsonapi.service.shredding.WritableDocRow;
-import java.util.Map;
-import java.util.Optional;
+import io.stargate.sgv2.jsonapi.service.shredding.*;
+import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+
+import java.util.Objects;
 
 /**
  * The data extracted from a JSON document that can be written to a table row.
@@ -25,111 +14,63 @@ import java.util.Optional;
  * @param id
  * @param allColumnValues
  */
-public record WriteableTableRow(RowId id, Map<CqlIdentifier, Object> allColumnValues)
-    implements WritableDocRow, SchemaValidatable {
+public class WriteableTableRow implements WritableDocRow {
+
+  private final TableSchemaObject tableSchemaObject;
+  private final OrderedCqlNamedValueContainer keyColumns;
+  private final UnorderedCqlNamedValueContainer nonKeyColumns;
+  private final OrderedCqlNamedValueContainer allColumns;
+
+  private final RowId id;
+
+  public WriteableTableRow(
+      TableSchemaObject tableSchemaObject,
+      OrderedCqlNamedValueContainer keyColumns,
+      UnorderedCqlNamedValueContainer nonKeyColumns) {
+    this.tableSchemaObject = Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
+    this.keyColumns = Objects.requireNonNull(keyColumns, "keyColumns must not be null");
+    this.nonKeyColumns = Objects.requireNonNull(nonKeyColumns, "nonKeyColumns must not be null");
+    this.allColumns = new OrderedCqlNamedValueContainer();
+    this.allColumns.putAll(keyColumns);
+    this.allColumns.putAll(nonKeyColumns);
+
+    // HACK TODO Aaron - for now the primary key is an array , this may change
+    this.id = new RowId(keyColumns.valuesValue().toArray());
+  }
+
+  public CqlNamedValueContainer keyColumns() {
+    return keyColumns;
+  }
+
+  public CqlNamedValueContainer nonKeyColumns() {
+    return nonKeyColumns;
+  }
+
+  public CqlNamedValueContainer allColumns() {
+    return nonKeyColumns;
+  }
+
 
   @Override
   public DocRowIdentifer docRowID() {
-    return id();
+    return id;
+  }
+
+  public RowId rowId() {
+    return id;
   }
 
   @Override
-  /**
-   * Validates the columns are included in the row are part of the table we are going to write to.
-   *
-   * <p>Happens here because the shredder is responsible for extracting what we consider columns and
-   * values from the document.
-   */
-  public void validate(TableSchemaObject table) {
-
-    var tableMetadata = table.tableMetadata;
-
-    checkAllPrimaryKeys(tableMetadata);
-    checkUnknownColumns(tableMetadata);
-    checkUnsupportedColumnType(tableMetadata);
+  public String toString() {
+    return toString(false);
   }
 
-  private boolean contains(CqlIdentifier column) {
-    return allColumnValues().containsKey(column);
-  }
-
-  private boolean contains(ColumnMetadata column) {
-    return contains(column.getName());
-  }
-
-  /** Checks if the row has all the primary key columns that are part of the table. */
-  private void checkAllPrimaryKeys(TableMetadata tableMetadata) {
-
-    var missingPrimaryKeys =
-        tableMetadata.getPrimaryKey().stream().filter(column -> !contains(column)).toList();
-
-    if (!missingPrimaryKeys.isEmpty()) {
-      var suppliedPrimaryKeys =
-          tableMetadata.getPrimaryKey().stream().filter(this::contains).toList();
-      throw DocumentException.Code.MISSING_PRIMARY_KEY_COLUMNS.get(
-          Map.of(
-              "keyspace", errFmt(tableMetadata.getKeyspace()),
-              "table", errFmt(tableMetadata.getName()),
-              "primaryKeys", errFmtColumnMetadata(tableMetadata.getPrimaryKey()),
-              "providedKeys", errFmtColumnMetadata(suppliedPrimaryKeys),
-              "missingKeys", errFmtColumnMetadata(missingPrimaryKeys)));
-    }
-  }
-
-  /** Checks if the row has any columns that are not part of the table. */
-  private void checkUnknownColumns(TableMetadata tableMetadata) {
-    var unknownColumns =
-        allColumnValues().keySet().stream()
-            .filter(column -> tableMetadata.getColumn(column).isEmpty())
-            .toList();
-
-    if (!unknownColumns.isEmpty()) {
-      throw DocumentException.Code.UNKNOWN_TABLE_COLUMNS.get(
-          Map.of(
-              "keyspace", errFmt(tableMetadata.getKeyspace()),
-              "table", errFmt(tableMetadata.getName()),
-              "allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()),
-              "unknownColumns", errFmtCqlIdentifier(unknownColumns)));
-    }
-  }
-
-  /**
-   * Checks if the row has any columns that are in the table but have a type that is not supported.
-   *
-   * <p>NOTE: AARON 3 aug 2024 - debatable if we do this here or in the operation, doing here
-   * because we started adding detailed errors and tests, can be moved later
-   *
-   * <p>NOTE: CHECK FOR UNKNOWN COLUMNS MUST GO FIRST, this will raise server error if there is an
-   * unknown colums
-   *
-   * @param tableMetadata
-   */
-  private void checkUnsupportedColumnType(TableMetadata tableMetadata) {
-
-    var unsupportedMetadata =
-        allColumnValues().entrySet().stream()
-            .filter(
-                entry -> {
-                  try {
-                    JSONCodecRegistry.codecToCQL(tableMetadata, entry.getKey(), entry.getValue());
-                  } catch (UnknownColumnException e) {
-                    throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
-                  } catch (MissingJSONCodecException e) {
-                    return true;
-                  }
-                  return false;
-                })
-            .map(entry -> tableMetadata.getColumn(entry.getKey()))
-            .map(Optional::get) // we know it is present
-            .toList();
-
-    if (!unsupportedMetadata.isEmpty()) {
-      throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
-          Map.of(
-              "keyspace", errFmt(tableMetadata.getKeyspace()),
-              "table", errFmt(tableMetadata.getName()),
-              "allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()),
-              "unsupportedColumns", errFmtColumnMetadata(unsupportedMetadata)));
-    }
+  public String toString(boolean pretty) {
+    var sb = new PrettyToStringBuilder(getClass(), pretty);
+    sb.append("keyspace", tableSchemaObject.tableMetadata.getKeyspace())
+        .append("table", tableSchemaObject.tableMetadata.getName())
+        .append("keyColumns", keyColumns)
+        .append("nonKeyColumns", nonKeyColumns);
+    return sb.toString();
   }
 }

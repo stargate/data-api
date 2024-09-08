@@ -21,7 +21,7 @@ public class TableInsertAttempt implements InsertAttempt {
   private final WriteableTableRow row;
   private Throwable failure;
 
-  private TableInsertAttempt(
+   TableInsertAttempt(
       TableSchemaObject tableSchemaObject, int position, RowId rowId, WriteableTableRow row) {
     this.tableSchemaObject =
         Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
@@ -30,35 +30,6 @@ public class TableInsertAttempt implements InsertAttempt {
     this.row = row;
   }
 
-  public static List<TableInsertAttempt> create(
-      RowShredder shredder, TableSchemaObject table, JsonNode document) {
-    return create(shredder, table, List.of(document));
-  }
-
-  public static List<TableInsertAttempt> create(
-      RowShredder shredder, TableSchemaObject tableSchemaObject, List<JsonNode> documents) {
-    Objects.requireNonNull(shredder, "shredder cannot be null");
-    Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
-    Objects.requireNonNull(documents, "documents cannot be null");
-
-    final List<TableInsertAttempt> attempts = new ArrayList<>(documents.size());
-    for (int i = 0; i < documents.size(); i++) {
-      try {
-        WriteableTableRow row = shredder.shred(tableSchemaObject, documents.get(i));
-
-        // validating may throw
-        SchemaValidatable.maybeValidate(tableSchemaObject, row);
-        attempts.add(new TableInsertAttempt(tableSchemaObject, i, row.id(), row));
-      } catch (Exception e) {
-        // TODO: need a shredding base exception to catch
-        // TODO: we need to get the row id, so we can return it in the response
-        attempts.add(
-            (TableInsertAttempt)
-                new TableInsertAttempt(tableSchemaObject, i, null, null).maybeAddFailure(e));
-      }
-    }
-    return attempts;
-  }
 
   public TableInsertValuesCQLClause getInsertValuesCQLClause() {
     return new TableInsertValuesCQLClause(tableSchemaObject, row);

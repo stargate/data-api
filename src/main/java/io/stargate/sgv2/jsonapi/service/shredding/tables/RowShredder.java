@@ -1,14 +1,16 @@
 package io.stargate.sgv2.jsonapi.service.shredding.tables;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.OrderedJsonNamedValueContainer;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
@@ -26,18 +28,14 @@ import java.util.Map;
 @ApplicationScoped
 public class RowShredder {
 
-  private final ObjectMapper objectMapper;
-
   private final DocumentLimitsConfig documentLimits;
 
   private final JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 
   @Inject
   public RowShredder(
-      ObjectMapper objectMapper,
       DocumentLimitsConfig documentLimits,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
-    this.objectMapper = objectMapper;
     this.documentLimits = documentLimits;
     this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
   }
@@ -49,28 +47,24 @@ public class RowShredder {
    * @param document
    * @return
    */
-  public WriteableTableRow shred(TableSchemaObject table, JsonNode document) {
+  public OrderedJsonNamedValueContainer shred(JsonNode document) {
 
-    Map<CqlIdentifier, Object> columnValues = new HashMap<>();
+    var container = new OrderedJsonNamedValueContainer();
     document
         .fields()
         .forEachRemaining(
             entry -> {
-              columnValues.put(CqlIdentifier.fromCql(entry.getKey()), shredValue(entry.getValue()));
+              container.put(shred(entry));
             });
-
-    // get all the primary key values that are in the document, this does not check if all are
-    // present, that happens
-    // when we do the WriteableTableRow is validated.
-    var primaryKeyValues =
-        table.tableMetadata.getPrimaryKey().stream()
-            .map(ColumnMetadata::getName)
-            .map(columnValues::get)
-            .toList();
-
-    return new WriteableTableRow(new RowId(primaryKeyValues.toArray()), columnValues);
+    return container;
   }
 
+  private JsonNamedValue shred(Map.Entry<String, JsonNode> rawField){
+    return new JsonNamedValue(
+        JsonPath.rootBuilder().property(rawField.getKey()).build(),
+        shredValue(rawField.getValue())
+    );
+  }
   /**
    * Function that will convert a JSONNode value, e.g. '1.25' into plain Java type expected when
    * processing tables, e.g. {@link String}, {@link Boolean}, {@link java.math.BigDecimal} and so
@@ -89,27 +83,29 @@ public class RowShredder {
    * @param value JSON value to convert ("shred")
    * @return the value as a "plain" Java type
    */
-  public static Object shredValue(JsonNode value) {
+  public static JsonLiteral<?> shredValue(JsonNode value) {
     return switch (value.getNodeType()) {
       case NUMBER -> shredNumber(value);
-      case STRING -> value.textValue();
-      case BOOLEAN -> value.booleanValue();
-      case NULL -> null;
+      case STRING -> new JsonLiteral<>(value.textValue(), JsonType.STRING);
+      case BOOLEAN -> new JsonLiteral<>(value.booleanValue(), JsonType.BOOLEAN);
+      case NULL -> new JsonLiteral<>(null, JsonType.NULL);
       case ARRAY -> {
         ArrayNode arrayNode = (ArrayNode) value;
-        List<Object> list = new ArrayList<>();
+        List<JsonLiteral<?>> list = new ArrayList<>();
         for (JsonNode node : arrayNode) {
           list.add(shredValue(node));
         }
-        yield list;
+        yield new JsonLiteral<>(list, JsonType.ARRAY);
       }
       case OBJECT -> {
         ObjectNode objectNode = (ObjectNode) value;
-        Map<String, Object> map = new HashMap<>();
+        Map<JsonPath, JsonLiteral<?>> map = new HashMap<>();
         for (var entry : objectNode.properties()) {
-          map.put(entry.getKey(), shredValue(entry.getValue()));
+          map.put(
+              JsonPath.rootBuilder().property(entry.getKey()).build(),
+              shredValue(entry.getValue()));
         }
-        yield map;
+        yield new JsonLiteral<>(map, JsonType.SUB_DOC);
       }
       default -> throw new IllegalArgumentException("Unsupported JsonNode type " + value.getNodeType());
     };
@@ -118,16 +114,16 @@ public class RowShredder {
   // NOTE! This method must be kept in sync with the logic in {@code JSONCodecRegistry}:
   // specifically,
   // types shredded here must be supported by the codec.
-  private static Object shredNumber(JsonNode number) {
+  private static JsonLiteral<?> shredNumber(JsonNode number) {
     if (number.isIntegralNumber()) {
       // Return as BigInteger if one required (won't fit in 64-bit Long)
       if (number.isBigInteger()) {
-        return number.bigIntegerValue();
+        return new JsonLiteral<>(number.bigIntegerValue(), JsonType.NUMBER);
       }
       // Otherwise as Long (possibly upgrading from Integer)
-      return number.longValue();
+      return new JsonLiteral<>(number.longValue(), JsonType.NUMBER);
     }
     // But all FPs are returned as BigDecimal
-    return number.decimalValue();
+    return new JsonLiteral<>(number.decimalValue(), JsonType.NUMBER);
   }
 }
