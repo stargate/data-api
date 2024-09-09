@@ -307,7 +307,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .body("errors[0].errorCode", is("KEYSPACE_DOES_NOT_EXIST"))
           .body(
               "errors[0].message",
-              containsString("Unknown namespace 'should_not_be_there', you must create it first"));
+              containsString("Unknown keyspace 'should_not_be_there', you must create it first"));
     }
 
     @Test
