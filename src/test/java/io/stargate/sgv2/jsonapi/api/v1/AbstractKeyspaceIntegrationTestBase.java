@@ -34,7 +34,7 @@ import org.junit.jupiter.api.TestInstance;
 public abstract class AbstractKeyspaceIntegrationTestBase {
 
   // keyspace automatically created in this test
-  protected final String keyspace = "ns" + RandomStringUtils.randomAlphanumeric(16);
+  protected final String keyspace = "ks" + RandomStringUtils.randomAlphanumeric(16);
 
   @BeforeAll
   public static void enableLog() {

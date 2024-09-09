@@ -20,7 +20,7 @@ class FindKeyspacesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
   @Nested
   @Order(1)
-  class FindKeyspacesTest {
+  class FindKeyspaces {
 
     @Test
     public final void happyPath() {
@@ -47,7 +47,7 @@ class FindKeyspacesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
   @Nested
   @Order(2)
-  class DeprecatedFindNamespacesTest {
+  class DeprecatedFindNamespaces {
 
     @Test
     public final void happyPath() {
