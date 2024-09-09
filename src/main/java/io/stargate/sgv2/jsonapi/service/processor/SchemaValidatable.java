@@ -5,7 +5,9 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import java.util.Objects;
 
 /**
- * Interface for any class that can be validated against a {@link SchemaObject}.
+ * TODO: AARON 9 sept 2024 - this is a failed idea of mine, we should remove as we go
+ *
+ * <p>Interface for any class that can be validated against a {@link SchemaObject}.
  *
  * <p>Implementations <b>must</b> cascade validation to other objects in their state if they are
  * also validatable. This is to ensure that the entire object graph is validated. If an object is

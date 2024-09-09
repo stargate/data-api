@@ -4,6 +4,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import java.util.Collection;
 
+/**
+ * A {@link JsonNamedValueContainer} container that does not maintain the order the named values
+ * were added.
+ */
 public class UnorderedJsonNamedValueContainer
     extends UnorderedNamedValueContainer<JsonPath, JsonLiteral<?>, JsonNamedValue>
     implements JsonNamedValueContainer {

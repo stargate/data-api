@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.OrderedJsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -18,7 +19,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * AARON TODO shreds docs for rows
+ * Shreds a document transforming it from a {@link JsonNode} to a {@link
+ * io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer}, extracting the values from
+ * the Jackson document ready to be later converted into values for the CQL Driver.
  *
  * <p>Note: logic in {@link #shredValue(JsonNode)} and {@link #shredNumber} needs to be kept in sync
  * with code in {@link io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec}:
@@ -40,28 +43,26 @@ public class RowShredder {
   }
 
   /**
-   * Shreds the document to get it ready for the database, we need to know the table schema so we
-   * can work out the primary key and the columns to insert
+   * Shreds a document into the {@link JsonNamedValue}'s by extracting the Java value from the
+   * Jackson document
    *
-   * @param document
-   * @return
+   * @param document the document to shred
+   * @return A {@link OrderedJsonNamedValueContainer} of the values found in the document
    */
-  public OrderedJsonNamedValueContainer shred(JsonNode document) {
+  public JsonNamedValueContainer shred(JsonNode document) {
 
     var container = new OrderedJsonNamedValueContainer();
     document
         .fields()
         .forEachRemaining(
             entry -> {
-              container.put(shred(entry));
+              var namedValue =
+                  new JsonNamedValue(
+                      JsonPath.rootBuilder().property(entry.getKey()).build(),
+                      shredValue(entry.getValue()));
+              container.put(namedValue);
             });
     return container;
-  }
-
-  private JsonNamedValue shred(Map.Entry<String, JsonNode> rawField) {
-    return new JsonNamedValue(
-        JsonPath.rootBuilder().property(rawField.getKey()).build(),
-        shredValue(rawField.getValue()));
   }
 
   /**
@@ -83,6 +84,7 @@ public class RowShredder {
    * @return the value as a "plain" Java type
    */
   public static JsonLiteral<?> shredValue(JsonNode value) {
+
     return switch (value.getNodeType()) {
       case NUMBER -> shredNumber(value);
       case STRING -> new JsonLiteral<>(value.textValue(), JsonType.STRING);

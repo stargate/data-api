@@ -3,6 +3,9 @@ package io.stargate.sgv2.jsonapi.service.shredding;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import java.util.Collection;
 
+/**
+ * A {@link CqlNamedValueContainer} container that maintains the order the named values were added.
+ */
 public class OrderedCqlNamedValueContainer
     extends OrderedNamedValueContainer<ColumnMetadata, Object, CqlNamedValue>
     implements CqlNamedValueContainer {
