@@ -2,8 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.collections;
 
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cql.ExpressionUtils;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;

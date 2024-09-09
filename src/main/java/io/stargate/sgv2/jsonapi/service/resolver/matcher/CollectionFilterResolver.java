@@ -214,7 +214,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                               IDCollectionFilter.Operator.NE, expression.value()));
                       break;
                     default:
-                      throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+                      throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
                           "%s", expression.operator());
                   }
                 });
@@ -241,53 +241,11 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                               (List<Object>) expression.value()));
                       break;
                     default:
-                      throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+                      throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
                           "%s", expression.operator());
                   }
                 });
           }
-  public static List<DBFilterBase> findDynamic(CaptureExpression captureExpression) {
-    List<DBFilterBase> filters = new ArrayList<>();
-    for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
-      if (captureExpression.marker() == ID_GROUP) {
-        switch ((ValueComparisonOperator) filterOperation.operator()) {
-          case EQ:
-            filters.add(
-                new IDCollectionFilter(
-                    IDCollectionFilter.Operator.EQ,
-                    (DocumentId) filterOperation.operand().value()));
-            break;
-          case NE:
-            filters.add(
-                new IDCollectionFilter(
-                    IDCollectionFilter.Operator.NE,
-                    (DocumentId) filterOperation.operand().value()));
-            break;
-          default:
-            throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-                "%s", filterOperation.operator().getOperator());
-        }
-      }
-      if (captureExpression.marker() == ID_GROUP_IN) {
-        switch ((ValueComparisonOperator) filterOperation.operator()) {
-          case IN:
-            filters.add(
-                new IDCollectionFilter(
-                    IDCollectionFilter.Operator.IN,
-                    (List<DocumentId>) filterOperation.operand().value()));
-            break;
-          case NIN:
-            filters.add(
-                new InCollectionFilter(
-                    getInFilterBaseOperator(filterOperation.operator()),
-                    captureExpression.path(),
-                    (List<Object>) filterOperation.operand().value()));
-            break;
-          default:
-            throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-                "%s", filterOperation.operator().getOperator());
-        }
-      }
 
           final CaptureGroup<DocumentId> idRangeGroup =
               (CaptureGroup<DocumentId>) captureGroups.getGroupIfPresent(ID_GROUP_RANGE);

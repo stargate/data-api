@@ -73,8 +73,8 @@ public abstract class FilterResolver<
           String.format(
               "%s: filter has %d fields, exceeds maximum allowed %s",
               ErrorCodeV1.FILTER_FIELDS_LIMIT_VIOLATION.getMessage(),
-                  command.filterClause().logicalExpression().getTotalComparisonExpressionCount(),
-                  operationsConfig.maxFilterObjectProperties()));
+              command.filterClause().logicalExpression().getTotalComparisonExpressionCount(),
+              operationsConfig.maxFilterObjectProperties()));
     }
     return dbFilterLogicalExpression;
   }
