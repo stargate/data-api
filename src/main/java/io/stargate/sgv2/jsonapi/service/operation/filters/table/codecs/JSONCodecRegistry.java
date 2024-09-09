@@ -183,6 +183,7 @@ public class JSONCodecRegistry {
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.DOUBLE,
+          // TODO: bounds checks (over/underflow)
           JSONCodec.ToCQL.safeNumber(BigDecimal::doubleValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
@@ -190,6 +191,7 @@ public class JSONCodecRegistry {
       new JSONCodec<>(
           GenericType.BIG_INTEGER,
           DataTypes.DOUBLE,
+          // TODO: bounds checks (over/underflow)
           JSONCodec.ToCQL.safeNumber(BigInteger::doubleValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
@@ -204,12 +206,14 @@ public class JSONCodecRegistry {
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.FLOAT,
+          // TODO: bounds checks (over/underflow)
           JSONCodec.ToCQL.safeNumber(BigDecimal::floatValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   private static final JSONCodec<BigInteger, Float> FLOAT_FROM_BIG_INTEGER =
       new JSONCodec<>(
           GenericType.BIG_INTEGER,
+          // TODO: bounds checks (over/underflow)
           DataTypes.FLOAT,
           JSONCodec.ToCQL.safeNumber(BigInteger::floatValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
@@ -217,6 +221,7 @@ public class JSONCodecRegistry {
   private static final JSONCodec<Long, Float> FLOAT_FROM_LONG =
       new JSONCodec<>(
           GenericType.LONG,
+          // TODO: bounds checks (over/underflow)?
           DataTypes.FLOAT,
           JSONCodec.ToCQL.safeNumber(Long::floatValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
