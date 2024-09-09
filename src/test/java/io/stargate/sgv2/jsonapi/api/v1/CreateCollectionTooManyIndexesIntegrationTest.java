@@ -45,7 +45,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractKeyspaceInte
   public void enforceMaxIndexes() {
     // Don't use auto-generated namespace that rest of the test uses
     final String NS = "ns_too_many_indexes";
-    createNamespace(NS);
+    createKeyspace(NS);
     final String createTemplate =
         """
                 {

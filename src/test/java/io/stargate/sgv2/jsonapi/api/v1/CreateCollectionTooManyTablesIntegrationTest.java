@@ -44,7 +44,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractKeyspaceInteg
   public void enforceMaxCollections() {
     // Don't use auto-generated namespace that rest of the test uses
     final String NS = "ns_too_many_collections";
-    createNamespace(NS);
+    createKeyspace(NS);
     final String createTemplate =
         """
                 {
