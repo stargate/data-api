@@ -2,10 +2,17 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
+import com.datastax.oss.driver.api.core.NoNodeAvailableException;
+import com.datastax.oss.driver.api.core.auth.AuthenticationException;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
+import io.stargate.sgv2.jsonapi.exception.AuthException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Default implementation of the {@link DriverExceptionHandler} interface, we keep the interface so
@@ -38,6 +45,49 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   @Override
   public RuntimeException handle(SchemaT schemaObject, DriverTimeoutException exception) {
     return DatabaseException.Code.DRIVER_TIMEOUT.get(
+        errVars(schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, AllNodesFailedException exception) {
+    Map<Node, List<Throwable>> allErrors = exception.getAllErrors();
+    if (!allErrors.isEmpty()) {
+      List<Throwable> errors = allErrors.values().iterator().next();
+      if (errors != null && !errors.isEmpty()) {
+        Throwable error =
+            errors.stream()
+                .findAny()
+                .filter(
+                    t ->
+                        t instanceof AuthenticationException
+                            || t instanceof IllegalArgumentException
+                            || t instanceof NoNodeAvailableException
+                            || t instanceof DriverTimeoutException)
+                .orElse(null);
+        // connect to oss cassandra throws AuthenticationException for invalid credentials
+        // connect to AstraDB throws IllegalArgumentException for invalid token/credentials
+        if (error instanceof AuthenticationException
+            || (error instanceof IllegalArgumentException
+                && (error.getMessage().contains("AUTHENTICATION ERROR")
+                    || error
+                        .getMessage()
+                        .contains("Provided username token and/or password are incorrect")))) {
+          return AuthException.Code.INVALID_TOKEN.get(errVars(exception));
+          // Driver NoNodeAvailableException -> ErrorCode.NO_NODE_AVAILABLE
+        } else if (error instanceof NoNodeAvailableException) {
+          return handle(schemaObject, (NoNodeAvailableException) error);
+        } else if (error instanceof DriverTimeoutException) {
+          // [data-api#1205] Need to map DriverTimeoutException as well
+          return handle(schemaObject, (DriverTimeoutException) error);
+        }
+      }
+    }
+    return exception;
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, NoNodeAvailableException exception) {
+    return DatabaseException.Code.NO_NODE_AVAILABLE.get(
         errVars(schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
   }
 }

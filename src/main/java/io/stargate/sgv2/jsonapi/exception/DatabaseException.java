@@ -11,6 +11,7 @@ public class DatabaseException extends ServerException {
   public enum Code implements ErrorCode<DatabaseException> {
     CLOSED_CONNECTION,
     DRIVER_TIMEOUT,
+    NO_NODE_AVAILABLE,
     TABLE_WRITE_TIMEOUT;
 
     private final ErrorTemplate<DatabaseException> template;

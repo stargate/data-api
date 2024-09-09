@@ -72,6 +72,16 @@ request-errors:
       
       ${SNIPPET.CONTACT_SUPPORT}
 
+  # Authentication request errors
+  - scope: AUTHENTICATION
+    code: INVALID_AUTHENTICATION_TOKEN
+    http-status-override: 401
+    title: Invalid authentication token
+    body: |-
+      The authentication token provided is invalid.
+      
+      ${SNIPPET.CONTACT_SUPPORT}
+
  # DOCUMENT request errors
   - scope: DOCUMENT
     code: MISSING_PRIMARY_KEY_COLUMNS
@@ -160,6 +170,18 @@ server-errors:
       The Data API connection to the database was timed out by the database while processing the request.
 
       Writing to the ${schemaType} ${keyspace}.${table} failed to complete successfully. If this request modified data the changes may have been written to by some replicas, but not all. Future read requests may return eventually consistent results.
+
+      The detailed response from the database was: ${errorMessage}    
+
+      ${SNIPPET.RETRY}
+  - scope: DATABASE
+    code: NO_NODE_AVAILABLE
+    http-status-override: 502
+    title: Database connection was timed out while processing the request
+    body: |-
+      No node was available to execute the query.
+
+      Writing to the ${schemaType} ${keyspace}.${table} failed to complete successfully. 
 
       The detailed response from the database was: ${errorMessage}    
 
