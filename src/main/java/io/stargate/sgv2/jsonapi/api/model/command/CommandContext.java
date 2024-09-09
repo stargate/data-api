@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
@@ -16,7 +17,8 @@ public record CommandContext<T extends SchemaObject>(
     T schemaObject,
     EmbeddingProvider embeddingProvider,
     String commandName,
-    JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+    JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+    ApiFeatures apiFeatures) {
 
   // TODO: this is what the original EMPTY had, no idea why the name of the command is missing
   // this is used by the GeneralResource
@@ -40,26 +42,31 @@ public record CommandContext<T extends SchemaObject>(
       T schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      ApiFeatures apiFeatures) {
 
     // TODO: upgrade to use the modern switch statements
     // TODO: how to remove the unchecked cast ? Had to use unchecked cast to get back to the
     // CommandContext<T>
     if (schemaObject instanceof CollectionSchemaObject cso) {
       return (CommandContext<T>)
-          forSchemaObject(cso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+          forSchemaObject(
+              cso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
     }
     if (schemaObject instanceof TableSchemaObject tso) {
       return (CommandContext<T>)
-          forSchemaObject(tso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+          forSchemaObject(
+              tso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
     }
     if (schemaObject instanceof KeyspaceSchemaObject kso) {
       return (CommandContext<T>)
-          forSchemaObject(kso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+          forSchemaObject(
+              kso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
     }
     if (schemaObject instanceof DatabaseSchemaObject dso) {
       return (CommandContext<T>)
-          forSchemaObject(dso, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+          forSchemaObject(
+              dso, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
     }
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "Unknown schema object type: %s", schemaObject.getClass().getName());
@@ -79,9 +86,10 @@ public record CommandContext<T extends SchemaObject>(
       CollectionSchemaObject schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      ApiFeatures apiFeatures) {
     return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
   }
 
   /**
@@ -98,9 +106,10 @@ public record CommandContext<T extends SchemaObject>(
       TableSchemaObject schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      ApiFeatures apiFeatures) {
     return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
   }
 
   /**
@@ -117,9 +126,10 @@ public record CommandContext<T extends SchemaObject>(
       KeyspaceSchemaObject schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      ApiFeatures apiFeatures) {
     return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
   }
 
   /**
@@ -136,9 +146,10 @@ public record CommandContext<T extends SchemaObject>(
       DatabaseSchemaObject schemaObject,
       EmbeddingProvider embeddingProvider,
       String commandName,
-      JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
+      JsonProcessingMetricsReporter jsonProcessingMetricsReporter,
+      ApiFeatures apiFeatures) {
     return new CommandContext<>(
-        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter);
+        schemaObject, embeddingProvider, commandName, jsonProcessingMetricsReporter, apiFeatures);
   }
 
   @SuppressWarnings("unchecked")
