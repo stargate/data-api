@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
-class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
   @Nested
   class ClientErrors {
@@ -23,7 +23,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .contentType(ContentType.JSON)
           .body("{}")
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
           .statusCode(401)
           .body(
@@ -39,7 +39,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .contentType(ContentType.JSON)
           .body("{wrong}")
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
           .statusCode(200)
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -61,7 +61,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
@@ -87,7 +87,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, "7_no_leading_number")
+          .post(KeyspaceResource.BASE_PATH, "7_no_leading_number")
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
@@ -104,7 +104,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))

@@ -22,7 +22,7 @@ import org.junit.jupiter.api.TestClassOrder;
     value = CreateCollectionTooManyIndexesIntegrationTest.TooManyIndexesTestResource.class,
     restrictToAnnotatedClass = true)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class CreateCollectionTooManyIndexesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   private static final int COLLECTIONS_TO_CREATE = 3;
 
   // Need to limit number of indexes available, relative to max collections
@@ -63,7 +63,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, NS)
+          .post(KeyspaceResource.BASE_PATH, NS)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -75,7 +75,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
         .contentType(ContentType.JSON)
         .body(json)
         .when()
-        .post(NamespaceResource.BASE_PATH, NS)
+        .post(KeyspaceResource.BASE_PATH, NS)
         .then()
         .statusCode(200)
         .body("status", is(nullValue()))
@@ -94,7 +94,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
         .contentType(ContentType.JSON)
         .body(createTemplate.formatted(1))
         .when()
-        .post(NamespaceResource.BASE_PATH, NS)
+        .post(KeyspaceResource.BASE_PATH, NS)
         .then()
         .statusCode(200)
         .body("status.ok", is(1));

@@ -64,7 +64,7 @@ class DropTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .contentType(ContentType.JSON)
           .body(addIndexJson)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, simpleTableName)
+          .post(CollectionResource.BASE_PATH, keyspace, simpleTableName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -82,7 +82,7 @@ class DropTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .contentType(ContentType.JSON)
           .body(dropIndexJson)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, simpleTableName)
+          .post(CollectionResource.BASE_PATH, keyspace, simpleTableName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));

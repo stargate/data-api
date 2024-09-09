@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
+import io.stargate.sgv2.jsonapi.util.DeprecatedCommandUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Optional;
@@ -100,7 +101,10 @@ public class CommandProcessor {
               logger.warn(
                   String.format(
                       "Command '%s' failed with %s: %s",
-                      command.getClass().getSimpleName(), t.getClass().getName(), message),
+                      DeprecatedCommandUtil.maybeResolveDeprecatedCommandName(
+                          command.getClass().getSimpleName()),
+                      t.getClass().getName(),
+                      message),
                   t);
               return new ThrowableCommandResultSupplier(t);
             })
@@ -109,6 +113,11 @@ public class CommandProcessor {
         // call supplier get to map to the command result
         .onItem()
         .ifNotNull()
-        .transform(Supplier::get);
+        .transform(Supplier::get)
+        // add possible warning for using deprecated command
+        .map(
+            commandResult ->
+                new CommandResult(
+                    commandResult, DeprecatedCommandUtil.getDeprecatedCommandMsg(commandContext)));
   }
 }

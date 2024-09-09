@@ -22,8 +22,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 
 /**
- * Abstract class for all int tests that needs a namespace to execute tests in. This class
- * automatically creates a namespace before all tests and drops a namespace after all test have been
+ * Abstract class for all int tests that needs a keyspace to execute tests in. This class
+ * automatically creates a keyspace before all tests and drops a keyspace after all test have been
  * run.
  *
  * <p>Note that this test uses a small workaround in {@link #getTestPort()} to avoid issue that
@@ -31,10 +31,10 @@ import org.junit.jupiter.api.TestInstance;
  * (see https://github.com/quarkusio/quarkus/issues/7690).
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public abstract class AbstractNamespaceIntegrationTestBase {
+public abstract class AbstractKeyspaceIntegrationTestBase {
 
-  // namespace automatically created in this test
-  protected final String namespaceName = "ns" + RandomStringUtils.randomAlphanumeric(16);
+  // keyspace automatically created in this test
+  protected final String keyspace = "ns" + RandomStringUtils.randomAlphanumeric(16);
 
   @BeforeAll
   public static void enableLog() {
@@ -42,15 +42,15 @@ public abstract class AbstractNamespaceIntegrationTestBase {
   }
 
   @BeforeAll
-  public void createNamespace() {
-    createNamespace(namespaceName);
+  public void createKeyspace() {
+    createKeyspace(keyspace);
   }
 
-  protected void createNamespace(String nsToCreate) {
+  protected void createKeyspace(String nsToCreate) {
     String json =
             """
         {
-          "createNamespace": {
+          "createKeyspace": {
             "name": "%s"
           }
         }
@@ -71,16 +71,16 @@ public abstract class AbstractNamespaceIntegrationTestBase {
   }
 
   @AfterAll
-  public void dropNamespace() {
+  public void dropKeyspace() {
     String json =
             """
         {
-          "dropNamespace": {
+          "dropKeyspace": {
             "name": "%s"
           }
         }
         """
-            .formatted(namespaceName);
+            .formatted(keyspace);
 
     given()
         .port(getTestPort())
@@ -95,7 +95,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
         .body("errors", is(nullValue()));
   }
 
-  protected void createCollection(String namespace, String collectionToCreate) {
+  protected void createCollection(String keyspace, String collectionToCreate) {
     given()
         .port(getTestPort())
         .headers(getHeaders())
@@ -110,7 +110,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
                   """
                 .formatted(collectionToCreate))
         .when()
-        .post(NamespaceResource.BASE_PATH, namespace)
+        .post(KeyspaceResource.BASE_PATH, keyspace)
         .then()
         .statusCode(200);
   }
@@ -181,6 +181,20 @@ public abstract class AbstractNamespaceIntegrationTestBase {
                         && line.contains("vector_enabled=\"false\""))
             .toList();
     assertThat(countMetrics.size()).isGreaterThan(0);
+  }
+
+  public static void checkShouldAbsentMetrics(String commandName) {
+    String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
+    List<String> countMetrics =
+        metrics
+            .lines()
+            .filter(
+                line ->
+                    line.startsWith("command_processor_process")
+                        && line.contains("command=\"" + commandName + "\"")
+                        && line.contains("vector_enabled=\"false\""))
+            .toList();
+    assertThat(countMetrics.size()).isEqualTo(0);
   }
 
   public static void checkDriverMetricsTenantId() {

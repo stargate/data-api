@@ -10,9 +10,15 @@ public enum CommandStatus {
   /** The element has the count of deleted documents */
   @JsonProperty("deletedCount")
   DELETED_COUNT,
-  /** Status for reporting existing namespaces. */
+  /**
+   * Status for reporting existing namespaces. findNamespaces command is deprecated, keep this
+   * jsonProperty to support backwards-compatibility
+   */
   @JsonProperty("namespaces")
   EXISTING_NAMESPACES,
+  /** Status for reporting existing keyspaces. */
+  @JsonProperty("keyspaces")
+  EXISTING_KEYSPACES,
   /** Status for reporting existing embedding services. */
   @JsonProperty("embeddingProviders")
   EXISTING_VECTOR_PROVIDERS,

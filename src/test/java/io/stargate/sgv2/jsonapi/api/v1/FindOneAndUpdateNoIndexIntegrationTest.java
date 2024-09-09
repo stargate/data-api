@@ -24,7 +24,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   private static final String collectionName = "no_index_collection";
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -57,7 +57,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -87,7 +87,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                       }
                       """)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
           .then()
           .statusCode(200);
 
@@ -112,7 +112,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
               }
               """)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
           .then()
           .statusCode(200)
           .body(
@@ -158,7 +158,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                               """
                   .formatted(DOC))
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
           .then()
           .statusCode(200);
 
@@ -183,7 +183,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                       }
                       """)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
           .then()
           .statusCode(200)
           .body("data.document", jsonEquals(DOC))
@@ -220,7 +220,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                     """
                   .formatted(arrayJson))
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
@@ -251,7 +251,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                             """
                   .formatted(arrayJson))
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))
@@ -291,7 +291,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                                 """
                     .formatted(objectJson))
             .when()
-            .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+            .post(CollectionResource.BASE_PATH, keyspace, collectionName)
             .then()
             .statusCode(200)
             .body("errors", is(nullValue()))
@@ -323,7 +323,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                                 """
                     .formatted(objectJson))
             .when()
-            .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+            .post(CollectionResource.BASE_PATH, keyspace, collectionName)
             .then()
             .statusCode(200)
             .body("data", is(nullValue()))
@@ -352,7 +352,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceInt
                         """
                   .formatted(docId))
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", hasSize(1))

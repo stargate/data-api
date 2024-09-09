@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropNamespaceCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.namespaces.DropNamespaceOperation;
+import io.stargate.sgv2.jsonapi.service.operation.keyspaces.DropKeyspaceOperation;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-class DropNamespaceCommandResolverTest {
+class DropKeyspaceCommandResolverTest {
 
   @Inject ObjectMapper objectMapper;
   @Inject DropNamespaceCommandResolver resolver;
@@ -44,7 +44,7 @@ class DropNamespaceCommandResolverTest {
 
       assertThat(result)
           .isInstanceOfSatisfying(
-              DropNamespaceOperation.class,
+              DropKeyspaceOperation.class,
               op -> assertThat(op.name()).isEqualTo("red_star_belgrade"));
     }
   }

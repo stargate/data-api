@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.namespaces;
+package io.stargate.sgv2.jsonapi.service.operation.keyspaces;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.smallrye.mutiny.Uni;
@@ -18,7 +18,7 @@ import java.util.function.Supplier;
  *
  * @param cqlSessionCache CQLSession cache for keyspace fetching
  */
-public record FindNamespacesOperations(CQLSessionCache cqlSessionCache) implements Operation {
+public record FindNamespacesOperation(CQLSessionCache cqlSessionCache) implements Operation {
 
   /** {@inheritDoc} */
   @Override

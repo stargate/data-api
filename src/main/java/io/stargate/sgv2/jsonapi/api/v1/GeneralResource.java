@@ -4,7 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateKeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
@@ -52,12 +52,12 @@ public class GeneralResource {
       content =
           @Content(
               mediaType = MediaType.APPLICATION_JSON,
-              schema = @Schema(anyOf = {CreateNamespaceCommand.class}),
+              schema = @Schema(anyOf = {CreateKeyspaceCommand.class}),
               examples = {
-                @ExampleObject(ref = "createNamespace"),
-                @ExampleObject(ref = "createNamespaceWithReplication"),
-                @ExampleObject(ref = "findNamespaces"),
-                @ExampleObject(ref = "dropNamespace"),
+                @ExampleObject(ref = "createKeyspace"),
+                @ExampleObject(ref = "createKeyspaceWithReplication"),
+                @ExampleObject(ref = "findKeyspaces"),
+                @ExampleObject(ref = "dropKeyspace"),
               }))
   @APIResponses(
       @APIResponse(
@@ -70,7 +70,7 @@ public class GeneralResource {
                   schema = @Schema(implementation = CommandResult.class),
                   examples = {
                     @ExampleObject(ref = "resultCreate"),
-                    @ExampleObject(ref = "resultFindNamespaces"),
+                    @ExampleObject(ref = "resultFindKeyspaces"),
                     @ExampleObject(ref = "resultError"),
                   })))
   @POST

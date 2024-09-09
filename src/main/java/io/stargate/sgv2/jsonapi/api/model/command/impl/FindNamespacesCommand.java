@@ -5,6 +5,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "Command that lists all available namespaces.")
+/**
+ * Command {@link FindNamespacesCommand} is deprecated, please switch to {@link
+ * FindKeyspacesCommand} Support it for backward-compatibility
+ */
+@Schema(
+    description =
+        "Command that lists all available namespaces.(Deprecated, please switch to findKeyspaces.)")
 @JsonTypeName("findNamespaces")
 public record FindNamespacesCommand() implements GeneralCommand, NoOptionsCommand {}

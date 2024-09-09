@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateKeyspaceCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.keyspaces.CreateKeyspaceOperation;
@@ -9,11 +9,11 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
 
 /**
- * Command resolver for {@link CreateNamespaceCommand}. Responsible for creating the replication
- * map. Resolve a {@link CreateNamespaceCommand} to a {@link CreateKeyspaceOperation}
+ * Command resolver for {@link CreateKeyspaceCommand}. Responsible for creating the replication map.
+ * Resolve a {@link CreateKeyspaceCommand} to a {@link CreateKeyspaceOperation}
  */
 @ApplicationScoped
-public class CreateNamespaceCommandResolver implements CommandResolver<CreateNamespaceCommand> {
+public class CreateKeyspaceCommandResolver implements CommandResolver<CreateKeyspaceCommand> {
 
   // default if omitted
   private static final String DEFAULT_REPLICATION_MAP =
@@ -21,26 +21,26 @@ public class CreateNamespaceCommandResolver implements CommandResolver<CreateNam
 
   /** {@inheritDoc} */
   @Override
-  public Class<CreateNamespaceCommand> getCommandClass() {
-    return CreateNamespaceCommand.class;
+  public Class<CreateKeyspaceCommand> getCommandClass() {
+    return CreateKeyspaceCommand.class;
   }
 
   /** {@inheritDoc} */
   @Override
   public Operation resolveDatabaseCommand(
-      CommandContext<DatabaseSchemaObject> ctx, CreateNamespaceCommand command) {
+      CommandContext<DatabaseSchemaObject> ctx, CreateKeyspaceCommand command) {
     String replicationMap = getReplicationMap(command.options());
     return new CreateKeyspaceOperation(command.name(), replicationMap);
   }
 
   // resolve the replication map
-  private String getReplicationMap(CreateNamespaceCommand.Options options) {
+  private String getReplicationMap(CreateKeyspaceCommand.Options options) {
     if (null == options) {
       return DEFAULT_REPLICATION_MAP;
     }
 
     // TODO REMOVE THE OPTION TO PASS REPLICATION STRATEGY!!!!
-    CreateNamespaceCommand.Replication replication = options.replication();
+    CreateKeyspaceCommand.Replication replication = options.replication();
     if ("NetworkTopologyStrategy".equals(replication.strategy())) {
       return networkTopologyStrategyMap(replication);
     } else {
@@ -48,7 +48,7 @@ public class CreateNamespaceCommandResolver implements CommandResolver<CreateNam
     }
   }
 
-  private static String networkTopologyStrategyMap(CreateNamespaceCommand.Replication replication) {
+  private static String networkTopologyStrategyMap(CreateKeyspaceCommand.Replication replication) {
     Map<String, Integer> options = replication.strategyOptions();
 
     StringBuilder map = new StringBuilder("{'class': 'NetworkTopologyStrategy'");
@@ -61,7 +61,7 @@ public class CreateNamespaceCommandResolver implements CommandResolver<CreateNam
     return map.toString();
   }
 
-  private static String simpleStrategyMap(CreateNamespaceCommand.Replication replication) {
+  private static String simpleStrategyMap(CreateKeyspaceCommand.Replication replication) {
     Map<String, Integer> options = replication.strategyOptions();
     if (null == options || options.isEmpty()) {
       return DEFAULT_REPLICATION_MAP;

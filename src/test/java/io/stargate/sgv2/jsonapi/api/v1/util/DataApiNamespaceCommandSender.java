@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
 import io.restassured.specification.RequestSpecification;
-import io.stargate.sgv2.jsonapi.api.v1.NamespaceResource;
+import io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource;
 
 public class DataApiNamespaceCommandSender
     extends DataApiCommandSenderBase<DataApiNamespaceCommandSender> {
@@ -10,7 +10,7 @@ public class DataApiNamespaceCommandSender
   }
 
   protected io.restassured.response.Response postInternal(RequestSpecification request) {
-    return request.post(NamespaceResource.BASE_PATH, namespace);
+    return request.post(KeyspaceResource.BASE_PATH, namespace);
   }
 
   public DataApiResponseValidator postCreateTable(String tableDefAsJSON) {

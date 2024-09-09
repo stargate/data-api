@@ -8,17 +8,12 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-/**
- * Command {@link DropNamespaceCommand} is deprecated, please switch to {@link DropKeyspaceCommand}
- * Support it for backward-compatibility
- */
-@Schema(
-    description = "Command that deletes a namespace.(Deprecated, please switch to dropKeyspace.)")
-@JsonTypeName("dropNamespace")
-public record DropNamespaceCommand(
+@Schema(description = "Command that deletes a Keyspace.")
+@JsonTypeName("dropKeyspace")
+public record DropKeyspaceCommand(
     @NotNull
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Size(min = 1, max = 48)
-        @Schema(description = "Name of the namespace. (Deprecated, please switch to dropKeyspace.)")
+        @Schema(description = "Name of the Keyspace")
         String name)
     implements GeneralCommand, NoOptionsCommand {}

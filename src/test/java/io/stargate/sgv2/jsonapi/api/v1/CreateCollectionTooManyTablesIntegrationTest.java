@@ -21,7 +21,7 @@ import org.junit.jupiter.api.TestClassOrder;
     value = CreateCollectionTooManyTablesIntegrationTest.TooManyTablesTestResource.class,
     restrictToAnnotatedClass = true)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class CreateCollectionTooManyTablesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   // Let's use relatively low limit to trigger test failure
   private static final int COLLECTIONS_TO_CREATE = 3;
 
@@ -62,7 +62,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, NS)
+          .post(KeyspaceResource.BASE_PATH, NS)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -74,7 +74,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceInte
         .contentType(ContentType.JSON)
         .body(json)
         .when()
-        .post(NamespaceResource.BASE_PATH, NS)
+        .post(KeyspaceResource.BASE_PATH, NS)
         .then()
         .statusCode(200)
         .body("status", is(nullValue()))
@@ -96,7 +96,7 @@ class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceInte
         .contentType(ContentType.JSON)
         .body(createTemplate.formatted(1))
         .when()
-        .post(NamespaceResource.BASE_PATH, NS)
+        .post(KeyspaceResource.BASE_PATH, NS)
         .then()
         .statusCode(200)
         .body("status.ok", is(1));

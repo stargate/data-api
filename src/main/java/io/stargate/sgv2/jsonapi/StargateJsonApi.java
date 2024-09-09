@@ -21,7 +21,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
     info = @Info(title = "", version = ""),
     tags = {
       @Tag(name = "General", description = "Executes general commands."),
-      @Tag(name = "Namespaces", description = "Executes namespace commands."),
+      @Tag(name = "Keyspaces", description = "Executes keyspaces commands."),
       @Tag(
           name = "Documents",
           description = "Executes document commands against a single collection."),
@@ -51,14 +51,14 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
             parameters = {
               @Parameter(
                   in = ParameterIn.PATH,
-                  name = "namespace",
+                  name = "keyspace",
                   required = true,
                   schema =
                       @Schema(
                           implementation = String.class,
                           pattern = "[a-zA-Z][a-zA-Z0-9_]*",
                           maxLength = 48),
-                  description = "The namespace where the collection is located.",
+                  description = "The keyspace where the collection is located.",
                   example = "cycling"),
               @Parameter(
                   in = ParameterIn.PATH,
@@ -321,23 +321,23 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
-                  name = "createNamespace",
-                  summary = "`CreateNamespace` command",
+                  name = "createKeyspace",
+                  summary = "`CreateKeyspace` command",
                   value =
                       """
                       {
-                        "createNamespace": {
+                        "createKeyspace": {
                             "name": "cycling"
                         }
                       }
                       """),
               @ExampleObject(
-                  name = "createNamespaceWithReplication",
-                  summary = "`CreateNamespace` command with replication",
+                  name = "createKeyspaceWithReplication",
+                  summary = "`CreateKeyspace` command with replication",
                   value =
                       """
                       {
-                        "createNamespace": {
+                        "createKeyspace": {
                             "name": "cycling",
                             "options": {
                                 "replication": {
@@ -349,21 +349,21 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
-                  name = "findNamespaces",
-                  summary = "`FindNamespaces` command",
+                  name = "findKeyspaces",
+                  summary = "`FindKeyspaces` command",
                   value =
                       """
                       {
-                        "findNamespaces": {}
+                        "findKeyspaces": {}
                       }
                       """),
               @ExampleObject(
-                  name = "dropNamespace",
-                  summary = "`DropNamespace` command",
+                  name = "dropKeyspace",
+                  summary = "`DropKeyspace` command",
                   value =
                       """
                       {
-                        "dropNamespace": {
+                        "dropKeyspace": {
                             "name": "cycling"
                         }
                       }
@@ -640,13 +640,13 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
                       }
                       """),
               @ExampleObject(
-                  name = "resultFindNamespaces",
-                  summary = "`findNamespaces` command result",
+                  name = "resultFindKeyspaces",
+                  summary = "`findKeyspaces` command result",
                   value =
                       """
                       {
                         "status": {
-                            "namespaces": [
+                            "keyspaces": [
                                 "cycling"
                             ]
                         }

@@ -6,8 +6,8 @@ import static org.hamcrest.Matchers.is;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.api.v1.AbstractNamespaceIntegrationTestBase;
-import io.stargate.sgv2.jsonapi.api.v1.NamespaceResource;
+import io.stargate.sgv2.jsonapi.api.v1.AbstractKeyspaceIntegrationTestBase;
+import io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.Test;
 import org.junit.jupiter.api.ClassOrderer;
@@ -18,7 +18,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class CreateTableIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class CreateTableIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
   @Nested
   @Order(1)
@@ -52,7 +52,7 @@ class CreateTableIntegrationTest extends AbstractNamespaceIntegrationTestBase {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -96,7 +96,7 @@ class CreateTableIntegrationTest extends AbstractNamespaceIntegrationTestBase {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -118,7 +118,7 @@ class CreateTableIntegrationTest extends AbstractNamespaceIntegrationTestBase {
                                 """
                 .formatted(tableName))
         .when()
-        .post(NamespaceResource.BASE_PATH, namespaceName)
+        .post(KeyspaceResource.BASE_PATH, keyspace)
         .then()
         .statusCode(200)
         .body("status.ok", is(1));

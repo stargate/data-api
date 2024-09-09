@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.namespaces;
+package io.stargate.sgv2.jsonapi.service.operation.keyspaces;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
@@ -12,9 +12,9 @@ import java.util.function.Supplier;
 /**
  * Operation that drops a Cassandra keyspace if it exists.
  *
- * @param name Name of the namespace to drop.
+ * @param name Name of the keyspace to drop.
  */
-public record DropNamespaceOperation(String name) implements Operation {
+public record DropKeyspaceOperation(String name) implements Operation {
 
   // simple pattern for the cql
   private static final String DROP_KEYSPACE_CQL = "DROP KEYSPACE IF EXISTS \"%s\";";

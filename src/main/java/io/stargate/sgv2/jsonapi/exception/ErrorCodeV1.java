@@ -64,7 +64,7 @@ public enum ErrorCodeV1 {
 
   ID_NOT_INDEXED("_id is not indexed"),
 
-  NAMESPACE_DOES_NOT_EXIST("The provided namespace does not exist"),
+  KEYSPACE_DOES_NOT_EXIST("The provided keyspace does not exist"),
 
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
 
