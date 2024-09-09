@@ -9,8 +9,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.config.ApiTablesConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
+import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
@@ -51,7 +53,7 @@ public class NamespaceResource {
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
 
-  @Inject ApiTablesConfig apiTablesConfig;
+  @Inject FeaturesConfig apiFeatureConfig;
 
   @Inject
   public NamespaceResource(MeteredCommandProcessor meteredCommandProcessor) {
@@ -106,7 +108,18 @@ public class NamespaceResource {
           @Size(min = 1, max = 48)
           String namespace) {
 
-    if (command instanceof TableOnlyCommand && !apiTablesConfig.enabled()) {
+    final ApiFeatures apiFeatures =
+        ApiFeatures.fromConfigAndRequest(apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
+
+    // create context
+    // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
+    //    CommandContext commandContext = new CommandContext(namespace, null);
+    // HACK TODO: The above did not set a command name on the command context, how did that work ?
+    CommandContext<KeyspaceSchemaObject> commandContext =
+        new CommandContext<>(new KeyspaceSchemaObject(namespace), null, "", null, apiFeatures);
+
+    // Need context first to check if feature is enabled
+    if (command instanceof TableOnlyCommand && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
       return Uni.createFrom()
           .item(
               new ThrowableCommandResultSupplier(
@@ -114,14 +127,7 @@ public class NamespaceResource {
           .map(commandResult -> commandResult.toRestResponse());
     }
 
-    // create context
-    // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
-    //    CommandContext commandContext = new CommandContext(namespace, null);
-    // HACK TODO: The above did not set a command name on the command context, how did that work ?
-    CommandContext<KeyspaceSchemaObject> commandContext =
-        new CommandContext<>(new KeyspaceSchemaObject(namespace), null, "", null);
-
-    //     call processor
+    // call processor
     return meteredCommandProcessor
         .processCommand(dataApiRequestInfo, commandContext, command)
         // map to 2xx unless overridden by error

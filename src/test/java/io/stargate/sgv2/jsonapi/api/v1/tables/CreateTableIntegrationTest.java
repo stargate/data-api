@@ -9,17 +9,16 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.api.v1.AbstractNamespaceIntegrationTestBase;
 import io.stargate.sgv2.jsonapi.api.v1.NamespaceResource;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import org.junit.Test;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateTableIntegrationTest extends AbstractNamespaceIntegrationTestBase {
-
   @Nested
   @Order(1)
   class CreateTable {
@@ -111,7 +110,7 @@ class CreateTableIntegrationTest extends AbstractNamespaceIntegrationTestBase {
         .body(
                 """
                                 {
-                                  "deleteTable": {
+                                  "deleteCollection": {
                                     "name": "%s"
                                   }
                                 }

@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.SchemaChangeResult
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -47,7 +48,7 @@ public class CreateTableOperation implements Operation {
       String comment) {
     this.commandContext = commandContext;
     this.tableName = tableName;
-    this.columnTypes = columnTypes;
+    this.columnTypes = Objects.requireNonNull(columnTypes, "columnTypes must not be null");
     this.partitionKeys = partitionKeys;
     this.clusteringKeys = clusteringKeys;
     this.comment = comment;
