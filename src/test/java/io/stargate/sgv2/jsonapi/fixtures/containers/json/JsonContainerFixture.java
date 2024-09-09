@@ -5,6 +5,8 @@ import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
 import io.stargate.sgv2.jsonapi.fixtures.TestListUtil;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
+import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -63,27 +65,11 @@ public record JsonContainerFixture(
   public String toString(boolean pretty) {
 
     // avoid needing to keep this up to date with the fields on the record
+    var sb = new PrettyToStringBuilder(supplier, pretty);
 
-    var fmtArgs = new ArrayList<>();
-    var fmtString = new StringBuilder("%s{");
-    fmtArgs.add(supplier.getSimpleName());
-
-    BiConsumer<String, String> add =
-        (name, value) -> {
-          if (pretty) {
-            fmtString.append("\n");
-          }
-          if (pretty) {
-            fmtString.append("\t");
-          }
-          fmtString.append("%s=");
-          fmtArgs.add(name);
-          fmtString.append("%s, ");
-          fmtArgs.add(value);
-        };
-    add.accept("table", cqlFixture.table().toString());
-    add.accept("identifiers", cqlFixture.identifiers().toString());
-    add.accept("data", cqlFixture.data().toString());
+    sb.append("table", cqlFixture.table().toString());
+    sb.append("identifiers", cqlFixture.identifiers().toString());
+    sb.append("data", cqlFixture.data().toString());
 
     Arrays.stream(getClass().getDeclaredFields())
         .forEach(
@@ -93,16 +79,24 @@ public record JsonContainerFixture(
                   return;
                 }
 
-                List<?> list = (List<?>) field.get(this);
+                List<ColumnMetadata> list = (List<ColumnMetadata>) field.get(this);
                 if (list.isEmpty()) {
                   return;
                 }
-                add.accept(field.getName(), list.toString());
+                sb.append(field.getName(), toString(list));
               } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
               }
             });
-    fmtString.append("}");
-    return String.format(fmtString.toString(), fmtArgs.toArray());
+    return sb.toString();
+  }
+
+  private static String toString(List<ColumnMetadata> columns) {
+    return String.join(
+        ",",
+        columns.stream()
+          .map(metadata -> String.format("%s(%s)", metadata.getName().asCql(true), metadata.getType().asCql(false, true)))
+            .toList());
+
   }
 }

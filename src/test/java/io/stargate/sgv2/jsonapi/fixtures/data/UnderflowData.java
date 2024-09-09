@@ -13,8 +13,9 @@ import java.math.BigInteger;
  */
 public class UnderflowData extends DefaultData {
 
-  private static final BigDecimal DOUBLE_UNDERFLOW =
-      BigDecimal.valueOf(Double.MIN_VALUE).subtract(BigDecimal.valueOf(Double.MAX_VALUE));
+//  private static final BigDecimal DOUBLE_UNDERFLOW =
+//      BigDecimal.valueOf(Double.MIN_VALUE).subtract(BigDecimal.valueOf(Double.MAX_VALUE));
+private static final BigDecimal DOUBLE_UNDERFLOW = new  BigDecimal("-1e309");
   private static final BigInteger INT_UNDERFLOW =
       BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.valueOf(Long.MAX_VALUE));
 
