@@ -20,12 +20,12 @@ import org.eclipse.microprofile.config.ConfigProvider;
  * (usually integration tests).
  */
 public abstract class DataApiCommandSenderBase<T extends DataApiCommandSenderBase> {
-  protected final String namespace;
+  protected final String keyspace;
 
   protected Response.Status expectedHttpStatus = Response.Status.OK;
 
-  protected DataApiCommandSenderBase(String namespace) {
-    this.namespace = namespace;
+  protected DataApiCommandSenderBase(String keyspace) {
+    this.keyspace = keyspace;
   }
 
   /**
