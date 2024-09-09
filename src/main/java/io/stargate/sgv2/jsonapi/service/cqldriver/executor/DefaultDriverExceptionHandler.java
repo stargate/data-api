@@ -8,6 +8,7 @@ import com.datastax.oss.driver.api.core.NoNodeAvailableException;
 import com.datastax.oss.driver.api.core.auth.AuthenticationException;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.servererrors.*;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
 import io.stargate.sgv2.jsonapi.exception.AuthException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
@@ -72,6 +73,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
                     || error
                         .getMessage()
                         .contains("Provided username token and/or password are incorrect")))) {
+          // TODO(Hazel): AuthException and INVALID_TOKEN?
           return AuthException.Code.INVALID_TOKEN.get(errVars(exception));
           // Driver NoNodeAvailableException -> ErrorCode.NO_NODE_AVAILABLE
         } else if (error instanceof NoNodeAvailableException) {
@@ -89,5 +91,59 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   public RuntimeException handle(SchemaT schemaObject, NoNodeAvailableException exception) {
     return DatabaseException.Code.NO_NODE_AVAILABLE.get(
         errVars(schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, QueryValidationException exception) {
+
+    String message = exception.getMessage();
+    if (exception instanceof UnauthorizedException) {
+      return handle(schemaObject, (UnauthorizedException) exception);
+    } else if (message.contains(
+            "If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING")
+        || message.contains("ANN ordering by vector requires the column to be indexed")) {
+      // TODO(Hazel): Original code is NO_INDEX_ERROR, I think we need to change but am not sure
+      // what to change
+      return exception;
+    }
+    if (message.contains("vector<float,")) {
+      // It is tricky to find the actual vector dimension from the message, include as-is
+      // TODO(Hazel): the code VECTOR_SIZE_MISMATCH was added recently, should we keep using it?
+      return exception;
+    }
+    // TODO(Hazel): the scope and family for INVALID_QUERY?
+    return exception;
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, UnauthorizedException exception) {
+    return AuthException.Code.INVALID_TOKEN.get(errVars(exception));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, QueryExecutionException exception) {
+    if (exception instanceof QueryConsistencyException e) {
+      if (e instanceof WriteTimeoutException || e instanceof ReadTimeoutException) {
+        return DatabaseException.Code.DRIVER_TIMEOUT.get(
+            errVars(
+                schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
+      } else if (e instanceof ReadFailureException) {
+        return DatabaseException.Code.READ_FAILURE.get(
+            errVars(
+                schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
+      } else {
+        // Leave this as 500 since we do not recognize the exception: should add new cases
+        // when we encounter new exceptions
+        return DatabaseException.Code.QUERY_CONSISTENCY_FAILURE.get(
+            errVars(
+                schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
+      }
+    } else {
+      // Leave this as 500 since we do not recognize the exception: should add new cases
+      // when we encounter new exceptions
+      return DatabaseException.Code.QUERY_EXECUTION_FAILURE.get(
+          errVars(
+              schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
+    }
   }
 }

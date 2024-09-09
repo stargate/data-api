@@ -187,6 +187,42 @@ server-errors:
 
       ${SNIPPET.RETRY}
   - scope: DATABASE
+    code: QUERY_CONSISTENCY_FAILURE
+    http-status-override: 500
+    title: Database failed to reach the required consistency level during the execution of a query
+    body: |-
+      Database failed to reach the required consistency level during the execution of a query
+
+      Writing to the ${schemaType} ${keyspace}.${table} failed to complete successfully. 
+
+      The detailed response from the database was: ${errorMessage}    
+
+      ${SNIPPET.RETRY}
+  - scope: DATABASE
+    code: QUERY_EXECUTION_FAILURE
+    http-status-override: 500
+    title: Database failed to execute the query
+    body: |-
+      Database failed to execute the query
+
+      Writing to the ${schemaType} ${keyspace}.${table} failed to complete successfully. 
+
+      The detailed response from the database was: ${errorMessage}    
+
+      ${SNIPPET.RETRY}
+  - scope: DATABASE
+    code: READ_FAILURE
+    http-status-override: 502
+    title: Database read failed
+    body: |-
+      Database read failed.
+
+      Writing to the ${schemaType} ${keyspace}.${table} failed to complete successfully. 
+
+      The detailed response from the database was: ${errorMessage}    
+
+      ${SNIPPET.RETRY}
+  - scope: DATABASE
     code: TABLE_WRITE_TIMEOUT
     title: Timeout writing to table
     body: |-

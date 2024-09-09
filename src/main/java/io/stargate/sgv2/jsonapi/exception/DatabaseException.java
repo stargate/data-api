@@ -12,6 +12,9 @@ public class DatabaseException extends ServerException {
     CLOSED_CONNECTION,
     DRIVER_TIMEOUT,
     NO_NODE_AVAILABLE,
+    QUERY_CONSISTENCY_FAILURE,
+    QUERY_EXECUTION_FAILURE,
+    READ_FAILURE,
     TABLE_WRITE_TIMEOUT;
 
     private final ErrorTemplate<DatabaseException> template;
