@@ -82,6 +82,6 @@ Other Quarkus properties that are specifically relevant for the service:
 ## API Feature enabling configuration
 *Configuration for enabling Features, defined by [FeaturesConfig.java](src/main/java/io/stargate/sgv2/jsonapi/config/CommandLoggingConfig.java).*
 
-| Property                        | Type      | Default | Description                                                                                                          |
-|---------------------------------|-----------|---------|----------------------------------------------------------------------------------------------------------------------|
-| `stargate.feature.flags.tables` | `boolean` | `null`   | Setting it to `true` enables Tables functionality; `false` disables; leaving as `null` allowes per-request override. |
+| Property                        | Type      | Default | Description                                                                                                         |
+|---------------------------------|-----------|---------|---------------------------------------------------------------------------------------------------------------------|
+| `stargate.feature.flags.tables` | `boolean` | `null`   | Setting it to `true` enables Tables functionality; `false` disables; leaving as `null` allows per-request override.|
