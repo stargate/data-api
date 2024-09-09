@@ -272,11 +272,9 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .body(
               "errors[0].message",
               is(
-                  "Request invalid: field 'command.name' value `null` not valid. Problem: must not be null."))
-          .body(
-              "deprecatedCommandWarning",
-              equalTo(
-                  "Warning: deprecated command \"CreateNamespace\", please switch to \"CreateKeyspace\"."));
+                  "Request invalid: field 'command.name' value `null` not valid. Problem: must not be null."));
+      // Since command failed in Deserialization, so command result won't have deprecated command
+      // warning.
     }
   }
 

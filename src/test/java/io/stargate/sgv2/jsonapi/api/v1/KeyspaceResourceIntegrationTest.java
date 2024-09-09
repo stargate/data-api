@@ -68,7 +68,7 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"NamespaceCommand\"s: known commands are [createCollection"));
+                  "Provided command unknown: \"unknownCommand\" not one of \"KeyspaceCommand\"s: known commands are [createCollection"));
     }
 
     @Test
@@ -95,7 +95,7 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'namespace' value \"7_no_leading_number\" not valid. Problem: must match "));
+                  "Request invalid: field 'keyspace' value \"7_no_leading_number\" not valid. Problem: must match "));
     }
 
     @Test

@@ -304,7 +304,7 @@ class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(KeyspaceResource.BASE_PATH, "should_not_be_there")
           .then()
           .statusCode(200)
-          .body("errors[0].errorCode", is("NAMESPACE_DOES_NOT_EXIST"))
+          .body("errors[0].errorCode", is("KEYSPACE_DOES_NOT_EXIST"))
           .body(
               "errors[0].message",
               containsString("Unknown namespace 'should_not_be_there', you must create it first"));
