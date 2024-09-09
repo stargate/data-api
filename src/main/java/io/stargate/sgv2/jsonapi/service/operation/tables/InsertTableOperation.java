@@ -47,8 +47,8 @@ public class InsertTableOperation extends TableMutationOperation {
    * @param throwable Any throwable, if it is not a {@link
    *     com.datastax.oss.driver.api.core.DriverException} or there is no special handling for it,
    *     it will be returned as is.
-   * @return Handler error, turning into a {@link
-   *     io.stargate.sgv2.jsonapi.exception.APIException} or the provided <code>throwable
+   * @return Handler error, turning into a {@link io.stargate.sgv2.jsonapi.exception.APIException}
+   *     or the provided <code>throwable
    *     </code>.
    */
   protected RuntimeException maybeHandleDriverError(RuntimeException throwable) {
@@ -74,7 +74,7 @@ public class InsertTableOperation extends TableMutationOperation {
         .collect()
         .in(
             () -> new InsertOperationPage(insertAttempts, false, debugMode, extendedErrors),
-            InsertOperationPage::aggregate)
+            InsertOperationPage::registerCompletedAttempt)
         // use object identity to resolve to Supplier<CommandResult>
         // TODO AARON - not sure what this is doing, original was .map(i -> i)
         .map(Function.identity());
@@ -111,7 +111,8 @@ public class InsertTableOperation extends TableMutationOperation {
               return switch (t) {
                 case null -> insertAttempt;
                 case RuntimeException runtimeException ->
-                    (TableInsertAttempt) insertAttempt.maybeAddFailure(maybeHandleDriverError(runtimeException));
+                    (TableInsertAttempt)
+                        insertAttempt.maybeAddFailure(maybeHandleDriverError(runtimeException));
                 default -> (TableInsertAttempt) insertAttempt.maybeAddFailure(t);
               };
             })

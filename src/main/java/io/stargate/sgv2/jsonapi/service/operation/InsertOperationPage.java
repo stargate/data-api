@@ -4,32 +4,32 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
+import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import java.util.*;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
- * The internal to insert operation results, keeping ids of successfully and not-successfully
- * inserted documents.
+ * Builds the response for an insert operation or one or more {@link InsertAttempt}s.
  *
- * <p>Can serve as an aggregator, using the {@link #aggregate} function. TODO: AARON DOCS
+ * <p>Keeps track of the inserts, their success status, and then builds the {@link CommandResult}
+ * via {@link #get()}.
  *
- * @param allInsertions Attempted insertions
- * @param returnDocumentResponses Whether to return detailed document responses
- * @param successfulInsertions Successfully inserted documents, NOTE: this list is mutated after
- *     creation
- * @param failedInsertions Failed insertions NOTE: this list is mutated after creation
+ * <p>Create an instance with all the insert attempts the insert operation will process, then call
+ * {@link #registerCompletedAttempt} for each completed attempt, the instance will then track failed
+ * and successful attempts. This is used as an aggregator for {@link
+ * io.smallrye.mutiny.groups.MultiCollect#in(Supplier, BiConsumer)}
  */
 public class InsertOperationPage implements Supplier<CommandResult> {
 
-  // TODO: AARON changed from a record because the successfulInsertions and failedInsertions were
-  // setable in the ctor
-  // but they have to be empty mutable lists
+  // All the insertions that are going to be attempted
   private final List<? extends InsertAttempt> allInsertions;
+
+  // True if the response should include detailed info for each document
   private final boolean returnDocumentResponses;
 
   // The success and failed lists are mutable and are used to build the response
@@ -40,21 +40,32 @@ public class InsertOperationPage implements Supplier<CommandResult> {
 
   // If the debug mode is enabled, errors include the errorclass
   private final boolean debugMode;
+
   // Flagged true to include the new error object v2
-  private final boolean extendedErrors;
+  private final boolean useErrorObjectV2;
+
   // Created in the Ctor
   private final Function<APIException, CommandResult.Error> apiExceptionToError;
 
+  /** Create an instance that has debug false and useErrorIbhectV2 false */
   public InsertOperationPage(
       List<? extends InsertAttempt> allAttemptedInsertions, boolean returnDocumentResponses) {
     this(allAttemptedInsertions, returnDocumentResponses, false, false);
   }
 
+  /**
+   * Create an instance with the given parameters
+   *
+   * @param allAttemptedInsertions All the insertions that are going to be attempted.
+   * @param returnDocumentResponses If the response should include detailed info for each document.
+   * @param debugMode If the debug mode is enabled, errors include the errorclass.
+   * @param useErrorObjectV2 Flagged true to include the new error object v2.
+   */
   public InsertOperationPage(
       List<? extends InsertAttempt> allAttemptedInsertions,
       boolean returnDocumentResponses,
       boolean debugMode,
-      boolean extendedErrors) {
+      boolean useErrorObjectV2) {
 
     this.allInsertions = List.copyOf(allAttemptedInsertions);
     this.returnDocumentResponses = returnDocumentResponses;
@@ -62,8 +73,8 @@ public class InsertOperationPage implements Supplier<CommandResult> {
     this.successfulInsertions = new ArrayList<>(allAttemptedInsertions.size());
     this.failedInsertions = new ArrayList<>(allAttemptedInsertions.size());
     this.debugMode = debugMode;
-    this.extendedErrors = extendedErrors;
-    this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode, extendedErrors);
+    this.useErrorObjectV2 = useErrorObjectV2;
+    this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode, useErrorObjectV2);
   }
 
   enum InsertionStatus {
@@ -83,7 +94,7 @@ public class InsertOperationPage implements Supplier<CommandResult> {
     // Sort on the insert position to rebuild the order we of the documents from the insert.
     // used for both legacy and new style output
     Collections.sort(failedInsertions);
-    // TODO AARON used to only sort the success list when not returning detaile responses, check OK
+    // TODO AARON used to only sort the success list when not returning detailed responses, check OK
     Collections.sort(successfulInsertions);
 
     if (!returnDocumentResponses) {
@@ -136,8 +147,11 @@ public class InsertOperationPage implements Supplier<CommandResult> {
                 allInsertions.get(i).docRowID().orElseThrow(), InsertionStatus.SKIPPED, null);
       }
     }
-    return new CommandResult(
-        null, Map.of(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results)), errors);
+    Map<CommandStatus, Object> status = new HashMap<>();
+    status.put(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results));
+    maybeAddSchema(status);
+
+    return new CommandResult(null, status, errors);
   }
 
   /**
@@ -160,11 +174,34 @@ public class InsertOperationPage implements Supplier<CommandResult> {
             .map(InsertAttempt::docRowID)
             .map(Optional::orElseThrow)
             .toList();
-    return new CommandResult(null, Map.of(CommandStatus.INSERTED_IDS, insertedIds), errors);
+
+    Map<CommandStatus, Object> status = new HashMap<>();
+    status.put(CommandStatus.INSERTED_IDS, insertedIds);
+    maybeAddSchema(status);
+    return new CommandResult(null, status, errors);
   }
 
   /**
-   * Gets the appropriately formatted error given {@link #extendedErrors} and {@link #debugMode}.
+   * Adds the schema for the first insert attempt to the status map, is the first insert attempt has
+   * schema to report.
+   *
+   * <p>Uses the first, not the first successful, because we may fail to do an insert but will still
+   * the _id or PK to report.
+   *
+   * @param status Map to add the status to
+   */
+  private void maybeAddSchema(Map<CommandStatus, Object> status) {
+    if (allInsertions.isEmpty()) {
+      return;
+    }
+    allInsertions
+        .getFirst()
+        .schemaDescription()
+        .ifPresent(o -> status.put(CommandStatus.PRIMARY_KEY_SCHEMA, o));
+  }
+
+  /**
+   * Gets the appropriately formatted error given {@link #useErrorObjectV2} and {@link #debugMode}.
    */
   private CommandResult.Error getErrorObject(InsertAttempt insertAttempt) {
 
@@ -175,7 +212,7 @@ public class InsertOperationPage implements Supplier<CommandResult> {
       // error
       return apiExceptionToError.apply(apiException);
     }
-    if (extendedErrors) {
+    if (useErrorObjectV2) {
       return getErrorObjectV2(throwable);
     }
 
@@ -214,11 +251,12 @@ public class InsertOperationPage implements Supplier<CommandResult> {
   }
 
   /**
-   * Aggregates the result of the insert operation into this object.
+   * Aggregates the result of the insert operation into this object, used when building the page
+   * from running inserts.
    *
    * @param insertion Document insertion attempt
    */
-  public void aggregate(InsertAttempt insertion) {
+  public void registerCompletedAttempt(InsertAttempt insertion) {
     // TODO: AARON: confirm this should not add to the allInsertions list. It would seem better if
     // it did
     insertion

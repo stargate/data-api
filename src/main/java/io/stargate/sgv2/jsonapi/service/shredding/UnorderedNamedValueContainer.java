@@ -4,9 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 
 public class UnorderedNamedValueContainer<NameT, ValueT, NvT extends NamedValue<NameT, ValueT>>
-    extends HashMap<NameT, NvT>
-    implements NamedValueContainer<NameT, ValueT, NvT> {
-
+    extends HashMap<NameT, NvT> implements NamedValueContainer<NameT, ValueT, NvT> {
 
   public UnorderedNamedValueContainer() {
     super();

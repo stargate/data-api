@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
+package io.stargate.sgv2.jsonapi.exception.catchable;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
@@ -10,7 +10,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
  * <p>Not intended to be returned on the API, usage of the JSONCodec's should catch this and turn it
  * into the appropriate API error.
  */
-public class UnknownColumnException extends Exception {
+public class UnknownColumnException extends CatchableApiException {
 
   public final TableMetadata table;
   public final CqlIdentifier column;

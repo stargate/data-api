@@ -9,7 +9,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultColumnMetadata;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultTableMetadata;
-
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -18,8 +17,7 @@ import java.util.stream.Collectors;
  * Builder for creating a {@link TableMetadata} from the C* java driver, creates an instance of the
  * {@link DefaultTableMetadata} the driver uses.
  *
- * <p>Used by the {@link BaseTableFixture} to create tables with specific designs, e.g.
- * <code>
+ * <p>Used by the {@link BaseTableFixture} to create tables with specific designs, e.g. <code>
  *   return new TableMetadataBuilder<>()
  *         .keyspace(identifiers.randomKeyspace())
  *         .table(identifiers.randomTable());

@@ -7,8 +7,11 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.update.Assignment;
 import com.datastax.oss.driver.api.querybuilder.update.OngoingAssignment;
 import com.datastax.oss.driver.api.querybuilder.update.UpdateWithAssignments;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
-
 import java.util.List;
 import java.util.Objects;
 
@@ -26,7 +29,7 @@ public class ColumnAssignment implements CQLAssignment {
 
   private final TableMetadata tableMetadata;
   private final CqlIdentifier column;
-  private final Object value;
+  private final JsonLiteral<?> value;
 
   /**
    * Create a new instance of the class to set the {@code column} to the {@code value} in the
@@ -34,10 +37,10 @@ public class ColumnAssignment implements CQLAssignment {
    *
    * @param tableMetadata The {@link TableMetadata} for the target table.
    * @param column The name of the column to set.
-   * @param value Value to set, may be null. The value is passed through the {@link
-   *     JSONCodecRegistry} to get the appropriate value to pass to the CQL driver.
+   * @param value the {@link JsonLiteral} value created by shredding the value from the update
+   *     clause in the request.
    */
-  public ColumnAssignment(TableMetadata tableMetadata, CqlIdentifier column, Object value) {
+  public ColumnAssignment(TableMetadata tableMetadata, CqlIdentifier column, JsonLiteral<?> value) {
     this.tableMetadata = Objects.requireNonNull(tableMetadata, "tableMetadata cannot be null");
     this.column = Objects.requireNonNull(column, "column cannot be null");
     // Value may be null, this is how to clear a column in CQL
@@ -71,8 +74,13 @@ public class ColumnAssignment implements CQLAssignment {
    * @param positionalValues
    */
   protected void addPositionalValues(List<Object> positionalValues) {
+
+    var rawValue = value.value();
     try {
-      positionalValues.add(JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(tableMetadata, column, value).toCQL(value));
+      positionalValues.add(
+          JSONCodecRegistries.DEFAULT_REGISTRY
+              .codecToCQL(tableMetadata, column, rawValue)
+              .toCQL(rawValue));
     } catch (MissingJSONCodecException e) {
       // TODO: Better error handling
       throw new RuntimeException(e);

@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.UnorderedJsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
-
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -25,8 +24,7 @@ import java.util.function.Supplier;
  *
  * <p>The name of the subclass is used in the test description.
  */
-public abstract class JsonContainerFixtureBuilder
-    implements Supplier<List<JsonContainerFixture>> {
+public abstract class JsonContainerFixtureBuilder implements Supplier<List<JsonContainerFixture>> {
 
   protected final CqlFixture cqlFixture;
 
@@ -35,8 +33,8 @@ public abstract class JsonContainerFixtureBuilder
   }
 
   /**
-   * Generates a list of {@link JsonContainerFixture} that test different combinations of the
-   * table. See sub-classes for what combinations are generated.
+   * Generates a list of {@link JsonContainerFixture} that test different combinations of the table.
+   * See sub-classes for what combinations are generated.
    *
    * <p>NOTE: sub-classes should implement the {@link #getInternal(List, List, List)} method it is
    * easier.
@@ -76,10 +74,12 @@ public abstract class JsonContainerFixtureBuilder
     Map<ColumnMetadata, JsonNamedValue> values = new HashMap<>();
     columns.forEach(
         metadata -> {
-          var jsonNamedValue = new JsonNamedValue(
-              // get the asInternal - we do not want any quotes, this is the value that would be pulled from JSON doc
-              JsonPath.rootBuilder().property(metadata.getName().asInternal()).build(),
-              cqlFixture.data().fromJSON(metadata.getType()));
+          var jsonNamedValue =
+              new JsonNamedValue(
+                  // get the asInternal - we do not want any quotes, this is the value that would be
+                  // pulled from JSON doc
+                  JsonPath.rootBuilder().property(metadata.getName().asInternal()).build(),
+                  cqlFixture.data().fromJSON(metadata.getType()));
           values.put(metadata, jsonNamedValue);
         });
     return values;
@@ -103,8 +103,8 @@ public abstract class JsonContainerFixtureBuilder
   }
 
   /**
-   * Helper to generate a {@link JsonContainerFixture}, values are set using the {@link
-   * CqlFixture} data generator.
+   * Helper to generate a {@link JsonContainerFixture}, values are set using the {@link CqlFixture}
+   * data generator.
    *
    * <p>The unknownAllColumns and unsupportedAllColumns are generated based on the values that are
    * set.
@@ -147,5 +147,4 @@ public abstract class JsonContainerFixtureBuilder
         unsupportedAllColumns,
         outOfRangeAllColumns);
   }
-
 }

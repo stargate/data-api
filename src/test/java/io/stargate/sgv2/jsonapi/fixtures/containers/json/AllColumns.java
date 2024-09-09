@@ -1,12 +1,11 @@
 package io.stargate.sgv2.jsonapi.fixtures.containers.json;
 
+import static io.stargate.sgv2.jsonapi.fixtures.TestListUtil.difference;
+
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static io.stargate.sgv2.jsonapi.fixtures.TestListUtil.difference;
 
 /**
  * Generates one fixture for the table that includes all columns
@@ -38,8 +37,7 @@ public class AllColumns extends JsonContainerFixtureBuilder {
             setNonKeyMetadata,
             missingKeysMetadata,
             missingNonKeyMetadata,
-            List.of()
-    ));
+            List.of()));
     return fixtures;
   }
 }

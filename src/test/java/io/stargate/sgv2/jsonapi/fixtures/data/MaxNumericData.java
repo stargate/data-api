@@ -4,13 +4,11 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-
 import java.math.BigDecimal;
 
-/**
- * Numerics with the max value
- */
+/** Numerics with the max value */
 public class MaxNumericData extends DefaultData {
+
   @Override
   protected JsonNode getJsonNode(DataType type) {
     if (DataTypes.BIGINT.equals(type)) {

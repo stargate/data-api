@@ -4,21 +4,18 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
 import io.stargate.sgv2.jsonapi.fixtures.identifiers.FixtureIdentifiers;
-
 import java.util.List;
 
 /**
- * Provides implementations of the {@link TableFixture} that generate tables of specified
- * designs.
+ * Provides implementations of the {@link TableFixture} that generate tables of specified designs.
  *
- * <p>Create inner subclasses that extend this class and add to the {@link #SUPPORTED}
- * list to have them included in the test runs by the {@link CqlFixture}. If you create tables that
- * are supported do not add them to the list.
+ * <p>Create inner subclasses that extend this class and add to the {@link #SUPPORTED} list to have
+ * them included in the test runs by the {@link CqlFixture}. If you create tables that are supported
+ * do not add them to the list.
  *
  * <p>The name of the subclass is used in the test description.
  */
 abstract class BaseTableFixture implements TableFixture {
-
 
   /**
    * Override so in test output it has the fixture name, not the full class name
@@ -40,9 +37,9 @@ abstract class BaseTableFixture implements TableFixture {
         .table(identifiers.randomTable());
   }
 
-  protected TableMetadataBuilder<?> builderWithTextPKAndTypes(FixtureIdentifiers identifiers, List<DataType> types) {
-    var builder = builder(identifiers)
-        .partitionKey(identifiers.getKey(0), DataTypes.TEXT);
+  protected TableMetadataBuilder<?> builderWithTextPKAndTypes(
+      FixtureIdentifiers identifiers, List<DataType> types) {
+    var builder = builder(identifiers).partitionKey(identifiers.getKey(0), DataTypes.TEXT);
 
     int i = 1;
     for (var type : types) {

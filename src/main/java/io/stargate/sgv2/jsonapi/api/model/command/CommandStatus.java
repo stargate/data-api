@@ -72,5 +72,16 @@ public enum CommandStatus {
    * is 'true' and no document available in DB for matching condition
    */
   @JsonProperty("upsertedId")
-  UPSERTED_ID
+  UPSERTED_ID,
+
+  /**
+   * The element contains the schema that describes either the structure of the insertedIds, only
+   * present when working with Tables.
+   *
+   * <p>The value of <code>insertedId</code> is an array of values, each value is a JSON value which
+   * for Table is an array of values. The schema is an ordered map of the fields contained in the
+   * array.
+   */
+  @JsonProperty("primaryKeySchema")
+  PRIMARY_KEY_SCHEMA;
 }

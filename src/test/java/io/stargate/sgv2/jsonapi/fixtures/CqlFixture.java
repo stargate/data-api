@@ -3,11 +3,10 @@ package io.stargate.sgv2.jsonapi.fixtures;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import io.stargate.sgv2.jsonapi.fixtures.data.DefaultData;
 import io.stargate.sgv2.jsonapi.fixtures.data.FixtureData;
-import io.stargate.sgv2.jsonapi.fixtures.identifiers.FixtureIdentifiers;
 import io.stargate.sgv2.jsonapi.fixtures.identifiers.BaseFixtureIdentifiers;
+import io.stargate.sgv2.jsonapi.fixtures.identifiers.FixtureIdentifiers;
 import io.stargate.sgv2.jsonapi.fixtures.tables.TableFixture;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,9 +30,7 @@ public class CqlFixture {
    */
   public static List<CqlFixture> allFixtures() {
     return allFixtures(
-        BaseFixtureIdentifiers.ALL_CLASSES,
-        DefaultData.SUPPORTED,
-        TableFixture.SUPPORTED);
+        BaseFixtureIdentifiers.ALL_CLASSES, DefaultData.SUPPORTED, TableFixture.SUPPORTED);
   }
 
   /** See {@link #allFixtures()} */

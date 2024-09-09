@@ -4,9 +4,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 
 public class OrderedNamedValueContainer<NameT, ValueT, NvT extends NamedValue<NameT, ValueT>>
-    extends LinkedHashMap<NameT, NvT>
-    implements NamedValueContainer<NameT, ValueT, NvT> {
-
+    extends LinkedHashMap<NameT, NvT> implements NamedValueContainer<NameT, ValueT, NvT> {
 
   public OrderedNamedValueContainer() {
     super();
@@ -24,5 +22,4 @@ public class OrderedNamedValueContainer<NameT, ValueT, NvT extends NamedValue<Na
     super();
     putAll(values);
   }
-
 }

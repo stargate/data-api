@@ -9,7 +9,6 @@ public class AllOverflowTypes extends BaseTableFixture {
   @Override
   public TableMetadata tableMetadata(FixtureIdentifiers identifiers) {
 
-    return builderWithTextPKAndTypes(identifiers, CqlTypesForTesting.OVERFLOW_TYPES)
-        .build();
+    return builderWithTextPKAndTypes(identifiers, CqlTypesForTesting.OVERFLOW_TYPES).build();
   }
 }

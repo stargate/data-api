@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.fixtures.containers.json;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
 import io.stargate.sgv2.jsonapi.fixtures.TestListUtil;
@@ -63,46 +62,47 @@ public record JsonContainerFixture(
 
   public String toString(boolean pretty) {
 
-      // avoid needing to keep this up to date with the fields on the record
+    // avoid needing to keep this up to date with the fields on the record
 
-      var fmtArgs = new ArrayList<>();
-      var fmtString = new StringBuilder("%s{");
-      fmtArgs.add(supplier.getSimpleName());
+    var fmtArgs = new ArrayList<>();
+    var fmtString = new StringBuilder("%s{");
+    fmtArgs.add(supplier.getSimpleName());
 
-      BiConsumer<String, String> add = (name, value ) -> {
-        if (pretty) {
-          fmtString.append("\n");
-        }
-        if (pretty) {
-          fmtString.append("\t");
-        }
-        fmtString.append("%s=");
-        fmtArgs.add(name);
-        fmtString.append("%s, ");
-        fmtArgs.add(value);
-      };
-      add.accept("table", cqlFixture.table().toString());
-      add.accept("identifiers", cqlFixture.identifiers().toString());
-      add.accept("data", cqlFixture.data().toString());
+    BiConsumer<String, String> add =
+        (name, value) -> {
+          if (pretty) {
+            fmtString.append("\n");
+          }
+          if (pretty) {
+            fmtString.append("\t");
+          }
+          fmtString.append("%s=");
+          fmtArgs.add(name);
+          fmtString.append("%s, ");
+          fmtArgs.add(value);
+        };
+    add.accept("table", cqlFixture.table().toString());
+    add.accept("identifiers", cqlFixture.identifiers().toString());
+    add.accept("data", cqlFixture.data().toString());
 
-      Arrays.stream(getClass().getDeclaredFields())
-          .forEach(
-              field -> {
-                try {
-                  if (!List.class.isAssignableFrom(field.getType())) {
-                    return;
-                  }
-
-                  List<?> list = (List<?>) field.get(this);
-                  if (list.isEmpty()) {
-                    return;
-                  }
-                  add.accept(field.getName(), list.toString());
-                } catch (IllegalAccessException e) {
-                  throw new RuntimeException(e);
+    Arrays.stream(getClass().getDeclaredFields())
+        .forEach(
+            field -> {
+              try {
+                if (!List.class.isAssignableFrom(field.getType())) {
+                  return;
                 }
-              });
-      fmtString.append("}");
-      return String.format(fmtString.toString(), fmtArgs.toArray());
+
+                List<?> list = (List<?>) field.get(this);
+                if (list.isEmpty()) {
+                  return;
+                }
+                add.accept(field.getName(), list.toString());
+              } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+              }
+            });
+    fmtString.append("}");
+    return String.format(fmtString.toString(), fmtArgs.toArray());
   }
 }

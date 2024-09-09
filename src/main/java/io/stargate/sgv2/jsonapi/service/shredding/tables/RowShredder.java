@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding.tables;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
@@ -59,12 +58,12 @@ public class RowShredder {
     return container;
   }
 
-  private JsonNamedValue shred(Map.Entry<String, JsonNode> rawField){
+  private JsonNamedValue shred(Map.Entry<String, JsonNode> rawField) {
     return new JsonNamedValue(
         JsonPath.rootBuilder().property(rawField.getKey()).build(),
-        shredValue(rawField.getValue())
-    );
+        shredValue(rawField.getValue()));
   }
+
   /**
    * Function that will convert a JSONNode value, e.g. '1.25' into plain Java type expected when
    * processing tables, e.g. {@link String}, {@link Boolean}, {@link java.math.BigDecimal} and so
@@ -107,7 +106,8 @@ public class RowShredder {
         }
         yield new JsonLiteral<>(map, JsonType.SUB_DOC);
       }
-      default -> throw new IllegalArgumentException("Unsupported JsonNode type " + value.getNodeType());
+      default ->
+          throw new IllegalArgumentException("Unsupported JsonNode type " + value.getNodeType());
     };
   }
 

@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.fixtures.types.CqlTypesForTesting;
 
 /**
- * Returns data for the unsupported types, and then falls back to the default for the supported
- * Kept out of the regular list of testing, so it can be used as needed.
+ * Returns data for the unsupported types, and then falls back to the default for the supported Kept
+ * out of the regular list of testing, so it can be used as needed.
  *
  * <p>Is in sync with {@link CqlTypesForTesting#UNSUPPORTED_FOR_INSERT}
  */

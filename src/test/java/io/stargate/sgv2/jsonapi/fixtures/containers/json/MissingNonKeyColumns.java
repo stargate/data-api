@@ -1,17 +1,14 @@
 package io.stargate.sgv2.jsonapi.fixtures.containers.json;
 
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static io.stargate.sgv2.jsonapi.fixtures.TestListUtil.difference;
 import static io.stargate.sgv2.jsonapi.fixtures.TestListUtil.testCombinations;
 
-/**
- * Generates one fixture for each combination of the non-primary key columns
- */
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
+import java.util.ArrayList;
+import java.util.List;
+
+/** Generates one fixture for each combination of the non-primary key columns */
 public class MissingNonKeyColumns extends JsonContainerFixtureBuilder {
 
   public MissingNonKeyColumns(CqlFixture cqlFixture) {

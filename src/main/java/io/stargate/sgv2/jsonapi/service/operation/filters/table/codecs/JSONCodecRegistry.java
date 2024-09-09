@@ -5,29 +5,32 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.google.common.base.Preconditions;
-
+import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Builds and manages the {@link JSONCodec} instances that are used to convert Java objects into the
- * objects expected by the CQL driver for specific CQL data types.
+ * Container of {@link JSONCodec} instances that are used to convert Java objects into the objects
+ * expected by the CQL driver for specific CQL data types.
+ *
+ * <p>Use the default instance from {@link JSONCodecRegistries#DEFAULT_REGISTRY}.
  *
  * <p>See {@link #codecToCQL(TableMetadata, CqlIdentifier, Object)} for the main entry point.
  *
  * <p>IMPORTANT: There must be a codec for every CQL data type we want to write to, even if the
  * translation is an identity translation. This is so we know if the translation can happen, and
  * then if it was done correctly with the actual value. See {@link JSONCodec.ToCQL#unsafeIdentity()}
- * for the identity mapping, and example usage in {@link #TEXT} codec.
+ * for the identity mapping.
  */
 public class JSONCodecRegistry {
-
 
   private final List<JSONCodec<?, ?>> codecs;
 
   JSONCodecRegistry(List<JSONCodec<?, ?>> codecs) {
     this.codecs = Objects.requireNonNull(codecs, "codecs must not be null");
   }
+
   /**
    * Returns a codec that can convert a Java object into the object expected by the CQL driver for a
    * specific CQL data type.

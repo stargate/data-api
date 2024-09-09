@@ -13,14 +13,13 @@ import java.math.BigDecimal;
  * Implementations fo the {@link FixtureData} interface that provide test data for use by the {@link
  * CqlFixture}.
  *
- * <p>Add implementations as inner subclasses and add them to the {@link #SUPPORTED} list,
- * so they are picked up. Do not add unsupported datatyes to this list :) Just add it as a source
- * and use it as needed see {@link UnsupportedTypesData} for an example.
+ * <p>Add implementations as inner subclasses and add them to the {@link #SUPPORTED} list, so they
+ * are picked up. Do not add unsupported datatyes to this list :) Just add it as a source and use it
+ * as needed see {@link UnsupportedTypesData} for an example.
  *
  * <p>The name of the subclass is used in the test description.
  */
 public class DefaultData implements FixtureData {
-
 
   @Override
   public JsonLiteral<?> fromJSON(DataType type) {

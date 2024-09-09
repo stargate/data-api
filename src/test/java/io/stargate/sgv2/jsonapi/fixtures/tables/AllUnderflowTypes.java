@@ -9,7 +9,6 @@ public class AllUnderflowTypes extends BaseTableFixture {
   @Override
   public TableMetadata tableMetadata(FixtureIdentifiers identifiers) {
 
-    return builderWithTextPKAndTypes(identifiers, CqlTypesForTesting.UNDERFLOW_TYPES)
-        .build();
+    return builderWithTextPKAndTypes(identifiers, CqlTypesForTesting.UNDERFLOW_TYPES).build();
   }
 }

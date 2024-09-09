@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.fixtures.identifiers;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.stargate.sgv2.jsonapi.fixtures.tables.TableFixture;
-
 import java.util.List;
 
 /**
@@ -19,11 +18,12 @@ import java.util.List;
  */
 public interface FixtureIdentifiers {
 
-  List<FixtureIdentifiers> ALL_CLASSES = List.of(
-      new UnquotedLCaseAlphaNum(),
-      new UnquotedMixedCaseAlphaNum(),
-      new QuotedMixedCaseAlphaNum(),
-      new QuotedMixedCaseAllChar());
+  List<FixtureIdentifiers> ALL_CLASSES =
+      List.of(
+          new UnquotedLCaseAlphaNum(),
+          new UnquotedMixedCaseAlphaNum(),
+          new QuotedMixedCaseAlphaNum(),
+          new QuotedMixedCaseAllChar());
 
   CqlIdentifier getKey(int index);
 

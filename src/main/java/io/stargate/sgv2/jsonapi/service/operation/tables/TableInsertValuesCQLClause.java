@@ -2,19 +2,13 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.insert.OngoingValues;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.resolver.UnvalidatedClauseException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**

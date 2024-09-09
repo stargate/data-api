@@ -1,17 +1,14 @@
 package io.stargate.sgv2.jsonapi.fixtures.containers.json;
 
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import static io.stargate.sgv2.jsonapi.fixtures.TestListUtil.difference;
 import static io.stargate.sgv2.jsonapi.fixtures.TestListUtil.testCombinations;
 
-/**
- * Generates one fixture for each missing primary key
- */
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
+import java.util.ArrayList;
+import java.util.List;
+
+/** Generates one fixture for each missing primary key */
 public class MissingPrimaryKeys extends JsonContainerFixtureBuilder {
 
   public MissingPrimaryKeys(CqlFixture cqlFixture) {
@@ -40,8 +37,7 @@ public class MissingPrimaryKeys extends JsonContainerFixtureBuilder {
                       setNonKeyMetadata,
                       missingKeysMetadata,
                       missingNonKeyMetadata,
-                      List.of()
-                  ));
+                      List.of()));
             });
     return fixtures;
   }

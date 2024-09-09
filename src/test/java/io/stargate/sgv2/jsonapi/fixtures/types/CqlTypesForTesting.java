@@ -24,6 +24,7 @@ public abstract class CqlTypesForTesting {
   public static final List<DataType> OVERFLOW_TYPES;
   public static final List<DataType> UNDERFLOW_TYPES;
   public static final List<DataType> INFINITY_TYPES = List.of(DataTypes.DOUBLE, DataTypes.FLOAT);
+
   static {
     NUMERIC_TYPES =
         List.of(
@@ -56,12 +57,13 @@ public abstract class CqlTypesForTesting {
 
     SUPPORTED_FOR_INSERT = new ArrayList<>(SCALAR_TYPES);
 
-    OVERFLOW_TYPES = List.of(
-        DataTypes.DOUBLE,
-        DataTypes.FLOAT,
-        DataTypes.INT,
-        DataTypes.SMALLINT,
-        DataTypes.TINYINT);
+    OVERFLOW_TYPES =
+        List.of(
+            DataTypes.DOUBLE,
+            DataTypes.FLOAT,
+            DataTypes.INT,
+            DataTypes.SMALLINT,
+            DataTypes.TINYINT);
     UNDERFLOW_TYPES = List.copyOf(OVERFLOW_TYPES);
   }
 

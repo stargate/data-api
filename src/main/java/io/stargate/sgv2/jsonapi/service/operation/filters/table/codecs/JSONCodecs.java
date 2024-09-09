@@ -1,14 +1,18 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 
-import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+/**
+ * Defines the {@link JSONCodec} instances that are added to the {@link
+ * JSONCodecRegistries#DEFAULT_REGISTRY} in that class.
+ *
+ * <p><b>NOTE:</b> Not enough to just define the codecs here, they must also be listed in {@link
+ * JSONCodecRegistries#DEFAULT_REGISTRY}
+ */
 public abstract class JSONCodecs {
 
   // Boolean

@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.fixtures.identifiers;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.internal.core.util.Strings;
 import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
-
 import java.util.Random;
 
 /**
@@ -102,5 +101,4 @@ public abstract class BaseFixtureIdentifiers implements FixtureIdentifiers {
   public String toString() {
     return getClass().getSimpleName();
   }
-
 }

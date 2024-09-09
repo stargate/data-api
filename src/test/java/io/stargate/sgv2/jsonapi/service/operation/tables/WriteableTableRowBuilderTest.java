@@ -17,12 +17,10 @@ import io.stargate.sgv2.jsonapi.fixtures.tables.AllUnderflowTypes;
 import io.stargate.sgv2.jsonapi.fixtures.tables.AllUnsupportedTypes;
 import io.stargate.sgv2.jsonapi.fixtures.types.CqlTypesForTesting;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
-
+import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
-
-import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -31,25 +29,26 @@ import org.slf4j.LoggerFactory;
 
 public class WriteableTableRowBuilderTest {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger( WriteableTableRowBuilderTest.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(WriteableTableRowBuilderTest.class);
 
   private static void logFixture(String testName, JsonContainerFixture fixture) {
-    LOGGER.info("{}: \nfixture={} \ncontainer={} \ntable={}",
+    LOGGER.info(
+        "{}: \nfixture={} \ncontainer={} \ntable={}",
         testName,
         fixture.toString(true),
         fixture.container().toString(true),
         fixture.cqlFixture().tableMetadata().describe(true));
-
   }
 
-  private static WriteableTableRow buildRow(JsonContainerFixture fixture){
-    var builder = new WriteableTableRowBuilder(
-        fixture.cqlFixture().tableSchemaObject(),
-        JSONCodecRegistries.DEFAULT_REGISTRY);
+  private static WriteableTableRow buildRow(JsonContainerFixture fixture) {
+    var builder =
+        new WriteableTableRowBuilder(
+            fixture.cqlFixture().tableSchemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY);
     var row = builder.build(fixture.container());
     LOGGER.info("buildRow: row={}", row.toString(true));
     return row;
   }
+
   @ParameterizedTest
   @MethodSource("missingPartitionKeysFixtures")
   public void missingPartitionKeys(JsonContainerFixture fixture) {
@@ -105,7 +104,8 @@ public class WriteableTableRowBuilderTest {
 
     assertDoesNotThrow(
         () -> buildRow(fixture),
-        String.format("Valid to insert row with all columns set container=%s", fixture.container()));
+        String.format(
+            "Valid to insert row with all columns set container=%s", fixture.container()));
   }
 
   private static Stream<Arguments> allColumnsFixtures() {
@@ -134,7 +134,8 @@ public class WriteableTableRowBuilderTest {
     assertDoesNotThrow(
         () -> buildRow(fixture),
         String.format(
-            "Valid to insert row with all PrimaryKeys and missing columns container=%s", fixture.container()));
+            "Valid to insert row with all PrimaryKeys and missing columns container=%s",
+            fixture.container()));
   }
 
   private static Stream<Arguments> missingNonKeyColumnsFixtures() {
@@ -237,9 +238,7 @@ public class WriteableTableRowBuilderTest {
 
     cqlFixtures.forEach(
         cqlFixture -> {
-          new AllColumns(cqlFixture)
-              .get()
-              .forEach(fixture -> testCases.add(Arguments.of(fixture)));
+          new AllColumns(cqlFixture).get().forEach(fixture -> testCases.add(Arguments.of(fixture)));
         });
     return testCases.stream();
   }
@@ -256,24 +255,31 @@ public class WriteableTableRowBuilderTest {
 
     // if the columns out of range are float or double then they will be positive infinity
     var outOfRangeMetadata = fixture.outOfRangeAllColumns().getFirst();
-    boolean isInfinityType = CqlTypesForTesting.INFINITY_TYPES.contains(outOfRangeMetadata.getType());
-    LOGGER.info("overflowColumns: outOfRangeMetadata={} isInfinityType={}", outOfRangeMetadata, isInfinityType);
+    boolean isInfinityType =
+        CqlTypesForTesting.INFINITY_TYPES.contains(outOfRangeMetadata.getType());
+    LOGGER.info(
+        "overflowColumns: outOfRangeMetadata={} isInfinityType={}",
+        outOfRangeMetadata,
+        isInfinityType);
 
     if (isInfinityType) {
-      var writableRow =  assertDoesNotThrow(
-          () -> buildRow(fixture),
-          String.format(
-              "Throw not exception when row has outOfRange infinite type \nfixture=%s \ncontainer=%s \ntable=%s",
-              fixture.toString(true),
-              fixture.container().toString(true),
-              fixture.cqlFixture().tableMetadata().describe(true)
-          ));
+      var writableRow =
+          assertDoesNotThrow(
+              () -> buildRow(fixture),
+              String.format(
+                  "Throw not exception when row has outOfRange infinite type \nfixture=%s \ncontainer=%s \ntable=%s",
+                  fixture.toString(true),
+                  fixture.container().toString(true),
+                  fixture.cqlFixture().tableMetadata().describe(true)));
 
-      var infinityValue = switch(writableRow.allColumns().get(outOfRangeMetadata).value())
-          {
+      var infinityValue =
+          switch (writableRow.allColumns().get(outOfRangeMetadata).value()) {
             case Float f -> f;
             case Double d -> d;
-            default -> throw new IllegalStateException("Unexpected value: " + writableRow.allColumns().get(outOfRangeMetadata).value());
+            default ->
+                throw new IllegalStateException(
+                    "Unexpected value: "
+                        + writableRow.allColumns().get(outOfRangeMetadata).value());
           };
 
       if (isOverflow) {
@@ -293,8 +299,7 @@ public class WriteableTableRowBuilderTest {
                   "Throw exception when row has outOfRange \nfixture=%s \ncontainer=%s \ntable=%s",
                   fixture.toString(true),
                   fixture.container().toString(true),
-                  fixture.cqlFixture().tableMetadata().describe(true)
-              ));
+                  fixture.cqlFixture().tableMetadata().describe(true)));
       assertThat(e.code)
           .as("Using correct error code")
           .isEqualTo(DocumentException.Code.INVALID_COLUMN_VALUES.name());
@@ -311,31 +316,19 @@ public class WriteableTableRowBuilderTest {
   }
 
   private void assertPositiveInfinity(Float value) {
-    assertThat(value)
-        .as("Value is positive infinity for Float")
-        .isInfinite()
-        .isPositive();
+    assertThat(value).as("Value is positive infinity for Float").isInfinite().isPositive();
   }
 
   private void assertPositiveInfinity(Double value) {
-    assertThat(value)
-        .as("Value is positive infinity for Double")
-        .isInfinite()
-        .isPositive();
+    assertThat(value).as("Value is positive infinity for Double").isInfinite().isPositive();
   }
 
   private void assertNegativeInfinity(Float value) {
-    assertThat(value)
-        .as("Value is negative infinity for Float")
-        .isInfinite()
-        .isNegative();
+    assertThat(value).as("Value is negative infinity for Float").isInfinite().isNegative();
   }
 
   private void assertNegativeInfinity(Double value) {
-    assertThat(value)
-        .as("Value is negative infinity for Double")
-        .isInfinite()
-        .isNegative();
+    assertThat(value).as("Value is negative infinity for Double").isInfinite().isNegative();
   }
 
   private static Stream<Arguments> outOfRangeColumnsFixtures() {
@@ -346,7 +339,7 @@ public class WriteableTableRowBuilderTest {
             BaseFixtureIdentifiers.ALL_CLASSES, // all the different types of identifiers
             List.of(new OverflowData()), // need unsupported types
             List.of(new AllOverflowTypes()) // need unsupported types;
-        );
+            );
 
     cqlOverflowFixtures.forEach(
         cqlFixture -> {
@@ -360,7 +353,7 @@ public class WriteableTableRowBuilderTest {
             BaseFixtureIdentifiers.ALL_CLASSES, // all the different types of identifiers
             List.of(new UnderflowData()), // need unsupported types
             List.of(new AllUnderflowTypes()) // need unsupported types;
-        );
+            );
 
     cqlUnderflowFixtures.forEach(
         cqlFixture -> {

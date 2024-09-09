@@ -1,20 +1,19 @@
 package io.stargate.sgv2.jsonapi.fixtures.containers.json;
 
+import static io.stargate.sgv2.jsonapi.fixtures.TestListUtil.difference;
+import static io.stargate.sgv2.jsonapi.fixtures.TestListUtil.testReplicated;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
 import io.stargate.sgv2.jsonapi.fixtures.identifiers.FixtureIdentifiers;
 import io.stargate.sgv2.jsonapi.fixtures.tables.TableMetadataBuilder;
-
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.stargate.sgv2.jsonapi.fixtures.TestListUtil.difference;
-import static io.stargate.sgv2.jsonapi.fixtures.TestListUtil.testReplicated;
-
 /**
- * Generates one fixture for each non-primary key column and gets the name wrong in the row, only
- * do it for the non-pk because errors for missing pk are different
+ * Generates one fixture for each non-primary key column and gets the name wrong in the row, only do
+ * it for the non-pk because errors for missing pk are different
  *
  * <p>The name of the column is changed using {@link FixtureIdentifiers#mask(CqlIdentifier)}
  */
@@ -72,8 +71,7 @@ public class UnknownColumns extends JsonContainerFixtureBuilder {
                       setNonKeyMetadata,
                       missingKeysMetadata,
                       missingNonKeyMetadata,
-                      List.of()
-                  ));
+                      List.of()));
             });
     return fixtures;
   }

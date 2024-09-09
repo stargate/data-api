@@ -5,6 +5,8 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import java.util.function.Function;
 
@@ -80,10 +82,11 @@ public record JSONCodec<JavaT, CqlT>(
    * @param value Json value of type {@link JavaT} that needs to be transformed into the type CQL
    *     expects.
    * @return Value of type {@link CqlT} that the CQL driver expects.
-   * @throws ToCQLCodecException if there was an error converting the value.
+   * @throws ToCQLCodecException if there was an error converting the value, if the value is null
+   *     then null is returned without calling the conversion function.
    */
   public CqlT toCQL(JavaT value) throws ToCQLCodecException {
-    if (value == null){
+    if (value == null) {
       return null;
     }
     return toCQL.apply(targetCQLType, value);

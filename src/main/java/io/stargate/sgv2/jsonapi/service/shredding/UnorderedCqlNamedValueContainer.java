@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding;
 
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-
 import java.util.Collection;
 
 public class UnorderedCqlNamedValueContainer
