@@ -156,11 +156,27 @@ public class JSONCodecRegistry {
           JSONCodec.ToCQL.unsafeIdentity(),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, BigDecimal> DECIMAL =
+  public static final JSONCodec<BigDecimal, BigDecimal> DECIMAL_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.DECIMAL,
           JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  private static final JSONCodec<BigInteger, BigDecimal> DECIMAL_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.DECIMAL,
+          // This is safe transformation, cannot fail:
+          (cqlType, value) -> new BigDecimal(value),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  private static final JSONCodec<Long, BigDecimal> DECIMAL_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.DECIMAL,
+          // This is safe transformation, cannot fail:
+          (cqlType, value) -> new BigDecimal(value),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, Double> DOUBLE =
@@ -297,7 +313,9 @@ public class JSONCodecRegistry {
             VARINT_FROM_BIG_INTEGER,
             VARINT_FROM_LONG,
             // Numeric Codecs, floating-point types
-            DECIMAL,
+            DECIMAL_FROM_BIG_DECIMAL,
+            DECIMAL_FROM_BIG_INTEGER,
+            DECIMAL_FROM_LONG,
             DOUBLE,
             FLOAT,
             // Text Codecs
