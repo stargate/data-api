@@ -179,18 +179,46 @@ public class JSONCodecRegistry {
           (cqlType, value) -> new BigDecimal(value),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, Double> DOUBLE =
+  public static final JSONCodec<BigDecimal, Double> DOUBLE_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.DOUBLE,
           JSONCodec.ToCQL.safeNumber(BigDecimal::doubleValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, Float> FLOAT =
+  private static final JSONCodec<BigInteger, Double> DOUBLE_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.DOUBLE,
+          JSONCodec.ToCQL.safeNumber(BigInteger::doubleValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  private static final JSONCodec<Long, Double> DOUBLE_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.DOUBLE,
+          JSONCodec.ToCQL.safeNumber(Long::doubleValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<BigDecimal, Float> FLOAT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.FLOAT,
           JSONCodec.ToCQL.safeNumber(BigDecimal::floatValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  private static final JSONCodec<BigInteger, Float> FLOAT_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.FLOAT,
+          JSONCodec.ToCQL.safeNumber(BigInteger::floatValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  private static final JSONCodec<Long, Float> FLOAT_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.FLOAT,
+          JSONCodec.ToCQL.safeNumber(Long::floatValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, Integer> INT_FROM_BIG_DECIMAL =
@@ -316,8 +344,12 @@ public class JSONCodecRegistry {
             DECIMAL_FROM_BIG_DECIMAL,
             DECIMAL_FROM_BIG_INTEGER,
             DECIMAL_FROM_LONG,
-            DOUBLE,
-            FLOAT,
+            DOUBLE_FROM_BIG_DECIMAL,
+            DOUBLE_FROM_BIG_INTEGER,
+            DOUBLE_FROM_LONG,
+            FLOAT_FROM_BIG_DECIMAL,
+            FLOAT_FROM_BIG_INTEGER,
+            FLOAT_FROM_LONG,
             // Text Codecs
             ASCII,
             TEXT,
