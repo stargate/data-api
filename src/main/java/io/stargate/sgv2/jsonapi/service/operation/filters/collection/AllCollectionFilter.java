@@ -4,7 +4,7 @@ import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.builder.ConditionLHS;
@@ -67,7 +67,7 @@ public class AllCollectionFilter extends CollectionFilter {
 
   @Override
   public BuiltCondition get() {
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "For $all filter we always use getAll() method");
   }
 }

@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
@@ -119,7 +119,7 @@ public record CreateCollectionOperation(
     if (currKeyspace == null) {
       return Uni.createFrom()
           .failure(
-              ErrorCode.NAMESPACE_DOES_NOT_EXIST.toApiException(
+              ErrorCodeV1.NAMESPACE_DOES_NOT_EXIST.toApiException(
                   "Unknown namespace '%s', you must create it first",
                   commandContext.schemaObject().name.keyspace()));
     }
@@ -149,7 +149,7 @@ public record CreateCollectionOperation(
     }
     return Uni.createFrom()
         .failure(
-            ErrorCode.EXISTING_COLLECTION_DIFFERENT_SETTINGS.toApiException(
+            ErrorCodeV1.EXISTING_COLLECTION_DIFFERENT_SETTINGS.toApiException(
                 "trying to create Collection ('%s') with different settings", name));
   }
 
@@ -218,7 +218,7 @@ public record CreateCollectionOperation(
             res -> {
               if (!res) {
                 // table creation failure or index creation failure
-                return ErrorCode.COLLECTION_CREATION_ERROR.toApiException(
+                return ErrorCodeV1.COLLECTION_CREATION_ERROR.toApiException(
                     "provided collection ('%s')", name);
               } else {
                 return new SchemaChangeResult(true);
@@ -248,7 +248,7 @@ public record CreateCollectionOperation(
                 return Uni.createFrom()
                     .item(
                         () ->
-                            ErrorCode.INDEXES_CREATION_FAILED.toApiException(
+                            ErrorCodeV1.INDEXES_CREATION_FAILED.toApiException(
                                 "The index failed to create because an index with the collection name (%s) prefix already exists.",
                                 name));
               } else {
@@ -257,7 +257,7 @@ public record CreateCollectionOperation(
                 return Uni.createFrom()
                     .item(
                         () ->
-                            ErrorCode.TOO_MANY_INDEXES.toApiException(
+                            ErrorCodeV1.TOO_MANY_INDEXES.toApiException(
                                 "Failed to create index for collection '%s': The number of required indexes exceeds the provisioned limit for the database.",
                                 name));
               }
@@ -316,7 +316,7 @@ public record CreateCollectionOperation(
         .onItem()
         .transform(
             res ->
-                ErrorCode.TOO_MANY_INDEXES.toApiException(
+                ErrorCodeV1.TOO_MANY_INDEXES.toApiException(
                     "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
                     name, dbLimitsConfig.indexesNeededPerCollection()))
         .onFailure()
@@ -324,7 +324,7 @@ public record CreateCollectionOperation(
             e -> {
               // This is unlikely to happen for delete collection though
               // Also return with TOO_MANY_INDEXES exception
-              return ErrorCode.TOO_MANY_INDEXES.toApiException(
+              return ErrorCodeV1.TOO_MANY_INDEXES.toApiException(
                   "collection \"%s\" creation failed due to index creation failing; need %d indexes to create the collection;",
                   name, dbLimitsConfig.indexesNeededPerCollection());
             });
@@ -346,7 +346,7 @@ public record CreateCollectionOperation(
       if (table.getName().asInternal().equals(tableName)) {
         // If that is not a valid Data API collection, error out the createCollectionCommand
         if (!COLLECTION_MATCHER.test(table)) {
-          throw ErrorCode.EXISTING_TABLE_NOT_DATA_API_COLLECTION.toApiException(
+          throw ErrorCodeV1.EXISTING_TABLE_NOT_DATA_API_COLLECTION.toApiException(
               "table ('%s') already exists and it is not a valid Data API Collection", tableName);
         }
         // If that is a valid Data API table, we returned it
@@ -363,7 +363,7 @@ public record CreateCollectionOperation(
     final long collectionCount = allTables.stream().filter(COLLECTION_MATCHER).count();
     final int MAX_COLLECTIONS = dbLimitsConfig.maxCollections();
     if (collectionCount >= MAX_COLLECTIONS) {
-      throw ErrorCode.TOO_MANY_COLLECTIONS.toApiException(
+      throw ErrorCodeV1.TOO_MANY_COLLECTIONS.toApiException(
           "number of collections in database cannot exceed %d, already have %d",
           MAX_COLLECTIONS, collectionCount);
     }
@@ -371,7 +371,7 @@ public record CreateCollectionOperation(
     int saisUsed = allTables.stream().mapToInt(table -> table.getIndexes().size()).sum();
     if ((saisUsed + dbLimitsConfig.indexesNeededPerCollection())
         > dbLimitsConfig.indexesAvailablePerDatabase()) {
-      throw ErrorCode.TOO_MANY_INDEXES.toApiException(
+      throw ErrorCodeV1.TOO_MANY_INDEXES.toApiException(
           "cannot create a new collection; need %d indexes to create the collection; %d indexes already created in database, maximum %d",
           dbLimitsConfig.indexesNeededPerCollection(),
           saisUsed,

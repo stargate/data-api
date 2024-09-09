@@ -5,7 +5,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
@@ -22,8 +22,6 @@ public class NamespaceCache {
 
   private final ObjectMapper objectMapper;
 
-  private final boolean apiTablesEnabled;
-
   // TODO: move the settings to config
   // TODO: set the cache loader when creating the cache
   private static final long CACHE_TTL_SECONDS = 300;
@@ -34,15 +32,10 @@ public class NamespaceCache {
           .maximumSize(CACHE_MAX_SIZE)
           .build();
 
-  public NamespaceCache(
-      String namespace,
-      boolean apiTablesEnabled,
-      QueryExecutor queryExecutor,
-      ObjectMapper objectMapper) {
+  public NamespaceCache(String namespace, QueryExecutor queryExecutor, ObjectMapper objectMapper) {
     this.namespace = namespace;
     this.queryExecutor = queryExecutor;
     this.objectMapper = objectMapper;
-    this.apiTablesEnabled = apiTablesEnabled;
   }
 
   protected Uni<SchemaObject> getSchemaObject(
@@ -63,20 +56,21 @@ public class NamespaceCache {
                   // TODO: Explain why this changes the error code
                   if (error instanceof JsonApiException
                       && ((JsonApiException) error).getErrorCode()
-                          == ErrorCode.VECTORIZECONFIG_CHECK_FAIL) {
+                          == ErrorCodeV1.VECTORIZECONFIG_CHECK_FAIL) {
                     return Uni.createFrom()
                         .failure(
-                            ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA.toApiException(
+                            ErrorCodeV1.INVALID_JSONAPI_COLLECTION_SCHEMA.toApiException(
                                 "%s", collectionName));
                   }
                   // collection does not exist
                   // TODO: DO NOT do a string starts with, use proper error structures
                   // again, why is this here, looks like it returns the same error code ?
                   if (error instanceof RuntimeException rte
-                      && rte.getMessage().startsWith(ErrorCode.COLLECTION_NOT_EXIST.getMessage())) {
+                      && rte.getMessage()
+                          .startsWith(ErrorCodeV1.COLLECTION_NOT_EXIST.getMessage())) {
                     return Uni.createFrom()
                         .failure(
-                            ErrorCode.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
+                            ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
                   }
                   return Uni.createFrom().failure(error);
                 } else {
@@ -99,7 +93,7 @@ public class NamespaceCache {
               // TODO: error code here needs to be for collections and tables
               var table =
                   optionalTable.orElseThrow(
-                      () -> ErrorCode.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
+                      () -> ErrorCodeV1.COLLECTION_NOT_EXIST.toApiException("%s", collectionName));
 
               // check if its a valid json api table
               // TODO: re-use the table matcher this is on the request hot path
@@ -108,13 +102,8 @@ public class NamespaceCache {
                     optionalTable.get(), objectMapper);
               }
 
-              if (apiTablesEnabled) {
-                return new TableSchemaObject(table);
-              }
-
-              // Target is not a collection and we are not supporting tables
-              throw ErrorCode.INVALID_JSONAPI_COLLECTION_SCHEMA.toApiException(
-                  "%s", collectionName);
+              // 04-Sep-2024, tatu: Used to check that API Tables enabled; no longer checked here
+              return new TableSchemaObject(table);
             });
   }
 

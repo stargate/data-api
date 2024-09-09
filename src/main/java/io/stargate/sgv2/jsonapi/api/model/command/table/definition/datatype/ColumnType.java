@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
 import com.datastax.oss.driver.api.core.type.DataType;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 
 /** Interface for column types. This is used to define the type of a column in a table. */
 public interface ColumnType {
@@ -36,7 +36,7 @@ public interface ColumnType {
       case "ascii":
         return PrimitiveTypes.ASCII;
       default:
-        throw ErrorCode.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException(
+        throw ErrorCodeV1.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException(
             "Invalid column type: " + type);
     }
   }

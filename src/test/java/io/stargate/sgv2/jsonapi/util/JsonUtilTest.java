@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.io.IOException;
@@ -109,7 +109,7 @@ public class JsonUtilTest {
       Throwable t = catchThrowable(() -> JsonUtil.extractEJsonDate(ob, "/"));
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_EJSON_VALUE)
           .hasMessage(
               "Bad JSON Extension value: Date ($date) needs to have NUMBER value, has STRING (path '/')");
     }

@@ -11,7 +11,7 @@ import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.*;
@@ -264,9 +264,9 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_EJSON_VALUE)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_EJSON_VALUE)
           .hasMessage(
-              ErrorCode.SHRED_BAD_EJSON_VALUE.getMessage()
+              ErrorCodeV1.SHRED_BAD_EJSON_VALUE.getMessage()
                   + ": type '$date' has invalid JSON value of type BOOLEAN");
     }
 
@@ -279,7 +279,7 @@ public class DocumentShredderTest {
       assertThat(t)
           .isNotNull()
           .hasMessage("$vector value can't be empty")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_VECTOR_SIZE);
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_VECTOR_SIZE);
     }
 
     @Test
@@ -293,7 +293,7 @@ public class DocumentShredderTest {
       assertThat(t)
           .isNotNull()
           .hasMessage("$vector value needs to be array of numbers")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_VECTOR_VALUE);
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_VECTOR_VALUE);
     }
 
     @Test
@@ -306,8 +306,8 @@ public class DocumentShredderTest {
 
       assertThat(t)
           .isNotNull()
-          .hasMessageStartingWith(ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_DOC_KEY_NAME_VIOLATION);
+          .hasMessageStartingWith(ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION.getMessage())
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_DOC_KEY_NAME_VIOLATION);
     }
   }
 
@@ -322,7 +322,7 @@ public class DocumentShredderTest {
           .isNotNull()
           .hasMessage(
               "Bad document type to shred: document to shred must be a JSON Object, instead got ARRAY")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCUMENT_TYPE);
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCUMENT_TYPE);
     }
 
     @Test
@@ -334,7 +334,7 @@ public class DocumentShredderTest {
           .isNotNull()
           .hasMessage(
               "Bad type for '_id' property: Document Id must be a JSON String, Number, Boolean, EJSON-Encoded Date Object or NULL instead got ARRAY")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_TYPE);
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_TYPE);
     }
 
     @Test
@@ -345,7 +345,7 @@ public class DocumentShredderTest {
       assertThat(t)
           .isNotNull()
           .hasMessage("Bad value for '_id' property: empty String not allowed")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.SHRED_BAD_DOCID_EMPTY_STRING);
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCID_EMPTY_STRING);
     }
   }
 

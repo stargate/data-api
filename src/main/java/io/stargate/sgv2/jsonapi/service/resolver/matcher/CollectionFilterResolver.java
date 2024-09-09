@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
@@ -246,6 +246,48 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                   }
                 });
           }
+  public static List<DBFilterBase> findDynamic(CaptureExpression captureExpression) {
+    List<DBFilterBase> filters = new ArrayList<>();
+    for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
+      if (captureExpression.marker() == ID_GROUP) {
+        switch ((ValueComparisonOperator) filterOperation.operator()) {
+          case EQ:
+            filters.add(
+                new IDCollectionFilter(
+                    IDCollectionFilter.Operator.EQ,
+                    (DocumentId) filterOperation.operand().value()));
+            break;
+          case NE:
+            filters.add(
+                new IDCollectionFilter(
+                    IDCollectionFilter.Operator.NE,
+                    (DocumentId) filterOperation.operand().value()));
+            break;
+          default:
+            throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+                "%s", filterOperation.operator().getOperator());
+        }
+      }
+      if (captureExpression.marker() == ID_GROUP_IN) {
+        switch ((ValueComparisonOperator) filterOperation.operator()) {
+          case IN:
+            filters.add(
+                new IDCollectionFilter(
+                    IDCollectionFilter.Operator.IN,
+                    (List<DocumentId>) filterOperation.operand().value()));
+            break;
+          case NIN:
+            filters.add(
+                new InCollectionFilter(
+                    getInFilterBaseOperator(filterOperation.operator()),
+                    captureExpression.path(),
+                    (List<Object>) filterOperation.operand().value()));
+            break;
+          default:
+            throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+                "%s", filterOperation.operator().getOperator());
+        }
+      }
 
           final CaptureGroup<DocumentId> idRangeGroup =
               (CaptureGroup<DocumentId>) captureGroups.getGroupIfPresent(ID_GROUP_RANGE);
@@ -458,7 +500,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case LTE:
         return MapCollectionFilter.Operator.LTE;
       default:
-        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
             "%s", filterOperator.getOperator());
     }
   }
@@ -471,7 +513,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case NIN:
         return InCollectionFilter.Operator.NIN;
       default:
-        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
             "%s", filterOperator.getOperator());
     }
   }
@@ -484,7 +526,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
       case NE:
         return SetCollectionFilter.Operator.NOT_CONTAINS;
       default:
-        throw ErrorCode.UNSUPPORTED_FILTER_OPERATION.toApiException(
+        throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
             "%s", filterOperator.getOperator());
     }
   }

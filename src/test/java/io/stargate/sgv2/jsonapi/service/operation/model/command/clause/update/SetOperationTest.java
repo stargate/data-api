@@ -9,7 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.SetOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import org.junit.jupiter.api.Nested;
@@ -387,8 +387,8 @@ public class SetOperationTest extends UpdateOperationTestBase {
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
           .withFailMessage("Should throw exception on $set of _id")
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID)
-          .hasMessage(ErrorCode.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $set");
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID)
+          .hasMessage(ErrorCodeV1.UNSUPPORTED_UPDATE_FOR_DOC_ID.getMessage() + ": $set");
     }
 
     // As per [json-api#433]: Ok to override _id for $setOnInsert
@@ -429,9 +429,9 @@ public class SetOperationTest extends UpdateOperationTestBase {
       assertThat(e)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH)
           .hasMessage(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
                   + ": cannot create field ('x') in path 'a.x'; only OBJECT nodes have properties (got NULL)");
     }
 
@@ -445,9 +445,9 @@ public class SetOperationTest extends UpdateOperationTestBase {
       assertThat(e)
           .isNotNull()
           .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH)
+          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH)
           .hasMessage(
-              ErrorCode.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
+              ErrorCodeV1.UNSUPPORTED_UPDATE_OPERATION_PATH.getMessage()
                   + ": cannot create field ('x') in path 'array.x.y.z'; only OBJECT nodes have properties (got ARRAY)");
     }
   }

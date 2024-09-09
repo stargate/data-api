@@ -118,7 +118,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 null),
             null,
             "testCommand",
-            jsonProcessingMetricsReporter);
+            jsonProcessingMetricsReporter,
+            DEFAULT_API_FEATURES_FOR_TESTS);
   }
 
   private MockRow resultRow(ColumnDefinitions columnDefs, int index, Object... values) {

@@ -3,7 +3,8 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
 import java.util.ArrayList;
@@ -27,7 +28,9 @@ public class FilterMatchRules<T extends Command & Filterable> {
    *
    * <p>Rules are applied in the order they are added, so add most specific first.
    *
-   * <p>Caller should then configure the rule as they want, e.g. <code>
+   * <p>Caller should then configure the rule as they want, e.g.
+   *
+   * <pre>
    *      private final FilterMatchRules<FindOneCommand> matchRules = new FilterMatchRules<>();
    *      matchRules.addMatchRule(FindOneCommandResolver::findById).matcher
    *        .capture(ID_GROUP).eq("_id", JsonType.STRING);
@@ -36,7 +39,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
    *          CaptureGroup captureGroup = captures.getCapture(ID_GROUP);
    *          return new FindByIdOperation(commandContext, captureGroup.getSingleJsonLiteral().getTypedValue());
    *      }
-   * </code>
+   * </pre>
    *
    * @param resolveFunction
    * @return
@@ -67,7 +70,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
         .findFirst() // unwraps the Optional from the resolver function.
         .orElseThrow(
             () ->
-                ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+                ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
                     "Filter type not supported, unable to resolve to a filtering strategy"));
   }
 

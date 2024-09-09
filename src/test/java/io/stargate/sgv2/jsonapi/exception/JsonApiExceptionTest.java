@@ -18,7 +18,7 @@ class JsonApiExceptionTest {
 
     @Test
     public void happyPath() {
-      JsonApiException ex = new JsonApiException(ErrorCode.COMMAND_UNKNOWN);
+      JsonApiException ex = new JsonApiException(ErrorCodeV1.COMMAND_UNKNOWN);
 
       CommandResult result = ex.get();
 
@@ -39,7 +39,7 @@ class JsonApiExceptionTest {
     @Test
     public void withCustomMessage() {
       JsonApiException ex =
-          new JsonApiException(ErrorCode.COMMAND_UNKNOWN, "Custom message is more important.");
+          new JsonApiException(ErrorCodeV1.COMMAND_UNKNOWN, "Custom message is more important.");
 
       CommandResult result = ex.get();
 
@@ -60,7 +60,7 @@ class JsonApiExceptionTest {
     @Test
     public void withCause() {
       Exception cause = new IllegalArgumentException("Cause message is important");
-      JsonApiException ex = new JsonApiException(ErrorCode.COMMAND_UNKNOWN, cause);
+      JsonApiException ex = new JsonApiException(ErrorCodeV1.COMMAND_UNKNOWN, cause);
 
       CommandResult result = ex.get();
 

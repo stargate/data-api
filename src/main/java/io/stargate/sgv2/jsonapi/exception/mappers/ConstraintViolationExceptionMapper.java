@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.exception.mappers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -39,7 +39,7 @@ public class ConstraintViolationExceptionMapper {
         violations.stream().map(ConstraintViolationExceptionMapper::getError).distinct().toList();
 
     // return result
-    return new CommandResult(errors).map();
+    return new CommandResult(errors).toRestResponse();
   }
 
   private static CommandResult.Error getError(ConstraintViolation<?> violation) {
@@ -52,7 +52,7 @@ public class ConstraintViolationExceptionMapper {
 
     String propertyValueDesc = valueDescription(violation.getInvalidValue());
     JsonApiException ex =
-        ErrorCode.COMMAND_FIELD_INVALID.toApiException(
+        ErrorCodeV1.COMMAND_FIELD_INVALID.toApiException(
             "field '%s' value %s not valid. Problem: %s.",
             propertyPath, propertyValueDesc, message);
     return ex.getCommandResultError(ex.getMessage(), Response.Status.OK);

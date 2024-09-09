@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 
 public class CommandObjectMapperHandler extends DeserializationProblemHandler {
@@ -22,22 +22,22 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
 
     final String typeStr = (deserializer == null) ? "N/A" : deserializer.handledType().toString();
     if (typeStr.endsWith("CreateCollectionCommand$Options")) {
-      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "No option \"%s\" exists for `createCollection.options` (valid options: \"defaultId\", \"indexing\", \"vector\")",
           propertyName);
     }
     if (typeStr.endsWith("CreateCollectionCommand$Options$IdConfig")) {
-      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "Unrecognized field \"%s\" for `createCollection.options.defaultId` (known fields: \"type\")",
           propertyName);
     }
     if (typeStr.endsWith("CreateCollectionCommand$Options$IndexingConfig")) {
-      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "Unrecognized field \"%s\" for `createCollection.options.indexing` (known fields: \"allow\", \"deny\")",
           propertyName);
     }
     if (typeStr.endsWith("CreateCollectionCommand$Options$VectorSearchConfig")) {
-      throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+      throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
           "Unrecognized field \"%s\" for `createCollection.options.vector` (known fields: \"dimension\", \"metric\", \"service\")",
           propertyName);
     }
@@ -64,7 +64,7 @@ public class CommandObjectMapperHandler extends DeserializationProblemHandler {
     final String rawCommandClassString = baseType.getRawClass().getName();
     final String baseCommand =
         rawCommandClassString.substring(rawCommandClassString.lastIndexOf('.') + 1);
-    throw ErrorCode.COMMAND_UNKNOWN.toApiException(
+    throw ErrorCodeV1.COMMAND_UNKNOWN.toApiException(
         "\"%s\" not one of \"%s\"s: known commands are %s",
         subTypeId, baseCommand, idResolver.getDescForKnownTypeIds());
   }

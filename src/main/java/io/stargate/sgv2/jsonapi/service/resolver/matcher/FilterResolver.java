@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
@@ -69,12 +69,12 @@ public abstract class FilterResolver<
         && command.filterClause().logicalExpression().getTotalComparisonExpressionCount()
             > operationsConfig.maxFilterObjectProperties()) {
       throw new JsonApiException(
-          ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION,
+          ErrorCodeV1.FILTER_FIELDS_LIMIT_VIOLATION,
           String.format(
               "%s: filter has %d fields, exceeds maximum allowed %s",
-              ErrorCode.FILTER_FIELDS_LIMIT_VIOLATION.getMessage(),
-              command.filterClause().logicalExpression().getTotalComparisonExpressionCount(),
-              operationsConfig.maxFilterObjectProperties()));
+              ErrorCodeV1.FILTER_FIELDS_LIMIT_VIOLATION.getMessage(),
+                  command.filterClause().logicalExpression().getTotalComparisonExpressionCount(),
+                  operationsConfig.maxFilterObjectProperties()));
     }
     return dbFilterLogicalExpression;
   }

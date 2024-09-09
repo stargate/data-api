@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.annotation.Nullable;
 import jakarta.inject.Inject;
 import java.util.List;
@@ -185,7 +185,7 @@ public interface EmbeddingProvidersConfig {
         } else if (type.equals("options")) {
           return OPTIONS;
         }
-        throw ErrorCode.INVALID_PARAMETER_VALIDATION_TYPE.toApiException(type);
+        throw ErrorCodeV1.INVALID_PARAMETER_VALIDATION_TYPE.toApiException(type);
       }
 
       @Override
