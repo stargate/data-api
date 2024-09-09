@@ -6,11 +6,8 @@ import io.stargate.sgv2.jsonapi.fixtures.TestListUtil;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
-
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.BiConsumer;
 
 /**
  * A fixture for a {@link WriteableTableRow} that is used in tests, created by {@link
@@ -95,8 +92,11 @@ public record JsonContainerFixture(
     return String.join(
         ",",
         columns.stream()
-          .map(metadata -> String.format("%s(%s)", metadata.getName().asCql(true), metadata.getType().asCql(false, true)))
+            .map(
+                metadata ->
+                    String.format(
+                        "%s(%s)",
+                        metadata.getName().asCql(true), metadata.getType().asCql(false, true)))
             .toList());
-
   }
 }
