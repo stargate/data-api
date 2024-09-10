@@ -104,7 +104,15 @@ public class JSONCodecRegistryTest {
             DataTypes.VARINT, BigDecimal.valueOf(123456789.0), BigInteger.valueOf(123456789)),
 
         // Floating-point types:
-        Arguments.of(DataTypes.DECIMAL, BigDecimal.valueOf(0.25), BigDecimal.valueOf(0.25)));
+        Arguments.of(DataTypes.DECIMAL, 123L, BigDecimal.valueOf(123L)),
+        Arguments.of(DataTypes.DECIMAL, BigInteger.valueOf(34567L), BigDecimal.valueOf(34567L)),
+        Arguments.of(DataTypes.DECIMAL, BigDecimal.valueOf(0.25), BigDecimal.valueOf(0.25)),
+        Arguments.of(DataTypes.DOUBLE, 123L, Double.valueOf(123L)),
+        Arguments.of(DataTypes.DOUBLE, BigInteger.valueOf(34567L), Double.valueOf(34567L)),
+        Arguments.of(DataTypes.DOUBLE, BigDecimal.valueOf(0.25), Double.valueOf(0.25)),
+        Arguments.of(DataTypes.FLOAT, 123L, Float.valueOf(123L)),
+        Arguments.of(DataTypes.FLOAT, BigInteger.valueOf(34567L), Float.valueOf(34567L)),
+        Arguments.of(DataTypes.FLOAT, BigDecimal.valueOf(0.25), Float.valueOf(0.25f)));
   }
 
   @Test
