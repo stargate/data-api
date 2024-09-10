@@ -45,25 +45,74 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.unsafeIdentity(),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, BigDecimal> DECIMAL =
+  public static final JSONCodec<BigDecimal, BigDecimal> DECIMAL_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.DECIMAL,
           JSONCodec.ToCQL.unsafeIdentity(),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, Double> DOUBLE =
+  public static final JSONCodec<BigInteger, BigDecimal> DECIMAL_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.DECIMAL,
+          // This is safe transformation, cannot fail:
+          (cqlType, value) -> new BigDecimal(value),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<Long, BigDecimal> DECIMAL_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.DECIMAL,
+          // This is safe transformation, cannot fail:
+          (cqlType, value) -> new BigDecimal(value),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<BigDecimal, Double> DOUBLE_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.DOUBLE,
+          // TODO: bounds checks (over/underflow)
           JSONCodec.ToCQL.safeNumber(BigDecimal::doubleValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, Float> FLOAT =
+  public static final JSONCodec<BigInteger, Double> DOUBLE_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          DataTypes.DOUBLE,
+          // TODO: bounds checks (over/underflow)
+          JSONCodec.ToCQL.safeNumber(BigInteger::doubleValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<Long, Double> DOUBLE_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          DataTypes.DOUBLE,
+          JSONCodec.ToCQL.safeNumber(Long::doubleValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<BigDecimal, Float> FLOAT_FROM_BIG_DECIMAL  =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.FLOAT,
+          // TODO: bounds checks (over/underflow)
           JSONCodec.ToCQL.safeNumber(BigDecimal::floatValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<BigInteger, Float> FLOAT_FROM_BIG_INTEGER =
+      new JSONCodec<>(
+          GenericType.BIG_INTEGER,
+          // TODO: bounds checks (over/underflow)
+          DataTypes.FLOAT,
+          JSONCodec.ToCQL.safeNumber(BigInteger::floatValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  public static final JSONCodec<Long, Float> FLOAT_FROM_LONG =
+      new JSONCodec<>(
+          GenericType.LONG,
+          // TODO: bounds checks (over/underflow)?
+          DataTypes.FLOAT,
+          JSONCodec.ToCQL.safeNumber(Long::floatValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, Integer> INT_FROM_BIG_DECIMAL =

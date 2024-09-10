@@ -18,8 +18,6 @@ import io.quarkus.test.junit.mockito.InjectMock;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.HashMap;
@@ -292,7 +290,7 @@ public class NamespaceCacheTest {
               .awaitItem()
               .getItem();
 
-      assertThat(schemaObject instanceof CollectionSchemaObject);
+      assertThat(schemaObject).isInstanceOf(CollectionSchemaObject.class);
       var collectionSchemaObject = (CollectionSchemaObject) schemaObject;
       assertThat(collectionSchemaObject)
           .satisfies(
@@ -304,7 +302,7 @@ public class NamespaceCacheTest {
     }
 
     @Test
-    public void checkInvalidJsonApiTable() {
+    public void checkNonCollectionJsonApiTable() {
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
       when(queryExecutor.getSchema(any(), any(), any()))
           .then(
@@ -350,28 +348,19 @@ public class NamespaceCacheTest {
                                 new HashMap<>())));
               });
       NamespaceCache namespaceCache = createNamespaceCache(queryExecutor);
-      Throwable error =
+      var schemaObject =
           namespaceCache
               .getSchemaObject(dataApiRequestInfo, "table")
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
-              .awaitFailure()
-              .getFailure();
+              .awaitItem()
+              .getItem();
 
-      assertThat(error)
-          .isInstanceOfSatisfying(
-              JsonApiException.class,
-              s -> {
-                assertThat(s.getErrorCode())
-                    .isEqualTo(ErrorCodeV1.INVALID_JSONAPI_COLLECTION_SCHEMA);
-                assertThat(s.getMessage())
-                    .isEqualTo(
-                        ErrorCodeV1.INVALID_JSONAPI_COLLECTION_SCHEMA.getMessage() + ": table");
-              });
+      assertThat(schemaObject).isInstanceOf(TableSchemaObject.class);
     }
   }
 
   private NamespaceCache createNamespaceCache(QueryExecutor qe) {
-    return new NamespaceCache("ks", false, qe, objectMapper);
+    return new NamespaceCache("ks", qe, objectMapper);
   }
 }

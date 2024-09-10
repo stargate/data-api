@@ -29,9 +29,15 @@ public abstract class JSONCodecRegistries {
               JSONCodecs.VARINT_FROM_BIG_INTEGER,
               JSONCodecs.VARINT_FROM_LONG,
               // Numeric Codecs, floating-point types
-              JSONCodecs.DECIMAL,
-              JSONCodecs.DOUBLE,
-              JSONCodecs.FLOAT,
+              JSONCodecs.DECIMAL_FROM_BIG_DECIMAL,
+              JSONCodecs.DECIMAL_FROM_BIG_INTEGER,
+              JSONCodecs.DECIMAL_FROM_LONG,
+              JSONCodecs.DOUBLE_FROM_BIG_DECIMAL,
+              JSONCodecs.DOUBLE_FROM_BIG_INTEGER,
+              JSONCodecs.DOUBLE_FROM_LONG,
+              JSONCodecs.FLOAT_FROM_BIG_DECIMAL,
+              JSONCodecs.FLOAT_FROM_BIG_INTEGER,
+              JSONCodecs.FLOAT_FROM_LONG,
               // Text Codecs
               JSONCodecs.ASCII,
               JSONCodecs.TEXT,
