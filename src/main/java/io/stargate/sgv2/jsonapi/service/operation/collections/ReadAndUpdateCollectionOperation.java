@@ -287,8 +287,8 @@ public record ReadAndUpdateCollectionOperation(
               + "            tx_id = ?";
       return String.format(
           update,
-          commandContext.schemaObject().name.keyspace(),
-          commandContext.schemaObject().name.table());
+          commandContext.schemaObject().name().keyspace(),
+          commandContext.schemaObject().name().table());
     } else {
       String update =
           "UPDATE \"%s\".\"%s\" "
@@ -309,8 +309,8 @@ public record ReadAndUpdateCollectionOperation(
               + "            tx_id = ?";
       return String.format(
           update,
-          commandContext.schemaObject().name.keyspace(),
-          commandContext.schemaObject().name.table());
+          commandContext.schemaObject().name().keyspace(),
+          commandContext.schemaObject().name().table());
     }
   }
 

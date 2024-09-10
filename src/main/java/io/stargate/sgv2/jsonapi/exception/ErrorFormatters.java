@@ -86,9 +86,9 @@ public abstract class ErrorFormatters {
   public static Map<String, String> errVars(
       SchemaObject schemaObject, Consumer<Map<String, String>> consumer) {
     Map<String, String> map = new HashMap<>();
-    map.put(TemplateVars.SCHEMA_TYPE, schemaObject.type.name());
-    map.put(TemplateVars.KEYSPACE, schemaObject.name.keyspace());
-    map.put(TemplateVars.TABLE, schemaObject.name.table());
+    map.put(TemplateVars.SCHEMA_TYPE, schemaObject.type().name());
+    map.put(TemplateVars.KEYSPACE, schemaObject.name().keyspace());
+    map.put(TemplateVars.TABLE, schemaObject.name().table());
     if (consumer != null) {
       consumer.accept(map);
     }

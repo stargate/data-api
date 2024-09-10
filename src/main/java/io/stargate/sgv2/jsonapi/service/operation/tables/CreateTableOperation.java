@@ -58,7 +58,7 @@ public class CreateTableOperation implements Operation {
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     CqlIdentifier keyspaceIdentifier =
-        CqlIdentifier.fromInternal(commandContext.schemaObject().name.keyspace());
+        CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace());
     CqlIdentifier tableIdentifier = CqlIdentifier.fromInternal(tableName);
     CreateTableStart create = createTable(keyspaceIdentifier, tableIdentifier).ifNotExists();
 

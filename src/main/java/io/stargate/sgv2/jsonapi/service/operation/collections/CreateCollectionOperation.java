@@ -108,20 +108,21 @@ public record CreateCollectionOperation(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     logger.info(
         "Executing CreateCollectionOperation for {}.{} with property {}",
-        commandContext.schemaObject().name.keyspace(),
+        commandContext.schemaObject().name().keyspace(),
         name,
         comment);
     // validate Data API collection limit guardrail and get tableMetadata
     Map<CqlIdentifier, KeyspaceMetadata> allKeyspaces =
         cqlSessionCache.getSession(dataApiRequestInfo).getMetadata().getKeyspaces();
     KeyspaceMetadata currKeyspace =
-        allKeyspaces.get(CqlIdentifier.fromInternal(commandContext.schemaObject().name.keyspace()));
+        allKeyspaces.get(
+            CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace()));
     if (currKeyspace == null) {
       return Uni.createFrom()
           .failure(
               ErrorCodeV1.NAMESPACE_DOES_NOT_EXIST.toApiException(
                   "Unknown namespace '%s', you must create it first",
-                  commandContext.schemaObject().name.keyspace()));
+                  commandContext.schemaObject().name().keyspace()));
     }
     TableMetadata table = findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
 
@@ -168,7 +169,7 @@ public record CreateCollectionOperation(
     final Uni<AsyncResultSet> execute =
         queryExecutor.executeCreateSchemaChange(
             dataApiRequestInfo,
-            getCreateTable(commandContext.schemaObject().name.keyspace(), name));
+            getCreateTable(commandContext.schemaObject().name().keyspace(), name));
     final Uni<Boolean> indexResult =
         execute
             .onItem()
@@ -180,7 +181,9 @@ public record CreateCollectionOperation(
                   if (res.wasApplied()) {
                     final List<SimpleStatement> indexStatements =
                         getIndexStatements(
-                            commandContext.schemaObject().name.keyspace(), name, collectionExisted);
+                            commandContext.schemaObject().name().keyspace(),
+                            name,
+                            collectionExisted);
                     Multi<AsyncResultSet> indexResultMulti;
                     /*
                     CI will override ddlDelayMillis to 0 using `-Dstargate.jsonapi.operations.database-config.ddl-delay-millis=0`
