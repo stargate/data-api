@@ -91,7 +91,7 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.safeNumber(Long::doubleValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
-  public static final JSONCodec<BigDecimal, Float> FLOAT_FROM_BIG_DECIMAL  =
+  public static final JSONCodec<BigDecimal, Float> FLOAT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
           DataTypes.FLOAT,
