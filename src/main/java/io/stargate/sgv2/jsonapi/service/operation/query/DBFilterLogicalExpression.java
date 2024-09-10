@@ -1,8 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorCode.UNSUPPORTED_FILTER_OPERATION;
-
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +31,7 @@ public class DBFilterLogicalExpression {
         case AND -> DBLogicalOperator.AND;
         case OR -> DBLogicalOperator.OR;
         default ->
-            throw UNSUPPORTED_FILTER_OPERATION.toApiException(
+            throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
                 "convert from logical operator failure, unsupported operator: " + logicalOperator);
       };
     }

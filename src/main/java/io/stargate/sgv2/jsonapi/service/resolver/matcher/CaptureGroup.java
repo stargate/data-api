@@ -20,9 +20,10 @@ import java.util.function.Consumer;
  * "address.street": "bar"} Path in the {@link ComparisonExpression} that was matched, e.g.
  * "address.street"
  *
- * <p>Created by the {@link CaptureGroups} via a builder
+ * <p>Created by the {@link CaptureGroups} via a builder <DataType> This is Data type of the object,
+ * type for the captureExpression value
  */
-public record CaptureGroup<T>(Map<String, List<FilterOperation<T>>> captures) {
+public record CaptureGroup<DataType>(Map<String, List<FilterOperation<DataType>>> captures) {
 
   /**
    * consumer all the captures for this captureGroup it takes the consumer object which defines how
@@ -30,13 +31,13 @@ public record CaptureGroup<T>(Map<String, List<FilterOperation<T>>> captures) {
    *
    * @param consumer
    */
-  void consumeAllCaptures(Consumer<CaptureExpression<T>> consumer) {
+  void consumeAllCaptures(Consumer<CaptureExpression<DataType>> consumer) {
     captures.forEach(
         (key, operations) -> {
           operations.forEach(
               operation ->
                   consumer.accept(
-                      new CaptureExpression<T>(
+                      new CaptureExpression<DataType>(
                           key, operation.operator(), operation.operand().value())));
         });
   }
@@ -50,7 +51,7 @@ public record CaptureGroup<T>(Map<String, List<FilterOperation<T>>> captures) {
    * @param path
    * @param capture
    */
-  public void withCapture(String path, List<FilterOperation<T>> capture) {
+  public void withCapture(String path, List<FilterOperation<DataType>> capture) {
     captures.computeIfAbsent(path, k -> new ArrayList<>()).addAll(capture);
   }
 
@@ -59,5 +60,6 @@ public record CaptureGroup<T>(Map<String, List<FilterOperation<T>>> captures) {
    *
    * <p>May also need to expand this to include the operation.
    */
-  public static record CaptureExpression<T>(String path, FilterOperator operator, T value) {}
+  public static record CaptureExpression<DataType>(
+      String path, FilterOperator operator, DataType value) {}
 }

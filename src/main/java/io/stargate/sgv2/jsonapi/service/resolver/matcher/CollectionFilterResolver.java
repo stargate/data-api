@@ -156,28 +156,33 @@ public class CollectionFilterResolver<T extends Command & Filterable>
     BiConsumer<CaptureGroups, DBFilterLogicalExpression> consumer =
         (captureGroups, dbFilterLogicalExpression) -> {
           // convert captureGroup to DBFilter
-          final CaptureGroup<DocumentId> idGroup =
-              (CaptureGroup<DocumentId>) captureGroups.getGroupIfPresent(ID_GROUP);
-          if (idGroup != null) {
-            idGroup.consumeAllCaptures(
-                expression ->
-                    dbFilterLogicalExpression.addInnerDBFilter(
-                        new IDCollectionFilter(
-                            IDCollectionFilter.Operator.EQ, (DocumentId) expression.value())));
-          }
 
-          final CaptureGroup<Object> idInGroup =
-              (CaptureGroup<Object>) captureGroups.getGroupIfPresent(ID_GROUP_IN);
-          // TIDY: Resolve the unchecked cast (List<DocumentId>) below and in other places in this
-          // file
-          if (idInGroup != null) {
-            idInGroup.consumeAllCaptures(
-                expression -> {
-                  dbFilterLogicalExpression.addInnerDBFilter(
-                      new IDCollectionFilter(
-                          IDCollectionFilter.Operator.IN, (List<DocumentId>) expression.value()));
-                });
-          }
+          captureGroups
+              .getGroupIfPresent(ID_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<DocumentId> idGroup = (CaptureGroup<DocumentId>) captureGroup;
+                    idGroup.consumeAllCaptures(
+                        expression ->
+                            dbFilterLogicalExpression.addInnerDBFilter(
+                                new IDCollectionFilter(
+                                    IDCollectionFilter.Operator.EQ,
+                                    (DocumentId) expression.value())));
+                  });
+
+          captureGroups
+              .getGroupIfPresent(ID_GROUP_IN)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<DocumentId> idInGroup = (CaptureGroup<DocumentId>) captureGroup;
+                    idInGroup.consumeAllCaptures(
+                        expression -> {
+                          dbFilterLogicalExpression.addInnerDBFilter(
+                              new IDCollectionFilter(
+                                  IDCollectionFilter.Operator.IN,
+                                  (List<DocumentId>) expression.value()));
+                        });
+                  });
         };
 
     currentCaptureGroups.recursiveConsume(currentDbFilterLogicalExpression, consumer);
@@ -197,244 +202,276 @@ public class CollectionFilterResolver<T extends Command & Filterable>
 
     BiConsumer<CaptureGroups, DBFilterLogicalExpression> consumer =
         (captureGroups, dbFilterLogicalExpression) -> {
-          final CaptureGroup<DocumentId> idGroup =
-              (CaptureGroup<DocumentId>) captureGroups.getGroupIfPresent(ID_GROUP);
-          if (idGroup != null) {
-            idGroup.consumeAllCaptures(
-                expression -> {
-                  switch ((ValueComparisonOperator) expression.operator()) {
-                    case EQ:
-                      dbFilterLogicalExpression.addInnerDBFilter(
-                          new IDCollectionFilter(
-                              IDCollectionFilter.Operator.EQ, expression.value()));
-                      break;
-                    case NE:
-                      dbFilterLogicalExpression.addInnerDBFilter(
-                          new IDCollectionFilter(
-                              IDCollectionFilter.Operator.NE, expression.value()));
-                      break;
-                    default:
-                      throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-                          "%s", expression.operator());
-                  }
-                });
-          }
+          captureGroups
+              .getGroupIfPresent(ID_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<DocumentId> idGroup = (CaptureGroup<DocumentId>) captureGroup;
+                    idGroup.consumeAllCaptures(
+                        expression -> {
+                          switch ((ValueComparisonOperator) expression.operator()) {
+                            case EQ:
+                              dbFilterLogicalExpression.addInnerDBFilter(
+                                  new IDCollectionFilter(
+                                      IDCollectionFilter.Operator.EQ, expression.value()));
+                              break;
+                            case NE:
+                              dbFilterLogicalExpression.addInnerDBFilter(
+                                  new IDCollectionFilter(
+                                      IDCollectionFilter.Operator.NE, expression.value()));
+                              break;
+                            default:
+                              throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+                                  "%s", expression.operator());
+                          }
+                        });
+                  });
 
-          final CaptureGroup<Object> idInGroup =
-              (CaptureGroup<Object>) captureGroups.getGroupIfPresent(ID_GROUP_IN);
-          if (idInGroup != null) {
+          captureGroups
+              .getGroupIfPresent(ID_GROUP_IN)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> idInGroup = (CaptureGroup<Object>) captureGroup;
+                    idInGroup.consumeAllCaptures(
+                        expression -> {
+                          switch ((ValueComparisonOperator) expression.operator()) {
+                            case IN:
+                              dbFilterLogicalExpression.addInnerDBFilter(
+                                  new IDCollectionFilter(
+                                      IDCollectionFilter.Operator.IN,
+                                      (List<DocumentId>) expression.value()));
+                              break;
+                            case NIN:
+                              dbFilterLogicalExpression.addInnerDBFilter(
+                                  new InCollectionFilter(
+                                      getInFilterBaseOperator(expression.operator()),
+                                      expression.path(),
+                                      (List<Object>) expression.value()));
+                              break;
+                            default:
+                              throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+                                  "%s", expression.operator());
+                          }
+                        });
+                  });
 
-            idInGroup.consumeAllCaptures(
-                expression -> {
-                  switch ((ValueComparisonOperator) expression.operator()) {
-                    case IN:
-                      dbFilterLogicalExpression.addInnerDBFilter(
-                          new IDCollectionFilter(
-                              IDCollectionFilter.Operator.IN,
-                              (List<DocumentId>) expression.value()));
-                      break;
-                    case NIN:
-                      dbFilterLogicalExpression.addInnerDBFilter(
-                          new InCollectionFilter(
-                              getInFilterBaseOperator(expression.operator()),
-                              expression.path(),
-                              (List<Object>) expression.value()));
-                      break;
-                    default:
-                      throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-                          "%s", expression.operator());
-                  }
-                });
-          }
+          captureGroups
+              .getGroupIfPresent(ID_GROUP_RANGE)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<DocumentId> idRangeGroup = (CaptureGroup<DocumentId>) captureGroup;
+                    idRangeGroup.consumeAllCaptures(
+                        expression -> {
+                          final DocumentId value = (DocumentId) expression.value();
+                          if (value.value() instanceof BigDecimal bdv) {
+                            dbFilterLogicalExpression.addInnerDBFilter(
+                                new NumberCollectionFilter(
+                                    DocumentConstants.Fields.DOC_ID,
+                                    getMapFilterBaseOperator(expression.operator()),
+                                    bdv));
+                          }
+                          if (value.value() instanceof Map) {
+                            dbFilterLogicalExpression.addInnerDBFilter(
+                                new DateCollectionFilter(
+                                    DocumentConstants.Fields.DOC_ID,
+                                    getMapFilterBaseOperator(expression.operator()),
+                                    JsonUtil.createDateFromDocumentId(value)));
+                          }
+                        });
+                  });
 
-          final CaptureGroup<DocumentId> idRangeGroup =
-              (CaptureGroup<DocumentId>) captureGroups.getGroupIfPresent(ID_GROUP_RANGE);
-          if (idRangeGroup != null) {
-            idRangeGroup.consumeAllCaptures(
-                expression -> {
-                  final DocumentId value = (DocumentId) expression.value();
-                  if (value.value() instanceof BigDecimal bdv) {
-                    dbFilterLogicalExpression.addInnerDBFilter(
-                        new NumberCollectionFilter(
-                            DocumentConstants.Fields.DOC_ID,
-                            getMapFilterBaseOperator(expression.operator()),
-                            bdv));
-                  }
-                  if (value.value() instanceof Map) {
-                    dbFilterLogicalExpression.addInnerDBFilter(
-                        new DateCollectionFilter(
-                            DocumentConstants.Fields.DOC_ID,
-                            getMapFilterBaseOperator(expression.operator()),
-                            JsonUtil.createDateFromDocumentId(value)));
-                  }
-                });
-          }
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_GROUP_IN)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> dynamicInGroup = (CaptureGroup<Object>) captureGroup;
+                    dynamicInGroup.consumeAllCaptures(
+                        expression -> {
+                          dbFilterLogicalExpression.addInnerDBFilter(
+                              new InCollectionFilter(
+                                  getInFilterBaseOperator(expression.operator()),
+                                  expression.path(),
+                                  (List<Object>) expression.value()));
+                        });
+                  });
 
-          final CaptureGroup<Object> dynamicInGroup =
-              (CaptureGroup<Object>) captureGroups.getGroupIfPresent(DYNAMIC_GROUP_IN);
-          if (dynamicInGroup != null) {
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_TEXT_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<String> dynamicTextGroup = (CaptureGroup<String>) captureGroup;
+                    dynamicTextGroup.consumeAllCaptures(
+                        expression -> {
+                          dbFilterLogicalExpression.addInnerDBFilter(
+                              new TextCollectionFilter(
+                                  expression.path(),
+                                  getMapFilterBaseOperator(expression.operator()),
+                                  expression.value()));
+                        });
+                  });
 
-            dynamicInGroup.consumeAllCaptures(
-                expression -> {
-                  dbFilterLogicalExpression.addInnerDBFilter(
-                      new InCollectionFilter(
-                          getInFilterBaseOperator(expression.operator()),
-                          expression.path(),
-                          (List<Object>) expression.value()));
-                });
-          }
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_BOOL_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Boolean> dynamicBoolGroup = (CaptureGroup<Boolean>) captureGroup;
+                    dynamicBoolGroup.consumeAllCaptures(
+                        expression -> {
+                          dbFilterLogicalExpression.addInnerDBFilter(
+                              new BoolCollectionFilter(
+                                  expression.path(),
+                                  getMapFilterBaseOperator(expression.operator()),
+                                  expression.value()));
+                        });
+                  });
 
-          final CaptureGroup<String> dynamicTextGroup =
-              (CaptureGroup<String>) captureGroups.getGroupIfPresent(DYNAMIC_TEXT_GROUP);
-          if (dynamicTextGroup != null) {
-            dynamicTextGroup.consumeAllCaptures(
-                expression -> {
-                  dbFilterLogicalExpression.addInnerDBFilter(
-                      new TextCollectionFilter(
-                          expression.path(),
-                          getMapFilterBaseOperator(expression.operator()),
-                          expression.value()));
-                });
-          }
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_NUMBER_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<BigDecimal> numberGroup = (CaptureGroup<BigDecimal>) captureGroup;
+                    numberGroup.consumeAllCaptures(
+                        expression ->
+                            dbFilterLogicalExpression.addInnerDBFilter(
+                                new NumberCollectionFilter(
+                                    expression.path(),
+                                    getMapFilterBaseOperator(expression.operator()),
+                                    expression.value())));
+                  });
 
-          final CaptureGroup<Boolean> dynamicBoolGroup =
-              (CaptureGroup<Boolean>) captureGroups.getGroupIfPresent(DYNAMIC_BOOL_GROUP);
-          if (dynamicBoolGroup != null) {
-            dynamicBoolGroup.consumeAllCaptures(
-                expression -> {
-                  dbFilterLogicalExpression.addInnerDBFilter(
-                      new BoolCollectionFilter(
-                          expression.path(),
-                          getMapFilterBaseOperator(expression.operator()),
-                          expression.value()));
-                });
-          }
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_NULL_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> nullGroup = (CaptureGroup<Object>) captureGroup;
+                    nullGroup.consumeAllCaptures(
+                        expression ->
+                            dbFilterLogicalExpression.addInnerDBFilter(
+                                new IsNullCollectionFilter(
+                                    expression.path(),
+                                    getSetFilterBaseOperator(expression.operator()))));
+                  });
 
-          final CaptureGroup<BigDecimal> numberGroup =
-              (CaptureGroup<BigDecimal>) captureGroups.getGroupIfPresent(DYNAMIC_NUMBER_GROUP);
-          if (numberGroup != null) {
-            numberGroup.consumeAllCaptures(
-                expression ->
-                    dbFilterLogicalExpression.addInnerDBFilter(
-                        new NumberCollectionFilter(
-                            expression.path(),
-                            getMapFilterBaseOperator(expression.operator()),
-                            expression.value())));
-          }
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_DATE_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Date> dateGroup = (CaptureGroup<Date>) captureGroup;
+                    dateGroup.consumeAllCaptures(
+                        expression -> {
+                          dbFilterLogicalExpression.addInnerDBFilter(
+                              new DateCollectionFilter(
+                                  expression.path(),
+                                  getMapFilterBaseOperator(expression.operator()),
+                                  (Date) expression.value()));
+                        });
+                  });
 
-          final CaptureGroup<Object> nullGroup =
-              (CaptureGroup<Object>) captureGroups.getGroupIfPresent(DYNAMIC_NULL_GROUP);
-          if (nullGroup != null) {
-            nullGroup.consumeAllCaptures(
-                expression ->
-                    dbFilterLogicalExpression.addInnerDBFilter(
-                        new IsNullCollectionFilter(
-                            expression.path(), getSetFilterBaseOperator(expression.operator()))));
-          }
+          captureGroups
+              .getGroupIfPresent(EXISTS_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Boolean> existsGroup = (CaptureGroup<Boolean>) captureGroup;
+                    existsGroup.consumeAllCaptures(
+                        expression -> {
+                          dbFilterLogicalExpression.addInnerDBFilter(
+                              new ExistsCollectionFilter(expression.path(), expression.value()));
+                        });
+                  });
 
-          final CaptureGroup<Date> dateGroup =
-              (CaptureGroup<Date>) captureGroups.getGroupIfPresent(DYNAMIC_DATE_GROUP);
-          if (dateGroup != null) {
-            dateGroup.consumeAllCaptures(
-                expression -> {
-                  dbFilterLogicalExpression.addInnerDBFilter(
-                      new DateCollectionFilter(
-                          expression.path(),
-                          getMapFilterBaseOperator(expression.operator()),
-                          (Date) expression.value()));
-                });
-          }
+          captureGroups
+              .getGroupIfPresent(ALL_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> allGroup = (CaptureGroup<Object>) captureGroup;
+                    allGroup.consumeAllCaptures(
+                        expression -> {
+                          dbFilterLogicalExpression.addInnerDBFilter(
+                              new AllCollectionFilter(
+                                  expression.path(), (List<Object>) expression.value(), false));
+                        });
+                  });
 
-          final CaptureGroup<Boolean> existsGroup =
-              (CaptureGroup<Boolean>) captureGroups.getGroupIfPresent(EXISTS_GROUP);
-          if (existsGroup != null) {
-            existsGroup.consumeAllCaptures(
-                expression -> {
-                  dbFilterLogicalExpression.addInnerDBFilter(
-                      new ExistsCollectionFilter(expression.path(), expression.value()));
-                });
-          }
+          captureGroups
+              .getGroupIfPresent(NOT_ANY_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> notAnyGroup = (CaptureGroup<Object>) captureGroup;
+                    notAnyGroup.consumeAllCaptures(
+                        expression -> {
+                          dbFilterLogicalExpression.addInnerDBFilter(
+                              new AllCollectionFilter(
+                                  expression.path(), (List<Object>) expression.value(), true));
+                        });
+                  });
 
-          final CaptureGroup<Object> allGroup =
-              (CaptureGroup<Object>) captureGroups.getGroupIfPresent(ALL_GROUP);
-          if (allGroup != null) {
-            allGroup.consumeAllCaptures(
-                expression -> {
-                  dbFilterLogicalExpression.addInnerDBFilter(
-                      new AllCollectionFilter(
-                          expression.path(), (List<Object>) expression.value(), false));
-                });
-          }
+          captureGroups
+              .getGroupIfPresent(SIZE_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> sizeGroup = (CaptureGroup<Object>) captureGroup;
+                    sizeGroup.consumeAllCaptures(
+                        expression -> {
+                          if (expression.value() instanceof Boolean) {
+                            // This is the special case, e.g. {"$not":{"ages":{"$size":0}}}
+                            dbFilterLogicalExpression.addInnerDBFilter(
+                                new SizeCollectionFilter(
+                                    expression.path(),
+                                    MapCollectionFilter.Operator.MAP_NOT_EQUALS,
+                                    0));
+                          } else {
+                            BigDecimal bigDecimal = (BigDecimal) expression.value();
+                            // Flipping size operator will multiply the value by -1
+                            // Negative means check array_size[?] != ?
+                            int size = bigDecimal.intValue();
+                            MapCollectionFilter.Operator operator;
+                            if (size >= 0) {
+                              operator = MapCollectionFilter.Operator.MAP_EQUALS;
+                            } else {
+                              operator = MapCollectionFilter.Operator.MAP_NOT_EQUALS;
+                            }
+                            dbFilterLogicalExpression.addInnerDBFilter(
+                                new SizeCollectionFilter(
+                                    expression.path(), operator, Math.abs(size)));
+                          }
+                        });
+                  });
 
-          final CaptureGroup<Object> notAnyGroup =
-              (CaptureGroup<Object>) captureGroups.getGroupIfPresent(NOT_ANY_GROUP);
-          if (notAnyGroup != null) {
-            notAnyGroup.consumeAllCaptures(
-                expression -> {
-                  dbFilterLogicalExpression.addInnerDBFilter(
-                      new AllCollectionFilter(
-                          expression.path(), (List<Object>) expression.value(), true));
-                });
-          }
+          captureGroups
+              .getGroupIfPresent(ARRAY_EQUALS)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> arrayEqualsGroup = (CaptureGroup<Object>) captureGroup;
+                    arrayEqualsGroup.consumeAllCaptures(
+                        expression -> {
+                          dbFilterLogicalExpression.addInnerDBFilter(
+                              new ArrayEqualsCollectionFilter(
+                                  new DocValueHasher(),
+                                  expression.path(),
+                                  (List<Object>) expression.value(),
+                                  expression.operator().equals(ValueComparisonOperator.EQ)
+                                      ? MapCollectionFilter.Operator.MAP_EQUALS
+                                      : MapCollectionFilter.Operator.MAP_NOT_EQUALS));
+                        });
+                  });
 
-          final CaptureGroup<Object> sizeGroup =
-              (CaptureGroup<Object>) captureGroups.getGroupIfPresent(SIZE_GROUP);
-          if (sizeGroup != null) {
-            sizeGroup.consumeAllCaptures(
-                expression -> {
-                  if (expression.value() instanceof Boolean) {
-                    // This is the special case, e.g. {"$not":{"ages":{"$size":0}}}
-                    dbFilterLogicalExpression.addInnerDBFilter(
-                        new SizeCollectionFilter(
-                            expression.path(), MapCollectionFilter.Operator.MAP_NOT_EQUALS, 0));
-                  } else {
-                    BigDecimal bigDecimal = (BigDecimal) expression.value();
-                    // Flipping size operator will multiply the value by -1
-                    // Negative means check array_size[?] != ?
-                    int size = bigDecimal.intValue();
-                    MapCollectionFilter.Operator operator;
-                    if (size >= 0) {
-                      operator = MapCollectionFilter.Operator.MAP_EQUALS;
-                    } else {
-                      operator = MapCollectionFilter.Operator.MAP_NOT_EQUALS;
-                    }
-                    dbFilterLogicalExpression.addInnerDBFilter(
-                        new SizeCollectionFilter(expression.path(), operator, Math.abs(size)));
-                  }
-                });
-          }
-
-          final CaptureGroup<Object> arrayEqualsGroup =
-              (CaptureGroup<Object>) captureGroups.getGroupIfPresent(ARRAY_EQUALS);
-          if (arrayEqualsGroup != null) {
-            arrayEqualsGroup.consumeAllCaptures(
-                expression -> {
-                  dbFilterLogicalExpression.addInnerDBFilter(
-                      new ArrayEqualsCollectionFilter(
-                          new DocValueHasher(),
-                          expression.path(),
-                          (List<Object>) expression.value(),
-                          expression.operator().equals(ValueComparisonOperator.EQ)
-                              ? MapCollectionFilter.Operator.MAP_EQUALS
-                              : MapCollectionFilter.Operator.MAP_NOT_EQUALS));
-                });
-          }
-
-          final CaptureGroup<Object> subDocEqualsGroup =
-              (CaptureGroup<Object>) captureGroups.getGroupIfPresent(SUB_DOC_EQUALS);
-          if (subDocEqualsGroup != null) {
-            subDocEqualsGroup.consumeAllCaptures(
-                expression -> {
-                  dbFilterLogicalExpression.addInnerDBFilter(
-                      new SubDocEqualsCollectionFilter(
-                          new DocValueHasher(),
-                          expression.path(),
-                          (Map<String, Object>) expression.value(),
-                          expression.operator().equals(ValueComparisonOperator.EQ)
-                              ? MapCollectionFilter.Operator.MAP_EQUALS
-                              : MapCollectionFilter.Operator.MAP_NOT_EQUALS));
-                });
-          }
+          captureGroups
+              .getGroupIfPresent(SUB_DOC_EQUALS)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> subDocEqualsGroup = (CaptureGroup<Object>) captureGroup;
+                    subDocEqualsGroup.consumeAllCaptures(
+                        expression -> {
+                          dbFilterLogicalExpression.addInnerDBFilter(
+                              new SubDocEqualsCollectionFilter(
+                                  new DocValueHasher(),
+                                  expression.path(),
+                                  (Map<String, Object>) expression.value(),
+                                  expression.operator().equals(ValueComparisonOperator.EQ)
+                                      ? MapCollectionFilter.Operator.MAP_EQUALS
+                                      : MapCollectionFilter.Operator.MAP_NOT_EQUALS));
+                        });
+                  });
         };
 
     currentCaptureGroups.recursiveConsume(currentDbFilterLogicalExpression, consumer);

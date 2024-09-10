@@ -63,7 +63,6 @@ public abstract class FilterResolver<
 
     final DBFilterLogicalExpression dbFilterLogicalExpression =
         matchRules.apply(commandContext, command);
-
     // TODO, why validate here?
     if (command.filterClause() != null
         && command.filterClause().logicalExpression().getTotalComparisonExpressionCount()

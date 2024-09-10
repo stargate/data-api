@@ -91,58 +91,67 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
     // TODO: How do we know what the CmdT of the JsonLiteral<CmdT> from .value() is ?
     BiConsumer<CaptureGroups, DBFilterLogicalExpression> consumer =
         (captureGroups, dbFilterLogicalExpression) -> {
-          final CaptureGroup<String> dynamicTextGroup =
-              (CaptureGroup<String>) captureGroups.getGroupIfPresent(DYNAMIC_TEXT_GROUP);
-          if (dynamicTextGroup != null) {
-            dynamicTextGroup.consumeAllCaptures(
-                expression -> {
-                  dbFilterLogicalExpression.addInnerDBFilter(
-                      new TextTableFilter(
-                          expression.path(),
-                          NativeTypeTableFilter.Operator.from(
-                              (ValueComparisonOperator) expression.operator()),
-                          (String) expression.value()));
-                });
-          }
-          final CaptureGroup<BigDecimal> dynamicNumberGroup =
-              (CaptureGroup<BigDecimal>) captureGroups.getGroupIfPresent(DYNAMIC_NUMBER_GROUP);
-          if (dynamicNumberGroup != null) {
-            dynamicNumberGroup.consumeAllCaptures(
-                expression -> {
-                  dbFilterLogicalExpression.addInnerDBFilter(
-                      new NumberTableFilter(
-                          expression.path(),
-                          NativeTypeTableFilter.Operator.from(
-                              (ValueComparisonOperator) expression.operator()),
-                          (BigDecimal) expression.value()));
-                });
-          }
-          final CaptureGroup<Object> dynamicDocIDGroup =
-              (CaptureGroup<Object>) captureGroups.getGroupIfPresent(DYNAMIC_DOCID_GROUP);
-          if (dynamicDocIDGroup != null) {
-            dynamicDocIDGroup.consumeAllCaptures(
-                expression -> {
-                  Object rhsValue = ((DocumentId) expression.value()).value();
-                  if (rhsValue instanceof String) {
-                    dbFilterLogicalExpression.addInnerDBFilter(
-                        new TextTableFilter(
-                            expression.path(),
-                            NativeTypeTableFilter.Operator.from(
-                                (ValueComparisonOperator) expression.operator()),
-                            (String) rhsValue));
-                  } else if (rhsValue instanceof Number) {
-                    dbFilterLogicalExpression.addInnerDBFilter(
-                        new NumberTableFilter(
-                            expression.path(),
-                            NativeTypeTableFilter.Operator.from(
-                                (ValueComparisonOperator) expression.operator()),
-                            (Number) rhsValue));
-                  } else {
-                    throw new UnsupportedOperationException(
-                        "Unsupported DocumentId type: " + rhsValue.getClass().getName());
-                  }
-                });
-          }
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_TEXT_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<String> dynamicTextGroup = (CaptureGroup<String>) captureGroup;
+                    dynamicTextGroup.consumeAllCaptures(
+                        expression -> {
+                          dbFilterLogicalExpression.addInnerDBFilter(
+                              new TextTableFilter(
+                                  expression.path(),
+                                  NativeTypeTableFilter.Operator.from(
+                                      (ValueComparisonOperator) expression.operator()),
+                                  (String) expression.value()));
+                        });
+                  });
+
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_NUMBER_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<BigDecimal> dynamicNumberGroup =
+                        (CaptureGroup<BigDecimal>) captureGroup;
+                    dynamicNumberGroup.consumeAllCaptures(
+                        expression -> {
+                          dbFilterLogicalExpression.addInnerDBFilter(
+                              new NumberTableFilter(
+                                  expression.path(),
+                                  NativeTypeTableFilter.Operator.from(
+                                      (ValueComparisonOperator) expression.operator()),
+                                  (BigDecimal) expression.value()));
+                        });
+                  });
+
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_DOCID_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> dynamicDocIDGroup = (CaptureGroup<Object>) captureGroup;
+                    dynamicDocIDGroup.consumeAllCaptures(
+                        expression -> {
+                          Object rhsValue = ((DocumentId) expression.value()).value();
+                          if (rhsValue instanceof String) {
+                            dbFilterLogicalExpression.addInnerDBFilter(
+                                new TextTableFilter(
+                                    expression.path(),
+                                    NativeTypeTableFilter.Operator.from(
+                                        (ValueComparisonOperator) expression.operator()),
+                                    (String) rhsValue));
+                          } else if (rhsValue instanceof Number) {
+                            dbFilterLogicalExpression.addInnerDBFilter(
+                                new NumberTableFilter(
+                                    expression.path(),
+                                    NativeTypeTableFilter.Operator.from(
+                                        (ValueComparisonOperator) expression.operator()),
+                                    (Number) rhsValue));
+                          } else {
+                            throw new UnsupportedOperationException(
+                                "Unsupported DocumentId type: " + rhsValue.getClass().getName());
+                          }
+                        });
+                  });
         };
 
     currentCaptureGroups.recursiveConsume(currentDBFilterLogicalExpression, consumer);

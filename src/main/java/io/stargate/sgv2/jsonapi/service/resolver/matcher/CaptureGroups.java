@@ -2,10 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiConsumer;
 
 /**
@@ -53,13 +50,14 @@ public class CaptureGroups<T extends Command> {
 
   /**
    * Get the {@link CaptureGroup} that has the result of the {@link FilterMatcher.Capture} created
-   * with the supplied marker
+   * with the supplied marker. If there is no target marker in captureGroup map, return an empty
+   * optional
    *
    * @param marker
-   * @return CaptureGroup
+   * @return Optional<CaptureGroup>
    */
-  public CaptureGroup<?> getGroupIfPresent(Object marker) {
-    return captureGroupMap.get(marker);
+  public Optional<CaptureGroup<?>> getGroupIfPresent(Object marker) {
+    return Optional.ofNullable(captureGroupMap.get(marker));
   }
 
   /**
@@ -90,9 +88,29 @@ public class CaptureGroups<T extends Command> {
    * DBFilter. This recursive method will help to consume in a recursive way and populate the
    * DBFilterLogicalExpression
    *
+   * <p>The BiConsumer takes two parameters, captureGroups and dBFilterLogicalExpression. it defines
+   * how to consume the current CaptureGroups and current DBFilterLogicalExpression. It will be
+   * constructed in FilterResolver, the behavior is to get CaptureGroup from captureGroupMap,
+   * convert to corresponding dbFilter and add to dBFilterLogicalExpression
+   *
+   * <p>e.g. { "name":"Jack","$or":[{"age":35},{"city":"LA"}] } first call of recursiveConsume A:
+   * currentDbFilterLogicalExpression is an implicit and caller CaptureGroups has {"name":"Jack"}
+   * captured in the captureGroupMap, and "$or":[{"age":35},{"city":"LA"}] captured in
+   * captureGroupsList.
+   *
+   * <p>next call of recursiveConsume B: B will be called from A as populating
+   * innerDBFilterLogicalExpression. and {"age":35},{"city":"LA"} are captured in the
+   * captureGroupMap of innerCaptureGroups
+   *
+   * <p>note the order of dbFilters in the result DBFilterLogicalExpression only depends on how we
+   * consume captures in filterResolver. And since they are in the same logical relation context, so
+   * order does not matter regarding how DB query work.
+   *
+   * <p>
+   *
    * @param currentDbFilterLogicalExpression, the current DBFilterLogicalExpression to be populated
    * @param consumer, consumer defines how to consume the current CaptureGroups and current
-   *     DBFilterLogicalExpression
+   *     DBFilterLogicalExpression.
    */
   public void recursiveConsume(
       DBFilterLogicalExpression currentDbFilterLogicalExpression,
