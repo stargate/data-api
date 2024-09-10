@@ -12,20 +12,14 @@ import java.util.Objects;
  *
  * <p>NOTE: create these using the {@link
  * io.stargate.sgv2.jsonapi.service.operation.tables.WriteableTableRowBuilder} it knows how to
- * validate and convert the data. <b>INVARIANTS:</b> For this class to be valid, the following must
- * be true:
- * <li>
+ * validate and convert the data.
  *
- *     <ul>
- *       All the key and non primary key columns exist in the target table
- * </ul>
+ * <p><b>INVARIANTS:</b> For this class to be valid, the following must be true:
  *
  * <ul>
- *   All key columns have values.
- * </ul>
- *
- * <ul>
- *   All types have been converted to what he driver expects.
+ *   <li>All the key and non primary key columns exist in the target table
+ *   <li>All key columns have values.
+ *   <li>All types have been converted to what he driver expects.
  * </ul>
  */
 public class WriteableTableRow implements WritableDocRow, PrettyPrintable {
