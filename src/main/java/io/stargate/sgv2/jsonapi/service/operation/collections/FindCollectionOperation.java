@@ -307,7 +307,7 @@ public record FindCollectionOperation(
       return Uni.createFrom()
           .failure(
               ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
-                  "%s", commandContext().schemaObject().name.table()));
+                  "%s", commandContext().schemaObject().name().table()));
     }
     // get FindResponse
     return getDocuments(dataApiRequestInfo, queryExecutor, pageState(), null)
@@ -456,8 +456,8 @@ public record FindCollectionOperation(
                             ? documentColumns
                             : documentKeyColumns)
                     .from(
-                        commandContext.schemaObject().name.keyspace(),
-                        commandContext.schemaObject().name.table())
+                        commandContext.schemaObject().name().keyspace(),
+                        commandContext.schemaObject().name().table())
                     .where(expression)
                     .limit(limit)
                     .build();
@@ -483,8 +483,8 @@ public record FindCollectionOperation(
               DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME,
               commandContext().schemaObject().similarityFunction())
           .from(
-              commandContext.schemaObject().name.keyspace(),
-              commandContext.schemaObject().name.table())
+              commandContext.schemaObject().name().keyspace(),
+              commandContext.schemaObject().name().table())
           .where(expression)
           .limit(limit)
           .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
@@ -494,8 +494,8 @@ public record FindCollectionOperation(
           .select()
           .column(CollectionReadType.DOCUMENT == readType ? documentColumns : documentKeyColumns)
           .from(
-              commandContext.schemaObject().name.keyspace(),
-              commandContext.schemaObject().name.table())
+              commandContext.schemaObject().name().keyspace(),
+              commandContext.schemaObject().name().table())
           .where(expression)
           .limit(limit)
           .vsearch(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME, vector())
@@ -532,8 +532,8 @@ public record FindCollectionOperation(
                   .select()
                   .column(columnsToAdd)
                   .from(
-                      commandContext.schemaObject().name.keyspace(),
-                      commandContext.schemaObject().name.table())
+                      commandContext.schemaObject().name().keyspace(),
+                      commandContext.schemaObject().name().table())
                   .where(expression)
                   .limit(maxSortReadLimit())
                   .build();
