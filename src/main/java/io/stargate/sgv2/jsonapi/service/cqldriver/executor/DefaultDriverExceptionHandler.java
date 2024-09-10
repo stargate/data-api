@@ -45,6 +45,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
 
   @Override
   public RuntimeException handle(SchemaT schemaObject, DriverTimeoutException exception) {
+    // TODO(Hazel): Aaron said "DRIVER" is a bad code.
     return DatabaseException.Code.DRIVER_TIMEOUT.get(
         errVars(schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
   }
@@ -65,23 +66,33 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
                             || t instanceof NoNodeAvailableException
                             || t instanceof DriverTimeoutException)
                 .orElse(null);
-        // connect to oss cassandra throws AuthenticationException for invalid credentials
-        // connect to AstraDB throws IllegalArgumentException for invalid token/credentials
-        if (error instanceof AuthenticationException
-            || (error instanceof IllegalArgumentException
-                && (error.getMessage().contains("AUTHENTICATION ERROR")
-                    || error
-                        .getMessage()
-                        .contains("Provided username token and/or password are incorrect")))) {
-          // TODO(Hazel): AuthException and INVALID_TOKEN?
-          return AuthException.Code.INVALID_TOKEN.get(errVars(exception));
-          // Driver NoNodeAvailableException -> ErrorCode.NO_NODE_AVAILABLE
-        } else if (error instanceof NoNodeAvailableException) {
-          return handle(schemaObject, (NoNodeAvailableException) error);
-        } else if (error instanceof DriverTimeoutException) {
-          // [data-api#1205] Need to map DriverTimeoutException as well
-          return handle(schemaObject, (DriverTimeoutException) error);
+
+        if (error == null) {
+          return exception;
         }
+
+        return switch (error) {
+          case AuthenticationException e ->
+              // connect to OSS Cassandra throws AuthenticationException for invalid credentials
+              // TODO(Hazel): AuthException and INVALID_TOKEN?
+              AuthException.Code.INVALID_TOKEN.get(errVars(e));
+          case IllegalArgumentException e -> {
+            // AstraDB throws IllegalArgumentException for invalid token/credentials
+            if (e.getMessage().contains("AUTHENTICATION ERROR")
+                || e.getMessage()
+                    .contains("Provided username token and/or password are incorrect")) {
+              // TODO(Hazel): AuthException and INVALID_TOKEN?
+              yield AuthException.Code.INVALID_TOKEN.get(errVars(e));
+            } else {
+              yield exception;
+            }
+          }
+          case NoNodeAvailableException e -> handle(schemaObject, e);
+          case DriverTimeoutException e ->
+              // [data-api#1205] Need to map DriverTimeoutException as well
+              handle(schemaObject, e);
+          default -> exception;
+        };
       }
     }
     return exception;
@@ -89,6 +100,7 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
 
   @Override
   public RuntimeException handle(SchemaT schemaObject, NoNodeAvailableException exception) {
+    // TODO(Hazel): Aaron said NO_NODE_AVAILABLE is a bad code.
     return DatabaseException.Code.NO_NODE_AVAILABLE.get(
         errVars(schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
   }
