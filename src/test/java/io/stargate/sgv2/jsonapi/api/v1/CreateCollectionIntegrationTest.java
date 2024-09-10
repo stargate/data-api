@@ -13,7 +13,7 @@ import org.junit.jupiter.api.*;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
+class CreateCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   @Nested
   @Order(1)
   class CreateCollection {
@@ -87,7 +87,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -111,7 +111,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -131,7 +131,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -146,7 +146,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createNonVectorCollectionJson)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -157,7 +157,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createNonVectorCollectionJson)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -168,7 +168,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createVectorCollection)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
@@ -190,7 +190,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createVectorCollection)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -200,7 +200,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createVectorCollection)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -210,7 +210,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createNonVectorCollectionJson)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
@@ -232,7 +232,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createVectorCollection)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -242,7 +242,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createVectorCollectionWithOtherSizeSettings)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -260,7 +260,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createVectorCollectionWithOtherFunctionSettings)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -301,7 +301,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -312,7 +312,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -346,7 +346,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -357,7 +357,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -385,7 +385,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               }
                               """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -409,7 +409,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               }
                               """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -434,7 +434,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                               }
                               """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -470,7 +470,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                       }
                       """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -503,7 +503,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                 }
                 """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -538,7 +538,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                     }
                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -572,7 +572,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                     }
                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -601,7 +601,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -634,7 +634,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     }
                                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -667,7 +667,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     }
                                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -700,7 +700,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     }
                                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -749,7 +749,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -760,7 +760,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionRequest)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -799,7 +799,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                           }
                           """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -841,7 +841,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -901,7 +901,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionWithoutDimension)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -912,7 +912,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionWithDimension)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -925,7 +925,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionWithDimension)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -936,7 +936,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionWithoutDimension)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -964,7 +964,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1002,7 +1002,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1058,7 +1058,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionWithoutDimension)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -1069,7 +1069,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionWithDefaultDimension)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -1082,7 +1082,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionWithDefaultDimension)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -1093,7 +1093,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(createCollectionWithoutDimension)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -1125,7 +1125,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -1158,7 +1158,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1193,7 +1193,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1235,7 +1235,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                                 """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -1270,7 +1270,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1307,7 +1307,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     }
                                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1347,7 +1347,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                     }
                                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1384,7 +1384,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                     }
                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -1419,7 +1419,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                         }
                         """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -1451,7 +1451,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                                 }
                                 """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -1488,7 +1488,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1529,7 +1529,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1569,7 +1569,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1611,7 +1611,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                                     """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1651,7 +1651,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1694,7 +1694,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1736,7 +1736,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                             }
                             """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
@@ -1764,7 +1764,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
                 """
                 .formatted(collectionName))
         .when()
-        .post(KeyspaceResource.BASE_PATH, keyspace)
+        .post(KeyspaceResource.BASE_PATH, namespaceName)
         .then()
         .statusCode(200)
         .body("status.ok", is(1));

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
-class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
+class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
   @Nested
   class ClientErrors {
@@ -23,7 +23,7 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body("{}")
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(401)
           .body(
@@ -39,7 +39,7 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body("{wrong}")
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -61,7 +61,7 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
@@ -104,7 +104,7 @@ class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))

@@ -65,7 +65,7 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspace, simpleTableName)
+          .post(CollectionResource.BASE_PATH, namespaceName, simpleTableName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -91,7 +91,7 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspace, simpleTableName)
+          .post(CollectionResource.BASE_PATH, namespaceName, simpleTableName)
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))

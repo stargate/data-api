@@ -24,7 +24,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
+public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   private static final String collectionName = "no_index_collection";
 
   private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -57,7 +57,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -87,7 +87,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
                       }
                       """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200);
 
@@ -112,7 +112,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
               }
               """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body(
@@ -158,7 +158,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
                               """
                   .formatted(DOC))
           .when()
-          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200);
 
@@ -183,7 +183,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
                       }
                       """)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.document", jsonEquals(DOC))
@@ -220,7 +220,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
                     """
                   .formatted(arrayJson))
           .when()
-          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
@@ -251,7 +251,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
                             """
                   .formatted(arrayJson))
           .when()
-          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data", is(nullValue()))
@@ -291,7 +291,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
                                 """
                     .formatted(objectJson))
             .when()
-            .post(CollectionResource.BASE_PATH, keyspace, collectionName)
+            .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
             .then()
             .statusCode(200)
             .body("errors", is(nullValue()))
@@ -323,7 +323,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
                                 """
                     .formatted(objectJson))
             .when()
-            .post(CollectionResource.BASE_PATH, keyspace, collectionName)
+            .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
             .then()
             .statusCode(200)
             .body("data", is(nullValue()))
@@ -352,7 +352,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
                         """
                   .formatted(docId))
           .when()
-          .post(CollectionResource.BASE_PATH, keyspace, collectionName)
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
           .then()
           .statusCode(200)
           .body("status.insertedIds", hasSize(1))

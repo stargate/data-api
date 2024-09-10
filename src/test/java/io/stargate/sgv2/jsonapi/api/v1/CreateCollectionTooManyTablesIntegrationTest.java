@@ -21,7 +21,7 @@ import org.junit.jupiter.api.TestClassOrder;
     value = CreateCollectionTooManyTablesIntegrationTest.TooManyTablesTestResource.class,
     restrictToAnnotatedClass = true)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class CreateCollectionTooManyTablesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
+class CreateCollectionTooManyTablesIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   // Let's use relatively low limit to trigger test failure
   private static final int COLLECTIONS_TO_CREATE = 3;
 

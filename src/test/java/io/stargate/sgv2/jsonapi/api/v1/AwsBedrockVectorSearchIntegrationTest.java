@@ -24,7 +24,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class AwsBedrockVectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
+public class AwsBedrockVectorSearchIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   static final String BEDROCK_ACCESS_KEY_ID = "BEDROCK_ACCESS_KEY_ID";
   static final String BEDROCK_SECRET_ID = "BEDROCK_SECRET_ID";
 
@@ -70,7 +70,7 @@ public class AwsBedrockVectorSearchIntegrationTest extends AbstractKeyspaceInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -98,7 +98,7 @@ public class AwsBedrockVectorSearchIntegrationTest extends AbstractKeyspaceInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspace, "aws_bedrock_vectorize")
+          .post(CollectionResource.BASE_PATH, namespaceName, "aws_bedrock_vectorize")
           .then()
           .statusCode(200)
           .body("status.insertedIds[0]", is("1"))
@@ -120,7 +120,7 @@ public class AwsBedrockVectorSearchIntegrationTest extends AbstractKeyspaceInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspace, "aws_bedrock_vectorize")
+          .post(CollectionResource.BASE_PATH, namespaceName, "aws_bedrock_vectorize")
           .then()
           .statusCode(200)
           .body("errors", is(nullValue()))
@@ -148,7 +148,7 @@ public class AwsBedrockVectorSearchIntegrationTest extends AbstractKeyspaceInteg
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, keyspace, "aws_bedrock_vectorize")
+          .post(CollectionResource.BASE_PATH, namespaceName, "aws_bedrock_vectorize")
           .then()
           .statusCode(200)
           .body("data.document._id", is("1"))

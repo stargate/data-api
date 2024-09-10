@@ -17,7 +17,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
+class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
   @Nested
   @Order(1)
@@ -33,7 +33,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
             }
           }
           """
-              .formatted(keyspace);
+              .formatted(namespaceName);
 
       given()
           .headers(getHeaders())
@@ -62,7 +62,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.keyspaces", not(hasItem(keyspace)));
+          .body("status.keyspaces", not(hasItem(namespaceName)));
     }
 
     @Test
@@ -103,7 +103,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .contentType(ContentType.JSON)
           .body(createCollection)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -185,7 +185,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
             }
           }
           """
-              .formatted(keyspace);
+              .formatted(namespaceName);
 
       given()
           .headers(getHeaders())
@@ -218,7 +218,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.keyspaces", not(hasItem(keyspace)));
+          .body("status.keyspaces", not(hasItem(namespaceName)));
     }
 
     @Test
@@ -259,7 +259,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .contentType(ContentType.JSON)
           .body(createCollection)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -340,11 +340,11 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   class Metrics {
     @Test
     public void checkMetrics() {
-      DropKeyspaceIntegrationTest.super.checkMetrics("DropKeyspaceCommand");
+      DropNamespaceIntegrationTest.super.checkMetrics("DropKeyspaceCommand");
       // There should be no DropNamespaceCommand metrics, since we convert into DropKeyspaceCommand
       // metrics
-      DropKeyspaceIntegrationTest.super.checkShouldAbsentMetrics("DropNamespaceCommand");
-      DropKeyspaceIntegrationTest.super.checkDriverMetricsTenantId();
+      DropNamespaceIntegrationTest.super.checkShouldAbsentMetrics("DropNamespaceCommand");
+      DropNamespaceIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }

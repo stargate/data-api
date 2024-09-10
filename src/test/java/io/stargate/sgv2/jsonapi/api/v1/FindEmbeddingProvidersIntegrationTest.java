@@ -12,7 +12,7 @@ import org.junit.jupiter.api.*;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class FindEmbeddingProvidersIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
+public class FindEmbeddingProvidersIntegrationTest extends AbstractNamespaceIntegrationTestBase {
   @Nested
   @Order(1)
   class FindEmbeddingProviders {

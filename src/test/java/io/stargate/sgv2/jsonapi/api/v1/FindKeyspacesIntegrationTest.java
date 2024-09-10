@@ -16,7 +16,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class FindKeyspacesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
+class FindKeyspacesIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
   @Nested
   @Order(1)
@@ -41,7 +41,7 @@ class FindKeyspacesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("status.keyspaces", hasSize(greaterThanOrEqualTo(1)))
-          .body("status.keyspaces", hasItem(keyspace));
+          .body("status.keyspaces", hasItem(namespaceName));
     }
   }
 
@@ -68,7 +68,7 @@ class FindKeyspacesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("status.namespaces", hasSize(greaterThanOrEqualTo(1)))
-          .body("status.namespaces", hasItem(keyspace))
+          .body("status.namespaces", hasItem(namespaceName))
           .body(
               "deprecatedCommandWarning",
               equalTo(

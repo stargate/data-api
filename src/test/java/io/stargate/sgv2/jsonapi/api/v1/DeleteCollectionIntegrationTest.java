@@ -15,7 +15,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
+class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
   @Nested
   @Order(1)
@@ -36,7 +36,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
               """
                   .formatted(collection))
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -52,7 +52,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
               """
                   .formatted(collection))
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -73,7 +73,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
               """
                   .formatted(collection))
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -89,7 +89,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
               }
           """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))

@@ -20,7 +20,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
+class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
 
   private static final String DB_NAME = "stargate";
 
@@ -89,7 +89,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
             }
           }
           """
-              .formatted(keyspace);
+              .formatted(namespaceName);
 
       given()
           .headers(getHeaders())
@@ -199,7 +199,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
             }
           }
           """
-              .formatted(keyspace);
+              .formatted(namespaceName);
 
       given()
           .headers(getHeaders())
@@ -283,11 +283,11 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
   class Metrics {
     @Test
     public void checkMetrics() {
-      CreateKeyspaceIntegrationTest.super.checkMetrics("CreateKeyspaceCommand");
+      CreateNamespaceIntegrationTest.super.checkMetrics("CreateKeyspaceCommand");
       // There should be no CreateNamespaceCommand metrics, since we convert into
       // CreateKeyspaceCommand metrics
-      CreateKeyspaceIntegrationTest.super.checkShouldAbsentMetrics("CreateNamespaceCommand");
-      CreateKeyspaceIntegrationTest.super.checkDriverMetricsTenantId();
+      CreateNamespaceIntegrationTest.super.checkShouldAbsentMetrics("CreateNamespaceCommand");
+      CreateNamespaceIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }
