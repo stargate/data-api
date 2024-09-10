@@ -9,8 +9,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCollectionsCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.config.ApiTablesConfig;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
+import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
@@ -51,7 +53,7 @@ public class KeyspaceResource {
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
 
-  @Inject ApiTablesConfig apiTablesConfig;
+  @Inject FeaturesConfig apiFeatureConfig;
 
   @Inject
   public KeyspaceResource(MeteredCommandProcessor meteredCommandProcessor) {
@@ -106,13 +108,8 @@ public class KeyspaceResource {
           @Size(min = 1, max = 48)
           String keyspace) {
 
-    if (command instanceof TableOnlyCommand && !apiTablesConfig.enabled()) {
-      return Uni.createFrom()
-          .item(
-              new ThrowableCommandResultSupplier(
-                  ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException()))
-          .map(commandResult -> commandResult.toRestResponse());
-    }
+    final ApiFeatures apiFeatures =
+        ApiFeatures.fromConfigAndRequest(apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
 
     // create context
     // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
@@ -121,8 +118,18 @@ public class KeyspaceResource {
     CommandContext<KeyspaceSchemaObject> commandContext =
         new CommandContext<>(
             new KeyspaceSchemaObject(keyspace), null, command.getClass().getSimpleName(), null);
+        new CommandContext<>(new KeyspaceSchemaObject(namespace), null, "", null, apiFeatures);
 
-    //     call processor
+    // Need context first to check if feature is enabled
+    if (command instanceof TableOnlyCommand && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
+      return Uni.createFrom()
+          .item(
+              new ThrowableCommandResultSupplier(
+                  ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException()))
+          .map(commandResult -> commandResult.toRestResponse());
+    }
+
+    // call processor
     return meteredCommandProcessor
         .processCommand(dataApiRequestInfo, commandContext, command)
         // map to 2xx unless overridden by error
