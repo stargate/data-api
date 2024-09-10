@@ -40,6 +40,14 @@ public class AbstractTableIntegrationTestBase extends AbstractNamespaceIntegrati
         .body("status.ok", is(1));
   }
 
+  protected DataApiResponseValidator deleteTable(String tableName) {
+    // 09-Sep-2024, tatu: No separate "deleteTable" command, so use "deleteCollection":
+    return DataApiCommandSenders.assertNamespaceCommand(namespaceName)
+        .postCommand("deleteCollection", "{\"name\": \"%s\"}".formatted(tableName))
+        .hasNoErrors()
+        .body("status.ok", is(1));
+  }
+
   protected void insertOneInTable(String tableName, String documentJSON) {
     DataApiCommandSenders.assertTableCommand(namespaceName, tableName)
         .postInsertOne(documentJSON)
