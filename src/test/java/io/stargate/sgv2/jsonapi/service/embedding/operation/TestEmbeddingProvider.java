@@ -24,7 +24,8 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
               null),
           new TestEmbeddingProvider(),
           "testCommand",
-          null);
+          null,
+          TestConstants.DEFAULT_API_FEATURES_FOR_TESTS);
 
   @Override
   public Uni<Response> vectorize(

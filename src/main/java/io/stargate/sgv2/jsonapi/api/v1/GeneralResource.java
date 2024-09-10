@@ -7,6 +7,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
+import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
@@ -36,6 +38,8 @@ import org.jboss.resteasy.reactive.RestResponse;
 public class GeneralResource {
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
+
+  @Inject FeaturesConfig apiFeatureConfig;
 
   public static final String BASE_PATH = "/v1";
 
@@ -75,10 +79,16 @@ public class GeneralResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
+    final ApiFeatures apiFeatures =
+        ApiFeatures.fromConfigAndRequest(apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
 
     var commandContext =
         CommandContext.forSchemaObject(
-            new DatabaseSchemaObject(), null, command.getClass().getSimpleName(), null);
+            new DatabaseSchemaObject(),
+            null,
+            command.getClass().getSimpleName(),
+            null,
+            apiFeatures);
 
     return meteredCommandProcessor
         .processCommand(dataApiRequestInfo, commandContext, command)
