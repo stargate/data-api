@@ -103,7 +103,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .contentType(ContentType.JSON)
           .body(createCollection)
           .when()
-          .post(KeyspaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -259,7 +259,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .contentType(ContentType.JSON)
           .body(createCollection)
           .when()
-          .post(KeyspaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
