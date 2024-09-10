@@ -17,7 +17,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * CreateKeyspaceCommand} Support it for backward-compatibility
  */
 @Schema(
-    description = "Command that creates a namespace.(Deprecated, please switch to createKeyspace.)")
+    description = "Command that creates a namespace (deprecated, please switch to createKeyspace).")
 @JsonTypeName("createNamespace")
 public record CreateNamespaceCommand(
     @NotNull

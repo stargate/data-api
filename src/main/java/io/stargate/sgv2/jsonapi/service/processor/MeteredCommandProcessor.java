@@ -140,8 +140,7 @@ public class MeteredCommandProcessor {
       CommandContext<T> commandContext, Command command, CommandResult result) {
     CommandLog commandLog =
         new CommandLog(
-            DeprecatedCommandUtil.maybeResolveDeprecatedCommandName(
-                command.getClass().getSimpleName()),
+            DeprecatedCommandUtil.maybeResolveDeprecatedCommand(command),
             dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE),
             commandContext.schemaObject().name.keyspace(),
             commandContext.schemaObject().name.table(),
@@ -226,8 +225,7 @@ public class MeteredCommandProcessor {
     Tag commandTag =
         Tag.of(
             jsonApiMetricsConfig.command(),
-            DeprecatedCommandUtil.maybeResolveDeprecatedCommandName(
-                command.getClass().getSimpleName()));
+            DeprecatedCommandUtil.maybeResolveDeprecatedCommand(command));
     String tenant = dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE);
     Tag tenantTag = Tag.of(tenantConfig.tenantTag(), tenant);
     Tag errorTag = errorFalse;

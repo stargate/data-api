@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.util;
 
-import io.quarkus.logging.Log;
+import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -13,6 +13,27 @@ public class DeprecatedCommandUtil {
    * this convert.
    *
    * @param command command that may be deprecated
+   * @return the command class simpleName
+   */
+  public static String maybeResolveDeprecatedCommand(Command command) {
+    if (command instanceof FindNamespacesCommand) {
+      return FindKeyspacesCommand.class.getSimpleName();
+    }
+    if (command instanceof DropNamespaceCommand) {
+      return DropKeyspaceCommand.class.getSimpleName();
+    }
+    if (command instanceof CreateNamespaceCommand) {
+      return CreateKeyspaceCommand.class.getSimpleName();
+    }
+    return command.getClass().getSimpleName();
+  }
+
+  /**
+   * This is a helper function to resolve deprecated command to a corresponding supported command
+   * name We do not want to track deprecated command in metrics and logs, that is why we need to do
+   * this convert.
+   *
+   * @param command command string that may be deprecated
    * @return the command class simpleName
    */
   public static String maybeResolveDeprecatedCommandName(String command) {
@@ -42,11 +63,8 @@ public class DeprecatedCommandUtil {
    */
   public static <U extends SchemaObject> String getDeprecatedCommandMsg(
       CommandContext<U> commandContext) {
-    Log.error("sdad " + commandContext.commandName());
-
     String supportedCommandName = maybeResolveDeprecatedCommandName(commandContext.commandName());
     String warningMessage = "Warning: deprecated command \"%s\", please switch to \"%s\".";
-    Log.error("sdad " + supportedCommandName);
     if (!commandContext.commandName().equals(supportedCommandName)) {
       // using a deprecated command
       String deprecatedCommandJson =

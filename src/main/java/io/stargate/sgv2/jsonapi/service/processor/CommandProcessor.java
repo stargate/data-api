@@ -101,8 +101,7 @@ public class CommandProcessor {
               logger.warn(
                   String.format(
                       "Command '%s' failed with %s: %s",
-                      DeprecatedCommandUtil.maybeResolveDeprecatedCommandName(
-                          command.getClass().getSimpleName()),
+                      DeprecatedCommandUtil.maybeResolveDeprecatedCommand(command),
                       t.getClass().getName(),
                       message),
                   t);

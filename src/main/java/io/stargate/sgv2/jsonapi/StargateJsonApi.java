@@ -21,7 +21,7 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
     info = @Info(title = "", version = ""),
     tags = {
       @Tag(name = "General", description = "Executes general commands."),
-      @Tag(name = "Keyspaces", description = "Executes keyspaces commands."),
+      @Tag(name = "Keyspaces", description = "Executes keyspace commands."),
       @Tag(
           name = "Documents",
           description = "Executes document commands against a single collection."),

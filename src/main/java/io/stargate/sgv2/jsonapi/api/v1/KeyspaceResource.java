@@ -117,8 +117,11 @@ public class KeyspaceResource {
     // HACK TODO: The above did not set a command name on the command context, how did that work ?
     CommandContext<KeyspaceSchemaObject> commandContext =
         new CommandContext<>(
-            new KeyspaceSchemaObject(keyspace), null, command.getClass().getSimpleName(), null);
-        new CommandContext<>(new KeyspaceSchemaObject(namespace), null, "", null, apiFeatures);
+            new KeyspaceSchemaObject(keyspace),
+            null,
+            command.getClass().getSimpleName(),
+            null,
+            apiFeatures);
 
     // Need context first to check if feature is enabled
     if (command instanceof TableOnlyCommand && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {

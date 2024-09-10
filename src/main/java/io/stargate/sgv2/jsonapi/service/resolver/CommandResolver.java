@@ -151,15 +151,14 @@ public interface CommandResolver<C extends Command> {
       Command command,
       LogicalExpression logicalExpression,
       IndexUsage baseIndexUsage) {
-    // TODO: this functions should not be on the CommandResolver interface, it has nothing to do
+    // TODO: this function should not be on the CommandResolver interface, it has nothing to do
     // with
     // that
     // it's only here because of the use of records and interfaces, move to a base class
     Tag commandTag =
         Tag.of(
             jsonApiMetricsConfig.command(),
-            DeprecatedCommandUtil.maybeResolveDeprecatedCommandName(
-                command.getClass().getSimpleName()));
+            DeprecatedCommandUtil.maybeResolveDeprecatedCommand(command));
     Tag tenantTag = Tag.of(TENANT_TAG, dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     Tags tags = Tags.of(commandTag, tenantTag);
 
