@@ -86,7 +86,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 null),
             null,
             "testCommand",
-            jsonProcessingMetricsReporter);
+            jsonProcessingMetricsReporter,
+            DEFAULT_API_FEATURES_FOR_TESTS);
   }
 
   @Nested

@@ -10,6 +10,7 @@ import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.api.v1.AbstractNamespaceIntegrationTestBase;
 import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
+import io.stargate.sgv2.jsonapi.api.v1.util.DataApiResponseValidator;
 import java.io.IOException;
 import java.util.Map;
 
@@ -17,9 +18,9 @@ import java.util.Map;
 public class AbstractTableIntegrationTestBase extends AbstractNamespaceIntegrationTestBase {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  protected void createTableWithColumns(
+  protected DataApiResponseValidator createTableWithColumns(
       String tableName, Map<String, Object> columns, Object primaryKeyDef) {
-    createTable(
+    return createTable(
             """
             {
                 "name": "%s",
@@ -32,9 +33,17 @@ public class AbstractTableIntegrationTestBase extends AbstractNamespaceIntegrati
             .formatted(tableName, asJSON(columns), asJSON(primaryKeyDef)));
   }
 
-  protected void createTable(String tableDefAsJSON) {
-    DataApiCommandSenders.assertNamespaceCommand(namespaceName)
+  protected DataApiResponseValidator createTable(String tableDefAsJSON) {
+    return DataApiCommandSenders.assertNamespaceCommand(namespaceName)
         .postCreateTable(tableDefAsJSON)
+        .hasNoErrors()
+        .body("status.ok", is(1));
+  }
+
+  protected DataApiResponseValidator deleteTable(String tableName) {
+    // 09-Sep-2024, tatu: No separate "deleteTable" command, so use "deleteCollection":
+    return DataApiCommandSenders.assertNamespaceCommand(namespaceName)
+        .postCommand("deleteCollection", "{\"name\": \"%s\"}".formatted(tableName))
         .hasNoErrors()
         .body("status.ok", is(1));
   }
