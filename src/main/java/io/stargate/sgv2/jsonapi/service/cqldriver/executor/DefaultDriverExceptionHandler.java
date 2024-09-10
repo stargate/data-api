@@ -95,11 +95,8 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
 
   @Override
   public RuntimeException handle(SchemaT schemaObject, QueryValidationException exception) {
-
     String message = exception.getMessage();
-    if (exception instanceof UnauthorizedException) {
-      return handle(schemaObject, (UnauthorizedException) exception);
-    } else if (message.contains(
+    if (message.contains(
             "If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING")
         || message.contains("ANN ordering by vector requires the column to be indexed")) {
       // TODO(Hazel): Original code is NO_INDEX_ERROR, I think we need to change but am not sure
@@ -111,8 +108,8 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
       // TODO(Hazel): the code VECTOR_SIZE_MISMATCH was added recently, should we keep using it?
       return exception;
     }
-    // TODO(Hazel): the scope and family for INVALID_QUERY?
-    return exception;
+    // Reuse the default method in the interface
+    return DriverExceptionHandler.super.handle(schemaObject, exception);
   }
 
   @Override
