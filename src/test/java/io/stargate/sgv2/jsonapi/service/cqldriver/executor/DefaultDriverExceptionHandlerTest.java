@@ -38,7 +38,7 @@ public class DefaultDriverExceptionHandlerTest {
 
     assertThat(handledEx)
         .as(
-            "Handled error should be a different instance, all driver errors mapp to a different exception")
+            "Handled error should be a different instance, all driver errors map to a different exception")
         .isNotSameAs(originalEx);
 
     // for now, assumed they always turn into a DatabaseException
