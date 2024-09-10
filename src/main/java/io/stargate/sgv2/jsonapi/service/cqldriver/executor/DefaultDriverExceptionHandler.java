@@ -121,29 +121,48 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   }
 
   @Override
-  public RuntimeException handle(SchemaT schemaObject, QueryExecutionException exception) {
-    if (exception instanceof QueryConsistencyException e) {
-      if (e instanceof WriteTimeoutException || e instanceof ReadTimeoutException) {
-        return DatabaseException.Code.DRIVER_TIMEOUT.get(
-            errVars(
-                schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
-      } else if (e instanceof ReadFailureException) {
-        return DatabaseException.Code.READ_FAILURE.get(
-            errVars(
-                schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
-      } else {
-        // Leave this as 500 since we do not recognize the exception: should add new cases
-        // when we encounter new exceptions
-        return DatabaseException.Code.QUERY_CONSISTENCY_FAILURE.get(
-            errVars(
-                schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
-      }
-    } else {
-      // Leave this as 500 since we do not recognize the exception: should add new cases
-      // when we encounter new exceptions
-      return DatabaseException.Code.QUERY_EXECUTION_FAILURE.get(
-          errVars(
-              schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
-    }
+  public RuntimeException handle(SchemaT schemaObject, ReadFailureException exception) {
+    return DatabaseException.Code.READ_FAILURE.get(
+        errVars(
+            schemaObject,
+            m -> {
+              m.put("blockFor", String.valueOf(exception.getBlockFor()));
+              m.put("received", String.valueOf(exception.getReceived()));
+              m.put("numFailures", String.valueOf(exception.getNumFailures()));
+            }));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, ReadTimeoutException exception) {
+    return DatabaseException.Code.READ_TIMEOUT.get(
+        errVars(
+            schemaObject,
+            m -> {
+              m.put("blockFor", String.valueOf(exception.getBlockFor()));
+              m.put("received", String.valueOf(exception.getReceived()));
+            }));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, WriteFailureException exception) {
+    return DatabaseException.Code.WRITE_FAILURE.get(
+        errVars(
+            schemaObject,
+            m -> {
+              m.put("blockFor", String.valueOf(exception.getBlockFor()));
+              m.put("received", String.valueOf(exception.getReceived()));
+              m.put("numFailures", String.valueOf(exception.getNumFailures()));
+            }));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, WriteTimeoutException exception) {
+    return DatabaseException.Code.WRITE_TIMEOUT.get(
+        errVars(
+            schemaObject,
+            m -> {
+              m.put("blockFor", String.valueOf(exception.getBlockFor()));
+              m.put("received", String.valueOf(exception.getReceived()));
+            }));
   }
 }

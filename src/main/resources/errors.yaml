@@ -187,43 +187,56 @@ server-errors:
 
       ${SNIPPET.RETRY}
   - scope: DATABASE
-    code: QUERY_CONSISTENCY_FAILURE
-    http-status-override: 500
-    title: Database failed to reach the required consistency level during the execution of a query
-    body: |-
-      Database failed to reach the required consistency level during the execution of a query
-
-      Writing to the ${schemaType} ${keyspace}.${table} failed to complete successfully. 
-
-      The detailed response from the database was: ${errorMessage}    
-
-      ${SNIPPET.RETRY}
-  - scope: DATABASE
-    code: QUERY_EXECUTION_FAILURE
-    http-status-override: 500
-    title: Database failed to execute the query
-    body: |-
-      Database failed to execute the query
-
-      Writing to the ${schemaType} ${keyspace}.${table} failed to complete successfully. 
-
-      The detailed response from the database was: ${errorMessage}    
-
-      ${SNIPPET.RETRY}
-  - scope: DATABASE
     code: READ_FAILURE
     http-status-override: 502
     title: Database read failed
     body: |-
-      Database read failed.
+      The Data API failed to read from the database.
 
-      Writing to the ${schemaType} ${keyspace}.${table} failed to complete successfully. 
+      Reading from the ${schemaType} ${keyspace}.${table} failed to complete successfully. 
 
-      The detailed response from the database was: ${errorMessage}    
+      The request was was waiting for ${blockFor} replicas to acknowledge the read, but only ${received} replicas responded, ${numFailures} failed.
+
+      ${SNIPPET.RETRY}
+  - scope: DATABASE
+    code: READ_TIMEOUT
+    http-status-override: 504
+    title: Database read timed out
+    body: |-
+      The Data API timed out while reading from the database.
+
+      Reading from the ${schemaType} ${keyspace}.${table} failed to complete successfully. 
+      #TODO(Hazel): ReadTimeoutException has multiple ways to format the error message. What message should we use?
+      The request was was waiting for ${blockFor} replicas to acknowledge the read, but only ${received} replicas responded within the timeout period.
+
+      ${SNIPPET.RETRY}
+  - scope: DATABASE
+    code: WRITE_FAILURE
+    http-status-override: 502
+    title: Database write failed
+    body: |-
+      The Data API failed to write from the database.
+
+      Writing from the ${schemaType} ${keyspace}.${table} failed to complete successfully. 
+
+      The request was was waiting for ${blockFor} replicas to acknowledge the write, but only ${received} replicas responded, ${numFailures} failed.
+
+      ${SNIPPET.RETRY}
+  - scope: DATABASE
+    code: WRITE_TIMEOUT
+    http-status-override: 504
+    title: Database write timed out
+    body: |-
+      The Data API timed out while writing from the database.
+
+      Writing from the ${schemaType} ${keyspace}.${table} failed to complete successfully.
+
+      The request was was waiting for ${blockFor} replicas to acknowledge the write, but only ${received} replicas responded within the timeout period.
 
       ${SNIPPET.RETRY}
   - scope: DATABASE
     code: TABLE_WRITE_TIMEOUT
+    http-status-override: 504
     title: Timeout writing to table
     body: |-
       The Data API timed out while writing to the table.
