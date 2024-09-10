@@ -76,5 +76,29 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       createTable(tableDef);
       deleteTable("primaryKeyAsJsonObjectTable");
     }
+
+    // [data-api#1396]: problem with quoting of "_id" as primary key
+    @Test
+    public void primaryKeyWithQuotable() {
+      String tableDef =
+          """
+          {
+              "name": "bots",
+              "definition": {
+                "primaryKey": "_id",
+                "columns": {
+                  "_id": {
+                    "type": "text"
+                  },
+                  "name": {
+                    "type": "text"
+                  }
+                }
+              }
+          }
+          """;
+      createTable(tableDef);
+      deleteTable("bots");
+    }
   }
 }
