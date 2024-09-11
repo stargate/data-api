@@ -23,6 +23,7 @@ public class ComparisonExpression implements Invertible {
 
   @Valid @NotEmpty private List<FilterOperation<?>> filterOperations;
 
+  // TIDY Why are there DB filters in the API layer, these should only be used by operations.
   private List<DBFilterBase> dbFilters;
 
   public List<DBFilterBase> getDbFilters() {

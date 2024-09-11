@@ -58,6 +58,7 @@ public class FilterMatcher<T extends Command & Filterable> {
     return matchStrategyCounter.applyStrategy(strategy, filter);
   }
 
+  // TIDY: Why is this public ?
   public void captureRecursive(
       LogicalExpression expression,
       List<Capture> unmatchedCaptures,
@@ -74,6 +75,7 @@ public class FilterMatcher<T extends Command & Filterable> {
         Capture capture = captureIter.next();
         List<FilterOperation<?>> matched = capture.match(comparisonExpression);
         if (!matched.isEmpty()) {
+          // TIDY - this must change, no DB Filters that come from the Operator level into the API
           comparisonExpression.setDBFilters(
               resolveFunction.apply(
                   new CaptureExpression(capture.marker, matched, comparisonExpression.getPath())));
@@ -149,6 +151,26 @@ public class FilterMatcher<T extends Command & Filterable> {
     }
   }
 
+  // TIDY - refactor this class, unclear why the original needed to change
+  // it is based on some original code, but is duplicating counting
+  // that was done by looking at lists of captures and expressions
+  //
+  // Or if it should stay, implement as a strategy that has sublcasses the implement the bahviour
+  // original below
+  //      switch (strategy) {
+  //    case STRICT:
+  //      if (unmatchedCaptures.isEmpty() && unmatchedExpressions.isEmpty()) {
+  //        // everything group and expression matched
+  //        return Optional.of(captures);
+  //      }
+  //      break;
+  //    case GREEDY:
+  //      if (unmatchedExpressions.isEmpty()) {
+  //        // everything expression matched, some captures may not match
+  //        return Optional.of(captures);
+  //      }
+  //      break;
+  //  }
   public static final class MatchStrategyCounter {
 
     private int unmatchedCaptureCount;
