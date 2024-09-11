@@ -61,7 +61,7 @@ public interface CommandResolver<C extends Command> {
     Objects.requireNonNull(commandContext, "commandContext must not be null");
     Objects.requireNonNull(command, "command must not be null");
 
-    return switch (commandContext.schemaObject().type) {
+    return switch (commandContext.schemaObject().type()) {
       case COLLECTION -> resolveCollectionCommand(commandContext.asCollectionContext(), command);
       case TABLE -> resolveTableCommand(commandContext.asTableContext(), command);
       case KEYSPACE -> resolveKeyspaceCommand(commandContext.asKeyspaceContext(), command);
@@ -81,7 +81,7 @@ public interface CommandResolver<C extends Command> {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Collections, target was %s",
-        ctx.commandName(), ctx.schemaObject().name);
+        command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
   ;
 
@@ -96,7 +96,7 @@ public interface CommandResolver<C extends Command> {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Tables, target was %s",
-        ctx.commandName(), ctx.schemaObject().name);
+        command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
 
   /**
@@ -110,7 +110,7 @@ public interface CommandResolver<C extends Command> {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Keyspaces, target was %s",
-        ctx.commandName(), ctx.schemaObject().name);
+        command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
 
   /**
@@ -124,7 +124,7 @@ public interface CommandResolver<C extends Command> {
     // throw error as a fallback to make sure method is implemented, commands are tested well
     throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Databases, target was %s",
-        ctx.commandName(), ctx.schemaObject().name);
+        command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
 
   static final String UNKNOWN_VALUE = "unknown";
@@ -155,10 +155,7 @@ public interface CommandResolver<C extends Command> {
     // with
     // that
     // it's only here because of the use of records and interfaces, move to a base class
-    Tag commandTag =
-        Tag.of(
-            jsonApiMetricsConfig.command(),
-            DeprecatedCommandUtil.maybeResolveDeprecatedCommand(command));
+    Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
     Tag tenantTag = Tag.of(TENANT_TAG, dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     Tags tags = Tags.of(commandTag, tenantTag);
 
