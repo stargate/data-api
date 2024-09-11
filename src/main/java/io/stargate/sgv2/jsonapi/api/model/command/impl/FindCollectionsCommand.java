@@ -15,4 +15,10 @@ public record FindCollectionsCommand(Options options) implements CollectionOnlyC
               type = SchemaType.BOOLEAN,
               implementation = Boolean.class)
           boolean explain) {}
+
+  /** {@inheritDoc} */
+  @Override
+  public CommandName commandName() {
+    return CommandName.FIND_COLLECTIONS;
+  }
 }

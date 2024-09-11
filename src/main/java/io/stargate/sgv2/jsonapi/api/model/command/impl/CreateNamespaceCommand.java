@@ -58,4 +58,10 @@ public record CreateNamespaceCommand(
       return strategyOptions;
     }
   }
+
+  /** {@inheritDoc} */
+  @Override
+  public CommandName commandName() {
+    return CommandName.CREATE_NAMESPACE;
+  }
 }

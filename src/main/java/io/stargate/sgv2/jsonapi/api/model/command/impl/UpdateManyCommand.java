@@ -39,4 +39,10 @@ public record UpdateManyCommand(
           @JsonProperty("pageState")
           @JsonAlias("pagingState") // old name, 1.0.0-BETA-3 and prior
           String pageState) {}
+
+  /** {@inheritDoc} */
+  @Override
+  public CommandName commandName() {
+    return CommandName.UPDATE_MANY;
+  }
 }
