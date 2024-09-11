@@ -15,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import io.stargate.sgv2.jsonapi.util.DeprecatedCommandUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -101,9 +102,7 @@ public class CommandProcessor {
               logger.warn(
                   String.format(
                       "Command '%s' failed with %s: %s",
-                      DeprecatedCommandUtil.maybeResolveDeprecatedCommand(command),
-                      t.getClass().getName(),
-                      message),
+                      command.getClass().getSimpleName(), t.getClass().getName(), message),
                   t);
               return new ThrowableCommandResultSupplier(t);
             })
@@ -113,10 +112,16 @@ public class CommandProcessor {
         .onItem()
         .ifNotNull()
         .transform(Supplier::get)
-        // add possible warning for using deprecated command
+        // add possible warning for using a deprecated command
         .map(
-            commandResult ->
-                new CommandResult(
-                    commandResult, DeprecatedCommandUtil.getDeprecatedCommandMsg(commandContext)));
+            commandResult -> {
+              String possibleDeprecatedCommandUsageWarning =
+                  DeprecatedCommandUtil.getDeprecatedCommandMsg(commandContext);
+              if (possibleDeprecatedCommandUsageWarning != null) {
+                return commandResult.addWarnings(List.of(possibleDeprecatedCommandUsageWarning));
+              } else {
+                return commandResult;
+              }
+            });
   }
 }

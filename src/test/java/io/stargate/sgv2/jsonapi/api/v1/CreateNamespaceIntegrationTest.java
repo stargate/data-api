@@ -186,7 +186,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body(
               "deprecatedCommandWarning",
               equalTo(
-                  "Warning: deprecated command \"CreateNamespace\", please switch to \"CreateKeyspace\"."));
+                  "deprecated command \"CreateNamespace\", please switch to \"CreateKeyspace\"."));
     }
 
     @Test
@@ -213,7 +213,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body(
               "deprecatedCommandWarning",
               equalTo(
-                  "Warning: deprecated command \"CreateNamespace\", please switch to \"CreateKeyspace\"."));
+                  "deprecated command \"CreateNamespace\", please switch to \"CreateKeyspace\"."));
     }
 
     @Test
@@ -246,7 +246,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body(
               "deprecatedCommandWarning",
               equalTo(
-                  "Warning: deprecated command \"CreateNamespace\", please switch to \"CreateKeyspace\"."));
+                  "deprecated command \"CreateNamespace\", please switch to \"CreateKeyspace\"."));
     }
 
     @Test
@@ -284,9 +284,8 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
     @Test
     public void checkMetrics() {
       CreateNamespaceIntegrationTest.super.checkMetrics("CreateKeyspaceCommand");
-      // There should be no CreateNamespaceCommand metrics, since we convert into
-      // CreateKeyspaceCommand metrics
-      CreateNamespaceIntegrationTest.super.checkShouldAbsentMetrics("CreateNamespaceCommand");
+      // We decided to keep createNamespace metrics and logs, even it is a deprecated command
+      CreateNamespaceIntegrationTest.super.checkMetrics("CreateNamespaceCommand");
       CreateNamespaceIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }

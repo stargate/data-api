@@ -198,8 +198,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .body("status.ok", is(1))
           .body(
               "deprecatedCommandWarning",
-              equalTo(
-                  "Warning: deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
+              equalTo("deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
 
       // ensure it's dropped
       json =
@@ -285,8 +284,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .body("status.ok", is(1))
           .body(
               "deprecatedCommandWarning",
-              equalTo(
-                  "Warning: deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
+              equalTo("deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
 
       // ensure it's dropped
       json =
@@ -330,8 +328,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .body("status.ok", is(1))
           .body(
               "deprecatedCommandWarning",
-              equalTo(
-                  "Warning: deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
+              equalTo("deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
     }
   }
 
@@ -341,9 +338,8 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
     @Test
     public void checkMetrics() {
       DropNamespaceIntegrationTest.super.checkMetrics("DropKeyspaceCommand");
-      // There should be no DropNamespaceCommand metrics, since we convert into DropKeyspaceCommand
-      // metrics
-      DropNamespaceIntegrationTest.super.checkShouldAbsentMetrics("DropNamespaceCommand");
+      // We decided to keep dropNamespace metrics and logs, even it is a deprecated command
+      DropNamespaceIntegrationTest.super.checkMetrics("DropNamespaceCommand");
       DropNamespaceIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }

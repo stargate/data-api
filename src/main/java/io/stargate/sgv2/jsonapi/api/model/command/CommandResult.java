@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.core.Response;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,9 +48,7 @@ public record CommandResult(
                   nullable = true)
             })
         Map<CommandStatus, Object> status,
-    @JsonInclude(JsonInclude.Include.NON_EMPTY) @Schema(nullable = true) List<Error> errors,
-    @Schema(description = "Deprecated command warning message.", nullable = true)
-        String deprecatedCommandWarning) {
+    @JsonInclude(JsonInclude.Include.NON_EMPTY) @Schema(nullable = true) List<Error> errors) {
 
   /**
    * Constructor for only specifying the {@link MultiResponseData}.
@@ -57,7 +56,7 @@ public record CommandResult(
    * @param responseData {@link MultiResponseData}
    */
   public CommandResult(ResponseData responseData) {
-    this(responseData, null, null, null);
+    this(responseData, null, null);
   }
 
   /**
@@ -67,19 +66,7 @@ public record CommandResult(
    * @param status Map of status information.
    */
   public CommandResult(ResponseData responseData, Map<CommandStatus, Object> status) {
-    this(responseData, status, null, null);
-  }
-
-  /**
-   * Constructor for specifying the {@link MultiResponseData}, statuses, errors
-   *
-   * @param responseData {@link MultiResponseData}
-   * @param status Map of status information.
-   * @param errors List of command errors
-   */
-  public CommandResult(
-      ResponseData responseData, Map<CommandStatus, Object> status, List<Error> errors) {
-    this(responseData, status, errors, null);
+    this(responseData, status, null);
   }
 
   /**
@@ -88,7 +75,7 @@ public record CommandResult(
    * @param status Map of status information.
    */
   public CommandResult(Map<CommandStatus, Object> status) {
-    this(null, status, null, null);
+    this(null, status, null);
   }
 
   /**
@@ -97,22 +84,22 @@ public record CommandResult(
    * @param errors List of errors.
    */
   public CommandResult(List<Error> errors) {
-    this(null, null, errors, null);
+    this(null, null, errors);
   }
 
   /**
-   * Constructor for a new commandResult Possibly adding a deprecatedCommandWarningMsg to the new
-   * commandResult
+   * construct a new CommandResult with warnings added in status map
    *
-   * @param commandResult to be be referenced and construct new commandResult
-   * @param deprecatedCommandWarningMsg msg when there is a using of deprecated command
+   * @param warnings list of warning messages
+   * @return CommandResult
    */
-  public CommandResult(CommandResult commandResult, String deprecatedCommandWarningMsg) {
-    this(
-        commandResult.data,
-        commandResult.status,
-        commandResult.errors,
-        deprecatedCommandWarningMsg);
+  public CommandResult addWarnings(List<String> warnings) {
+    Map<CommandStatus, Object> newStatus = new HashMap<>();
+    if (status != null) {
+      newStatus.putAll(status);
+    }
+    newStatus.put(CommandStatus.WARNINGS, warnings);
+    return new CommandResult(this.data, newStatus, errors);
   }
 
   public interface ResponseData {

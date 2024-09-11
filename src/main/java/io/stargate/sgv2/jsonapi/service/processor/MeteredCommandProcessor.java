@@ -22,7 +22,6 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.util.DeprecatedCommandUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
@@ -140,7 +139,7 @@ public class MeteredCommandProcessor {
       CommandContext<T> commandContext, Command command, CommandResult result) {
     CommandLog commandLog =
         new CommandLog(
-            DeprecatedCommandUtil.maybeResolveDeprecatedCommand(command),
+            command.getClass().getSimpleName(),
             dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE),
             commandContext.schemaObject().name().keyspace(),
             commandContext.schemaObject().name().table(),
@@ -222,10 +221,7 @@ public class MeteredCommandProcessor {
    */
   private <T extends SchemaObject> Tags getCustomTags(
       CommandContext<T> commandContext, Command command, CommandResult result) {
-    Tag commandTag =
-        Tag.of(
-            jsonApiMetricsConfig.command(),
-            DeprecatedCommandUtil.maybeResolveDeprecatedCommand(command));
+    Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
     String tenant = dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE);
     Tag tenantTag = Tag.of(tenantConfig.tenantTag(), tenant);
     Tag errorTag = errorFalse;

@@ -72,7 +72,7 @@ class FindKeyspacesIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .body(
               "deprecatedCommandWarning",
               equalTo(
-                  "Warning: deprecated command \"FindNamespaces\", please switch to \"FindKeyspaces\"."));
+                  "deprecated command \"FindNamespaces\", please switch to \"FindKeyspaces\"."));
     }
   }
 
@@ -82,9 +82,8 @@ class FindKeyspacesIntegrationTest extends AbstractNamespaceIntegrationTestBase 
     @Test
     public void checkMetrics() {
       FindKeyspacesIntegrationTest.super.checkMetrics("FindKeyspacesCommand");
-      // There should be no FindNamespacesCommand metrics, since we convert into
-      // FindKeyspacesCommand metrics
-      FindKeyspacesIntegrationTest.super.checkShouldAbsentMetrics("FindNamespacesCommand");
+      // We decided to keep findNamespaces metrics and logs, even it is a deprecated command
+      FindKeyspacesIntegrationTest.super.checkMetrics("FindNamespacesCommand");
       FindKeyspacesIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }

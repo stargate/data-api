@@ -54,9 +54,9 @@ public class DeprecatedCommandUtil {
    * Name, and generate warning message.
    *
    * <p>We don't want command as suffix, as it is not the actually command json that user needs e.g.
-   * "deprecatedCommandWarning":"Warning: deprecated command \"FindNamespacesCommand\", please
-   * switch to \"FindKeyspacesCommand\"." "deprecatedCommandWarning":"Warning: deprecated command
-   * \"FindNamespaces\", please switch to \"FindKeyspaces\"."
+   * "deprecatedCommandWarning":"deprecated command \"FindNamespacesCommand\", please switch to
+   * \"FindKeyspacesCommand\"." "deprecatedCommandWarning":"deprecated command \"FindNamespaces\",
+   * please switch to \"FindKeyspaces\"."
    *
    * @param commandContext commandContext that has original command name
    * @return a message states using of deprecated command
@@ -64,7 +64,7 @@ public class DeprecatedCommandUtil {
   public static <U extends SchemaObject> String getDeprecatedCommandMsg(
       CommandContext<U> commandContext) {
     String supportedCommandName = maybeResolveDeprecatedCommandName(commandContext.commandName());
-    String warningMessage = "Warning: deprecated command \"%s\", please switch to \"%s\".";
+    String warningMessage = "deprecated command \"%s\", please switch to \"%s\".";
     if (!commandContext.commandName().equals(supportedCommandName)) {
       // using a deprecated command
       String deprecatedCommandJson =

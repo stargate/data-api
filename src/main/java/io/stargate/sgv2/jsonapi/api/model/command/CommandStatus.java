@@ -78,5 +78,9 @@ public enum CommandStatus {
    * is 'true' and no document available in DB for matching condition
    */
   @JsonProperty("upsertedId")
-  UPSERTED_ID
+  UPSERTED_ID,
+
+  /** warning value used for commandResult status */
+  @JsonProperty("warnings")
+  WARNINGS,
 }
