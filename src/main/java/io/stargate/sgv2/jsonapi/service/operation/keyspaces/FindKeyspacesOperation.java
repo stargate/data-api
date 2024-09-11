@@ -2,10 +2,8 @@ package io.stargate.sgv2.jsonapi.service.operation.keyspaces;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.FindNamespacesCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -23,7 +21,8 @@ import java.util.function.Supplier;
 public class FindKeyspacesOperation implements Operation {
 
   /**
-   * useKeyspaceNaming will be false, if this operation is created by deprecated FindNamespacesCommand
+   * useKeyspaceNaming will be false, if this operation is created by deprecated
+   * FindNamespacesCommand
    */
   private final boolean useKeyspaceNaming;
 
@@ -66,7 +65,10 @@ public class FindKeyspacesOperation implements Operation {
 
     @Override
     public CommandResult get() {
-      Map<CommandStatus, Object> statuses = useKeyspaceNaming ? Map.of(CommandStatus.EXISTING_KEYSPACES, keyspaces) : Map.of(CommandStatus.EXISTING_NAMESPACES, keyspaces);
+      Map<CommandStatus, Object> statuses =
+          useKeyspaceNaming
+              ? Map.of(CommandStatus.EXISTING_KEYSPACES, keyspaces)
+              : Map.of(CommandStatus.EXISTING_NAMESPACES, keyspaces);
       return new CommandResult(statuses);
     }
   }

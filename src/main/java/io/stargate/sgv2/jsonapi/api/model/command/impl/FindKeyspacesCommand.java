@@ -14,5 +14,4 @@ public record FindKeyspacesCommand() implements GeneralCommand, NoOptionsCommand
   public CommandName commandName() {
     return CommandName.FIND_KEYSPACES;
   }
-
 }

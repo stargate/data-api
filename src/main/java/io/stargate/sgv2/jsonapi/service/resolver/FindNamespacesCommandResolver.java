@@ -12,7 +12,7 @@ import jakarta.enterprise.context.ApplicationScoped;
  * FindKeyspacesOperation}
  */
 @ApplicationScoped
-public class FindNamespacesCommandResolver extends FindNamespacesKeyspacesCommandResolver<FindNamespacesCommand> {
+public class FindNamespacesCommandResolver implements CommandResolver<FindNamespacesCommand> {
 
   public FindNamespacesCommandResolver() {}
 

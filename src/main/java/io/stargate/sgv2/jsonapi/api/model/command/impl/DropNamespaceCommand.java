@@ -25,10 +25,9 @@ public record DropNamespaceCommand(
     return CommandName.DROP_NAMESPACE;
   }
 
-    /** {@inheritDoc} */
-    @Override
-    public CommandName useCommandName() {
-        return CommandName.DROP_KEYSPACE;
-    }
-
+  /** {@inheritDoc} */
+  @Override
+  public CommandName useCommandName() {
+    return CommandName.DROP_KEYSPACE;
+  }
 }

@@ -8,7 +8,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that lists all available namespaces.")
 @JsonTypeName("findNamespaces")
-public record FindNamespacesCommand() implements GeneralCommand, NoOptionsCommand, DeprecatedCommand {
+public record FindNamespacesCommand()
+    implements GeneralCommand, NoOptionsCommand, DeprecatedCommand {
 
   /** {@inheritDoc} */
   @Override

@@ -13,8 +13,8 @@ import java.util.Map;
  * Resolve a {@link CreateKeyspaceCommand} to a {@link CreateKeyspaceOperation}
  */
 @ApplicationScoped
-public class CreateKeyspaceCommandResolver extends CreateNamespaceKeyspaceCommandResolver<CreateKeyspaceCommand> {
-
+public class CreateKeyspaceCommandResolver
+    extends CreateNamespaceKeyspaceCommandResolver<CreateKeyspaceCommand> {
 
   @Override
   public Class<CreateKeyspaceCommand> getCommandClass() {
@@ -25,8 +25,17 @@ public class CreateKeyspaceCommandResolver extends CreateNamespaceKeyspaceComman
   @Override
   public Operation resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, CreateKeyspaceCommand command) {
-    String replicationMap = getReplicationMap(command.options());
+    String strategy =
+        (command.options() != null && command.options().replication() != null)
+            ? command.options().replication().strategy()
+            : null;
+
+    Map<String, Integer> strategyOptions =
+        (command.options() != null && command.options().replication() != null)
+            ? command.options().replication().strategyOptions()
+            : null;
+    ;
+    String replicationMap = getReplicationMap(strategy, strategyOptions);
     return new CreateKeyspaceOperation(command.name(), replicationMap);
   }
-
 }

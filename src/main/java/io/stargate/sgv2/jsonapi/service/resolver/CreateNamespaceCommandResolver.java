@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateKeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -14,7 +13,8 @@ import java.util.Map;
  * map. Resolve a {@link CreateNamespaceCommand} to a {@link CreateKeyspaceOperation}
  */
 @ApplicationScoped
-public class CreateNamespaceCommandResolver extends CreateNamespaceKeyspaceCommandResolver<CreateNamespaceCommand> {
+public class CreateNamespaceCommandResolver
+    extends CreateNamespaceKeyspaceCommandResolver<CreateNamespaceCommand> {
 
   @Override
   public Class<CreateNamespaceCommand> getCommandClass() {
@@ -24,8 +24,18 @@ public class CreateNamespaceCommandResolver extends CreateNamespaceKeyspaceComma
   /** {@inheritDoc} */
   @Override
   public Operation resolveDatabaseCommand(
-          CommandContext<DatabaseSchemaObject> ctx, CreateNamespaceCommand command) {
-    String replicationMap = getReplicationMap(command.options());
+      CommandContext<DatabaseSchemaObject> ctx, CreateNamespaceCommand command) {
+    String strategy =
+        (command.options() != null && command.options().replication() != null)
+            ? command.options().replication().strategy()
+            : null;
+
+    Map<String, Integer> strategyOptions =
+        (command.options() != null && command.options().replication() != null)
+            ? command.options().replication().strategyOptions()
+            : null;
+    ;
+    String replicationMap = getReplicationMap(strategy, strategyOptions);
     return new CreateKeyspaceOperation(command.name(), replicationMap);
   }
 }
