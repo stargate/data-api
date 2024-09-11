@@ -28,6 +28,6 @@ public record AddIndexCommand(
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.addIndex;
+    return PublicCommandName.ADD_INDEX;
   }
 }

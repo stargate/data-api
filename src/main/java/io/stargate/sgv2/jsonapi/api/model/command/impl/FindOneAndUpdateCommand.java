@@ -51,6 +51,6 @@ public record FindOneAndUpdateCommand(
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.findOneAndUpdate;
+    return PublicCommandName.FIND_ONE_AND_UPDATE;
   }
 }

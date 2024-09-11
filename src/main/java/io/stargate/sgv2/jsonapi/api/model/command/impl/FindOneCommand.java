@@ -39,6 +39,6 @@ public record FindOneCommand(
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.findOne;
+    return PublicCommandName.FIND_ONE;
   }
 }

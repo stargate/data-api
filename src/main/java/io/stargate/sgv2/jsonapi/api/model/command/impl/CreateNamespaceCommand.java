@@ -62,6 +62,6 @@ public record CreateNamespaceCommand(
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.createNamespace;
+    return PublicCommandName.CREATE_NAMESPACE;
   }
 }

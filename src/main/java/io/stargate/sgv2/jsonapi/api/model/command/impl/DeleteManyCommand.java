@@ -31,6 +31,6 @@ public record DeleteManyCommand(
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.deleteMany;
+    return PublicCommandName.DELETE_MANY;
   }
 }

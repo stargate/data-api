@@ -25,6 +25,6 @@ public record FindOneAndDeleteCommand(
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.findOneAndDelete;
+    return PublicCommandName.FIND_ONE_AND_DELETE;
   }
 }

@@ -50,6 +50,6 @@ public record FindOneAndReplaceCommand(
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.findOneAndReplace;
+    return PublicCommandName.FIND_ONE_AND_REPLACE;
   }
 }

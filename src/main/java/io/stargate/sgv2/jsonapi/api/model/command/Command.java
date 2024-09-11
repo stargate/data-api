@@ -37,32 +37,32 @@ public interface Command {
    */
   PublicCommandName publicCommandName();
 
-  /** Enum class for API public command name This is what user uses for command json body. */
+  /** Enum class for API public command name. This is what user uses for command json body. */
   enum PublicCommandName {
-    addIndex("addIndex"),
-    countDocuments("countDocuments"),
-    createCollection("createCollection"),
-    createNamespace("createNamespace"),
-    createTable("createTable"),
-    deleteCollection("deleteCollection"),
-    deleteMany("deleteMany"),
-    deleteOne("deleteOne"),
-    dropIndex("dropIndex"),
-    dropNamespace("dropNamespace"),
-    dropTable("dropTable"),
-    estimatedDocumentCount("estimatedDocumentCount"),
-    findCollections("findCollections"),
-    find("find"),
-    findEmbeddingProviders("findEmbeddingProviders"),
-    findNamespaces("findNamespaces"),
-    findOneAndDelete("findOneAndDelete"),
-    findOneAndReplace("findOneAndReplace"),
-    findOneAndUpdate("findOneAndUpdate"),
-    findOne("findOne"),
-    insertMany("insertMany"),
-    insertOne("insertOne"),
-    updateMany("updateMany"),
-    updateOne("updateOne");
+    ADD_INDEX("addIndex"),
+    COUNT_DOCUMENTS("countDocuments"),
+    CREATE_COLLECTION("createCollection"),
+    CREATE_NAMESPACE("createNamespace"),
+    CREATE_TABLE("createTable"),
+    DELETE_COLLECTION("deleteCollection"),
+    DELETE_MANY("deleteMany"),
+    DELETE_ONE("deleteOne"),
+    DROP_INDEX("dropIndex"),
+    DROP_NAMESPACE("dropNamespace"),
+    DROP_TABLE("dropTable"),
+    ESTIMATED_DOCUMENT_COUNT("estimatedDocumentCount"),
+    FIND_COLLECTIONS("findCollections"),
+    FIND("find"),
+    FIND_EMBEDDING_PROVIDERS("findEmbeddingProviders"),
+    FIND_NAMESPACES("findNamespaces"),
+    FIND_ONE_AND_DELETE("findOneAndDelete"),
+    FIND_ONE_AND_REPLACE("findOneAndReplace"),
+    FIND_ONE_AND_UPDATE("findOneAndUpdate"),
+    FIND_ONE("findOne"),
+    INSERT_MANY("insertMany"),
+    INSERT_ONE("insertOne"),
+    UPDATE_MANY("updateMany"),
+    UPDATE_ONE("updateOne");
 
     private final String publicCommandName;
 

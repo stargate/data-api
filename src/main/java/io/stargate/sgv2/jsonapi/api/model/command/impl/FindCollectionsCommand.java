@@ -19,6 +19,6 @@ public record FindCollectionsCommand(Options options) implements CollectionOnlyC
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.findCollections;
+    return PublicCommandName.FIND_COLLECTIONS;
   }
 }

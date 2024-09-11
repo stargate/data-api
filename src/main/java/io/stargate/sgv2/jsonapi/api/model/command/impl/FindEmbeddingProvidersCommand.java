@@ -12,6 +12,6 @@ public record FindEmbeddingProvidersCommand() implements GeneralCommand, NoOptio
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.findEmbeddingProviders;
+    return PublicCommandName.FIND_EMBEDDING_PROVIDERS;
   }
 }

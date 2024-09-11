@@ -40,6 +40,6 @@ public record CreateTableCommand(
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.createTable;
+    return PublicCommandName.CREATE_TABLE;
   }
 }

@@ -28,6 +28,6 @@ public record DropTableCommand(
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.dropTable;
+    return PublicCommandName.DROP_TABLE;
   }
 }

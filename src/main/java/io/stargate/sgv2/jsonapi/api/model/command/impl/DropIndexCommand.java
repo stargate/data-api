@@ -23,6 +23,6 @@ public record DropIndexCommand(
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.dropIndex;
+    return PublicCommandName.DROP_INDEX;
   }
 }

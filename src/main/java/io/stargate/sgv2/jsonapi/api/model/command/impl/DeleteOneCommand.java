@@ -34,6 +34,6 @@ public record DeleteOneCommand(
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.deleteOne;
+    return PublicCommandName.DELETE_ONE;
   }
 }

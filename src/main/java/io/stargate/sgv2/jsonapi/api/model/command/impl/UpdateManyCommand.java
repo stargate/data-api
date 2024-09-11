@@ -43,6 +43,6 @@ public record UpdateManyCommand(
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.updateMany;
+    return PublicCommandName.UPDATE_MANY;
   }
 }

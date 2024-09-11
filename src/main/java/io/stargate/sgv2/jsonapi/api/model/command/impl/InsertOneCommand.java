@@ -28,6 +28,6 @@ public record InsertOneCommand(
   /** {@inheritDoc} */
   @Override
   public PublicCommandName publicCommandName() {
-    return PublicCommandName.insertOne;
+    return PublicCommandName.INSERT_ONE;
   }
 }
