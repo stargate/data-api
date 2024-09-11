@@ -11,13 +11,9 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonTypeName("estimatedDocumentCount")
 public record EstimatedDocumentCountCommand() implements ReadCommand, NoOptionsCommand {
 
-  /**
-   * Override Command interface, this method return the class name of implementation class
-   *
-   * @return String
-   */
+  /** {@inheritDoc} */
   @Override
-  public String commandName() {
-    return this.getClass().getSimpleName();
+  public CommandName commandName() {
+    return CommandName.ESTIMATED_DOCUMENT_COUNT;
   }
 }

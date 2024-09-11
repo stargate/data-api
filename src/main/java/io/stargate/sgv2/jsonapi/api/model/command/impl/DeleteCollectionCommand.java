@@ -23,13 +23,9 @@ public record DeleteCollectionCommand(
         String name)
     implements CollectionOnlyCommand, NoOptionsCommand {
 
-  /**
-   * Override Command interface, this method return the class name of implementation class
-   *
-   * @return String
-   */
+  /** {@inheritDoc} */
   @Override
-  public String commandName() {
-    return this.getClass().getSimpleName();
+  public CommandName commandName() {
+    return CommandName.DELETE_COLLECTION;
   }
 }

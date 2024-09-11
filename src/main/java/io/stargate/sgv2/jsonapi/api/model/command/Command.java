@@ -29,6 +29,49 @@ import io.stargate.sgv2.jsonapi.service.resolver.CommandResolver;
 })
 public interface Command {
 
-  /** commandName that refers to implementation class name */
-  String commandName();
+  /**
+   * commandName that refers to the api command name
+   *
+   * <p>e.g. FindKeyspacesCommand publicCommandName -> findKeyspaces. CreateCollectionCommand
+   * publicCommandName -> createCollection
+   */
+  CommandName commandName();
+
+  /** Enum class for API command name. This is what user uses for command json body. */
+  enum CommandName {
+    ADD_INDEX("addIndex"),
+    COUNT_DOCUMENTS("countDocuments"),
+    CREATE_COLLECTION("createCollection"),
+    CREATE_NAMESPACE("createNamespace"),
+    CREATE_TABLE("createTable"),
+    DELETE_COLLECTION("deleteCollection"),
+    DELETE_MANY("deleteMany"),
+    DELETE_ONE("deleteOne"),
+    DROP_INDEX("dropIndex"),
+    DROP_NAMESPACE("dropNamespace"),
+    DROP_TABLE("dropTable"),
+    ESTIMATED_DOCUMENT_COUNT("estimatedDocumentCount"),
+    FIND_COLLECTIONS("findCollections"),
+    FIND("find"),
+    FIND_EMBEDDING_PROVIDERS("findEmbeddingProviders"),
+    FIND_NAMESPACES("findNamespaces"),
+    FIND_ONE_AND_DELETE("findOneAndDelete"),
+    FIND_ONE_AND_REPLACE("findOneAndReplace"),
+    FIND_ONE_AND_UPDATE("findOneAndUpdate"),
+    FIND_ONE("findOne"),
+    INSERT_MANY("insertMany"),
+    INSERT_ONE("insertOne"),
+    UPDATE_MANY("updateMany"),
+    UPDATE_ONE("updateOne");
+
+    private final String apiName;
+
+    CommandName(String apiName) {
+      this.apiName = apiName;
+    }
+
+    public String getApiName() {
+      return apiName;
+    }
+  }
 }

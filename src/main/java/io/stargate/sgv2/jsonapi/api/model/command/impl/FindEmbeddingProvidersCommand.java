@@ -9,13 +9,9 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @JsonTypeName("findEmbeddingProviders")
 public record FindEmbeddingProvidersCommand() implements GeneralCommand, NoOptionsCommand {
 
-  /**
-   * Override Command interface, this method return the class name of implementation class
-   *
-   * @return String
-   */
+  /** {@inheritDoc} */
   @Override
-  public String commandName() {
-    return this.getClass().getSimpleName();
+  public CommandName commandName() {
+    return CommandName.FIND_EMBEDDING_PROVIDERS;
   }
 }
