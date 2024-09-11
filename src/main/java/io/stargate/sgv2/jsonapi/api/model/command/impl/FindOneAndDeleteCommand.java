@@ -20,4 +20,15 @@ public record FindOneAndDeleteCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @Valid @JsonProperty("sort") SortClause sortClause,
     @JsonProperty("projection") JsonNode projectionDefinition)
-    implements ModifyCommand, Filterable, Projectable, Sortable {}
+    implements ModifyCommand, Filterable, Projectable, Sortable {
+
+  /**
+   * Override Command interface, this method return the class name of implementation class
+   *
+   * @return String
+   */
+  @Override
+  public String commandName() {
+    return this.getClass().getSimpleName();
+  }
+}

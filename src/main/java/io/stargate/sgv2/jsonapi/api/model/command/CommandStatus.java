@@ -12,7 +12,8 @@ public enum CommandStatus {
   DELETED_COUNT,
   /**
    * Status for reporting existing namespaces. findNamespaces command is deprecated, keep this
-   * jsonProperty to support backwards-compatibility
+   * jsonProperty to support backwards-compatibility. Use "namespaces" when old command name used
+   * and "keyspaces" for new one.
    */
   @JsonProperty("namespaces")
   EXISTING_NAMESPACES,

@@ -16,4 +16,15 @@ public record DropKeyspaceCommand(
         @Size(min = 1, max = 48)
         @Schema(description = "Name of the Keyspace")
         String name)
-    implements GeneralCommand, NoOptionsCommand {}
+    implements GeneralCommand, NoOptionsCommand {
+
+  /**
+   * Override Command interface, this method return the class name of implementation class
+   *
+   * @return String
+   */
+  @Override
+  public String commandName() {
+    return this.getClass().getSimpleName();
+  }
+}

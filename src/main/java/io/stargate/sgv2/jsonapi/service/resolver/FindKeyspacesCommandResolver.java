@@ -27,6 +27,6 @@ public class FindKeyspacesCommandResolver implements CommandResolver<FindKeyspac
   @Override
   public Operation resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, FindKeyspacesCommand command) {
-    return new FindKeyspacesOperation(cqlSessionCache);
+    return new FindKeyspacesOperation(command);
   }
 }

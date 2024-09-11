@@ -198,7 +198,8 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .body("status.ok", is(1))
           .body(
               "status.warnings",
-              hasItem("deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
+              hasItem(
+                  "This DropNamespaceCommand has been deprecated and will be removed in future releases, use DropKeyspaceCommand instead."));
 
       // ensure it's dropped
       json =
@@ -284,7 +285,8 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .body("status.ok", is(1))
           .body(
               "status.warnings",
-              hasItem("deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
+              hasItem(
+                  "This DropNamespaceCommand has been deprecated and will be removed in future releases, use DropKeyspaceCommand instead."));
 
       // ensure it's dropped
       json =
@@ -328,7 +330,8 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .body("status.ok", is(1))
           .body(
               "status.warnings",
-              hasItem("deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
+              hasItem(
+                  "This DropNamespaceCommand has been deprecated and will be removed in future releases, use DropKeyspaceCommand instead."));
     }
   }
 

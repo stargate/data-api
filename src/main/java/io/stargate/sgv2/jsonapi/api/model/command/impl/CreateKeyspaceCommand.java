@@ -56,4 +56,14 @@ public record CreateKeyspaceCommand(
       return strategyOptions;
     }
   }
+
+  /**
+   * Override Command interface, this method return the class name of implementation class
+   *
+   * @return String
+   */
+  @Override
+  public String commandName() {
+    return this.getClass().getSimpleName();
+  }
 }

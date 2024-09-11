@@ -29,4 +29,15 @@ public record DeleteOneCommand(
         @JsonProperty("filter")
         FilterClause filterClause,
     @Valid @JsonProperty("sort") SortClause sortClause)
-    implements ModifyCommand, NoOptionsCommand, Filterable, Sortable {}
+    implements ModifyCommand, NoOptionsCommand, Filterable, Sortable {
+
+  /**
+   * Override Command interface, this method return the class name of implementation class
+   *
+   * @return String
+   */
+  @Override
+  public String commandName() {
+    return this.getClass().getSimpleName();
+  }
+}

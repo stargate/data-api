@@ -23,4 +23,15 @@ public record AddIndexCommand(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Unique name for the index.")
         String indexName)
-    implements NoOptionsCommand, CollectionCommand {}
+    implements NoOptionsCommand, CollectionCommand {
+
+  /**
+   * Override Command interface, this method return the class name of implementation class
+   *
+   * @return String
+   */
+  @Override
+  public String commandName() {
+    return this.getClass().getSimpleName();
+  }
+}

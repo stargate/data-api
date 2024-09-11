@@ -23,4 +23,15 @@ public record InsertOneCommand(
             implementation = Object.class,
             type = SchemaType.OBJECT)
         JsonNode document)
-    implements ModifyCommand, NoOptionsCommand {}
+    implements ModifyCommand, NoOptionsCommand {
+
+  /**
+   * Override Command interface, this method return the class name of implementation class
+   *
+   * @return String
+   */
+  @Override
+  public String commandName() {
+    return this.getClass().getSimpleName();
+  }
+}

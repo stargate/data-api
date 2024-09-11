@@ -23,4 +23,15 @@ public record DropTableCommand(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the table")
         String name)
-    implements TableOnlyCommand, NoOptionsCommand {}
+    implements TableOnlyCommand, NoOptionsCommand {
+
+  /**
+   * Override Command interface, this method return the class name of implementation class
+   *
+   * @return String
+   */
+  @Override
+  public String commandName() {
+    return this.getClass().getSimpleName();
+  }
+}

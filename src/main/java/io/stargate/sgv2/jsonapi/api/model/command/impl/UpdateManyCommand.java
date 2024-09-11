@@ -39,4 +39,14 @@ public record UpdateManyCommand(
           @JsonProperty("pageState")
           @JsonAlias("pagingState") // old name, 1.0.0-BETA-3 and prior
           String pageState) {}
+
+  /**
+   * Override Command interface, this method return the class name of implementation class
+   *
+   * @return String
+   */
+  @Override
+  public String commandName() {
+    return this.getClass().getSimpleName();
+  }
 }

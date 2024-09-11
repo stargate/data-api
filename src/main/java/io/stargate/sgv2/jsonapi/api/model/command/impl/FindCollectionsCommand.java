@@ -15,4 +15,14 @@ public record FindCollectionsCommand(Options options) implements CollectionOnlyC
               type = SchemaType.BOOLEAN,
               implementation = Boolean.class)
           boolean explain) {}
+
+  /**
+   * Override Command interface, this method return the class name of implementation class
+   *
+   * @return String
+   */
+  @Override
+  public String commandName() {
+    return this.getClass().getSimpleName();
+  }
 }

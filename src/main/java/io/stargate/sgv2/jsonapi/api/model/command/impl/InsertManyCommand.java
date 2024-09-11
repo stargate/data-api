@@ -48,4 +48,14 @@ public record InsertManyCommand(
                       + " status is `ERROR` and contains the index of the error in the main `errors` array.",
               defaultValue = "false")
           boolean returnDocumentResponses) {}
+
+  /**
+   * Override Command interface, this method return the class name of implementation class
+   *
+   * @return String
+   */
+  @Override
+  public String commandName() {
+    return this.getClass().getSimpleName();
+  }
 }

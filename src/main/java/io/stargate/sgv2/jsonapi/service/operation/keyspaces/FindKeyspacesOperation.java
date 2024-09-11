@@ -2,10 +2,11 @@ package io.stargate.sgv2.jsonapi.service.operation.keyspaces;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindNamespacesCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import java.util.List;
@@ -14,11 +15,24 @@ import java.util.function.Supplier;
 
 /**
  * Operation that list all available keyspaces into the {@link CommandStatus#EXISTING_KEYSPACES}
- * command status.
+ * command status. OR namespaces into the {@link CommandStatus#EXISTING_NAMESPACES} command status.
  *
- * @param cqlSessionCache CQLSession cache for keyspace fetching
+ * <p>Note, both FindKeyspacesCommandResolver and FindNamespaceCommandResolver resolve to
+ * FindKeyspaceOperation
  */
-public record FindKeyspacesOperation(CQLSessionCache cqlSessionCache) implements Operation {
+public class FindKeyspacesOperation implements Operation {
+
+  Command fromCommand;
+
+  /**
+   * Construct FindKeyspacesOperation, and specify it is from command
+   * FindKeyspacesCommand/FindNamespacesCommand
+   *
+   * @param fromCommand
+   */
+  public FindKeyspacesOperation(Command fromCommand) {
+    this.fromCommand = fromCommand;
+  }
 
   /** {@inheritDoc} */
   @Override
@@ -30,7 +44,8 @@ public record FindKeyspacesOperation(CQLSessionCache cqlSessionCache) implements
             () -> {
               // get all existing keyspaces
               List<String> keyspacesList =
-                  cqlSessionCache
+                  queryExecutor
+                      .getCqlSessionCache()
                       .getSession(dataApiRequestInfo)
                       .getMetadata()
                       .getKeyspaces()
@@ -38,16 +53,22 @@ public record FindKeyspacesOperation(CQLSessionCache cqlSessionCache) implements
                       .stream()
                       .map(CqlIdentifier::asInternal)
                       .toList();
-              return new Result(keyspacesList);
+              return new Result(keyspacesList, fromCommand);
             });
   }
 
   // simple result wrapper
-  private record Result(List<String> keyspaces) implements Supplier<CommandResult> {
+  private record Result(List<String> keyspaces, Command fromCommand)
+      implements Supplier<CommandResult> {
 
     @Override
     public CommandResult get() {
-      Map<CommandStatus, Object> statuses = Map.of(CommandStatus.EXISTING_KEYSPACES, keyspaces);
+      Map<CommandStatus, Object> statuses;
+      if (fromCommand instanceof FindNamespacesCommand) {
+        statuses = Map.of(CommandStatus.EXISTING_NAMESPACES, keyspaces);
+      } else {
+        statuses = Map.of(CommandStatus.EXISTING_KEYSPACES, keyspaces);
+      }
       return new CommandResult(statuses);
     }
   }

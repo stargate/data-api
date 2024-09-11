@@ -4,6 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
@@ -12,10 +13,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
-import io.stargate.sgv2.jsonapi.util.DeprecatedCommandUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -115,13 +114,10 @@ public class CommandProcessor {
         // add possible warning for using a deprecated command
         .map(
             commandResult -> {
-              String possibleDeprecatedCommandUsageWarning =
-                  DeprecatedCommandUtil.getDeprecatedCommandMsg(commandContext);
-              if (possibleDeprecatedCommandUsageWarning != null) {
-                return commandResult.addWarnings(List.of(possibleDeprecatedCommandUsageWarning));
-              } else {
-                return commandResult;
+              if (command instanceof DeprecatedCommand deprecatedCommand) {
+                return commandResult.withWarning(deprecatedCommand.getDeprecationMessage());
               }
+              return commandResult;
             });
   }
 }

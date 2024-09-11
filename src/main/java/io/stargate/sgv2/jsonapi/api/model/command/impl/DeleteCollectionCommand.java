@@ -21,4 +21,15 @@ public record DeleteCollectionCommand(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the collection")
         String name)
-    implements CollectionOnlyCommand, NoOptionsCommand {}
+    implements CollectionOnlyCommand, NoOptionsCommand {
+
+  /**
+   * Override Command interface, this method return the class name of implementation class
+   *
+   * @return String
+   */
+  @Override
+  public String commandName() {
+    return this.getClass().getSimpleName();
+  }
+}
