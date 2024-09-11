@@ -21,4 +21,11 @@ public record DeleteCollectionCommand(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the collection")
         String name)
-    implements CollectionOnlyCommand, NoOptionsCommand {}
+    implements CollectionOnlyCommand, NoOptionsCommand {
+
+  /** {@inheritDoc} */
+  @Override
+  public PublicCommandName publicCommandName() {
+    return PublicCommandName.deleteCollection;
+  }
+}

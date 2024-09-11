@@ -23,4 +23,11 @@ public record DropTableCommand(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the table")
         String name)
-    implements TableOnlyCommand, NoOptionsCommand {}
+    implements TableOnlyCommand, NoOptionsCommand {
+
+  /** {@inheritDoc} */
+  @Override
+  public PublicCommandName publicCommandName() {
+    return PublicCommandName.dropTable;
+  }
+}

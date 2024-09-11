@@ -20,4 +20,11 @@ public record FindOneAndDeleteCommand(
     @Valid @JsonProperty("filter") FilterClause filterClause,
     @Valid @JsonProperty("sort") SortClause sortClause,
     @JsonProperty("projection") JsonNode projectionDefinition)
-    implements ModifyCommand, Filterable, Projectable, Sortable {}
+    implements ModifyCommand, Filterable, Projectable, Sortable {
+
+  /** {@inheritDoc} */
+  @Override
+  public PublicCommandName publicCommandName() {
+    return PublicCommandName.findOneAndDelete;
+  }
+}

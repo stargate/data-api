@@ -27,4 +27,51 @@ import io.stargate.sgv2.jsonapi.service.resolver.CommandResolver;
   @JsonSubTypes.Type(value = GeneralCommand.class),
   @JsonSubTypes.Type(value = CollectionCommand.class),
 })
-public interface Command {}
+public interface Command {
+
+  /**
+   * commandName that refers to the public command name
+   *
+   * <p>e.g. FindKeyspacesCommand publicCommandName -> findKeyspaces CreateCollectionCommand
+   * publicCommandName -> createCollection
+   */
+  PublicCommandName publicCommandName();
+
+  /** Enum class for API public command name This is what user uses for command json body. */
+  enum PublicCommandName {
+    addIndex("addIndex"),
+    countDocuments("countDocuments"),
+    createCollection("createCollection"),
+    createNamespace("createNamespace"),
+    createTable("createTable"),
+    deleteCollection("deleteCollection"),
+    deleteMany("deleteMany"),
+    deleteOne("deleteOne"),
+    dropIndex("dropIndex"),
+    dropNamespace("dropNamespace"),
+    dropTable("dropTable"),
+    estimatedDocumentCount("estimatedDocumentCount"),
+    findCollections("findCollections"),
+    find("find"),
+    findEmbeddingProviders("findEmbeddingProviders"),
+    findNamespaces("findNamespaces"),
+    findOneAndDelete("findOneAndDelete"),
+    findOneAndReplace("findOneAndReplace"),
+    findOneAndUpdate("findOneAndUpdate"),
+    findOne("findOne"),
+    insertMany("insertMany"),
+    insertOne("insertOne"),
+    updateMany("updateMany"),
+    updateOne("updateOne");
+
+    private final String publicCommandName;
+
+    PublicCommandName(String publicCommandName) {
+      this.publicCommandName = publicCommandName;
+    }
+
+    public String getPublicCommandName() {
+      return publicCommandName;
+    }
+  }
+}

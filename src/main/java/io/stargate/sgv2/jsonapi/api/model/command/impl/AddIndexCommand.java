@@ -23,4 +23,11 @@ public record AddIndexCommand(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Unique name for the index.")
         String indexName)
-    implements NoOptionsCommand, CollectionCommand {}
+    implements NoOptionsCommand, CollectionCommand {
+
+  /** {@inheritDoc} */
+  @Override
+  public PublicCommandName publicCommandName() {
+    return PublicCommandName.addIndex;
+  }
+}

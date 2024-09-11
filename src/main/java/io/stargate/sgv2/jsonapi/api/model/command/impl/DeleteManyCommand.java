@@ -26,4 +26,11 @@ public record DeleteManyCommand(
         @Valid
         @JsonProperty("filter")
         FilterClause filterClause)
-    implements ModifyCommand, NoOptionsCommand, Filterable {}
+    implements ModifyCommand, NoOptionsCommand, Filterable {
+
+  /** {@inheritDoc} */
+  @Override
+  public PublicCommandName publicCommandName() {
+    return PublicCommandName.deleteMany;
+  }
+}

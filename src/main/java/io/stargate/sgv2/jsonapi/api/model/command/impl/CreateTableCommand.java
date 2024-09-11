@@ -36,4 +36,10 @@ public record CreateTableCommand(
               anyOf = {String.class, PrimaryKey.class})
           @JsonInclude(JsonInclude.Include.NON_NULL)
           PrimaryKey primaryKey) {}
+
+  /** {@inheritDoc} */
+  @Override
+  public PublicCommandName publicCommandName() {
+    return PublicCommandName.createTable;
+  }
 }

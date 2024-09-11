@@ -35,4 +35,10 @@ public record FindOneCommand(
               description = "Return vector embedding used for ANN sorting.",
               type = SchemaType.BOOLEAN)
           boolean includeSortVector) {}
+
+  /** {@inheritDoc} */
+  @Override
+  public PublicCommandName publicCommandName() {
+    return PublicCommandName.findOne;
+  }
 }

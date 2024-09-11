@@ -48,4 +48,10 @@ public record InsertManyCommand(
                       + " status is `ERROR` and contains the index of the error in the main `errors` array.",
               defaultValue = "false")
           boolean returnDocumentResponses) {}
+
+  /** {@inheritDoc} */
+  @Override
+  public PublicCommandName publicCommandName() {
+    return PublicCommandName.insertMany;
+  }
 }

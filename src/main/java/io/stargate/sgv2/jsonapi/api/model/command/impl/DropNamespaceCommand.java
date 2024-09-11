@@ -16,4 +16,11 @@ public record DropNamespaceCommand(
         @Size(min = 1, max = 48)
         @Schema(description = "Name of the namespace")
         String name)
-    implements GeneralCommand, NoOptionsCommand {}
+    implements GeneralCommand, NoOptionsCommand {
+
+  /** {@inheritDoc} */
+  @Override
+  public PublicCommandName publicCommandName() {
+    return PublicCommandName.dropNamespace;
+  }
+}

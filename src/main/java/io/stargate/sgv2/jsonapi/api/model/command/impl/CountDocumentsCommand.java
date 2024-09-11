@@ -14,4 +14,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         "Command that returns count of documents in a collection based on the collection.")
 @JsonTypeName("countDocuments")
 public record CountDocumentsCommand(@Valid @JsonProperty("filter") FilterClause filterClause)
-    implements ReadCommand, NoOptionsCommand, Filterable {}
+    implements ReadCommand, NoOptionsCommand, Filterable {
+
+  /** {@inheritDoc} */
+  @Override
+  public PublicCommandName publicCommandName() {
+    return PublicCommandName.countDocuments;
+  }
+}
