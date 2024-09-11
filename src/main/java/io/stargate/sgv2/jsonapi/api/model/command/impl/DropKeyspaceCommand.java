@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
 import jakarta.validation.constraints.NotNull;
@@ -18,13 +19,10 @@ public record DropKeyspaceCommand(
         String name)
     implements GeneralCommand, NoOptionsCommand {
 
-  /**
-   * Override Command interface, this method return the class name of implementation class
-   *
-   * @return String
-   */
-  @Override
-  public String commandName() {
-    return this.getClass().getSimpleName();
-  }
+    /** {@inheritDoc} */
+    @Override
+    public CommandName commandName() {
+        return CommandName.DROP_KEYSPACE;
+    }
+
 }

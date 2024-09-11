@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateKeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -13,13 +14,8 @@ import java.util.Map;
  * map. Resolve a {@link CreateNamespaceCommand} to a {@link CreateKeyspaceOperation}
  */
 @ApplicationScoped
-public class CreateNamespaceCommandResolver implements CommandResolver<CreateNamespaceCommand> {
+public class CreateNamespaceCommandResolver extends CreateNamespaceKeyspaceCommandResolver<CreateNamespaceCommand> {
 
-  // default if omitted
-  private static final String DEFAULT_REPLICATION_MAP =
-      "{'class': 'SimpleStrategy', 'replication_factor': 1}";
-
-  /** {@inheritDoc} */
   @Override
   public Class<CreateNamespaceCommand> getCommandClass() {
     return CreateNamespaceCommand.class;
@@ -28,46 +24,8 @@ public class CreateNamespaceCommandResolver implements CommandResolver<CreateNam
   /** {@inheritDoc} */
   @Override
   public Operation resolveDatabaseCommand(
-      CommandContext<DatabaseSchemaObject> ctx, CreateNamespaceCommand command) {
+          CommandContext<DatabaseSchemaObject> ctx, CreateNamespaceCommand command) {
     String replicationMap = getReplicationMap(command.options());
     return new CreateKeyspaceOperation(command.name(), replicationMap);
-  }
-
-  // resolve the replication map
-  private String getReplicationMap(CreateNamespaceCommand.Options options) {
-    if (null == options) {
-      return DEFAULT_REPLICATION_MAP;
-    }
-
-    // TODO REMOVE THE OPTION TO PASS REPLICATION STRATEGY!!!!
-    CreateNamespaceCommand.Replication replication = options.replication();
-    if ("NetworkTopologyStrategy".equals(replication.strategy())) {
-      return networkTopologyStrategyMap(replication);
-    } else {
-      return simpleStrategyMap(replication);
-    }
-  }
-
-  private static String networkTopologyStrategyMap(CreateNamespaceCommand.Replication replication) {
-    Map<String, Integer> options = replication.strategyOptions();
-
-    StringBuilder map = new StringBuilder("{'class': 'NetworkTopologyStrategy'");
-    if (null != options) {
-      for (Map.Entry<String, Integer> dcEntry : options.entrySet()) {
-        map.append(", '%s': %d".formatted(dcEntry.getKey(), dcEntry.getValue()));
-      }
-    }
-    map.append("}");
-    return map.toString();
-  }
-
-  private static String simpleStrategyMap(CreateNamespaceCommand.Replication replication) {
-    Map<String, Integer> options = replication.strategyOptions();
-    if (null == options || options.isEmpty()) {
-      return DEFAULT_REPLICATION_MAP;
-    }
-
-    Integer replicationFactor = options.getOrDefault("replication_factor", 1);
-    return "{'class': 'SimpleStrategy', 'replication_factor': " + replicationFactor + "}";
   }
 }

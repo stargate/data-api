@@ -185,7 +185,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body(
               "status.warnings",
               hasItem(
-                  "This CreateNamespaceCommand has been deprecated and will be removed in future releases, use CreateKeyspaceCommand instead."));
+                  "This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead."));
     }
 
     @Test
@@ -212,7 +212,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body(
               "status.warnings",
               hasItem(
-                  "This CreateNamespaceCommand has been deprecated and will be removed in future releases, use CreateKeyspaceCommand instead."));
+                  "This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead."));
     }
 
     @Test
@@ -245,7 +245,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body(
               "status.warnings",
               hasItem(
-                  "This CreateNamespaceCommand has been deprecated and will be removed in future releases, use CreateKeyspaceCommand instead."));
+                  "This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead."));
     }
 
     @Test

@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindKeyspacesCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.FindNamespacesCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -11,9 +12,7 @@ import jakarta.inject.Inject;
 
 /** Command resolver for {@link FindKeyspacesCommand}. */
 @ApplicationScoped
-public class FindKeyspacesCommandResolver implements CommandResolver<FindKeyspacesCommand> {
-
-  @Inject CQLSessionCache cqlSessionCache;
+public class FindKeyspacesCommandResolver extends FindNamespacesKeyspacesCommandResolver<FindKeyspacesCommand> {
 
   public FindKeyspacesCommandResolver() {}
 
@@ -27,6 +26,6 @@ public class FindKeyspacesCommandResolver implements CommandResolver<FindKeyspac
   @Override
   public Operation resolveDatabaseCommand(
       CommandContext<DatabaseSchemaObject> ctx, FindKeyspacesCommand command) {
-    return new FindKeyspacesOperation(command);
+    return new FindKeyspacesOperation(true);
   }
 }

@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -21,7 +22,7 @@ public record CreateNamespaceCommand(
         @Schema(description = "Name of the namespace")
         String name,
     @Nullable @Valid CreateNamespaceCommand.Options options)
-    implements GeneralCommand {
+    implements GeneralCommand, DeprecatedCommand {
 
   @Schema(
       name = "CreateNamespaceCommand.Options",
@@ -63,5 +64,11 @@ public record CreateNamespaceCommand(
   @Override
   public CommandName commandName() {
     return CommandName.CREATE_NAMESPACE;
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public CommandName useCommandName() {
+    return CommandName.CREATE_KEYSPACE;
   }
 }

@@ -13,13 +13,9 @@ import java.util.Map;
  * Resolve a {@link CreateKeyspaceCommand} to a {@link CreateKeyspaceOperation}
  */
 @ApplicationScoped
-public class CreateKeyspaceCommandResolver implements CommandResolver<CreateKeyspaceCommand> {
+public class CreateKeyspaceCommandResolver extends CreateNamespaceKeyspaceCommandResolver<CreateKeyspaceCommand> {
 
-  // default if omitted
-  private static final String DEFAULT_REPLICATION_MAP =
-      "{'class': 'SimpleStrategy', 'replication_factor': 1}";
 
-  /** {@inheritDoc} */
   @Override
   public Class<CreateKeyspaceCommand> getCommandClass() {
     return CreateKeyspaceCommand.class;
@@ -33,41 +29,4 @@ public class CreateKeyspaceCommandResolver implements CommandResolver<CreateKeys
     return new CreateKeyspaceOperation(command.name(), replicationMap);
   }
 
-  // resolve the replication map
-  private String getReplicationMap(CreateKeyspaceCommand.Options options) {
-    if (null == options) {
-      return DEFAULT_REPLICATION_MAP;
-    }
-
-    // TODO REMOVE THE OPTION TO PASS REPLICATION STRATEGY!!!!
-    CreateKeyspaceCommand.Replication replication = options.replication();
-    if ("NetworkTopologyStrategy".equals(replication.strategy())) {
-      return networkTopologyStrategyMap(replication);
-    } else {
-      return simpleStrategyMap(replication);
-    }
-  }
-
-  private static String networkTopologyStrategyMap(CreateKeyspaceCommand.Replication replication) {
-    Map<String, Integer> options = replication.strategyOptions();
-
-    StringBuilder map = new StringBuilder("{'class': 'NetworkTopologyStrategy'");
-    if (null != options) {
-      for (Map.Entry<String, Integer> dcEntry : options.entrySet()) {
-        map.append(", '%s': %d".formatted(dcEntry.getKey(), dcEntry.getValue()));
-      }
-    }
-    map.append("}");
-    return map.toString();
-  }
-
-  private static String simpleStrategyMap(CreateKeyspaceCommand.Replication replication) {
-    Map<String, Integer> options = replication.strategyOptions();
-    if (null == options || options.isEmpty()) {
-      return DEFAULT_REPLICATION_MAP;
-    }
-
-    Integer replicationFactor = options.getOrDefault("replication_factor", 1);
-    return "{'class': 'SimpleStrategy', 'replication_factor': " + replicationFactor + "}";
-  }
 }

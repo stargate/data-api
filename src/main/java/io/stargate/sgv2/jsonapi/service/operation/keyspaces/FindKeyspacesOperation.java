@@ -22,16 +22,19 @@ import java.util.function.Supplier;
  */
 public class FindKeyspacesOperation implements Operation {
 
-  Command fromCommand;
+  /**
+   * useKeyspaceNaming will be false, if this operation is created by deprecated FindNamespacesCommand
+   */
+  private final boolean useKeyspaceNaming;
 
   /**
    * Construct FindKeyspacesOperation, and specify it is from command
-   * FindKeyspacesCommand/FindNamespacesCommand
+   * FindKeyspacesCommand/FindNamespacesCommand by using useKeyspaceNaming boolean
    *
-   * @param fromCommand
+   * @param useKeyspaceNaming a boolean value indicated use keyspace or not
    */
-  public FindKeyspacesOperation(Command fromCommand) {
-    this.fromCommand = fromCommand;
+  public FindKeyspacesOperation(boolean useKeyspaceNaming) {
+    this.useKeyspaceNaming = useKeyspaceNaming;
   }
 
   /** {@inheritDoc} */
@@ -53,22 +56,17 @@ public class FindKeyspacesOperation implements Operation {
                       .stream()
                       .map(CqlIdentifier::asInternal)
                       .toList();
-              return new Result(keyspacesList, fromCommand);
+              return new Result(keyspacesList, useKeyspaceNaming);
             });
   }
 
   // simple result wrapper
-  private record Result(List<String> keyspaces, Command fromCommand)
+  private record Result(List<String> keyspaces, boolean useKeyspaceNaming)
       implements Supplier<CommandResult> {
 
     @Override
     public CommandResult get() {
-      Map<CommandStatus, Object> statuses;
-      if (fromCommand instanceof FindNamespacesCommand) {
-        statuses = Map.of(CommandStatus.EXISTING_NAMESPACES, keyspaces);
-      } else {
-        statuses = Map.of(CommandStatus.EXISTING_KEYSPACES, keyspaces);
-      }
+      Map<CommandStatus, Object> statuses = useKeyspaceNaming ? Map.of(CommandStatus.EXISTING_KEYSPACES, keyspaces) : Map.of(CommandStatus.EXISTING_NAMESPACES, keyspaces);
       return new CommandResult(statuses);
     }
   }

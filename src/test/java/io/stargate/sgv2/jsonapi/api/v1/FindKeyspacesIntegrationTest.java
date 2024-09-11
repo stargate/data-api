@@ -72,7 +72,7 @@ class FindKeyspacesIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .body(
               "status.warnings",
               hasItem(
-                  "This FindNamespacesCommand has been deprecated and will be removed in future releases, use FindKeyspacesCommand instead."));
+                  "This findNamespaces has been deprecated and will be removed in future releases, use findKeyspaces instead."));
     }
   }
 
