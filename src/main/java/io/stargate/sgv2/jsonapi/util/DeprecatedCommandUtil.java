@@ -54,9 +54,8 @@ public class DeprecatedCommandUtil {
    * Name, and generate warning message.
    *
    * <p>We don't want command as suffix, as it is not the actually command json that user needs e.g.
-   * "deprecatedCommandWarning":"deprecated command \"FindNamespacesCommand\", please switch to
-   * \"FindKeyspacesCommand\"." "deprecatedCommandWarning":"deprecated command \"FindNamespaces\",
-   * please switch to \"FindKeyspaces\"."
+   * "deprecated command \"FindNamespacesCommand\", please switch to
+   * "deprecated command \"FindNamespaces\", please switch to \"FindKeyspaces\"."
    *
    * @param commandContext commandContext that has original command name
    * @return a message states using of deprecated command

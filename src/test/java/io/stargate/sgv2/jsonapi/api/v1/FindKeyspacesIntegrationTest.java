@@ -70,8 +70,8 @@ class FindKeyspacesIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .body("status.namespaces", hasSize(greaterThanOrEqualTo(1)))
           .body("status.namespaces", hasItem(namespaceName))
           .body(
-              "deprecatedCommandWarning",
-              equalTo(
+              "status.warnings",
+                  hasItem(
                   "deprecated command \"FindNamespaces\", please switch to \"FindKeyspaces\"."));
     }
   }

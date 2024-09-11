@@ -197,8 +197,8 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .statusCode(200)
           .body("status.ok", is(1))
           .body(
-              "deprecatedCommandWarning",
-              equalTo("deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
+              "status.warnings",
+              hasItem("deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
 
       // ensure it's dropped
       json =
@@ -283,8 +283,8 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .statusCode(200)
           .body("status.ok", is(1))
           .body(
-              "deprecatedCommandWarning",
-              equalTo("deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
+              "status.warnings",
+              hasItem("deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
 
       // ensure it's dropped
       json =
@@ -327,8 +327,8 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .statusCode(200)
           .body("status.ok", is(1))
           .body(
-              "deprecatedCommandWarning",
-              equalTo("deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
+              "status.warnings",
+              hasItem("deprecated command \"DropNamespace\", please switch to \"DropKeyspace\"."));
     }
   }
 

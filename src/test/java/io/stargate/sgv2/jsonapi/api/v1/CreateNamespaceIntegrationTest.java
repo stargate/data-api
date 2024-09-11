@@ -1,8 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -184,8 +183,8 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .statusCode(200)
           .body("status.ok", is(1))
           .body(
-              "deprecatedCommandWarning",
-              equalTo(
+              "status.warnings",
+              hasItem(
                   "deprecated command \"CreateNamespace\", please switch to \"CreateKeyspace\"."));
     }
 
@@ -211,8 +210,8 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .statusCode(200)
           .body("status.ok", is(1))
           .body(
-              "deprecatedCommandWarning",
-              equalTo(
+              "status.warnings",
+              hasItem(
                   "deprecated command \"CreateNamespace\", please switch to \"CreateKeyspace\"."));
     }
 
@@ -244,8 +243,8 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .statusCode(200)
           .body("status.ok", is(1))
           .body(
-              "deprecatedCommandWarning",
-              equalTo(
+              "status.warnings",
+              hasItem(
                   "deprecated command \"CreateNamespace\", please switch to \"CreateKeyspace\"."));
     }
 
