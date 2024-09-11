@@ -32,7 +32,7 @@ public interface Command {
   /**
    * commandName that refers to the public command name
    *
-   * <p>e.g. FindKeyspacesCommand publicCommandName -> findKeyspaces CreateCollectionCommand
+   * <p>e.g. FindKeyspacesCommand publicCommandName -> findKeyspaces. CreateCollectionCommand
    * publicCommandName -> createCollection
    */
   PublicCommandName publicCommandName();
