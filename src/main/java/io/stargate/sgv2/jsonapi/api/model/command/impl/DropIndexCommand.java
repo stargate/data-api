@@ -18,4 +18,11 @@ public record DropIndexCommand(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Unique name for the index.")
         String indexName)
-    implements NoOptionsCommand, CollectionCommand {}
+    implements NoOptionsCommand, CollectionCommand {
+
+  /** {@inheritDoc} */
+  @Override
+  public CommandName commandName() {
+    return CommandName.DROP_INDEX;
+  }
+}

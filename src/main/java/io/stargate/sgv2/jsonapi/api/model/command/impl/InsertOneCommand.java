@@ -23,4 +23,11 @@ public record InsertOneCommand(
             implementation = Object.class,
             type = SchemaType.OBJECT)
         JsonNode document)
-    implements ModifyCommand, NoOptionsCommand {}
+    implements ModifyCommand, NoOptionsCommand {
+
+  /** {@inheritDoc} */
+  @Override
+  public CommandName commandName() {
+    return CommandName.INSERT_ONE;
+  }
+}

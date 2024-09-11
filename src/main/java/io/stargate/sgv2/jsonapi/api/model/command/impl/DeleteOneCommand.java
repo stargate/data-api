@@ -29,4 +29,11 @@ public record DeleteOneCommand(
         @JsonProperty("filter")
         FilterClause filterClause,
     @Valid @JsonProperty("sort") SortClause sortClause)
-    implements ModifyCommand, NoOptionsCommand, Filterable, Sortable {}
+    implements ModifyCommand, NoOptionsCommand, Filterable, Sortable {
+
+  /** {@inheritDoc} */
+  @Override
+  public CommandName commandName() {
+    return CommandName.DELETE_ONE;
+  }
+}

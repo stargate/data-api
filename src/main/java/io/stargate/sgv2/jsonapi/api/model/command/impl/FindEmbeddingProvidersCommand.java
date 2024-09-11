@@ -7,4 +7,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 @Schema(description = "Command that lists all available vector providers.")
 @JsonTypeName("findEmbeddingProviders")
-public record FindEmbeddingProvidersCommand() implements GeneralCommand, NoOptionsCommand {}
+public record FindEmbeddingProvidersCommand() implements GeneralCommand, NoOptionsCommand {
+
+  /** {@inheritDoc} */
+  @Override
+  public CommandName commandName() {
+    return CommandName.FIND_EMBEDDING_PROVIDERS;
+  }
+}

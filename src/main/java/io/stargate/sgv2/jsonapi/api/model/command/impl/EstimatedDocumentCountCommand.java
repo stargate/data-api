@@ -9,4 +9,11 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
     description =
         "Command that returns estimated count of documents in a collection based on the collection.")
 @JsonTypeName("estimatedDocumentCount")
-public record EstimatedDocumentCountCommand() implements ReadCommand, NoOptionsCommand {}
+public record EstimatedDocumentCountCommand() implements ReadCommand, NoOptionsCommand {
+
+  /** {@inheritDoc} */
+  @Override
+  public CommandName commandName() {
+    return CommandName.ESTIMATED_DOCUMENT_COUNT;
+  }
+}
