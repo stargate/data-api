@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import io.stargate.sgv2.jsonapi.exception.ServerException;
-import io.stargate.sgv2.jsonapi.exception.catchable.UnsupportedCqlType;
+import io.stargate.sgv2.jsonapi.exception.catchable.UnsupportedCqlTypeForDML;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertAttempt;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
@@ -74,7 +74,7 @@ public class TableInsertAttempt implements InsertAttempt {
     for (var cqlNamedValue : row.keyColumns().values()) {
       try {
         apiColumns.put(ApiColumnDef.from(cqlNamedValue.name()));
-      } catch (UnsupportedCqlType e) {
+      } catch (UnsupportedCqlTypeForDML e) {
         throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
       }
     }

@@ -266,19 +266,6 @@ public final class ThrowableToErrorMapper {
 
   private static CommandResult.Error handleUnrecognizedException(
       Throwable throwable, String message) {
-
-    StackTraceElement[] stackTraceElements = Thread.currentThread().getStackTrace();
-
-    // Iterate and log each element in the stack trace
-    StringBuilder stackTraceBuilder = new StringBuilder("Current call stack:\n");
-    for (StackTraceElement element : stackTraceElements) {
-      stackTraceBuilder.append("\tat ").append(element).append("\n");
-    }
-
-    // Log the complete stack trace
-    logger.warn("IN handleUnrecognizedException");
-    logger.warn(stackTraceBuilder.toString());
-
     logger.error(
         String.format(
             "Unrecognized Exception (%s) caught, mapped to SERVER_UNHANDLED_ERROR: %s",

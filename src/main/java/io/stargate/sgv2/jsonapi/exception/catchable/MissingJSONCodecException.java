@@ -10,7 +10,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
  * <p>Not intended to be returned on the API, usage of the JSONCodec's should catch this and turn it
  * into the appropriate API error.
  */
-public class MissingJSONCodecException extends CatchableApiException {
+public class MissingJSONCodecException extends CheckedApiException {
 
   // TODO: both javaType and value may be null when going toJSON
   public final TableMetadata table;

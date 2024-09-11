@@ -8,7 +8,7 @@ import com.datastax.oss.driver.api.core.type.DataType;
  * <p>Not intended to be returned on the API, usage of the JSONCodec's should catch this and turn it
  * into the appropriate API error.
  */
-public class ToCQLCodecException extends CatchableApiException {
+public class ToCQLCodecException extends CheckedApiException {
 
   public final Object value;
   public final DataType targetCQLType;

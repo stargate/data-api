@@ -1,8 +1,10 @@
 package io.stargate.sgv2.jsonapi.util;
 
+import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
+
 /**
- * Helper used to print the objects when testing, for example the {@ink JsonNamedValueContainer} and
- * the fixture types.
+ * Helper used to print the objects when testing, for example the {@link JsonNamedValueContainer}
+ * and the fixture types.
  *
  * <p>Useful because there tests have a lot of context with them, example of the sort of output:
  *

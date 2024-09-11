@@ -9,7 +9,7 @@ public class TableSchemaObject extends SchemaObject {
   public final TableMetadata tableMetadata;
 
   public TableSchemaObject(TableMetadata tableMetadata) {
-    // uses asCwl(pretty) so the names do not always include double quotes
+    // uses asCql(pretty) so the names do not always include double quotes
     super(
         TYPE,
         new SchemaObjectName(

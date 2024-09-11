@@ -10,7 +10,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
  * <p>Not intended to be returned on the API, usage of the JSONCodec's should catch this and turn it
  * into the appropriate API error.
  */
-public class UnknownColumnException extends CatchableApiException {
+public class UnknownColumnException extends CheckedApiException {
 
   public final TableMetadata table;
   public final CqlIdentifier column;

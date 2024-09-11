@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import io.stargate.sgv2.jsonapi.exception.catchable.UnsupportedCqlType;
+import io.stargate.sgv2.jsonapi.exception.catchable.UnsupportedCqlTypeForDML;
 import java.util.Objects;
 
 /**
@@ -40,14 +40,15 @@ public class ApiColumnDef {
    *
    * @param columnMetadata the column metadata to convert
    * @return a new instance of {@link ApiColumnDef}
-   * @throws UnsupportedCqlType if the column metadata uses a type that is not supported by the API.
+   * @throws UnsupportedCqlTypeForDML if the column metadata uses a type that is not supported by
+   *     the API.
    */
-  public static ApiColumnDef from(ColumnMetadata columnMetadata) throws UnsupportedCqlType {
+  public static ApiColumnDef from(ColumnMetadata columnMetadata) throws UnsupportedCqlTypeForDML {
     Objects.requireNonNull(columnMetadata, "columnMetadata is must not be null");
 
     var optionalType = ApiDataTypeDefs.from(columnMetadata.getType());
     if (optionalType.isEmpty()) {
-      throw new UnsupportedCqlType(columnMetadata);
+      throw new UnsupportedCqlTypeForDML(columnMetadata);
     }
     return new ApiColumnDef(columnMetadata.getName(), optionalType.get());
   }

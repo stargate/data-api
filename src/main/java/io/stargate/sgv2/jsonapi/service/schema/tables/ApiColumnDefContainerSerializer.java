@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
 
 /**
- * Serialise for a container of {@link ApiColumnDef} objects when returning the schema in a
+ * Serializer for a container of {@link ApiColumnDef} objects when returning the schema in a
  * response.
  *
  * <p>Example:

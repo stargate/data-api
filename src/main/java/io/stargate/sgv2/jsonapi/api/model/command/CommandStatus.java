@@ -75,12 +75,16 @@ public enum CommandStatus {
   UPSERTED_ID,
 
   /**
-   * The element contains the schema that describes either the structure of the insertedIds, only
-   * present when working with Tables.
+   * The element contains the schema that describes the structure of the insertedIds, only present
+   * when working with Tables.
    *
-   * <p>The value of <code>insertedId</code> is an array of values, each value is a JSON value which
-   * for Table is an array of values. The schema is an ordered map of the fields contained in the
-   * array.
+   * <p>The value of <code>insertedId</code> element in the status is an array of values. For
+   * collections this is an array of the value for <code>_id</code> field for the inserted
+   * documents. For tables, where the primary key of the table may be multiple columns, the value of
+   * the items in the array is an array of the primary key values for the inserted rows. For
+   * example, with two columns in the PK it may be <code>[ [2000, "aaron"], [2001, "bob"]</code>.
+   * The schema tells the client what the structure of the array is using the same layout for field
+   * definitions as the is used in createTable command.
    */
   @JsonProperty("primaryKeySchema")
   PRIMARY_KEY_SCHEMA;

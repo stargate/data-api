@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.exception.catchable;
 
 /** Thrown when asked to parse the name of a API data type for a table column. */
-public class UnknownApiDataType extends CatchableApiException {
+public class UnknownApiDataType extends CheckedApiException {
 
   private final String typeName;
 

@@ -27,14 +27,12 @@ import java.util.function.Supplier;
 public class InsertOperationPage implements Supplier<CommandResult> {
 
   // All the insertions that are going to be attempted
-  private final List<? extends InsertAttempt> allInsertions;
+  private final List<InsertAttempt> allInsertions;
 
   // True if the response should include detailed info for each document
   private final boolean returnDocumentResponses;
 
   // The success and failed lists are mutable and are used to build the response
-  // they do not use the ? wild card because they are always added to via {@link #aggregate} which
-  // wants to accept only of the InsertAttempt interface
   private final List<InsertAttempt> successfulInsertions;
   private final List<InsertAttempt> failedInsertions;
 
@@ -56,7 +54,9 @@ public class InsertOperationPage implements Supplier<CommandResult> {
   /**
    * Create an instance with the given parameters
    *
-   * @param allAttemptedInsertions All the insertions that are going to be attempted.
+   * @param allAttemptedInsertions All the insertions that are going to be attempted. Accepts
+   *     wildcard to allow for implementations of the {@link InsertAttempt} interface to be passed
+   *     easily.
    * @param returnDocumentResponses If the response should include detailed info for each document.
    * @param debugMode If the debug mode is enabled, errors include the errorclass.
    * @param useErrorObjectV2 Flagged true to include the new error object v2.
@@ -67,7 +67,8 @@ public class InsertOperationPage implements Supplier<CommandResult> {
       boolean debugMode,
       boolean useErrorObjectV2) {
 
-    this.allInsertions = List.copyOf(allAttemptedInsertions);
+    Objects.requireNonNull(allAttemptedInsertions, "allAttemptedInsertions cannot be null");
+    this.allInsertions = allAttemptedInsertions.stream().map(InsertAttempt.class::cast).toList();
     this.returnDocumentResponses = returnDocumentResponses;
 
     this.successfulInsertions = new ArrayList<>(allAttemptedInsertions.size());
@@ -182,11 +183,11 @@ public class InsertOperationPage implements Supplier<CommandResult> {
   }
 
   /**
-   * Adds the schema for the first insert attempt to the status map, is the first insert attempt has
+   * Adds the schema for the first insert attempt to the status map, if the first insert attempt has
    * schema to report.
    *
    * <p>Uses the first, not the first successful, because we may fail to do an insert but will still
-   * the _id or PK to report.
+   * have the _id or PK to report.
    *
    * @param status Map to add the status to
    */
@@ -253,7 +254,7 @@ public class InsertOperationPage implements Supplier<CommandResult> {
             .formatted(insertAttempt.docRowID().orElseThrow(), throwable.getMessage());
     /// TODO: confirm the null handling in the getMapperWithMessageFunction
     // passing null is what would have happened before changing to optional
-    // BUG: this does not handle is the debug flag is set.
+    // BUG: this does not handle if the debug flag is set.
     return ThrowableToErrorMapper.getMapperWithMessageFunction()
         .apply(insertAttempt.failure().orElse(null), message);
   }
