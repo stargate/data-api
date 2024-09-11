@@ -49,7 +49,7 @@ public record FindOneAndReplaceCommand(
 
   /** {@inheritDoc} */
   @Override
-  public PublicCommandName publicCommandName() {
-    return PublicCommandName.FIND_ONE_AND_REPLACE;
+  public CommandName commandName() {
+    return CommandName.FIND_ONE_AND_REPLACE;
   }
 }

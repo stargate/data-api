@@ -20,7 +20,7 @@ public record DropNamespaceCommand(
 
   /** {@inheritDoc} */
   @Override
-  public PublicCommandName publicCommandName() {
-    return PublicCommandName.DROP_NAMESPACE;
+  public CommandName commandName() {
+    return CommandName.DROP_NAMESPACE;
   }
 }

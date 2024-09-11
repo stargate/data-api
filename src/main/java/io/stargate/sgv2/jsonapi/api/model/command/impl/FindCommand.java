@@ -70,7 +70,7 @@ public record FindCommand(
 
   /** {@inheritDoc} */
   @Override
-  public PublicCommandName publicCommandName() {
-    return PublicCommandName.find;
+  public CommandName commandName() {
+    return CommandName.FIND;
   }
 }

@@ -30,15 +30,15 @@ import io.stargate.sgv2.jsonapi.service.resolver.CommandResolver;
 public interface Command {
 
   /**
-   * commandName that refers to the public command name
+   * commandName that refers to the api command name
    *
    * <p>e.g. FindKeyspacesCommand publicCommandName -> findKeyspaces. CreateCollectionCommand
    * publicCommandName -> createCollection
    */
-  PublicCommandName publicCommandName();
+  CommandName commandName();
 
-  /** Enum class for API public command name. This is what user uses for command json body. */
-  enum PublicCommandName {
+  /** Enum class for API command name. This is what user uses for command json body. */
+  enum CommandName {
     ADD_INDEX("addIndex"),
     COUNT_DOCUMENTS("countDocuments"),
     CREATE_COLLECTION("createCollection"),
@@ -64,14 +64,14 @@ public interface Command {
     UPDATE_MANY("updateMany"),
     UPDATE_ONE("updateOne");
 
-    private final String publicCommandName;
+    private final String apiName;
 
-    PublicCommandName(String publicCommandName) {
-      this.publicCommandName = publicCommandName;
+    CommandName(String apiName) {
+      this.apiName = apiName;
     }
 
-    public String getPublicCommandName() {
-      return publicCommandName;
+    public String getApiName() {
+      return apiName;
     }
   }
 }

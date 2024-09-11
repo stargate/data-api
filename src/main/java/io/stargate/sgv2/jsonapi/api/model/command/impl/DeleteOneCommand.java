@@ -33,7 +33,7 @@ public record DeleteOneCommand(
 
   /** {@inheritDoc} */
   @Override
-  public PublicCommandName publicCommandName() {
-    return PublicCommandName.DELETE_ONE;
+  public CommandName commandName() {
+    return CommandName.DELETE_ONE;
   }
 }

@@ -11,7 +11,7 @@ public record FindNamespacesCommand() implements GeneralCommand, NoOptionsComman
 
   /** {@inheritDoc} */
   @Override
-  public PublicCommandName publicCommandName() {
-    return PublicCommandName.FIND_NAMESPACES;
+  public CommandName commandName() {
+    return CommandName.FIND_NAMESPACES;
   }
 }

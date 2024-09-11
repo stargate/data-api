@@ -18,7 +18,7 @@ public record CountDocumentsCommand(@Valid @JsonProperty("filter") FilterClause 
 
   /** {@inheritDoc} */
   @Override
-  public PublicCommandName publicCommandName() {
-    return PublicCommandName.COUNT_DOCUMENTS;
+  public CommandName commandName() {
+    return CommandName.COUNT_DOCUMENTS;
   }
 }

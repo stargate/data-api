@@ -35,7 +35,7 @@ public record UpdateOneCommand(
 
   /** {@inheritDoc} */
   @Override
-  public PublicCommandName publicCommandName() {
-    return PublicCommandName.UPDATE_ONE;
+  public CommandName commandName() {
+    return CommandName.UPDATE_ONE;
   }
 }

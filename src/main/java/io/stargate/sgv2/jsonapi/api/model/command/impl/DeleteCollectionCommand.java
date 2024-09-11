@@ -25,7 +25,7 @@ public record DeleteCollectionCommand(
 
   /** {@inheritDoc} */
   @Override
-  public PublicCommandName publicCommandName() {
-    return PublicCommandName.DELETE_COLLECTION;
+  public CommandName commandName() {
+    return CommandName.DELETE_COLLECTION;
   }
 }

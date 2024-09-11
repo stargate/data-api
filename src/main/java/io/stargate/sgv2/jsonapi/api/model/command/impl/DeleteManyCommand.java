@@ -30,7 +30,7 @@ public record DeleteManyCommand(
 
   /** {@inheritDoc} */
   @Override
-  public PublicCommandName publicCommandName() {
-    return PublicCommandName.DELETE_MANY;
+  public CommandName commandName() {
+    return CommandName.DELETE_MANY;
   }
 }

@@ -13,7 +13,7 @@ public record EstimatedDocumentCountCommand() implements ReadCommand, NoOptionsC
 
   /** {@inheritDoc} */
   @Override
-  public PublicCommandName publicCommandName() {
-    return PublicCommandName.ESTIMATED_DOCUMENT_COUNT;
+  public CommandName commandName() {
+    return CommandName.ESTIMATED_DOCUMENT_COUNT;
   }
 }

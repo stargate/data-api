@@ -27,7 +27,7 @@ public record InsertOneCommand(
 
   /** {@inheritDoc} */
   @Override
-  public PublicCommandName publicCommandName() {
-    return PublicCommandName.INSERT_ONE;
+  public CommandName commandName() {
+    return CommandName.INSERT_ONE;
   }
 }

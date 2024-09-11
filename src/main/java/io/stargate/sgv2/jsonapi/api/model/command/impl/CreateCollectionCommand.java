@@ -281,7 +281,7 @@ public record CreateCollectionCommand(
 
   /** {@inheritDoc} */
   @Override
-  public PublicCommandName publicCommandName() {
-    return PublicCommandName.CREATE_COLLECTION;
+  public CommandName commandName() {
+    return CommandName.CREATE_COLLECTION;
   }
 }

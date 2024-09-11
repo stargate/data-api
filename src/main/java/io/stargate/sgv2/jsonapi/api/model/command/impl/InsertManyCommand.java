@@ -51,7 +51,7 @@ public record InsertManyCommand(
 
   /** {@inheritDoc} */
   @Override
-  public PublicCommandName publicCommandName() {
-    return PublicCommandName.INSERT_MANY;
+  public CommandName commandName() {
+    return CommandName.INSERT_MANY;
   }
 }
