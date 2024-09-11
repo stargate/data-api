@@ -221,18 +221,36 @@ public class InsertOperationPage implements Supplier<CommandResult> {
 
   /**
    * Original error object V1, before the family etc, when the exception is not a ApiException aaron
-   * - 3 sept 2024 - old code, moved but mostly left alone
+   * - 3 sept 2024 - old code, moved but mostly left alone.
+   *
+   * <p>the reference "how it used to work" version of this class is the commit at <code>
+   * c3ea7b01ef5b658b4bd51be7fc98b0e0333c3e87</code>. In that, when generating the errors for
+   * perDocument response it called the mapper without a message prefix, it added the prefix "Failed
+   * to insert document with _id %s: %s" when doing the non perDocument responsed. Replicating below
+   * for we fail the IT's in {@link InsertIntegrationTest.InsertManyFails} for per doc responses. In
+   * this reference version this was the function "getError(Throwable throwable)"
    */
   private CommandResult.Error getErrorObjectV1(InsertAttempt insertAttempt) {
+
+    // aaron we should not be here unless the attempt has failed.
+    var throwable =
+        insertAttempt
+            .failure()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        String.format(
+                            "getErrorObjectV1: attempting to get an error object for an insertAttempt that has not failed. insertAttempt: %s",
+                            insertAttempt)));
+
+    if (returnDocumentResponses) {
+      return ThrowableToErrorMapper.getMapperWithMessageFunction()
+          .apply(throwable, throwable.getMessage());
+    }
+
     String message =
         "Failed to insert document with _id %s: %s"
-            .formatted(
-                insertAttempt.docRowID().orElseThrow(),
-                insertAttempt
-                    .failure()
-                    .map(Throwable::getMessage)
-                    .orElse("InsertAttempt failure was null."));
-
+            .formatted(insertAttempt.docRowID().orElseThrow(), throwable.getMessage());
     /// TODO: confirm the null handling in the getMapperWithMessageFunction
     // passing null is what would have happened before changing to optional
     // BUG: this does not handle is the debug flag is set.
