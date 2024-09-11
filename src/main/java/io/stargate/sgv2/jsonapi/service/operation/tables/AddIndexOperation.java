@@ -33,15 +33,15 @@ public record AddIndexOperation(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
     logger.info(
         "Executing AddIndexOperation for {} {} {} {}",
-        context.schemaObject().name.keyspace(),
-        context.schemaObject().name.table(),
+        context.schemaObject().name().keyspace(),
+        context.schemaObject().name().table(),
         columnName,
         indexName);
     String cql =
         ADD_INDEX_TEMPLATE.formatted(
             indexName,
-            context.schemaObject().name.keyspace(),
-            context.schemaObject().name.table(),
+            context.schemaObject().name().keyspace(),
+            context.schemaObject().name().table(),
             columnName);
     SimpleStatement query = SimpleStatement.newInstance(cql);
     // execute

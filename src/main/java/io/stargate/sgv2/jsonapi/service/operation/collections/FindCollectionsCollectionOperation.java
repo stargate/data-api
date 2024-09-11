@@ -60,13 +60,13 @@ public record FindCollectionsCollectionOperation(
             .getSession(dataApiRequestInfo)
             .getMetadata()
             .getKeyspaces()
-            .get(CqlIdentifier.fromInternal(commandContext.schemaObject().name.keyspace()));
+            .get(CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace()));
     if (keyspaceMetadata == null) {
       return Uni.createFrom()
           .failure(
               ErrorCodeV1.NAMESPACE_DOES_NOT_EXIST.toApiException(
                   "Unknown namespace '%s', you must create it first",
-                  commandContext.schemaObject().name.keyspace()));
+                  commandContext.schemaObject().name().keyspace()));
     }
     return Uni.createFrom()
         .item(
@@ -106,7 +106,7 @@ public record FindCollectionsCollectionOperation(
         return new CommandResult(statuses);
       } else {
         List<String> tables =
-            collections.stream().map(schemaObject -> schemaObject.name.table()).toList();
+            collections.stream().map(schemaObject -> schemaObject.name().table()).toList();
         Map<CommandStatus, Object> statuses = Map.of(CommandStatus.EXISTING_COLLECTIONS, tables);
         return new CommandResult(statuses);
       }

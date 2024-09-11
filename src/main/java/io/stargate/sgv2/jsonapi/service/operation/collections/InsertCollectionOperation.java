@@ -75,7 +75,7 @@ public record InsertCollectionOperation(
     final boolean vectorEnabled = commandContext().schemaObject().isVectorEnabled();
     if (!vectorEnabled && insertions.stream().anyMatch(insertion -> insertion.hasVectorValues())) {
       throw ErrorCodeV1.VECTOR_SEARCH_NOT_SUPPORTED.toApiException(
-          commandContext().schemaObject().name.table());
+          commandContext().schemaObject().name().table());
     }
     // create json doc write metrics
     if (commandContext.jsonProcessingMetricsReporter() != null) {
@@ -233,8 +233,8 @@ public record InsertCollectionOperation(
       // IF NOT EXISTS clause
       return String.format(
           insertWithVector,
-          commandContext.schemaObject().name.keyspace(),
-          commandContext.schemaObject().name.table());
+          commandContext.schemaObject().name().keyspace(),
+          commandContext.schemaObject().name().table());
     } else {
       String insert =
           "INSERT INTO \"%s\".\"%s\""
@@ -246,8 +246,8 @@ public record InsertCollectionOperation(
       // IF NOT EXISTS clause
       return String.format(
           insert,
-          commandContext.schemaObject().name.keyspace(),
-          commandContext.schemaObject().name.table());
+          commandContext.schemaObject().name().keyspace(),
+          commandContext.schemaObject().name().table());
     }
   }
 

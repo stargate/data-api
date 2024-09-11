@@ -35,7 +35,7 @@ public interface ValidatableCommandClause {
       return;
     }
 
-    switch (commandContext.schemaObject().type) {
+    switch (commandContext.schemaObject().type()) {
       case COLLECTION:
         validatable.validateCollectionCommand(commandContext.asCollectionContext());
         break;
@@ -50,7 +50,7 @@ public interface ValidatableCommandClause {
         break;
       default:
         throw new UnsupportedOperationException(
-            String.format("Unsupported schema type: %s", commandContext.schemaObject().type));
+            String.format("Unsupported schema type: %s", commandContext.schemaObject().type()));
     }
   }
 
@@ -69,7 +69,7 @@ public interface ValidatableCommandClause {
     throw new UnsupportedOperationException(
         String.format(
             "validateCollectionCommand: %s Clause does not support validating for Collections, target was %s",
-            getClass().getSimpleName(), commandContext.schemaObject().name));
+            getClass().getSimpleName(), commandContext.schemaObject().name()));
   }
 
   /**
@@ -87,7 +87,7 @@ public interface ValidatableCommandClause {
     throw new UnsupportedOperationException(
         String.format(
             "validateTableCommand: %s Clause does not support validating for Tables, target was %s",
-            getClass().getSimpleName(), commandContext.schemaObject().name));
+            getClass().getSimpleName(), commandContext.schemaObject().name()));
   }
 
   /**
@@ -105,7 +105,7 @@ public interface ValidatableCommandClause {
     throw new UnsupportedOperationException(
         String.format(
             "validateNamespaceCommand: %s Clause does not support validating for Namespaces, target was %s",
-            getClass().getSimpleName(), commandContext.schemaObject().name));
+            getClass().getSimpleName(), commandContext.schemaObject().name()));
   }
 
   /**
@@ -123,6 +123,6 @@ public interface ValidatableCommandClause {
     throw new UnsupportedOperationException(
         String.format(
             "validateDatabaseCommand: %s Clause does not support validating for Databases, target was %s",
-            getClass().getSimpleName(), commandContext.schemaObject().name));
+            getClass().getSimpleName(), commandContext.schemaObject().name()));
   }
 }
