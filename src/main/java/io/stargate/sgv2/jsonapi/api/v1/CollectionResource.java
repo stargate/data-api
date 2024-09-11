@@ -191,7 +191,7 @@ public class CollectionResource {
                 final ApiFeatures apiFeatures =
                     ApiFeatures.fromConfigAndRequest(
                         apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
-                if ((schemaObject.type == SchemaObject.SchemaObjectType.TABLE)
+                if ((schemaObject.type() == SchemaObject.SchemaObjectType.TABLE)
                     && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
                   return Uni.createFrom()
                       .failure(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException());

@@ -178,9 +178,9 @@ public record CommandContext<T extends SchemaObject>(
 
   private void checkSchemaObjectType(SchemaObject.SchemaObjectType expectedType) {
     Preconditions.checkArgument(
-        schemaObject().type == expectedType,
+        schemaObject().type() == expectedType,
         "SchemaObject type actual was %s expected was %s ",
-        schemaObject().type,
+        schemaObject().type(),
         expectedType);
   }
 }
