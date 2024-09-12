@@ -32,7 +32,9 @@ public record CreateNamespaceCommand(
 
   @Schema(
       name = "CreateNamespaceCommand.Options",
-      description = "Options for creating a new namespace.")
+      description =
+          "Options for creating a new namespace. This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead.",
+      deprecated = true)
   public record Options(@Nullable @Valid Replication replication) {}
 
   /**
