@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -15,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
@@ -97,7 +97,8 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> commandContext, FindOneAndUpdateCommand command) {
-    LogicalExpression logicalExpression = collectionFilterResolver.resolve(commandContext, command);
+    final DBLogicalExpression dbLogicalExpression =
+        collectionFilterResolver.resolve(commandContext, command);
 
     final SortClause sortClause = command.sortClause();
     SchemaValidatable.maybeValidate(commandContext, sortClause);
@@ -111,12 +112,12 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
-        logicalExpression,
+        dbLogicalExpression,
         indexUsage);
     if (vector != null) {
       return FindCollectionOperation.vsearchSingle(
           commandContext,
-          logicalExpression,
+          dbLogicalExpression,
           DocumentProjector.includeAllProjector(),
           CollectionReadType.DOCUMENT,
           objectMapper,
@@ -129,7 +130,7 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
     if (orderBy != null) {
       return FindCollectionOperation.sortedSingle(
           commandContext,
-          logicalExpression,
+          dbLogicalExpression,
           // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
           // read path:
           DocumentProjector.includeAllProjector(),
@@ -146,7 +147,7 @@ public class FindOneAndUpdateCommandResolver implements CommandResolver<FindOneA
     } else {
       return FindCollectionOperation.unsortedSingle(
           commandContext,
-          logicalExpression,
+          dbLogicalExpression,
           // 24-Mar-2023, tatu: Since we update the document, need to avoid modifications on
           // read path:
           DocumentProjector.includeAllProjector(),

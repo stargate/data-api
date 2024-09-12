@@ -8,16 +8,16 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -41,24 +41,26 @@ public class FilterMatchRuleTest {
               }
               """;
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
-      Function<CaptureExpression, List<DBFilterBase>> resolveFunction =
-          captureExpression -> filters;
+      BiFunction<DBLogicalExpression, CaptureGroups, DBLogicalExpression> resolveFunction =
+          (dbLogicalExpression, captureGroups) -> dbLogicalExpression;
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY, resolveFunction);
+          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
       matcher
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
-      FilterMatchRule<FindOneCommand> filterMatchRule = new FilterMatchRule(matcher);
-      Optional<LogicalExpression> response =
+      FilterMatchRule<FindOneCommand> filterMatchRule =
+          new FilterMatchRule(matcher, resolveFunction);
+      Optional<DBLogicalExpression> response =
           filterMatchRule.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
       assertThat(response).isPresent();
 
-      matcher = new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY, resolveFunction);
+      matcher = new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
       matcher
           .capture("CAPTURE 1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.NULL);
-      filterMatchRule = new FilterMatchRule(matcher);
+      filterMatchRule = new FilterMatchRule(matcher, resolveFunction);
+
       response = filterMatchRule.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
       assertThat(response).isEmpty();
     }
@@ -74,19 +76,20 @@ public class FilterMatchRuleTest {
                   }
                   """;
       FindOneCommand findOneCommand = objectMapper.readValue(json, FindOneCommand.class);
-      Function<CaptureExpression, List<DBFilterBase>> resolveFunction =
-          captureExpression -> filters;
+      BiFunction<DBLogicalExpression, CaptureGroups, DBLogicalExpression> resolveFunction =
+          (dbLogicalExpression, captureGroups) -> dbLogicalExpression;
       FilterMatcher<FindOneCommand> matcher =
-          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY, resolveFunction);
+          new FilterMatcher<>(FilterMatcher.MatchStrategy.GREEDY);
 
-      FilterMatchRule<FindOneCommand> filterMatchRule = new FilterMatchRule(matcher);
+      FilterMatchRule<FindOneCommand> filterMatchRule =
+          new FilterMatchRule(matcher, resolveFunction);
 
       filterMatchRule
           .matcher()
           .capture("capture marker")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
 
-      Optional<LogicalExpression> response =
+      Optional<DBLogicalExpression> response =
           filterMatchRule.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
       assertThat(response).isPresent();
     }
