@@ -15,4 +15,15 @@ public class CqlNamedValue extends NamedValue<ColumnMetadata, Object> {
   public CqlNamedValue(ColumnMetadata name, Object value) {
     super(name, value);
   }
+
+  @Override
+  public String toString() {
+    return new StringBuilder(getClass().getSimpleName())
+        .append("{columnName=")
+        .append(name().getName())
+        .append(", value=")
+        .append(value())
+        .append("}")
+        .toString();
+  }
 }

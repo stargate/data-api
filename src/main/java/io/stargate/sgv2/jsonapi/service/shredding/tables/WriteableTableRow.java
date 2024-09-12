@@ -25,9 +25,9 @@ import java.util.Objects;
 public class WriteableTableRow implements WritableDocRow, PrettyPrintable {
 
   private final TableSchemaObject tableSchemaObject;
-  private final OrderedCqlNamedValueContainer keyColumns;
-  private final UnorderedCqlNamedValueContainer nonKeyColumns;
-  private final OrderedCqlNamedValueContainer allColumns;
+  private final CqlNamedValueContainer keyColumns;
+  private final CqlNamedValueContainer nonKeyColumns;
+  private final CqlNamedValueContainer allColumns;
 
   private final RowId id;
 
@@ -44,13 +44,13 @@ public class WriteableTableRow implements WritableDocRow, PrettyPrintable {
    */
   public WriteableTableRow(
       TableSchemaObject tableSchemaObject,
-      OrderedCqlNamedValueContainer keyColumns,
-      UnorderedCqlNamedValueContainer nonKeyColumns) {
+      CqlNamedValueContainer keyColumns,
+      CqlNamedValueContainer nonKeyColumns) {
     this.tableSchemaObject =
         Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     this.keyColumns = Objects.requireNonNull(keyColumns, "keyColumns must not be null");
     this.nonKeyColumns = Objects.requireNonNull(nonKeyColumns, "nonKeyColumns must not be null");
-    this.allColumns = new OrderedCqlNamedValueContainer();
+    this.allColumns = new CqlNamedValueContainer();
     this.allColumns.putAll(keyColumns);
     this.allColumns.putAll(nonKeyColumns);
 
@@ -69,8 +69,8 @@ public class WriteableTableRow implements WritableDocRow, PrettyPrintable {
   /**
    * All the columns to be inserted.
    *
-   * @return an {@link OrderedCqlNamedValueContainer} that contains all the columns in the table,
-   *     with the * {@link #keyColumns()} first, followed by the {@link #nonKeyColumns()}.
+   * @return an {@link CqlNamedValueContainer} that contains all the columns in the table, with the
+   *     * {@link #keyColumns()} first, followed by the {@link #nonKeyColumns()}.
    */
   public CqlNamedValueContainer allColumns() {
     return allColumns;
