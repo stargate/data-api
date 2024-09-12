@@ -13,13 +13,19 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(description = "Command that creates a namespace.")
+@Schema(
+    description =
+        "Command that creates a namespace. This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead.",
+    deprecated = true)
 @JsonTypeName("createNamespace")
 public record CreateNamespaceCommand(
     @NotNull
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Size(min = 1, max = 48)
-        @Schema(description = "Name of the namespace")
+        @Schema(
+            description =
+                "Name of the namespace. This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead.",
+            deprecated = true)
         String name,
     @Nullable @Valid CreateNamespaceCommand.Options options)
     implements GeneralCommand, DeprecatedCommand {
@@ -38,7 +44,10 @@ public record CreateNamespaceCommand(
    *     `replication_factor` is optional. For the <code>NetworkTopologyStrategy</code> each data
    *     center with replication.
    */
-  @Schema(description = "Cassandra based replication settings.")
+  @Schema(
+      description =
+          "Cassandra based replication settings. This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead.",
+      deprecated = true)
   // no record due to the @JsonAnySetter, see
   // https://github.com/FasterXML/jackson-databind/issues/562
   public static class Replication {
