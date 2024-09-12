@@ -34,7 +34,6 @@ public class CreateKeyspaceCommandResolver
         (command.options() != null && command.options().replication() != null)
             ? command.options().replication().strategyOptions()
             : null;
-    ;
     String replicationMap = getReplicationMap(strategy, strategyOptions);
     return new CreateKeyspaceOperation(command.name(), replicationMap);
   }
