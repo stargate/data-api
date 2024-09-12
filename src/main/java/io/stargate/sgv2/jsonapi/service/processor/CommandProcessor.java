@@ -5,6 +5,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.APIException;
+import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -14,7 +18,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.Optional;
+import java.util.List;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,24 +90,35 @@ public class CommandProcessor {
         // handle failures here
         .onFailure()
         .recoverWithItem(
-            t -> {
-              // DocsException is supplier of the CommandResult
-              // so simply return
-              if (t instanceof JsonApiException jsonApiException) {
-                // Note: JsonApiException means that JSON API itself handled the situation
-                // (created, or wrapped the exception) -- should not be logged (have already
-                // been logged if necessary)
-                return jsonApiException;
-              }
-              // But other exception types are unexpected, so log for now
-              final String message = Optional.ofNullable(t.getMessage()).orElse("[no message]");
-              logger.warn(
-                  String.format(
-                      "Command '%s' failed with %s: %s",
-                      command.getClass().getSimpleName(), t.getClass().getName(), message),
-                  t);
-              return new ThrowableCommandResultSupplier(t);
-            })
+            t ->
+                switch (t) {
+                  case APIException apiException -> {
+                    // new error object V2
+                    var errorBuilder =
+                        new APIExceptionCommandErrorBuilder(
+                            commandContext.getConfig(DebugModeConfig.class).enabled(),
+                            commandContext.getConfig(OperationsConfig.class).extendError());
+
+                    // yet more mucking about with suppliers everywhere :(
+                    yield (Supplier<CommandResult>)
+                        () -> new CommandResult(List.of(errorBuilder.apply(apiException)));
+                  }
+                  case JsonApiException jsonApiException ->
+                      // old error objects, old comment below
+                      // Note: JsonApiException means that JSON API itself handled the situation
+                      // (created, or wrapped the exception) -- should not be logged (have already
+                      // been logged if necessary)
+                      jsonApiException;
+                  default -> {
+                    // Old error handling below, to be replaced eventually (aaron aug 28 2024)
+                    // But other exception types are unexpected, so log for now
+                    logger.warn(
+                        "Command '{}' failed with exception",
+                        command.getClass().getSimpleName(),
+                        t);
+                    yield new ThrowableCommandResultSupplier(t);
+                  }
+                })
 
         // if we have a non-null item
         // call supplier get to map to the command result

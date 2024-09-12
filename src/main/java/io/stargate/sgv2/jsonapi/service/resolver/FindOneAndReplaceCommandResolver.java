@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndReplaceCommand;
@@ -18,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -107,7 +107,7 @@ public class FindOneAndReplaceCommandResolver implements CommandResolver<FindOne
     LogicalExpression logicalExpression = collectionFilterResolver.resolve(ctx, command);
 
     final SortClause sortClause = command.sortClause();
-    ValidatableCommandClause.maybeValidate(ctx, sortClause);
+    SchemaValidatable.maybeValidate(ctx, sortClause);
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
     var indexUsage = ctx.schemaObject().newCollectionIndexUsage();

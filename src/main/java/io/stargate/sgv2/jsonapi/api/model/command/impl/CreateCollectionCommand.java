@@ -278,4 +278,10 @@ public record CreateCollectionCommand(
       this.indexing = indexing;
     }
   }
+
+  /** {@inheritDoc} */
+  @Override
+  public CommandName commandName() {
+    return CommandName.CREATE_COLLECTION;
+  }
 }

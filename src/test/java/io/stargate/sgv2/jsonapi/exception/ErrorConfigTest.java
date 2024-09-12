@@ -16,7 +16,6 @@ public class ErrorConfigTest {
 
   @Test
   public void initializeFromResource() {
-
     // test that we load from a resource, and that it can only happen once
     // we will assume other tests that just look for an exception from normal code will cause the
     // autoloading to happen
