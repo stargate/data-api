@@ -97,12 +97,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                         });
               });
@@ -155,7 +150,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
+                          assertThat(find.dbLogicalExpression().dBFilters()).isEmpty();
                         });
               });
     }
@@ -212,12 +207,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                         });
               });
@@ -271,7 +261,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
+                          assertThat(find.dbLogicalExpression().dBFilters()).isEmpty();
                         });
               });
     }

@@ -3,8 +3,8 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
@@ -17,10 +17,23 @@ import java.util.function.BiFunction;
  *
  * <p>T - Command type to match
  */
-public record FilterMatchRule<T extends Command & Filterable>(FilterMatcher<T> matcher)
-    implements BiFunction<CommandContext, T, Optional<LogicalExpression>> {
+public record FilterMatchRule<T extends Command & Filterable>(
+    FilterMatcher<T> matcher,
+    BiFunction<DBLogicalExpression, CaptureGroups<T>, DBLogicalExpression> resolveFunction)
+    implements BiFunction<CommandContext, T, Optional<DBLogicalExpression>> {
+  //  @Override
+  //  public Optional<DBLogicalExpression> apply(CommandContext commandContext, T command) {
+  //    return matcher.apply(command).map(captures -> resolveFunction.apply(new
+  // DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND), captures));
+  //  }
+
   @Override
-  public Optional<LogicalExpression> apply(CommandContext commandContext, T command) {
-    return matcher.apply(command);
+  public Optional<DBLogicalExpression> apply(CommandContext commandContext, T command) {
+    return matcher
+        .apply(command)
+        .map(
+            captures ->
+                resolveFunction.apply(
+                    new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND), captures));
   }
 }

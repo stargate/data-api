@@ -54,7 +54,7 @@ class CountDocumentsCommandResolverTest {
               CountCollectionOperation.class,
               op -> {
                 assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(op.logicalExpression().comparisonExpressions).isEmpty();
+                assertThat(op.dbLogicalExpression().dBFilters()).isEmpty();
                 assertThat(op.pageSize()).isEqualTo(operationsConfig.defaultCountPageSize());
                 assertThat(op.limit()).isEqualTo(operationsConfig.maxCountLimit());
               });
@@ -84,9 +84,7 @@ class CountDocumentsCommandResolverTest {
                     new TextCollectionFilter("name", Operator.EQ, "Aaron");
 
                 assertThat(op.commandContext()).isEqualTo(commandContext);
-                assertThat(
-                        op.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
-                    .isEqualTo(expected);
+                assertThat(op.dbLogicalExpression().dBFilters().get(0)).isEqualTo(expected);
                 assertThat(op.pageSize()).isEqualTo(operationsConfig.defaultCountPageSize());
                 assertThat(op.limit()).isEqualTo(operationsConfig.maxCountLimit());
               });
