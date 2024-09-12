@@ -193,6 +193,66 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
 
   @Nested
   @Order(3)
+  class FindOneTextColumns {
+    static final String TABLE_WITH_TEXT_COLUMNS = "findOneTextColumnsTable";
+    public final String STRING_UTF8_WITH_2BYTE_CHAR = "utf8-2-byte-\u00a2"; // cent symbol
+    public final String STRING_UTF8_WITH_3BYTE_CHAR = "utf8-3-byte-\u20ac"; // euro symbol
+
+    @Test
+    @Order(1)
+    void setup() {
+      createTableWithColumns(
+          TABLE_WITH_TEXT_COLUMNS,
+          Map.of(
+              "id",
+              Map.of("type", "int"),
+              "asciiText",
+              Map.of("type", "ascii"),
+              "varcharText",
+              Map.of("type", "text")),
+          "id");
+    }
+
+    @Test
+    @Order(2)
+    void insertWithTextColumnsAndFind() {
+      final String DOC_JSON =
+              """
+                                  {
+                                      "id": 1,
+                                      "asciiText": "safe value",
+                                      "varcharText": "%s/%s"
+                                  }
+                                  """
+              .formatted(STRING_UTF8_WITH_2BYTE_CHAR, STRING_UTF8_WITH_3BYTE_CHAR);
+      insertOneInTable(TABLE_WITH_TEXT_COLUMNS, DOC_JSON);
+
+      DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_WITH_TEXT_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": 1 } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", DOC_JSON);
+    }
+
+    @Test
+    @Order(3)
+    void failTryingToInsertNonAscii() {
+      final String DOC_JSON =
+              """
+                {
+                    "id": 2,
+                    "asciiText": "%s",
+                    "varcharText": "safe value"
+                }
+                """
+              .formatted(STRING_UTF8_WITH_2BYTE_CHAR);
+      DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_WITH_TEXT_COLUMNS)
+          .postInsertOne(DOC_JSON)
+          .hasSingleApiError(ErrorCodeV1.SERVER_INTERNAL_ERROR, "Invalid ASCII character");
+    }
+  }
+
+  @Nested
+  @Order(4)
   class FindOneFail {
     @Test
     @Order(1)

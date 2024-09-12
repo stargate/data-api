@@ -48,8 +48,8 @@ public class AbstractTableIntegrationTestBase extends AbstractNamespaceIntegrati
         .body("status.ok", is(1));
   }
 
-  protected void insertOneInTable(String tableName, String documentJSON) {
-    DataApiCommandSenders.assertTableCommand(namespaceName, tableName)
+  protected DataApiResponseValidator insertOneInTable(String tableName, String documentJSON) {
+    return DataApiCommandSenders.assertTableCommand(namespaceName, tableName)
         .postInsertOne(documentJSON)
         .hasNoErrors()
         .body("status.insertedIds", hasSize(1));
