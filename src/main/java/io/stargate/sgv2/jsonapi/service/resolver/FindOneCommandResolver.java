@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -18,6 +19,7 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpressio
 import io.stargate.sgv2.jsonapi.service.operation.tables.FindTableOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableRowProjection;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
@@ -86,7 +88,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     final DBFilterLogicalExpression dbFilterLogicalExpression =
         collectionFilterResolver.resolve(ctx, command);
     final SortClause sortClause = command.sortClause();
-    ValidatableCommandClause.maybeValidate(ctx, sortClause);
+    SchemaValidatable.maybeValidate(ctx, sortClause);
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
 

@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.ClauseResolver;
 import java.util.Objects;
 
@@ -35,6 +36,10 @@ public abstract class FilterResolver<
 
     matchRules =
         Objects.requireNonNull(buildMatchRules(), "buildMatchRules() must return non null");
+    if (matchRules.isEmpty()) {
+      throw new IllegalArgumentException(
+          "buildMatchRules() must return non empty FilterMatchRules");
+    }
   }
 
   /**
@@ -57,8 +62,8 @@ public abstract class FilterResolver<
   public DBFilterLogicalExpression resolve(CommandContext<SchemaT> commandContext, CmdT command) {
     Preconditions.checkNotNull(commandContext, "commandContext is required");
     Preconditions.checkNotNull(command, "command is required");
+    SchemaValidatable.maybeValidate(commandContext, command.filterClause());
 
-    ValidatableCommandClause.maybeValidate(commandContext, command.filterClause());
     InvertibleCommandClause.maybeInvert(commandContext, command.filterClause());
 
     final DBFilterLogicalExpression dbFilterLogicalExpression =

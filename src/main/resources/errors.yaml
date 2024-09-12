@@ -108,6 +108,17 @@ request-errors:
       
       Resend the request using only supported column types.
 
+  - scope: DOCUMENT
+    code: INVALID_COLUMN_VALUES
+    title: Invalid values for table columns
+    body: |-
+      Only values that are supported by the column data type can be included when inserting a document into a table.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included the following columns that had values that are invalid: ${invalidColumns}.
+      
+      Resend the request using only supported column values.
+
   # FILTER request errors
   - scope: FILTER
     code: INVALID_FILTER

@@ -7,13 +7,12 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSource;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSourceSupplier;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToJSONCodecException;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.projection.TableProjectionDefinition;
 import java.util.HashMap;
@@ -68,7 +67,7 @@ public record TableRowProjection(
 
       // TODO: maybe optimize common case of String, Boolean to avoid conversions, lookups
       try {
-        codec = JSONCodecRegistry.codecToJSON(table.tableMetadata, column);
+        codec = JSONCodecRegistries.DEFAULT_REGISTRY.codecToJSON(table.tableMetadata, column);
       } catch (MissingJSONCodecException e) {
         throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
             "Column '%s' has unsupported type '%s'", columnName, column.getType().toString());

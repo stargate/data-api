@@ -46,4 +46,10 @@ public record FindOneAndReplaceCommand(
                   "When `true`, if no documents match the `filter` clause the command will create a new _empty_ document and apply all _id filter and replacement document to the empty document.",
               defaultValue = "false")
           boolean upsert) {}
+
+  /** {@inheritDoc} */
+  @Override
+  public CommandName commandName() {
+    return CommandName.FIND_ONE_AND_REPLACE;
+  }
 }

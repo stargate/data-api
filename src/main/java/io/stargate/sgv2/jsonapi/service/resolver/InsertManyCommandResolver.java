@@ -8,8 +8,11 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.tables.InsertTableOperation;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertAttemptBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.WriteableTableRowBuilder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
@@ -71,7 +74,12 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, InsertManyCommand command) {
 
-    return new InsertTableOperation(
-        ctx, TableInsertAttempt.create(rowShredder, ctx.schemaObject(), command.documents()));
+    var builder =
+        new TableInsertAttemptBuilder(
+            rowShredder,
+            new WriteableTableRowBuilder(ctx.schemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY));
+    var attempts = command.documents().stream().map(builder::build).toList();
+
+    return new InsertTableOperation(ctx, new TableDriverExceptionHandler(), attempts);
   }
 }

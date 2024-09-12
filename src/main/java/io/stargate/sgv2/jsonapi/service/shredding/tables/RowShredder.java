@@ -1,20 +1,27 @@
 package io.stargate.sgv2.jsonapi.service.shredding.tables;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.resolver.UnvalidatedClauseException;
+import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValue;
+import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
+import io.stargate.sgv2.jsonapi.service.shredding.OrderedJsonNamedValueContainer;
+import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * AARON TODO shreds docs for rows
+ * Shreds a document transforming it from a {@link JsonNode} to a {@link
+ * io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer}, extracting the values from
+ * the Jackson document ready to be later converted into values for the CQL Driver.
  *
  * <p>Note: logic in {@link #shredValue(JsonNode)} and {@link #shredNumber} needs to be kept in sync
  * with code in {@link io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec}:
@@ -23,60 +30,39 @@ import java.util.Map;
 @ApplicationScoped
 public class RowShredder {
 
-  private final ObjectMapper objectMapper;
-
   private final DocumentLimitsConfig documentLimits;
 
   private final JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 
   @Inject
   public RowShredder(
-      ObjectMapper objectMapper,
       DocumentLimitsConfig documentLimits,
       JsonProcessingMetricsReporter jsonProcessingMetricsReporter) {
-    this.objectMapper = objectMapper;
     this.documentLimits = documentLimits;
     this.jsonProcessingMetricsReporter = jsonProcessingMetricsReporter;
   }
 
   /**
-   * Shreds the document to get it ready for the database, we need to know the table schema so we
-   * can work out the primary key and the columns to insert
+   * Shreds a document into the {@link JsonNamedValue}'s by extracting the Java value from the
+   * Jackson document
    *
-   * @param document
-   * @return
+   * @param document the document to shred
+   * @return A {@link OrderedJsonNamedValueContainer} of the values found in the document
    */
-  public WriteableTableRow shred(TableSchemaObject table, JsonNode document) {
+  public JsonNamedValueContainer shred(JsonNode document) {
 
-    Map<CqlIdentifier, Object> columnValues = new HashMap<>();
+    var container = new OrderedJsonNamedValueContainer();
     document
         .fields()
         .forEachRemaining(
             entry -> {
-              // using fromInternal to preserve case-sensitivity
-              columnValues.put(
-                  CqlIdentifier.fromInternal(entry.getKey()), shredValue(entry.getValue()));
+              var namedValue =
+                  new JsonNamedValue(
+                      JsonPath.rootBuilder().property(entry.getKey()).build(),
+                      shredValue(entry.getValue()));
+              container.put(namedValue);
             });
-
-    // the document should have been validated that all the fields present exist in the table
-    // and that all the primary key fields on the table have been included in the document.
-    var primaryKeyValues =
-        table.tableMetadata.getPrimaryKey().stream()
-            .map(ColumnMetadata::getName)
-            .map(
-                colIdentifier -> {
-                  Object value = columnValues.get(colIdentifier);
-                  if (value != null) {
-                    return value;
-                  }
-                  throw new UnvalidatedClauseException(
-                      String.format(
-                          "Primary key column %s is missing from the document",
-                          colIdentifier.toString()));
-                })
-            .toList();
-
-    return new WriteableTableRow(new RowId(primaryKeyValues.toArray()), columnValues);
+    return container;
   }
 
   /**
@@ -97,29 +83,49 @@ public class RowShredder {
    * @param value JSON value to convert ("shred")
    * @return the value as a "plain" Java type
    */
-  public static Object shredValue(JsonNode value) {
+  public static JsonLiteral<?> shredValue(JsonNode value) {
+
     return switch (value.getNodeType()) {
       case NUMBER -> shredNumber(value);
-      case STRING -> value.textValue();
-      case BOOLEAN -> value.booleanValue();
-      case NULL -> null;
-      default -> throw new IllegalArgumentException("Unsupported type: " + value.getNodeType());
+      case STRING -> new JsonLiteral<>(value.textValue(), JsonType.STRING);
+      case BOOLEAN -> new JsonLiteral<>(value.booleanValue(), JsonType.BOOLEAN);
+      case NULL -> new JsonLiteral<>(null, JsonType.NULL);
+      case ARRAY -> {
+        ArrayNode arrayNode = (ArrayNode) value;
+        List<JsonLiteral<?>> list = new ArrayList<>();
+        for (JsonNode node : arrayNode) {
+          list.add(shredValue(node));
+        }
+        yield new JsonLiteral<>(list, JsonType.ARRAY);
+      }
+      case OBJECT -> {
+        ObjectNode objectNode = (ObjectNode) value;
+        Map<JsonPath, JsonLiteral<?>> map = new HashMap<>();
+        for (var entry : objectNode.properties()) {
+          map.put(
+              JsonPath.rootBuilder().property(entry.getKey()).build(),
+              shredValue(entry.getValue()));
+        }
+        yield new JsonLiteral<>(map, JsonType.SUB_DOC);
+      }
+      default ->
+          throw new IllegalArgumentException("Unsupported JsonNode type " + value.getNodeType());
     };
   }
 
   // NOTE! This method must be kept in sync with the logic in {@code JSONCodecRegistry}:
   // specifically,
   // types shredded here must be supported by the codec.
-  private static Object shredNumber(JsonNode number) {
+  private static JsonLiteral<?> shredNumber(JsonNode number) {
     if (number.isIntegralNumber()) {
       // Return as BigInteger if one required (won't fit in 64-bit Long)
       if (number.isBigInteger()) {
-        return number.bigIntegerValue();
+        return new JsonLiteral<>(number.bigIntegerValue(), JsonType.NUMBER);
       }
       // Otherwise as Long (possibly upgrading from Integer)
-      return number.longValue();
+      return new JsonLiteral<>(number.longValue(), JsonType.NUMBER);
     }
     // But all FPs are returned as BigDecimal
-    return number.decimalValue();
+    return new JsonLiteral<>(number.decimalValue(), JsonType.NUMBER);
   }
 }
