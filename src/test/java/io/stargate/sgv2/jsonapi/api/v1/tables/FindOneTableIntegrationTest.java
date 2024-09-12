@@ -33,16 +33,15 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
             Map.of("type", "text")),
         "id");
     createTableWithColumns(
-            TABLE_WITH_TEXT_COLUMNS,
-            Map.of(
-                    "id",
-                    Map.of("type", "int"),
-                    "asciiText",
-                    Map.of("type", "ascii"),
-                    "varcharText",
-                    Map.of("type", "text")),
-            "id");
-
+        TABLE_WITH_TEXT_COLUMNS,
+        Map.of(
+            "id",
+            Map.of("type", "int"),
+            "asciiText",
+            Map.of("type", "ascii"),
+            "varcharText",
+            Map.of("type", "text")),
+        "id");
   }
 
   // On-empty tests to be run before ones that populate tables
