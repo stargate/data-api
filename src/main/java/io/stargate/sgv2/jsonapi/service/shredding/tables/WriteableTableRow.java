@@ -22,7 +22,7 @@ import java.util.Objects;
  *   <li>All types have been converted to what he driver expects.
  * </ul>
  */
-public class WriteableTableRow implements WritableDocRow, PrettyPrintable {
+public class WriteableTableRow implements PrettyPrintable {
 
   private final TableSchemaObject tableSchemaObject;
   private final OrderedCqlNamedValueContainer keyColumns;
@@ -74,11 +74,6 @@ public class WriteableTableRow implements WritableDocRow, PrettyPrintable {
    */
   public CqlNamedValueContainer allColumns() {
     return allColumns;
-  }
-
-  @Override
-  public DocRowIdentifer docRowID() {
-    return id;
   }
 
   public RowId rowId() {

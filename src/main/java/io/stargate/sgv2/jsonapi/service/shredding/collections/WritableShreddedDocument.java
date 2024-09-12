@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
-import io.stargate.sgv2.jsonapi.service.shredding.WritableDocRow;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -43,8 +41,7 @@ public record WritableShreddedDocument(
     Map<JsonPath, Date> queryTimestampValues,
     Set<JsonPath> queryNullValues,
     float[] queryVectorValues,
-    UUID nextTxID)
-    implements WritableDocRow {
+    UUID nextTxID) {
 
   @Override
   public boolean equals(Object o) {
@@ -85,11 +82,6 @@ public record WritableShreddedDocument(
             queryNullValues);
     result = 31 * result + Arrays.hashCode(queryVectorValues);
     return result;
-  }
-
-  @Override
-  public DocRowIdentifer docRowID() {
-    return id();
   }
 
   public static Builder builder(DocumentId id, UUID txID, String docJson, JsonNode docJsonNode) {
