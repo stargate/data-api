@@ -99,12 +99,8 @@ public class FindOneAndUpdateCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.singleResponse()).isTrue();
                         });
@@ -164,12 +160,7 @@ public class FindOneAndUpdateCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.orderBy()).hasSize(1);
                           assertThat(find.orderBy())
@@ -233,12 +224,7 @@ public class FindOneAndUpdateCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.11f, 0.22f, 0.33f, 0.44f);
@@ -300,12 +286,7 @@ public class FindOneAndUpdateCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.singleResponse()).isTrue();
                         });
@@ -366,12 +347,7 @@ public class FindOneAndUpdateCommandResolverTest {
                           assertThat(find.pageSize()).isEqualTo(100);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.orderBy()).hasSize(2);
                           assertThat(find.orderBy())
@@ -436,12 +412,7 @@ public class FindOneAndUpdateCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.singleResponse()).isTrue();
                         });
