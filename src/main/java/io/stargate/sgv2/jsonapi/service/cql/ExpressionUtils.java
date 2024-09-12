@@ -29,7 +29,7 @@ import java.util.List;
  * failure By using this ExpressionUtils class, we pass a default comparator to keep expression
  * order as it is
  */
-public class ExpressionUtils<K> {
+public abstract class ExpressionUtils<K> {
 
   public static <K> And<K> andOf(Expression<K>... expressions) {
     // expression as creation order
