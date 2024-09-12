@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
+import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import java.util.Optional;
 
@@ -53,6 +54,14 @@ public interface InsertAttempt extends Comparable<InsertAttempt> {
    *     called on.
    */
   InsertAttempt maybeAddFailure(Throwable failure);
+
+  /**
+   * Called to get the description of the schema to use when building the response.
+   *
+   * @return The optional object that describes the schema, if present the object will be serialised
+   *     to JSON and included in the response status as {@link CommandStatus#PRIMARY_KEY_SCHEMA}.
+   */
+  Optional<Object> schemaDescription();
 
   /**
    * Compares the position of this attempt to another.

@@ -125,7 +125,7 @@ public record InsertCollectionOperation(
         .in(
             () -> new InsertOperationPage(insertions, returnDocumentResponses()),
             (insertPage, insertAttempt) -> {
-              insertPage.aggregate(insertAttempt);
+              insertPage.registerCompletedAttempt(insertAttempt);
               insertAttempt
                   .failure()
                   .ifPresent(
@@ -178,7 +178,7 @@ public record InsertCollectionOperation(
         .in(
             () -> new InsertOperationPage(insertions, returnDocumentResponses()),
             (agg, in) -> {
-              agg.aggregate(in);
+              agg.registerCompletedAttempt(in);
             })
         // use object identity to resolve to Supplier<CommandResult>
         .map(i -> i);
