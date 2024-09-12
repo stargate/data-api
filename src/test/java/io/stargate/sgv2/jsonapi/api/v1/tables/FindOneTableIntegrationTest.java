@@ -18,6 +18,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBase {
   static final String TABLE_WITH_STRING_ID_AGE_NAME = "findOneSingleStringKeyTable";
+  static final String TABLE_WITH_TEXT_COLUMNS = "findOneTextColumnsTable";
 
   @BeforeAll
   public final void createDefaultTables() {
@@ -31,6 +32,17 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
             "name",
             Map.of("type", "text")),
         "id");
+    createTableWithColumns(
+            TABLE_WITH_TEXT_COLUMNS,
+            Map.of(
+                    "id",
+                    Map.of("type", "int"),
+                    "asciiText",
+                    Map.of("type", "ascii"),
+                    "varcharText",
+                    Map.of("type", "text")),
+            "id");
+
   }
 
   // On-empty tests to be run before ones that populate tables
@@ -193,28 +205,12 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
 
   @Nested
   @Order(3)
+  @TestClassOrder(ClassOrderer.OrderAnnotation.class)
   class FindOneTextColumns {
-    static final String TABLE_WITH_TEXT_COLUMNS = "findOneTextColumnsTable";
     public final String STRING_UTF8_WITH_2BYTE_CHAR = "utf8-2-byte-\u00a2"; // cent symbol
     public final String STRING_UTF8_WITH_3BYTE_CHAR = "utf8-3-byte-\u20ac"; // euro symbol
 
     @Test
-    @Order(1)
-    void setup() {
-      createTableWithColumns(
-          TABLE_WITH_TEXT_COLUMNS,
-          Map.of(
-              "id",
-              Map.of("type", "int"),
-              "asciiText",
-              Map.of("type", "ascii"),
-              "varcharText",
-              Map.of("type", "text")),
-          "id");
-    }
-
-    @Test
-    @Order(2)
     void insertWithTextColumnsAndFind() {
       final String DOC_JSON =
               """
@@ -234,7 +230,6 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     }
 
     @Test
-    @Order(3)
     void failTryingToInsertNonAscii() {
       final String DOC_JSON =
               """
