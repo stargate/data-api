@@ -6,14 +6,14 @@ import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
 public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiTableCommandSender> {
   private final String tableName;
 
-  protected DataApiTableCommandSender(String namespace, String tableName) {
-    super(namespace);
+  protected DataApiTableCommandSender(String keyspace, String tableName) {
+    super(keyspace);
     this.tableName = tableName;
   }
 
   @Override
   protected io.restassured.response.Response postInternal(RequestSpecification request) {
-    return request.post(CollectionResource.BASE_PATH, namespace, tableName);
+    return request.post(CollectionResource.BASE_PATH, keyspace, tableName);
   }
 
   public DataApiResponseValidator postDeleteMany(String deleteManyClause) {

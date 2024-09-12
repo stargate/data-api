@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -33,7 +33,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
     String json =
             """
         {
-          "dropNamespace": {
+          "dropKeyspace": {
             "name": "%s"
           }
         }
@@ -52,14 +52,15 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
   }
 
   @Nested
-  class CreateNamespace {
+  @Order(1)
+  class CreateKeyspace {
 
     @Test
     public final void happyPath() {
       String json =
               """
           {
-            "createNamespace": {
+            "createKeyspace": {
               "name": "%s"
             }
           }
@@ -82,7 +83,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
       String json =
               """
           {
-            "createNamespace": {
+            "createKeyspace": {
               "name": "%s"
             }
           }
@@ -105,7 +106,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
       String json =
               """
           {
-            "createNamespace": {
+            "createKeyspace": {
               "name": "%s",
               "options": {
                 "replication": {
@@ -134,7 +135,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
       String json =
           """
                       {
-                        "createNamespace": {
+                        "createKeyspace": {
                         }
                       }
                       """;
@@ -158,9 +159,131 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
 
   @Nested
   @Order(2)
+  class DeprecatedCreateNamespace {
+
+    @Test
+    public final void happyPath() {
+      String json =
+              """
+          {
+            "createNamespace": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted(DB_NAME);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1))
+          .body(
+              "status.warnings",
+              hasItem(
+                  "This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead."));
+    }
+
+    @Test
+    public final void alreadyExists() {
+      String json =
+              """
+          {
+            "createNamespace": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted(namespaceName);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1))
+          .body(
+              "status.warnings",
+              hasItem(
+                  "This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead."));
+    }
+
+    @Test
+    public final void withReplicationFactor() {
+      String json =
+              """
+          {
+            "createNamespace": {
+              "name": "%s",
+              "options": {
+                "replication": {
+                  "class": "SimpleStrategy",
+                  "replication_factor": 2
+                }
+              }
+            }
+          }
+          """
+              .formatted(DB_NAME);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1))
+          .body(
+              "status.warnings",
+              hasItem(
+                  "This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead."));
+    }
+
+    @Test
+    public void invalidCommand() {
+      String json =
+          """
+                          {
+                            "createNamespace": {
+                            }
+                          }
+                          """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Request invalid: field 'command.name' value `null` not valid. Problem: must not be null."));
+      // Since command failed in Deserialization, so command result won't have deprecated command
+      // warning.
+    }
+  }
+
+  @Nested
+  @Order(3)
   class Metrics {
     @Test
     public void checkMetrics() {
+      CreateNamespaceIntegrationTest.super.checkMetrics("CreateKeyspaceCommand");
+      // We decided to keep createNamespace metrics and logs, even it is a deprecated command
       CreateNamespaceIntegrationTest.super.checkMetrics("CreateNamespaceCommand");
       CreateNamespaceIntegrationTest.super.checkDriverMetricsTenantId();
     }

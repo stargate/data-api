@@ -10,9 +10,16 @@ public enum CommandStatus {
   /** The element has the count of deleted documents */
   @JsonProperty("deletedCount")
   DELETED_COUNT,
-  /** Status for reporting existing namespaces. */
+  /**
+   * Status for reporting existing namespaces. findNamespaces command is deprecated, keep this
+   * jsonProperty to support backwards-compatibility. Use "namespaces" when old command name used
+   * and "keyspaces" for new one.
+   */
   @JsonProperty("namespaces")
   EXISTING_NAMESPACES,
+  /** Status for reporting existing keyspaces. */
+  @JsonProperty("keyspaces")
+  EXISTING_KEYSPACES,
   /** Status for reporting existing embedding services. */
   @JsonProperty("embeddingProviders")
   EXISTING_VECTOR_PROVIDERS,
@@ -73,6 +80,10 @@ public enum CommandStatus {
    */
   @JsonProperty("upsertedId")
   UPSERTED_ID,
+
+  /** warning value used for commandResult status */
+  @JsonProperty("warnings")
+  WARNINGS,
 
   /**
    * The element contains the schema that describes the structure of the insertedIds, only present

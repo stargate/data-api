@@ -9,7 +9,7 @@ import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
@@ -48,7 +48,7 @@ class ObjectMapperConfigurationTest {
   @Nested
   class unmatchedOperationCommandHandlerTest {
     @Test
-    public void notExistedCommandMatchNamespaceCommand() throws Exception {
+    public void notExistedCommandMatchKeyspaceCommand() throws Exception {
       String json =
           """
                     {
@@ -56,15 +56,15 @@ class ObjectMapperConfigurationTest {
                       }
                     }
                     """;
-      Exception e = catchException(() -> objectMapper.readValue(json, NamespaceCommand.class));
+      Exception e = catchException(() -> objectMapper.readValue(json, KeyspaceCommand.class));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
           .hasMessageStartingWith(
-              "Provided command unknown: \"notExistedCommand\" not one of \"NamespaceCommand\"s");
+              "Provided command unknown: \"notExistedCommand\" not one of \"KeyspaceCommand\"s");
     }
 
     @Test
-    public void collectionCommandNotMatchNamespaceCommand() throws Exception {
+    public void collectionCommandNotMatchKeyspaceCommand() throws Exception {
       String json =
           """
                             {
@@ -72,11 +72,11 @@ class ObjectMapperConfigurationTest {
                               }
                             }
                             """;
-      Exception e = catchException(() -> objectMapper.readValue(json, NamespaceCommand.class));
+      Exception e = catchException(() -> objectMapper.readValue(json, KeyspaceCommand.class));
       assertThat(e)
           .isInstanceOf(JsonApiException.class)
           .hasMessageStartingWith(
-              "Provided command unknown: \"find\" not one of \"NamespaceCommand\"s");
+              "Provided command unknown: \"find\" not one of \"KeyspaceCommand\"s");
     }
 
     @Test
@@ -99,13 +99,28 @@ class ObjectMapperConfigurationTest {
     public void generalCommandNotMatchCollectionCommand() throws Exception {
       String json =
           """
+                                  {
+                                    "createKeyspace": {
+                                    }
+                                  }
+                                  """;
+      Exception e = catchException(() -> objectMapper.readValue(json, CollectionCommand.class));
+      assertThat(e)
+          .isInstanceOf(JsonApiException.class)
+          .hasMessageStartingWith(
+              "Provided command unknown: \"createKeyspace\" not one of \"CollectionCommand\"s");
+
+      String deprecatedCommandJson =
+          """
                             {
                               "createNamespace": {
                               }
                             }
                             """;
-      Exception e = catchException(() -> objectMapper.readValue(json, CollectionCommand.class));
-      assertThat(e)
+      Exception e1 =
+          catchException(
+              () -> objectMapper.readValue(deprecatedCommandJson, CollectionCommand.class));
+      assertThat(e1)
           .isInstanceOf(JsonApiException.class)
           .hasMessageStartingWith(
               "Provided command unknown: \"createNamespace\" not one of \"CollectionCommand\"s");

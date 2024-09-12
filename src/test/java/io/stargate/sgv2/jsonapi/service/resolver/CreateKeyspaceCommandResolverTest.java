@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.namespaces.CreateNamespaceOperation;
+import io.stargate.sgv2.jsonapi.service.operation.keyspaces.CreateKeyspaceOperation;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Nested;
@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 @TestProfile(NoGlobalResourcesTestProfile.Impl.class)
-class CreateNamespaceCommandResolverTest {
+class CreateKeyspaceCommandResolverTest {
 
   @Inject ObjectMapper objectMapper;
   @Inject CreateNamespaceCommandResolver resolver;
@@ -44,7 +44,7 @@ class CreateNamespaceCommandResolverTest {
 
       assertThat(result)
           .isInstanceOfSatisfying(
-              CreateNamespaceOperation.class,
+              CreateKeyspaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
                 assertThat(op.replicationMap())
@@ -73,7 +73,7 @@ class CreateNamespaceCommandResolverTest {
 
       assertThat(result)
           .isInstanceOfSatisfying(
-              CreateNamespaceOperation.class,
+              CreateKeyspaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
                 assertThat(op.replicationMap())
@@ -103,7 +103,7 @@ class CreateNamespaceCommandResolverTest {
 
       assertThat(result)
           .isInstanceOfSatisfying(
-              CreateNamespaceOperation.class,
+              CreateKeyspaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
                 assertThat(op.replicationMap())
@@ -134,7 +134,7 @@ class CreateNamespaceCommandResolverTest {
 
       assertThat(result)
           .isInstanceOfSatisfying(
-              CreateNamespaceOperation.class,
+              CreateKeyspaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
                 assertThat(op.replicationMap())
@@ -166,7 +166,7 @@ class CreateNamespaceCommandResolverTest {
 
       assertThat(result)
           .isInstanceOfSatisfying(
-              CreateNamespaceOperation.class,
+              CreateKeyspaceOperation.class,
               op -> {
                 assertThat(op.name()).isEqualTo("red_star_belgrade");
                 assertThat(op.replicationMap()).isEqualTo("{'class': 'NetworkTopologyStrategy'}");

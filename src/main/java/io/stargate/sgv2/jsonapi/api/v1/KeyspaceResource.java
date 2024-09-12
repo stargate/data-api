@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.NamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteCollectionCommand;
@@ -41,14 +41,14 @@ import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.resteasy.reactive.RestResponse;
 
-@Path(NamespaceResource.BASE_PATH)
+@Path(KeyspaceResource.BASE_PATH)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @SecurityRequirement(name = OpenApiConstants.SecuritySchemes.TOKEN)
-@Tag(ref = "Namespaces")
-public class NamespaceResource {
+@Tag(ref = "Keyspaces")
+public class KeyspaceResource {
 
-  public static final String BASE_PATH = "/v1/{namespace}";
+  public static final String BASE_PATH = "/v1/{keyspace}";
   private final MeteredCommandProcessor meteredCommandProcessor;
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
@@ -56,14 +56,14 @@ public class NamespaceResource {
   @Inject FeaturesConfig apiFeatureConfig;
 
   @Inject
-  public NamespaceResource(MeteredCommandProcessor meteredCommandProcessor) {
+  public KeyspaceResource(MeteredCommandProcessor meteredCommandProcessor) {
     this.meteredCommandProcessor = meteredCommandProcessor;
   }
 
   @Operation(
       summary = "Execute command",
       description = "Executes a single command against a collection.")
-  @Parameters(value = {@Parameter(name = "namespace", ref = "namespace")})
+  @Parameters(value = {@Parameter(name = "keyspace", ref = "keyspace")})
   @RequestBody(
       content =
           @Content(
@@ -101,22 +101,27 @@ public class NamespaceResource {
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
-      @NotNull @Valid NamespaceCommand command,
-      @PathParam("namespace")
+      @NotNull @Valid KeyspaceCommand command,
+      @PathParam("keyspace")
           @NotNull
           @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
           @Size(min = 1, max = 48)
-          String namespace) {
+          String keyspace) {
 
     final ApiFeatures apiFeatures =
         ApiFeatures.fromConfigAndRequest(apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
 
     // create context
     // TODO: Aaron , left here to see what CTOR was used, there was a lot of different ones.
-    //    CommandContext commandContext = new CommandContext(namespace, null);
+    //    CommandContext commandContext = new CommandContext(keyspace, null);
     // HACK TODO: The above did not set a command name on the command context, how did that work ?
     CommandContext<KeyspaceSchemaObject> commandContext =
-        new CommandContext<>(new KeyspaceSchemaObject(namespace), null, "", null, apiFeatures);
+        new CommandContext<>(
+            new KeyspaceSchemaObject(keyspace),
+            null,
+            command.getClass().getSimpleName(),
+            null,
+            apiFeatures);
 
     // Need context first to check if feature is enabled
     if (command instanceof TableOnlyCommand && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {

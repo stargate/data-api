@@ -122,7 +122,7 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
     }
 
     @Test
-    public void wrongNamespace() {
+    public void wrongKeyspace() {
       String json =
           """
           {
@@ -144,8 +144,8 @@ public class FindIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("data", is(nullValue()))
-          .body("errors[0].message", is("The provided namespace does not exist: something_else"))
-          .body("errors[0].errorCode", is("NAMESPACE_DOES_NOT_EXIST"))
+          .body("errors[0].message", is("The provided keyspace does not exist: something_else"))
+          .body("errors[0].errorCode", is("KEYSPACE_DOES_NOT_EXIST"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
 

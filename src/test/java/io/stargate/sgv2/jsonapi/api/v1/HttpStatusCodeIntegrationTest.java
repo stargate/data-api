@@ -114,7 +114,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
                                                 }
                                                 """)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(415)
           .body("errors", is(notNullValue()))
@@ -170,7 +170,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
 
   @Nested
   @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-  class NamespaceResourceStatusCode {
+  class KeyspaceResourceStatusCode {
     @Test
     public void unauthenticated() {
       String json =
@@ -186,7 +186,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(401)
           .body("errors", is(notNullValue()))
@@ -205,15 +205,15 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
              """;
       AnyOf<String> anyOf =
           AnyOf.anyOf(
-              endsWith("Keyspace '%s' doesn't exist".formatted("badNamespace")),
+              endsWith("keyspace '%s' doesn't exist".formatted("badNamespace")),
               endsWith(
-                  "Unknown namespace '%s', you must create it first".formatted("badNamespace")));
+                  "Unknown keyspace '%s', you must create it first".formatted("badNamespace")));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, "badNamespace")
+          .post(KeyspaceResource.BASE_PATH, "badNamespace")
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
@@ -257,7 +257,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .get(NamespaceResource.BASE_PATH, namespaceName)
+          .get(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(405);
     }

@@ -54,7 +54,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -80,7 +80,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -114,7 +114,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
             """
                   .formatted(tooHighDimension))
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(nullValue()))
@@ -151,7 +151,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(nullValue()))
@@ -1809,7 +1809,7 @@ public class VectorSearchIntegrationTest extends AbstractNamespaceIntegrationTes
                             """
                 .formatted(collectionName, vectorSize))
         .when()
-        .post(NamespaceResource.BASE_PATH, namespaceName)
+        .post(KeyspaceResource.BASE_PATH, namespaceName)
         .then()
         .statusCode(200)
         .body("status.ok", is(1));

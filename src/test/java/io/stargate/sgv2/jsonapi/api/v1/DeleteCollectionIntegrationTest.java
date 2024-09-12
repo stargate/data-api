@@ -36,7 +36,7 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               """
                   .formatted(collection))
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -52,7 +52,7 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               """
                   .formatted(collection))
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -73,7 +73,7 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               """
                   .formatted(collection))
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -89,7 +89,7 @@ class DeleteCollectionIntegrationTest extends AbstractNamespaceIntegrationTestBa
               }
           """)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))

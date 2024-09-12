@@ -45,7 +45,7 @@ public abstract class AbstractCollectionIntegrationTestBase
                       """
                 .formatted(collectionSetting))
         .when()
-        .post(NamespaceResource.BASE_PATH, namespaceName)
+        .post(KeyspaceResource.BASE_PATH, namespaceName)
         .then()
         .statusCode(200);
   }
