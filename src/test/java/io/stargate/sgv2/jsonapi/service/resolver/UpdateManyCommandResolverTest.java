@@ -97,7 +97,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbFilterLogicalExpression().dBFilters().get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                         });
               });
@@ -150,7 +150,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbFilterLogicalExpression().dBFilters()).isEmpty();
+                          assertThat(find.dbLogicalExpression().dBFilters()).isEmpty();
                         });
               });
     }
@@ -207,7 +207,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbFilterLogicalExpression().dBFilters().get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                         });
               });
@@ -261,7 +261,7 @@ public class UpdateManyCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(Integer.MAX_VALUE);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbFilterLogicalExpression().dBFilters()).isEmpty();
+                          assertThat(find.dbLogicalExpression().dBFilters()).isEmpty();
                         });
               });
     }

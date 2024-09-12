@@ -75,7 +75,7 @@ public class FindOneAndDeleteCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbFilterLogicalExpression().dBFilters().get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.singleResponse()).isTrue();
                         });
@@ -117,7 +117,7 @@ public class FindOneAndDeleteCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
-                          assertThat(find.dbFilterLogicalExpression().dBFilters().get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.orderBy()).hasSize(1);
                           assertThat(find.orderBy())
@@ -163,7 +163,7 @@ public class FindOneAndDeleteCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbFilterLogicalExpression().dBFilters().get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.11f, 0.22f, 0.33f, 0.44f);
@@ -210,7 +210,7 @@ public class FindOneAndDeleteCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbFilterLogicalExpression().dBFilters().get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.singleResponse()).isTrue();
                         });

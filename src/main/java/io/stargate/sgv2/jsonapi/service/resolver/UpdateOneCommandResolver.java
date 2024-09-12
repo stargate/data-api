@@ -15,7 +15,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.UpdateTableOperation;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
@@ -115,8 +115,7 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> ctx, UpdateOneCommand command) {
-    final DBFilterLogicalExpression dbFilterLogicalExpression =
-        collectionFilterResolver.resolve(ctx, command);
+    final DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
 
     final SortClause sortClause = command.sortClause();
     SchemaValidatable.maybeValidate(ctx, sortClause);
@@ -130,12 +129,12 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
-        dbFilterLogicalExpression,
+        dbLogicalExpression,
         indexUsage);
     if (vector != null) {
       return FindCollectionOperation.vsearchSingle(
           ctx,
-          dbFilterLogicalExpression,
+          dbLogicalExpression,
           DocumentProjector.includeAllProjector(),
           CollectionReadType.DOCUMENT,
           objectMapper,
@@ -148,7 +147,7 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
     if (orderBy != null) {
       return FindCollectionOperation.sortedSingle(
           ctx,
-          dbFilterLogicalExpression,
+          dbLogicalExpression,
           DocumentProjector.includeAllProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
@@ -163,7 +162,7 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
     } else {
       return FindCollectionOperation.unsortedSingle(
           ctx,
-          dbFilterLogicalExpression,
+          dbLogicalExpression,
           DocumentProjector.includeAllProjector(),
           CollectionReadType.DOCUMENT,
           objectMapper,

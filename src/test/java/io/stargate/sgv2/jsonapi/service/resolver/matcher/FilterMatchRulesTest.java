@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.util.EnumSet;
@@ -48,7 +48,7 @@ public class FilterMatchRulesTest {
           .capture("TEST1")
           .compareValues("*", EnumSet.of(ValueComparisonOperator.EQ), JsonType.STRING);
 
-      DBFilterLogicalExpression response =
+      DBLogicalExpression response =
           filterMatchRules.apply(TestConstants.COLLECTION_CONTEXT, findOneCommand);
       assertThat(response).isNotNull();
 

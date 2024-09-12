@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -19,10 +19,7 @@ import java.util.function.Supplier;
  * assumption that all variables to be indexed.
  */
 public record CountCollectionOperation(
-    CommandContext commandContext,
-    DBFilterLogicalExpression dbFilterLogicalExpression,
-    int pageSize,
-    int limit)
+    CommandContext commandContext, DBLogicalExpression dbLogicalExpression, int pageSize, int limit)
     implements CollectionReadOperation {
 
   @Override
@@ -50,7 +47,7 @@ public record CountCollectionOperation(
 
   private SimpleStatement buildSelectQuery() {
     final List<Expression<BuiltCondition>> expressions =
-        ExpressionBuilder.buildExpressions(dbFilterLogicalExpression, null);
+        ExpressionBuilder.buildExpressions(dbLogicalExpression, null);
     Query query = null;
     if (limit == -1) {
       query =

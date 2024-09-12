@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NumberTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TextTableFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
 import java.util.EnumSet;
@@ -79,18 +79,17 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
     return matchRules;
   }
 
-  public static DBFilterLogicalExpression findNoFilter(
-      DBFilterLogicalExpression dbFilterLogicalExpression, CaptureGroups currentCaptureGroups) {
-    return dbFilterLogicalExpression;
+  public static DBLogicalExpression findNoFilter(
+      DBLogicalExpression dbLogicalExpression, CaptureGroups currentCaptureGroups) {
+    return dbLogicalExpression;
   }
 
-  public static DBFilterLogicalExpression findDynamic(
-      DBFilterLogicalExpression currentDBFilterLogicalExpression,
-      CaptureGroups currentCaptureGroups) {
+  public static DBLogicalExpression findDynamic(
+      DBLogicalExpression currentDBLogicalExpression, CaptureGroups currentCaptureGroups) {
 
     // TODO: How do we know what the CmdT of the JsonLiteral<CmdT> from .value() is ?
-    BiConsumer<CaptureGroups, DBFilterLogicalExpression> consumer =
-        (captureGroups, dbFilterLogicalExpression) -> {
+    BiConsumer<CaptureGroups, DBLogicalExpression> consumer =
+        (captureGroups, dbLogicalExpression) -> {
           captureGroups
               .getGroupIfPresent(DYNAMIC_TEXT_GROUP)
               .ifPresent(
@@ -98,7 +97,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                     CaptureGroup<String> dynamicTextGroup = (CaptureGroup<String>) captureGroup;
                     dynamicTextGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addDBFilter(
                               new TextTableFilter(
                                   expression.path(),
                                   NativeTypeTableFilter.Operator.from(
@@ -115,7 +114,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                         (CaptureGroup<BigDecimal>) captureGroup;
                     dynamicNumberGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addDBFilter(
                               new NumberTableFilter(
                                   expression.path(),
                                   NativeTypeTableFilter.Operator.from(
@@ -133,14 +132,14 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                         expression -> {
                           Object rhsValue = ((DocumentId) expression.value()).value();
                           if (rhsValue instanceof String) {
-                            dbFilterLogicalExpression.addDBFilter(
+                            dbLogicalExpression.addDBFilter(
                                 new TextTableFilter(
                                     expression.path(),
                                     NativeTypeTableFilter.Operator.from(
                                         (ValueComparisonOperator) expression.operator()),
                                     (String) rhsValue));
                           } else if (rhsValue instanceof Number) {
-                            dbFilterLogicalExpression.addDBFilter(
+                            dbLogicalExpression.addDBFilter(
                                 new NumberTableFilter(
                                     expression.path(),
                                     NativeTypeTableFilter.Operator.from(
@@ -154,7 +153,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                   });
         };
 
-    currentCaptureGroups.consumeAll(currentDBFilterLogicalExpression, consumer);
-    return currentDBFilterLogicalExpression;
+    currentCaptureGroups.consumeAll(currentDBLogicalExpression, consumer);
+    return currentDBLogicalExpression;
   }
 }

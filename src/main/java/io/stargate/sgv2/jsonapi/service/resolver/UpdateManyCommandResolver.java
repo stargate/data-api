@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.ReadAndUpdateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -87,8 +87,7 @@ public class UpdateManyCommandResolver implements CommandResolver<UpdateManyComm
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> ctx, UpdateManyCommand command) {
-    final DBFilterLogicalExpression dbFilterLogicalExpression =
-        collectionFilterResolver.resolve(ctx, command);
+    final DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
 
     // TODO this did not track the vector usage, correct ?
     addToMetrics(
@@ -96,11 +95,11 @@ public class UpdateManyCommandResolver implements CommandResolver<UpdateManyComm
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
-        dbFilterLogicalExpression,
+        dbLogicalExpression,
         ctx.schemaObject().newIndexUsage());
     return FindCollectionOperation.unsorted(
         ctx,
-        dbFilterLogicalExpression,
+        dbLogicalExpression,
         DocumentProjector.includeAllProjector(),
         null != command.options() ? command.options().pageState() : null,
         Integer.MAX_VALUE,

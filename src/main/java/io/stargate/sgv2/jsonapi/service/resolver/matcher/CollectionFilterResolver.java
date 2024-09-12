@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
@@ -149,12 +149,11 @@ public class CollectionFilterResolver<T extends Command & Filterable>
     return matchRules;
   }
 
-  public static DBFilterLogicalExpression findById(
-      DBFilterLogicalExpression currentDbFilterLogicalExpression,
-      CaptureGroups currentCaptureGroups) {
+  public static DBLogicalExpression findById(
+      DBLogicalExpression currentDbLogicalExpression, CaptureGroups currentCaptureGroups) {
 
-    BiConsumer<CaptureGroups, DBFilterLogicalExpression> consumer =
-        (captureGroups, dbFilterLogicalExpression) -> {
+    BiConsumer<CaptureGroups, DBLogicalExpression> consumer =
+        (captureGroups, dbLogicalExpression) -> {
           // convert captureGroup to DBFilter
 
           captureGroups
@@ -164,7 +163,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<DocumentId> idGroup = (CaptureGroup<DocumentId>) captureGroup;
                     idGroup.consumeAllCaptures(
                         expression ->
-                            dbFilterLogicalExpression.addDBFilter(
+                            dbLogicalExpression.addDBFilter(
                                 new IDCollectionFilter(
                                     IDCollectionFilter.Operator.EQ,
                                     (DocumentId) expression.value())));
@@ -177,7 +176,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<DocumentId> idInGroup = (CaptureGroup<DocumentId>) captureGroup;
                     idInGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addDBFilter(
                               new IDCollectionFilter(
                                   IDCollectionFilter.Operator.IN,
                                   (List<DocumentId>) expression.value()));
@@ -185,23 +184,21 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                   });
         };
 
-    currentCaptureGroups.consumeAll(currentDbFilterLogicalExpression, consumer);
+    currentCaptureGroups.consumeAll(currentDbLogicalExpression, consumer);
 
-    return currentDbFilterLogicalExpression;
+    return currentDbLogicalExpression;
   }
 
-  public static DBFilterLogicalExpression findNoFilter(
-      DBFilterLogicalExpression currentDbFilterLogicalExpression,
-      CaptureGroups currentCaptureGroups) {
-    return currentDbFilterLogicalExpression;
+  public static DBLogicalExpression findNoFilter(
+      DBLogicalExpression currentDbLogicalExpression, CaptureGroups currentCaptureGroups) {
+    return currentDbLogicalExpression;
   }
 
-  public static DBFilterLogicalExpression findDynamic(
-      DBFilterLogicalExpression currentDbFilterLogicalExpression,
-      CaptureGroups currentCaptureGroups) {
+  public static DBLogicalExpression findDynamic(
+      DBLogicalExpression currentDbLogicalExpression, CaptureGroups currentCaptureGroups) {
 
-    BiConsumer<CaptureGroups, DBFilterLogicalExpression> consumer =
-        (captureGroups, dbFilterLogicalExpression) -> {
+    BiConsumer<CaptureGroups, DBLogicalExpression> consumer =
+        (captureGroups, dbLogicalExpression) -> {
           captureGroups
               .getGroupIfPresent(ID_GROUP)
               .ifPresent(
@@ -211,12 +208,12 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                         expression -> {
                           switch ((ValueComparisonOperator) expression.operator()) {
                             case EQ:
-                              dbFilterLogicalExpression.addDBFilter(
+                              dbLogicalExpression.addDBFilter(
                                   new IDCollectionFilter(
                                       IDCollectionFilter.Operator.EQ, expression.value()));
                               break;
                             case NE:
-                              dbFilterLogicalExpression.addDBFilter(
+                              dbLogicalExpression.addDBFilter(
                                   new IDCollectionFilter(
                                       IDCollectionFilter.Operator.NE, expression.value()));
                               break;
@@ -236,13 +233,13 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                         expression -> {
                           switch ((ValueComparisonOperator) expression.operator()) {
                             case IN:
-                              dbFilterLogicalExpression.addDBFilter(
+                              dbLogicalExpression.addDBFilter(
                                   new IDCollectionFilter(
                                       IDCollectionFilter.Operator.IN,
                                       (List<DocumentId>) expression.value()));
                               break;
                             case NIN:
-                              dbFilterLogicalExpression.addDBFilter(
+                              dbLogicalExpression.addDBFilter(
                                   new InCollectionFilter(
                                       getInFilterBaseOperator(expression.operator()),
                                       expression.path(),
@@ -264,14 +261,14 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                         expression -> {
                           final DocumentId value = (DocumentId) expression.value();
                           if (value.value() instanceof BigDecimal bdv) {
-                            dbFilterLogicalExpression.addDBFilter(
+                            dbLogicalExpression.addDBFilter(
                                 new NumberCollectionFilter(
                                     DocumentConstants.Fields.DOC_ID,
                                     getMapFilterBaseOperator(expression.operator()),
                                     bdv));
                           }
                           if (value.value() instanceof Map) {
-                            dbFilterLogicalExpression.addDBFilter(
+                            dbLogicalExpression.addDBFilter(
                                 new DateCollectionFilter(
                                     DocumentConstants.Fields.DOC_ID,
                                     getMapFilterBaseOperator(expression.operator()),
@@ -287,7 +284,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<Object> dynamicInGroup = (CaptureGroup<Object>) captureGroup;
                     dynamicInGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addDBFilter(
                               new InCollectionFilter(
                                   getInFilterBaseOperator(expression.operator()),
                                   expression.path(),
@@ -302,7 +299,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<String> dynamicTextGroup = (CaptureGroup<String>) captureGroup;
                     dynamicTextGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addDBFilter(
                               new TextCollectionFilter(
                                   expression.path(),
                                   getMapFilterBaseOperator(expression.operator()),
@@ -317,7 +314,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<Boolean> dynamicBoolGroup = (CaptureGroup<Boolean>) captureGroup;
                     dynamicBoolGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addDBFilter(
                               new BoolCollectionFilter(
                                   expression.path(),
                                   getMapFilterBaseOperator(expression.operator()),
@@ -332,7 +329,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<BigDecimal> numberGroup = (CaptureGroup<BigDecimal>) captureGroup;
                     numberGroup.consumeAllCaptures(
                         expression ->
-                            dbFilterLogicalExpression.addDBFilter(
+                            dbLogicalExpression.addDBFilter(
                                 new NumberCollectionFilter(
                                     expression.path(),
                                     getMapFilterBaseOperator(expression.operator()),
@@ -346,7 +343,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<Object> nullGroup = (CaptureGroup<Object>) captureGroup;
                     nullGroup.consumeAllCaptures(
                         expression ->
-                            dbFilterLogicalExpression.addDBFilter(
+                            dbLogicalExpression.addDBFilter(
                                 new IsNullCollectionFilter(
                                     expression.path(),
                                     getSetFilterBaseOperator(expression.operator()))));
@@ -359,7 +356,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<Date> dateGroup = (CaptureGroup<Date>) captureGroup;
                     dateGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addDBFilter(
                               new DateCollectionFilter(
                                   expression.path(),
                                   getMapFilterBaseOperator(expression.operator()),
@@ -374,7 +371,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<Boolean> existsGroup = (CaptureGroup<Boolean>) captureGroup;
                     existsGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addDBFilter(
                               new ExistsCollectionFilter(expression.path(), expression.value()));
                         });
                   });
@@ -386,7 +383,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<Object> allGroup = (CaptureGroup<Object>) captureGroup;
                     allGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addDBFilter(
                               new AllCollectionFilter(
                                   expression.path(), (List<Object>) expression.value(), false));
                         });
@@ -399,7 +396,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<Object> notAnyGroup = (CaptureGroup<Object>) captureGroup;
                     notAnyGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addDBFilter(
                               new AllCollectionFilter(
                                   expression.path(), (List<Object>) expression.value(), true));
                         });
@@ -414,7 +411,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                         expression -> {
                           if (expression.value() instanceof Boolean) {
                             // This is the special case, e.g. {"$not":{"ages":{"$size":0}}}
-                            dbFilterLogicalExpression.addDBFilter(
+                            dbLogicalExpression.addDBFilter(
                                 new SizeCollectionFilter(
                                     expression.path(),
                                     MapCollectionFilter.Operator.MAP_NOT_EQUALS,
@@ -430,7 +427,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                             } else {
                               operator = MapCollectionFilter.Operator.MAP_NOT_EQUALS;
                             }
-                            dbFilterLogicalExpression.addDBFilter(
+                            dbLogicalExpression.addDBFilter(
                                 new SizeCollectionFilter(
                                     expression.path(), operator, Math.abs(size)));
                           }
@@ -444,7 +441,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<Object> arrayEqualsGroup = (CaptureGroup<Object>) captureGroup;
                     arrayEqualsGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addDBFilter(
                               new ArrayEqualsCollectionFilter(
                                   new DocValueHasher(),
                                   expression.path(),
@@ -462,7 +459,7 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                     CaptureGroup<Object> subDocEqualsGroup = (CaptureGroup<Object>) captureGroup;
                     subDocEqualsGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addDBFilter(
                               new SubDocEqualsCollectionFilter(
                                   new DocValueHasher(),
                                   expression.path(),
@@ -474,8 +471,8 @@ public class CollectionFilterResolver<T extends Command & Filterable>
                   });
         };
 
-    currentCaptureGroups.consumeAll(currentDbFilterLogicalExpression, consumer);
-    return currentDbFilterLogicalExpression;
+    currentCaptureGroups.consumeAll(currentDbLogicalExpression, consumer);
+    return currentDbLogicalExpression;
   }
 
   // TIDY move these to the MapCollectionFilter etc enums

@@ -20,7 +20,7 @@ import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.CollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.util.*;
@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 /** Operation that returns the documents or its key based on the filter condition. */
 public record FindCollectionOperation(
     CommandContext<CollectionSchemaObject> commandContext,
-    DBFilterLogicalExpression dbFilterLogicalExpression,
+    DBLogicalExpression dbLogicalExpression,
     /**
      * Projection used on document to return; if no changes desired, identity projection. Defined
      * for "pure" read operations: for updates (like {@code findOneAndUpdate}) is passed differently
@@ -56,7 +56,7 @@ public record FindCollectionOperation(
    * Constructs find operation for unsorted single document find.
    *
    * @param commandContext command context
-   * @param dbFilterLogicalExpression expression contains filters and their logical relation
+   * @param dbLogicalExpression expression contains filters and their logical relation
    * @param projection projections, see FindCollectionOperation#projection
    * @param readType type of the read
    * @param objectMapper object mapper to use
@@ -65,7 +65,7 @@ public record FindCollectionOperation(
    */
   public static FindCollectionOperation unsortedSingle(
       CommandContext<CollectionSchemaObject> commandContext,
-      DBFilterLogicalExpression dbFilterLogicalExpression,
+      DBLogicalExpression dbLogicalExpression,
       DocumentProjector projection,
       CollectionReadType readType,
       ObjectMapper objectMapper,
@@ -73,7 +73,7 @@ public record FindCollectionOperation(
 
     return new FindCollectionOperation(
         commandContext,
-        dbFilterLogicalExpression,
+        dbLogicalExpression,
         projection,
         null,
         1,
@@ -104,7 +104,7 @@ public record FindCollectionOperation(
    */
   public static FindCollectionOperation unsorted(
       CommandContext<CollectionSchemaObject> commandContext,
-      DBFilterLogicalExpression dbLogicalExpression,
+      DBLogicalExpression dbLogicalExpression,
       DocumentProjector projection,
       String pageState,
       int limit,
@@ -143,7 +143,7 @@ public record FindCollectionOperation(
    */
   public static FindCollectionOperation vsearchSingle(
       CommandContext<CollectionSchemaObject> commandContext,
-      DBFilterLogicalExpression dbLogicalExpression,
+      DBLogicalExpression dbLogicalExpression,
       DocumentProjector projection,
       CollectionReadType readType,
       ObjectMapper objectMapper,
@@ -182,7 +182,7 @@ public record FindCollectionOperation(
    */
   public static FindCollectionOperation vsearch(
       CommandContext<CollectionSchemaObject> commandContext,
-      DBFilterLogicalExpression dbLogicalExpression,
+      DBLogicalExpression dbLogicalExpression,
       DocumentProjector projection,
       String pageState,
       int limit,
@@ -225,7 +225,7 @@ public record FindCollectionOperation(
    */
   public static FindCollectionOperation sortedSingle(
       CommandContext<CollectionSchemaObject> commandContext,
-      DBFilterLogicalExpression dbLogicalExpression,
+      DBLogicalExpression dbLogicalExpression,
       DocumentProjector projection,
       int pageSize,
       CollectionReadType readType,
@@ -270,7 +270,7 @@ public record FindCollectionOperation(
    */
   public static FindCollectionOperation sorted(
       CommandContext<CollectionSchemaObject> commandContext,
-      DBFilterLogicalExpression dbLogicalExpression,
+      DBLogicalExpression dbLogicalExpression,
       DocumentProjector projection,
       String pageState,
       int limit,
@@ -396,13 +396,13 @@ public record FindCollectionOperation(
 
     final var rootNode = objectMapper().createObjectNode();
     DocumentId documentId = null;
-    final var stack = new Stack<DBFilterLogicalExpression>();
-    stack.push(dbFilterLogicalExpression);
+    final var stack = new Stack<DBLogicalExpression>();
+    stack.push(dbLogicalExpression);
 
     while (!stack.empty()) {
-      var currentDbFilterLogicalExpression = stack.pop();
+      var currentDbLogicalExpression = stack.pop();
 
-      for (DBFilterBase filter : dbFilterLogicalExpression.dBFilters()) {
+      for (DBFilterBase filter : dbLogicalExpression.dBFilters()) {
         // every filter must be a collection filter, because we are making a new document and we
         // only do this for docs
         if (filter instanceof IDCollectionFilter) {
@@ -422,7 +422,7 @@ public record FindCollectionOperation(
         }
       }
 
-      currentDbFilterLogicalExpression.dBFilterLogicalExpressions().forEach(stack::push);
+      currentDbLogicalExpression.dbLogicalExpressions().forEach(stack::push);
     }
     return ReadDocument.from(documentId, null, rootNode);
   }
@@ -436,7 +436,7 @@ public record FindCollectionOperation(
    */
   private List<SimpleStatement> buildSelectQueries(IDCollectionFilter additionalIdFilter) {
     final List<Expression<BuiltCondition>> expressions =
-        ExpressionBuilder.buildExpressions(dbFilterLogicalExpression, additionalIdFilter);
+        ExpressionBuilder.buildExpressions(dbLogicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing
       return List.of();
     }
@@ -509,7 +509,7 @@ public record FindCollectionOperation(
    */
   private List<SimpleStatement> buildSortedSelectQueries(IDCollectionFilter additionalIdFilter) {
     final List<Expression<BuiltCondition>> expressions =
-        ExpressionBuilder.buildExpressions(dbFilterLogicalExpression, additionalIdFilter);
+        ExpressionBuilder.buildExpressions(dbLogicalExpression, additionalIdFilter);
     if (expressions == null) { // find nothing
       return List.of();
     }

@@ -6,7 +6,7 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.util.List;
@@ -22,19 +22,18 @@ import java.util.Objects;
  * solve the generic typing needed for the {@link OngoingWhereClause}.
  *
  * @param <T> The type of Query Builder stament that the where clause is being added to, use the
- *     static factory methods like {@link #forSelect(TableSchemaObject, DBFilterLogicalExpression)}
- *     to get the correct type.
+ *     static factory methods like {@link #forSelect(TableSchemaObject, DBLogicalExpression)} to get
+ *     the correct type.
  */
 public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements WhereCQLClause<T> {
 
   private final TableSchemaObject table;
-  private final DBFilterLogicalExpression dbFilterLogicalExpression;
+  private final DBLogicalExpression dbLogicalExpression;
 
-  private TableWhereCQLClause(
-      TableSchemaObject table, DBFilterLogicalExpression dbFilterLogicalExpression) {
+  private TableWhereCQLClause(TableSchemaObject table, DBLogicalExpression dbLogicalExpression) {
     this.table = Objects.requireNonNull(table, "table must not be null");
-    this.dbFilterLogicalExpression =
-        Objects.requireNonNull(dbFilterLogicalExpression, "logicalExpression must not be null");
+    this.dbLogicalExpression =
+        Objects.requireNonNull(dbLogicalExpression, "logicalExpression must not be null");
   }
 
   /**
@@ -43,12 +42,12 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
    * <p>
    *
    * @param table
-   * @param dbFilterLogicalExpression
+   * @param dbLogicalExpression
    * @return
    */
   public static TableWhereCQLClause<Select> forSelect(
-      TableSchemaObject table, DBFilterLogicalExpression dbFilterLogicalExpression) {
-    return new TableWhereCQLClause<>(table, dbFilterLogicalExpression);
+      TableSchemaObject table, DBLogicalExpression dbLogicalExpression) {
+    return new TableWhereCQLClause<>(table, dbLogicalExpression);
   }
 
   /**
@@ -57,12 +56,12 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
    * <p>
    *
    * @param table
-   * @param dbFilterLogicalExpression
+   * @param dbLogicalExpression
    * @return
    */
   public static TableWhereCQLClause<Update> forUpdate(
-      TableSchemaObject table, DBFilterLogicalExpression dbFilterLogicalExpression) {
-    return new TableWhereCQLClause<>(table, dbFilterLogicalExpression);
+      TableSchemaObject table, DBLogicalExpression dbLogicalExpression) {
+    return new TableWhereCQLClause<>(table, dbLogicalExpression);
   }
 
   /**
@@ -71,12 +70,12 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
    * <p>
    *
    * @param table
-   * @param dbFilterLogicalExpression
+   * @param dbLogicalExpression
    * @return
    */
   public static TableWhereCQLClause<Delete> forDelete(
-      TableSchemaObject table, DBFilterLogicalExpression dbFilterLogicalExpression) {
-    return new TableWhereCQLClause<>(table, dbFilterLogicalExpression);
+      TableSchemaObject table, DBLogicalExpression dbLogicalExpression) {
+    return new TableWhereCQLClause<>(table, dbLogicalExpression);
   }
 
   @Override
@@ -84,9 +83,7 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
     // TODO BUG: this probably breaks order for nested expressions, for now enough to get this
     // tested
     var tableFilters =
-        dbFilterLogicalExpression.dBFilters().stream()
-            .map(dbFilter -> (TableFilter) dbFilter)
-            .toList();
+        dbLogicalExpression.dBFilters().stream().map(dbFilter -> (TableFilter) dbFilter).toList();
 
     // Add the where clause operations
     for (TableFilter tableFilter : tableFilters) {

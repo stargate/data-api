@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpres
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -25,10 +26,18 @@ import java.util.function.Consumer;
  * @param <DataType> Data type of the FilterOperation operand JsonLiteral value, the value should be
  *     the Java object value extracted from the Jackson node. type for the captureExpression value
  */
-public record CaptureGroup<DataType>(Map<String, List<FilterOperation<DataType>>> captures) {
+public class CaptureGroup<DataType> {
 
   /**
-   * consumer all the captures for this captureGroup it takes the consumer object which defines how
+   * Key is filter path Value is list of corresponding FilterOperations, each has operator and
+   * operand
+   */
+  private final Map<String, List<FilterOperation<DataType>>> captures = new HashMap<>();
+
+  public CaptureGroup() {}
+
+  /**
+   * Consumer all the captures for this captureGroup it takes the consumer object which defines how
    * to construct corresponding dbFilter{@link CollectionFilterResolver} {@link TableFilterResolver}
    *
    * @param consumer
@@ -45,15 +54,15 @@ public record CaptureGroup<DataType>(Map<String, List<FilterOperation<DataType>>
   }
 
   /**
-   * update capture entry within the captureGroup for value update, need to merge captures into
-   * single list This is to handle multiple filters with same path within logical operator e.g. if
+   * Update capture entry within the captureGroup for value update, need to merge captures into
+   * single list This is to handle multiple filters with same path within logical operator e.g. If
    * no merge, then value overrides will happen "$or": [ { "username": "user1" }, { "username":
    * "user2" } ]
    *
    * @param path
    * @param capture
    */
-  public void withCapture(String path, List<FilterOperation<DataType>> capture) {
+  public void addCapture(String path, List<FilterOperation<DataType>> capture) {
     captures.computeIfAbsent(path, k -> new ArrayList<>()).addAll(capture);
   }
 

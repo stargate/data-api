@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CountCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -48,19 +48,18 @@ public class CountDocumentsCommandResolver implements CommandResolver<CountDocum
   @Override
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, CountDocumentsCommand command) {
-    DBFilterLogicalExpression dbFilterLogicalExpression =
-        collectionFilterResolver.resolve(ctx, command);
+    DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
     addToMetrics(
         meterRegistry,
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
-        dbFilterLogicalExpression,
+        dbLogicalExpression,
         ctx.schemaObject().newIndexUsage());
 
     return new CountCollectionOperation(
         ctx,
-        dbFilterLogicalExpression,
+        dbLogicalExpression,
         operationsConfig.defaultCountPageSize(),
         operationsConfig.maxCountLimit());
   }

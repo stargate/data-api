@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.service.cql.ExpressionUtils;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class ExpressionBuilder {
 
   public static List<Expression<BuiltCondition>> buildExpressions(
-      DBFilterLogicalExpression dbLogicalExpression, IDCollectionFilter additionalIdFilter) {
+      DBLogicalExpression dbLogicalExpression, IDCollectionFilter additionalIdFilter) {
     // an empty filter should find everything
     if (dbLogicalExpression.isEmpty() && additionalIdFilter == null) {
       return Collections.singletonList(null);
@@ -81,14 +81,13 @@ public class ExpressionBuilder {
   }
 
   private static Expression<BuiltCondition> buildExpressionRecursive(
-      DBFilterLogicalExpression dbLogicalExpression,
+      DBLogicalExpression dbLogicalExpression,
       IDCollectionFilter additionalIdFilter,
       List<IDCollectionFilter> idConditionExpressions) {
     List<Expression<BuiltCondition>> conditionExpressions = new ArrayList<>();
     // first for loop, is to iterate all subLogicalExpression
     // each iteration goes into another recursive build
-    for (DBFilterLogicalExpression subLogicalExpression :
-        dbLogicalExpression.dBFilterLogicalExpressions()) {
+    for (DBLogicalExpression subLogicalExpression : dbLogicalExpression.dbLogicalExpressions()) {
       final Expression<BuiltCondition> subExpressionCondition =
           buildExpressionRecursive(
               subLogicalExpression, additionalIdFilter, idConditionExpressions);
@@ -154,7 +153,7 @@ public class ExpressionBuilder {
     // everything
     if (hasNinFilterThisLevel
         && ninFilterThisLevelWithEmptyArray
-        && dbLogicalExpression.operator().equals(DBFilterLogicalExpression.DBLogicalOperator.OR)) {
+        && dbLogicalExpression.operator().equals(DBLogicalExpression.DBLogicalOperator.OR)) {
       // TODO: find a better CQL TRUE placeholder
       conditionExpressions.clear();
       conditionExpressions.add(
@@ -169,7 +168,7 @@ public class ExpressionBuilder {
     // nothing
     if (hasInFilterThisLevel
         && inFilterThisLevelWithEmptyArray
-        && dbLogicalExpression.operator().equals(DBFilterLogicalExpression.DBLogicalOperator.AND)) {
+        && dbLogicalExpression.operator().equals(DBLogicalExpression.DBLogicalOperator.AND)) {
       // TODO: find a better CQL FALSE placeholder
       conditionExpressions.clear();
       conditionExpressions.add(

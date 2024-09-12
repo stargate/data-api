@@ -31,7 +31,7 @@ import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
@@ -204,8 +204,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
@@ -310,8 +310,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
@@ -605,8 +605,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results2);
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
 
@@ -815,8 +815,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
@@ -922,8 +922,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
@@ -1097,8 +1097,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results2);
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
 
@@ -1263,8 +1263,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results2);
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
 
@@ -1342,8 +1342,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
@@ -1438,8 +1438,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
@@ -1585,8 +1585,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results3);
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
 
@@ -1683,8 +1683,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results2);
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
@@ -1760,8 +1760,8 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results1);
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
 

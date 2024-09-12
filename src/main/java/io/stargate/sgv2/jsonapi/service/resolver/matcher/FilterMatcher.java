@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -37,7 +37,7 @@ public class FilterMatcher<T extends Command & Filterable> {
     // construct a default CaptureGroups, with default AND relation, empty captureGroupsList,
     // empty captureGroupMap
     CaptureGroups<T> captureGroups =
-        new CaptureGroups<T>(command, DBFilterLogicalExpression.DBLogicalOperator.AND);
+        new CaptureGroups<T>(DBLogicalExpression.DBLogicalOperator.AND);
     if (strategy == MatchStrategy.EMPTY) {
       if (filter == null || filter.logicalExpression().isEmpty()) {
         return Optional.of(captureGroups);
@@ -55,17 +55,12 @@ public class FilterMatcher<T extends Command & Filterable> {
             filter.logicalExpression().getTotalComparisonExpressionCount());
     // capture recursively, resolve logicalExpression to captureGroups
     captureRecursive(
-        command,
-        captureGroups,
-        filter.logicalExpression(),
-        unmatchedCaptures,
-        matchStrategyCounter);
+        captureGroups, filter.logicalExpression(), unmatchedCaptures, matchStrategyCounter);
     // apply strategy to the resolved root captureGroups
     return matchStrategyCounter.applyStrategy(strategy, captureGroups);
   }
 
   private void captureRecursive(
-      T command,
       CaptureGroups currentCaptureGroups,
       LogicalExpression expression,
       List<Capture> unmatchedCaptures,
@@ -76,15 +71,10 @@ public class FilterMatcher<T extends Command & Filterable> {
       CaptureGroups innerCaptureGroups =
           currentCaptureGroups.addSubCaptureGroups(
               new CaptureGroups<>(
-                  command,
-                  DBFilterLogicalExpression.DBLogicalOperator.fromLogicalOperator(
+                  DBLogicalExpression.DBLogicalOperator.fromLogicalOperator(
                       innerLogicalExpression.getLogicalRelation())));
       captureRecursive(
-          command,
-          innerCaptureGroups,
-          innerLogicalExpression,
-          unmatchedCaptures,
-          matchStrategyCounter);
+          innerCaptureGroups, innerLogicalExpression, unmatchedCaptures, matchStrategyCounter);
     }
 
     // resolve current level of comparisonExpressions to captureGroup
@@ -96,7 +86,7 @@ public class FilterMatcher<T extends Command & Filterable> {
         if (!matched.isEmpty()) {
           currentCaptureGroups
               .getGroup(capture.marker)
-              .withCapture(comparisonExpression.getPath(), matched);
+              .addCapture(comparisonExpression.getPath(), matched);
           switch (strategy) {
             case STRICT:
               captureIter.remove();

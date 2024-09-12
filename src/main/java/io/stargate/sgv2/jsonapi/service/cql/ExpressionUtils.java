@@ -18,7 +18,7 @@ package io.stargate.sgv2.jsonapi.service.cql;
 import com.bpodgursky.jbool_expressions.And;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Or;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import java.util.List;
 
 /**
@@ -53,7 +53,7 @@ public class ExpressionUtils<K> {
 
   public static <K> Expression<K> buildExpression(
       List<? extends Expression<K>> expressions,
-      DBFilterLogicalExpression.DBLogicalOperator logicOperator) {
+      DBLogicalExpression.DBLogicalOperator logicOperator) {
     return switch (logicOperator) {
       case AND -> andOf(expressions);
       case OR -> orOf(expressions);

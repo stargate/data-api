@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DeleteTableOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
@@ -89,7 +89,7 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> commandContext, DeleteOneCommand command) {
 
-    final DBFilterLogicalExpression dbFilterLogicalExpression =
+    final DBLogicalExpression dbLogicalExpression =
         collectionFilterResolver.resolve(commandContext, command);
 
     final SortClause sortClause = command.sortClause();
@@ -104,12 +104,12 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
-        dbFilterLogicalExpression,
+        dbLogicalExpression,
         indexUsage);
     if (vector != null) {
       return FindCollectionOperation.vsearchSingle(
           commandContext,
-          dbFilterLogicalExpression,
+          dbLogicalExpression,
           DocumentProjector.includeAllProjector(),
           CollectionReadType.KEY,
           objectMapper,
@@ -122,7 +122,7 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
     if (orderBy != null) {
       return FindCollectionOperation.sortedSingle(
           commandContext,
-          dbFilterLogicalExpression,
+          dbLogicalExpression,
           DocumentProjector.includeAllProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
@@ -137,7 +137,7 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
     } else {
       return FindCollectionOperation.unsortedSingle(
           commandContext,
-          dbFilterLogicalExpression,
+          dbLogicalExpression,
           DocumentProjector.includeAllProjector(),
           CollectionReadType.KEY,
           objectMapper,

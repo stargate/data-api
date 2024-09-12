@@ -6,7 +6,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.ClauseResolver;
 import java.util.Objects;
@@ -27,7 +27,7 @@ import java.util.Objects;
  */
 public abstract class FilterResolver<
         CmdT extends Command & Filterable, SchemaT extends SchemaObject>
-    extends ClauseResolver<CmdT, SchemaT, DBFilterLogicalExpression> {
+    extends ClauseResolver<CmdT, SchemaT, DBLogicalExpression> {
 
   protected final FilterMatchRules<CmdT> matchRules;
 
@@ -53,21 +53,20 @@ public abstract class FilterResolver<
 
   /**
    * Users of the class should call this function to convert the filer on the command into a {@link
-   * DBFilterLogicalExpression}.
+   * DBLogicalExpression}.
    *
    * @param commandContext
    * @param command
-   * @return DBFilterLogicalExpression
+   * @return DBLogicalExpression
    */
-  public DBFilterLogicalExpression resolve(CommandContext<SchemaT> commandContext, CmdT command) {
+  public DBLogicalExpression resolve(CommandContext<SchemaT> commandContext, CmdT command) {
     Preconditions.checkNotNull(commandContext, "commandContext is required");
     Preconditions.checkNotNull(command, "command is required");
     SchemaValidatable.maybeValidate(commandContext, command.filterClause());
 
     InvertibleCommandClause.maybeInvert(commandContext, command.filterClause());
 
-    final DBFilterLogicalExpression dbFilterLogicalExpression =
-        matchRules.apply(commandContext, command);
+    final DBLogicalExpression dbLogicalExpression = matchRules.apply(commandContext, command);
     // TODO, why validate here?
     if (command.filterClause() != null
         && command.filterClause().logicalExpression().getTotalComparisonExpressionCount()
@@ -80,6 +79,6 @@ public abstract class FilterResolver<
               command.filterClause().logicalExpression().getTotalComparisonExpressionCount(),
               operationsConfig.maxFilterObjectProperties()));
     }
-    return dbFilterLogicalExpression;
+    return dbLogicalExpression;
   }
 }

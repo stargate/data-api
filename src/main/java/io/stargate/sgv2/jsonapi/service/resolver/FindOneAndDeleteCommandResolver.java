@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
@@ -71,7 +71,7 @@ public class FindOneAndDeleteCommandResolver implements CommandResolver<FindOneA
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> commandContext, FindOneAndDeleteCommand command) {
-    DBFilterLogicalExpression dbFilterLogicalExpression =
+    DBLogicalExpression dbLogicalExpression =
         collectionFilterResolver.resolve(commandContext, command);
 
     final SortClause sortClause = command.sortClause();
@@ -86,12 +86,12 @@ public class FindOneAndDeleteCommandResolver implements CommandResolver<FindOneA
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
-        dbFilterLogicalExpression,
+        dbLogicalExpression,
         indexUsage);
     if (vector != null) {
       return FindCollectionOperation.vsearchSingle(
           commandContext,
-          dbFilterLogicalExpression,
+          dbLogicalExpression,
           DocumentProjector.includeAllProjector(),
           CollectionReadType.DOCUMENT,
           objectMapper,
@@ -104,7 +104,7 @@ public class FindOneAndDeleteCommandResolver implements CommandResolver<FindOneA
     if (orderBy != null) {
       return FindCollectionOperation.sortedSingle(
           commandContext,
-          dbFilterLogicalExpression,
+          dbLogicalExpression,
           DocumentProjector.includeAllProjector(),
           // For in memory sorting we read more data than needed, so defaultSortPageSize like 100
           operationsConfig.defaultSortPageSize(),
@@ -119,7 +119,7 @@ public class FindOneAndDeleteCommandResolver implements CommandResolver<FindOneA
     } else {
       return FindCollectionOperation.unsortedSingle(
           commandContext,
-          dbFilterLogicalExpression,
+          dbLogicalExpression,
           DocumentProjector.includeAllProjector(),
           CollectionReadType.DOCUMENT,
           objectMapper,

@@ -17,7 +17,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.testutil.MockAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.testutil.MockRow;
@@ -62,8 +62,8 @@ public class CountCollectionOperationTest extends OperationTestBase {
                 return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
 
       CountCollectionOperation countCollectionOperation =
           new CountCollectionOperation(COLLECTION_CONTEXT, implicitAnd, 100, -1);
@@ -107,12 +107,12 @@ public class CountCollectionOperationTest extends OperationTestBase {
                 return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
               });
 
-      DBFilterLogicalExpression dbFilterLogicalExpression =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      dbFilterLogicalExpression.addDBFilter(
+      DBLogicalExpression dbLogicalExpression =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+      dbLogicalExpression.addDBFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
       CountCollectionOperation countCollectionOperation =
-          new CountCollectionOperation(COLLECTION_CONTEXT, dbFilterLogicalExpression, 100, -1);
+          new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, -1);
       Supplier<CommandResult> execute =
           countCollectionOperation
               .execute(dataApiRequestInfo, queryExecutor)
@@ -153,12 +153,12 @@ public class CountCollectionOperationTest extends OperationTestBase {
                 return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
               });
 
-      DBFilterLogicalExpression dbFilterLogicalExpression =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      dbFilterLogicalExpression.addDBFilter(
+      DBLogicalExpression dbLogicalExpression =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+      dbLogicalExpression.addDBFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user_all"));
       CountCollectionOperation countCollectionOperation =
-          new CountCollectionOperation(COLLECTION_CONTEXT, dbFilterLogicalExpression, 100, -1);
+          new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, -1);
       Supplier<CommandResult> execute =
           countCollectionOperation
               .execute(dataApiRequestInfo, queryExecutor)
@@ -196,10 +196,10 @@ public class CountCollectionOperationTest extends OperationTestBase {
                 return CompletableFuture.failedFuture(failure).minimalCompletionStage();
               });
 
-      DBFilterLogicalExpression dbFilterLogicalExpression =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression dbLogicalExpression =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       CountCollectionOperation countCollectionOperation =
-          new CountCollectionOperation(COLLECTION_CONTEXT, dbFilterLogicalExpression, 100, -1);
+          new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, -1);
       Throwable result =
           countCollectionOperation
               .execute(dataApiRequestInfo, queryExecutor)
@@ -242,10 +242,10 @@ public class CountCollectionOperationTest extends OperationTestBase {
                 callCount.incrementAndGet();
                 return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
               });
-      DBFilterLogicalExpression dbFilterLogicalExpression =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression dbLogicalExpression =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       CountCollectionOperation countCollectionOperation =
-          new CountCollectionOperation(COLLECTION_CONTEXT, dbFilterLogicalExpression, 100, 10);
+          new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
       Supplier<CommandResult> execute =
           countCollectionOperation
               .execute(dataApiRequestInfo, queryExecutor)
@@ -285,12 +285,12 @@ public class CountCollectionOperationTest extends OperationTestBase {
                 return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
               });
 
-      DBFilterLogicalExpression dbFilterLogicalExpression =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      dbFilterLogicalExpression.addDBFilter(
+      DBLogicalExpression dbLogicalExpression =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+      dbLogicalExpression.addDBFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user2"));
       CountCollectionOperation countCollectionOperation =
-          new CountCollectionOperation(COLLECTION_CONTEXT, dbFilterLogicalExpression, 100, 10);
+          new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
       Supplier<CommandResult> execute =
           countCollectionOperation
               .execute(dataApiRequestInfo, queryExecutor)
@@ -330,8 +330,8 @@ public class CountCollectionOperationTest extends OperationTestBase {
                 return CompletableFuture.supplyAsync(() -> mockResults).minimalCompletionStage();
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user_all"));
 
@@ -374,11 +374,11 @@ public class CountCollectionOperationTest extends OperationTestBase {
                 return CompletableFuture.failedFuture(failure).minimalCompletionStage();
               });
 
-      DBFilterLogicalExpression dbFilterLogicalExpression =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression dbLogicalExpression =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
 
       CountCollectionOperation countCollectionOperation =
-          new CountCollectionOperation(COLLECTION_CONTEXT, dbFilterLogicalExpression, 100, 10);
+          new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
       Throwable result =
           countCollectionOperation
               .execute(dataApiRequestInfo, queryExecutor)

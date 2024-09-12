@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.FindTableOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableRowProjection;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
@@ -89,7 +89,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   @Override
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindCommand command) {
-    final DBFilterLogicalExpression resolvedDbFilterLogicalExpression =
+    final DBLogicalExpression resolvedDbLogicalExpression =
         collectionFilterResolver.resolve(ctx, command);
     // limit and page state defaults
     int limit = Integer.MAX_VALUE;
@@ -125,7 +125,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
-        resolvedDbFilterLogicalExpression,
+        resolvedDbLogicalExpression,
         indexUsage);
 
     if (vector != null) {
@@ -134,7 +134,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
               limit, operationsConfig.maxVectorSearchLimit()); // Max vector search support is 1000
       return FindCollectionOperation.vsearch(
           ctx,
-          resolvedDbFilterLogicalExpression,
+          resolvedDbLogicalExpression,
           command.buildProjector(includeSimilarity),
           pageState,
           limit,
@@ -150,7 +150,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     if (orderBy != null) {
       return FindCollectionOperation.sorted(
           ctx,
-          resolvedDbFilterLogicalExpression,
+          resolvedDbLogicalExpression,
           command.buildProjector(),
           pageState,
           // For in memory sorting if no limit provided in the request will use
@@ -167,7 +167,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     } else {
       return FindCollectionOperation.unsorted(
           ctx,
-          resolvedDbFilterLogicalExpression,
+          resolvedDbLogicalExpression,
           command.buildProjector(),
           pageState,
           limit,

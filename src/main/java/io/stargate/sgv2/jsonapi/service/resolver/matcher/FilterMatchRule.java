@@ -4,7 +4,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
@@ -19,23 +19,21 @@ import java.util.function.BiFunction;
  */
 public record FilterMatchRule<T extends Command & Filterable>(
     FilterMatcher<T> matcher,
-    BiFunction<DBFilterLogicalExpression, CaptureGroups<T>, DBFilterLogicalExpression>
-        resolveFunction)
-    implements BiFunction<CommandContext, T, Optional<DBFilterLogicalExpression>> {
+    BiFunction<DBLogicalExpression, CaptureGroups<T>, DBLogicalExpression> resolveFunction)
+    implements BiFunction<CommandContext, T, Optional<DBLogicalExpression>> {
   //  @Override
-  //  public Optional<DBFilterLogicalExpression> apply(CommandContext commandContext, T command) {
+  //  public Optional<DBLogicalExpression> apply(CommandContext commandContext, T command) {
   //    return matcher.apply(command).map(captures -> resolveFunction.apply(new
-  // DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND), captures));
+  // DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND), captures));
   //  }
 
   @Override
-  public Optional<DBFilterLogicalExpression> apply(CommandContext commandContext, T command) {
+  public Optional<DBLogicalExpression> apply(CommandContext commandContext, T command) {
     return matcher
         .apply(command)
         .map(
             captures ->
                 resolveFunction.apply(
-                    new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND),
-                    captures));
+                    new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND), captures));
   }
 }

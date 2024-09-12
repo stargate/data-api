@@ -14,7 +14,7 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.TruncateCollectionOperation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DeleteTableOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
@@ -91,19 +91,18 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> ctx, DeleteManyCommand command) {
-    final DBFilterLogicalExpression dbFilterLogicalExpression =
-        collectionFilterResolver.resolve(ctx, command);
+    final DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
     // Read One extra document than delete limit so return moreData flag
     addToMetrics(
         meterRegistry,
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
-        dbFilterLogicalExpression,
+        dbLogicalExpression,
         ctx.schemaObject().newIndexUsage());
     return FindCollectionOperation.unsorted(
         ctx,
-        dbFilterLogicalExpression,
+        dbLogicalExpression,
         DocumentProjector.includeAllProjector(),
         null,
         operationsConfig.maxDocumentDeleteCount() + 1,

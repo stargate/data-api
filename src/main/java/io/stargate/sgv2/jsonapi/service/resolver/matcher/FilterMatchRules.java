@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -19,8 +19,8 @@ import java.util.function.BiFunction;
 public class FilterMatchRules<T extends Command & Filterable> {
 
   // use the interface rather than MatchRule class so the streaming works.
-  private final List<BiFunction<CommandContext, T, Optional<DBFilterLogicalExpression>>>
-      matchRules = new ArrayList<>();
+  private final List<BiFunction<CommandContext, T, Optional<DBLogicalExpression>>> matchRules =
+      new ArrayList<>();
 
   /**
    * Adds a rule that will result in the specified resolveFunction being called.
@@ -44,8 +44,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @return
    */
   public FilterMatchRule<T> addMatchRule(
-      BiFunction<DBFilterLogicalExpression, CaptureGroups<T>, DBFilterLogicalExpression>
-          resolveFunction,
+      BiFunction<DBLogicalExpression, CaptureGroups<T>, DBLogicalExpression> resolveFunction,
       FilterMatcher.MatchStrategy matchStrategy) {
     FilterMatchRule<T> rule =
         new FilterMatchRule<T>(new FilterMatcher<>(matchStrategy), resolveFunction);
@@ -60,7 +59,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @param command
    * @return
    */
-  public DBFilterLogicalExpression apply(CommandContext commandContext, T command) {
+  public DBLogicalExpression apply(CommandContext commandContext, T command) {
 
     return matchRules.stream()
         .map(e -> e.apply(commandContext, command))

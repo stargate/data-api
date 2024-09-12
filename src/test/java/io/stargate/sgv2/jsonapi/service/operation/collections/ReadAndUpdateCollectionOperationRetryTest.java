@@ -25,7 +25,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -207,8 +207,8 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
               return Uni.createFrom().item(results4);
             });
 
-    DBFilterLogicalExpression implicitAnd =
-        new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+    DBLogicalExpression implicitAnd =
+        new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
     implicitAnd.addDBFilter(
         new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
 
@@ -349,8 +349,8 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
               return Uni.createFrom().item(results4);
             });
 
-    DBFilterLogicalExpression implicitAnd =
-        new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+    DBLogicalExpression implicitAnd =
+        new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
     implicitAnd.addDBFilter(
         new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
 
@@ -499,8 +499,8 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
               return Uni.createFrom().item(results4);
             });
 
-    DBFilterLogicalExpression implicitAnd =
-        new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+    DBLogicalExpression implicitAnd =
+        new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
     implicitAnd.addDBFilter(
         new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
 
@@ -681,8 +681,8 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
               return Uni.createFrom().item(results5);
             });
 
-    DBFilterLogicalExpression implicitAnd =
-        new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+    DBLogicalExpression implicitAnd =
+        new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
     implicitAnd.addDBFilter(
         new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
 
@@ -891,8 +891,8 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
               return Uni.createFrom().item(results7);
             });
 
-    DBFilterLogicalExpression implicitAnd =
-        new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+    DBLogicalExpression implicitAnd =
+        new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
     implicitAnd.addDBFilter(
         new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
 

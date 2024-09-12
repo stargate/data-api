@@ -28,7 +28,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
@@ -122,8 +122,8 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(deleteResults);
               });
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
@@ -322,8 +322,8 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       IDCollectionFilter filter =
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1"));
 
-      DBFilterLogicalExpression implicitAnd =
-          new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
       implicitAnd.addDBFilter(filter);
 
       FindCollectionOperation findCollectionOperation =
