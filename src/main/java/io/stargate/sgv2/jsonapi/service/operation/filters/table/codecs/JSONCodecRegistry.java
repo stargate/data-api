@@ -113,15 +113,13 @@ public class JSONCodecRegistry {
   }
 
   /**
-   * Same as {@link #internalCodecForToCQL(DataType, Object)}
+   * Like {@link #internalCodecForToCQL(DataType, Object)} but for converting in the opposite
+   * direction, from CQL type to JSON.
    *
-   * @param targetCQLType
-   * @return
+   * @param fromCQLType
+   * @return Codec to use for conversion, or `null` if none found.
    */
-  private JSONCodec<?, ?> internalCodecForToJSON(DataType targetCQLType) {
-    return codecs.stream()
-        .filter(codec -> codec.testToJSON(targetCQLType))
-        .findFirst()
-        .orElse(null);
+  private JSONCodec<?, ?> internalCodecForToJSON(DataType fromCQLType) {
+    return codecs.stream().filter(codec -> codec.testToJSON(fromCQLType)).findFirst().orElse(null);
   }
 }

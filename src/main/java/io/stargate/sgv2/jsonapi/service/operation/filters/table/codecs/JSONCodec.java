@@ -168,6 +168,24 @@ public record JSONCodec<JavaT, CqlT>(
     }
 
     /**
+     * Returns given String if (and only if) it only contains 7-bit ASCII characters; otherwise it
+     * will throw an {@link IllegalArgumentException}
+     */
+    static String safeAscii(DataType targetTextType, String value) throws ToCQLCodecException {
+      for (int i = 0, len = value.length(); i < len; ++i) {
+        if (value.charAt(i) > 0x7F) {
+          Exception rootCause =
+              new IllegalArgumentException(
+                  String.format(
+                      "String contains non-ASCII character at index #%d (length=%d): \\u%04X",
+                      i, len, (int) value.charAt(i)));
+          throw new ToCQLCodecException(value, targetTextType, rootCause);
+        }
+      }
+      return value;
+    }
+
+    /**
      * Returns an instance that converts the value to the target type, catching any arithmetic
      * exceptions and throwing them as a {@link ToCQLCodecException}
      *

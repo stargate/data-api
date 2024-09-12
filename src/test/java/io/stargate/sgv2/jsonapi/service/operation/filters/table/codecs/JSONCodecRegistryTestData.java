@@ -38,6 +38,12 @@ public class JSONCodecRegistryTestData {
 
   public final BigDecimal NOT_EXACT_AS_INTEGER = new BigDecimal("1.25");
 
+  public final String STRING_ASCII_SAFE = "ascii-safe-string";
+
+  public final String STRING_UTF8_WITH_2BYTE_CHAR = "utf8-2-byte-\u00a2"; // cent symbol
+
+  public final String STRING_UTF8_WITH_3BYTE_CHAR = "utf8-3-byte-\u20ac"; // euro symbol
+
   /**
    * Returns a mocked {@link TableMetadata} that has a column of the specified type.
    *

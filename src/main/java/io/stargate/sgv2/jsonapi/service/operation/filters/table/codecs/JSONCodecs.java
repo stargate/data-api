@@ -204,7 +204,7 @@ public abstract class JSONCodecs {
       new JSONCodec<>(
           GenericType.STRING,
           DataTypes.ASCII,
-          JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToCQL::safeAscii,
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::textNode));
 
   public static final JSONCodec<String, String> TEXT =

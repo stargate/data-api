@@ -115,7 +115,19 @@ public class JSONCodecRegistryTest {
         Arguments.of(DataTypes.DOUBLE, BigDecimal.valueOf(0.25), Double.valueOf(0.25)),
         Arguments.of(DataTypes.FLOAT, 123L, Float.valueOf(123L)),
         Arguments.of(DataTypes.FLOAT, BigInteger.valueOf(34567L), Float.valueOf(34567L)),
-        Arguments.of(DataTypes.FLOAT, BigDecimal.valueOf(0.25), Float.valueOf(0.25f)));
+        Arguments.of(DataTypes.FLOAT, BigDecimal.valueOf(0.25), Float.valueOf(0.25f)),
+
+        // Textual types: ASCII, TEXT (VARCHAR is an alias for TEXT).
+        Arguments.of(DataTypes.ASCII, TEST_DATA.STRING_ASCII_SAFE, TEST_DATA.STRING_ASCII_SAFE),
+        Arguments.of(DataTypes.TEXT, TEST_DATA.STRING_ASCII_SAFE, TEST_DATA.STRING_ASCII_SAFE),
+        Arguments.of(
+            DataTypes.TEXT,
+            TEST_DATA.STRING_UTF8_WITH_2BYTE_CHAR,
+            TEST_DATA.STRING_UTF8_WITH_2BYTE_CHAR),
+        Arguments.of(
+            DataTypes.TEXT,
+            TEST_DATA.STRING_UTF8_WITH_3BYTE_CHAR,
+            TEST_DATA.STRING_UTF8_WITH_3BYTE_CHAR));
   }
 
   @Test
@@ -275,5 +287,38 @@ public class JSONCodecRegistryTest {
         Arguments.of(DataTypes.SMALLINT, TEST_DATA.NOT_EXACT_AS_INTEGER),
         Arguments.of(DataTypes.TINYINT, TEST_DATA.NOT_EXACT_AS_INTEGER),
         Arguments.of(DataTypes.VARINT, TEST_DATA.NOT_EXACT_AS_INTEGER));
+  }
+
+  @ParameterizedTest
+  @MethodSource("nonAsciiValueFailTestCases")
+  public void nonAsciiValueFail(String valueToTest) {
+    var codec = assertGetCodecToCQL(DataTypes.ASCII, valueToTest);
+
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest),
+            String.format(
+                "Throw ToCQLCodecException when attempting to convert `%s` from non-ASCII value %s",
+                DataTypes.ASCII, valueToTest));
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(DataTypes.ASCII);
+              assertThat(e.value).isEqualTo(valueToTest);
+
+              assertThat(e.getMessage())
+                  .contains(DataTypes.ASCII.toString())
+                  .contains(valueToTest.getClass().getName())
+                  .contains(valueToTest.toString())
+                  .contains("Root cause: String contains non-ASCII character at index");
+            });
+  }
+
+  private static Stream<Arguments> nonAsciiValueFailTestCases() {
+    return Stream.of(
+        Arguments.of(TEST_DATA.STRING_UTF8_WITH_2BYTE_CHAR),
+        Arguments.of(TEST_DATA.STRING_UTF8_WITH_3BYTE_CHAR));
   }
 }

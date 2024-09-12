@@ -17,9 +17,20 @@ public class ToCQLCodecException extends CheckedApiException {
     super(
         String.format(
             "Error trying to convert to targetCQLType `%s` from value.class `%s`, value %s. Root cause: %s",
-            targetCQLType, value.getClass().getName(), value, cause.getMessage()),
+            targetCQLType, value.getClass().getName(), valueDesc(value), cause.getMessage()),
         cause);
     this.value = value;
     this.targetCQLType = targetCQLType;
+  }
+
+  // Add a place to slightly massage value; can be further improved
+  private static String valueDesc(Object value) {
+    if (value == null) {
+      return "null";
+    }
+    if (value instanceof String) {
+      return "\"" + value + "\"";
+    }
+    return String.valueOf(value);
   }
 }
