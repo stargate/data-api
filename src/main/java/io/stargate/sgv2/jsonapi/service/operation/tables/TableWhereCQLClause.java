@@ -84,7 +84,7 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
     // TODO BUG: this probably breaks order for nested expressions, for now enough to get this
     // tested
     var tableFilters =
-        dbFilterLogicalExpression.getDbFilterList().stream()
+        dbFilterLogicalExpression.dBFilters().stream()
             .map(dbFilter -> (TableFilter) dbFilter)
             .toList();
 

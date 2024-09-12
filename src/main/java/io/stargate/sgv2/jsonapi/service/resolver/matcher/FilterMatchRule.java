@@ -17,13 +17,6 @@ import java.util.function.BiFunction;
  *
  * <p>T - Command type to match
  */
-// public record FilterMatchRule<T extends Command & Filterable>(FilterMatcher<T> matcher)
-//    implements BiFunction<CommandContext, T, Optional<LogicalExpression>> {
-//  @Override
-//  public Optional<LogicalExpression> apply(CommandContext commandContext, T command) {
-//    return matcher.apply(command);
-//  }
-// }
 public record FilterMatchRule<T extends Command & Filterable>(
     FilterMatcher<T> matcher,
     BiFunction<DBFilterLogicalExpression, CaptureGroups<T>, DBFilterLogicalExpression>

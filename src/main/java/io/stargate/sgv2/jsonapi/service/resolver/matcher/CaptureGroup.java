@@ -20,8 +20,10 @@ import java.util.function.Consumer;
  * "address.street": "bar"} Path in the {@link ComparisonExpression} that was matched, e.g.
  * "address.street"
  *
- * <p>Created by the {@link CaptureGroups} via a builder <DataType> This is Data type of the object,
- * type for the captureExpression value
+ * <p>Created by the {@link CaptureGroups} via a builder
+ *
+ * @param <DataType> Data type of the FilterOperation operand JsonLiteral value, the value should be
+ *     the Java object value extracted from the Jackson node. type for the captureExpression value
  */
 public record CaptureGroup<DataType>(Map<String, List<FilterOperation<DataType>>> captures) {
 
@@ -37,7 +39,7 @@ public record CaptureGroup<DataType>(Map<String, List<FilterOperation<DataType>>
           operations.forEach(
               operation ->
                   consumer.accept(
-                      new CaptureExpression<DataType>(
+                      new CaptureExpression<>(
                           key, operation.operator(), operation.operand().value())));
         });
   }

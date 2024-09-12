@@ -131,7 +131,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.dbFilterLogicalExpression().getDbFilterList()).isEmpty();
+                assertThat(find.dbFilterLogicalExpression().dBFilters()).isEmpty();
               });
     }
 
@@ -220,7 +220,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
-                          assertThat(find.dbFilterLogicalExpression().getDbFilterList().get(0))
+                          assertThat(find.dbFilterLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.orderBy()).isNull();
                           assertThat(find.vector()).isNotNull();
@@ -298,7 +298,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbFilterLogicalExpression().getDbFilterList().get(0))
+                          assertThat(find.dbFilterLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
@@ -391,7 +391,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(find.dbFilterLogicalExpression().getDbFilterList().get(0))
+                          assertThat(find.dbFilterLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
@@ -448,8 +448,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isTrue();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.dbFilterLogicalExpression().getDbFilterList().get(0))
-                    .isEqualTo(filter);
+                assertThat(find.dbFilterLogicalExpression().dBFilters().get(0)).isEqualTo(filter);
               });
     }
 

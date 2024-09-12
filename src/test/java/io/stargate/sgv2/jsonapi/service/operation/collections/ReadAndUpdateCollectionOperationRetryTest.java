@@ -209,7 +209,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     DBFilterLogicalExpression implicitAnd =
         new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-    implicitAnd.addInnerDBFilter(
+    implicitAnd.addDBFilter(
         new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
 
     FindCollectionOperation findCollectionOperation =
@@ -351,7 +351,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     DBFilterLogicalExpression implicitAnd =
         new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-    implicitAnd.addInnerDBFilter(
+    implicitAnd.addDBFilter(
         new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
 
     FindCollectionOperation findCollectionOperation =
@@ -501,7 +501,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     DBFilterLogicalExpression implicitAnd =
         new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-    implicitAnd.addInnerDBFilter(
+    implicitAnd.addDBFilter(
         new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
 
     FindCollectionOperation findCollectionOperation =
@@ -683,7 +683,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     DBFilterLogicalExpression implicitAnd =
         new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-    implicitAnd.addInnerDBFilter(
+    implicitAnd.addDBFilter(
         new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
 
     FindCollectionOperation findCollectionOperation =
@@ -893,7 +893,7 @@ public class ReadAndUpdateCollectionOperationRetryTest extends OperationTestBase
 
     DBFilterLogicalExpression implicitAnd =
         new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-    implicitAnd.addInnerDBFilter(
+    implicitAnd.addDBFilter(
         new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
 
     FindCollectionOperation findCollectionOperation =

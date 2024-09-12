@@ -124,7 +124,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
@@ -324,7 +324,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(filter);
+      implicitAnd.addDBFilter(filter);
 
       FindCollectionOperation findCollectionOperation =
           FindCollectionOperation.unsortedSingle(

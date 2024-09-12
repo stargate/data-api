@@ -206,7 +206,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
@@ -312,7 +312,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       CommandContext commandContext = createCommandContextWithCommandName("ReadNoWriteCommand");
@@ -607,7 +607,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
 
       CommandContext commandContext = createCommandContextWithCommandName("ReadAndWriteCommand");
@@ -817,7 +817,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
@@ -924,7 +924,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
@@ -1099,7 +1099,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
 
       FindCollectionOperation findCollectionOperation =
@@ -1265,7 +1265,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new TextCollectionFilter("filter_me", MapCollectionFilter.Operator.EQ, "happy"));
 
       FindCollectionOperation findCollectionOperation =
@@ -1344,7 +1344,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
@@ -1440,7 +1440,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
@@ -1587,7 +1587,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
 
       FindCollectionOperation findCollectionOperation =
@@ -1685,7 +1685,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
@@ -1762,7 +1762,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new TextCollectionFilter("status", MapCollectionFilter.Operator.EQ, "active"));
 
       FindCollectionOperation findCollectionOperation =

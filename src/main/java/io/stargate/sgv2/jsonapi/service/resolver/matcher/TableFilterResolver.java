@@ -98,7 +98,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                     CaptureGroup<String> dynamicTextGroup = (CaptureGroup<String>) captureGroup;
                     dynamicTextGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addInnerDBFilter(
+                          dbFilterLogicalExpression.addDBFilter(
                               new TextTableFilter(
                                   expression.path(),
                                   NativeTypeTableFilter.Operator.from(
@@ -115,7 +115,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                         (CaptureGroup<BigDecimal>) captureGroup;
                     dynamicNumberGroup.consumeAllCaptures(
                         expression -> {
-                          dbFilterLogicalExpression.addInnerDBFilter(
+                          dbFilterLogicalExpression.addDBFilter(
                               new NumberTableFilter(
                                   expression.path(),
                                   NativeTypeTableFilter.Operator.from(
@@ -133,14 +133,14 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                         expression -> {
                           Object rhsValue = ((DocumentId) expression.value()).value();
                           if (rhsValue instanceof String) {
-                            dbFilterLogicalExpression.addInnerDBFilter(
+                            dbFilterLogicalExpression.addDBFilter(
                                 new TextTableFilter(
                                     expression.path(),
                                     NativeTypeTableFilter.Operator.from(
                                         (ValueComparisonOperator) expression.operator()),
                                     (String) rhsValue));
                           } else if (rhsValue instanceof Number) {
-                            dbFilterLogicalExpression.addInnerDBFilter(
+                            dbFilterLogicalExpression.addDBFilter(
                                 new NumberTableFilter(
                                     expression.path(),
                                     NativeTypeTableFilter.Operator.from(
@@ -154,7 +154,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                   });
         };
 
-    currentCaptureGroups.recursiveConsume(currentDBFilterLogicalExpression, consumer);
+    currentCaptureGroups.consumeAll(currentDBFilterLogicalExpression, consumer);
     return currentDBFilterLogicalExpression;
   }
 }

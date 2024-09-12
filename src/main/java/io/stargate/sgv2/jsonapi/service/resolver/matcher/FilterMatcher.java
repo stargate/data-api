@@ -28,8 +28,6 @@ public class FilterMatcher<T extends Command & Filterable> {
 
   private final MatchStrategy strategy;
 
-  //  private final Function<CaptureExpression, List<DBFilterBase>> resolveFunction;
-
   FilterMatcher(MatchStrategy strategy) {
     this.strategy = strategy;
   }
@@ -66,7 +64,7 @@ public class FilterMatcher<T extends Command & Filterable> {
     return matchStrategyCounter.applyStrategy(strategy, captureGroups);
   }
 
-  public void captureRecursive(
+  private void captureRecursive(
       T command,
       CaptureGroups currentCaptureGroups,
       LogicalExpression expression,
@@ -76,10 +74,10 @@ public class FilterMatcher<T extends Command & Filterable> {
     // recursively resolve logicalExpression to captureGroups
     for (LogicalExpression innerLogicalExpression : expression.logicalExpressions) {
       CaptureGroups innerCaptureGroups =
-          currentCaptureGroups.addCaptureGroups(
+          currentCaptureGroups.addSubCaptureGroups(
               new CaptureGroups<>(
                   command,
-                  DBFilterLogicalExpression.DBLogicalOperator.convertFromLogicalOperator(
+                  DBFilterLogicalExpression.DBLogicalOperator.fromLogicalOperator(
                       innerLogicalExpression.getLogicalRelation())));
       captureRecursive(
           command,

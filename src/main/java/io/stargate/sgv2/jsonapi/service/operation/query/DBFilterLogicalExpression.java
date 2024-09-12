@@ -5,12 +5,22 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * DBFilterLogicalExpression is what we use in DB level. (LogicalExpression in API level) Similarly
+ * to LogicalExpression, this class also has recursive definition by having logical relation
+ * context.
+ *
+ * <p>fields dbFilterLogicalExpressionList and dbFilterList are mutable, because we need to
+ * construct the DBFilterLogicalExpression recursively by adding new dbFilters and
+ * subDbFilterLogicalExpression.
+ */
 public class DBFilterLogicalExpression {
 
   /**
-   * This is another enum class for LogicalOperator Different with LogicalOperator in
-   * LogicalExpression This one does not have the NOT operator and not invertible Basically made
-   * just for preserve logical relation
+   * This is another enum class for LogicalOperator. We have this one because LogicalOperator here
+   * is associated with DB operations and not API. Different with LogicalOperator in
+   * LogicalExpression. This one does not have the NOT operator(not supported by CQL) and not
+   * invertible.
    */
   public enum DBLogicalOperator {
     AND("and"),
@@ -25,7 +35,7 @@ public class DBFilterLogicalExpression {
       return operator;
     }
 
-    public static DBLogicalOperator convertFromLogicalOperator(
+    public static DBLogicalOperator fromLogicalOperator(
         LogicalExpression.LogicalOperator logicalOperator) {
       return switch (logicalOperator) {
         case AND -> DBLogicalOperator.AND;
@@ -39,73 +49,79 @@ public class DBFilterLogicalExpression {
 
   private final DBLogicalOperator dbLogicalOperator;
 
-  private final List<DBFilterBase> dbFilterList;
+  private final List<DBFilterBase> dbFilters;
 
-  private final List<DBFilterLogicalExpression> dbFilterLogicalExpressionList;
+  private final List<DBFilterLogicalExpression> dBFilterLogicalExpressions;
 
   public DBFilterLogicalExpression(DBLogicalOperator dbLogicalOperator) {
     this.dbLogicalOperator = dbLogicalOperator;
-    this.dbFilterList = new ArrayList<>();
-    this.dbFilterLogicalExpressionList = new ArrayList<>();
+    this.dbFilters = new ArrayList<>();
+    this.dBFilterLogicalExpressions = new ArrayList<>();
   }
 
   /**
-   * add a logical relation of DBFilterLogicalExpression to the dbFilterLogicalExpressionList
+   * Add a child dbFilterLogicalExpression as subExpression to current caller
+   * dbFilterLogicalExpression
    *
    * @param DBFilterLogicalExpression innerDBFilterLogicalExpression
    * @return DBFilterLogicalExpression
    */
   public DBFilterLogicalExpression addDBFilterLogicalExpression(
       DBFilterLogicalExpression innerDBFilterLogicalExpression) {
-    dbFilterLogicalExpressionList.add(innerDBFilterLogicalExpression);
+    dBFilterLogicalExpressions.add(innerDBFilterLogicalExpression);
     return innerDBFilterLogicalExpression;
   }
 
   /**
-   * add a DBFilterBase to the dbFilterList
+   * Add a dbFilter to current caller dbFilterLogicalExpression. This new DBFilter will be added in
+   * the dbFilter List, it will be in the relation context of this dbFilterLogicalExpression.
    *
-   * @param DBFilterBase innerDBFilter
+   * @param DBFilterBase dBFilter
    * @return DBFilterBase
    */
-  public DBFilterBase addInnerDBFilter(DBFilterBase innerDBFilter) {
-    dbFilterList.add(innerDBFilter);
-    return innerDBFilter;
+  public DBFilterBase addDBFilter(DBFilterBase dBFilter) {
+    dbFilters.add(dBFilter);
+    return dBFilter;
   }
 
-  public DBLogicalOperator getDbLogicalOperator() {
+  public DBLogicalOperator operator() {
     return dbLogicalOperator;
   }
 
   public boolean isEmpty() {
-    return dbFilterLogicalExpressionList.isEmpty() && dbFilterList.isEmpty();
+    return dBFilterLogicalExpressions.isEmpty() && dbFilters.isEmpty();
   }
 
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("DBFilterLogicalExpression{");
     sb.append("dbLogicalOperator='").append(dbLogicalOperator).append("'");
-    sb.append(", dbFilterLogicalExpressionList=").append(dbFilterLogicalExpressionList);
-    sb.append(", dbFilterList=").append(dbFilterList);
+    sb.append(", dbFilterLogicalExpressionList=").append(dBFilterLogicalExpressions);
+    sb.append(", dbFilterList=").append(dbFilters);
     sb.append("}");
     return sb.toString();
   }
 
-  public List<DBFilterBase> getDbFilterList() {
-    return dbFilterList;
+  public List<DBFilterBase> dBFilters() {
+    return List.copyOf(dbFilters);
   }
 
-  public List<DBFilterLogicalExpression> getDbFilterLogicalExpressionList() {
-    return dbFilterLogicalExpressionList;
+  public List<DBFilterLogicalExpression> dBFilterLogicalExpressions() {
+    return List.copyOf(dBFilterLogicalExpressions);
   }
 
-  public int getTotalDbFiltersAmount() {
-    return getTotalDbFiltersAmountHelper(this);
-  }
-
-  private int getTotalDbFiltersAmountHelper(DBFilterLogicalExpression dbFilterLogicalExpression) {
-    return dbFilterLogicalExpression.getDbFilterList().size()
-        + dbFilterLogicalExpression.getDbFilterLogicalExpressionList().stream()
-            .mapToInt(this::getTotalDbFiltersAmountHelper)
+  /**
+   * Count dBFilters amount in DBFilterLogicalExpression. This method will recursively sum up all
+   * sub DBFilterLogicalExpression.
+   *
+   * @return int
+   */
+  public int totalFilterCount() {
+    var childCounts =
+        dBFilterLogicalExpressions().stream()
+            .mapToInt(DBFilterLogicalExpression::totalFilterCount)
             .sum();
+    return childCounts + dbFilters.size();
   }
 }

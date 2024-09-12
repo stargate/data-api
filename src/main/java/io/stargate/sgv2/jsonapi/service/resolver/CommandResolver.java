@@ -136,7 +136,7 @@ public interface CommandResolver<C extends Command> {
    * @param dataApiRequestInfo
    * @param jsonApiMetricsConfig
    * @param command
-   * @param
+   * @param dbFilterLogicalExpression
    * @param baseIndexUsage Callers should pass an initial {@link IndexUsage} object that will be
    *     merged with those from the {@link DBFilterBase} used in the {@link
    *     DBFilterLogicalExpression}. This means the caller can set some things the filter may not
@@ -165,16 +165,12 @@ public interface CommandResolver<C extends Command> {
 
   private void getIndexUsageTags(
       DBFilterLogicalExpression dbFilterLogicalExpression, IndexUsage indexUsage) {
-    for (DBFilterBase dbFilter : dbFilterLogicalExpression.getDbFilterList()) {
-      getIndexUsageTags(dbFilter, indexUsage);
+    for (DBFilterBase dbFilter : dbFilterLogicalExpression.dBFilters()) {
+      indexUsage.merge(dbFilter.indexUsage);
     }
-    for (DBFilterLogicalExpression innerDbFilterLogicalExpression :
-        dbFilterLogicalExpression.getDbFilterLogicalExpressionList()) {
-      getIndexUsageTags(innerDbFilterLogicalExpression, indexUsage);
+    for (DBFilterLogicalExpression subDBFilterLogicalExpression :
+        dbFilterLogicalExpression.dBFilterLogicalExpressions()) {
+      getIndexUsageTags(subDBFilterLogicalExpression, indexUsage);
     }
-  }
-
-  private void getIndexUsageTags(DBFilterBase dbFilter, IndexUsage indexUsage) {
-    indexUsage.merge(dbFilter.indexUsage);
   }
 }

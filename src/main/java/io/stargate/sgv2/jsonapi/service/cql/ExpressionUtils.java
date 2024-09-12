@@ -18,7 +18,6 @@ package io.stargate.sgv2.jsonapi.service.cql;
 import com.bpodgursky.jbool_expressions.And;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Or;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterLogicalExpression;
 import java.util.List;
 
@@ -55,17 +54,10 @@ public class ExpressionUtils<K> {
   public static <K> Expression<K> buildExpression(
       List<? extends Expression<K>> expressions,
       DBFilterLogicalExpression.DBLogicalOperator logicOperator) {
-    switch (logicOperator) {
-      case AND -> {
-        return andOf(expressions);
-      }
-      case OR -> {
-        return orOf(expressions);
-      }
-      default ->
-          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-              "Invalid logical operator '%s'", logicOperator);
-    }
+    return switch (logicOperator) {
+      case AND -> andOf(expressions);
+      case OR -> orOf(expressions);
+    };
   }
 
   public static <K> Expression<K>[] getAsArray(Expression<K>... expressions) {

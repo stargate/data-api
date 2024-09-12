@@ -16,25 +16,24 @@ import java.util.function.BiConsumer;
  *
  * <p>Created in the {@link FilterMatcher} via a builder
  *
- * <p>T - The {@link Command} that is filtered against
- *
- * <p>Since we need to keep the logical relation information when doing captures for
- * LogicalExpression, so CaptureGroups needs to have a recursive defined structure
+ * @param T - The {@link Command} that is command filtered against
+ *     <p>Since we need to keep the logical relation information when doing captures for
+ *     LogicalExpression, so CaptureGroups needs to have a recursive defined structure
  */
 public class CaptureGroups<T extends Command> {
 
-  private DBFilterLogicalExpression.DBLogicalOperator dbLogicalOperator;
+  private final DBFilterLogicalExpression.DBLogicalOperator dbLogicalOperator;
   private final T command;
 
-  public final Map<Object, CaptureGroup<?>> captureGroupMap;
+  public final Map<Object, CaptureGroup<?>> captureGroupByMarker;
 
-  private final List<CaptureGroups<T>> captureGroupsList;
+  private final List<CaptureGroups<T>> subCaptureGroups;
 
   public CaptureGroups(T command, DBFilterLogicalExpression.DBLogicalOperator dbLogicalOperator) {
     this.command = command;
     this.dbLogicalOperator = dbLogicalOperator;
-    this.captureGroupMap = new HashMap<>();
-    this.captureGroupsList = new ArrayList<>();
+    this.captureGroupByMarker = new HashMap<>();
+    this.subCaptureGroups = new ArrayList<>();
   }
 
   /**
@@ -45,7 +44,7 @@ public class CaptureGroups<T extends Command> {
    * @return CaptureGroup
    */
   public CaptureGroup<?> getGroup(Object marker) {
-    return captureGroupMap.computeIfAbsent(marker, f -> new CaptureGroup(new HashMap<>()));
+    return captureGroupByMarker.computeIfAbsent(marker, f -> new CaptureGroup(new HashMap<>()));
   }
 
   /**
@@ -57,27 +56,22 @@ public class CaptureGroups<T extends Command> {
    * @return Optional<CaptureGroup>
    */
   public Optional<CaptureGroup<?>> getGroupIfPresent(Object marker) {
-    return Optional.ofNullable(captureGroupMap.get(marker));
+    return Optional.ofNullable(captureGroupByMarker.get(marker));
   }
 
-  /**
-   * getter method for the DBLogicalOperator
-   *
-   * @return DBFilterLogicalExpression.DBLogicalOperator
-   */
   public DBFilterLogicalExpression.DBLogicalOperator getLogicalOperator() {
     return dbLogicalOperator;
   }
 
   /**
-   * add next logical relation level of captureGroups to the captureGroupsList this method will be
-   * called when FilterMatcher convert LogicalExpression and populate the captureGroups
+   * add sub captureGroups to the subCaptureGroups. this method will be called when FilterMatcher
+   * convert LogicalExpression and populate the captureGroups
    *
    * @param captureGroups captureGroups
    * @return captureGroups
    */
-  public CaptureGroups<T> addCaptureGroups(CaptureGroups<T> captureGroups) {
-    captureGroupsList.add(captureGroups);
+  public CaptureGroups<T> addSubCaptureGroups(CaptureGroups<T> captureGroups) {
+    subCaptureGroups.add(captureGroups);
     return captureGroups;
   }
 
@@ -87,11 +81,6 @@ public class CaptureGroups<T extends Command> {
    * TableFilterResolver} Resolver method defines the consumer of how to resolve CaptureGroup to
    * DBFilter. This recursive method will help to consume in a recursive way and populate the
    * DBFilterLogicalExpression
-   *
-   * <p>The BiConsumer takes two parameters, captureGroups and dBFilterLogicalExpression. it defines
-   * how to consume the current CaptureGroups and current DBFilterLogicalExpression. It will be
-   * constructed in FilterResolver, the behavior is to get CaptureGroup from captureGroupMap,
-   * convert to corresponding dbFilter and add to dBFilterLogicalExpression
    *
    * <p>e.g. { "name":"Jack","$or":[{"age":35},{"city":"LA"}] } first call of recursiveConsume A:
    * currentDbFilterLogicalExpression is an implicit and caller CaptureGroups has {"name":"Jack"}
@@ -106,22 +95,24 @@ public class CaptureGroups<T extends Command> {
    * consume captures in filterResolver. And since they are in the same logical relation context, so
    * order does not matter regarding how DB query work.
    *
-   * <p>
-   *
+   * @param BiConsumer The BiConsumer takes two parameters, captureGroups and
+   *     dBFilterLogicalExpression. it defines * how to consume the current CaptureGroups and
+   *     current DBFilterLogicalExpression. It will be * constructed in FilterResolver, the behavior
+   *     is to get CaptureGroup from captureGroupMap, convert to corresponding dbFilter and add to
+   *     dBFilterLogicalExpression
    * @param currentDbFilterLogicalExpression, the current DBFilterLogicalExpression to be populated
    * @param consumer, consumer defines how to consume the current CaptureGroups and current
    *     DBFilterLogicalExpression.
    */
-  public void recursiveConsume(
+  public void consumeAll(
       DBFilterLogicalExpression currentDbFilterLogicalExpression,
       BiConsumer<CaptureGroups, DBFilterLogicalExpression> consumer) {
 
-    final List<CaptureGroups<T>> captureGroupsList = this.captureGroupsList;
-    for (CaptureGroups<T> innerCaptureGroups : captureGroupsList) {
+    for (CaptureGroups<T> innerCaptureGroups : this.subCaptureGroups) {
       DBFilterLogicalExpression innerDBFilterLogicalExpression =
           currentDbFilterLogicalExpression.addDBFilterLogicalExpression(
               new DBFilterLogicalExpression(innerCaptureGroups.getLogicalOperator()));
-      innerCaptureGroups.recursiveConsume(innerDBFilterLogicalExpression, consumer);
+      innerCaptureGroups.consumeAll(innerDBFilterLogicalExpression, consumer);
     }
 
     consumer.accept(this, currentDbFilterLogicalExpression);

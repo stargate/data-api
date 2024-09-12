@@ -73,7 +73,7 @@ public class DeleteOneCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
-                          assertThat(find.dbFilterLogicalExpression().getDbFilterList().get(0))
+                          assertThat(find.dbFilterLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.singleResponse()).isTrue();
                         });
@@ -110,7 +110,7 @@ public class DeleteOneCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
-                          assertThat(find.dbFilterLogicalExpression().getDbFilterList()).isEmpty();
+                          assertThat(find.dbFilterLogicalExpression().dBFilters()).isEmpty();
                           assertThat(find.singleResponse()).isTrue();
                         });
               });
@@ -151,7 +151,7 @@ public class DeleteOneCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
-                          assertThat(find.dbFilterLogicalExpression().getDbFilterList().get(0))
+                          assertThat(find.dbFilterLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.singleResponse()).isTrue();
                         });
@@ -194,7 +194,7 @@ public class DeleteOneCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
-                          assertThat(find.dbFilterLogicalExpression().getDbFilterList().get(0))
+                          assertThat(find.dbFilterLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.orderBy()).hasSize(1);
                           assertThat(find.orderBy().get(0))
@@ -242,7 +242,7 @@ public class DeleteOneCommandResolverTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
-                          assertThat(find.dbFilterLogicalExpression().getDbFilterList().get(0))
+                          assertThat(find.dbFilterLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.orderBy()).isNull();
                           assertThat(find.vector()).isNotNull();

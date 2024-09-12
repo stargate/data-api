@@ -109,7 +109,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression dbFilterLogicalExpression =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      dbFilterLogicalExpression.addInnerDBFilter(
+      dbFilterLogicalExpression.addDBFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
       CountCollectionOperation countCollectionOperation =
           new CountCollectionOperation(COLLECTION_CONTEXT, dbFilterLogicalExpression, 100, -1);
@@ -155,7 +155,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression dbFilterLogicalExpression =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      dbFilterLogicalExpression.addInnerDBFilter(
+      dbFilterLogicalExpression.addDBFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user_all"));
       CountCollectionOperation countCollectionOperation =
           new CountCollectionOperation(COLLECTION_CONTEXT, dbFilterLogicalExpression, 100, -1);
@@ -287,7 +287,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression dbFilterLogicalExpression =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      dbFilterLogicalExpression.addInnerDBFilter(
+      dbFilterLogicalExpression.addDBFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user2"));
       CountCollectionOperation countCollectionOperation =
           new CountCollectionOperation(COLLECTION_CONTEXT, dbFilterLogicalExpression, 100, 10);
@@ -332,7 +332,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       DBFilterLogicalExpression implicitAnd =
           new DBFilterLogicalExpression(DBFilterLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addInnerDBFilter(
+      implicitAnd.addDBFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user_all"));
 
       CountCollectionOperation countCollectionOperation =

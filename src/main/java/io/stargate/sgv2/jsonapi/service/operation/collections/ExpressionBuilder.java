@@ -88,7 +88,7 @@ public class ExpressionBuilder {
     // first for loop, is to iterate all subLogicalExpression
     // each iteration goes into another recursive build
     for (DBFilterLogicalExpression subLogicalExpression :
-        dbLogicalExpression.getDbFilterLogicalExpressionList()) {
+        dbLogicalExpression.dBFilterLogicalExpressions()) {
       final Expression<BuiltCondition> subExpressionCondition =
           buildExpressionRecursive(
               subLogicalExpression, additionalIdFilter, idConditionExpressions);
@@ -106,7 +106,7 @@ public class ExpressionBuilder {
     boolean ninFilterThisLevelWithEmptyArray = true;
 
     // second for loop, is to iterate dbFilters
-    for (DBFilterBase dbFilter : dbLogicalExpression.getDbFilterList()) {
+    for (DBFilterBase dbFilter : dbLogicalExpression.dBFilters()) {
       if (dbFilter instanceof AllCollectionFilter allFilter) {
         List<BuiltCondition> allFilterConditions = allFilter.getAll();
         List<Variable<BuiltCondition>> allFilterVariables =
@@ -154,9 +154,7 @@ public class ExpressionBuilder {
     // everything
     if (hasNinFilterThisLevel
         && ninFilterThisLevelWithEmptyArray
-        && dbLogicalExpression
-            .getDbLogicalOperator()
-            .equals(DBFilterLogicalExpression.DBLogicalOperator.OR)) {
+        && dbLogicalExpression.operator().equals(DBFilterLogicalExpression.DBLogicalOperator.OR)) {
       // TODO: find a better CQL TRUE placeholder
       conditionExpressions.clear();
       conditionExpressions.add(
@@ -164,17 +162,14 @@ public class ExpressionBuilder {
               new IsNullCollectionFilter(
                       "something user never use", SetCollectionFilter.Operator.NOT_CONTAINS)
                   .get()));
-      return ExpressionUtils.buildExpression(
-          conditionExpressions, dbLogicalExpression.getDbLogicalOperator());
+      return ExpressionUtils.buildExpression(conditionExpressions, dbLogicalExpression.operator());
     }
 
     // when having an empty array $in, if $in occurs within an and logic, entire and should match
     // nothing
     if (hasInFilterThisLevel
         && inFilterThisLevelWithEmptyArray
-        && dbLogicalExpression
-            .getDbLogicalOperator()
-            .equals(DBFilterLogicalExpression.DBLogicalOperator.AND)) {
+        && dbLogicalExpression.operator().equals(DBFilterLogicalExpression.DBLogicalOperator.AND)) {
       // TODO: find a better CQL FALSE placeholder
       conditionExpressions.clear();
       conditionExpressions.add(
@@ -182,8 +177,7 @@ public class ExpressionBuilder {
               new IsNullCollectionFilter(
                       "something user never use", SetCollectionFilter.Operator.CONTAINS)
                   .get()));
-      return ExpressionUtils.buildExpression(
-          conditionExpressions, dbLogicalExpression.getDbLogicalOperator());
+      return ExpressionUtils.buildExpression(conditionExpressions, dbLogicalExpression.operator());
     }
 
     // current dbLogicalExpression is empty (implies nested dbLogicalExpression and dbFilters are
@@ -192,7 +186,6 @@ public class ExpressionBuilder {
       return null;
     }
 
-    return ExpressionUtils.buildExpression(
-        conditionExpressions, dbLogicalExpression.getDbLogicalOperator());
+    return ExpressionUtils.buildExpression(conditionExpressions, dbLogicalExpression.operator());
   }
 }
