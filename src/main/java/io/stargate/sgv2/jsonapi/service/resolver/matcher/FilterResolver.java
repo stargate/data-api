@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.ClauseResolver;
 import java.util.Objects;
 
@@ -61,7 +62,7 @@ public abstract class FilterResolver<
   public LogicalExpression resolve(CommandContext<SchemaT> commandContext, CmdT command) {
     Preconditions.checkNotNull(commandContext, "commandContext is required");
     Preconditions.checkNotNull(command, "command is required");
-    ValidatableCommandClause.maybeValidate(commandContext, command.filterClause());
+    SchemaValidatable.maybeValidate(commandContext, command.filterClause());
     InvertibleCommandClause.maybeInvert(commandContext, command.filterClause());
     LogicalExpression filter = matchRules.apply(commandContext, command);
     if (filter.getTotalComparisonExpressionCount() > operationsConfig.maxFilterObjectProperties()) {

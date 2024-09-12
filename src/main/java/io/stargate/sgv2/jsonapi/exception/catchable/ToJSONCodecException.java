@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
+package io.stargate.sgv2.jsonapi.exception.catchable;
 
 import com.datastax.oss.driver.api.core.type.DataType;
 
@@ -8,7 +8,7 @@ import com.datastax.oss.driver.api.core.type.DataType;
  * <p>Not intended to be returned on the API, usage of the JSONCodec's should catch this and turn it
  * into the appropriate API error.
  */
-public class ToJSONCodecException extends Exception {
+public class ToJSONCodecException extends CheckedApiException {
 
   public final Object value;
   public final DataType fromCqlType;

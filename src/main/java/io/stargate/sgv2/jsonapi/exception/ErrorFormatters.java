@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Static helper functions to consistently format objects into strings when building error messages.
@@ -25,19 +24,23 @@ public abstract class ErrorFormatters {
 
   public static final String DELIMITER = ", ";
 
-  public static <T> String join(Collection<T> list, Function<T, String> formatter) {
+  public static <T> String errFmtJoin(Collection<T> list, Function<T, String> formatter) {
+    return errFmtJoin(list.stream().map(formatter).toList());
+  }
+
+  public static <T> String errFmtJoin(Collection<String> list) {
     if (list.isEmpty()) {
       return "[None]";
     }
-    return list.stream().map(formatter).collect(Collectors.joining(DELIMITER));
+    return String.join(DELIMITER, list);
   }
 
   public static String errFmtColumnMetadata(Collection<ColumnMetadata> columns) {
-    return join(columns, ErrorFormatters::errFmt);
+    return errFmtJoin(columns, ErrorFormatters::errFmt);
   }
 
   public static String errFmtCqlIdentifier(Collection<CqlIdentifier> identifiers) {
-    return join(identifiers, ErrorFormatters::errFmt);
+    return errFmtJoin(identifiers, ErrorFormatters::errFmt);
   }
 
   public static String errFmt(ColumnMetadata column) {

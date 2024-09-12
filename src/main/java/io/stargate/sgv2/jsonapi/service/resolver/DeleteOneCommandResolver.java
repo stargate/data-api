@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
@@ -18,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOp
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DeleteTableOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
@@ -92,7 +92,7 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
     LogicalExpression logicalExpression = collectionFilterResolver.resolve(commandContext, command);
 
     final SortClause sortClause = command.sortClause();
-    ValidatableCommandClause.maybeValidate(commandContext, sortClause);
+    SchemaValidatable.maybeValidate(commandContext, sortClause);
 
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
     var indexUsage = commandContext.schemaObject().newCollectionIndexUsage();
