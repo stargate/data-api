@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding.configuration;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
+import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
 
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.ws.rs.client.ClientRequestContext;

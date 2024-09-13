@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.stream.Stream;
@@ -35,7 +38,7 @@ public class JSONCodecRegistryTest {
     JSONCodec<JavaT, CqlT> codec =
         assertDoesNotThrow(
             () ->
-                JSONCodecRegistry.codecToCQL(
+                JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(
                     TEST_DATA.mockTableMetadata(cqlType), columnName, fromValue),
             String.format(
                 "Get codec for cqlType=%s and fromValue.class=%s",
@@ -104,7 +107,15 @@ public class JSONCodecRegistryTest {
             DataTypes.VARINT, BigDecimal.valueOf(123456789.0), BigInteger.valueOf(123456789)),
 
         // Floating-point types:
-        Arguments.of(DataTypes.DECIMAL, BigDecimal.valueOf(0.25), BigDecimal.valueOf(0.25)));
+        Arguments.of(DataTypes.DECIMAL, 123L, BigDecimal.valueOf(123L)),
+        Arguments.of(DataTypes.DECIMAL, BigInteger.valueOf(34567L), BigDecimal.valueOf(34567L)),
+        Arguments.of(DataTypes.DECIMAL, BigDecimal.valueOf(0.25), BigDecimal.valueOf(0.25)),
+        Arguments.of(DataTypes.DOUBLE, 123L, Double.valueOf(123L)),
+        Arguments.of(DataTypes.DOUBLE, BigInteger.valueOf(34567L), Double.valueOf(34567L)),
+        Arguments.of(DataTypes.DOUBLE, BigDecimal.valueOf(0.25), Double.valueOf(0.25)),
+        Arguments.of(DataTypes.FLOAT, 123L, Float.valueOf(123L)),
+        Arguments.of(DataTypes.FLOAT, BigInteger.valueOf(34567L), Float.valueOf(34567L)),
+        Arguments.of(DataTypes.FLOAT, BigDecimal.valueOf(0.25), Float.valueOf(0.25f)));
   }
 
   @Test
@@ -114,7 +125,7 @@ public class JSONCodecRegistryTest {
         assertThrowsExactly(
             MissingJSONCodecException.class,
             () ->
-                JSONCodecRegistry.codecToCQL(
+                JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(
                     TEST_DATA.mockTableMetadata(TEST_DATA.UNSUPPORTED_CQL_DATA_TYPE),
                     TEST_DATA.COLUMN_NAME,
                     TEST_DATA.RANDOM_STRING),
@@ -148,7 +159,7 @@ public class JSONCodecRegistryTest {
         assertThrowsExactly(
             UnknownColumnException.class,
             () ->
-                JSONCodecRegistry.codecToCQL(
+                JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(
                     TEST_DATA.mockTableMetadata(DataTypes.TEXT),
                     TEST_DATA.RANDOM_CQL_IDENTIFIER,
                     TEST_DATA.RANDOM_STRING),

@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding.collections;
 
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -42,7 +42,7 @@ public class MD5Hasher {
       md = MessageDigest.getInstance("MD5");
     } catch (NoSuchAlgorithmException e) {
       // should never happen but:
-      throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
           e, "MD5 Hash algorithm not available for Shredding");
     }
     byte[] digest = md.digest(value.getBytes(StandardCharsets.UTF_8));

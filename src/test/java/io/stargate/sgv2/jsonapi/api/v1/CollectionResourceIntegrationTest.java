@@ -112,7 +112,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
     }
 
     @Test
-    public void invalidNamespaceName() {
+    public void invalidKeyspaceName() {
       String json =
           """
           {
@@ -136,7 +136,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'namespace' value \"7_no_leading_number\" not valid. Problem: must match "));
+                  "Request invalid: field 'keyspace' value \"7_no_leading_number\" not valid. Problem: must match "));
     }
 
     @Test

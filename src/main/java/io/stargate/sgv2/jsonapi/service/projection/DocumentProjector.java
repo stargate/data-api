@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -83,7 +83,7 @@ public class DocumentProjector {
       return defaultProjector();
     }
     if (!projectionDefinition.isObject()) {
-      throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
           "definition must be OBJECT, was %s", projectionDefinition.getNodeType());
     }
     // Special cases: "star-include/exclude"
@@ -109,7 +109,7 @@ public class DocumentProjector {
       return value.booleanValue();
     }
     // Unknown JSON node type; error
-    throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+    throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
         "path ('%s') value must be NUMBER or BOOLEAN, was %s", path, value.getNodeType());
   }
 
@@ -262,7 +262,7 @@ public class DocumentProjector {
         String path = entry.getKey();
 
         if (path.isEmpty()) {
-          throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
               "empty paths (and path segments) not allowed");
         }
         if (path.charAt(0) == '$'
@@ -270,13 +270,13 @@ public class DocumentProjector {
                 || DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path))) {
           // First: no operators allowed at root level
           if (parentPath == null) {
-            throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+            throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
                 "'$vector'/'$vectorize' are the only allowed paths that can start with '$'");
           }
 
           // Second: we only support one operator for now
           if (!"$slice".equals(path)) {
-            throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+            throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
                 "unrecognized/unsupported projection operator '%s' (only '$slice' supported)",
                 path);
           }
@@ -287,7 +287,7 @@ public class DocumentProjector {
 
         // Special rule for "*": only allowed as single root-level entry;
         if ("*".equals(path)) {
-          throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
               "wildcard ('*') only allowed as the only root-level path");
         }
         if (parentPath != null) {
@@ -312,7 +312,7 @@ public class DocumentProjector {
           collectFromObject(value, path);
         } else {
           // Unknown JSON node type; error
-          throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
               "path ('%s') value must be NUMBER, BOOLEAN or OBJECT, was %s",
               path, value.getNodeType());
         }
@@ -328,7 +328,7 @@ public class DocumentProjector {
           int skip = sliceDef.get(0).intValue();
           int count = sliceDef.get(1).intValue();
           if (count < 0) { // negative values not allowed
-            throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+            throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
                 "path ('%s') has unsupported parameter for '$slice' (%s): second NUMBER (entries to return) MUST be positive",
                 path, sliceDef.getNodeType());
           }
@@ -341,7 +341,7 @@ public class DocumentProjector {
         slices.add(new ProjectionLayer.SliceDef(path, ProjectionLayer.constructSlicer(count)));
         return;
       }
-      throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+      throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
           "path ('%s') has unsupported parameter for '$slice' (%s): only NUMBER or ARRAY with 2 NUMBERs accepted",
           path, sliceDef.getNodeType());
     }
@@ -356,7 +356,7 @@ public class DocumentProjector {
       } else {
         // Must not mix exclusions and inclusions
         if (inclusions > 0) {
-          throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
               "cannot exclude '%s' on inclusion projection", path);
         }
         ++exclusions;
@@ -374,7 +374,7 @@ public class DocumentProjector {
       } else {
         // Must not mix exclusions and inclusions
         if (exclusions > 0) {
-          throw ErrorCode.UNSUPPORTED_PROJECTION_PARAM.toApiException(
+          throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
               "cannot include '%s' on exclusion projection", path);
         }
         ++inclusions;

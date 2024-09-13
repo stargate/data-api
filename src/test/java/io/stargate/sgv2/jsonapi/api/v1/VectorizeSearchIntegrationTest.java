@@ -60,7 +60,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -97,7 +97,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -1192,7 +1192,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -1238,7 +1238,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
                           """
                   .formatted("cacheTestTable"))
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -1273,7 +1273,7 @@ public class VectorizeSearchIntegrationTest extends AbstractNamespaceIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, namespaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));

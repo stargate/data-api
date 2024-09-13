@@ -1982,7 +1982,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
     }
 
     @Test
-    public void orderedFailBadNamespace() {
+    public void orderedFailBadKeyspace() {
       String json =
           """
               {
@@ -2010,7 +2010,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
               "errors[0].message",
-              startsWith("The provided namespace does not exist: something_else"));
+              startsWith("The provided keyspace does not exist: something_else"));
     }
 
     @Test

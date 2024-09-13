@@ -5,14 +5,14 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import java.util.List;
 import org.slf4j.Logger;
@@ -107,13 +107,13 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
 
     try {
       var codec =
-          JSONCodecRegistry.codecToCQL(
+          JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(
               tableSchemaObject.tableMetadata, getPathAsCqlIdentifier(), columnValue);
       positionalValues.add(codec.toCQL(columnValue));
     } catch (UnknownColumnException e) {
-      throw ErrorCode.TABLE_COLUMN_UNKNOWN.toApiException(e.getMessage());
+      throw ErrorCodeV1.TABLE_COLUMN_UNKNOWN.toApiException(e.getMessage());
     } catch (MissingJSONCodecException e) {
-      throw ErrorCode.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException(e.getMessage());
+      throw ErrorCodeV1.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException(e.getMessage());
     } catch (ToCQLCodecException e) {
       // TODO AARON - Handle error
       throw new RuntimeException(e);

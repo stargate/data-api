@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.embedding.operation;
 
 import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_AUTHENTICATION_TOKEN_HEADER_NAME;
-import static io.stargate.sgv2.jsonapi.exception.ErrorCode.EMBEDDING_PROVIDER_API_KEY_MISSING;
+import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_API_KEY_MISSING;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.EmbeddingProviderConfigStore;
 import java.time.Duration;
@@ -60,7 +60,7 @@ public abstract class EmbeddingProvider {
             throwable ->
                 (throwable.getCause() != null
                         && throwable.getCause() instanceof JsonApiException jae
-                        && jae.getErrorCode() == ErrorCode.EMBEDDING_PROVIDER_TIMEOUT)
+                        && jae.getErrorCode() == ErrorCodeV1.EMBEDDING_PROVIDER_TIMEOUT)
                     || throwable instanceof TimeoutException)
         .retry()
         .withBackOff(
@@ -141,7 +141,7 @@ public abstract class EmbeddingProvider {
 
       Object value = parameters.get(key);
       if (value == null) {
-        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
             "Missing URL parameter '%s' (available: %s)", key, parameters.keySet());
       }
       baseUrl.append(value);

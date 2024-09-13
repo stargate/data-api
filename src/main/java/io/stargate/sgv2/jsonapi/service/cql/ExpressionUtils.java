@@ -18,7 +18,7 @@ package io.stargate.sgv2.jsonapi.service.cql;
 import com.bpodgursky.jbool_expressions.And;
 import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Or;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import java.util.List;
 
 /**
@@ -29,7 +29,7 @@ import java.util.List;
  * failure By using this ExpressionUtils class, we pass a default comparator to keep expression
  * order as it is
  */
-public class ExpressionUtils<K> {
+public abstract class ExpressionUtils<K> {
 
   public static <K> And<K> andOf(Expression<K>... expressions) {
     // expression as creation order
@@ -52,18 +52,12 @@ public class ExpressionUtils<K> {
   }
 
   public static <K> Expression<K> buildExpression(
-      List<? extends Expression<K>> expressions, String logicOperator) {
-    switch (logicOperator) {
-      case "$and" -> {
-        return andOf(expressions);
-      }
-      case "$or" -> {
-        return orOf(expressions);
-      }
-      default ->
-          throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
-              "Invalid logical operator '%s'", logicOperator);
-    }
+      List<? extends Expression<K>> expressions,
+      DBLogicalExpression.DBLogicalOperator logicOperator) {
+    return switch (logicOperator) {
+      case AND -> andOf(expressions);
+      case OR -> orOf(expressions);
+    };
   }
 
   public static <K> Expression<K>[] getAsArray(Expression<K>... expressions) {

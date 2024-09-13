@@ -8,7 +8,7 @@ import io.smallrye.mutiny.tuples.Tuple3;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -167,8 +167,8 @@ public record DeleteCollectionOperation(
     String delete = "DELETE FROM \"%s\".\"%s\" WHERE key = ? IF tx_id = ?";
     return String.format(
         delete,
-        commandContext.schemaObject().name.keyspace(),
-        commandContext.schemaObject().name.table());
+        commandContext.schemaObject().name().keyspace(),
+        commandContext.schemaObject().name().table());
   }
 
   /**
@@ -220,7 +220,7 @@ public record DeleteCollectionOperation(
                           } else {
                             // In case of successful document delete
 
-                            throw new LWTException(ErrorCode.CONCURRENCY_FAILURE);
+                            throw new LWTException(ErrorCodeV1.CONCURRENCY_FAILURE);
                           }
                         });
               }

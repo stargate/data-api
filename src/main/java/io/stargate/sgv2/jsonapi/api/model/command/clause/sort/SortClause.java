@@ -1,12 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.sort;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.SortClauseDeserializer;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -27,8 +26,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
         """
               {"user.age" : -1, "user.name" : 1}
               """)
-public record SortClause(@Valid List<SortExpression> sortExpressions)
-    implements ValidatableCommandClause {
+public record SortClause(@Valid List<SortExpression> sortExpressions) implements SchemaValidatable {
 
   public boolean hasVsearchClause() {
     return sortExpressions != null
@@ -46,9 +44,8 @@ public record SortClause(@Valid List<SortExpression> sortExpressions)
   }
 
   @Override
-  public void validateCollectionCommand(CommandContext<CollectionSchemaObject> commandContext) {
-    IndexingProjector indexingProjector =
-        commandContext.asCollectionContext().schemaObject().indexingProjector();
+  public void validate(CollectionSchemaObject collection) {
+    IndexingProjector indexingProjector = collection.indexingProjector();
     // If nothing specified, everything indexed
     if (indexingProjector.isIdentityProjection()) {
       return;
@@ -56,7 +53,7 @@ public record SortClause(@Valid List<SortExpression> sortExpressions)
     // validate each path in sortExpressions
     for (SortExpression sortExpression : sortExpressions) {
       if (!indexingProjector.isPathIncluded(sortExpression.path())) {
-        throw ErrorCode.UNINDEXED_SORT_PATH.toApiException(
+        throw ErrorCodeV1.UNINDEXED_SORT_PATH.toApiException(
             "sort path '%s' is not indexed", sortExpression.path());
       }
     }

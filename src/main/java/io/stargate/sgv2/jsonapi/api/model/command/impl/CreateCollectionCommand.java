@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionOnlyCommand;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.embedding.configuration.ProviderConstants;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -155,7 +155,7 @@ public record CreateCollectionCommand(
           if (provider.equals(ProviderConstants.HUGGINGFACE_DEDICATED)) {
             if (modelName != null
                 && !modelName.equals(ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL)) {
-              throw ErrorCode.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
+              throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(
                   "'modelName' is not needed for provider %s explicitly, only '%s' is accepted",
                   ProviderConstants.HUGGINGFACE_DEDICATED,
                   ProviderConstants.HUGGINGFACE_DEDICATED_DEFINED_MODEL);
@@ -209,24 +209,24 @@ public record CreateCollectionCommand(
 
       public void validate() {
         if (allow() != null && deny() != null) {
-          throw ErrorCode.INVALID_INDEXING_DEFINITION.toApiException(
+          throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
               "`allow` and `deny` cannot be used together");
         }
 
         if (allow() == null && deny() == null) {
-          throw ErrorCode.INVALID_INDEXING_DEFINITION.toApiException(
+          throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
               "`allow` or `deny` should be provided");
         }
 
         if (allow() != null) {
           Set<String> dedupe = new HashSet<>(allow());
           if (dedupe.size() != allow().size()) {
-            throw ErrorCode.INVALID_INDEXING_DEFINITION.toApiException(
+            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
                 "`allow` cannot contain duplicates");
           }
           String invalid = findInvalidPath(allow());
           if (invalid != null) {
-            throw ErrorCode.INVALID_INDEXING_DEFINITION.toApiException(
+            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
                 "`allow` contains invalid path: '%s'", invalid);
           }
         }
@@ -234,12 +234,12 @@ public record CreateCollectionCommand(
         if (deny() != null) {
           Set<String> dedupe = new HashSet<>(deny());
           if (dedupe.size() != deny().size()) {
-            throw ErrorCode.INVALID_INDEXING_DEFINITION.toApiException(
+            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
                 "`deny` cannot contain duplicates");
           }
           String invalid = findInvalidPath(deny());
           if (invalid != null) {
-            throw ErrorCode.INVALID_INDEXING_DEFINITION.toApiException(
+            throw ErrorCodeV1.INVALID_INDEXING_DEFINITION.toApiException(
                 "`deny` contains invalid path: '%s'", invalid);
           }
         }
@@ -277,5 +277,11 @@ public record CreateCollectionCommand(
       this.vector = vector;
       this.indexing = indexing;
     }
+  }
+
+  /** {@inheritDoc} */
+  @Override
+  public CommandName commandName() {
+    return CommandName.CREATE_COLLECTION;
   }
 }

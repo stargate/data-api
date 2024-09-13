@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeCreator;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Utf8;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType;
@@ -104,7 +104,7 @@ public class JsonUtil {
           return new Date(value.longValue());
         }
         // Otherwise we have an error case
-        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
             "Date (%s) needs to have NUMBER value, has %s (path '%s')",
             EJSON_VALUE_KEY_DATE, value.getNodeType(), path);
       }
@@ -233,20 +233,20 @@ public class JsonUtil {
   private static void failOnInvalidExtendedValue(JsonExtensionType etype, JsonNode value) {
     switch (etype) {
       case EJSON_DATE:
-        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
             "'%s' value has to be an epoch timestamp, instead got (%s)",
             etype.encodedName(), value);
       case OBJECT_ID:
-        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
             "'%s' value has to be 24-digit hexadecimal ObjectId, instead got (%s)",
             etype.encodedName(), value);
       case UUID:
-        throw ErrorCode.SHRED_BAD_EJSON_VALUE.toApiException(
+        throw ErrorCodeV1.SHRED_BAD_EJSON_VALUE.toApiException(
             "'%s' value has to be 36-character UUID String, instead got (%s)",
             etype.encodedName(), value);
     }
     // should never happen
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "Unrecognized JsonExtensionType: %s", etype);
   }
 

@@ -25,6 +25,10 @@ stargate:
   exception-mappers:
     enabled: false
 
+  feature: # See io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig
+    flags:  # Ok to leave out features that have no default value (enabled or disabled)
+      tables:
+
   # custom grpc settings
   grpc:
 
@@ -46,10 +50,6 @@ stargate:
   # multi tenancy settings
   # see io.stargate.sgv2.jsonapi.config.MultiTenancyConfig  for all config properties and options
   multi-tenancy:
-    enabled: false
-
-  # Is support for API Tables enabled?
-  tables:
     enabled: false
 
 quarkus:
@@ -136,8 +136,8 @@ quarkus:
         # we need to define uri templating on our own for now
         # note that order is important
         match-patterns: |
-          /v1/[^/]+=/v1/{namespace},
-          /v1/.+/.+=/v1/{namespace}/{collection}
+          /v1/[^/]+=/v1/{keyspace},
+          /v1/.+/.+=/v1/{keyspace}/{collection}
 
   native:
     # Adding com.datastax.oss.driver.internal.core.metadata.MetadataManager to the list of classes that are initialized

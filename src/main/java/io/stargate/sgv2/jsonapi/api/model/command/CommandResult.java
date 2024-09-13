@@ -4,12 +4,10 @@ import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.core.Response;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
@@ -175,33 +173,57 @@ public record CommandResult(
       @JsonIgnore @Schema(hidden = true) Map<String, Object> fieldsForMetricsTag,
       @JsonAnyGetter @Schema(hidden = true) Map<String, Object> fields,
       // Http status to be used in the response, defaulted to 200
-      @JsonIgnore Response.Status status) {
+      @JsonIgnore Response.Status httpStatus) {
 
     // this is a compact constructor for records
     // ensure message is not set in the fields key
     public Error {
       if (null != fields && fields.containsKey("message")) {
-        throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+        throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
             "Error fields can not contain the reserved key 'message'");
       }
     }
   }
 
   /**
-   * Maps CommandResult to RestResponse. Except for few selective errors, all errors are mapped to
-   * http status 200. In case of 401, 500, 502 and 504 response is sent with appropriate status
-   * code.
+   * Create the {@link RestResponse} Maps CommandResult to RestResponse. Except for few selective
+   * errors, all errors are mapped to http status 200. In case of 401, 500, 502 and 504 response is
+   * sent with appropriate status code.
    *
    * @return
    */
-  public RestResponse map() {
+  public RestResponse<CommandResult> toRestResponse() {
+
     if (null != this.errors()) {
       final Optional<Error> first =
-          this.errors().stream().filter(error -> error.status() != Response.Status.OK).findFirst();
+          this.errors().stream()
+              .filter(error -> error.httpStatus() != Response.Status.OK)
+              .findFirst();
+
       if (first.isPresent()) {
-        return RestResponse.ResponseBuilder.create(first.get().status(), this).build();
+        return RestResponse.ResponseBuilder.create(first.get().httpStatus(), this).build();
       }
     }
     return RestResponse.ok(this);
+  }
+
+  /**
+   * returned a new CommandResult with warning message added in status map
+   *
+   * @param warning message
+   * @return CommandResult
+   */
+  public CommandResult withWarning(String warning) {
+    Map<CommandStatus, Object> newStatus = new HashMap<>();
+    if (status != null) {
+      newStatus.putAll(status);
+    }
+    List<String> newWarnings =
+        newStatus.get(CommandStatus.WARNINGS) != null
+            ? new ArrayList<>((List<String>) newStatus.get(CommandStatus.WARNINGS))
+            : new ArrayList<>();
+    newWarnings.add(warning);
+    newStatus.put(CommandStatus.WARNINGS, newWarnings);
+    return new CommandResult(this.data, newStatus, errors);
   }
 }

@@ -2,19 +2,13 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.querybuilder.insert.OngoingValues;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistry;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.MissingJSONCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.ToCQLCodecException;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.resolver.UnvalidatedClauseException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -33,7 +27,7 @@ public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, Wr
   public TableInsertValuesCQLClause {
     Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     Objects.requireNonNull(row, "row cannot be null");
-    if (row.allColumnValues().isEmpty()) {
+    if (row.allColumns().isEmpty()) {
       throw new UnvalidatedClauseException("Row must have at least one column to insert");
     }
   }
@@ -45,26 +39,12 @@ public record TableInsertValuesCQLClause(TableSchemaObject tableSchemaObject, Wr
 
     RegularInsert regularInsert = null;
 
-    for (Map.Entry<CqlIdentifier, Object> entry : row.allColumnValues().entrySet()) {
-      try {
-        var codec =
-            JSONCodecRegistry.codecToCQL(
-                tableSchemaObject.tableMetadata, entry.getKey(), entry.getValue());
-        positionalValues.add(codec.toCQL(entry.getValue()));
-      } catch (UnknownColumnException e) {
-        // TODO AARON - Handle error
-        throw new RuntimeException(e);
-      } catch (MissingJSONCodecException e) {
-        // TODO AARON - Handle error
-        throw new RuntimeException(e);
-      } catch (ToCQLCodecException e) {
-        // TODO AARON - Handle error
-        throw new RuntimeException(e);
-      }
+    for (var cqlNamedValue : row.allColumns().values()) {
+      positionalValues.add(cqlNamedValue.value());
       regularInsert =
           regularInsert == null
-              ? ongoingValues.value(entry.getKey(), bindMarker())
-              : regularInsert.value(entry.getKey(), bindMarker());
+              ? ongoingValues.value(cqlNamedValue.name().getName(), bindMarker())
+              : regularInsert.value(cqlNamedValue.name().getName(), bindMarker());
     }
 
     return regularInsert;

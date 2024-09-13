@@ -3,15 +3,13 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * Applies a series of {@link FilterMatchRule}'s to either create an {@link Operation}
@@ -21,7 +19,7 @@ import java.util.function.Function;
 public class FilterMatchRules<T extends Command & Filterable> {
 
   // use the interface rather than MatchRule class so the streaming works.
-  private final List<BiFunction<CommandContext, T, Optional<LogicalExpression>>> matchRules =
+  private final List<BiFunction<CommandContext, T, Optional<DBLogicalExpression>>> matchRules =
       new ArrayList<>();
 
   /**
@@ -29,7 +27,9 @@ public class FilterMatchRules<T extends Command & Filterable> {
    *
    * <p>Rules are applied in the order they are added, so add most specific first.
    *
-   * <p>Caller should then configure the rule as they want, e.g. <code>
+   * <p>Caller should then configure the rule as they want, e.g.
+   *
+   * <pre>
    *      private final FilterMatchRules<FindOneCommand> matchRules = new FilterMatchRules<>();
    *      matchRules.addMatchRule(FindOneCommandResolver::findById).matcher
    *        .capture(ID_GROUP).eq("_id", JsonType.STRING);
@@ -38,16 +38,16 @@ public class FilterMatchRules<T extends Command & Filterable> {
    *          CaptureGroup captureGroup = captures.getCapture(ID_GROUP);
    *          return new FindByIdOperation(commandContext, captureGroup.getSingleJsonLiteral().getTypedValue());
    *      }
-   * </code>
+   * </pre>
    *
    * @param resolveFunction
    * @return
    */
   public FilterMatchRule<T> addMatchRule(
-      Function<CaptureExpression, List<DBFilterBase>> resolveFunction,
+      BiFunction<DBLogicalExpression, CaptureGroups<T>, DBLogicalExpression> resolveFunction,
       FilterMatcher.MatchStrategy matchStrategy) {
     FilterMatchRule<T> rule =
-        new FilterMatchRule<T>(new FilterMatcher<T>(matchStrategy, resolveFunction));
+        new FilterMatchRule<T>(new FilterMatcher<>(matchStrategy), resolveFunction);
     matchRules.add(rule);
     return rule;
   }
@@ -59,7 +59,8 @@ public class FilterMatchRules<T extends Command & Filterable> {
    * @param command
    * @return
    */
-  public LogicalExpression apply(CommandContext commandContext, T command) {
+  public DBLogicalExpression apply(CommandContext commandContext, T command) {
+
     return matchRules.stream()
         .map(e -> e.apply(commandContext, command))
         .filter(Optional::isPresent)
@@ -67,7 +68,7 @@ public class FilterMatchRules<T extends Command & Filterable> {
         .findFirst() // unwraps the Optional from the resolver function.
         .orElseThrow(
             () ->
-                ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+                ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
                     "Filter type not supported, unable to resolve to a filtering strategy"));
   }
 

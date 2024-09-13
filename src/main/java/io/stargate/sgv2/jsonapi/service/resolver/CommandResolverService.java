@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -44,7 +44,7 @@ public class CommandResolverService {
         .failWith(
             () -> {
               // Should never happen: all Commands should have matching resolvers
-              return ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+              return ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
                   "No `CommandResolver` for Command \"%s\"", command.getClass().getName());
             });
   }

@@ -11,4 +11,4 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.DropTableCommand;
   @JsonSubTypes.Type(value = CreateTableCommand.class),
   @JsonSubTypes.Type(value = DropTableCommand.class)
 })
-public interface TableOnlyCommand extends NamespaceCommand {}
+public interface TableOnlyCommand extends KeyspaceCommand {}

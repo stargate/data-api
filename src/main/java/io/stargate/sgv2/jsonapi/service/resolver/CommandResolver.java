@@ -5,14 +5,13 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import java.util.Objects;
 
 /**
@@ -60,7 +59,7 @@ public interface CommandResolver<C extends Command> {
     Objects.requireNonNull(commandContext, "commandContext must not be null");
     Objects.requireNonNull(command, "command must not be null");
 
-    return switch (commandContext.schemaObject().type) {
+    return switch (commandContext.schemaObject().type()) {
       case COLLECTION -> resolveCollectionCommand(commandContext.asCollectionContext(), command);
       case TABLE -> resolveTableCommand(commandContext.asTableContext(), command);
       case KEYSPACE -> resolveKeyspaceCommand(commandContext.asKeyspaceContext(), command);
@@ -78,9 +77,9 @@ public interface CommandResolver<C extends Command> {
   default Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Collections, target was %s",
-        command.getClass().getSimpleName(), ctx.schemaObject().name);
+        command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
   ;
 
@@ -93,9 +92,9 @@ public interface CommandResolver<C extends Command> {
    */
   default Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Tables, target was %s",
-        command.getClass().getSimpleName(), ctx.schemaObject().name);
+        command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
 
   /**
@@ -107,9 +106,9 @@ public interface CommandResolver<C extends Command> {
    */
   default Operation resolveKeyspaceCommand(CommandContext<KeyspaceSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Keyspaces, target was %s",
-        command.getClass().getSimpleName(), ctx.schemaObject().name);
+        command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
 
   /**
@@ -121,9 +120,9 @@ public interface CommandResolver<C extends Command> {
    */
   default Operation resolveDatabaseCommand(CommandContext<DatabaseSchemaObject> ctx, C command) {
     // throw error as a fallback to make sure method is implemented, commands are tested well
-    throw ErrorCode.SERVER_INTERNAL_ERROR.toApiException(
+    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
         "%s Command does not support operating on Databases, target was %s",
-        command.getClass().getSimpleName(), ctx.schemaObject().name);
+        command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
 
   static final String UNKNOWN_VALUE = "unknown";
@@ -137,44 +136,39 @@ public interface CommandResolver<C extends Command> {
    * @param dataApiRequestInfo
    * @param jsonApiMetricsConfig
    * @param command
-   * @param logicalExpression
+   * @param dbLogicalExpression
    * @param baseIndexUsage Callers should pass an initial {@link IndexUsage} object that will be
-   *     merged with those from the {@link DBFilterBase} used in the {@link LogicalExpression}. This
-   *     means the caller can set some things the filter may not have, like using ANN in a sort. Use
-   *     {@link SchemaObject#newIndexUsage()} to get the correct type of IndexUsage.
+   *     merged with those from the {@link DBFilterBase} used in the {@link DBLogicalExpression}.
+   *     This means the caller can set some things the filter may not have, like using ANN in a
+   *     sort. Use {@link SchemaObject#newIndexUsage()} to get the correct type of IndexUsage.
    */
   default void addToMetrics(
       MeterRegistry meterRegistry,
       DataApiRequestInfo dataApiRequestInfo,
       JsonApiMetricsConfig jsonApiMetricsConfig,
       Command command,
-      LogicalExpression logicalExpression,
+      DBLogicalExpression dbLogicalExpression,
       IndexUsage baseIndexUsage) {
-    // TODO: this functions hould not be on the CommandResolver interface, it has nothing to do with
+    // TODO: this function should not be on the CommandResolver interface, it has nothing to do
+    // with
     // that
     // it's only here because of the use of records and interfaces, move to a base class
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());
     Tag tenantTag = Tag.of(TENANT_TAG, dataApiRequestInfo.getTenantId().orElse(UNKNOWN_VALUE));
     Tags tags = Tags.of(commandTag, tenantTag);
 
-    getIndexUsageTags(logicalExpression, baseIndexUsage);
+    getIndexUsageTags(dbLogicalExpression, baseIndexUsage);
     tags = tags.and(baseIndexUsage.getTags());
 
     meterRegistry.counter(jsonApiMetricsConfig.indexUsageCounterMetrics(), tags).increment();
   }
 
-  private void getIndexUsageTags(LogicalExpression logicalExpression, IndexUsage indexUsage) {
-    for (ComparisonExpression comparisonExpression : logicalExpression.comparisonExpressions) {
-      getIndexUsageTags(comparisonExpression, indexUsage);
+  private void getIndexUsageTags(DBLogicalExpression dbLogicalExpression, IndexUsage indexUsage) {
+    for (DBFilterBase dbFilter : dbLogicalExpression.dBFilters()) {
+      indexUsage.merge(dbFilter.indexUsage);
     }
-    for (LogicalExpression innerLogicalExpression : logicalExpression.logicalExpressions) {
-      getIndexUsageTags(innerLogicalExpression, indexUsage);
-    }
-  }
-
-  private void getIndexUsageTags(ComparisonExpression comparisonExpression, IndexUsage indexUsage) {
-    for (DBFilterBase dbFilterBase : comparisonExpression.getDbFilters()) {
-      indexUsage.merge(dbFilterBase.indexUsage);
+    for (DBLogicalExpression subDBLogicalExpression : dbLogicalExpression.dbLogicalExpressions()) {
+      getIndexUsageTags(subDBLogicalExpression, indexUsage);
     }
   }
 }

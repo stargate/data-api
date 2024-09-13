@@ -10,9 +10,16 @@ public enum CommandStatus {
   /** The element has the count of deleted documents */
   @JsonProperty("deletedCount")
   DELETED_COUNT,
-  /** Status for reporting existing namespaces. */
+  /**
+   * Status for reporting existing namespaces. findNamespaces command is deprecated, keep this
+   * jsonProperty to support backwards-compatibility. Use "namespaces" when old command name used
+   * and "keyspaces" for new one.
+   */
   @JsonProperty("namespaces")
   EXISTING_NAMESPACES,
+  /** Status for reporting existing keyspaces. */
+  @JsonProperty("keyspaces")
+  EXISTING_KEYSPACES,
   /** Status for reporting existing embedding services. */
   @JsonProperty("embeddingProviders")
   EXISTING_VECTOR_PROVIDERS,
@@ -72,5 +79,24 @@ public enum CommandStatus {
    * is 'true' and no document available in DB for matching condition
    */
   @JsonProperty("upsertedId")
-  UPSERTED_ID
+  UPSERTED_ID,
+
+  /** warning value used for commandResult status */
+  @JsonProperty("warnings")
+  WARNINGS,
+
+  /**
+   * The element contains the schema that describes the structure of the insertedIds, only present
+   * when working with Tables.
+   *
+   * <p>The value of <code>insertedId</code> element in the status is an array of values. For
+   * collections this is an array of the value for <code>_id</code> field for the inserted
+   * documents. For tables, where the primary key of the table may be multiple columns, the value of
+   * the items in the array is an array of the primary key values for the inserted rows. For
+   * example, with two columns in the PK it may be <code>[ [2000, "aaron"], [2001, "bob"]</code>.
+   * The schema tells the client what the structure of the array is using the same layout for field
+   * definitions as the is used in createTable command.
+   */
+  @JsonProperty("primaryKeySchema")
+  PRIMARY_KEY_SCHEMA;
 }

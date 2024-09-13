@@ -3,8 +3,6 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.ValidatableCommandClause;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
@@ -16,9 +14,11 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.FindTableOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableRowProjection;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
@@ -89,7 +89,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
   @Override
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, FindCommand command) {
-    final LogicalExpression resolvedLogicalExpression =
+    final DBLogicalExpression resolvedDbLogicalExpression =
         collectionFilterResolver.resolve(ctx, command);
     // limit and page state defaults
     int limit = Integer.MAX_VALUE;
@@ -113,7 +113,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     }
 
     SortClause sortClause = command.sortClause();
-    ValidatableCommandClause.maybeValidate(ctx, sortClause);
+    SchemaValidatable.maybeValidate(ctx, sortClause);
 
     // if vector search
     float[] vector = SortClauseUtil.resolveVsearch(sortClause);
@@ -125,7 +125,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
-        resolvedLogicalExpression,
+        resolvedDbLogicalExpression,
         indexUsage);
 
     if (vector != null) {
@@ -134,7 +134,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
               limit, operationsConfig.maxVectorSearchLimit()); // Max vector search support is 1000
       return FindCollectionOperation.vsearch(
           ctx,
-          resolvedLogicalExpression,
+          resolvedDbLogicalExpression,
           command.buildProjector(includeSimilarity),
           pageState,
           limit,
@@ -150,7 +150,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     if (orderBy != null) {
       return FindCollectionOperation.sorted(
           ctx,
-          resolvedLogicalExpression,
+          resolvedDbLogicalExpression,
           command.buildProjector(),
           pageState,
           // For in memory sorting if no limit provided in the request will use
@@ -167,7 +167,7 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     } else {
       return FindCollectionOperation.unsorted(
           ctx,
-          resolvedLogicalExpression,
+          resolvedDbLogicalExpression,
           command.buildProjector(),
           pageState,
           limit,

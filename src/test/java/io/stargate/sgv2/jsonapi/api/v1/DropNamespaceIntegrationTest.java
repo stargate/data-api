@@ -1,9 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -23,7 +21,159 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
 
   @Nested
   @Order(1)
-  class DropNamespace {
+  class DropKeyspace {
+
+    @Test
+    public final void happyPath() {
+      String json =
+              """
+          {
+            "dropKeyspace": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted(namespaceName);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // ensure it's dropped
+      json =
+          """
+                  {
+                    "findKeyspaces": {
+                    }
+                  }
+                  """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.keyspaces", not(hasItem(namespaceName)));
+    }
+
+    @Test
+    public final void withExistingCollection() {
+      String keyspace = "k%s".formatted(RandomStringUtils.randomAlphanumeric(8)).toLowerCase();
+      String collection = "c%s".formatted(RandomStringUtils.randomAlphanumeric(8)).toLowerCase();
+
+      String createKeyspace =
+              """
+              {
+                "createKeyspace": {
+                  "name": "%s"
+                }
+              }
+              """
+              .formatted(keyspace);
+      String createCollection =
+              """
+              {
+                "createCollection": {
+                  "name": "%s"
+                }
+              }
+              """
+              .formatted(collection);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createKeyspace)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(createCollection)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspace)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      String json =
+              """
+          {
+            "dropKeyspace": {
+              "name": "%s"
+            }
+          }
+          """
+              .formatted(keyspace);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+
+      // ensure it's dropped
+      json =
+          """
+                  {
+                    "findKeyspaces": {
+                    }
+                  }
+                  """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.keyspaces", not(hasItem(keyspace)));
+    }
+
+    @Test
+    public final void notExisting() {
+      String json =
+          """
+              {
+                "dropKeyspace": {
+                  "name": "whatever_not_there"
+                }
+              }
+              """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(GeneralResource.BASE_PATH)
+          .then()
+          .statusCode(200)
+          .body("status.ok", is(1));
+    }
+  }
+
+  @Nested
+  @Order(2)
+  class DeprecatedDropNamespace {
 
     @Test
     public final void happyPath() {
@@ -45,13 +195,17 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.ok", is(1));
+          .body("status.ok", is(1))
+          .body(
+              "status.warnings",
+              hasItem(
+                  "This dropNamespace has been deprecated and will be removed in future releases, use dropKeyspace instead."));
 
       // ensure it's dropped
       json =
           """
               {
-                "findNamespaces": {
+                "findKeyspaces": {
                 }
               }
               """;
@@ -64,7 +218,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.namespaces", not(hasItem(namespaceName)));
+          .body("status.keyspaces", not(hasItem(namespaceName)));
     }
 
     @Test
@@ -72,10 +226,10 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
       String keyspace = "k%s".formatted(RandomStringUtils.randomAlphanumeric(8)).toLowerCase();
       String collection = "c%s".formatted(RandomStringUtils.randomAlphanumeric(8)).toLowerCase();
 
-      String createNamespace =
+      String createKeyspace =
               """
               {
-                "createNamespace": {
+                "createKeyspace": {
                   "name": "%s"
                 }
               }
@@ -94,7 +248,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
-          .body(createNamespace)
+          .body(createKeyspace)
           .when()
           .post(GeneralResource.BASE_PATH)
           .then()
@@ -105,7 +259,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .contentType(ContentType.JSON)
           .body(createCollection)
           .when()
-          .post(NamespaceResource.BASE_PATH, keyspace)
+          .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -128,13 +282,17 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.ok", is(1));
+          .body("status.ok", is(1))
+          .body(
+              "status.warnings",
+              hasItem(
+                  "This dropNamespace has been deprecated and will be removed in future releases, use dropKeyspace instead."));
 
       // ensure it's dropped
       json =
           """
               {
-                "findNamespaces": {
+                "findKeyspaces": {
                 }
               }
               """;
@@ -147,7 +305,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.namespaces", not(hasItem(keyspace)));
+          .body("status.keyspaces", not(hasItem(keyspace)));
     }
 
     @Test
@@ -169,15 +327,21 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.ok", is(1));
+          .body("status.ok", is(1))
+          .body(
+              "status.warnings",
+              hasItem(
+                  "This dropNamespace has been deprecated and will be removed in future releases, use dropKeyspace instead."));
     }
   }
 
   @Nested
-  @Order(2)
+  @Order(3)
   class Metrics {
     @Test
     public void checkMetrics() {
+      DropNamespaceIntegrationTest.super.checkMetrics("DropKeyspaceCommand");
+      // We decided to keep dropNamespace metrics and logs, even it is a deprecated command
       DropNamespaceIntegrationTest.super.checkMetrics("DropNamespaceCommand");
       DropNamespaceIntegrationTest.super.checkDriverMetricsTenantId();
     }

@@ -45,7 +45,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
   public void enforceMaxIndexes() {
     // Don't use auto-generated namespace that rest of the test uses
     final String NS = "ns_too_many_indexes";
-    createNamespace(NS);
+    createKeyspace(NS);
     final String createTemplate =
         """
                 {
@@ -63,7 +63,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, NS)
+          .post(KeyspaceResource.BASE_PATH, NS)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -75,7 +75,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
         .contentType(ContentType.JSON)
         .body(json)
         .when()
-        .post(NamespaceResource.BASE_PATH, NS)
+        .post(KeyspaceResource.BASE_PATH, NS)
         .then()
         .statusCode(200)
         .body("status", is(nullValue()))
@@ -94,7 +94,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceInt
         .contentType(ContentType.JSON)
         .body(createTemplate.formatted(1))
         .when()
-        .post(NamespaceResource.BASE_PATH, NS)
+        .post(KeyspaceResource.BASE_PATH, NS)
         .then()
         .statusCode(200)
         .body("status.ok", is(1));

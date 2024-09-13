@@ -34,7 +34,7 @@
 # Each error object has:
 # - scope: UPPER_SNAKE_CASE_1
 # - code: UPPER_SNAKE_CASE_1
-# - http-response-override: (optional) The HTTP status code to return when this error is thrown. If not present, the
+# - http-status-override: (optional) The HTTP status code to return when this error is thrown. If not present, the
 #                           default status code is 200 for most things. This is not returned in the error object JSON
 #                           It is used to override the HTTP status code in the response.
 #                           NOTE: NO checking is done to confirm this is a valid HTTP status code.
@@ -45,31 +45,136 @@
 # NOTE: Please keep the entries sorted on their name for snippets, or scope and code for errors. Please add a
 #       new line after each entry, using the `|-` to trim trailing newlines.
 
+# ================================================================================================================
+# Snippets
+# ================================================================================================================
+
 snippets:
   - name: CONTACT_SUPPORT
     body: |-
       Please contact support if the issue persists.
 
-request-errors:
-  - scope: FILTER
-    code: MULTIPLE_ID_FILTER
-    title: the title for the error
+  - name: RETRY
     body: |-
-      big long message with ${vars} in it
+      It is safe to retry this request.
+
+# ================================================================================================================
+# Request Errors
+# ================================================================================================================
+
+request-errors:
+  # UNSCOPED request errors
   - scope:
     code: DOCUMENT_UNPARSEABLE
     title: Unable to parse the document
     body: |-
       big long message with ${vars} in it.
-        
+      
       ${SNIPPET.CONTACT_SUPPORT}
 
-server-errors:
-  - scope: DATABASE
-    code: SERVER_READ_FAILED
-    title: the title for the error
-    body: big long body with ${vars} in it
+ # DOCUMENT request errors
+  - scope: DOCUMENT
+    code: MISSING_PRIMARY_KEY_COLUMNS
+    title: Missing table primary key columns in document
+    body: |-
+      All primary key columns must be provided when inserting a document into a table. 
+      
+      The table ${keyspace}.${table} defines the primary key columns: ${primaryKeys}.
+      
+      The request included values for primary key columns: ${providedKeys}.
+      The request did not include values for primary key columns: ${missingKeys}.
+      
+      Resend the request with the missing primary key columns.
 
+  - scope: DOCUMENT
+    code: UNKNOWN_TABLE_COLUMNS
+    title: Unknown table columns in document
+    body: |-
+      Only columns defined in the table schema can be included when inserted a document into a table.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included the following unknown columns: ${unknownColumns}.
+      
+      Resend the request using only defined columns.
+
+  - scope: DOCUMENT
+    code: UNSUPPORTED_COLUMN_TYPES
+    title: Unsupported table column data types in document
+    body: |-
+      Only supported column types can be included when inserting a document into a table.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included the following columns that have unsupported data types: ${unsupportedColumns}.
+      
+      Resend the request using only supported column types.
+
+  - scope: DOCUMENT
+    code: INVALID_COLUMN_VALUES
+    title: Invalid values for table columns
+    body: |-
+      Only values that are supported by the column data type can be included when inserting a document into a table.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included the following columns that had values that are invalid: ${invalidColumns}.
+      
+      Resend the request using only supported column values.
+
+  # FILTER request errors
+  - scope: FILTER
+    code: INVALID_FILTER
+    title: Invalid filter
+    body: |-
+      The filter clause is invalid. ${filter}
+      
+      ${SNIPPET.CONTACT_SUPPORT}
+ # FILTER request errors
+  - scope: FILTER
+    code: MULTIPLE_ID_FILTER
+    title: the title for the error
+    body: |-
+      big long message with ${vars} in it
+
+# ================================================================================================================
+# Server Errors
+# ================================================================================================================
+
+server-errors:
+  # UNSCOPED server errors
+  - scope:
+    code: UNEXPECTED_SERVER_ERROR
+    http-status-override: 500
+    title: Unexpected server error
+    body: |-
+      An unexpected server error occurred while processing the request. 
+      
+      Error Class: ${errorClass}
+      Error Message: ${errorMessage}
+
+  # DATABASE scope server errors
+  - scope: DATABASE
+    code: CLOSED_CONNECTION
+    title: Database connection was closed while processing the request
+    body: |-
+      The Data API connection to the database was closed by the database while processing the request.
+      
+      Writing to the ${schemaType} ${keyspace}.${table} failed to complete successfully. If this request modified data the changes may have been written to by some replicas, but not all. Future read requests may return eventually consistent results.
+      
+      The detailed response from the database was: ${errorMessage}    
+      
+      ${SNIPPET.RETRY}
+  - scope: DATABASE
+    code: TABLE_WRITE_TIMEOUT
+    title: Timeout writing to table
+    body: |-
+      The Data API timed out while writing to the table.
+      
+      Writing to the table ${keyspace}.${table} failed to complete successfully within the timeout period. The data may have written to the table by some replicas, but not all. Future read requests may return eventually consistent results.
+      
+      The request was was waiting for ${blockFor} replicas to acknowledge the write, but only ${received} replicas responded within the timeout period.
+      
+      ${SNIPPET.RETRY}
+
+  # EMBEDDING scope server errors
   - scope: EMBEDDING_PROVIDER
     code: CLIENT_ERROR
     title: The Embedding Provider returned a HTTP client error

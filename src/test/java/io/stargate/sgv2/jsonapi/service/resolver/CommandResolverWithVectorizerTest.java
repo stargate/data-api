@@ -19,7 +19,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
@@ -71,7 +72,7 @@ public class CommandResolverWithVectorizerTest {
 
   @Nested
   class Resolve {
-    // TODO: do these need to be uniqe to this test ? Can we use TestConstants ?
+    // TODO: do these need to be unique to this test ? Can we use TestConstants ?
     protected final String KEYSPACE_NAME = RandomStringUtils.randomAlphanumeric(16);
     protected final String COLLECTION_NAME = RandomStringUtils.randomAlphanumeric(16);
     private final CommandContext<CollectionSchemaObject> VECTOR_COMMAND_CONTEXT =
@@ -83,7 +84,8 @@ public class CommandResolverWithVectorizerTest {
                 null),
             null,
             null,
-            null);
+            null,
+            ApiFeatures.empty());
 
     @Test
     public void find() throws Exception {
@@ -129,7 +131,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
+                assertThat(find.dbLogicalExpression().dBFilters()).isEmpty();
               });
     }
 
@@ -161,9 +163,9 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(exception.getMessage())
                     .isEqualTo(
                         "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.schemaObject().name.table());
+                            + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
                 assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
+                    .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
     }
 
@@ -218,12 +220,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.orderBy()).isNull();
                           assertThat(find.vector()).isNotNull();
@@ -301,12 +298,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
@@ -343,9 +335,9 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(exception.getMessage())
                     .isEqualTo(
                         "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.schemaObject().name.table());
+                            + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
                 assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
+                    .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
     }
 
@@ -399,12 +391,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
@@ -461,9 +448,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isTrue();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(
-                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
-                    .isEqualTo(filter);
+                assertThat(find.dbLogicalExpression().dBFilters().get(0)).isEqualTo(filter);
               });
     }
 
@@ -560,9 +545,9 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(exception.getMessage())
                     .isEqualTo(
                         "Unable to vectorize data, embedding service not configured for the collection : "
-                            + VECTOR_COMMAND_CONTEXT.schemaObject().name.table());
+                            + VECTOR_COMMAND_CONTEXT.schemaObject().name().table());
                 assertThat(exception.getErrorCode())
-                    .isEqualTo(ErrorCode.EMBEDDING_SERVICE_NOT_CONFIGURED);
+                    .isEqualTo(ErrorCodeV1.EMBEDDING_SERVICE_NOT_CONFIGURED);
               });
     }
 

@@ -4,31 +4,32 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
-import com.datastax.oss.driver.api.core.type.DataTypes;
-import com.datastax.oss.driver.api.core.type.reflect.GenericType;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.base.Preconditions;
-import java.math.BigDecimal;
-import java.math.BigInteger;
+import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import java.util.List;
+import java.util.Objects;
 
 /**
- * Builds and manages the {@link JSONCodec} instances that are used to convert Java objects into the
- * objects expected by the CQL driver for specific CQL data types.
+ * Container of {@link JSONCodec} instances that are used to convert Java objects into the objects
+ * expected by the CQL driver for specific CQL data types.
+ *
+ * <p>Use the default instance from {@link JSONCodecRegistries#DEFAULT_REGISTRY}.
  *
  * <p>See {@link #codecToCQL(TableMetadata, CqlIdentifier, Object)} for the main entry point.
  *
  * <p>IMPORTANT: There must be a codec for every CQL data type we want to write to, even if the
  * translation is an identity translation. This is so we know if the translation can happen, and
  * then if it was done correctly with the actual value. See {@link JSONCodec.ToCQL#unsafeIdentity()}
- * for the identity mapping, and example usage in {@link #TEXT} codec.
+ * for the identity mapping.
  */
 public class JSONCodecRegistry {
 
-  // Internal list of all codes
-  // IMPORTANT: any codec must be added to the list to be available!
-  // They are added in a static block at the end of the file
-  private static final List<JSONCodec<?, ?>> CODECS;
+  private final List<JSONCodec<?, ?>> codecs;
+
+  JSONCodecRegistry(List<JSONCodec<?, ?>> codecs) {
+    this.codecs = Objects.requireNonNull(codecs, "codecs must not be null");
+  }
 
   /**
    * Returns a codec that can convert a Java object into the object expected by the CQL driver for a
@@ -46,15 +47,13 @@ public class JSONCodecRegistry {
    * @throws UnknownColumnException If the column is not found in the table.
    * @throws MissingJSONCodecException If no codec is found for the column and type of the value.
    */
-  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(
+  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(
       TableMetadata table, CqlIdentifier column, Object value)
       throws UnknownColumnException, MissingJSONCodecException {
 
     Preconditions.checkNotNull(table, "table must not be null");
     Preconditions.checkNotNull(column, "column must not be null");
-    Preconditions.checkNotNull(value, "value must not be null");
 
-    // BUG: needs to handle NULl value
     var columnMetadata =
         table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
 
@@ -67,7 +66,7 @@ public class JSONCodecRegistry {
     throw new MissingJSONCodecException(table, columnMetadata, value.getClass(), value);
   }
 
-  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(
+  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(
       TableMetadata table, CqlIdentifier columnId)
       throws UnknownColumnException, MissingJSONCodecException {
 
@@ -79,7 +78,7 @@ public class JSONCodecRegistry {
     return codecToJSON(table, columnMetadata);
   }
 
-  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(
+  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(
       TableMetadata table, ColumnMetadata column) throws MissingJSONCodecException {
     // compiler telling me we need to use the unchecked assignment again like the codecFor does
     JSONCodec<JavaT, CqlT> codec = codecToJSON(column.getType());
@@ -89,7 +88,7 @@ public class JSONCodecRegistry {
     return codec;
   }
 
-  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(DataType targetCQLType) {
+  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(DataType targetCQLType) {
     return JSONCodec.unchecked(internalCodecForToJSON(targetCQLType));
   }
 
@@ -105,9 +104,9 @@ public class JSONCodecRegistry {
    * @param javaValue
    * @return The codec, or `null` if none found.
    */
-  private static JSONCodec<?, ?> internalCodecForToCQL(DataType targetCQLType, Object javaValue) {
+  private JSONCodec<?, ?> internalCodecForToCQL(DataType targetCQLType, Object javaValue) {
     // BUG: needs to handle NULl value
-    return CODECS.stream()
+    return codecs.stream()
         .filter(codec -> codec.testToCQL(targetCQLType, javaValue))
         .findFirst()
         .orElse(null);
@@ -119,191 +118,10 @@ public class JSONCodecRegistry {
    * @param targetCQLType
    * @return
    */
-  private static JSONCodec<?, ?> internalCodecForToJSON(DataType targetCQLType) {
-    return CODECS.stream()
+  private JSONCodec<?, ?> internalCodecForToJSON(DataType targetCQLType) {
+    return codecs.stream()
         .filter(codec -> codec.testToJSON(targetCQLType))
         .findFirst()
         .orElse(null);
-  }
-
-  // Boolean
-  private static final JSONCodec<Boolean, Boolean> BOOLEAN =
-      new JSONCodec<>(
-          GenericType.BOOLEAN,
-          DataTypes.BOOLEAN,
-          JSONCodec.ToCQL.unsafeIdentity(),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::booleanNode));
-
-  // Numeric Codecs
-  private static final JSONCodec<BigDecimal, Long> BIGINT_FROM_BIG_DECIMAL =
-      new JSONCodec<>(
-          GenericType.BIG_DECIMAL,
-          DataTypes.BIGINT,
-          JSONCodec.ToCQL.safeNumber(BigDecimal::longValueExact),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  private static final JSONCodec<BigInteger, Long> BIGINT_FROM_BIG_INTEGER =
-      new JSONCodec<>(
-          GenericType.BIG_INTEGER,
-          DataTypes.BIGINT,
-          JSONCodec.ToCQL.safeNumber(BigInteger::longValueExact),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  private static final JSONCodec<Long, Long> BIGINT_FROM_LONG =
-      new JSONCodec<>(
-          GenericType.LONG,
-          DataTypes.BIGINT,
-          JSONCodec.ToCQL.unsafeIdentity(),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<BigDecimal, BigDecimal> DECIMAL =
-      new JSONCodec<>(
-          GenericType.BIG_DECIMAL,
-          DataTypes.DECIMAL,
-          JSONCodec.ToCQL.unsafeIdentity(),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<BigDecimal, Double> DOUBLE =
-      new JSONCodec<>(
-          GenericType.BIG_DECIMAL,
-          DataTypes.DOUBLE,
-          JSONCodec.ToCQL.safeNumber(BigDecimal::doubleValue),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<BigDecimal, Float> FLOAT =
-      new JSONCodec<>(
-          GenericType.BIG_DECIMAL,
-          DataTypes.FLOAT,
-          JSONCodec.ToCQL.safeNumber(BigDecimal::floatValue),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<BigDecimal, Integer> INT_FROM_BIG_DECIMAL =
-      new JSONCodec<>(
-          GenericType.BIG_DECIMAL,
-          DataTypes.INT,
-          JSONCodec.ToCQL.safeNumber(BigDecimal::intValueExact),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<BigInteger, Integer> INT_FROM_BIG_INTEGER =
-      new JSONCodec<>(
-          GenericType.BIG_INTEGER,
-          DataTypes.INT,
-          JSONCodec.ToCQL.safeNumber(BigInteger::intValueExact),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<Long, Integer> INT_FROM_LONG =
-      new JSONCodec<>(
-          GenericType.LONG,
-          DataTypes.INT,
-          JSONCodec.ToCQL.safeNumber(JSONCodec.ToCQL::safeLongToInt),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<BigDecimal, Short> SMALLINT_FROM_BIG_DECIMAL =
-      new JSONCodec<>(
-          GenericType.BIG_DECIMAL,
-          DataTypes.SMALLINT,
-          JSONCodec.ToCQL.safeNumber(BigDecimal::shortValueExact),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<BigInteger, Short> SMALLINT_FROM_BIG_INTEGER =
-      new JSONCodec<>(
-          GenericType.BIG_INTEGER,
-          DataTypes.SMALLINT,
-          JSONCodec.ToCQL.safeNumber(BigInteger::shortValueExact),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<Long, Short> SMALLINT_FROM_LONG =
-      new JSONCodec<>(
-          GenericType.LONG,
-          DataTypes.SMALLINT,
-          JSONCodec.ToCQL.safeNumber(JSONCodec.ToCQL::safeLongToSmallint),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<BigDecimal, Byte> TINYINT_FROM_BIG_DECIMAL =
-      new JSONCodec<>(
-          GenericType.BIG_DECIMAL,
-          DataTypes.TINYINT,
-          JSONCodec.ToCQL.safeNumber(BigDecimal::byteValueExact),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<BigInteger, Byte> TINYINT_FROM_BIG_INTEGER =
-      new JSONCodec<>(
-          GenericType.BIG_INTEGER,
-          DataTypes.TINYINT,
-          JSONCodec.ToCQL.safeNumber(BigInteger::byteValueExact),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<Long, Byte> TINYINT_FROM_LONG =
-      new JSONCodec<>(
-          GenericType.LONG,
-          DataTypes.TINYINT,
-          JSONCodec.ToCQL.safeNumber(JSONCodec.ToCQL::safeLongToTinyint),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<BigDecimal, BigInteger> VARINT_FROM_BIG_DECIMAL =
-      new JSONCodec<>(
-          GenericType.BIG_DECIMAL,
-          DataTypes.VARINT,
-          JSONCodec.ToCQL.safeNumber(BigDecimal::toBigIntegerExact),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<BigInteger, BigInteger> VARINT_FROM_BIG_INTEGER =
-      new JSONCodec<>(
-          GenericType.BIG_INTEGER,
-          DataTypes.VARINT,
-          JSONCodec.ToCQL.unsafeIdentity(),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  public static final JSONCodec<Long, BigInteger> VARINT_FROM_LONG =
-      new JSONCodec<>(
-          GenericType.LONG,
-          DataTypes.VARINT,
-          JSONCodec.ToCQL.safeNumber(BigInteger::valueOf),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
-
-  // Text Codecs
-  public static final JSONCodec<String, String> ASCII =
-      new JSONCodec<>(
-          GenericType.STRING,
-          DataTypes.ASCII,
-          JSONCodec.ToCQL.unsafeIdentity(),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::textNode));
-
-  public static final JSONCodec<String, String> TEXT =
-      new JSONCodec<>(
-          GenericType.STRING,
-          DataTypes.TEXT,
-          JSONCodec.ToCQL.unsafeIdentity(),
-          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::textNode));
-
-  /** IMPORTANT: All codecs must be added to the list here. */
-  static {
-    CODECS =
-        List.of(
-            // Numeric Codecs, integer types
-            BIGINT_FROM_BIG_DECIMAL,
-            BIGINT_FROM_BIG_INTEGER,
-            BIGINT_FROM_LONG,
-            INT_FROM_BIG_DECIMAL,
-            INT_FROM_BIG_INTEGER,
-            INT_FROM_LONG,
-            SMALLINT_FROM_BIG_DECIMAL,
-            SMALLINT_FROM_BIG_INTEGER,
-            SMALLINT_FROM_LONG,
-            TINYINT_FROM_BIG_DECIMAL,
-            TINYINT_FROM_BIG_INTEGER,
-            TINYINT_FROM_LONG,
-            VARINT_FROM_BIG_DECIMAL,
-            VARINT_FROM_BIG_INTEGER,
-            VARINT_FROM_LONG,
-            // Numeric Codecs, floating-point types
-            DECIMAL,
-            DOUBLE,
-            FLOAT,
-            // Text Codecs
-            ASCII,
-            TEXT,
-            // Other codecs
-            BOOLEAN);
   }
 }

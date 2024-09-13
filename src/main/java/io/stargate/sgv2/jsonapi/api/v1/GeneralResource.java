@@ -4,9 +4,11 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateNamespaceCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateKeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
+import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DatabaseSchemaObject;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
@@ -37,6 +39,8 @@ public class GeneralResource {
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
 
+  @Inject FeaturesConfig apiFeatureConfig;
+
   public static final String BASE_PATH = "/v1";
 
   private final MeteredCommandProcessor meteredCommandProcessor;
@@ -52,12 +56,12 @@ public class GeneralResource {
       content =
           @Content(
               mediaType = MediaType.APPLICATION_JSON,
-              schema = @Schema(anyOf = {CreateNamespaceCommand.class}),
+              schema = @Schema(anyOf = {CreateKeyspaceCommand.class}),
               examples = {
-                @ExampleObject(ref = "createNamespace"),
-                @ExampleObject(ref = "createNamespaceWithReplication"),
-                @ExampleObject(ref = "findNamespaces"),
-                @ExampleObject(ref = "dropNamespace"),
+                @ExampleObject(ref = "createKeyspace"),
+                @ExampleObject(ref = "createKeyspaceWithReplication"),
+                @ExampleObject(ref = "findKeyspaces"),
+                @ExampleObject(ref = "dropKeyspace"),
               }))
   @APIResponses(
       @APIResponse(
@@ -70,19 +74,25 @@ public class GeneralResource {
                   schema = @Schema(implementation = CommandResult.class),
                   examples = {
                     @ExampleObject(ref = "resultCreate"),
-                    @ExampleObject(ref = "resultFindNamespaces"),
+                    @ExampleObject(ref = "resultFindKeyspaces"),
                     @ExampleObject(ref = "resultError"),
                   })))
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(@NotNull @Valid GeneralCommand command) {
+    final ApiFeatures apiFeatures =
+        ApiFeatures.fromConfigAndRequest(apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
 
     var commandContext =
         CommandContext.forSchemaObject(
-            new DatabaseSchemaObject(), null, command.getClass().getSimpleName(), null);
+            new DatabaseSchemaObject(),
+            null,
+            command.getClass().getSimpleName(),
+            null,
+            apiFeatures);
 
     return meteredCommandProcessor
         .processCommand(dataApiRequestInfo, commandContext, command)
         // map to 2xx unless overridden by error
-        .map(commandResult -> commandResult.map());
+        .map(commandResult -> commandResult.toRestResponse());
   }
 }

@@ -3,13 +3,12 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Optional;
-import java.util.function.Function;
 
 /**
  * This class matches the filter clauses against the filter match rules defined. The match rules
@@ -19,7 +18,7 @@ import java.util.function.Function;
  */
 public class FilterMatcher<T extends Command & Filterable> {
 
-  private List<Capture> captures = new ArrayList<>();
+  private final List<Capture> captures = new ArrayList<>();
 
   public enum MatchStrategy {
     EMPTY,
@@ -29,19 +28,19 @@ public class FilterMatcher<T extends Command & Filterable> {
 
   private final MatchStrategy strategy;
 
-  private final Function<CaptureExpression, List<DBFilterBase>> resolveFunction;
-
-  FilterMatcher(
-      MatchStrategy strategy, Function<CaptureExpression, List<DBFilterBase>> resolveFunction) {
+  FilterMatcher(MatchStrategy strategy) {
     this.strategy = strategy;
-    this.resolveFunction = resolveFunction;
   }
 
-  public Optional<LogicalExpression> apply(T command) {
+  public Optional<CaptureGroups<T>> apply(T command) {
     FilterClause filter = command.filterClause();
+    // construct a default CaptureGroups, with default AND relation, empty captureGroupsList,
+    // empty captureGroupMap
+    CaptureGroups<T> captureGroups =
+        new CaptureGroups<T>(DBLogicalExpression.DBLogicalOperator.AND);
     if (strategy == MatchStrategy.EMPTY) {
       if (filter == null || filter.logicalExpression().isEmpty()) {
-        return Optional.of(LogicalExpression.and());
+        return Optional.of(captureGroups);
       } else {
         return Optional.empty();
       }
@@ -54,29 +53,40 @@ public class FilterMatcher<T extends Command & Filterable> {
         new MatchStrategyCounter(
             unmatchedCaptures.size(),
             filter.logicalExpression().getTotalComparisonExpressionCount());
-    captureRecursive(filter.logicalExpression(), unmatchedCaptures, matchStrategyCounter);
-    return matchStrategyCounter.applyStrategy(strategy, filter);
+    // capture recursively, resolve logicalExpression to captureGroups
+    captureRecursive(
+        captureGroups, filter.logicalExpression(), unmatchedCaptures, matchStrategyCounter);
+    // apply strategy to the resolved root captureGroups
+    return matchStrategyCounter.applyStrategy(strategy, captureGroups);
   }
 
-  public void captureRecursive(
+  private void captureRecursive(
+      CaptureGroups currentCaptureGroups,
       LogicalExpression expression,
       List<Capture> unmatchedCaptures,
       MatchStrategyCounter matchStrategyCounter) {
-    for (LogicalExpression logicalExpression : expression.logicalExpressions) {
-      captureRecursive(logicalExpression, unmatchedCaptures, matchStrategyCounter);
+
+    // recursively resolve logicalExpression to captureGroups
+    for (LogicalExpression innerLogicalExpression : expression.logicalExpressions) {
+      CaptureGroups innerCaptureGroups =
+          currentCaptureGroups.addSubCaptureGroups(
+              new CaptureGroups<>(
+                  DBLogicalExpression.DBLogicalOperator.fromLogicalOperator(
+                      innerLogicalExpression.getLogicalRelation())));
+      captureRecursive(
+          innerCaptureGroups, innerLogicalExpression, unmatchedCaptures, matchStrategyCounter);
     }
-    ListIterator<ComparisonExpression> expressionIterator =
-        expression.comparisonExpressions.listIterator();
-    while (expressionIterator.hasNext()) {
-      ComparisonExpression comparisonExpression = expressionIterator.next();
+
+    // resolve current level of comparisonExpressions to captureGroup
+    for (ComparisonExpression comparisonExpression : expression.comparisonExpressions) {
       ListIterator<Capture> captureIter = unmatchedCaptures.listIterator();
       while (captureIter.hasNext()) {
         Capture capture = captureIter.next();
-        List<FilterOperation<?>> matched = capture.match(comparisonExpression);
+        List<FilterOperation> matched = capture.match(comparisonExpression);
         if (!matched.isEmpty()) {
-          comparisonExpression.setDBFilters(
-              resolveFunction.apply(
-                  new CaptureExpression(capture.marker, matched, comparisonExpression.getPath())));
+          currentCaptureGroups
+              .getGroup(capture.marker)
+              .addCapture(comparisonExpression.getPath(), matched);
           switch (strategy) {
             case STRICT:
               captureIter.remove();
@@ -97,8 +107,8 @@ public class FilterMatcher<T extends Command & Filterable> {
    *
    * <p>See {@link FilterMatchRules #addMatchRule(BiFunction, MatchStrategy)}}
    *
-   * @param marker
-   * @return
+   * @param marker marker
+   * @return capture
    */
   public Capture capture(Object marker) {
     final Capture newCapture = new Capture(marker);
@@ -123,16 +133,18 @@ public class FilterMatcher<T extends Command & Filterable> {
       this.marker = marker;
     }
 
-    public List<FilterOperation<?>> match(ComparisonExpression t) {
+    public List<FilterOperation> match(ComparisonExpression t) {
       return t.match(matchPath, operators, type);
     }
 
     /**
      * The path is compared using an operator against a value of a type
      *
-     * <p>e.g. <code>
+     * <p>e.g.
+     *
+     * <pre>
      *  .compare("*", ValueComparisonOperator.GT, JsonType.NUMBER);
-     * </code>
+     * </pre>
      *
      * @param path
      * @param type
@@ -147,7 +159,7 @@ public class FilterMatcher<T extends Command & Filterable> {
     }
   }
 
-  public static final class MatchStrategyCounter {
+  public final class MatchStrategyCounter {
 
     private int unmatchedCaptureCount;
     private int unmatchedComparisonExpressionCount;
@@ -166,19 +178,20 @@ public class FilterMatcher<T extends Command & Filterable> {
       unmatchedComparisonExpressionCount--;
     }
 
-    public Optional<LogicalExpression> applyStrategy(MatchStrategy strategy, FilterClause filter) {
+    public Optional<CaptureGroups<T>> applyStrategy(
+        MatchStrategy strategy, CaptureGroups<T> captureGroups) {
       // these strategies should be abstracted if we have another one, only 2 for now.
       switch (strategy) {
         case STRICT:
           if (unmatchedCaptureCount == 0 && unmatchedComparisonExpressionCount == 0) {
             // everything group and expression matched
-            return Optional.of(filter.logicalExpression());
+            return Optional.of(captureGroups);
           }
           break;
         case GREEDY:
           if (unmatchedComparisonExpressionCount == 0) {
             // everything expression matched, some captures may not match
-            return Optional.of(filter.logicalExpression());
+            return Optional.of(captureGroups);
           }
           break;
       }

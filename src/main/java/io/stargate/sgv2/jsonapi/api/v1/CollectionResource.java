@@ -20,9 +20,14 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.constants.OpenApiConstants;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeature;
+import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
+import io.stargate.sgv2.jsonapi.config.feature.FeaturesConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
@@ -58,7 +63,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Tag(ref = "Documents")
 public class CollectionResource {
 
-  public static final String BASE_PATH = "/v1/{namespace}/{collection}";
+  public static final String BASE_PATH = "/v1/{keyspace}/{collection}";
 
   private final MeteredCommandProcessor meteredCommandProcessor;
 
@@ -67,6 +72,8 @@ public class CollectionResource {
   @Inject private EmbeddingProviderFactory embeddingProviderFactory;
 
   @Inject private DataApiRequestInfo dataApiRequestInfo;
+
+  @Inject FeaturesConfig apiFeatureConfig;
 
   @Inject private JsonProcessingMetricsReporter jsonProcessingMetricsReporter;
 
@@ -80,7 +87,7 @@ public class CollectionResource {
       description = "Executes a single command against a collection.")
   @Parameters(
       value = {
-        @Parameter(name = "namespace", ref = "namespace"),
+        @Parameter(name = "keyspace", ref = "keyspace"),
         @Parameter(name = "collection", ref = "collection")
       })
   @RequestBody(
@@ -154,19 +161,18 @@ public class CollectionResource {
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
       @NotNull @Valid CollectionCommand command,
-      @PathParam("namespace")
+      @PathParam("keyspace")
           @NotNull
           @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
           @Size(min = 1, max = 48)
-          String namespace,
+          String keyspace,
       @PathParam("collection")
           @NotNull
           @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
           @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
-        .getSchemaObject(
-            dataApiRequestInfo, dataApiRequestInfo.getTenantId(), namespace, collection)
+        .getSchemaObject(dataApiRequestInfo, dataApiRequestInfo.getTenantId(), keyspace, collection)
         .onItemOrFailure()
         .transformToUni(
             (schemaObject, throwable) -> {
@@ -182,6 +188,14 @@ public class CollectionResource {
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
               } else {
                 // TODO No need for the else clause here, simplify
+                final ApiFeatures apiFeatures =
+                    ApiFeatures.fromConfigAndRequest(
+                        apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
+                if ((schemaObject.type() == SchemaObject.SchemaObjectType.TABLE)
+                    && !apiFeatures.isFeatureEnabled(ApiFeature.TABLES)) {
+                  return Uni.createFrom()
+                      .failure(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException());
+                }
                 // TODO: refactor this code to be cleaner so it assigns on one line
                 EmbeddingProvider embeddingProvider = null;
                 final VectorConfig.VectorizeConfig vectorizeConfig =
@@ -204,12 +218,13 @@ public class CollectionResource {
                         schemaObject,
                         embeddingProvider,
                         command.getClass().getSimpleName(),
-                        jsonProcessingMetricsReporter);
+                        jsonProcessingMetricsReporter,
+                        apiFeatures);
 
                 return meteredCommandProcessor.processCommand(
                     dataApiRequestInfo, commandContext, command);
               }
             })
-        .map(commandResult -> commandResult.map());
+        .map(commandResult -> commandResult.toRestResponse());
   }
 }

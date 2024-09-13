@@ -12,12 +12,20 @@ public abstract class SchemaObject {
     DATABASE
   }
 
-  public final SchemaObjectType type;
-  public final SchemaObjectName name;
+  protected final SchemaObjectType type;
+  protected final SchemaObjectName name;
 
   protected SchemaObject(SchemaObjectType type, SchemaObjectName name) {
     this.type = type;
     this.name = name;
+  }
+
+  public SchemaObjectType type() {
+    return type;
+  }
+
+  public SchemaObjectName name() {
+    return name;
   }
 
   /**

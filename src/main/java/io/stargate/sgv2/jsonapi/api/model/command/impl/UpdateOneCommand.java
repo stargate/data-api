@@ -32,4 +32,10 @@ public record UpdateOneCommand(
                   "When `true`, if no documents match the `filter` clause the command will create a new _empty_ document and apply the `update` clause and all equality filters to the empty document.",
               defaultValue = "false")
           boolean upsert) {}
+
+  /** {@inheritDoc} */
+  @Override
+  public CommandName commandName() {
+    return CommandName.UPDATE_ONE;
+  }
 }
