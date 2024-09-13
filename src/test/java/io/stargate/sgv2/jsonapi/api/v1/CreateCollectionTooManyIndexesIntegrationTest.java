@@ -22,7 +22,7 @@ import org.junit.jupiter.api.TestClassOrder;
     value = CreateCollectionTooManyIndexesIntegrationTest.TooManyIndexesTestResource.class,
     restrictToAnnotatedClass = true)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class CreateCollectionTooManyIndexesIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class CreateCollectionTooManyIndexesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   private static final int COLLECTIONS_TO_CREATE = 3;
 
   // Need to limit number of indexes available, relative to max collections

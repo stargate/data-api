@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
-class GeneralResourceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
   @BeforeAll
   public static void enableLog() {
