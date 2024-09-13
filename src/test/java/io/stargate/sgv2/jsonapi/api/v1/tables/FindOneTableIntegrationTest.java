@@ -36,13 +36,13 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     createTableWithColumns(
         TABLE_WITH_TEXT_COLUMNS,
         Map.of(
-            "id",
-            Map.of("type", "int"),
+            "idText",
+            Map.of("type", "text"),
             "asciiText",
             Map.of("type", "ascii"),
             "varcharText",
             Map.of("type", "text")),
-        "id");
+        "idText");
   }
 
   // On-empty tests to be run before ones that populate tables
@@ -215,7 +215,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
       final String DOC_JSON =
               """
                                   {
-                                      "id": 1,
+                                      "idText": "abc",
                                       "asciiText": "safe value",
                                       "varcharText": "%s/%s"
                                   }
@@ -224,7 +224,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
       insertOneInTable(TABLE_WITH_TEXT_COLUMNS, DOC_JSON);
 
       DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_WITH_TEXT_COLUMNS)
-          .postFindOne("{ \"filter\": { \"id\": 1 } }")
+          .postFindOne("{ \"filter\": { \"idText\": \"abc\" } }")
           .hasNoErrors()
           .hasJSONField("data.document", DOC_JSON);
     }
@@ -234,7 +234,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
       final String DOC_JSON =
               """
                 {
-                    "id": 2,
+                    "idText": "def",
                     "asciiText": "%s",
                     "varcharText": "safe value"
                 }
