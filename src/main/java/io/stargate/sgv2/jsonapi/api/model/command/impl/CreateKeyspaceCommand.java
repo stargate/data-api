@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.GeneralCommand;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -13,32 +12,22 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-@Schema(
-    description =
-        "Command that creates a namespace. This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead.",
-    deprecated = true)
-@JsonTypeName("createNamespace")
-public record CreateNamespaceCommand(
+@Schema(description = "Command that creates a keyspace.")
+@JsonTypeName("createKeyspace")
+public record CreateKeyspaceCommand(
     @NotNull
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Size(min = 1, max = 48)
-        @Schema(
-            description =
-                "Name of the namespace. This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead.",
-            deprecated = true)
+        @Schema(description = "Name of the keyspace")
         String name,
-    @Nullable @Valid CreateNamespaceCommand.Options options)
-    implements GeneralCommand, DeprecatedCommand {
+    @Nullable @Valid CreateKeyspaceCommand.Options options)
+    implements GeneralCommand {
 
-  @Schema(
-      name = "CreateNamespaceCommand.Options",
-      description =
-          "Options for creating a new namespace. This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead.",
-      deprecated = true)
+  @Schema(name = "CreateKeyspace.Options", description = "Options for creating a new keyspace.")
   public record Options(@Nullable @Valid Replication replication) {}
 
   /**
-   * Replication options for the create namespace.
+   * Replication options for the create keyspace.
    *
    * @param strategy Cassandra keyspace strategy class name to use (SimpleStrategy or
    *     NetworkTopologyStrategy).
@@ -46,10 +35,7 @@ public record CreateNamespaceCommand(
    *     `replication_factor` is optional. For the <code>NetworkTopologyStrategy</code> each data
    *     center with replication.
    */
-  @Schema(
-      description =
-          "Cassandra based replication settings. This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead.",
-      deprecated = true)
+  @Schema(description = "Cassandra based replication settings.")
   // no record due to the @JsonAnySetter, see
   // https://github.com/FasterXML/jackson-databind/issues/562
   public static class Replication {
@@ -74,12 +60,6 @@ public record CreateNamespaceCommand(
   /** {@inheritDoc} */
   @Override
   public CommandName commandName() {
-    return CommandName.CREATE_NAMESPACE;
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public CommandName useCommandName() {
     return CommandName.CREATE_KEYSPACE;
   }
 }

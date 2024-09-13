@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.fixtures.CqlFixture;
 import io.stargate.sgv2.jsonapi.fixtures.types.CqlTypesForTesting;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
-import io.stargate.sgv2.jsonapi.service.shredding.UnorderedJsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import java.util.*;
 import java.util.function.Supplier;
@@ -86,12 +85,13 @@ public abstract class JsonContainerFixtureBuilder implements Supplier<List<JsonC
   }
 
   /**
-   * Helper to create a WriteableTableRow instance,values are set using the {@link CqlFixture} data
-   * generator.
+   * Helper to create a {@link JsonNamedValueContainer} instance,values are set using the {@link
+   * CqlFixture} data generator.
    *
    * @param setKeys keys that should have a value set
    * @param setNonKeyColumns non-key columns that should have a value set
-   * @return confifgured WriteableTableRow
+   * @return configured {@link JsonNamedValueContainer} with named values based on the setKeys and
+   *     setNonKeyColumns
    */
   protected JsonNamedValueContainer jsonContainer(
       List<ColumnMetadata> setKeys, List<ColumnMetadata> setNonKeyColumns) {
@@ -99,7 +99,7 @@ public abstract class JsonContainerFixtureBuilder implements Supplier<List<JsonC
     var allSetColumns = join(setKeys, setNonKeyColumns);
     var columnValues = columnValues(allSetColumns);
 
-    return new UnorderedJsonNamedValueContainer(columnValues.values());
+    return new JsonNamedValueContainer(columnValues.values());
   }
 
   /**

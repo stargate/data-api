@@ -149,7 +149,8 @@ public interface CommandResolver<C extends Command> {
       Command command,
       DBLogicalExpression dbLogicalExpression,
       IndexUsage baseIndexUsage) {
-    // TODO: this functions hould not be on the CommandResolver interface, it has nothing to do with
+    // TODO: this function should not be on the CommandResolver interface, it has nothing to do
+    // with
     // that
     // it's only here because of the use of records and interfaces, move to a base class
     Tag commandTag = Tag.of(jsonApiMetricsConfig.command(), command.getClass().getSimpleName());

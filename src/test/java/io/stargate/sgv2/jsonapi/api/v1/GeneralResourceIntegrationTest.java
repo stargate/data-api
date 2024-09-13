@@ -75,7 +75,7 @@ class GeneralResourceIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"GeneralCommand\"s: known commands are [createNamespace,"));
+                  "Provided command unknown: \"unknownCommand\" not one of \"GeneralCommand\"s: known commands are [createKeyspace,"));
     }
 
     @Test

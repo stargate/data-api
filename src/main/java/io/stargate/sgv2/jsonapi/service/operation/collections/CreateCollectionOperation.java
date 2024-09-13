@@ -120,8 +120,8 @@ public record CreateCollectionOperation(
     if (currKeyspace == null) {
       return Uni.createFrom()
           .failure(
-              ErrorCodeV1.NAMESPACE_DOES_NOT_EXIST.toApiException(
-                  "Unknown namespace '%s', you must create it first",
+              ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException(
+                  "Unknown keyspace '%s', you must create it first",
                   commandContext.schemaObject().name().keyspace()));
     }
     TableMetadata table = findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
