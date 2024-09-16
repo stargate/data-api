@@ -174,12 +174,12 @@ public record JSONCodec<JavaT, CqlT>(
     static String safeAscii(DataType targetTextType, String value) throws ToCQLCodecException {
       for (int i = 0, len = value.length(); i < len; ++i) {
         if (value.charAt(i) > 0x7F) {
-          Exception rootCause =
-              new IllegalArgumentException(
-                  String.format(
-                      "String contains non-ASCII character at index #%d (length=%d): \\u%04X",
-                      i, len, (int) value.charAt(i)));
-          throw new ToCQLCodecException(value, targetTextType, rootCause);
+          throw new ToCQLCodecException(
+              value,
+              targetTextType,
+              String.format(
+                  "String contains non-ASCII character at index #%d (length=%d): \\u%04X",
+                  i, len, (int) value.charAt(i)));
         }
       }
       return value;

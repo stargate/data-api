@@ -13,14 +13,25 @@ public class ToCQLCodecException extends CheckedApiException {
   public final Object value;
   public final DataType targetCQLType;
 
-  public ToCQLCodecException(Object value, DataType targetCQLType, Exception cause) {
+  public ToCQLCodecException(Object value, DataType targetCQLType, Exception rootCause) {
     super(
-        String.format(
-            "Error trying to convert to targetCQLType `%s` from value.class `%s`, value %s. Root cause: %s",
-            targetCQLType, value.getClass().getName(), valueDesc(value), cause.getMessage()),
-        cause);
+        formatMessage(value, targetCQLType, (rootCause == null) ? "NULL" : rootCause.getMessage()),
+        rootCause);
     this.value = value;
     this.targetCQLType = targetCQLType;
+  }
+
+  public ToCQLCodecException(Object value, DataType targetCQLType, String rootCauseMessage) {
+    super(formatMessage(value, targetCQLType, rootCauseMessage));
+    this.value = value;
+    this.targetCQLType = targetCQLType;
+  }
+
+  private static String formatMessage(
+      Object value, DataType targetCQLType, String rootCauseMessage) {
+    return String.format(
+        "Error trying to convert to targetCQLType `%s` from value.class `%s`, value %s. Root cause: %s",
+        targetCQLType, value.getClass().getName(), valueDesc(value), rootCauseMessage);
   }
 
   // Add a place to slightly massage value; can be further improved
