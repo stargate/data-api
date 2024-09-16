@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
-class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
   @Nested
   class ClientErrors {
     String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
@@ -24,7 +24,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .contentType(ContentType.JSON)
           .body("{}")
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(401)
           .body(
@@ -40,7 +40,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .contentType(ContentType.JSON)
           .body("wrong")
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           // 10-Jul-2024, tatu: As per [data-api#1216], should be 400, not 200
           //  (we want to return 4xx because we cannot actually process the request
@@ -70,7 +70,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
@@ -98,7 +98,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
@@ -112,7 +112,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
     }
 
     @Test
-    public void invalidNamespaceName() {
+    public void invalidKeyspaceName() {
       String json =
           """
           {
@@ -136,7 +136,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'namespace' value \"7_no_leading_number\" not valid. Problem: must match "));
+                  "Request invalid: field 'keyspace' value \"7_no_leading_number\" not valid. Problem: must match "));
     }
 
     @Test
@@ -155,7 +155,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, "7_no_leading_number")
+          .post(CollectionResource.BASE_PATH, keyspaceName, "7_no_leading_number")
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))
@@ -173,7 +173,7 @@ class CollectionResourceIntegrationTest extends AbstractNamespaceIntegrationTest
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
           .body("errors", hasSize(1))

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
-class GeneralResourceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
   @BeforeAll
   public static void enableLog() {
@@ -75,7 +75,7 @@ class GeneralResourceIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"GeneralCommand\"s: known commands are [createNamespace,"));
+                  "Provided command unknown: \"unknownCommand\" not one of \"GeneralCommand\"s: known commands are [createKeyspace,"));
     }
 
     @Test

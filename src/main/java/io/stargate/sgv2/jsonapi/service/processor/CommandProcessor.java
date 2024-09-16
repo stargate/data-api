@@ -4,6 +4,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.DeprecatedCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
@@ -124,6 +125,14 @@ public class CommandProcessor {
         // call supplier get to map to the command result
         .onItem()
         .ifNotNull()
-        .transform(Supplier::get);
+        .transform(Supplier::get)
+        // add possible warning for using a deprecated command
+        .map(
+            commandResult -> {
+              if (command instanceof DeprecatedCommand deprecatedCommand) {
+                return commandResult.withWarning(deprecatedCommand.getDeprecationMessage());
+              }
+              return commandResult;
+            });
   }
 }

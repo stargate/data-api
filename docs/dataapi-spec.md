@@ -7,7 +7,7 @@ library such as [Mongoose](https://github.com/Automattic/mongoose).
 - [High-level concepts](#high-level-concepts)
 - [Conventions](#conventions)
 - [Request and Response Messages](#request-and-response-messages)
-- [Namespace](#namespace)
+- [Keyspace](#keyspace)
 - [Collections](#collections)
 - [Documents](#documents)
 - [Commands](#commands)
@@ -27,7 +27,7 @@ Additionally consideration should be given to implementing that API such that th
 
 The DATA API consists of the following high level concepts that are composed to create a request:
 
--   **Namespace:** A logical container representing a distinct storage location and query boundary which can contain multiple collections. May map to a keyspace or database.
+-   **Keyspace:** Keyspace of Cassandra
 -   **Collection:** A logical container of documents that have some meaning to the developer using the API. Often an ODM may map a single developer defined class or type to a collection.
 -   **Document:** A document is a hierarchical [JSON](https://www.json.org/) document with a single reserved `_id` field. All documents in a collection may have different fields and structure.
 -   **Command:** Commands are performed on Collections of Documents. Commands may return zero or more documents from the collection, update or insert zero or more documents, or both.
@@ -197,23 +197,23 @@ state.
 ```
 
 
-## Namespace
+## Keyspace
 
-**TODO:** define the namespace, its properties, etc. Do we define how to create one?
+**TODO:** define the keyspace, its properties, etc. Do we define how to create one?
 
-### Namespace Limits
+### Keyspace Limits
 
-#### Namespace Name Limit
+#### Keyspace Name Limit
 
-Namespace names must follow the regular expression pattern below:
+Keyspace names must follow the regular expression pattern below:
 
 *Syntax:*
 
 ```bnf
-<namespace-name> ::= ["a-zA-Z"]["a-zA-Z0-9_"]*
+<keyspace-name> ::= ["a-zA-Z"]["a-zA-Z0-9_"]*
 ```
 
-The maximum length of a namespace name is 48 characters.
+The maximum length of a keyspace name is 48 characters.
 
 
 ## Collections
@@ -569,7 +569,7 @@ If an error occurs the command will not return `status`.
 
 ### createCollection Command
 
-Creates a new collection in the current namespace.
+Creates a new collection in the current keyspace.
 
 *Sample*
 
@@ -838,9 +838,9 @@ If an error occurs the command will not return `data`.
 
 ### findCollections Command
 
-`findCollections` returns all collections from a given namespace.
+`findCollections` returns all collections from a given keyspace.
 
-There is no payload. The `namespace` is given as `{{base_url}}{{json_port}}/v1/{namespace}`.
+There is no payload. The `keyspace` is given as `{{base_url}}{{json_port}}/v1/{keyspace}`.
 
 *Syntax:*
 
@@ -855,10 +855,10 @@ None.
 
 #### findCollections Command Response
 
-| Response Elements | Description                                                                        |
-| ----------------- | ---------------------------------------------------------------------------------- |
-| `status`          | Status has `collections` field with array of the available collection names.       |
-| `errors`          | If the provided namespace does not exist, return `NAMESPACE_DOES_NOT_EXIST`.       |
+| Response Elements | Description                                                                  |
+| ----------------- |------------------------------------------------------------------------------|
+| `status`          | Status has `collections` field with array of the available collection names. |
+| `errors`          | If the provided keyspace does not exist, return `KEYSPACE_DOES_NOT_EXIST`.   |
 
 
 ### findOneAndReplace Command

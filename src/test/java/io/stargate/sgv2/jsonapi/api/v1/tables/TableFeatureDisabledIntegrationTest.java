@@ -41,7 +41,7 @@ public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegratio
   @Order(1)
   @Test
   public void failCreateWithoutFeatureEnabled() {
-    DataApiCommandSenders.assertNamespaceCommand(namespaceName)
+    DataApiCommandSenders.assertNamespaceCommand(keyspaceName)
         .postCreateTable(simpleTableDef(TABLE_TO_CREATE))
         .hasSingleApiError(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED);
   }
@@ -50,7 +50,7 @@ public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegratio
   @Order(2)
   @Test
   public void okCreateWithFeatureEnabledViaHeader() {
-    DataApiCommandSenders.assertNamespaceCommand(namespaceName)
+    DataApiCommandSenders.assertNamespaceCommand(keyspaceName)
         .header(ApiFeature.TABLES.httpHeaderName(), "true")
         .postCreateTable(simpleTableDef(TABLE_TO_CREATE))
         .hasNoErrors()
@@ -61,7 +61,7 @@ public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegratio
   @Order(3)
   @Test
   public void failFindWithoutFeature() {
-    DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_TO_CREATE)
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_TO_CREATE)
         .postFindOne("{}")
         .hasSingleApiError(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED);
   }
@@ -70,7 +70,7 @@ public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegratio
   @Order(4)
   @Test
   public void okFindWithFeatureEnabledViaHeader() {
-    DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_TO_CREATE)
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_TO_CREATE)
         .header(ApiFeature.TABLES.httpHeaderName(), "true")
         .postFindOne("{}")
         .hasNoErrors();

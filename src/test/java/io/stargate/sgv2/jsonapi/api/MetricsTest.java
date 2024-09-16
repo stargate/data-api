@@ -45,8 +45,8 @@ public class MetricsTest {
                 assertThat(line)
                     .containsAnyOf(
                         "uri=\"/v1\"",
-                        "uri=\"/v1/{namespace}\"",
-                        "uri=\"/v1/{namespace}/{collection}\""));
+                        "uri=\"/v1/{keyspace}\"",
+                        "uri=\"/v1/{keyspace}/{collection}\""));
   }
 
   @Test
@@ -78,8 +78,8 @@ public class MetricsTest {
                 assertThat(line)
                     .containsAnyOf(
                         "uri=\"/v1\"",
-                        "uri=\"/v1/{namespace}\"",
-                        "uri=\"/v1/{namespace}/{collection}\""));
+                        "uri=\"/v1/{keyspace}\"",
+                        "uri=\"/v1/{keyspace}/{collection}\""));
   }
 
   @Test
@@ -112,7 +112,7 @@ public class MetricsTest {
                 assertThat(line)
                     .containsAnyOf(
                         "uri=\"/v1\"",
-                        "uri=\"/v1/{namespace}\"",
-                        "uri=\"/v1/{namespace}/{collection}\""));
+                        "uri=\"/v1/{keyspace}\"",
+                        "uri=\"/v1/{keyspace}/{collection}\""));
   }
 }

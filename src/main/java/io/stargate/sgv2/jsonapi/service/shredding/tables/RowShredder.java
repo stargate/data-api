@@ -9,7 +9,6 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValue;
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
-import io.stargate.sgv2.jsonapi.service.shredding.OrderedJsonNamedValueContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.JsonPath;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -47,11 +46,11 @@ public class RowShredder {
    * Jackson document
    *
    * @param document the document to shred
-   * @return A {@link OrderedJsonNamedValueContainer} of the values found in the document
+   * @return A {@link JsonNamedValueContainer} of the values found in the document
    */
   public JsonNamedValueContainer shred(JsonNode document) {
 
-    var container = new OrderedJsonNamedValueContainer();
+    var container = new JsonNamedValueContainer();
     document
         .fields()
         .forEachRemaining(

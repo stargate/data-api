@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
-class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class KeyspaceResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
   @Nested
   class ClientErrors {
@@ -23,7 +23,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .contentType(ContentType.JSON)
           .body("{}")
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(401)
           .body(
@@ -39,7 +39,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .contentType(ContentType.JSON)
           .body("{wrong}")
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -61,14 +61,14 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"NamespaceCommand\"s: known commands are [createCollection"));
+                  "Provided command unknown: \"unknownCommand\" not one of \"KeyspaceCommand\"s: known commands are [createCollection"));
     }
 
     @Test
@@ -87,7 +87,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(NamespaceResource.BASE_PATH, "7_no_leading_number")
+          .post(KeyspaceResource.BASE_PATH, "7_no_leading_number")
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
@@ -95,7 +95,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .body(
               "errors[0].message",
               startsWith(
-                  "Request invalid: field 'namespace' value \"7_no_leading_number\" not valid. Problem: must match "));
+                  "Request invalid: field 'keyspace' value \"7_no_leading_number\" not valid. Problem: must match "));
     }
 
     @Test
@@ -104,7 +104,7 @@ class NamespaceResourceIntegrationTest extends AbstractNamespaceIntegrationTestB
           .headers(getHeaders())
           .contentType(ContentType.JSON)
           .when()
-          .post(NamespaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))

@@ -16,7 +16,7 @@ import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
  * </ul>
  *
  * @param <NameT> The type of the name of the value
- * @param <ValueT> The value
+ * @param <ValueT> The type of the value
  */
 public abstract class NamedValue<NameT, ValueT> implements PrettyPrintable {
 
