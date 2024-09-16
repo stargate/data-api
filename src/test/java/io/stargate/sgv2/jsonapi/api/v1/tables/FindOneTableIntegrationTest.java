@@ -51,7 +51,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
   class FindOneOnEmpty {
     @Test
     public void findOnEmptyNoFilter() {
-      DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .postFindOne("{ }")
           .hasNoErrors()
           .hasNoField("data.document");
@@ -59,7 +59,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
 
     @Test
     public void findOnEmptyNonMatchingFilter() {
-      DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .postFindOne(
               """
                                   {
@@ -99,7 +99,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                           """;
       insertOneInTable(TABLE_WITH_STRING_ID_AGE_NAME, DOC_B_JSON);
 
-      DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .postFindOne(
               """
                           {
@@ -137,7 +137,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                               """;
       insertOneInTable(TABLE_NAME, DOC_B_JSON);
 
-      DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_NAME)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_NAME)
           .postFindOne(
               """
               {
@@ -189,7 +189,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                                   """;
       insertOneInTable(TABLE_NAME, DOC_B_JSON);
 
-      DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_NAME)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_NAME)
           .postFindOne(
               """
                                           {
@@ -223,7 +223,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
               .formatted(STRING_UTF8_WITH_2BYTE_CHAR, STRING_UTF8_WITH_3BYTE_CHAR);
       insertOneInTable(TABLE_WITH_TEXT_COLUMNS, DOC_JSON);
 
-      DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_WITH_TEXT_COLUMNS)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_TEXT_COLUMNS)
           .postFindOne("{ \"filter\": { \"idText\": \"abc\" } }")
           .hasNoErrors()
           .hasJSONField("data.document", DOC_JSON);
@@ -240,7 +240,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                 }
                 """
               .formatted(STRING_UTF8_WITH_2BYTE_CHAR);
-      DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_WITH_TEXT_COLUMNS)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_TEXT_COLUMNS)
           .postInsertOne(DOC_JSON)
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
@@ -255,7 +255,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     @Test
     @Order(1)
     public void failOnUnknownColumn() {
-      DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .postFindOne(
               """
                           {
@@ -273,7 +273,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     @Test
     @Order(2)
     public void failOnNonKeyColumn() {
-      DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .postFindOne(
               """
               {
