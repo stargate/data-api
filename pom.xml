@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.16-SNAPSHOT</version>
+  <version>1.0.17-SNAPSHOT</version>
   <properties>
     <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->
     <!-- 16-Aug-2024, tatu: Quarkus depends on 2.17 already, but keep explicit -->
@@ -50,9 +50,6 @@
     <skipUnitTests>${skipTests}</skipUnitTests>
     <surefire-plugin.version>3.3.0</surefire-plugin.version>
     <skipITs>false</skipITs>
-
-
-
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -210,7 +207,6 @@
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jdk8</artifactId>
     </dependency>
-
     <!-- Dependencies for _id auto-generation -->
     <dependency>
       <!-- for generating UUIDs of versions not supported by JDK -->
