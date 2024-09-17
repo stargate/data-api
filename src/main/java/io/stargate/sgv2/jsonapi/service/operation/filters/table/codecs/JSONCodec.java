@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
@@ -172,6 +173,12 @@ public record JSONCodec<JavaT, CqlT>(
      * will throw an {@link ToCQLCodecException}
      */
     static String safeAscii(DataType targetTextType, String value) throws ToCQLCodecException {
+      // Not sure if this is strictly needed, but for now assert that the target type is ASCII
+      Preconditions.checkArgument(
+          targetTextType == DataTypes.ASCII,
+          "Should only be called for type DataTypes.ASCII, was called on %s",
+          targetTextType);
+
       for (int i = 0, len = value.length(); i < len; ++i) {
         /* Check if the character is ASCII: internally Unicode characters in Java are 16-bit
          * UCS-2 (similar to UTF-16) encoded, so only characters in the range 0x0000 to 0x007F are ASCII characters.
