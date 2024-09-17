@@ -48,8 +48,8 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
         .body("status.ok", is(1));
   }
 
-  protected void insertOneInTable(String tableName, String documentJSON) {
-    DataApiCommandSenders.assertTableCommand(keyspaceName, tableName)
+  protected DataApiResponseValidator insertOneInTable(String tableName, String documentJSON) {
+    return DataApiCommandSenders.assertTableCommand(keyspaceName, tableName)
         .postInsertOne(documentJSON)
         .hasNoErrors()
         .body("status.insertedIds", hasSize(1));

@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBase {
   static final String TABLE_WITH_STRING_ID_AGE_NAME = "findOneSingleStringKeyTable";
+  static final String TABLE_WITH_TEXT_COLUMNS = "findOneTextColumnsTable";
 
   @BeforeAll
   public final void createDefaultTables() {
@@ -31,6 +33,16 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
             "name",
             Map.of("type", "text")),
         "id");
+    createTableWithColumns(
+        TABLE_WITH_TEXT_COLUMNS,
+        Map.of(
+            "idText",
+            Map.of("type", "text"),
+            "asciiText",
+            Map.of("type", "ascii"),
+            "varcharText",
+            Map.of("type", "text")),
+        "idText");
   }
 
   // On-empty tests to be run before ones that populate tables
@@ -193,6 +205,52 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
 
   @Nested
   @Order(3)
+  @TestClassOrder(ClassOrderer.OrderAnnotation.class)
+  class FindOneTextColumns {
+    public final String STRING_UTF8_WITH_2BYTE_CHAR = "utf8-2-byte-\u00a2"; // cent symbol
+    public final String STRING_UTF8_WITH_3BYTE_CHAR = "utf8-3-byte-\u20ac"; // euro symbol
+
+    @Test
+    void insertWithTextColumnsAndFind() {
+      final String DOC_JSON =
+              """
+                                  {
+                                      "idText": "abc",
+                                      "asciiText": "safe value",
+                                      "varcharText": "%s/%s"
+                                  }
+                                  """
+              .formatted(STRING_UTF8_WITH_2BYTE_CHAR, STRING_UTF8_WITH_3BYTE_CHAR);
+      insertOneInTable(TABLE_WITH_TEXT_COLUMNS, DOC_JSON);
+
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_TEXT_COLUMNS)
+          .postFindOne("{ \"filter\": { \"idText\": \"abc\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", DOC_JSON);
+    }
+
+    @Test
+    void failTryingToInsertNonAscii() {
+      final String DOC_JSON =
+              """
+                {
+                    "idText": "def",
+                    "asciiText": "%s",
+                    "varcharText": "safe value"
+                }
+                """
+              .formatted(STRING_UTF8_WITH_2BYTE_CHAR);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_TEXT_COLUMNS)
+          .postInsertOne(DOC_JSON)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "String contains non-ASCII character");
+    }
+  }
+
+  @Nested
+  @Order(4)
   class FindOneFail {
     @Test
     @Order(1)

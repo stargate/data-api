@@ -38,6 +38,17 @@ public class JSONCodecRegistryTestData {
 
   public final BigDecimal NOT_EXACT_AS_INTEGER = new BigDecimal("1.25");
 
+  public final String STRING_ASCII_SAFE = "ascii-safe-string";
+
+  public final String STRING_WITH_2BYTE_UTF8_CHAR = "text-with-2-byte-utf8-\u00a2"; // cent symbol
+
+  public final String STRING_WITH_3BYTE_UTF8_CHAR = "text-with-3-byte-utf8-\u20ac"; // euro symbol
+
+  // 4 byte / 2 UCS-2 char Unicode Surrogate Pair characters (see
+  // https://codepoints.net/U+10437?lang=en)
+  public final String STRING_WITH_4BYTE_SURROGATE_CHAR =
+      "text-with-4-byte-surrogate-\uD801\uDC37"; // Deseret
+
   /**
    * Returns a mocked {@link TableMetadata} that has a column of the specified type.
    *
