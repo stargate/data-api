@@ -316,6 +316,24 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>au.com.acegi</groupId>
+        <artifactId>xml-format-maven-plugin</artifactId>
+        <version>3.2.2</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>xml-check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <excludes>
+            <exclude>.idea/**</exclude>
+            <exclude>**/target/**</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>io.smallrye</groupId>
         <artifactId>jandex-maven-plugin</artifactId>
         <version>3.1.6</version>
