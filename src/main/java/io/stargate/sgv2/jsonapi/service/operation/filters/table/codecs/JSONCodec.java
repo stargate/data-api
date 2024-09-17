@@ -173,6 +173,12 @@ public record JSONCodec<JavaT, CqlT>(
      */
     static String safeAscii(DataType targetTextType, String value) throws ToCQLCodecException {
       for (int i = 0, len = value.length(); i < len; ++i) {
+        /* Check if the character is ASCII: internally Unicode characters in Java are 16-bit
+         * UCS-2 (similar to UTF-16) encoded, so only characters in the range 0x0000 to 0x007F are ASCII characters.
+         * This is not only true for "regular" (Basic-Multilingual Plane, BMP) characters, but also for
+         * Unicode surrogate pairs, which are used to encode characters outside the BMP. In latter
+         * case chars are in range above 0xD400, never confused with ASCII characters.
+         */
         if (value.charAt(i) > 0x7F) {
           throw new ToCQLCodecException(
               value,
