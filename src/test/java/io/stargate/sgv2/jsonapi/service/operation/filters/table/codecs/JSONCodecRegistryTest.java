@@ -122,12 +122,12 @@ public class JSONCodecRegistryTest {
         Arguments.of(DataTypes.TEXT, TEST_DATA.STRING_ASCII_SAFE, TEST_DATA.STRING_ASCII_SAFE),
         Arguments.of(
             DataTypes.TEXT,
-            TEST_DATA.STRING_UTF8_WITH_2BYTE_CHAR,
-            TEST_DATA.STRING_UTF8_WITH_2BYTE_CHAR),
+            TEST_DATA.STRING_WITH_2BYTE_UTF8_CHAR,
+            TEST_DATA.STRING_WITH_2BYTE_UTF8_CHAR),
         Arguments.of(
             DataTypes.TEXT,
-            TEST_DATA.STRING_UTF8_WITH_3BYTE_CHAR,
-            TEST_DATA.STRING_UTF8_WITH_3BYTE_CHAR));
+            TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR,
+            TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR));
   }
 
   @Test
@@ -318,7 +318,8 @@ public class JSONCodecRegistryTest {
 
   private static Stream<Arguments> nonAsciiValueFailTestCases() {
     return Stream.of(
-        Arguments.of(TEST_DATA.STRING_UTF8_WITH_2BYTE_CHAR),
-        Arguments.of(TEST_DATA.STRING_UTF8_WITH_3BYTE_CHAR));
+        Arguments.of(TEST_DATA.STRING_WITH_2BYTE_UTF8_CHAR),
+        Arguments.of(TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR),
+        Arguments.of(TEST_DATA.STRING_WITH_4BYTE_SURROGATE_CHAR));
   }
 }
