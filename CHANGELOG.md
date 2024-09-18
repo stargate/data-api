@@ -2,11 +2,80 @@
 
 ## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
 
-[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.15...HEAD)
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.16...HEAD)
 
 **Closed issues:**
 
+- Data API, JsonCodec testing: textual values \(ascii, text, varchar\) [\#1364](https://github.com/stargate/data-api/issues/1364)
+
+## [v1.0.16](https://github.com/stargate/data-api/tree/v1.0.16) (2024-09-17)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.15...v1.0.16)
+
+**Closed issues:**
+
+- Error object V2 templates failing to load in IT's  [\#1421](https://github.com/stargate/data-api/issues/1421)
+- Simplify the NamedValueContainers  [\#1411](https://github.com/stargate/data-api/issues/1411)
+- remove the WritableDocRow interface [\#1410](https://github.com/stargate/data-api/issues/1410)
+- Move or Delete AwsBedrockVectorSearchIntegrationTest [\#1399](https://github.com/stargate/data-api/issues/1399)
+- createTable command with `\_id` errors out [\#1396](https://github.com/stargate/data-api/issues/1396)
+- Data API filter refactor, logicalExpression [\#1389](https://github.com/stargate/data-api/issues/1389)
+- Exceptions from Database \(via CQL Driver\) incorrectly mapped to HTTP 500, should be 504 \(or 502\) [\#1383](https://github.com/stargate/data-api/issues/1383)
+- Data API/JsonCodec: floating-point \(FP\) numeric values \(`decimal`, `double`, `float`\), testing, impl [\#1366](https://github.com/stargate/data-api/issues/1366)
+- Data API, JsonCodec testing: integral numeric values \(`bigint`, `smallint`, `int`, `tinyint`, `varint`\) [\#1365](https://github.com/stargate/data-api/issues/1365)
+- Change `ObjectMapperConfiguration` to allow static access, not just injection [\#1361](https://github.com/stargate/data-api/issues/1361)
+- Not able to filter by \_id with tables [\#1357](https://github.com/stargate/data-api/issues/1357)
+- Do not expose table commands in swaggerUI before the feature goes public [\#1353](https://github.com/stargate/data-api/issues/1353)
+- Not able to use column names with upper-case letters, special characters [\#1349](https://github.com/stargate/data-api/issues/1349)
+- Upgrade Jackson to 2.17\(.2\) \(from 2.16\(.2\)\) to align with Quarkus [\#1343](https://github.com/stargate/data-api/issues/1343)
+- Remove use of `io.stargate:sgv2-api-parent` parent pom by Data API [\#1341](https://github.com/stargate/data-api/issues/1341)
+- Update to DSE 6.9.1 [\#1336](https://github.com/stargate/data-api/issues/1336)
+- Refactor feature flags to use combination of Quarkus config and per-request overrides [\#1335](https://github.com/stargate/data-api/issues/1335)
 - Should be able to use column names like `\_id` with API Tables too [\#1334](https://github.com/stargate/data-api/issues/1334)
+- Refactor traverseForNot and flip in the API tier  [\#1319](https://github.com/stargate/data-api/issues/1319)
+
+**Merged pull requests:**
+
+- clean up namespace terminology for spec and test files, convert to keyspace [\#1426](https://github.com/stargate/data-api/pull/1426) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- fixes \#1421 - improved error template loading [\#1422](https://github.com/stargate/data-api/pull/1422) ([amorton](https://github.com/amorton))
+- Fix \#1364: add tests, fixes to text value codecs \(to CQL\) [\#1419](https://github.com/stargate/data-api/pull/1419) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- simplify the NamedValueContainers structure [\#1414](https://github.com/stargate/data-api/pull/1414) ([amorton](https://github.com/amorton))
+- Remove no longer used WritableDocRow Fixes \#1410 [\#1413](https://github.com/stargate/data-api/pull/1413) ([amorton](https://github.com/amorton))
+- Add publicCommandName for command interface, add PublicCommandName enum [\#1408](https://github.com/stargate/data-api/pull/1408) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Minor refactoring: hide type, name fields of SchemaObject [\#1405](https://github.com/stargate/data-api/pull/1405) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Remove AWS bedrock IT test [\#1402](https://github.com/stargate/data-api/pull/1402) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Add test for \#1396: allow use of columns with "quotable" names \(like "\_id"\) for tables [\#1401](https://github.com/stargate/data-api/pull/1401) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bump peter-evans/create-pull-request from 6 to 7 in the github-actions group [\#1398](https://github.com/stargate/data-api/pull/1398) ([dependabot[bot]](https://github.com/apps/dependabot))
+- deprecate namespace, convert to keyspace [\#1397](https://github.com/stargate/data-api/pull/1397) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1366: add missing CQL FP number type conversions, unit tests [\#1395](https://github.com/stargate/data-api/pull/1395) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Move the Error Object V2 code from "playing" package to exceptions [\#1392](https://github.com/stargate/data-api/pull/1392) ([amorton](https://github.com/amorton))
+- DriverExceptionHandler and APIException Improvements [\#1391](https://github.com/stargate/data-api/pull/1391) ([amorton](https://github.com/amorton))
+- Fix \#1335: add general-purpose Feature flag system [\#1390](https://github.com/stargate/data-api/pull/1390) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Refactor filter path, remove LogicalExpression from DB operation level. [\#1388](https://github.com/stargate/data-api/pull/1388) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- insertOne with validation  [\#1387](https://github.com/stargate/data-api/pull/1387) ([amorton](https://github.com/amorton))
+- Fix \#1383: map most recognized SERVER\_ errors to 504 or 502, leave 500 for unrecognized [\#1384](https://github.com/stargate/data-api/pull/1384) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix a minor flaw in logging non-JsonApiException logging by CommandProcessor \(missing stack trace\) [\#1382](https://github.com/stargate/data-api/pull/1382) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix problem with ErrorCode initialization wrt config access [\#1380](https://github.com/stargate/data-api/pull/1380) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Error object v2 [\#1371](https://github.com/stargate/data-api/pull/1371) ([amorton](https://github.com/amorton))
+- Fixes \#1365: add integral number codecs, tests [\#1367](https://github.com/stargate/data-api/pull/1367) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+-  Starting tests for JSONCodecRegistry [\#1363](https://github.com/stargate/data-api/pull/1363) ([amorton](https://github.com/amorton))
+- hide table feature in swaggerUI before it goes public [\#1360](https://github.com/stargate/data-api/pull/1360) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix `findOne`/`find` wrt `\_id` column \(actually all filterables\) [\#1359](https://github.com/stargate/data-api/pull/1359) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add invertForTableCommand override for table path [\#1356](https://github.com/stargate/data-api/pull/1356) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1349: support "non-standard" column names [\#1355](https://github.com/stargate/data-api/pull/1355) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Rename Java package for API Tables ITs \(to conform to Java package naming convention\) [\#1354](https://github.com/stargate/data-api/pull/1354) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Update `help` text for OpenAI and huggingfaceDedicated [\#1352](https://github.com/stargate/data-api/pull/1352) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- remove stargate parent pom [\#1351](https://github.com/stargate/data-api/pull/1351) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- update Data API to DSE 6.9.1 [\#1350](https://github.com/stargate/data-api/pull/1350) ([jeffreyscarpenter](https://github.com/jeffreyscarpenter))
+- Fix CreateTableOperation identifier issue, add several table ITs. [\#1348](https://github.com/stargate/data-api/pull/1348) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Reintroduce not operator refactor [\#1347](https://github.com/stargate/data-api/pull/1347) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Revert "init" [\#1345](https://github.com/stargate/data-api/pull/1345) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fixes \#1343: Upgrade Jackson to 2.17\(.2\) from 2.16\(.2\) [\#1344](https://github.com/stargate/data-api/pull/1344) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Second part of Quarkus 3.13 upgrade: convert ITs to use @WithTestResource [\#1342](https://github.com/stargate/data-api/pull/1342) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix find command limit option for tables [\#1340](https://github.com/stargate/data-api/pull/1340) ([maheshrajamani](https://github.com/maheshrajamani))
+- Bumping version for next data-api release [\#1339](https://github.com/stargate/data-api/pull/1339) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Added support for addIndex and dropIndex commands [\#1322](https://github.com/stargate/data-api/pull/1322) ([maheshrajamani](https://github.com/maheshrajamani))
+- Update Data API to the latest Quarkus \(3.13.2\) [\#1253](https://github.com/stargate/data-api/pull/1253) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 
 ## [v1.0.15](https://github.com/stargate/data-api/tree/v1.0.15) (2024-08-14)
 
