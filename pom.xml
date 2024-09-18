@@ -50,9 +50,6 @@
     <skipUnitTests>${skipTests}</skipUnitTests>
     <surefire-plugin.version>3.3.0</surefire-plugin.version>
     <skipITs>false</skipITs>
-
-
-
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -210,7 +207,6 @@
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jdk8</artifactId>
     </dependency>
-
     <!-- Dependencies for _id auto-generation -->
     <dependency>
       <!-- for generating UUIDs of versions not supported by JDK -->
@@ -314,6 +310,24 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>au.com.acegi</groupId>
+        <artifactId>xml-format-maven-plugin</artifactId>
+        <version>3.2.2</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>xml-check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <excludes>
+            <exclude>.idea/**</exclude>
+            <exclude>**/target/**</exclude>
+          </excludes>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>io.smallrye</groupId>
