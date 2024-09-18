@@ -20,6 +20,7 @@ import org.junit.jupiter.api.TestClassOrder;
 public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBase {
   static final String TABLE_WITH_STRING_ID_AGE_NAME = "findOneSingleStringKeyTable";
   static final String TABLE_WITH_TEXT_COLUMNS = "findOneTextColumnsTable";
+  static final String TABLE_WITH_INT_COLUMNS = "findOneIntColumnsTable";
 
   @BeforeAll
   public final void createDefaultTables() {
@@ -43,6 +44,22 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
             "varcharText",
             Map.of("type", "text")),
         "idText");
+    createTableWithColumns(
+        TABLE_WITH_INT_COLUMNS,
+        Map.of(
+            "id",
+            Map.of("type", "text"),
+            "intValue",
+            Map.of("type", "int"),
+            "longValue",
+            Map.of("type", "bigint"),
+            "shortValue",
+            Map.of("type", "smallint"),
+            "byteValue",
+            Map.of("type", "tinyint"),
+            "bigIntegerValue",
+            Map.of("type", "varint")),
+        "id");
   }
 
   // On-empty tests to be run before ones that populate tables
@@ -205,7 +222,6 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
 
   @Nested
   @Order(3)
-  @TestClassOrder(ClassOrderer.OrderAnnotation.class)
   class FindOneTextColumns {
     public final String STRING_UTF8_WITH_2BYTE_CHAR = "utf8-2-byte-\u00a2"; // cent symbol
     public final String STRING_UTF8_WITH_3BYTE_CHAR = "utf8-3-byte-\u20ac"; // euro symbol
@@ -251,6 +267,60 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
 
   @Nested
   @Order(4)
+  class FindOneIntColumns {
+    // [data-api#1429]: Test to verify that all-zero fractional parts are ok for int types
+    @Test
+    void insertWithIntColumnsZeroFractional() {
+      // In goes 5.00, out comes 5:
+      insertOneInTable(TABLE_WITH_INT_COLUMNS, numDoc("zero-fraction", "5.00"));
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"zero-fraction\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", numDoc("zero-fraction", "5"));
+    }
+
+    // [data-api#1429]: Test to verify that scientific is allowed for int types if  (and only if)
+    // the fractional part is zero
+    @Test
+    void insertWithIntColumnsScientificNotation() {
+      // In goes 1.23E+02, out comes 123:
+      insertOneInTable(TABLE_WITH_INT_COLUMNS, numDoc("scientific-but-int", "1.23E+02"));
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"scientific-but-int\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", numDoc("scientific-but-int", "123"));
+    }
+
+    // [data-api#1429]: Test to verify that should there be real fraction, insert fails
+    @Test
+    void failWithNonZeroFractionPlain() {
+      // Try with 12.5, should fail
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
+          .postInsertOne(numDoc("non-zero-fraction", "12.5"))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Root cause: Rounding necessary");
+    }
+
+    private String numDoc(String id, String num) {
+      return
+          """
+                                  {
+                                      "id": "%s",
+                                      "byteValue": %s,
+                                      "shortValue": %s,
+                                      "intValue": %s,
+                                      "longValue": %s,
+                                      "bigIntegerValue": %s
+                                  }
+                                  """
+          .formatted(id, num, num, num, num, num);
+    }
+  }
+
+  @Nested
+  @Order(5)
   class FindOneFail {
     @Test
     @Order(1)
