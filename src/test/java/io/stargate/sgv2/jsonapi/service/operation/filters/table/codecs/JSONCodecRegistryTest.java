@@ -106,7 +106,7 @@ public class JSONCodecRegistryTest {
         Arguments.of(
             DataTypes.VARINT, BigDecimal.valueOf(123456789.0), BigInteger.valueOf(123456789)),
 
-        // Floating-point types:
+        // Floating-point types: regular
         Arguments.of(DataTypes.DECIMAL, 123L, BigDecimal.valueOf(123L)),
         Arguments.of(DataTypes.DECIMAL, BigInteger.valueOf(34567L), BigDecimal.valueOf(34567L)),
         Arguments.of(DataTypes.DECIMAL, BigDecimal.valueOf(0.25), BigDecimal.valueOf(0.25)),
@@ -116,6 +116,13 @@ public class JSONCodecRegistryTest {
         Arguments.of(DataTypes.FLOAT, 123L, Float.valueOf(123L)),
         Arguments.of(DataTypes.FLOAT, BigInteger.valueOf(34567L), Float.valueOf(34567L)),
         Arguments.of(DataTypes.FLOAT, BigDecimal.valueOf(0.25), Float.valueOf(0.25f)),
+        // Floating-point types: not-a-numbers
+        Arguments.of(DataTypes.DOUBLE, "NaN", Double.NaN),
+        Arguments.of(DataTypes.DOUBLE, "Infinity", Double.POSITIVE_INFINITY),
+        Arguments.of(DataTypes.DOUBLE, "-Infinity", Double.NEGATIVE_INFINITY),
+        Arguments.of(DataTypes.FLOAT, "NaN", Float.NaN),
+        Arguments.of(DataTypes.FLOAT, "Infinity", Float.POSITIVE_INFINITY),
+        Arguments.of(DataTypes.FLOAT, "-Infinity", Float.NEGATIVE_INFINITY),
 
         // Textual types: ASCII, TEXT (VARCHAR is an alias for TEXT).
         Arguments.of(DataTypes.ASCII, TEST_DATA.STRING_ASCII_SAFE, TEST_DATA.STRING_ASCII_SAFE),

@@ -35,9 +35,11 @@ public abstract class JSONCodecRegistries {
               JSONCodecs.DOUBLE_FROM_BIG_DECIMAL,
               JSONCodecs.DOUBLE_FROM_BIG_INTEGER,
               JSONCodecs.DOUBLE_FROM_LONG,
+              JSONCodecs.DOUBLE_FROM_STRING,
               JSONCodecs.FLOAT_FROM_BIG_DECIMAL,
               JSONCodecs.FLOAT_FROM_BIG_INTEGER,
               JSONCodecs.FLOAT_FROM_LONG,
+              JSONCodecs.FLOAT_FROM_STRING,
               // Text Codecs
               JSONCodecs.ASCII,
               JSONCodecs.TEXT,

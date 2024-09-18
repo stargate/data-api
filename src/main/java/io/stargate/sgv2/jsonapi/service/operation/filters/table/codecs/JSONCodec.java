@@ -257,6 +257,33 @@ public record JSONCodec<JavaT, CqlT>(
       throw new ArithmeticException(
           String.format("Underflow, value too small for %s", targetCQLType));
     }
+
+    static Double doubleFromString(DataType targetCQLType, String value)
+        throws ToCQLCodecException {
+      return switch (value) {
+        case "NaN" -> Double.NaN;
+        case "Infinity" -> Double.POSITIVE_INFINITY;
+        case "-Infinity" -> Double.NEGATIVE_INFINITY;
+        default ->
+            throw new ToCQLCodecException(
+                value,
+                targetCQLType,
+                "Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
+      };
+    }
+
+    static Float floatFromString(DataType targetCQLType, String value) throws ToCQLCodecException {
+      return switch (value) {
+        case "NaN" -> Float.NaN;
+        case "Infinity" -> Float.POSITIVE_INFINITY;
+        case "-Infinity" -> Float.NEGATIVE_INFINITY;
+        default ->
+            throw new ToCQLCodecException(
+                value,
+                targetCQLType,
+                "Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
+      };
+    }
   }
 
   /**
