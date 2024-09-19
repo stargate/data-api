@@ -11,28 +11,25 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.OrderedApiColumnDefContain
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
-import java.util.Objects;
 import java.util.Optional;
 
-public class TableInsertAttempt implements InsertAttempt {
+public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
 
-  private final TableSchemaObject tableSchemaObject;
-  private final int position;
   private final RowId rowId;
   private final WriteableTableRow row;
-  private Throwable failure;
 
   TableInsertAttempt(
       TableSchemaObject tableSchemaObject, int position, RowId rowId, WriteableTableRow row) {
-    this.tableSchemaObject =
-        Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
-    this.position = position;
+    super(position, tableSchemaObject);
+
     this.rowId = rowId;
     this.row = row;
+    setStatus(OperationStatus.READY);
   }
 
-  public TableInsertValuesCQLClause getInsertValuesCQLClause() {
-    return new TableInsertValuesCQLClause(tableSchemaObject, row);
+  @Override
+  protected TableInsertValuesCQLClause getInsertValuesCQLClause() {
+    return new TableInsertValuesCQLClause(schemaObject, row);
   }
 
   public Optional<WriteableTableRow> row() {
@@ -40,26 +37,8 @@ public class TableInsertAttempt implements InsertAttempt {
   }
 
   @Override
-  public int position() {
-    return position;
-  }
-
-  @Override
   public Optional<DocRowIdentifer> docRowID() {
     return Optional.ofNullable(rowId);
-  }
-
-  @Override
-  public Optional<Throwable> failure() {
-    return Optional.ofNullable(failure);
-  }
-
-  @Override
-  public InsertAttempt maybeAddFailure(Throwable failure) {
-    if (this.failure == null) {
-      this.failure = failure;
-    }
-    return this;
   }
 
   /**

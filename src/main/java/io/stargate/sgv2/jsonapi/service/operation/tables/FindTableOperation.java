@@ -61,8 +61,8 @@ public class FindTableOperation extends TableReadOperation {
     // Start the select
     SelectFrom selectFrom =
         selectFrom(
-            commandContext.schemaObject().tableMetadata.getKeyspace(),
-            commandContext.schemaObject().tableMetadata.getName());
+            commandContext.schemaObject().tableMetadata().getKeyspace(),
+            commandContext.schemaObject().tableMetadata().getName());
 
     // Add the columns we want to select
     Select select = selectCQLClause.apply(selectFrom);

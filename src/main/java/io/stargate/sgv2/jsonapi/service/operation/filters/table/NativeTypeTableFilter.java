@@ -108,7 +108,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
     try {
       var codec =
           JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(
-              tableSchemaObject.tableMetadata, getPathAsCqlIdentifier(), columnValue);
+              tableSchemaObject.tableMetadata(), getPathAsCqlIdentifier(), columnValue);
       positionalValues.add(codec.toCQL(columnValue));
     } catch (UnknownColumnException e) {
       throw ErrorCodeV1.TABLE_COLUMN_UNKNOWN.toApiException(e.getMessage());
