@@ -178,15 +178,93 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .hasJSONField("data.document", docJSON);
     }
 
-    // [data-api#1428]: Test to verify Not-a-Number handling
+    // [data-api#1428]: Test to verify Not-a-Number handling, NaN
     @Test
-    void insertWithNaNsOk() {
-      final String docJSON = fpDoc("nans", "\"NaN\"", "\"NaN\"", "0.5");
+    void insertWithNaNOk() {
+      // First check Float
+      String docJSON = fpDoc("floatNan", "\"NaN\"", "0.25", "0.5");
       insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
       DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
-          .postFindOne("{ \"filter\": { \"id\": \"nans\" } }")
+          .postFindOne("{ \"filter\": { \"id\": \"floatNan\" } }")
           .hasNoErrors()
           .hasJSONField("data.document", docJSON);
+
+      // Then double
+      docJSON = fpDoc("doubleNan", "-2.5", "\"NaN\"", "0.5");
+      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"doubleNan\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    // [data-api#1428]: Test to verify Not-a-Number handling, (positive) Infinity
+    @Test
+    void insertWithPositiveInfOk() {
+      // First check Float
+      String docJSON = fpDoc("floatInf", "\"Infinity\"", "0.25", "0.5");
+      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"floatInf\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+
+      // Then double
+      docJSON = fpDoc("doubleInf", "-2.5", "\"Infinity\"", "0.5");
+      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"doubleInf\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    // [data-api#1428]: Test to verify Not-a-Number handling, Negative Infinity
+    @Test
+    void insertWithNegativeInfOk() {
+      // First check Float
+      String docJSON = fpDoc("floatNegInf", "\"-Infinity\"", "0.25", "0.5");
+      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"floatNegInf\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+
+      // Then double
+      docJSON = fpDoc("doubleNegInf", "-2.5", "\"-Infinity\"", "0.5");
+      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"doubleNegInf\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    @Test
+    void failWithUnrecognizedString() {
+      // First float
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postInsertOne(fpDoc("floatUnknownString", "\"Bazillion\"", "1.0", "0.5"))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              " value \"Bazillion\"",
+              "Root cause: Unsupported String value: only");
+      // Then double
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postInsertOne(fpDoc("doubleUnknownString", "\"Bazillion\"", "1.0", "0.5"))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              " value \"Bazillion\"",
+              "Root cause: Unsupported String value: only");
+
+      // And finally BigDecimal: different error message because no String values accepted
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postInsertOne(fpDoc("decimalUnknownString", "0.5", "1.0", "\"Bazillion\""))
+          .hasSingleApiError(
+              DocumentException.Code.UNSUPPORTED_COLUMN_TYPES,
+              DocumentException.class,
+              "following columns that have unsupported data types",
+              "\"decimalValue\"");
     }
 
     private String fpDoc(String id, String floatValue, String doubleValue, String bigDecValue) {
