@@ -61,9 +61,18 @@ public class DataApiResponseValidator {
         .body("errors[0].errorCode", is(errorCode.toString()));
   }
 
+  /**
+   * @param errorCode Error code to check for
+   * @param errorClass Error class to check for
+   * @param messageSnippet Set of pieces of error message to check: ALL must match
+   */
   public <T extends APIException> DataApiResponseValidator hasSingleApiError(
-      ErrorCode<T> errorCode, Class<T> errorClass, String messageSnippet) {
-    return hasSingleApiError(errorCode, errorClass, containsString(messageSnippet));
+      ErrorCode<T> errorCode, Class<T> errorClass, String... messageSnippet) {
+    DataApiResponseValidator validator = hasSingleApiError(errorCode, errorClass);
+    for (String snippet : messageSnippet) {
+      validator = validator.body("errors[0].message", containsString(snippet));
+    }
+    return validator;
   }
 
   public <T extends APIException> DataApiResponseValidator hasSingleApiError(

@@ -91,6 +91,14 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.safeNumber(Long::doubleValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
+  // Codec needed to support "not-a-number" values: encoded as Strings in JSON
+  public static final JSONCodec<String, Double> DOUBLE_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.DOUBLE,
+          JSONCodec.ToCQL::doubleFromString,
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
   public static final JSONCodec<BigDecimal, Float> FLOAT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
@@ -113,6 +121,14 @@ public abstract class JSONCodecs {
           // TODO: bounds checks (over/underflow)?
           DataTypes.FLOAT,
           JSONCodec.ToCQL.safeNumber(Long::floatValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  // Codec needed to support "not-a-number" values: encoded as Strings in JSON
+  public static final JSONCodec<String, Float> FLOAT_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.FLOAT,
+          JSONCodec.ToCQL::floatFromString,
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, Integer> INT_FROM_BIG_DECIMAL =

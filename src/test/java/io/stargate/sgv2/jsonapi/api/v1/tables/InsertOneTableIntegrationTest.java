@@ -19,6 +19,7 @@ import org.junit.jupiter.api.TestClassOrder;
 public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestBase {
   static final String TABLE_WITH_TEXT_COLUMNS = "findOneTextColumnsTable";
   static final String TABLE_WITH_INT_COLUMNS = "findOneIntColumnsTable";
+  static final String TABLE_WITH_FP_COLUMNS = "findOneFpColumnsTable";
 
   @BeforeAll
   public final void createDefaultTables() {
@@ -47,6 +48,18 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
             Map.of("type", "tinyint"),
             "bigIntegerValue",
             Map.of("type", "varint")),
+        "id");
+    createTableWithColumns(
+        TABLE_WITH_FP_COLUMNS,
+        Map.of(
+            "id",
+            Map.of("type", "text"),
+            "floatValue",
+            Map.of("type", "float"),
+            "doubleValue",
+            Map.of("type", "double"),
+            "decimalValue",
+            Map.of("type", "decimal")),
         "id");
   }
 
@@ -103,12 +116,12 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     @Test
     void insertWithIntColumnsZeroFractional() {
       // In goes 5.00
-      insertOneInTable(TABLE_WITH_INT_COLUMNS, numDoc("zero-fraction", "5.00"));
+      insertOneInTable(TABLE_WITH_INT_COLUMNS, intDoc("zero-fraction", "5.00"));
       // and out comes 5
       DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"zero-fraction\" } }")
           .hasNoErrors()
-          .hasJSONField("data.document", numDoc("zero-fraction", "5"));
+          .hasJSONField("data.document", intDoc("zero-fraction", "5"));
     }
 
     // [data-api#1429]: Test to verify that scientific is allowed for int types if  (and only if)
@@ -116,12 +129,12 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     @Test
     void insertWithIntColumnsScientificNotation() {
       // In goes 1.23E+02
-      insertOneInTable(TABLE_WITH_INT_COLUMNS, numDoc("scientific-but-int", "1.23E+02"));
+      insertOneInTable(TABLE_WITH_INT_COLUMNS, intDoc("scientific-but-int", "1.23E+02"));
       // and out comes 123
       DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
           .postFindOne("{ \"filter\": { \"id\": \"scientific-but-int\" } }")
           .hasNoErrors()
-          .hasJSONField("data.document", numDoc("scientific-but-int", "123"));
+          .hasJSONField("data.document", intDoc("scientific-but-int", "123"));
     }
 
     // [data-api#1429]: Test to verify that should there be real fraction, insert fails
@@ -129,14 +142,14 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     void failWithNonZeroFractionPlain() {
       // Try with 12.5, should fail
       DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INT_COLUMNS)
-          .postInsertOne(numDoc("non-zero-fraction", "12.5"))
+          .postInsertOne(intDoc("non-zero-fraction", "12.5"))
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
               "Root cause: Rounding necessary");
     }
 
-    private String numDoc(String id, String num) {
+    private String intDoc(String id, String num) {
       return
           """
                                             {
@@ -149,6 +162,122 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                             }
                                             """
           .formatted(id, num, num, num, num, num);
+    }
+  }
+
+  @Nested
+  @Order(3)
+  class InsertFPColumns {
+    @Test
+    void insertWithPlainFPValues() {
+      final String docJSON = fpDoc("fpRegular", "0.25", "-2.5", "0.75");
+      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"fpRegular\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    // [data-api#1428]: Test to verify Not-a-Number handling, NaN
+    @Test
+    void insertWithNaNOk() {
+      // First check Float
+      String docJSON = fpDoc("floatNan", "\"NaN\"", "0.25", "0.5");
+      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"floatNan\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+
+      // Then double
+      docJSON = fpDoc("doubleNan", "-2.5", "\"NaN\"", "0.5");
+      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"doubleNan\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    // [data-api#1428]: Test to verify Not-a-Number handling, (positive) Infinity
+    @Test
+    void insertWithPositiveInfOk() {
+      // First check Float
+      String docJSON = fpDoc("floatInf", "\"Infinity\"", "0.25", "0.5");
+      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"floatInf\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+
+      // Then double
+      docJSON = fpDoc("doubleInf", "-2.5", "\"Infinity\"", "0.5");
+      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"doubleInf\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    // [data-api#1428]: Test to verify Not-a-Number handling, Negative Infinity
+    @Test
+    void insertWithNegativeInfOk() {
+      // First check Float
+      String docJSON = fpDoc("floatNegInf", "\"-Infinity\"", "0.25", "0.5");
+      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"floatNegInf\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+
+      // Then double
+      docJSON = fpDoc("doubleNegInf", "-2.5", "\"-Infinity\"", "0.5");
+      insertOneInTable(TABLE_WITH_FP_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"doubleNegInf\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    @Test
+    void failWithUnrecognizedString() {
+      // First float
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postInsertOne(fpDoc("floatUnknownString", "\"Bazillion\"", "1.0", "0.5"))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              " value \"Bazillion\"",
+              "Root cause: Unsupported String value: only");
+      // Then double
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postInsertOne(fpDoc("doubleUnknownString", "\"Bazillion\"", "1.0", "0.5"))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              " value \"Bazillion\"",
+              "Root cause: Unsupported String value: only");
+
+      // And finally BigDecimal: different error message because no String values accepted
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
+          .postInsertOne(fpDoc("decimalUnknownString", "0.5", "1.0", "\"Bazillion\""))
+          .hasSingleApiError(
+              DocumentException.Code.UNSUPPORTED_COLUMN_TYPES,
+              DocumentException.class,
+              "following columns that have unsupported data types",
+              "\"decimalValue\"");
+    }
+
+    private String fpDoc(String id, String floatValue, String doubleValue, String bigDecValue) {
+      return
+          """
+            {
+                "id": "%s",
+                "floatValue": %s,
+                "doubleValue": %s,
+                "decimalValue": %s
+            }
+            """
+          .formatted(id, floatValue, doubleValue, bigDecValue);
     }
   }
 }
