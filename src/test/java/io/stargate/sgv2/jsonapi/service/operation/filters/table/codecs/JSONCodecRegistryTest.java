@@ -64,9 +64,30 @@ public class JSONCodecRegistryTest {
    * @param expectedCqlValue The value we expect to pass to the CQL driver
    */
   @ParameterizedTest
-  @MethodSource("validCodecToCQLTestCases")
-  public void codecToCQL(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+  @MethodSource("validCodecToCQLTestCasesInt")
+  public void codecToCQLInts(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
 
+  @ParameterizedTest
+  @MethodSource("validCodecToCQLTestCasesFloat")
+  public void codecToCQLFloats(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToCQLTestCasesText")
+  public void codecToCQLText(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToCQLTestCasesOther")
+  public void codecToCQLOther(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    // _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
+
+  private void _codecToCQL(DataType cqlType, Object fromValue, Object expectedCqlValue) {
     var codec = assertGetCodecToCQL(cqlType, fromValue);
 
     var actualCqlValue =
@@ -84,7 +105,7 @@ public class JSONCodecRegistryTest {
         .isEqualTo(expectedCqlValue);
   }
 
-  private static Stream<Arguments> validCodecToCQLTestCases() {
+  private static Stream<Arguments> validCodecToCQLTestCasesInt() {
     // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
     // Note: all Numeric types accept 3 Java types: Long, BigInteger, BigDecimal
     return Stream.of(
@@ -104,9 +125,14 @@ public class JSONCodecRegistryTest {
         Arguments.of(DataTypes.VARINT, -39999L, BigInteger.valueOf(-39999)),
         Arguments.of(DataTypes.VARINT, BigInteger.valueOf(1), BigInteger.valueOf(1)),
         Arguments.of(
-            DataTypes.VARINT, BigDecimal.valueOf(123456789.0), BigInteger.valueOf(123456789)),
+            DataTypes.VARINT, BigDecimal.valueOf(123456789.0), BigInteger.valueOf(123456789)));
+  }
 
-        // Floating-point types: regular
+  private static Stream<Arguments> validCodecToCQLTestCasesFloat() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
+    // Note: all Numeric types accept 3 Java types: Long, BigInteger, BigDecimal; and
+    // 2 accept String as well (for Not-a-Numbers)
+    return Stream.of(
         Arguments.of(DataTypes.DECIMAL, 123L, BigDecimal.valueOf(123L)),
         Arguments.of(DataTypes.DECIMAL, BigInteger.valueOf(34567L), BigDecimal.valueOf(34567L)),
         Arguments.of(DataTypes.DECIMAL, BigDecimal.valueOf(0.25), BigDecimal.valueOf(0.25)),
@@ -122,9 +148,13 @@ public class JSONCodecRegistryTest {
         Arguments.of(DataTypes.DOUBLE, "-Infinity", Double.NEGATIVE_INFINITY),
         Arguments.of(DataTypes.FLOAT, "NaN", Float.NaN),
         Arguments.of(DataTypes.FLOAT, "Infinity", Float.POSITIVE_INFINITY),
-        Arguments.of(DataTypes.FLOAT, "-Infinity", Float.NEGATIVE_INFINITY),
+        Arguments.of(DataTypes.FLOAT, "-Infinity", Float.NEGATIVE_INFINITY));
+  }
 
-        // Textual types: ASCII, TEXT (VARCHAR is an alias for TEXT).
+  private static Stream<Arguments> validCodecToCQLTestCasesText() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
+    // Textual types: ASCII, TEXT (VARCHAR is an alias for TEXT).
+    return Stream.of(
         Arguments.of(DataTypes.ASCII, TEST_DATA.STRING_ASCII_SAFE, TEST_DATA.STRING_ASCII_SAFE),
         Arguments.of(DataTypes.TEXT, TEST_DATA.STRING_ASCII_SAFE, TEST_DATA.STRING_ASCII_SAFE),
         Arguments.of(
@@ -135,15 +165,17 @@ public class JSONCodecRegistryTest {
             DataTypes.TEXT,
             TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR,
             TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR));
+  }
 
-    // Binary: to be added when we have a codec for it
-    /*
-    Arguments.of(
-        DataTypes.BLOB,
-        TEST_DATA.BASE64_PADDED_DECODED,
-        TEST_DATA.BASE64_PADDED_ENCODED_BYTES)
-        )
-         */
+  private static Stream<Arguments> validCodecToCQLTestCasesOther() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
+    // Textual types: ASCII, TEXT (VARCHAR is an alias for TEXT).
+    return Stream.of(
+        // Binary: to be added when we have a codec for it
+        Arguments.of(
+            DataTypes.BLOB,
+            TEST_DATA.BASE64_PADDED_DECODED,
+            TEST_DATA.BASE64_PADDED_ENCODED_BYTES));
   }
 
   @Test
