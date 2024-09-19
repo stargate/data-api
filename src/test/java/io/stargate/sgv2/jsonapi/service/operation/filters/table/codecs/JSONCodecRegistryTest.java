@@ -135,6 +135,15 @@ public class JSONCodecRegistryTest {
             DataTypes.TEXT,
             TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR,
             TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR));
+
+    // Binary: to be added when we have a codec for it
+    /*
+    Arguments.of(
+        DataTypes.BLOB,
+        TEST_DATA.BASE64_PADDED_DECODED,
+        TEST_DATA.BASE64_PADDED_ENCODED_BYTES)
+        )
+         */
   }
 
   @Test

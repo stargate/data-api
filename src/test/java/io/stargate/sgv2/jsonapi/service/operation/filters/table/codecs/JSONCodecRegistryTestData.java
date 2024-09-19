@@ -9,6 +9,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 /** Tests data and utility for testing the JSON Codecs see {@link JSONCodecRegistryTest} */
@@ -38,10 +39,14 @@ public class JSONCodecRegistryTestData {
 
   public final BigDecimal NOT_EXACT_AS_INTEGER = new BigDecimal("1.25");
 
+  // From https://en.wikipedia.org/wiki/Base64 -- 11 character sample case, with padding
+  public final String BASE64_PADDED_DECODED = "light work";
+  public final String BASE64_PADDED_ENCODED_STR = "bGlnaHQgd29yaw==";
+  public final byte[] BASE64_PADDED_ENCODED_BYTES =
+      BASE64_PADDED_ENCODED_STR.getBytes(StandardCharsets.UTF_8);
+
   public final String STRING_ASCII_SAFE = "ascii-safe-string";
-
   public final String STRING_WITH_2BYTE_UTF8_CHAR = "text-with-2-byte-utf8-\u00a2"; // cent symbol
-
   public final String STRING_WITH_3BYTE_UTF8_CHAR = "text-with-3-byte-utf8-\u20ac"; // euro symbol
 
   // 4 byte / 2 UCS-2 char Unicode Surrogate Pair characters (see
