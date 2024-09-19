@@ -260,23 +260,32 @@ public record JSONCodec<JavaT, CqlT>(
 
     static Double doubleFromString(DataType targetCQLType, String value)
         throws ToCQLCodecException {
-      return switch (value) {
-        case "NaN" -> Double.NaN;
-        case "Infinity" -> Double.POSITIVE_INFINITY;
-        case "-Infinity" -> Double.NEGATIVE_INFINITY;
-        default ->
-            throw new ToCQLCodecException(
-                value,
-                targetCQLType,
-                "Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
+      return switch (notANumber(targetCQLType, value)) {
+        case NAN -> Double.NaN;
+        case POSITIVE_INFINITY -> Double.POSITIVE_INFINITY;
+        case NEGATIVE_INFINITY -> Double.NEGATIVE_INFINITY;
       };
     }
 
     static Float floatFromString(DataType targetCQLType, String value) throws ToCQLCodecException {
+      return switch (notANumber(targetCQLType, value)) {
+        case NAN -> Float.NaN;
+        case POSITIVE_INFINITY -> Float.POSITIVE_INFINITY;
+        case NEGATIVE_INFINITY -> Float.NEGATIVE_INFINITY;
+      };
+    }
+
+    enum NotANumber {
+      NAN,
+      POSITIVE_INFINITY,
+      NEGATIVE_INFINITY
+    }
+
+    static NotANumber notANumber(DataType targetCQLType, String value) throws ToCQLCodecException {
       return switch (value) {
-        case "NaN" -> Float.NaN;
-        case "Infinity" -> Float.POSITIVE_INFINITY;
-        case "-Infinity" -> Float.NEGATIVE_INFINITY;
+        case "NaN" -> NotANumber.NAN;
+        case "Infinity" -> NotANumber.POSITIVE_INFINITY;
+        case "-Infinity" -> NotANumber.NEGATIVE_INFINITY;
         default ->
             throw new ToCQLCodecException(
                 value,
