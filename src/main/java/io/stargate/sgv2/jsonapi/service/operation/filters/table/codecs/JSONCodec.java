@@ -321,7 +321,7 @@ public record JSONCodec<JavaT, CqlT>(
         throw new ToCQLCodecException(
             wrapper,
             targetCQLType,
-            "Invalid content in EJSON $binary wrapper: not valid Base64 encoded; root cause: %s"
+            "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String; problem: %s"
                 .formatted(e.getMessage()));
       }
     }
