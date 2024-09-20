@@ -31,7 +31,8 @@ public abstract class JSONCodecs {
           GenericType.of(EJSONWrapper.class),
           DataTypes.BLOB,
           JSONCodec.ToCQL::byteBufferFromEJSON,
-          (mapper, cqlType, value) -> mapper.getNodeFactory().binaryNode(new byte[0]));
+          (mapper, cqlType, value) ->
+              mapper.getNodeFactory().binaryNode(bytesFromByteBuffer(value)));
 
   // Numeric Codecs
   public static final JSONCodec<BigDecimal, Long> BIGINT_FROM_BIG_DECIMAL =
