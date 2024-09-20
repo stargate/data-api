@@ -39,7 +39,7 @@ public class JSONCodecRegistryTestData {
 
   public final BigDecimal NOT_EXACT_AS_INTEGER = new BigDecimal("1.25");
 
-  // From https://en.wikipedia.org/wiki/Base64 -- 11 character sample case, with padding
+  // From https://en.wikipedia.org/wiki/Base64 -- 10-to-16 character sample case, with padding
   public final String BASE64_PADDED_DECODED_STR = "light work";
   public final byte[] BASE64_PADDED_DECODED_BYTES =
       BASE64_PADDED_DECODED_STR.getBytes(StandardCharsets.UTF_8);
