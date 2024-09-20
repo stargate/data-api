@@ -27,8 +27,12 @@ public class JSONCodecRegistry {
 
   private final List<JSONCodec<?, ?>> codecs;
 
-  JSONCodecRegistry(List<JSONCodec<?, ?>> codecs) {
+  private JSONCodecRegistry(List<JSONCodec<?, ?>> codecs) {
     this.codecs = Objects.requireNonNull(codecs, "codecs must not be null");
+  }
+
+  public static JSONCodecRegistry create(List<JSONCodec<?, ?>> codecs) {
+    return new JSONCodecRegistry(codecs);
   }
 
   /**
