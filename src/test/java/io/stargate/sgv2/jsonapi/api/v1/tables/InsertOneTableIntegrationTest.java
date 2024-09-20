@@ -295,7 +295,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     @Test
     void insertSimpleBinaryValue() {
       final String docJSON =
-          validBinaryDoc("binarySimple", codecTestData.BASE64_PADDED_ENCODED_STR);
+          wrappedBinaryDoc("binarySimple", codecTestData.BASE64_PADDED_ENCODED_STR);
       insertOneInTable(TABLE_WITH_BINARY_COLUMN, docJSON);
       DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
           .postFindOne("{ \"filter\": { \"id\": \"binarySimple\" } }")
@@ -305,15 +305,34 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
     @Test
     void failOnMalformedBase64() {
-      // TO IMPLEMENT
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
+          .postInsertOne(wrappedBinaryDoc("binaryBadBase64", "not-valid-base64!!!"))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `BLOB` from");
     }
 
     @Test
     void failOnMalformedEJSONWrapper() {
-      // TO IMPLEMENT
+      // Test with number first:
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
+          .postInsertOne(rawBinaryDoc("binaryFromNumber", "1234"))
+          .hasSingleApiError(
+              // Not optimal: to be improved in future:
+              DocumentException.Code.UNSUPPORTED_COLUMN_TYPES, DocumentException.class);
+      // and then with String too; valid Base64, but not EJSON
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
+          .postInsertOne(
+              rawBinaryDoc(
+                  "binaryFromString", "\"" + codecTestData.BASE64_PADDED_ENCODED_STR + "\""))
+          .hasSingleApiError(
+              // Not optimal: to be improved in future:
+              DocumentException.Code.UNSUPPORTED_COLUMN_TYPES, DocumentException.class);
     }
 
-    private String validBinaryDoc(String id, String base64Binary) {
+    private String wrappedBinaryDoc(String id, String base64Binary) {
       return rawBinaryDoc(id, "{\"$binary\": \"%s\"}".formatted(base64Binary));
     }
 

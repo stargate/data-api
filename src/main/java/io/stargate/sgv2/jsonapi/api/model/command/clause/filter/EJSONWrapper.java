@@ -8,8 +8,8 @@ import java.util.Objects;
 
 /**
  * Intermediate type for further processing: used with {@link JsonLiteral} and {@link
- * JsonType#EJSON_WRAPPER} to store special types in JSON (e.g. binary data).
- * Currently only one type is supported but this can be extended in the future.
+ * JsonType#EJSON_WRAPPER} to store special types in JSON (e.g. binary data). Currently only one
+ * type is supported but this can be extended in the future.
  */
 public class EJSONWrapper {
   // Actual DRY keys
