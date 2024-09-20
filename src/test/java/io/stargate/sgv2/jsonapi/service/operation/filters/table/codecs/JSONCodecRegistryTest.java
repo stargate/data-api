@@ -178,7 +178,7 @@ public class JSONCodecRegistryTest {
         Arguments.of(
             DataTypes.BLOB,
             EJSONWrapper.from(
-                EJSONWrapper.EJSONType.BINARY.getKey(),
+                EJSONWrapper.EJSONType.BINARY.key(),
                 JsonNodeFactory.instance.textNode(TEST_DATA.BASE64_PADDED_ENCODED_STR)),
             ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES)));
   }
@@ -366,6 +366,44 @@ public class JSONCodecRegistryTest {
                   .contains(valueToTest.getClass().getName())
                   .contains(valueToTest.toString())
                   .contains("Root cause: String contains non-ASCII character at index");
+            });
+  }
+
+  // difficult to parameterize this test, so just test a few cases
+  @Test
+  public void badBinaryInputs() {
+    EJSONWrapper valueToTest1 =
+        new EJSONWrapper(
+            EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.textNode("bad-base64!"));
+    final var codec = assertGetCodecToCQL(DataTypes.BLOB, valueToTest1);
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest1),
+            "Throw ToCQLCodecException when attempting to convert DataTypes.BLOB from invalid Base64 value");
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(DataTypes.BLOB);
+              assertThat(e.value).isEqualTo(valueToTest1);
+              assertThat(e.getMessage())
+                  .contains("Root cause: Invalid content in EJSON $binary wrapper");
+            });
+
+    EJSONWrapper valueToTest2 =
+        new EJSONWrapper(EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.numberNode(42));
+    error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest2),
+            "Throw ToCQLCodecException when attempting to convert DataTypes.BLOB from non-String EJSONWrapper value");
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(DataTypes.BLOB);
+              assertThat(e.value).isEqualTo(valueToTest2);
+              assertThat(e.getMessage())
+                  .contains("Root cause: Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed");
             });
   }
 

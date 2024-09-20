@@ -303,14 +303,15 @@ public record JSONCodec<JavaT, CqlT>(
         throw new ToCQLCodecException(
             wrapper,
             targetCQLType,
-            "Unsupported EJSON type %s: only $binary supported".formatted(wrapper.type()));
+            "Unsupported EJSON type '%s': only '%s' supported"
+                .formatted(wrapper.type().key(), EJSONWrapper.EJSONType.BINARY.key()));
       }
       JsonNode value = wrapper.value();
       if (!value.isTextual()) {
         throw new ToCQLCodecException(
             wrapper,
             targetCQLType,
-            "Wrong JSON value type in EJSON $binary wrapper (%s): only STRING allowed"
+            "Unsupported JSON value type in EJSON $binary wrapper (%s): only STRING allowed"
                 .formatted(value.getNodeType()));
       }
       // Jackson is smart enough to decode base64-encode String values, so we can just use it

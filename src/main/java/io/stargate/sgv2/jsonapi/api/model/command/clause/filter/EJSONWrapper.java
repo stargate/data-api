@@ -29,7 +29,7 @@ public class EJSONWrapper {
       };
     }
 
-    public String getKey() {
+    public String key() {
       return key;
     }
   }
@@ -53,5 +53,10 @@ public class EJSONWrapper {
 
   public JsonNode value() {
     return value;
+  }
+
+  @Override
+  public String toString() {
+    return "EJSONWrapper{%s}".formatted(type.key());
   }
 }
