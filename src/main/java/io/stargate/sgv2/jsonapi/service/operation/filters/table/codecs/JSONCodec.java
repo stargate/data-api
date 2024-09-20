@@ -6,9 +6,12 @@ import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 /**
@@ -292,6 +295,34 @@ public record JSONCodec<JavaT, CqlT>(
                 targetCQLType,
                 "Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
       };
+    }
+
+    static ByteBuffer byteBufferFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
+        throws ToCQLCodecException {
+      if (wrapper.getType() != EJSONWrapper.EJSONType.BINARY) {
+        throw new ToCQLCodecException(
+            wrapper,
+            targetCQLType,
+            "Unsupported EJSON type %s: only $binary supported".formatted(wrapper.getType()));
+      }
+      JsonNode value = wrapper.getValue();
+      if (!value.isTextual()) {
+        throw new ToCQLCodecException(
+            wrapper,
+            targetCQLType,
+            "Wrong JSON value type in EJSON $binary wrapper (%s): only STRING allowed"
+                .formatted(value.getNodeType()));
+      }
+      // Jackson is smart enough to decode base64-encode String values, so we can just use it
+      try {
+        return ByteBuffer.wrap(value.binaryValue());
+      } catch (IOException e) {
+        throw new ToCQLCodecException(
+            wrapper,
+            targetCQLType,
+            "Invalid content in EJSON $binary wrapper: not valid Base64 encoded; root cause: %s"
+                .formatted(e.getMessage()));
+      }
     }
   }
 

@@ -7,11 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -84,7 +87,7 @@ public class JSONCodecRegistryTest {
   @ParameterizedTest
   @MethodSource("validCodecToCQLTestCasesOther")
   public void codecToCQLOther(DataType cqlType, Object fromValue, Object expectedCqlValue) {
-    // _codecToCQL(cqlType, fromValue, expectedCqlValue);
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
   }
 
   private void _codecToCQL(DataType cqlType, Object fromValue, Object expectedCqlValue) {
@@ -174,8 +177,10 @@ public class JSONCodecRegistryTest {
         // Binary: to be added when we have a codec for it
         Arguments.of(
             DataTypes.BLOB,
-            TEST_DATA.BASE64_PADDED_DECODED,
-            TEST_DATA.BASE64_PADDED_ENCODED_BYTES));
+            EJSONWrapper.from(
+                EJSONWrapper.EJSONType.BINARY.getKey(),
+                JsonNodeFactory.instance.textNode(TEST_DATA.BASE64_PADDED_ENCODED_STR)),
+            ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES)));
   }
 
   @Test
