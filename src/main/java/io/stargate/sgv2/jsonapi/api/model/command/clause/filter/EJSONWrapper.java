@@ -1,11 +1,15 @@
 package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
  * Intermediate type for further processing: used with {@link JsonLiteral} and {@link
- * JsonType#EJSON_WRAPPER} to store special types in JSON (e.g. binary data). Note that
+ * JsonType#EJSON_WRAPPER} to store special types in JSON (e.g. binary data).
+ * Currently only one type is supported but this can be extended in the future.
  */
 public class EJSONWrapper {
   // Actual DRY keys
@@ -47,6 +51,14 @@ public class EJSONWrapper {
     return (type == null) ? null : new EJSONWrapper(type, value);
   }
 
+  public static EJSONWrapper binaryWrapper(ByteBuffer value) {
+    return binaryWrapper(bytesFromByteBuffer(value));
+  }
+
+  public static EJSONWrapper binaryWrapper(byte[] value) {
+    return new EJSONWrapper(EJSONType.BINARY, JsonNodeFactory.instance.binaryNode(value));
+  }
+
   public EJSONType type() {
     return type;
   }
@@ -58,5 +70,17 @@ public class EJSONWrapper {
   @Override
   public String toString() {
     return "EJSONWrapper{%s}".formatted(type.key());
+  }
+
+  // Return value specifies how serialization works: re-creates wrapper
+  @JsonValue
+  public JsonNode asJsonNode() {
+    return JsonNodeFactory.instance.objectNode().set(type.key(), value);
+  }
+
+  private static byte[] bytesFromByteBuffer(ByteBuffer buffer) {
+    byte[] bytes = new byte[buffer.remaining()];
+    buffer.get(bytes);
+    return bytes;
   }
 }
