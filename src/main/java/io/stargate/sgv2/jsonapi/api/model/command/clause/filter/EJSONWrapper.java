@@ -5,7 +5,7 @@ import java.util.Objects;
 
 /**
  * Intermediate type for further processing: used with {@link JsonLiteral} and {@link
- * JsonType#EJSON_WRAPPER} to store special types in JSON (e.g. binary data, dates). Note that
+ * JsonType#EJSON_WRAPPER} to store special types in JSON (e.g. binary data). Note that
  */
 public class EJSONWrapper {
   // Actual DRY keys
