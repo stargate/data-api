@@ -403,7 +403,8 @@ public class JSONCodecRegistryTest {
               assertThat(e.targetCQLType).isEqualTo(DataTypes.BLOB);
               assertThat(e.value).isEqualTo(valueToTest2);
               assertThat(e.getMessage())
-                  .contains("Root cause: Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed");
+                  .contains(
+                      "Root cause: Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed");
             });
   }
 
