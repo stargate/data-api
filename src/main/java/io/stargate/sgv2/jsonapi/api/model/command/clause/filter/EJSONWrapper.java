@@ -8,8 +8,11 @@ import java.util.Objects;
  * JsonType#EJSON_WRAPPER} to store special types in JSON (e.g. binary data, dates). Note that
  */
 public class EJSONWrapper {
+  // Actual DRY keys
+  public static final String $BINARY = "$binary";
+
   public enum EJSONType {
-    BINARY("$binary");
+    BINARY($BINARY);
 
     private final String key;
 
@@ -21,7 +24,7 @@ public class EJSONWrapper {
       // With very few entries just do this: can build lookup Map if needed
       // in future
       return switch (key) {
-        case "$binary" -> BINARY;
+        case $BINARY -> BINARY;
         default -> null;
       };
     }
@@ -44,11 +47,11 @@ public class EJSONWrapper {
     return (type == null) ? null : new EJSONWrapper(type, value);
   }
 
-  public EJSONType getType() {
+  public EJSONType type() {
     return type;
   }
 
-  public JsonNode getValue() {
+  public JsonNode value() {
     return value;
   }
 }

@@ -299,13 +299,13 @@ public record JSONCodec<JavaT, CqlT>(
 
     static ByteBuffer byteBufferFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
         throws ToCQLCodecException {
-      if (wrapper.getType() != EJSONWrapper.EJSONType.BINARY) {
+      if (wrapper.type() != EJSONWrapper.EJSONType.BINARY) {
         throw new ToCQLCodecException(
             wrapper,
             targetCQLType,
-            "Unsupported EJSON type %s: only $binary supported".formatted(wrapper.getType()));
+            "Unsupported EJSON type %s: only $binary supported".formatted(wrapper.type()));
       }
-      JsonNode value = wrapper.getValue();
+      JsonNode value = wrapper.value();
       if (!value.isTextual()) {
         throw new ToCQLCodecException(
             wrapper,
