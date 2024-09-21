@@ -261,9 +261,10 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postInsertOne(fpDoc("decimalUnknownString", "0.5", "1.0", "\"Bazillion\""))
           .hasSingleApiError(
-              DocumentException.Code.UNSUPPORTED_COLUMN_TYPES,
+              DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "following columns that have unsupported data types",
+              "Only values that are supported by the column data type can be included when inserting",
+              "no codec matching value type",
               "\"decimalValue\"");
     }
 
