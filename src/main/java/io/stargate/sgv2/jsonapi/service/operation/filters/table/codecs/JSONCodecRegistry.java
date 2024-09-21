@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,7 +62,7 @@ public class JSONCodecRegistry {
    */
   public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(
       TableMetadata table, CqlIdentifier column, Object value)
-      throws UnknownColumnException, MissingJSONCodecException {
+      throws UnknownColumnException, MissingJSONCodecException, ToCQLCodecException {
 
     Preconditions.checkNotNull(table, "table must not be null");
     Preconditions.checkNotNull(column, "column must not be null");
@@ -84,8 +85,10 @@ public class JSONCodecRegistry {
                 .findFirst()
                 .orElse(null));
     if (match == null) {
-      // !!! TODO: should use different exception
-      throw new MissingJSONCodecException(table, columnMetadata, value.getClass(), value);
+      // Different exception for this case: CQL type supported but not from given Java type
+      // (f.ex, CQL Boolean from Java/JSON number)
+      throw new ToCQLCodecException(
+          value, columnMetadata.getType(), "no codec matching value type");
     }
     return match;
   }
