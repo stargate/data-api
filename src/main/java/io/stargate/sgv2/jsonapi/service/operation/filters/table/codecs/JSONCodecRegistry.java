@@ -7,7 +7,10 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -25,10 +28,15 @@ import java.util.Objects;
  */
 public class JSONCodecRegistry {
 
+  private final Map<DataType, List<JSONCodec<?, ?>>> codecsByCQLType;
   private final List<JSONCodec<?, ?>> codecs;
 
   private JSONCodecRegistry(List<JSONCodec<?, ?>> codecs) {
     this.codecs = Objects.requireNonNull(codecs, "codecs must not be null");
+    this.codecsByCQLType = new HashMap<>();
+    for (JSONCodec<?, ?> codec : codecs) {
+      codecsByCQLType.computeIfAbsent(codec.targetCQLType(), k -> new ArrayList<>()).add(codec);
+    }
   }
 
   public static JSONCodecRegistry create(List<JSONCodec<?, ?>> codecs) {
@@ -61,13 +69,25 @@ public class JSONCodecRegistry {
     var columnMetadata =
         table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
 
-    // compiler telling me we need to use the unchecked assignment again like the codecFor does
-    JSONCodec<JavaT, CqlT> codec =
-        JSONCodec.unchecked(internalCodecForToCQL(columnMetadata.getType(), value));
-    if (codec != null) {
-      return codec;
+    // First find candidates for CQL target type in question (if any)
+    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(columnMetadata.getType());
+    if (candidates == null) { // No codec for this CQL type
+      throw new MissingJSONCodecException(
+          table, columnMetadata, (value == null) ? null : value.getClass(), value);
     }
-    throw new MissingJSONCodecException(table, columnMetadata, value.getClass(), value);
+
+    // And if any found try to match with the incoming Java value
+    JSONCodec<JavaT, CqlT> match =
+        JSONCodec.unchecked(
+            candidates.stream()
+                .filter(codec -> codec.handlesJavaValue(value))
+                .findFirst()
+                .orElse(null));
+    if (match == null) {
+      // !!! TODO: should use different exception
+      throw new MissingJSONCodecException(table, columnMetadata, value.getClass(), value);
+    }
+    return match;
   }
 
   public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(
@@ -97,28 +117,7 @@ public class JSONCodecRegistry {
   }
 
   /**
-   * Internal only method to find a codec for the specified type and value.
-   *
-   * <p>The return type is {@code JSONCodec<?, ?>} because type erasure means that returning {@code
-   * JSONCodec<JavaT, CqlT>} would be erased. Therefore, we need to use {@link JSONCodec#unchecked}
-   * anyway, which results in this method returning {@code <?, ?>}. However, you are guaranteed that
-   * it will match the types you wanted, due to the call to the codec to test.
-   *
-   * @param targetCQLType
-   * @param javaValue
-   * @return The codec, or `null` if none found.
-   */
-  private JSONCodec<?, ?> internalCodecForToCQL(DataType targetCQLType, Object javaValue) {
-    // BUG: needs to handle NULl value
-    return codecs.stream()
-        .filter(codec -> codec.testToCQL(targetCQLType, javaValue))
-        .findFirst()
-        .orElse(null);
-  }
-
-  /**
-   * Like {@link #internalCodecForToCQL(DataType, Object)} but for converting in the opposite
-   * direction, from CQL type to JSON.
+   * Internal only method to find a codec for the specified CQL Type, converting from Java to JSON
    *
    * @param fromCQLType
    * @return Codec to use for conversion, or `null` if none found.
