@@ -30,10 +30,9 @@ import java.util.Objects;
 public class JSONCodecRegistry {
 
   private final Map<DataType, List<JSONCodec<?, ?>>> codecsByCQLType;
-  private final List<JSONCodec<?, ?>> codecs;
 
   private JSONCodecRegistry(List<JSONCodec<?, ?>> codecs) {
-    this.codecs = Objects.requireNonNull(codecs, "codecs must not be null");
+    Objects.requireNonNull(codecs, "codecs must not be null");
     this.codecsByCQLType = new HashMap<>();
     for (JSONCodec<?, ?> codec : codecs) {
       codecsByCQLType.computeIfAbsent(codec.targetCQLType(), k -> new ArrayList<>()).add(codec);
@@ -115,17 +114,14 @@ public class JSONCodecRegistry {
     return codec;
   }
 
-  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(DataType targetCQLType) {
-    return JSONCodec.unchecked(internalCodecForToJSON(targetCQLType));
-  }
-
   /**
-   * Internal only method to find a codec for the specified CQL Type, converting from Java to JSON
+   * Method to find a codec for the specified CQL Type, converting from Java to JSON
    *
    * @param fromCQLType
    * @return Codec to use for conversion, or `null` if none found.
    */
-  private JSONCodec<?, ?> internalCodecForToJSON(DataType fromCQLType) {
-    return codecs.stream().filter(codec -> codec.testToJSON(fromCQLType)).findFirst().orElse(null);
+  public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(DataType fromCQLType) {
+    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(fromCQLType);
+    return (candidates == null) ? null : JSONCodec.unchecked(candidates.get(0));
   }
 }
