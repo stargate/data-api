@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.processor;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import java.util.Objects;
 
 /**

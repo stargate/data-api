@@ -7,10 +7,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.InsertOperationPage;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
 import java.util.*;
@@ -31,42 +31,48 @@ public record InsertCollectionOperation(
     boolean returnDocumentResponses)
     implements CollectionModifyOperation {
 
-  public static InsertCollectionOperation create(
-      CommandContext commandContext,
-      List<WritableShreddedDocument> documents,
-      boolean ordered,
-      boolean offlineMode,
-      boolean returnDocumentResponses) {
-    return new InsertCollectionOperation(
-        commandContext,
-        CollectionInsertAttempt.from(documents),
-        ordered,
-        offlineMode,
-        returnDocumentResponses);
+  public InsertCollectionOperation(
+      CommandContext<CollectionSchemaObject> commandContext,
+      List<CollectionInsertAttempt> insertions) {
+    this(commandContext, insertions, false, false, false);
   }
 
-  public static InsertCollectionOperation create(
-      CommandContext commandContext,
-      List<WritableShreddedDocument> documents,
-      boolean ordered,
-      boolean returnDocumentResponses) {
-    return new InsertCollectionOperation(
-        commandContext,
-        CollectionInsertAttempt.from(documents),
-        ordered,
-        false,
-        returnDocumentResponses);
-  }
-
-  public static InsertCollectionOperation create(
-      CommandContext commandContext, WritableShreddedDocument document) {
-    return new InsertCollectionOperation(
-        commandContext,
-        Collections.singletonList(CollectionInsertAttempt.from(0, document)),
-        false,
-        false,
-        false);
-  }
+  //  public static InsertCollectionOperation create(
+  //      CommandContext commandContext,
+  //      List<WritableShreddedDocument> documents,
+  //      boolean ordered,
+  //      boolean offlineMode,
+  //      boolean returnDocumentResponses) {
+  //    return new InsertCollectionOperation(
+  //        commandContext,
+  //        CollectionInsertAttempt.from(documents),
+  //        ordered,
+  //        offlineMode,
+  //        returnDocumentResponses);
+  //  }
+  //
+  //  public static InsertCollectionOperation create(
+  //      CommandContext commandContext,
+  //      List<WritableShreddedDocument> documents,
+  //      boolean ordered,
+  //      boolean returnDocumentResponses) {
+  //    return new InsertCollectionOperation(
+  //        commandContext,
+  //        CollectionInsertAttempt.from(documents),
+  //        ordered,
+  //        false,
+  //        returnDocumentResponses);
+  //  }
+  //
+  //  public static InsertCollectionOperation create(
+  //      CommandContext commandContext, WritableShreddedDocument document) {
+  //    return new InsertCollectionOperation(
+  //        commandContext,
+  //        Collections.singletonList(CollectionInsertAttempt.from(0, document)),
+  //        false,
+  //        false,
+  //        false);
+  //  }
 
   /** {@inheritDoc} */
   @Override

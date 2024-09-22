@@ -37,7 +37,7 @@ public class TableInsertAttemptBuilder implements InsertAttemptBuilder<TableInse
     try {
       var jsonContainer = rowShredder.shred(jsonNode);
       writeableRow = writeableTableRowBuilder.build(jsonContainer);
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       exception = e;
     }
 

@@ -15,9 +15,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
+import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
@@ -226,11 +228,12 @@ public class DataVectorizerTest {
           new CollectionSchemaObject(
               "namespace",
               "collections",
-              CollectionSchemaObject.IdConfig.defaultIdConfig(),
+              null,
+              IdConfig.defaultIdConfig(),
               new VectorConfig(
                   true,
                   4,
-                  CollectionSchemaObject.SimilarityFunction.COSINE,
+                  SimilarityFunction.COSINE,
                   new VectorConfig.VectorizeConfig("custom", "custom", null, null)),
               null);
       List<JsonNode> documents = new ArrayList<>();

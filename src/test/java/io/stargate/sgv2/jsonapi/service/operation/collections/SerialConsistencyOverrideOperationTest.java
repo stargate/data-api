@@ -23,13 +23,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
@@ -61,6 +61,19 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
   @Inject DocumentShredder documentShredder;
 
   @Inject DataVectorizerService dataVectorizerService;
+
+  public CollectionInsertAttempt createInsertAttempt(
+      CommandContext<CollectionSchemaObject> context, JsonNode document) {
+    return createInsertAttempt(context, List.of(document)).getFirst();
+  }
+
+  public List<CollectionInsertAttempt> createInsertAttempt(
+      CommandContext<CollectionSchemaObject> context, List<JsonNode> documents) {
+    var builder =
+        new CollectionInsertAttemptBuilder(
+            context.schemaObject(), documentShredder, context.commandName());
+    return documents.stream().map(builder::build).toList();
+  }
 
   public static class SerialConsistencyOverrideProfile implements QuarkusTestProfile {
     @Override
@@ -179,7 +192,8 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
+      var insertAttempt = createInsertAttempt(COMMAND_CONTEXT, jsonNode);
+      var shredDocument = insertAttempt.document;
 
       SimpleStatement stmt =
           SimpleStatement.newInstance(
@@ -208,7 +222,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
               });
 
       InsertCollectionOperation operation =
-          InsertCollectionOperation.create(COMMAND_CONTEXT, shredDocument);
+          new InsertCollectionOperation(COMMAND_CONTEXT, List.of(insertAttempt));
       Supplier<CommandResult> execute =
           operation
               .execute(dataApiRequestInfo, queryExecutor)

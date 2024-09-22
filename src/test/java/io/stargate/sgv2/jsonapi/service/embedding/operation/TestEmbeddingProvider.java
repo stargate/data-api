@@ -4,8 +4,10 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,11 +17,12 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
       new CommandContext<>(
           new CollectionSchemaObject(
               TestConstants.SCHEMA_OBJECT_NAME,
-              CollectionSchemaObject.IdConfig.defaultIdConfig(),
+              null,
+              IdConfig.defaultIdConfig(),
               new VectorConfig(
                   true,
                   3,
-                  CollectionSchemaObject.SimilarityFunction.COSINE,
+                  SimilarityFunction.COSINE,
                   new VectorConfig.VectorizeConfig("custom", "custom", null, null)),
               null),
           new TestEmbeddingProvider(),

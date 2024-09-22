@@ -2,26 +2,18 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.*;
 
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.google.common.base.Preconditions;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.DocumentSourceSupplier;
-import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
-import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
-import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+import io.stargate.sgv2.jsonapi.service.operation.*;
+import java.util.*;
 import java.util.function.Supplier;
-import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,71 +21,53 @@ import org.slf4j.LoggerFactory;
  * TODO: this is still a POC class, showing how we can build a filter still to do is order and
  * projections
  */
-public class FindTableOperation extends TableReadOperation {
+public class FindTableOperation<SchemaT extends TableBasedSchemaObject> extends TableReadOperation {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TableReadOperation.class);
 
-  private final SelectCQLClause selectCQLClause;
-  private final WhereCQLClause<Select> whereCQLClause;
-  private final DocumentSourceSupplier documentSourceSupplier;
-  private final FindTableParams params;
+  private final DriverExceptionHandler<SchemaT> driverExceptionHandler;
+  private final List<ReadAttempt<SchemaT>> readAttempts;
+
+  private final ReadAttemptPage.Builder<SchemaT> pageBuilder;
 
   public FindTableOperation(
       CommandContext<TableSchemaObject> commandContext,
-      SelectCQLClause selectCQLClause,
-      WhereCQLClause<Select> whereCQLClause,
-      DocumentSourceSupplier documentSourceSupplier,
-      FindTableParams params) {
+      DriverExceptionHandler<SchemaT> driverExceptionHandler,
+      List<? extends ReadAttempt<SchemaT>> readAttempts,
+      ReadAttemptPage.Builder<SchemaT> pageBuilder) {
     super(commandContext);
 
-    this.selectCQLClause =
-        Objects.requireNonNull(selectCQLClause, "selectCQLClause must not be null");
-    this.whereCQLClause = Objects.requireNonNull(whereCQLClause, "whereCQLClause must not be null");
-    this.documentSourceSupplier =
-        Objects.requireNonNull(documentSourceSupplier, "documentSourceSupplier must not be null");
-    this.params = Objects.requireNonNull(params, "params must not be null");
+    this.driverExceptionHandler =
+        Objects.requireNonNull(driverExceptionHandler, "driverExceptionHandler cannot be null");
+    this.readAttempts =
+        List.copyOf(Objects.requireNonNull(readAttempts, "readAttempts cannot be null"));
+    this.pageBuilder = Objects.requireNonNull(pageBuilder, "pageBuilder cannot be null");
   }
 
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
 
-    // Start the select
-    SelectFrom selectFrom =
-        selectFrom(
-            commandContext.schemaObject().tableMetadata.getKeyspace(),
-            commandContext.schemaObject().tableMetadata.getName());
+    // TODO AARON - for now we create the CommandQueryExecutor here , later change the Operation
+    // interface
+    CommandQueryExecutor commandQueryExecutor =
+        new CommandQueryExecutor(
+            queryExecutor.getCqlSessionCache(),
+            new RequestContext(
+                dataApiRequestInfo.getTenantId(), dataApiRequestInfo.getCassandraToken()),
+            CommandQueryExecutor.QueryTarget.TABLE);
 
-    // Add the columns we want to select
-    Select select = selectCQLClause.apply(selectFrom);
-
-    // Add the where clause
-    List<Object> positionalValues = new ArrayList<>();
-    select = whereCQLClause.apply(select, positionalValues);
-
-    // Add things like limit
-    select = params.options().apply(select);
-
-    var statement = select.build(positionalValues.toArray());
-
-    LOGGER.warn("FIND CQL: {}", select.asCql());
-    LOGGER.warn("FIND VALUES: {}", positionalValues);
-
-    // TODO: pageSize for FindTableOperation
-    return queryExecutor
-        .executeRead(dataApiRequestInfo, statement, Optional.empty(), 100)
+    return Multi.createFrom()
+        .iterable(readAttempts)
         .onItem()
-        .transform(this::toReadOperationPage);
-  }
-
-  private ReadOperationPage toReadOperationPage(AsyncResultSet resultSet) {
-
-    var docSources =
-        StreamSupport.stream(resultSet.currentPage().spliterator(), false)
-            .map(documentSourceSupplier::documentSource)
-            .toList();
-
-    return new ReadOperationPage(docSources, params.isSingleResponse(), null, false, null);
+        .transformToUniAndMerge(
+            readAttempt -> readAttempt.execute(commandQueryExecutor, driverExceptionHandler))
+        .onItem()
+        .transform(OperationAttempt::setSkippedIfReady)
+        .collect()
+        .in(() -> pageBuilder, OperationAttemptAccumulator::accumulate)
+        .onItem()
+        .transform(ReadAttemptPage.Builder::build);
   }
 
   public record FindTableParams(int limit) {

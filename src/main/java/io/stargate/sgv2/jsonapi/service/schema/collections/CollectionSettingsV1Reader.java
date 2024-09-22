@@ -1,8 +1,10 @@
-package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
+package io.stargate.sgv2.jsonapi.service.schema.collections;
 
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 
 /**
  * schema_version 1 sample:
@@ -15,6 +17,7 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
       JsonNode collectionNode,
       String keyspaceName,
       String collectionName,
+      TableMetadata tableMetadata,
       ObjectMapper objectMapper) {
 
     JsonNode collectionOptionsNode = collectionNode.get(TableCommentConstants.OPTIONS_KEY);
@@ -25,24 +28,22 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
       vectorConfig = VectorConfig.fromJson(vector, objectMapper);
     }
     // construct collectionSettings IndexingConfig
-    CollectionSchemaObject.IndexingConfig indexingConfig = null;
+    CollectionIndexingConfig indexingConfig = null;
     JsonNode indexing = collectionOptionsNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
     if (!indexing.isMissingNode()) {
-      indexingConfig = CollectionSchemaObject.IndexingConfig.fromJson(indexing);
+      indexingConfig = CollectionIndexingConfig.fromJson(indexing);
     }
     // construct collectionSettings idConfig, default idType as uuid
-    final CollectionSchemaObject.IdConfig idConfig;
+    final IdConfig idConfig;
     JsonNode idConfigNode = collectionOptionsNode.path(TableCommentConstants.DEFAULT_ID_KEY);
     // should always have idConfigNode in table comment since schema v1
     if (idConfigNode.has("type")) {
-      idConfig =
-          new CollectionSchemaObject.IdConfig(
-              CollectionSchemaObject.IdType.fromString(idConfigNode.get("type").asText()));
+      idConfig = new IdConfig(CollectionIdType.fromString(idConfigNode.get("type").asText()));
     } else {
-      idConfig = CollectionSchemaObject.IdConfig.defaultIdConfig();
+      idConfig = IdConfig.defaultIdConfig();
     }
 
     return new CollectionSchemaObject(
-        keyspaceName, collectionName, idConfig, vectorConfig, indexingConfig);
+        keyspaceName, collectionName, tableMetadata, idConfig, vectorConfig, indexingConfig);
   }
 }

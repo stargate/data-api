@@ -16,10 +16,11 @@ import io.stargate.sgv2.jsonapi.config.DatabaseLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -124,22 +125,23 @@ public record CreateCollectionOperation(
                   "Unknown keyspace '%s', you must create it first",
                   commandContext.schemaObject().name().keyspace()));
     }
-    TableMetadata table = findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
+    TableMetadata tableMetadata = findTableAndValidateLimits(allKeyspaces, currKeyspace, name);
 
     // if table doesn't exist, continue to create collection
-    if (table == null) {
+    if (tableMetadata == null) {
       return executeCollectionCreation(dataApiRequestInfo, queryExecutor, false);
     }
     // if table exists, compare existedCollectionSettings and newCollectionSettings
     CollectionSchemaObject existedCollectionSettings =
-        CollectionSchemaObject.getCollectionSettings(table, objectMapper);
+        CollectionSchemaObject.getCollectionSettings(tableMetadata, objectMapper);
     CollectionSchemaObject newCollectionSettings =
         CollectionSchemaObject.getCollectionSettings(
             currKeyspace.getName().asInternal(),
             name,
+            tableMetadata,
             vectorSearch,
             vectorSize,
-            CollectionSchemaObject.SimilarityFunction.fromString(vectorFunction),
+            SimilarityFunction.fromString(vectorFunction),
             comment,
             objectMapper);
     // if table exists we have to choices:

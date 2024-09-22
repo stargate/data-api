@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
+package io.stargate.sgv2.jsonapi.service.schema.collections;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
@@ -8,39 +8,39 @@ import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.Lists;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
-import java.util.HashSet;
+import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * Refactored as seperate class that represent a collection property.*
  *
  * <p>TODO: there are a LOT of different ways this is constructed, need to refactor
  */
-public final class CollectionSchemaObject extends SchemaObject {
+public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
   public static final SchemaObjectType TYPE = SchemaObjectType.COLLECTION;
 
   public static final CollectionSchemaObject MISSING =
       new CollectionSchemaObject(
           SchemaObjectName.MISSING,
+          null,
           IdConfig.defaultIdConfig(),
           VectorConfig.notEnabledVectorConfig(),
           null);
 
   private final IdConfig idConfig;
   private final VectorConfig vectorConfig;
-  private final IndexingConfig indexingConfig;
+  private final CollectionIndexingConfig indexingConfig;
+  private final TableMetadata tableMetadata;
 
   /**
    * @param vectorConfig
@@ -49,25 +49,37 @@ public final class CollectionSchemaObject extends SchemaObject {
   public CollectionSchemaObject(
       String keypaceName,
       String name,
+      TableMetadata tableMetadata,
       IdConfig idConfig,
       VectorConfig vectorConfig,
-      IndexingConfig indexingConfig) {
-    this(new SchemaObjectName(keypaceName, name), idConfig, vectorConfig, indexingConfig);
+      CollectionIndexingConfig indexingConfig) {
+    this(
+        new SchemaObjectName(keypaceName, name),
+        tableMetadata,
+        idConfig,
+        vectorConfig,
+        indexingConfig);
   }
 
   public CollectionSchemaObject(
       SchemaObjectName name,
+      TableMetadata tableMetadata,
       IdConfig idConfig,
       VectorConfig vectorConfig,
-      IndexingConfig indexingConfig) {
-    super(TYPE, name);
+      CollectionIndexingConfig indexingConfig) {
+    super(TYPE, name, tableMetadata);
+
     this.idConfig = idConfig;
     this.vectorConfig = vectorConfig;
     this.indexingConfig = indexingConfig;
+    this.tableMetadata = tableMetadata;
   }
 
-  public CollectionSchemaObject withIdType(IdType idType) {
-    return new CollectionSchemaObject(name, new IdConfig(idType), vectorConfig, indexingConfig);
+  // TODO: remove this, it is just here for testing and can be handled by creating test data
+  // effectively
+  public CollectionSchemaObject withIdType(CollectionIdType idType) {
+    return new CollectionSchemaObject(
+        name(), tableMetadata, new IdConfig(idType), vectorConfig, indexingConfig);
   }
 
   @Override
@@ -92,12 +104,6 @@ public final class CollectionSchemaObject extends SchemaObject {
     return new CollectionIndexUsage();
   }
 
-  public record IdConfig(IdType idType) {
-    public static IdConfig defaultIdConfig() {
-      return new IdConfig(IdType.UNDEFINED);
-    }
-  }
-
   public IndexingProjector indexingProjector() {
     // IndexingConfig null if no indexing definitions: default, index all:
     if (indexingConfig == null) {
@@ -107,115 +113,25 @@ public final class CollectionSchemaObject extends SchemaObject {
     return indexingConfig.indexingProjector();
   }
 
-  public record IndexingConfig(
-      Set<String> allowed, Set<String> denied, Supplier<IndexingProjector> indexedProject) {
-    public IndexingConfig(Set<String> allowed, Set<String> denied) {
-      this(
-          allowed,
-          denied,
-          Suppliers.memoize(() -> IndexingProjector.createForIndexing(allowed, denied)));
-    }
-
-    public IndexingProjector indexingProjector() {
-      return indexedProject.get();
-    }
-
-    public static IndexingConfig fromJson(JsonNode jsonNode) {
-      Set<String> allowed = new HashSet<>();
-      Set<String> denied = new HashSet<>();
-      if (jsonNode.has("allow")) {
-        jsonNode.get("allow").forEach(node -> allowed.add(node.asText()));
-      }
-      if (jsonNode.has("deny")) {
-        jsonNode.get("deny").forEach(node -> denied.add(node.asText()));
-      }
-      return new IndexingConfig(allowed, denied);
-    }
-
-    // Need to override to prevent comparison of the supplier
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o instanceof IndexingConfig other) {
-        return Objects.equals(this.allowed, other.allowed)
-            && Objects.equals(this.denied, other.denied);
-      }
-      return false;
-    }
-  }
-
-  /**
-   * The similarity function used for the vector index. This is only applicable if the vector index
-   * is enabled.
-   */
-  public enum SimilarityFunction {
-    COSINE,
-    EUCLIDEAN,
-    DOT_PRODUCT,
-    UNDEFINED;
-
-    public static SimilarityFunction fromString(String similarityFunction) {
-      if (similarityFunction == null) return UNDEFINED;
-      return switch (similarityFunction.toLowerCase()) {
-        case "cosine" -> COSINE;
-        case "euclidean" -> EUCLIDEAN;
-        case "dot_product" -> DOT_PRODUCT;
-        default ->
-            throw ErrorCodeV1.VECTOR_SEARCH_INVALID_FUNCTION_NAME.toApiException(
-                "'%s'", similarityFunction);
-      };
-    }
-  }
-
-  /** Collection Id Type enum, UNDEFINED represents unwrapped id */
-  public enum IdType {
-    OBJECT_ID,
-    UUID,
-    UUID_V6,
-    UUID_V7,
-    UNDEFINED;
-
-    public static IdType fromString(String idType) {
-      if (idType == null) return UNDEFINED;
-      return switch (idType) {
-        case "objectId" -> OBJECT_ID;
-        case "uuid" -> UUID;
-        case "uuidv6" -> UUID_V6;
-        case "uuidv7" -> UUID_V7;
-        case "" -> UNDEFINED;
-        default -> throw ErrorCodeV1.INVALID_ID_TYPE.toApiException(idType);
-      };
-    }
-
-    public String toString() {
-      return switch (this) {
-        case OBJECT_ID -> "objectId";
-        case UUID -> "uuid";
-        case UUID_V6 -> "uuidv6";
-        case UUID_V7 -> "uuidv7";
-        case UNDEFINED -> "";
-      };
-    }
-  }
-
-  public enum AuthenticationType {
-    NONE,
-    HEADER,
-    SHARED_SECRET,
-    UNDEFINED;
-
-    public static AuthenticationType fromString(String authenticationType) {
-      if (authenticationType == null) return UNDEFINED;
-      return switch (authenticationType.toLowerCase()) {
-        case "none" -> NONE;
-        case "header" -> HEADER;
-        case "shared_secret" -> SHARED_SECRET;
-        default ->
-            throw ErrorCodeV1.VECTORIZE_INVALID_AUTHENTICATION_TYPE.toApiException(
-                "'%s'", authenticationType);
-      };
-    }
-  }
+  // TODO: AARON COMMENTED OUT TO SEE IF IT IS USED
+  //  public enum AuthenticationType {
+  //    NONE,
+  //    HEADER,
+  //    SHARED_SECRET,
+  //    UNDEFINED;
+  //
+  //    public static AuthenticationType fromString(String authenticationType) {
+  //      if (authenticationType == null) return UNDEFINED;
+  //      return switch (authenticationType.toLowerCase()) {
+  //        case "none" -> NONE;
+  //        case "header" -> HEADER;
+  //        case "shared_secret" -> SHARED_SECRET;
+  //        default ->
+  //            throw ErrorCodeV1.VECTORIZE_INVALID_AUTHENTICATION_TYPE.toApiException(
+  //                "'%s'", authenticationType);
+  //      };
+  //    }
+  //  }
 
   public static CollectionSchemaObject getCollectionSettings(
       TableMetadata table, ObjectMapper objectMapper) {
@@ -226,6 +142,7 @@ public final class CollectionSchemaObject extends SchemaObject {
     final Optional<ColumnMetadata> vectorColumn =
         table.getColumn(DocumentConstants.Fields.VECTOR_SEARCH_INDEX_COLUMN_NAME);
     boolean vectorEnabled = vectorColumn.isPresent();
+
     // if vector column exists
     if (vectorEnabled) {
       final int vectorSize = ((VectorType) vectorColumn.get().getType()).getDimensions();
@@ -249,13 +166,14 @@ public final class CollectionSchemaObject extends SchemaObject {
       }
       final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       return createCollectionSettings(
-          keyspaceName, collectionName, true, vectorSize, function, comment, objectMapper);
+          keyspaceName, collectionName, table, true, vectorSize, function, comment, objectMapper);
     } else { // if not vector collection
       // handling comment so get the indexing config from comment
       final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       return createCollectionSettings(
           keyspaceName,
           collectionName,
+          table,
           false,
           0,
           SimilarityFunction.UNDEFINED,
@@ -267,6 +185,7 @@ public final class CollectionSchemaObject extends SchemaObject {
   public static CollectionSchemaObject getCollectionSettings(
       String keyspaceName,
       String collectionName,
+      TableMetadata tableMetadata,
       boolean vectorEnabled,
       int vectorSize,
       SimilarityFunction similarityFunction,
@@ -275,6 +194,7 @@ public final class CollectionSchemaObject extends SchemaObject {
     return createCollectionSettings(
         keyspaceName,
         collectionName,
+        tableMetadata,
         vectorEnabled,
         vectorSize,
         similarityFunction,
@@ -285,16 +205,19 @@ public final class CollectionSchemaObject extends SchemaObject {
   private static CollectionSchemaObject createCollectionSettings(
       String keyspaceName,
       String collectionName,
+      TableMetadata tableMetadata,
       boolean vectorEnabled,
       int vectorSize,
       SimilarityFunction function,
       String comment,
       ObjectMapper objectMapper) {
+
     if (comment == null || comment.isBlank()) {
       if (vectorEnabled) {
         return new CollectionSchemaObject(
             keyspaceName,
             collectionName,
+            tableMetadata,
             IdConfig.defaultIdConfig(),
             new VectorConfig(true, vectorSize, function, null),
             null);
@@ -302,6 +225,7 @@ public final class CollectionSchemaObject extends SchemaObject {
         return new CollectionSchemaObject(
             keyspaceName,
             collectionName,
+            tableMetadata,
             IdConfig.defaultIdConfig(),
             VectorConfig.notEnabledVectorConfig(),
             null);
@@ -326,7 +250,8 @@ public final class CollectionSchemaObject extends SchemaObject {
         switch (collectionNode.get(TableCommentConstants.SCHEMA_VERSION_KEY).asInt()) {
           case 1:
             return new CollectionSettingsV1Reader()
-                .readCollectionSettings(collectionNode, keyspaceName, collectionName, objectMapper);
+                .readCollectionSettings(
+                    collectionNode, keyspaceName, collectionName, tableMetadata, objectMapper);
           default:
             throw ErrorCodeV1.INVALID_SCHEMA_VERSION.toApiException();
         }
@@ -338,6 +263,7 @@ public final class CollectionSchemaObject extends SchemaObject {
                 commentConfigNode,
                 keyspaceName,
                 collectionName,
+                tableMetadata,
                 vectorEnabled,
                 vectorSize,
                 function);
@@ -381,9 +307,9 @@ public final class CollectionSchemaObject extends SchemaObject {
               Lists.newArrayList(collectionSetting.indexingConfig().denied()));
     }
     // construct the CreateCollectionCommand.options.idConfig -- but only if non-default IdType
-    final IdType idType = collectionSetting.idConfig().idType();
+    final CollectionIdType idType = collectionSetting.idConfig().idType();
     CreateCollectionCommand.Options.IdConfig idConfig =
-        (idType == null || idType == IdType.UNDEFINED)
+        (idType == null || idType == CollectionIdType.UNDEFINED)
             ? null
             : new CreateCollectionCommand.Options.IdConfig(idType.toString());
 
@@ -398,12 +324,12 @@ public final class CollectionSchemaObject extends SchemaObject {
     return idConfig;
   }
 
-  public IndexingConfig indexingConfig() {
+  public CollectionIndexingConfig indexingConfig() {
     return indexingConfig;
   }
 
   // TODO: these helper functions break encapsulation for very little benefit
-  public CollectionSchemaObject.SimilarityFunction similarityFunction() {
+  public SimilarityFunction similarityFunction() {
     return vectorConfig().similarityFunction();
   }
 

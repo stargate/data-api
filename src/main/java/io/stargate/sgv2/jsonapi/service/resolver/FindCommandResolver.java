@@ -8,20 +8,22 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.ReadAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.operation.tables.FindTableOperation;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableRowProjection;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.SortClauseUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -66,24 +68,40 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
 
   @Override
   public Operation resolveTableCommand(CommandContext<TableSchemaObject> ctx, FindCommand command) {
-    // TODO AARON - make reusable code for getting the limit
 
     var limit =
         Optional.ofNullable(command.options())
             .map(FindCommand.Options::limit)
             .orElse(Integer.MAX_VALUE);
+    var cqlPageState =
+        Optional.ofNullable(command.options())
+            .map(options -> CqlPagingState.from(options.pageState()))
+            .orElse(CqlPagingState.EMPTY);
 
-    var tableRowProjection =
+    var projection =
         TableRowProjection.fromDefinition(
             objectMapper, command.tableProjectionDefinition(), ctx.schemaObject());
 
-    return new FindTableOperation(
-        ctx,
-        tableRowProjection,
+    var builder =
+        new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection)
+            .addBuilderOption(CQLOption.ForSelect.limit(limit))
+            .addStatementOption(CQLOption.ForStatement.pageSize(operationsConfig.defaultPageSize()))
+            .addPagingState(cqlPageState);
+
+    var where =
         TableWhereCQLClause.forSelect(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command)),
-        tableRowProjection,
-        new FindTableOperation.FindTableParams(limit));
+            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));
+    var attempts = List.of(builder.build(where));
+
+    var pageBuilder =
+        ReadAttemptPage.<TableSchemaObject>builder()
+            .singleResponse(false)
+            .includeSortVector(
+                command.options() == null ? false : command.options().includeSortVector())
+            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
+            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+
+    return new FindTableOperation<>(ctx, new TableDriverExceptionHandler(), attempts, pageBuilder);
   }
 
   @Override

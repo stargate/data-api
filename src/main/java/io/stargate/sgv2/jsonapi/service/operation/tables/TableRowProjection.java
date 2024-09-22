@@ -37,7 +37,7 @@ public record TableRowProjection(
     Map<String, ColumnMetadata> columnsByName = new HashMap<>();
     // TODO: This can also be cached as part of TableSchemaObject than resolving it for every query.
     table
-        .tableMetadata
+        .tableMetadata()
         .getColumns()
         .forEach((id, column) -> columnsByName.put(id.asInternal(), column));
 
@@ -67,7 +67,7 @@ public record TableRowProjection(
 
       // TODO: maybe optimize common case of String, Boolean to avoid conversions, lookups
       try {
-        codec = JSONCodecRegistries.DEFAULT_REGISTRY.codecToJSON(table.tableMetadata, column);
+        codec = JSONCodecRegistries.DEFAULT_REGISTRY.codecToJSON(table.tableMetadata(), column);
       } catch (MissingJSONCodecException e) {
         throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
             "Column '%s' has unsupported type '%s'", columnName, column.getType().toString());
