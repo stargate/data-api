@@ -20,16 +20,11 @@ public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
 
   TableInsertAttempt(
       TableSchemaObject tableSchemaObject, int position, RowId rowId, WriteableTableRow row) {
-    super(position, tableSchemaObject);
+    super(position, tableSchemaObject, new TableInsertValuesCQLClause(tableSchemaObject, row));
 
     this.rowId = rowId;
     this.row = row;
     setStatus(OperationStatus.READY);
-  }
-
-  @Override
-  protected TableInsertValuesCQLClause getInsertValuesCQLClause() {
-    return new TableInsertValuesCQLClause(schemaObject, row);
   }
 
   public Optional<WriteableTableRow> row() {

@@ -138,15 +138,6 @@ public record CommandResult(
           String nextPageState)
       implements ResponseData {
 
-    /**
-     * Constructor that sets documents without next page state.
-     *
-     * @param documents Documents, must not be <code>null</code>.
-     */
-    public MultiResponseData(List<JsonNode> documents) {
-      this(documents, null);
-    }
-
     /** {@inheritDoc} */
     @Override
     public List<JsonNode> getResponseDocuments() {

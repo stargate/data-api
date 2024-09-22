@@ -1,11 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.operation.collections;
 
+import com.datastax.oss.driver.api.querybuilder.insert.OngoingValues;
+import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
 import io.stargate.sgv2.jsonapi.service.operation.InsertAttempt;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
+import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -30,7 +32,7 @@ public class CollectionInsertAttempt extends InsertAttempt<CollectionSchemaObjec
       int position,
       DocumentId documentId,
       WritableShreddedDocument document) {
-    super(position, collectionSchemaObject);
+    super(position, collectionSchemaObject, null);
 
     this.documentId = documentId;
     this.document = document;
@@ -65,7 +67,8 @@ public class CollectionInsertAttempt extends InsertAttempt<CollectionSchemaObjec
   //  }
 
   @Override
-  protected TableInsertValuesCQLClause getInsertValuesCQLClause() {
+  protected RegularInsert applyInsertValues(
+      OngoingValues ongoingValues, List<Object> positionalValues) {
     // aaron - collections does not support this pathway yet
     throw new NotImplementedException("CollectionInsertAttempt.getInsertValuesCQLClause()");
   }

@@ -1,17 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +24,11 @@ public abstract class OperationAttempt<
     IN_PROGRESS,
     COMPLETED,
     ERROR,
-    SKIPPED
+    SKIPPED;
+
+    public final boolean isTerminal() {
+      return this == COMPLETED || this == ERROR || this == SKIPPED;
+    }
   }
 
   private final int position;
@@ -44,9 +45,8 @@ public abstract class OperationAttempt<
   }
 
   public Uni<SubT> execute(
-      DataApiRequestInfo dataApiRequestInfo,
-      QueryExecutor queryExecutor,
-      DriverExceptionHandler<SchemaT> exceptionHandler) {
+      CommandQueryExecutor queryExecutor, DriverExceptionHandler<SchemaT> exceptionHandler) {
+
     LOGGER.debug("OperationAttempt: execute starting for for attemptId {}", attemptId);
 
     // First things first: did we already fail? If so, propagate
@@ -68,23 +68,31 @@ public abstract class OperationAttempt<
 
     swapStatus("start execute()", OperationStatus.READY, OperationStatus.IN_PROGRESS);
 
-    // TODO: we will eventually stop needing to hand the DataApiRequestInfo around
-    var session = queryExecutor.getCqlSessionCache().getSession(dataApiRequestInfo);
-
-    return Uni.createFrom()
-        .completionStage(execute(session))
-        .onItemOrFailure()
-        .transform(
-            (result, throwable) ->
-                switch (throwable) {
-                  case null -> setStatus(OperationStatus.COMPLETED);
-                  case RuntimeException re ->
-                      maybeAddFailure(exceptionHandler.maybeHandle(schemaObject, re));
-                  default -> maybeAddFailure(throwable);
-                });
+    try {
+      return execute(queryExecutor)
+          .onItemOrFailure()
+          .transform(
+              (result, throwable) ->
+                  switch (throwable) {
+                    case null -> onSuccess(result);
+                    case RuntimeException re ->
+                        maybeAddFailure(exceptionHandler.maybeHandle(schemaObject, re));
+                    default -> maybeAddFailure(throwable);
+                  });
+    } catch (RuntimeException re) {
+      return Uni.createFrom().item(maybeAddFailure(exceptionHandler.maybeHandle(schemaObject, re)));
+    }
   }
 
-  protected abstract CompletionStage<AsyncResultSet> execute(CqlSession session);
+  protected abstract Uni<AsyncResultSet> execute(CommandQueryExecutor queryExecutor);
+
+  /**
+   * set compled and handle the reslt set is there
+   *
+   * @param resultSet
+   * @return
+   */
+  protected abstract SubT onSuccess(AsyncResultSet resultSet);
 
   @SuppressWarnings("unchecked")
   protected SubT downcast() {
@@ -131,16 +139,23 @@ public abstract class OperationAttempt<
     return setStatus(newStatus);
   }
 
-  public SubT verifyComplete() {
+  public SubT setSkippedIfReady() {
+    if (status() == OperationStatus.READY) {
+      return setStatus(OperationAttempt.OperationStatus.SKIPPED);
+    }
+    return downcast();
+  }
+
+  public SubT checkTerminal() {
 
     if (status() == OperationStatus.READY) {
       return setStatus(OperationAttempt.OperationStatus.SKIPPED);
     }
-
-    return checkStatus(
-        "verifyComplete()",
-        OperationAttempt.OperationStatus.ERROR,
-        OperationAttempt.OperationStatus.COMPLETED);
+    if (status().isTerminal()) {
+      return downcast();
+    }
+    throw new IllegalStateException(
+        String.format("OperationAttempt: checkTerminal failed, non terminal status %s", status()));
   }
 
   /**
@@ -177,11 +192,33 @@ public abstract class OperationAttempt<
   public SubT maybeAddFailure(Throwable failure) {
     if (this.failure == null) {
       this.failure = failure;
+      LOGGER.warn("OperationAttempt: maybeAddFailure for attemptId {}", attemptId, failure);
     }
     if (this.failure != null) {
       setStatus(OperationStatus.ERROR);
     }
     return downcast();
+  }
+
+  @Override
+  public String toString() {
+    return new StringBuilder("OperationAttempt{")
+        .append("subtype={")
+        .append(getClass().getSimpleName())
+        .append("}, ")
+        .append("position=")
+        .append(position)
+        .append(", ")
+        .append("status=")
+        .append(status)
+        .append(", ")
+        .append("attemptId=")
+        .append(attemptId)
+        .append(", ")
+        .append("failure=")
+        .append(failure)
+        .append("}")
+        .toString();
   }
 
   /**

@@ -5,12 +5,10 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
+import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.InsertAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.InsertOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.OperationAttempt;
@@ -42,26 +40,21 @@ public class InsertTableOperation<SchemaT extends TableBasedSchemaObject>
     this.returnDocumentResponses = returnDocumentResponses;
   }
 
-  /**
-   * Uses the provided {@link DriverExceptionHandler} to handle any driver errors that occur during.
-   *
-   * @param throwable Any throwable, if it is not a {@link
-   *     com.datastax.oss.driver.api.core.DriverException} or there is no special handling for it,
-   *     it will be returned as is.
-   * @return Handler error, turning into a {@link io.stargate.sgv2.jsonapi.exception.APIException}
-   *     or the provided <code>throwable
-   *     </code>.
-   */
-  //  protected RuntimeException maybeHandleDriverError(RuntimeException throwable) {
-  //    return driverExceptionHandler.maybeHandle(commandContext.schemaObject(), throwable);
-  //  }
-
   @Override
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
 
     var debugMode = commandContext.getConfig(DebugModeConfig.class).enabled();
     var extendedErrors = commandContext.getConfig(OperationsConfig.class).extendError();
+
+    // TODO AARON - for now we create the CommandQueryExecutor here , later change the Operation
+    // interface
+    CommandQueryExecutor commandQueryExecutor =
+        new CommandQueryExecutor(
+            queryExecutor.getCqlSessionCache(),
+            new RequestContext(
+                dataApiRequestInfo.getTenantId(), dataApiRequestInfo.getCassandraToken()),
+            CommandQueryExecutor.QueryTarget.TABLE);
 
     // TODO AARON - this is for unordered, copy from Collection InsertCollectionOperation
     // insertUnordered
@@ -70,10 +63,11 @@ public class InsertTableOperation<SchemaT extends TableBasedSchemaObject>
         // merge to make it parallel
         .onItem()
         .transformToUniAndMerge(
-            insertAttempt ->
-                insertAttempt.execute(dataApiRequestInfo, queryExecutor, driverExceptionHandler))
+            insertAttempt -> insertAttempt.execute(commandQueryExecutor, driverExceptionHandler))
         .onItem()
-        .transform(OperationAttempt::verifyComplete)
+        .transform(OperationAttempt::setSkippedIfReady)
+        .onItem()
+        .transform(OperationAttempt::checkTerminal)
         // then reduce here
         .collect()
         .in(

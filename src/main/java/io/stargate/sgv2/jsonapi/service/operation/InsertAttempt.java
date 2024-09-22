@@ -1,19 +1,21 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
+import com.datastax.oss.driver.api.querybuilder.insert.OngoingValues;
 import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertValuesCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,20 +35,30 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
     extends OperationAttempt<InsertAttempt<SchemaT>, SchemaT> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(InsertAttempt.class);
+  private final InsertValuesCQLClause insertValuesCQLClause;
 
-  protected InsertAttempt(int position, SchemaT schemaObject) {
+  protected InsertAttempt(
+      int position, SchemaT schemaObject, InsertValuesCQLClause insertValuesCQLClause) {
     super(position, schemaObject);
+    // nullable, because the subclass may want to implement method itself.
+    this.insertValuesCQLClause = insertValuesCQLClause;
   }
 
   @Override
-  protected CompletionStage<AsyncResultSet> execute(CqlSession session) {
+  protected Uni<AsyncResultSet> execute(CommandQueryExecutor queryExecutor) {
     // bind and execute
     var boundStatement = buildInsertStatement();
 
     LOGGER.warn("INSERT CQL: {}", boundStatement.getQuery());
     LOGGER.warn("INSERT VALUES: {}", boundStatement.getPositionalValues());
 
-    return session.executeAsync(boundStatement);
+    return queryExecutor.executeWrite(boundStatement);
+  }
+
+  @Override
+  protected InsertAttempt<SchemaT> onSuccess(AsyncResultSet resultSet) {
+    setStatus(OperationStatus.COMPLETED);
+    return this;
   }
 
   protected SimpleStatement buildInsertStatement() {
@@ -56,11 +68,15 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
     InsertInto insertInto = QueryBuilder.insertInto(metadata.getKeyspace(), metadata.getName());
 
     List<Object> positionalValues = new ArrayList<>();
-    RegularInsert regularInsert = getInsertValuesCQLClause().apply(insertInto, positionalValues);
+    RegularInsert regularInsert = applyInsertValues(insertInto, positionalValues);
     return SimpleStatement.newInstance(regularInsert.asCql(), positionalValues.toArray());
   }
 
-  protected abstract TableInsertValuesCQLClause getInsertValuesCQLClause();
+  protected RegularInsert applyInsertValues(
+      OngoingValues ongoingValues, List<Object> positionalValues) {
+    Objects.requireNonNull(insertValuesCQLClause, "insertValuesCQLClause must not be null");
+    return insertValuesCQLClause.apply(ongoingValues, positionalValues);
+  }
 
   /**
    * The document _id or the row primary key, if known, used to build the response that includes the

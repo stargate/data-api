@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver;
 
 import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -19,10 +18,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.InetSocketAddress;
 import java.time.Duration;
-import java.util.Base64;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +40,6 @@ public class CQLSessionCache {
    * request
    */
   private static final String DEFAULT_TENANT = "default_tenant";
-
-  /** CQL username to be used when the backend is AstraDB */
-  private static final String TOKEN = "token";
 
   /** CQLSession cache. */
   private final LoadingCache<SessionCacheKey, CqlSession> sessionCache;
@@ -117,75 +110,46 @@ public class CQLSessionCache {
    * @throws RuntimeException if database type is not supported
    */
   private CqlSession getNewSession(SessionCacheKey cacheKey) {
+
+    // TODO: WHY IS THIS USED ?
     DriverConfigLoader loader =
         DriverConfigLoader.programmaticBuilder()
             .withString(DefaultDriverOption.SESSION_NAME, cacheKey.tenantId)
             .build();
+
+    var databaseConfig = operationsConfig.databaseConfig();
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Creating new session for tenant : {}", cacheKey.tenantId());
+      LOGGER.trace(
+          "Creating new session for tenant : {} and Database type: {}",
+          cacheKey.tenantId(),
+          databaseConfig.type());
     }
-    OperationsConfig.DatabaseConfig databaseConfig = operationsConfig.databaseConfig();
-    if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Database type: {}", databaseConfig.type());
-    }
-    if (CASSANDRA.equals(databaseConfig.type())) {
-      List<InetSocketAddress> seeds =
+
+    // there is a lot of common setup regardless of the database type
+    var builder =
+        new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
+            .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
+            .withClassLoader(Thread.currentThread().getContextClassLoader())
+            .withConfigLoader(loader)
+            .addSchemaChangeListener(new SchemaChangeListener(schemaCache, cacheKey.tenantId))
+            .withApplicationName(APPLICATION_NAME);
+    cacheKey.credentials().addToSessionBuilder(builder);
+
+    if (databaseConfig.type().equals(CASSANDRA)) {
+      var seeds =
           Objects.requireNonNull(operationsConfig.databaseConfig().cassandraEndPoints()).stream()
               .map(
                   host ->
                       new InetSocketAddress(
                           host, operationsConfig.databaseConfig().cassandraPort()))
-              .collect(Collectors.toList());
-      CqlSessionBuilder builder =
-          new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
-              .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
-              .addContactPoints(seeds)
-              .withClassLoader(Thread.currentThread().getContextClassLoader())
-              .withConfigLoader(loader)
-              .addSchemaChangeListener(new SchemaChangeListener(schemaCache, cacheKey.tenantId))
-              .withApplicationName(APPLICATION_NAME);
-      // To use username and password, a Base64Encoded text of the credential is passed as token.
-      // The text needs to be in format Cassandra:Base64(username):Base64(password)
-      String token = ((TokenCredentials) cacheKey.credentials()).token();
-      if (getFixedToken() == null) {
-        if (token.startsWith("Cassandra:")) {
-          UsernamePasswordCredentials upc = UsernamePasswordCredentials.from(token);
-          builder.withAuthCredentials(
-              Objects.requireNonNull(upc.userName()), Objects.requireNonNull(upc.password()));
-        } else {
-          throw new UnauthorizedException(
-              "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
-        }
-      } else {
-        builder.withAuthCredentials(
-            Objects.requireNonNull(databaseConfig.userName()),
-            Objects.requireNonNull(databaseConfig.password()));
-      }
-      return builder.build();
-    } else if (ASTRA.equals(databaseConfig.type())) {
-      String token = ((TokenCredentials) cacheKey.credentials()).token();
-      // If we pass empty token (password), would throw IllegalArgumentException so instead:
-      if ((token == null) || token.isBlank()) {
-        throw new UnauthorizedException(
-            "Missing AstraDB token for tenant '" + cacheKey.tenantId + "'");
-      }
-      CqlSession cqlSession =
-          new TenantAwareCqlSessionBuilder(cacheKey.tenantId())
-              .withAuthCredentials(TOKEN, token)
-              .withLocalDatacenter(operationsConfig.databaseConfig().localDatacenter())
-              .withClassLoader(Thread.currentThread().getContextClassLoader())
-              .withApplicationName(APPLICATION_NAME)
-              .withConfigLoader(loader)
-              .addSchemaChangeListener(new SchemaChangeListener(schemaCache, cacheKey.tenantId))
-              .build();
-      //      if (!isAstraSessionValid(cqlSession, cacheKey.tenantId())) {
-      //        throw new UnauthorizedException("Provided username token and/or password are
-      // incorrect");
-      //      }
-      return cqlSession;
+              .toList();
+      builder.addContactPoints(seeds);
     }
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "Unsupported database type: %s", databaseConfig.type());
+
+    // aaron - this used to have a if / else that threw an exception if the database type was not
+    // known
+    // but we test that when creating the credentials for the cache key so no need to do it here.
+    return builder.build();
   }
 
   //  /**
@@ -230,16 +194,24 @@ public class CQLSessionCache {
    * @return CQLSession
    */
   public CqlSession getSession(DataApiRequestInfo dataApiRequestInfo) {
-    String fixedToken;
-    if ((fixedToken = getFixedToken()) != null
-        && !dataApiRequestInfo.getCassandraToken().orElseThrow().equals(fixedToken)) {
+    // Validation happens when creating the credentials and session key
+    return getSession(
+        dataApiRequestInfo.getTenantId().orElse(""),
+        dataApiRequestInfo.getCassandraToken().orElse(""));
+  }
+
+  public CqlSession getSession(String tenantId, String authToken) {
+    String fixedToken = getFixedToken();
+    if (fixedToken != null && !authToken.equals(fixedToken)) {
       throw new UnauthorizedException(ErrorCodeV1.UNAUTHENTICATED_REQUEST.getMessage());
     }
-    if (!OFFLINE_WRITER.equals(operationsConfig.databaseConfig().type())) {
-      return sessionCache.get(getSessionCacheKey(dataApiRequestInfo));
-    } else {
-      return sessionCache.getIfPresent(getSessionCacheKey(dataApiRequestInfo));
+
+    var cacheKey = getSessionCacheKey(tenantId, authToken);
+    // TODO: why is this different for OFFLINE ?
+    if (OFFLINE_WRITER.equals(operationsConfig.databaseConfig().type())) {
+      return sessionCache.getIfPresent(cacheKey);
     }
+    return sessionCache.get(cacheKey);
   }
 
   /**
@@ -257,30 +229,33 @@ public class CQLSessionCache {
    *
    * @return key for CQLSession cache
    */
-  private SessionCacheKey getSessionCacheKey(DataApiRequestInfo dataApiRequestInfo) {
-    switch (operationsConfig.databaseConfig().type()) {
-      case CASSANDRA -> {
-        if (dataApiRequestInfo.getCassandraToken().isPresent()) {
-          return new SessionCacheKey(
-              dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT),
-              new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
-        } else {
-          throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-              "Missing/Invalid authentication credentials provided for type: %s",
-              operationsConfig.databaseConfig().type());
-        }
-      }
-      case ASTRA -> {
-        return new SessionCacheKey(
-            dataApiRequestInfo.getTenantId().orElseThrow(),
-            new TokenCredentials(dataApiRequestInfo.getCassandraToken().orElseThrow()));
-      }
-      case OFFLINE_WRITER -> {
-        return new SessionCacheKey(dataApiRequestInfo.getTenantId().orElse(DEFAULT_TENANT), null);
-      }
+  private SessionCacheKey getSessionCacheKey(String tenantId, String authToken) {
+    var databaseConfig = operationsConfig.databaseConfig();
+
+    // NOTE: this has changed, will create the UsernamePasswordCredentials from the token if that is
+    // the token
+    var credentials =
+        CqlCredentials.create(
+            getFixedToken(), authToken, databaseConfig.userName(), databaseConfig.password());
+
+    // Only the OFFLINE_WRITER allows anonymous access, because it is not connecting to an actual
+    // database
+    if (credentials.isAnonymous()
+        && !OFFLINE_WRITER.equals(operationsConfig.databaseConfig().type())) {
+      throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
+          "Missing/Invalid authentication credentials provided for type: %s",
+          operationsConfig.databaseConfig().type());
     }
-    throw ErrorCodeV1.SERVER_INTERNAL_ERROR.toApiException(
-        "Unsupported database type: %s", operationsConfig.databaseConfig().type());
+
+    return switch (operationsConfig.databaseConfig().type()) {
+      case CASSANDRA, OFFLINE_WRITER ->
+          new SessionCacheKey(
+              tenantId == null || tenantId.isBlank() ? DEFAULT_TENANT : tenantId, credentials);
+      case ASTRA -> new SessionCacheKey(tenantId, credentials);
+      default ->
+          throw new IllegalStateException(
+              "Unknown databaseConfig().type(): " + operationsConfig.databaseConfig().type());
+    };
   }
 
   /**
@@ -314,42 +289,21 @@ public class CQLSessionCache {
     sessionCache.put(sessionCacheKey, cqlSession);
   }
 
-  /** Key for CQLSession cache. */
-  public record SessionCacheKey(String tenantId, Credentials credentials) {}
-
   /**
-   * Credentials for CQLSession cache when username and password is provided.
+   * Key for CQLSession cache.
    *
-   * @param userName
-   * @param password
+   * <p>
+   *
+   * @param tenantId optional tenantId, if null converted to empty string
+   * @param credentials Required, credentials for the session
    */
-  private record UsernamePasswordCredentials(String userName, String password)
-      implements Credentials {
+  public record SessionCacheKey(String tenantId, CqlCredentials credentials) {
 
-    public static UsernamePasswordCredentials from(String encodedCredentials) {
-      String[] parts = encodedCredentials.split(":");
-      if (parts.length != 3) {
-        throw new UnauthorizedException(
-            "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
+    public SessionCacheKey {
+      if (tenantId == null) {
+        tenantId = "";
       }
-      try {
-        String userName = new String(Base64.getDecoder().decode(parts[1]));
-        String password = new String(Base64.getDecoder().decode(parts[2]));
-        return new UsernamePasswordCredentials(userName, password);
-      } catch (Exception e) {
-        throw new UnauthorizedException(
-            "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
-      }
+      Objects.requireNonNull(credentials, "credentials must not be null");
     }
   }
-
-  /**
-   * Credentials for CQLSession cache when token is provided.
-   *
-   * @param token
-   */
-  private record TokenCredentials(String token) implements Credentials {}
-
-  /** A marker interface for credentials. */
-  private interface Credentials {}
 }
