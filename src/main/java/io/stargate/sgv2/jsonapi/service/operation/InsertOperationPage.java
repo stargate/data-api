@@ -181,9 +181,13 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
             .toList();
 
     Map<CommandStatus, Object> status = new HashMap<>();
-    status.put(CommandStatus.INSERTED_IDS, insertedIds);
+    // only add the insertedId's if we do not have errors to avoid adding the status element to the
+    // JOSN
+    if (errors.isEmpty()) {
+      status.put(CommandStatus.INSERTED_IDS, insertedIds);
+    }
     maybeAddSchema(status);
-    return new CommandResult(null, status, errors);
+    return new CommandResult(null, status.isEmpty() ? null : status, errors);
   }
 
   /**
@@ -253,9 +257,14 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
           .apply(throwable, throwable.getMessage());
     }
 
+    // aaron 23 sept - the insertAttempt.docRowID().orElse.. below is because if we fail to shred we
+    // do not have the id
+    // previously this type of error would bubble to the top of the stack, it is not handled as part
+    // of building the
+    // insert page. This is ugly, need to fix later.
+    var docRowID = insertAttempt.docRowID().orElse(() -> "UNKNOWN").value();
     String message =
-        "Failed to insert document with _id %s: %s"
-            .formatted(insertAttempt.docRowID().orElseThrow(), throwable.getMessage());
+        "Failed to insert document with _id %s: %s".formatted(docRowID, throwable.getMessage());
     /// TODO: confirm the null handling in the getMapperWithMessageFunction
     // passing null is what would have happened before changing to optional
     // BUG: this does not handle if the debug flag is set.

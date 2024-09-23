@@ -89,23 +89,5 @@ class InsertOneCommandResolverTest {
               });
     }
 
-    @Test
-    public void shredderFailure() throws Exception {
-      String json =
-          """
-          {
-            "insertOne": {
-              "document" : null
-            }
-          }
-          """;
-
-      InsertOneCommand command = objectMapper.readValue(json, InsertOneCommand.class);
-      Throwable failure = catchThrowable(() -> resolver.resolveCommand(commandContext, command));
-
-      assertThat(failure)
-          .isInstanceOf(JsonApiException.class)
-          .hasFieldOrPropertyWithValue("errorCode", ErrorCodeV1.SHRED_BAD_DOCUMENT_TYPE);
-    }
   }
 }
