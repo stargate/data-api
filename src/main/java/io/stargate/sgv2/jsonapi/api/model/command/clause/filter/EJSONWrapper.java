@@ -3,7 +3,9 @@ package io.stargate.sgv2.jsonapi.api.model.command.clause.filter;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.nio.ByteBuffer;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -46,7 +48,16 @@ public class EJSONWrapper {
     this.value = Objects.requireNonNull(value);
   }
 
-  public static EJSONWrapper from(String key, JsonNode value) {
+  public static EJSONWrapper maybeFrom(ObjectNode objectNode) {
+    // EJSON-wrapper: single entry with key starting with "$TYPE"?
+    if (objectNode.size() == 1) {
+      Map.Entry<String, JsonNode> entry = objectNode.fields().next();
+      return maybeFrom(entry.getKey(), entry.getValue());
+    }
+    return null;
+  }
+
+  public static EJSONWrapper maybeFrom(String key, JsonNode value) {
     EJSONType type = EJSONType.fromKey(key);
     return (type == null) ? null : new EJSONWrapper(type, value);
   }

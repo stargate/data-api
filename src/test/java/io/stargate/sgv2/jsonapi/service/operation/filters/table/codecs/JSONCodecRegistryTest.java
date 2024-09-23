@@ -177,7 +177,7 @@ public class JSONCodecRegistryTest {
         // Binary: to be added when we have a codec for it
         Arguments.of(
             DataTypes.BLOB,
-            EJSONWrapper.from(
+            EJSONWrapper.maybeFrom(
                 EJSONWrapper.EJSONType.BINARY.key(),
                 JsonNodeFactory.instance.textNode(TEST_DATA.BASE64_PADDED_ENCODED_STR)),
             ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES)));

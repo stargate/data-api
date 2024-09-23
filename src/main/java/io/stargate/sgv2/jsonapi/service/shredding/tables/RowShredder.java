@@ -100,13 +100,9 @@ public class RowShredder {
       }
       case OBJECT -> {
         ObjectNode objectNode = (ObjectNode) value;
-        // EJSON-wrapper: single entry with key starting with "$TYPE"?
-        if (objectNode.size() == 1) {
-          Map.Entry<String, JsonNode> entry = objectNode.fields().next();
-          EJSONWrapper wrapper = EJSONWrapper.from(entry.getKey(), entry.getValue());
-          if (wrapper != null) {
-            yield new JsonLiteral<>(wrapper, JsonType.EJSON_WRAPPER);
-          }
+        EJSONWrapper wrapper = EJSONWrapper.maybeFrom(objectNode);
+        if (wrapper != null) {
+          yield new JsonLiteral<>(wrapper, JsonType.EJSON_WRAPPER);
         }
         // If not, treat as a regular sub-document
         Map<JsonPath, JsonLiteral<?>> map = new HashMap<>();
