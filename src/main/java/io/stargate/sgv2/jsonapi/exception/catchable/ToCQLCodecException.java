@@ -31,7 +31,7 @@ public class ToCQLCodecException extends CheckedApiException {
       Object value, DataType targetCQLType, String rootCauseMessage) {
     return String.format(
         "Error trying to convert to targetCQLType `%s` from value.class `%s`, value %s. Root cause: %s",
-        targetCQLType, value.getClass().getName(), valueDesc(value), rootCauseMessage);
+        targetCQLType, className(value), valueDesc(value), rootCauseMessage);
   }
 
   // Add a place to slightly massage value; can be further improved
@@ -43,5 +43,12 @@ public class ToCQLCodecException extends CheckedApiException {
       return "\"" + value + "\"";
     }
     return String.valueOf(value);
+  }
+
+  private static String className(Object value) {
+    if (value == null) {
+      return "null";
+    }
+    return value.getClass().getName();
   }
 }
