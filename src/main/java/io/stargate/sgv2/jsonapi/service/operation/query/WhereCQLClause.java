@@ -26,4 +26,5 @@ import java.util.function.BiFunction;
  * {@link io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause} implementation.
  */
 public interface WhereCQLClause<T extends OngoingWhereClause<T>>
-    extends BiFunction<T, List<Object>, T>, CQLClause {}
+    extends BiFunction<ExtendedOngoingWhereClause<T>, List<Object>, ExtendedOngoingWhereClause<T>>,
+        CQLClause {}

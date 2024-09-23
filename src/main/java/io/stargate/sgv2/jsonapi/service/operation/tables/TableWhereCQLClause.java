@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.querybuilder.update.Update;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.query.ExtendedOngoingWhereClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.util.List;
@@ -78,8 +79,25 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
     return new TableWhereCQLClause<>(table, dbLogicalExpression);
   }
 
+  //
+  //  @Override
+  //  public T apply(T tOngoingWhereClause, List<Object> objects) {
+  //    // TODO BUG: this probably breaks order for nested expressions, for now enough to get this
+  //    // tested
+  //    var tableFilters =
+  //        dbLogicalExpression.dBFilters().stream().map(dbFilter -> (TableFilter)
+  // dbFilter).toList();
+  //
+  //    // Add the where clause operations
+  //    for (TableFilter tableFilter : tableFilters) {
+  //      tOngoingWhereClause = tableFilter.apply(table, tOngoingWhereClause, objects);
+  //    }
+  //    return tOngoingWhereClause;
+  //  }
+
   @Override
-  public T apply(T tOngoingWhereClause, List<Object> objects) {
+  public ExtendedOngoingWhereClause<T> apply(
+      ExtendedOngoingWhereClause<T> extendedOngoingWhereClause, List<Object> objects) {
     // TODO BUG: this probably breaks order for nested expressions, for now enough to get this
     // tested
     var tableFilters =
@@ -87,8 +105,8 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
 
     // Add the where clause operations
     for (TableFilter tableFilter : tableFilters) {
-      tOngoingWhereClause = tableFilter.apply(table, tOngoingWhereClause, objects);
+      extendedOngoingWhereClause = tableFilter.apply(table, extendedOngoingWhereClause, objects);
     }
-    return tOngoingWhereClause;
+    return extendedOngoingWhereClause;
   }
 }

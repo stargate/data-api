@@ -74,6 +74,8 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
         new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection)
             .addBuilderOption(CQLOption.ForSelect.limit(1));
 
+    // TODO, we may want the ability to resolve API filter clause into multiple
+    // dbLogicalExpressions, which will map into multiple readAttempts
     var where =
         TableWhereCQLClause.forSelect(
             ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));

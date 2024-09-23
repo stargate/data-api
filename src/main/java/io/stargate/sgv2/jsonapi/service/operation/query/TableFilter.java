@@ -39,6 +39,54 @@ public abstract class TableFilter extends DBFilterBase {
    *     fluent builder that returns immutable that are used in a chain, see the
    *     https://docs.datastax.com/en/developer/java-driver/4.3/manual/query_builder/index.html
    */
-  public abstract <StmtT extends OngoingWhereClause<StmtT>> StmtT apply(
-      TableSchemaObject tableSchemaObject, StmtT ongoingWhereClause, List<Object> positionalValues);
+  public abstract <StmtT extends OngoingWhereClause<StmtT>> ExtendedOngoingWhereClause<StmtT> apply(
+      TableSchemaObject tableSchemaObject,
+      ExtendedOngoingWhereClause<StmtT> extendedOngoingWhereClause,
+      List<Object> positionalValues);
+
+  /**
+   * All subClass tableFilter have access to this method. This method will check the tableSchema and
+   * see if the filter column(path) has SAI index on it.
+   *
+   * @param tableSchemaObject tableSchemaObject
+   * @return boolean to indicate if there is a SAI index on the column
+   */
+  public boolean hasSaiIndexOnColumn(TableSchemaObject tableSchemaObject) {
+    // Check if the column has SAI index on it
+    return tableSchemaObject.tableMetadata().getIndexes().values().stream()
+        .anyMatch(index -> index.getTarget().equals(path));
+  }
+
+  /**
+   * All subClass tableFilter have access to this method. This method will check the tableSchema and
+   * see if the filter column(path) is on the primary key.
+   *
+   * @param tableSchemaObject tableSchemaObject
+   * @return boolean to indicate if there is an index on the primary key
+   */
+  public boolean hasPrimaryKeyOnColumn(TableSchemaObject tableSchemaObject) {
+
+    // Check if the column is a primary key (partition key or clustering column)
+    boolean isPrimaryKey =
+        tableSchemaObject.tableMetadata().getPartitionKey().stream()
+                .anyMatch(column -> column.getName().equals(path))
+            || tableSchemaObject.tableMetadata().getClusteringColumns().keySet().stream()
+                .anyMatch(column -> column.getName().equals(path));
+    return isPrimaryKey;
+  }
+
+  /**
+   * Method to check if current tableFilter needs ALLOW FILTERING on. All tableFilter will implement
+   * this abstract method.
+   *
+   * <p>[use case] If there is no index on the target column, Data API will add ALLOW FILTERING
+   * despite the performance unpredictability.
+   *
+   * <p>[user case] Some cql operators need ALLOW FILTERING on to perform the query, with or without
+   * index. Then the tableFilter implementation should know itself to add ALLOW FILTERING or not.
+   *
+   * @param tableSchemaObject tableSchemaObject
+   * @return boolean
+   */
+  public abstract boolean shouldAddAllowFiltering(TableSchemaObject tableSchemaObject);
 }

@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
+import io.stargate.sgv2.jsonapi.service.operation.query.ExtendedOngoingWhereClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import java.util.List;
 import org.slf4j.Logger;
@@ -61,6 +62,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
    */
   public enum Operator {
     EQ(BuiltConditionPredicate.EQ),
+    NE(BuiltConditionPredicate.NEQ),
     LT(BuiltConditionPredicate.LT),
     GT(BuiltConditionPredicate.GT),
     LTE(BuiltConditionPredicate.LTE),
@@ -75,6 +77,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
     public static Operator from(ValueComparisonOperator operator) {
       return switch (operator) {
         case EQ -> EQ;
+        case NE -> NE;
         case GT -> GT;
         case GTE -> GTE;
         case LT -> LT;
@@ -100,9 +103,9 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
   }
 
   @Override
-  public <StmtT extends OngoingWhereClause<StmtT>> StmtT apply(
+  public <StmtT extends OngoingWhereClause<StmtT>> ExtendedOngoingWhereClause<StmtT> apply(
       TableSchemaObject tableSchemaObject,
-      StmtT ongoingWhereClause,
+      ExtendedOngoingWhereClause<StmtT> extendedOngoingWhereClause,
       List<Object> positionalValues) {
 
     try {
@@ -119,7 +122,57 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
       throw new RuntimeException(e);
     }
 
-    return ongoingWhereClause.where(
-        Relation.column(getPathAsCqlIdentifier()).build(operator.predicate.cql, bindMarker()));
+    return extendedOngoingWhereClause.where(
+        Relation.column(getPathAsCqlIdentifier()).build(operator.predicate.cql, bindMarker()),
+        shouldAddAllowFiltering(tableSchemaObject));
+  }
+
+  /**
+   * shouldAddAllowFiltering implementation for all nativeTypeTableFilter
+   *
+   * <p>[NativeTypeTableFilter on primary key column].<br>
+   * Example Table definition: {"definition": {"columns": {"id": {"type": "int"},"age": {"type":
+   * "int"},"name": {"type": "text"}},"primaryKey": "id"}}.<br>
+   * API filter($eq) on id(primary key column) does NOT need ALLOW FILTERING without SAI index,
+   * already a primary key index behind the scene. Note, other API filters($ne, $lt, $gt, etc..)
+   * still need ALLOW FILTERING if without SAI index.
+   *
+   * <p>[NativeTypeTableFilter on non-primary key, scalar column, without SAI index/primary key].
+   * <br>
+   * Example Table definition: {"definition": {"columns": {"id": {"type": "int"},"age": {"type":
+   * "int"},"name": {"type": "text"}},"primaryKey": "id"}}.<br>
+   * If without SAI index, All nativeTypeTableFilter on these non-primary key scalar column need
+   * ALLOW FILTERING.
+   *
+   * <p>[NativeTypeTableFilter on non-primary key, scalar column, with SAI index/primary key].<br>
+   * Example Table definition: {"definition": {"columns": {"id": {"type": "int"},"age": {"type":
+   * "int"},"name": {"type": "text"}},"primaryKey": "id"}}.<br>
+   * With SAI index, there are several situations we still need ALLOW FILTERING.<br>
+   * (1) $ne on scalar column ...
+   *
+   * @param tableSchemaObject tableSchemaObject
+   * @return boolean to indicate ALLOW FILTERING is needed or not
+   */
+  @Override
+  public boolean shouldAddAllowFiltering(TableSchemaObject tableSchemaObject) {
+
+    // if column is on the primary key, does not need ALLOW FILTERING to perform $eq
+    if (hasPrimaryKeyOnColumn(tableSchemaObject) && operator == Operator.EQ) {
+      return false;
+    }
+
+    // if column is on the index, there are several situations that we still need allow filtering
+    if (hasSaiIndexOnColumn(tableSchemaObject)) {
+
+      if (operator == Operator.NE) {
+        return true;
+      }
+      // TODO other operators?
+
+      return false;
+    }
+
+    // If without index, then all filters on scalar column need ALLOW FILTERING
+    return true;
   }
 }

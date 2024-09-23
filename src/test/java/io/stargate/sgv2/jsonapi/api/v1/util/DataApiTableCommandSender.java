@@ -35,4 +35,10 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
   public DataApiResponseValidator postInsertOne(String docAsJSON) {
     return postCommand("insertOne", "{ \"document\": %s }".formatted(docAsJSON));
   }
+
+  public DataApiResponseValidator postCreateIndex(String columnName, String indexName) {
+    String createIndex =
+        "{\"column\":\"%s\", \"indexName\":\"%s\"}".formatted(columnName, indexName);
+    return postCommand("createIndex", createIndex);
+  }
 }

@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
+import io.stargate.sgv2.jsonapi.service.operation.query.ExtendedOngoingWhereClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.util.ArrayList;
@@ -108,7 +109,10 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
     Select select = selectCQLClause.apply(selectFrom);
 
     // Add the where clause
-    select = whereCQLClause.apply(select, positionalValues);
+    ExtendedOngoingWhereClause<Select> extendedOngoingWhereClause =
+        whereCQLClause.apply(new ExtendedOngoingWhereClause<>(select, false), positionalValues);
+    select = extendedOngoingWhereClause.mayApplyAllowFilteringToSelect();
+
     return select;
   }
 

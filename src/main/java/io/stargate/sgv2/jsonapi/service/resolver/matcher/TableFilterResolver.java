@@ -2,10 +2,13 @@ package io.stargate.sgv2.jsonapi.service.resolver.matcher;
 
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.FilterOperator;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.InTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NumberTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.TextTableFilter;
@@ -13,6 +16,7 @@ import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.function.BiConsumer;
 
 /**
@@ -26,6 +30,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
   private static final Object DYNAMIC_DOCID_GROUP = new Object();
   private static final Object DYNAMIC_TEXT_GROUP = new Object();
   private static final Object DYNAMIC_NUMBER_GROUP = new Object();
+  private static final Object DYNAMIC_GROUP_IN = new Object();
 
   public TableFilterResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
@@ -45,7 +50,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
             "*",
             EnumSet.of(
                 ValueComparisonOperator.EQ,
-                //                ValueComparisonOperator.NE, // TODO: not sure this is supported
+                ValueComparisonOperator.NE,
                 ValueComparisonOperator.GT,
                 ValueComparisonOperator.GTE,
                 ValueComparisonOperator.LT,
@@ -56,7 +61,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
             "*",
             EnumSet.of(
                 ValueComparisonOperator.EQ,
-                //                ValueComparisonOperator.NE, - TODO - not supported
+                ValueComparisonOperator.NE,
                 ValueComparisonOperator.GT,
                 ValueComparisonOperator.GTE,
                 ValueComparisonOperator.LT,
@@ -74,8 +79,13 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                 ValueComparisonOperator.GTE,
                 ValueComparisonOperator.LT,
                 ValueComparisonOperator.LTE),
-            JsonType.DOCUMENT_ID);
-
+            JsonType.DOCUMENT_ID)
+        .capture(DYNAMIC_GROUP_IN)
+        .compareValues(
+            "*",
+            EnumSet.of(ValueComparisonOperator.IN, ValueComparisonOperator.NIN),
+            JsonType.ARRAY)
+        .capture(DYNAMIC_NUMBER_GROUP);
     return matchRules;
   }
 
@@ -151,9 +161,34 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                           }
                         });
                   });
+
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_GROUP_IN)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> dynamicInGroup = (CaptureGroup<Object>) captureGroup;
+                    dynamicInGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addDBFilter(
+                              new InTableFilter(
+                                  getTableInOperator(expression.operator()),
+                                  expression.path(),
+                                  (List<Object>) expression.value()));
+                        });
+                  });
         };
 
     currentCaptureGroups.consumeAll(currentDBLogicalExpression, consumer);
     return currentDBLogicalExpression;
+  }
+
+  private static InTableFilter.Operator getTableInOperator(FilterOperator filterOperator) {
+    return switch ((ValueComparisonOperator) filterOperator) {
+      case IN -> InTableFilter.Operator.IN;
+      case NIN -> InTableFilter.Operator.NIN;
+      default ->
+          throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+              "%s", filterOperator.getOperator());
+    };
   }
 }
