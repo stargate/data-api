@@ -269,10 +269,10 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_FP_COLUMNS)
           .postInsertOne(fpDoc("decimalUnknownString", "0.5", "1.0", "\"Bazillion\""))
           .hasSingleApiError(
-              // Not optimal as type is supported, just not coercion
-              DocumentException.Code.UNSUPPORTED_COLUMN_TYPES,
+              DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
-              "following columns that have unsupported data types",
+              "Only values that are supported by the column data type can be included when inserting",
+              "no codec matching value type",
               "\"decimalValue\"");
     }
 
@@ -321,16 +321,14 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
           .postInsertOne(rawBinaryDoc("binaryFromNumber", "1234"))
           .hasSingleApiError(
-              // Not optimal: to be improved in future:
-              DocumentException.Code.UNSUPPORTED_COLUMN_TYPES, DocumentException.class);
+              DocumentException.Code.INVALID_COLUMN_VALUES, DocumentException.class, "binaryValue");
       // and then with String too; valid Base64, but not EJSON
       DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
           .postInsertOne(
               rawBinaryDoc(
                   "binaryFromString", "\"" + codecTestData.BASE64_PADDED_ENCODED_STR + "\""))
           .hasSingleApiError(
-              // Not optimal: to be improved in future:
-              DocumentException.Code.UNSUPPORTED_COLUMN_TYPES, DocumentException.class);
+              DocumentException.Code.INVALID_COLUMN_VALUES, DocumentException.class, "binaryValue");
     }
 
     private String wrappedBinaryDoc(String id, String base64Binary) {

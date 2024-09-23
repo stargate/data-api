@@ -73,10 +73,16 @@ public record JSONCodec<JavaT, CqlT>(
    * @return True if the codec can convert the value into the type needed for the column.
    */
   public boolean testToCQL(DataType toCQLType, Object value) {
+    return handlesCQLType(toCQLType) && handlesJavaValue(value);
+  }
 
+  public boolean handlesCQLType(DataType toCQLType) {
+    return this.targetCQLType.equals(toCQLType);
+  }
+
+  public boolean handlesJavaValue(Object value) {
     // java value tests comes from TypeCodec.accepts(Object value) in the driver
-    return this.targetCQLType.equals(toCQLType)
-        && (value == null || javaType.getRawType().isAssignableFrom(value.getClass()));
+    return (value == null) || javaType.getRawType().isAssignableFrom(value.getClass());
   }
 
   /**
