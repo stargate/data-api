@@ -69,7 +69,12 @@ public class EJSONWrapper {
 
   @Override
   public String toString() {
-    return "EJSONWrapper{%s}".formatted(type.key());
+    // Include a snippet of actual value for easier debugging
+    String valueDesc = String.valueOf(value);
+    if (valueDesc.length() > 20) {
+      valueDesc = valueDesc.substring(0, 20) + "[...]";
+    }
+    return "EJSONWrapper{%s,(%s)%s}".formatted(type.key(), value.getNodeType().name(), valueDesc);
   }
 
   // Return value specifies how serialization works: re-creates wrapper
