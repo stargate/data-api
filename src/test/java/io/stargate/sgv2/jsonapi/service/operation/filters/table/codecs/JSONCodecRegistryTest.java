@@ -172,15 +172,19 @@ public class JSONCodecRegistryTest {
 
   private static Stream<Arguments> validCodecToCQLTestCasesOther() {
     // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
-    // Textual types: ASCII, TEXT (VARCHAR is an alias for TEXT).
     return Stream.of(
-        // Binary: to be added when we have a codec for it
+        // Short regular base64-encoded string
         Arguments.of(
             DataTypes.BLOB,
-            EJSONWrapper.maybeFrom(
-                EJSONWrapper.EJSONType.BINARY.key(),
-                JsonNodeFactory.instance.textNode(TEST_DATA.BASE64_PADDED_ENCODED_STR)),
-            ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES)));
+            binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR),
+            ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES)),
+        // edge case: empty String -> byte[0]
+        Arguments.of(DataTypes.BLOB, binaryWrapper(""), ByteBuffer.wrap(new byte[0])));
+  }
+
+  private static EJSONWrapper binaryWrapper(String base64Encoded) {
+    return new EJSONWrapper(
+        EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.textNode(base64Encoded));
   }
 
   @Test
@@ -392,6 +396,7 @@ public class JSONCodecRegistryTest {
 
     EJSONWrapper valueToTest2 =
         new EJSONWrapper(EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.numberNode(42));
+
     error =
         assertThrowsExactly(
             ToCQLCodecException.class,
@@ -405,6 +410,23 @@ public class JSONCodecRegistryTest {
               assertThat(e.getMessage())
                   .contains(
                       "Root cause: Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed");
+            });
+
+    // Test with unpadded base64
+    EJSONWrapper valueToTest3 = binaryWrapper(TEST_DATA.BASE64_UNPADDED_ENCODED_STR);
+    error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest3),
+            "Throw ToCQLCodecException when attempting to convert DataTypes.BLOB from non-String EJSONWrapper value");
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(DataTypes.BLOB);
+              assertThat(e.value).isEqualTo(valueToTest3);
+              assertThat(e.getMessage())
+                  .contains("Unexpected end of base64-encoded String")
+                  .contains("expects padding");
             });
   }
 

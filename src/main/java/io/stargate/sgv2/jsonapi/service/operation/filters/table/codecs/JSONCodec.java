@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
+import com.fasterxml.jackson.core.Base64Variants;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
@@ -313,23 +314,31 @@ public record JSONCodec<JavaT, CqlT>(
                 .formatted(wrapper.type().key(), EJSONWrapper.EJSONType.BINARY.key()));
       }
       JsonNode value = wrapper.value();
-      if (!value.isTextual()) {
-        throw new ToCQLCodecException(
-            wrapper,
-            targetCQLType,
-            "Unsupported JSON value type in EJSON $binary wrapper (%s): only STRING allowed"
-                .formatted(value.getNodeType()));
-      }
-      // Jackson is smart enough to decode base64-encode String values, so we can just use it
+      byte[] binaryPayload;
+
       try {
-        return ByteBuffer.wrap(value.binaryValue());
-      } catch (IOException e) {
+        if (value.isBinary()) {
+          binaryPayload = value.binaryValue();
+        } else if (value.isTextual()) {
+          // Jackson supports multiple optimized variants: MIME, PEM, MODIFIED_FOR_URL
+          // but MIME_NO_LINEFEEDS is the most common (and default).
+          // Most variation on encoding side; for decoding less difference
+          binaryPayload = Base64Variants.MIME_NO_LINEFEEDS.decode(value.textValue());
+        } else {
+          throw new ToCQLCodecException(
+              wrapper,
+              targetCQLType,
+              "Unsupported JSON value type in EJSON $binary wrapper (%s): only STRING allowed"
+                  .formatted(value.getNodeType()));
+        }
+      } catch (IllegalArgumentException | IOException e) {
         throw new ToCQLCodecException(
             wrapper,
             targetCQLType,
             "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String; problem: %s"
                 .formatted(e.getMessage()));
       }
+      return ByteBuffer.wrap(binaryPayload);
     }
   }
 
