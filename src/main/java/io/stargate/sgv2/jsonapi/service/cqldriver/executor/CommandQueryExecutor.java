@@ -40,7 +40,8 @@ public class CommandQueryExecutor {
 
   private enum QueryType {
     READ,
-    WRITE;
+    WRITE,
+    CREATE_SCHEMA;
 
     final String profileSuffix;
 
@@ -63,6 +64,27 @@ public class CommandQueryExecutor {
     this.queryTarget = queryTarget;
   }
 
+  public Uni<AsyncResultSet> executeRead(SimpleStatement statement) {
+    Objects.requireNonNull(statement, "statement must not be null");
+
+    statement = withExecutionProfile(statement, QueryType.READ);
+    return executeAndWrap(statement);
+  }
+
+  public Uni<AsyncResultSet> executeWrite(SimpleStatement statement) {
+    Objects.requireNonNull(statement, "statement must not be null");
+
+    statement = withExecutionProfile(statement, QueryType.WRITE);
+    return executeAndWrap(statement);
+  }
+
+  public Uni<AsyncResultSet> executeCreateSchema(SimpleStatement statement) {
+    Objects.requireNonNull(statement, "statement must not be null");
+
+    statement = withExecutionProfile(statement, QueryType.CREATE_SCHEMA);
+    return executeAndWrap(statement);
+  }
+
   private CqlSession session() {
     return cqlSessionCache.getSession(
         requestContext.tenantId().orElse(""), requestContext.authToken().orElse(""));
@@ -78,19 +100,5 @@ public class CommandQueryExecutor {
 
   private Uni<AsyncResultSet> executeAndWrap(SimpleStatement statement) {
     return Uni.createFrom().completionStage(session().executeAsync(statement));
-  }
-
-  public Uni<AsyncResultSet> executeRead(SimpleStatement statement) {
-    Objects.requireNonNull(statement, "statement must not be null");
-
-    statement = withExecutionProfile(statement, QueryType.READ);
-    return executeAndWrap(statement);
-  }
-
-  public Uni<AsyncResultSet> executeWrite(SimpleStatement statement) {
-    Objects.requireNonNull(statement, "statement must not be null");
-
-    statement = withExecutionProfile(statement, QueryType.WRITE);
-    return executeAndWrap(statement);
   }
 }

@@ -26,6 +26,11 @@ public class OperationAttemptContainer<
         .toList();
   }
 
+  public boolean allAttemptsCompleted() {
+    return stream()
+        .allMatch(attempt -> attempt.status() == OperationAttempt.OperationStatus.COMPLETED);
+  }
+
   public List<AttemptT> completedAttempts() {
     return stream()
         .filter(attempt -> attempt.status() == OperationAttempt.OperationStatus.COMPLETED)

@@ -12,13 +12,19 @@ import java.util.function.Function;
 
 public class CommandResultBuilder {
 
+  public enum ResponseType {
+    SINGLE_DOCUMENT,
+    MULTI_DOCUMENT,
+    STATUS_ONLY;
+  }
+
   private final Map<CommandStatus, Object> cmdStatus = new HashMap<>();
   private final List<Throwable> throwables = new ArrayList<>();
   private final List<CommandResult.Error> cmdErrors = new ArrayList<>();
   private final List<JsonNode> documents = new ArrayList<>();
   private String nextPageState = null;
 
-  private final boolean singleDocumentResponse;
+  private final ResponseType responseType;
 
   // If the debug mode is enabled, errors include the errorclass
   private final boolean debugMode;
@@ -30,8 +36,8 @@ public class CommandResultBuilder {
   private final Function<APIException, CommandResult.Error> apiExceptionToError;
 
   public CommandResultBuilder(
-      boolean singleDocumentResponse, boolean useErrorObjectV2, boolean debugMode) {
-    this.singleDocumentResponse = singleDocumentResponse;
+      ResponseType responseType, boolean useErrorObjectV2, boolean debugMode) {
+    this.responseType = responseType;
     this.useErrorObjectV2 = useErrorObjectV2;
     this.debugMode = debugMode;
 
@@ -70,24 +76,44 @@ public class CommandResultBuilder {
 
   public CommandResult build() {
 
-    var finalStatus = cmdStatus.isEmpty() ? null : cmdStatus;
+    switch (responseType) {
+      case SINGLE_DOCUMENT:
+        if (documents.size() > 1) {
+          throw new IllegalStateException(
+              String.format(
+                  "%s response type requested but multiple documents added, count=%s",
+                  responseType, documents.size()));
+        }
+        break;
+      case STATUS_ONLY:
+        if (!documents.isEmpty()) {
+          throw new IllegalStateException(
+              String.format(
+                  "%s response type requested but documents added, count=%s",
+                  responseType, documents.size()));
+        }
+        break;
+    }
 
+    // null out values that are empty, the CommandResult serialiser will ignore them when the JSON
+    // is built
+    var finalStatus = cmdStatus.isEmpty() ? null : cmdStatus;
     var finalErrors = finaliseErrors();
 
-    if (singleDocumentResponse) {
-      if (documents.size() > 1) {
-        throw new IllegalStateException(
-            "Single document response requested but multiple documents added, count="
-                + documents.size());
-      }
-    }
-    var responseData =
-        singleDocumentResponse
-            ? new CommandResult.SingleResponseData(
-                documents.isEmpty() ? null : documents.getFirst())
-            : new CommandResult.MultiResponseData(documents, nextPageState);
-
-    return new CommandResult(responseData, finalStatus, finalErrors);
+    return switch (responseType) {
+      case SINGLE_DOCUMENT ->
+          new CommandResult(
+              new CommandResult.SingleResponseData(
+                  documents.isEmpty() ? null : documents.getFirst()),
+              finalStatus,
+              finalErrors);
+      case MULTI_DOCUMENT ->
+          new CommandResult(
+              new CommandResult.MultiResponseData(documents, nextPageState),
+              finalStatus,
+              finalErrors);
+      case STATUS_ONLY -> new CommandResult(null, finalStatus, finalErrors);
+    };
   }
 
   private List<CommandResult.Error> finaliseErrors() {

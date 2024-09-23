@@ -56,8 +56,7 @@ public class InsertTableOperation<SchemaT extends TableBasedSchemaObject>
                 dataApiRequestInfo.getTenantId(), dataApiRequestInfo.getCassandraToken()),
             CommandQueryExecutor.QueryTarget.TABLE);
 
-    // TODO AARON - this is for unordered, copy from Collection InsertCollectionOperation
-    // insertUnordered
+    // TODO AARON - IS THIS IN parallel ?
     return Multi.createFrom()
         .iterable(insertAttempts)
         // merge to make it parallel
