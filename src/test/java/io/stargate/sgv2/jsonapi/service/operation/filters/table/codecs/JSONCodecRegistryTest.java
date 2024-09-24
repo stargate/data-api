@@ -188,8 +188,12 @@ public class JSONCodecRegistryTest {
             DataTypes.DATE, TEST_DATA.DATE_VALID_STR, LocalDate.parse(TEST_DATA.DATE_VALID_STR)),
         Arguments.of(
             DataTypes.DURATION,
-            TEST_DATA.DURATION_VALID_STR,
-            CqlDuration.from(TEST_DATA.DURATION_VALID_STR)),
+            TEST_DATA.DURATION_VALID1_STR,
+            CqlDuration.from(TEST_DATA.DURATION_VALID1_STR)),
+        Arguments.of(
+            DataTypes.DURATION,
+            TEST_DATA.DURATION_VALID2_STR,
+            CqlDuration.from(TEST_DATA.DURATION_VALID2_STR)),
         Arguments.of(
             DataTypes.TIME, TEST_DATA.TIME_VALID_STR, LocalTime.parse(TEST_DATA.TIME_VALID_STR)),
         Arguments.of(

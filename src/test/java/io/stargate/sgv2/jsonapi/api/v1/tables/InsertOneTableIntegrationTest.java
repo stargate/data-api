@@ -310,7 +310,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   @Order(4)
   class InsertBinaryColumns {
     @Test
-    void insertSimpleBinaryValue() {
+    void insertValidBinaryValue() {
       final String docJSON =
           wrappedBinaryDoc("binarySimple", codecTestData.BASE64_PADDED_ENCODED_STR);
       insertOneInTable(TABLE_WITH_BINARY_COLUMN, docJSON);
@@ -367,7 +367,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   @Order(5)
   class InsertDatetimeColumns {
     @Test
-    void insertWithPlainFPValues() {
+    void insertValidDateTimeValues() {
       // NOTE: While `CqlDuration.from()` accepts both ISO-8601 "P"-notation (like "PT2H45M")
       //   and Cassandra's standard compact/readable notation (like "2h45m"),
       //   `CqlDuration.toString()` returns canonical representation so we use the latter here
@@ -380,6 +380,54 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .postFindOne("{ \"filter\": { \"id\": \"datetimeValid\" } }")
           .hasNoErrors()
           .hasJSONField("data.document", docJSON);
+    }
+
+    @Test
+    void failOnInvalidDateValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .postInsertOne(datetimeDoc("datetimeInvalidDate", "xxx", null, null, null))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `DATE` from",
+              "Text 'xxx'");
+    }
+
+    @Test
+    void failOnInvalidDurationValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .postInsertOne(datetimeDoc("datetimeInvalidDuration", null, "xxx", null, null))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `DURATION` from",
+              "Unable to convert 'xxx'");
+    }
+
+    @Test
+    void failOnInvalidTimeValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .postInsertOne(datetimeDoc("datetimeInvalidTime", null, null, "xxx", null))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `TIME` from",
+              "Text 'xxx'");
+    }
+
+    @Test
+    void failOnInvalidTimestampValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .postInsertOne(datetimeDoc("datetimeInvalidTimestamp", null, null, null, "xxx"))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `TIMESTAMP` from",
+              "Text 'xxx'");
     }
 
     private String datetimeDoc(

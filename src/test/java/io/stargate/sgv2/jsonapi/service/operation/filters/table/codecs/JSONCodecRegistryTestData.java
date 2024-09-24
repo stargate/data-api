@@ -54,7 +54,8 @@ public class JSONCodecRegistryTestData {
   public final String DATE_VALID_STR = "2024-09-24";
   public final String DATE_INVALID_STR = "not-a-date";
 
-  public final String DURATION_VALID_STR = "PT1H30M";
+  public final String DURATION_VALID1_STR = "1h30m";
+  public final String DURATION_VALID2_STR = "PT1H30M";
   public final String DURATION_INVALID_STR = "not-a-duration";
 
   public final String TIME_VALID_STR = "12:34:56.789";
