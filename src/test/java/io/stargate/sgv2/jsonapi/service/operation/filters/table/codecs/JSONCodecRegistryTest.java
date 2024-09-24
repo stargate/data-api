@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.data.CqlDuration;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -15,6 +16,9 @@ import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -85,6 +89,12 @@ public class JSONCodecRegistryTest {
   }
 
   @ParameterizedTest
+  @MethodSource("validCodecToCQLTestCasesDatetime")
+  public void codecToCQLDatetime(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
+
+  @ParameterizedTest
   @MethodSource("validCodecToCQLTestCasesOther")
   public void codecToCQLOther(DataType cqlType, Object fromValue, Object expectedCqlValue) {
     _codecToCQL(cqlType, fromValue, expectedCqlValue);
@@ -109,7 +119,7 @@ public class JSONCodecRegistryTest {
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesInt() {
-    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
     // Note: all Numeric types accept 3 Java types: Long, BigInteger, BigDecimal
     return Stream.of(
         // Integer types:
@@ -132,7 +142,7 @@ public class JSONCodecRegistryTest {
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesFloat() {
-    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
     // Note: all Numeric types accept 3 Java types: Long, BigInteger, BigDecimal; and
     // 2 accept String as well (for Not-a-Numbers)
     return Stream.of(
@@ -155,7 +165,7 @@ public class JSONCodecRegistryTest {
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesText() {
-    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
     // Textual types: ASCII, TEXT (VARCHAR is an alias for TEXT).
     return Stream.of(
         Arguments.of(DataTypes.ASCII, TEST_DATA.STRING_ASCII_SAFE, TEST_DATA.STRING_ASCII_SAFE),
@@ -168,6 +178,24 @@ public class JSONCodecRegistryTest {
             DataTypes.TEXT,
             TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR,
             TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR));
+  }
+
+  private static Stream<Arguments> validCodecToCQLTestCasesDatetime() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
+    // Date/time types: DATE, DURATION, TIME, TIMESTAMP
+    return Stream.of(
+        Arguments.of(
+            DataTypes.DATE, TEST_DATA.DATE_VALID_STR, LocalDate.parse(TEST_DATA.DATE_VALID_STR)),
+        Arguments.of(
+            DataTypes.DURATION,
+            TEST_DATA.DURATION_VALID_STR,
+            CqlDuration.from(TEST_DATA.DURATION_VALID_STR)),
+        Arguments.of(
+            DataTypes.TIME, TEST_DATA.TIME_VALID_STR, LocalTime.parse(TEST_DATA.TIME_VALID_STR)),
+        Arguments.of(
+            DataTypes.TIMESTAMP,
+            TEST_DATA.TIMESTAMP_VALID_STR,
+            Instant.parse(TEST_DATA.TIMESTAMP_VALID_STR)));
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesOther() {
