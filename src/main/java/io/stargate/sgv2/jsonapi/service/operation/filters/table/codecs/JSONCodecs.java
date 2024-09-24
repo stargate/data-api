@@ -235,28 +235,28 @@ public abstract class JSONCodecs {
       new JSONCodec<>(
           GenericType.STRING,
           DataTypes.DATE,
-          JSONCodec.ToCQL::dateFromString,
+          JSONCodec.ToCQL.safeFromString(LocalDate::parse),
           JSONCodec.ToJSON.toJSONUsingToString());
 
   public static final JSONCodec<String, CqlDuration> DURATION_FROM_STRING =
       new JSONCodec<>(
           GenericType.STRING,
           DataTypes.DURATION,
-          JSONCodec.ToCQL::durationFromString,
+          JSONCodec.ToCQL.safeFromString(CqlDuration::from),
           JSONCodec.ToJSON.toJSONUsingToString());
 
   public static final JSONCodec<String, LocalTime> TIME_FROM_STRING =
       new JSONCodec<>(
           GenericType.STRING,
           DataTypes.TIME,
-          JSONCodec.ToCQL::timeFromString,
+          JSONCodec.ToCQL.safeFromString(LocalTime::parse),
           JSONCodec.ToJSON.toJSONUsingToString());
 
   public static final JSONCodec<String, Instant> TIMESTAMP_FROM_STRING =
       new JSONCodec<>(
           GenericType.STRING,
           DataTypes.TIMESTAMP,
-          JSONCodec.ToCQL::timestampFromString,
+          JSONCodec.ToCQL.safeFromString(Instant::parse),
           JSONCodec.ToJSON.toJSONUsingToString());
 
   // Text Codecs

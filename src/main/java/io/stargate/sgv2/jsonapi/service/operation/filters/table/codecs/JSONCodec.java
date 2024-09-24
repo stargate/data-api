@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 
-import com.datastax.oss.driver.api.core.data.CqlDuration;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
@@ -15,9 +14,6 @@ import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.DateTimeException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.function.Function;
 
 /**
@@ -184,6 +180,24 @@ public record JSONCodec<JavaT, CqlT>(
     }
 
     /**
+     * Method for constructing exception-handling String-to-CQL-type converter, given a function
+     * that converts a String to the target CQL type.
+     */
+    static <JavaT, CqlT> ToCQL<JavaT, CqlT> safeFromString(Function<JavaT, CqlT> function) {
+      return (toCQLType, value) -> {
+        try {
+          return function.apply(value);
+        } catch (IllegalArgumentException | DateTimeException e) {
+          throw new ToCQLCodecException(
+              value,
+              toCQLType,
+              "Invalid String value for type `%s`; problem: %s"
+                  .formatted(toCQLType, e.getMessage()));
+        }
+      };
+    }
+
+    /**
      * Returns given String if (and only if) it only contains 7-bit ASCII characters; otherwise it
      * will throw an {@link ToCQLCodecException}
      */
@@ -307,58 +321,6 @@ public record JSONCodec<JavaT, CqlT>(
                 targetCQLType,
                 "Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
       };
-    }
-
-    static LocalDate dateFromString(DataType targetCQLType, String value)
-        throws ToCQLCodecException {
-      try {
-        return LocalDate.parse(value);
-      } catch (DateTimeException e) {
-        throw new ToCQLCodecException(
-            value,
-            targetCQLType,
-            "Invalid String value for type `%s`; problem: %s"
-                .formatted(targetCQLType, e.getMessage()));
-      }
-    }
-
-    static CqlDuration durationFromString(DataType targetCQLType, String value)
-        throws ToCQLCodecException {
-      try {
-        return CqlDuration.from(value);
-      } catch (IllegalArgumentException e) {
-        throw new ToCQLCodecException(
-            value,
-            targetCQLType,
-            "Invalid String value for type `%s`; problem: %s"
-                .formatted(targetCQLType, e.getMessage()));
-      }
-    }
-
-    static LocalTime timeFromString(DataType targetCQLType, String value)
-        throws ToCQLCodecException {
-      try {
-        return LocalTime.parse(value);
-      } catch (DateTimeException e) {
-        throw new ToCQLCodecException(
-            value,
-            targetCQLType,
-            "Invalid String value for type `%s`; problem: %s"
-                .formatted(targetCQLType, e.getMessage()));
-      }
-    }
-
-    static Instant timestampFromString(DataType targetCQLType, String value)
-        throws ToCQLCodecException {
-      try {
-        return Instant.parse(value);
-      } catch (DateTimeException e) {
-        throw new ToCQLCodecException(
-            value,
-            targetCQLType,
-            "Invalid String value for type `%s`; problem: %s"
-                .formatted(targetCQLType, e.getMessage()));
-      }
     }
 
     static ByteBuffer byteBufferFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
