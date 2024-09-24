@@ -388,5 +388,16 @@ public record JSONCodec<JavaT, CqlT>(
     static <CqlT> ToJSON<CqlT> unsafeNodeFactory(Function<CqlT, JsonNode> nodeFactoryMethod) {
       return (objectMapper, fromCQLType, value) -> nodeFactoryMethod.apply(value);
     }
+
+    /**
+     * Returns an instance that will translate given CQL value using plain {@code toString()},
+     * constructing a {@link JsonNode} of type {@link com.fasterxml.jackson.databind.node.TextNode}.
+     *
+     * <p>See usage in the {@link JSONCodecRegistry}
+     */
+    static <CqlT> ToJSON<CqlT> toJSONUsingToString() {
+      return (objectMapper, fromCQLType, value) ->
+          objectMapper.getNodeFactory().textNode(String.valueOf(value));
+    }
   }
 }

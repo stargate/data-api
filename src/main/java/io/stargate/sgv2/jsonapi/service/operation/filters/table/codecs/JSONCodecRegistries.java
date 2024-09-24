@@ -44,6 +44,10 @@ public abstract class JSONCodecRegistries {
               JSONCodecs.ASCII,
               JSONCodecs.TEXT,
               // Date/Time Codecs
+              JSONCodecs.DATE_FROM_STRING,
+              JSONCodecs.DURATION_FROM_STRING,
+              JSONCodecs.TIME_FROM_STRING,
+              JSONCodecs.TIMESTAMP_FROM_STRING,
               // Other codecs
               JSONCodecs.BINARY,
               JSONCodecs.BOOLEAN));
