@@ -401,6 +401,43 @@ public class JSONCodecRegistryTest {
             });
   }
 
+  @ParameterizedTest
+  @MethodSource("invalidCodecToCQLTestCasesDatetime")
+  public void invalidDatetimeValueFail(DataType cqlDatetimeType, String valueToTest) {
+    var codec = assertGetCodecToCQL(cqlDatetimeType, valueToTest);
+
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest),
+            String.format(
+                "Throw ToCQLCodecException when attempting to convert `%s` from non-ASCII value %s",
+                cqlDatetimeType, valueToTest));
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(cqlDatetimeType);
+              assertThat(e.value).isEqualTo(valueToTest);
+
+              assertThat(e.getMessage())
+                  .contains(cqlDatetimeType.toString())
+                  .contains(valueToTest.getClass().getName())
+                  .contains(valueToTest.toString())
+                  .contains("Root cause: Invalid String value for type");
+            });
+  }
+
+  private static Stream<Arguments> invalidCodecToCQLTestCasesDatetime() {
+    // Arguments: (CQL-type, from-caller)
+    // Date/time types: DATE, DURATION, TIME, TIMESTAMP
+    return Stream.of(
+        Arguments.of(DataTypes.DATE, TEST_DATA.DATE_INVALID_STR),
+        Arguments.of(DataTypes.DURATION, TEST_DATA.DURATION_INVALID_STR),
+        Arguments.of(DataTypes.TIME, TEST_DATA.TIME_INVALID_STR),
+        Arguments.of(DataTypes.TIMESTAMP, TEST_DATA.TIMESTAMP_INVALID_STR));
+  }
+
   // difficult to parameterize this test, so just test a few cases
   @Test
   public void badBinaryInputs() {
