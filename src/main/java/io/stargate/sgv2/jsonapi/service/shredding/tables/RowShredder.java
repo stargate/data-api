@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.shredding.tables;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
@@ -99,6 +100,11 @@ public class RowShredder {
       }
       case OBJECT -> {
         ObjectNode objectNode = (ObjectNode) value;
+        EJSONWrapper wrapper = EJSONWrapper.maybeFrom(objectNode);
+        if (wrapper != null) {
+          yield new JsonLiteral<>(wrapper, JsonType.EJSON_WRAPPER);
+        }
+        // If not, treat as a regular sub-document
         Map<JsonPath, JsonLiteral<?>> map = new HashMap<>();
         for (var entry : objectNode.properties()) {
           map.put(

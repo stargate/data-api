@@ -3,12 +3,16 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
+import com.fasterxml.jackson.core.Base64Variants;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 /**
@@ -298,6 +302,43 @@ public record JSONCodec<JavaT, CqlT>(
                 targetCQLType,
                 "Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
       };
+    }
+
+    static ByteBuffer byteBufferFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
+        throws ToCQLCodecException {
+      if (wrapper.type() != EJSONWrapper.EJSONType.BINARY) {
+        throw new ToCQLCodecException(
+            wrapper,
+            targetCQLType,
+            "Unsupported EJSON type '%s': only '%s' supported"
+                .formatted(wrapper.type().key(), EJSONWrapper.EJSONType.BINARY.key()));
+      }
+      JsonNode value = wrapper.value();
+      byte[] binaryPayload;
+
+      try {
+        if (value.isBinary()) {
+          binaryPayload = value.binaryValue();
+        } else if (value.isTextual()) {
+          // Jackson supports multiple optimized variants: MIME, PEM, MODIFIED_FOR_URL
+          // but MIME_NO_LINEFEEDS is the most common (and default).
+          // Most variation on encoding side; for decoding less difference
+          binaryPayload = Base64Variants.MIME_NO_LINEFEEDS.decode(value.textValue());
+        } else {
+          throw new ToCQLCodecException(
+              wrapper,
+              targetCQLType,
+              "Unsupported JSON value type in EJSON $binary wrapper (%s): only STRING allowed"
+                  .formatted(value.getNodeType()));
+        }
+      } catch (IllegalArgumentException | IOException e) {
+        throw new ToCQLCodecException(
+            wrapper,
+            targetCQLType,
+            "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String; problem: %s"
+                .formatted(e.getMessage()));
+      }
+      return ByteBuffer.wrap(binaryPayload);
     }
   }
 

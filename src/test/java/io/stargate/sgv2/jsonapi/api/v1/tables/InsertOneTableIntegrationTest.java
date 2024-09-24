@@ -4,6 +4,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistryTestData;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
@@ -20,6 +21,9 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   static final String TABLE_WITH_TEXT_COLUMNS = "findOneTextColumnsTable";
   static final String TABLE_WITH_INT_COLUMNS = "findOneIntColumnsTable";
   static final String TABLE_WITH_FP_COLUMNS = "findOneFpColumnsTable";
+  static final String TABLE_WITH_BINARY_COLUMN = "findOneBinaryColumnsTable";
+
+  final JSONCodecRegistryTestData codecTestData = new JSONCodecRegistryTestData();
 
   @BeforeAll
   public final void createDefaultTables() {
@@ -60,6 +64,10 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
             Map.of("type", "double"),
             "decimalValue",
             Map.of("type", "decimal")),
+        "id");
+    createTableWithColumns(
+        TABLE_WITH_BINARY_COLUMN,
+        Map.of("id", Map.of("type", "text"), "binaryValue", Map.of("type", "blob")),
         "id");
   }
 
@@ -279,6 +287,63 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
             }
             """
           .formatted(id, floatValue, doubleValue, bigDecValue);
+    }
+  }
+
+  @Nested
+  @Order(4)
+  class InsertBinaryColumns {
+    @Test
+    void insertSimpleBinaryValue() {
+      final String docJSON =
+          wrappedBinaryDoc("binarySimple", codecTestData.BASE64_PADDED_ENCODED_STR);
+      insertOneInTable(TABLE_WITH_BINARY_COLUMN, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
+          .postFindOne("{ \"filter\": { \"id\": \"binarySimple\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    @Test
+    void failOnMalformedBase64() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
+          .postInsertOne(wrappedBinaryDoc("binaryBadBase64", "not-valid-base64!!!"))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `BLOB` from");
+    }
+
+    @Test
+    void failOnMalformedEJSONWrapper() {
+      // Test with number first:
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
+          .postInsertOne(rawBinaryDoc("binaryFromNumber", "1234"))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES, DocumentException.class, "binaryValue");
+      // and then with String too; valid Base64, but not EJSON
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_BINARY_COLUMN)
+          .postInsertOne(
+              rawBinaryDoc(
+                  "binaryFromString", "\"" + codecTestData.BASE64_PADDED_ENCODED_STR + "\""))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES, DocumentException.class, "binaryValue");
+    }
+
+    private String wrappedBinaryDoc(String id, String base64Binary) {
+      return rawBinaryDoc(id, "{\"$binary\": \"%s\"}".formatted(base64Binary));
+    }
+
+    private String rawBinaryDoc(String id, String rawBinaryValue) {
+      return
+          """
+                {
+                    "id": "%s",
+                    "binaryValue": %s
+                }
+                """
+          .formatted(id, rawBinaryValue);
     }
   }
 }

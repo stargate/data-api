@@ -3,8 +3,10 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 
 /**
  * Defines the {@link JSONCodec} instances that are added to the {@link
@@ -22,6 +24,14 @@ public abstract class JSONCodecs {
           DataTypes.BOOLEAN,
           JSONCodec.ToCQL.unsafeIdentity(),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::booleanNode));
+
+  // Blob/binary
+  public static final JSONCodec<EJSONWrapper, ByteBuffer> BINARY =
+      new JSONCodec<>(
+          GenericType.of(EJSONWrapper.class),
+          DataTypes.BLOB,
+          JSONCodec.ToCQL::byteBufferFromEJSON,
+          (mapper, cqlType, value) -> EJSONWrapper.binaryWrapper(value).asJsonNode());
 
   // Numeric Codecs
   public static final JSONCodec<BigDecimal, Long> BIGINT_FROM_BIG_DECIMAL =

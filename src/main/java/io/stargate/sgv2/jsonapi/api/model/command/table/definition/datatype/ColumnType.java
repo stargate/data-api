@@ -35,6 +35,8 @@ public interface ColumnType {
         return PrimitiveTypes.VARINT;
       case "ascii":
         return PrimitiveTypes.ASCII;
+      case "blob":
+        return PrimitiveTypes.BLOB;
       default:
         throw ErrorCodeV1.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException(
             "Invalid column type: " + type);

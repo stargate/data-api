@@ -44,5 +44,6 @@ public abstract class JSONCodecRegistries {
               JSONCodecs.ASCII,
               JSONCodecs.TEXT,
               // Other codecs
+              JSONCodecs.BINARY,
               JSONCodecs.BOOLEAN));
 }
