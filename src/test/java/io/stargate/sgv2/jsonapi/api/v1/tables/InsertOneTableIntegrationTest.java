@@ -362,4 +362,51 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .formatted(id, rawBinaryValue);
     }
   }
+
+  @Nested
+  @Order(5)
+  class InsertDatetimeColumns {
+    @Test
+    void insertWithPlainFPValues() {
+      // NOTE: While `CqlDuration.from()` accepts both ISO-8601 "P"-notation (like "PT2H45M")
+      //   and Cassandra's standard compact/readable notation (like "2h45m"),
+      //   `CqlDuration.toString()` returns canonical representation so we use the latter here
+      //   to verify round-tripping
+      final String docJSON =
+          datetimeDoc(
+              "datetimeValid", "2024-09-24", "2h45m", "12:45:01.005", "2024-09-24T14:06:59Z");
+      insertOneInTable(TABLE_WITH_DATETIME_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_DATETIME_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"datetimeValid\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    private String datetimeDoc(
+        String id,
+        String dateValue,
+        String durationValue,
+        String timeValue,
+        String timestampValue) {
+      return
+          """
+                {
+                    "id": "%s",
+                    "dateValue": %s,
+                    "durationValue": %s,
+                    "timeValue": %s,
+                    "timestampValue": %s
+                }
+                """
+          .formatted(
+              id, quote(dateValue), quote(durationValue), quote(timeValue), quote(timestampValue));
+    }
+
+    private String quote(String s) {
+      if (s == null) {
+        return "null";
+      }
+      return "\"" + s + "\"";
+    }
+  }
 }
