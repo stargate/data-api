@@ -28,13 +28,13 @@ public class FindTableOperation<SchemaT extends TableBasedSchemaObject> extends 
   private final DriverExceptionHandler<SchemaT> driverExceptionHandler;
   private final List<ReadAttempt<SchemaT>> readAttempts;
 
-  private final ReadAttemptPage.Builder<SchemaT> pageBuilder;
+  private final OperationAttemptPageBuilder<SchemaT, ReadAttempt<SchemaT>> pageBuilder;
 
   public FindTableOperation(
       CommandContext<TableSchemaObject> commandContext,
       DriverExceptionHandler<SchemaT> driverExceptionHandler,
       List<? extends ReadAttempt<SchemaT>> readAttempts,
-      ReadAttemptPage.Builder<SchemaT> pageBuilder) {
+      OperationAttemptPageBuilder<SchemaT, ReadAttempt<SchemaT>> pageBuilder) {
     super(commandContext);
 
     this.driverExceptionHandler =
@@ -67,7 +67,7 @@ public class FindTableOperation<SchemaT extends TableBasedSchemaObject> extends 
         .collect()
         .in(() -> pageBuilder, OperationAttemptAccumulator::accumulate)
         .onItem()
-        .transform(ReadAttemptPage.Builder::build);
+        .transform(OperationAttemptPageBuilder::getOperationPage);
   }
 
   public record FindTableParams(int limit) {

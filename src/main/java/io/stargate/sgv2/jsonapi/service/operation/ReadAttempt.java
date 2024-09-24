@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
     extends OperationAttempt<ReadAttempt<SchemaT>, SchemaT> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(InsertAttempt.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ReadAttempt.class);
 
   private final SelectCQLClause selectCQLClause;
   private final WhereCQLClause<Select> whereCQLClause;
@@ -44,7 +44,7 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
       CqlOptions<Select> cqlOptions,
       CqlPagingState pagingState,
       DocumentSourceSupplier documentSourceSupplier) {
-    super(position, schemaObject);
+    super(position, schemaObject, RetryPolicy.NO_RETRY);
 
     // nullable because the subclass may want to implement methods to build the statement itself
     this.selectCQLClause = selectCQLClause;
@@ -84,8 +84,7 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
   @Override
   protected ReadAttempt<SchemaT> onSuccess(AsyncResultSet resultSet) {
     readResult = new ReadResult(resultSet);
-    setStatus(OperationStatus.COMPLETED);
-    return this;
+    return super.onSuccess(resultSet);
   }
 
   protected SimpleStatement buildReadStatement() {

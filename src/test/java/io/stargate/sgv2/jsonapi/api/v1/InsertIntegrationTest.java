@@ -55,6 +55,41 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
   class InsertOne {
 
     @Test
+    public void shredFailure() {
+      // This used to be a unit test for the InsertOneCommandResolver calld shredderFailure(), but
+      // the resolver does not throw this
+      // error any more, it is instead handed in the result.
+
+      String json =
+          """
+            {
+              "insertOne": {
+                "document" : null
+              }
+            }
+          """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("data.document", is(nullValue()))
+          .body("status", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCUMENT_TYPE"))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body(
+              "errors[0].message",
+              startsWith(
+                  "Failed to insert document with _id UNKNOWN: Bad document type to shred: document to shred must be a JSON Object, instead got NULL"));
+    }
+
+    @Test
     public void insertDocument() {
       String json =
           """

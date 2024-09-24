@@ -39,7 +39,7 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
 
   protected InsertAttempt(
       int position, SchemaT schemaObject, InsertValuesCQLClause insertValuesCQLClause) {
-    super(position, schemaObject);
+    super(position, schemaObject, RetryPolicy.NO_RETRY);
     // nullable, because the subclass may want to implement method itself.
     this.insertValuesCQLClause = insertValuesCQLClause;
   }
@@ -53,12 +53,6 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
     LOGGER.warn("INSERT VALUES: {}", boundStatement.getPositionalValues());
 
     return queryExecutor.executeWrite(boundStatement);
-  }
-
-  @Override
-  protected InsertAttempt<SchemaT> onSuccess(AsyncResultSet resultSet) {
-    setStatus(OperationStatus.COMPLETED);
-    return this;
   }
 
   protected SimpleStatement buildInsertStatement() {

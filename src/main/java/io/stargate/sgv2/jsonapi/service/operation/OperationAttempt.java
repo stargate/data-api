@@ -5,6 +5,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,15 +34,18 @@ public abstract class OperationAttempt<
 
   private final int position;
   protected final SchemaT schemaObject;
+  protected final RetryPolicy retryPolicy;
+
   protected final UUID attemptId = UUID.randomUUID();
   private Throwable failure;
 
   // Keep this private, so sub-classes set through setter incase we need to syncronize later
   private OperationStatus status = OperationStatus.UNINITIALIZED;
 
-  protected OperationAttempt(int position, SchemaT schemaObject) {
+  protected OperationAttempt(int position, SchemaT schemaObject, RetryPolicy retryPolicy) {
     this.position = position;
     this.schemaObject = Objects.requireNonNull(schemaObject, "schemaObject cannot be null");
+    this.retryPolicy = Objects.requireNonNull(retryPolicy, "retryPolicy cannot be null");
   }
 
   public Uni<SubT> execute(
@@ -70,21 +74,48 @@ public abstract class OperationAttempt<
 
     try {
       return execute(queryExecutor)
-          .onItemOrFailure()
-          .transform(
-              (result, throwable) ->
-                  switch (throwable) {
-                    case null -> onSuccess(result);
-                    case RuntimeException re ->
-                        maybeAddFailure(exceptionHandler.maybeHandle(schemaObject, re));
-                    default -> maybeAddFailure(throwable);
-                  });
+          .onFailure(throwable -> trackAndDecideRetry(exceptionHandler, throwable))
+          .recoverWithUni(throwable -> recoveryUni(queryExecutor))
+          .onFailure(throwable -> trackAndDecideRetry(exceptionHandler, throwable))
+          .retry()
+          .atMost(retryPolicy.maxRetries())
+          .onItem()
+          .transform(this::onSuccess);
+
     } catch (RuntimeException re) {
+      // This is here to catch an in the execute() method of the subclass, when that happens there
+      // is no
+      // Uni for the rest of the function chain to run on.
       return Uni.createFrom().item(maybeAddFailure(exceptionHandler.maybeHandle(schemaObject, re)));
     }
   }
 
   protected abstract Uni<AsyncResultSet> execute(CommandQueryExecutor queryExecutor);
+
+  protected boolean trackAndDecideRetry(
+      DriverExceptionHandler<SchemaT> exceptionHandler, Throwable throwable) {
+
+    maybeAddThrowable(exceptionHandler, throwable);
+    return retryPolicy.shouldRetry(throwable);
+  }
+
+  protected void maybeAddThrowable(
+      DriverExceptionHandler<SchemaT> exceptionHandler, Throwable throwable) {
+    if (throwable instanceof RuntimeException re) {
+      maybeAddFailure(exceptionHandler.maybeHandle(schemaObject, re));
+    } else {
+      maybeAddFailure(throwable);
+    }
+  }
+
+  protected Uni<AsyncResultSet> recoveryUni(CommandQueryExecutor queryExecutor) {
+    // HACK TODO: remove constants
+    return Uni.createFrom()
+        .deferred(() -> execute(queryExecutor))
+        .onItem()
+        .delayIt()
+        .by(retryPolicy.delay); // operationsConfig.databaseConfig().ddlRetryDelayMillis()
+  }
 
   /**
    * set compled and handle the reslt set is there
@@ -92,7 +123,9 @@ public abstract class OperationAttempt<
    * @param resultSet
    * @return
    */
-  protected abstract SubT onSuccess(AsyncResultSet resultSet);
+  protected SubT onSuccess(AsyncResultSet resultSet) {
+    return setStatus(OperationStatus.COMPLETED);
+  }
 
   @SuppressWarnings("unchecked")
   protected SubT downcast() {
@@ -230,5 +263,39 @@ public abstract class OperationAttempt<
   @Override
   public int compareTo(SubT other) {
     return Integer.compare(position(), other.position());
+  }
+
+  protected static class RetryPolicy {
+
+    static final RetryPolicy NO_RETRY = new RetryPolicy();
+
+    private final int maxRetries;
+    private final Duration delay;
+
+    private RetryPolicy() {
+      this(1, Duration.ZERO);
+    }
+
+    RetryPolicy(int maxRetries, Duration delay) {
+      // This is a requirement of UniRetryAtMost that is it >= 1, however UniRetry.atMost() says it
+      // must be >= 0
+      if (maxRetries < 1) {
+        throw new IllegalArgumentException("maxRetries must be >= 1");
+      }
+      this.maxRetries = maxRetries;
+      this.delay = delay;
+    }
+
+    int maxRetries() {
+      return maxRetries;
+    }
+
+    Duration delay() {
+      return delay;
+    }
+
+    boolean shouldRetry(Throwable throwable) {
+      return false;
+    }
   }
 }

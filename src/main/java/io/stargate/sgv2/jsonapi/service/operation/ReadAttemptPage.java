@@ -58,11 +58,9 @@ public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
   }
 
   public static class Builder<SchemaT extends TableBasedSchemaObject>
-      extends OperationAttemptAccumulator<SchemaT, ReadAttempt<SchemaT>> {
+      extends OperationAttemptPageBuilder<SchemaT, ReadAttempt<SchemaT>> {
 
     private boolean singleResponse = false;
-    private boolean useErrorObjectV2 = false;
-    private boolean debugMode = false;
     private boolean includeSortVector;
     private float[] sortVector;
 
@@ -70,16 +68,6 @@ public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
 
     public Builder<SchemaT> singleResponse(boolean singleResponse) {
       this.singleResponse = singleResponse;
-      return this;
-    }
-
-    public Builder<SchemaT> useErrorObjectV2(boolean useErrorObjectV2) {
-      this.useErrorObjectV2 = useErrorObjectV2;
-      return this;
-    }
-
-    public Builder<SchemaT> debugMode(boolean debugMode) {
-      this.debugMode = debugMode;
       return this;
     }
 
@@ -93,7 +81,8 @@ public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
       return this;
     }
 
-    public ReadAttemptPage<SchemaT> build() {
+    @Override
+    public ReadAttemptPage<SchemaT> getOperationPage() {
 
       attempts.checkAllAttemptsTerminal();
 
@@ -114,7 +103,13 @@ public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
                             nonEmptyPageStateAttempts.stream().map(Object::toString).toList()));
           };
 
-      var resultBuilder = new CommandResultBuilder(singleResponse, useErrorObjectV2, debugMode);
+      var resultBuilder =
+          new CommandResultBuilder(
+              singleResponse
+                  ? CommandResultBuilder.ResponseType.SINGLE_DOCUMENT
+                  : CommandResultBuilder.ResponseType.MULTI_DOCUMENT,
+              useErrorObjectV2,
+              debugMode);
 
       return new ReadAttemptPage<>(
           attempts, pagingState, includeSortVector, sortVector, resultBuilder);
