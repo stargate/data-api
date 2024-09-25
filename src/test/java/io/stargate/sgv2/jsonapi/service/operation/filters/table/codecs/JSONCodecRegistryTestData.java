@@ -50,6 +50,20 @@ public class JSONCodecRegistryTestData {
   public final String STRING_WITH_2BYTE_UTF8_CHAR = "text-with-2-byte-utf8-\u00a2"; // cent symbol
   public final String STRING_WITH_3BYTE_UTF8_CHAR = "text-with-3-byte-utf8-\u20ac"; // euro symbol
 
+  // Date/time test values
+  public final String DATE_VALID_STR = "2024-09-24";
+  public final String DATE_INVALID_STR = "not-a-date";
+
+  public final String DURATION_VALID1_STR = "1h30m";
+  public final String DURATION_VALID2_STR = "PT1H30M";
+  public final String DURATION_INVALID_STR = "not-a-duration";
+
+  public final String TIME_VALID_STR = "12:34:56.789";
+  public final String TIME_INVALID_STR = "not-a-time";
+
+  public final String TIMESTAMP_VALID_STR = "2024-09-12T10:15:30Z";
+  public final String TIMESTAMP_INVALID_STR = "not-a-timestamp";
+
   // 4 byte / 2 UCS-2 char Unicode Surrogate Pair characters (see
   // https://codepoints.net/U+10437?lang=en)
   public final String STRING_WITH_4BYTE_SURROGATE_CHAR =
