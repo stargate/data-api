@@ -409,8 +409,9 @@ public record JSONCodec<JavaT, CqlT>(
     }
 
     /**
-     * Returns an instance that will translate given CQL value using plain {@code toString()},
-     * constructing a {@link JsonNode} of type {@link com.fasterxml.jackson.databind.node.TextNode}.
+     * Returns a converter that will translate given CQL value by calling {@code value.toString()}
+     * and constructing a {@link JsonNode} (of type {@link
+     * com.fasterxml.jackson.databind.node.TextNode}) with that {@code String}.
      *
      * <p>See usage in the {@link JSONCodecRegistry}
      */

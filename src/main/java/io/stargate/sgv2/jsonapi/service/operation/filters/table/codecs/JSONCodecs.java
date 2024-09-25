@@ -242,6 +242,8 @@ public abstract class JSONCodecs {
       new JSONCodec<>(
           GenericType.STRING,
           DataTypes.DURATION,
+          // CqlDuration.from() accepts 2 formats; ISO-8601 ("P1H30M") and "1h30m" (Cassandra
+          // compact) format
           JSONCodec.ToCQL.safeFromString(CqlDuration::from),
           JSONCodec.ToJSON.toJSONUsingToString());
 
