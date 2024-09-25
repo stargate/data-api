@@ -14,12 +14,12 @@ import org.junit.jupiter.api.*;
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
-  String simpleTableName = "simpleTableForAddIndexTest";
+  String testTableName = "tableForAddIndexTest";
 
   @BeforeAll
   public final void createSimpleTable() {
     createTableWithColumns(
-        simpleTableName,
+        testTableName,
         Map.of(
             "id",
             Map.of("type", "text"),
@@ -38,7 +38,7 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void addIndexBasic() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, simpleTableName)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "addIndex",
               """
@@ -53,7 +53,7 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void addIndexCaseSensitive() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, simpleTableName)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "addIndex",
               """
@@ -72,7 +72,7 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   class AddIndexFailure {
     @Test
     public void tryAddIndexMissingColumn() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, simpleTableName)
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "addIndex",
               """
