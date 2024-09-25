@@ -20,6 +20,7 @@ public class PrimitiveTypes {
   public static final ColumnType TINYINT = new TinyInt();
   public static final ColumnType VARINT = new VarInt();
   public static final ColumnType ASCII = new Ascii();
+  public static final ColumnType BLOB = new Blob();
 
   private static class Text implements ColumnType {
     @Override
@@ -95,6 +96,13 @@ public class PrimitiveTypes {
     @Override
     public DataType getCqlType() {
       return DataTypes.ASCII;
+    }
+  }
+
+  private static class Blob implements ColumnType {
+    @Override
+    public DataType getCqlType() {
+      return DataTypes.BLOB;
     }
   }
 }

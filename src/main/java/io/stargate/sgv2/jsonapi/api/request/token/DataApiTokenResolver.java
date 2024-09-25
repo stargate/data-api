@@ -22,7 +22,7 @@ import jakarta.ws.rs.core.SecurityContext;
 import java.util.Optional;
 
 /**
- * Resolver of the Cassandra token. This token will be passed to the Bridge.
+ * Resolver of the Cassandra token.
  *
  * <p>The implementation can use any information from the {@link RoutingContext} or {@link
  * SecurityContext} to obtain the token.
@@ -35,8 +35,7 @@ public interface DataApiTokenResolver {
    *
    * @param context the routing context
    * @param securityContext the security context
-   * @return The Cassandra token to pass to the Bridge. If empty, indicates that no token should be
-   *     used..
+   * @return The Cassandra token. If empty, indicates that no token should be used.
    */
   Optional<String> resolve(RoutingContext context, SecurityContext securityContext);
 }
