@@ -78,7 +78,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .then()
           .statusCode(200)
           .body("data.document", is(nullValue()))
-          .body("status", is(nullValue()))
+          .body("status.insertedIds", jsonEquals("[]"))
           .body("errors", is(notNullValue()))
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("SHRED_BAD_DOCUMENT_TYPE"))
@@ -86,7 +86,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body(
               "errors[0].message",
               startsWith(
-                  "Failed to insert document with _id UNKNOWN: Bad document type to shred: document to shred must be a JSON Object, instead got NULL"));
+                  "Bad document type to shred: document to shred must be a JSON Object, instead got NULL"));
     }
 
     @Test
@@ -467,10 +467,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .then()
           .statusCode(200)
           .body("status.insertedIds", jsonEquals("[]"))
-          .body(
-              "errors[0].message",
-              is(
-                  "Failed to insert document with _id 'duplicate': Document already exists with the given _id"))
+          .body("errors[0].message", is("Document already exists with the given _id"))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
 
       json =
@@ -1513,7 +1510,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .statusCode(200)
           .body("status.insertedIds", containsInAnyOrder("doc4", "doc5"))
           .body("data", is(nullValue()))
-          .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"))
+          .body("errors[0].message", startsWith("Failed to insert document with _id doc4"))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"));
 
       verifyDocCount(2);
@@ -1824,7 +1821,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("DOCUMENT_ALREADY_EXISTS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].message", startsWith("Failed to insert document with _id 'doc4'"));
+          .body("errors[0].message", startsWith("Failed to insert document with _id doc4"));
 
       verifyDocCount(1);
     }

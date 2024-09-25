@@ -64,11 +64,12 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
     if (!insertedIds.isEmpty()) {
       resultBuilder.addStatus(CommandStatus.INSERTED_IDS, insertedIds);
 
-      // for the non document response, only add schema if we have some inserted Id's because if we do not
-      // the insertIds status will not be included. When we have per doc responses, we add the schema in all cases.
+      // for the non document response, only add schema if we have some inserted Id's because if we
+      // do not
+      // the insertIds status will not be included. When we have per doc responses, we add the
+      // schema in all cases.
       maybeAddSchema();
     }
-
   }
 
   /**
