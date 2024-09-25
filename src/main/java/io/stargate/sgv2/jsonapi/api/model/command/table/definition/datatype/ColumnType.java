@@ -21,6 +21,10 @@ public interface ColumnType {
         return PrimitiveTypes.BOOLEAN;
       case "bigint":
         return PrimitiveTypes.BIGINT;
+      case "date":
+        return PrimitiveTypes.DATE;
+      case "duration":
+        return PrimitiveTypes.DURATION;
       case "decimal":
         return PrimitiveTypes.DECIMAL;
       case "double":
@@ -29,6 +33,10 @@ public interface ColumnType {
         return PrimitiveTypes.FLOAT;
       case "smallint":
         return PrimitiveTypes.SMALLINT;
+      case "time":
+        return PrimitiveTypes.TIME;
+      case "timestamp":
+        return PrimitiveTypes.TIMESTAMP;
       case "tinyint":
         return PrimitiveTypes.TINYINT;
       case "varint":
