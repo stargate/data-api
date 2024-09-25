@@ -1,35 +1,28 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import java.util.*;
-import java.util.function.Supplier;
 
 public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
-    implements Supplier<CommandResult> {
+    extends OperationAttemptPage<SchemaT, ReadAttempt<SchemaT>> {
 
-  private final OperationAttemptContainer<SchemaT, ReadAttempt<SchemaT>> attempts;
   private final CqlPagingState pagingState;
   private final boolean includeSortVector;
   private final float[] sortVector;
 
-  private final CommandResultBuilder resultBuilder;
-
   private ReadAttemptPage(
       OperationAttemptContainer<SchemaT, ReadAttempt<SchemaT>> attempts,
+      CommandResultBuilder resultBuilder,
       CqlPagingState pagingState,
       boolean includeSortVector,
-      float[] sortVector,
-      CommandResultBuilder resultBuilder) {
-
-    this.attempts = attempts;
+      float[] sortVector) {
+    super(attempts, resultBuilder);
     this.pagingState = pagingState;
     this.includeSortVector = includeSortVector;
     this.sortVector = sortVector;
-    this.resultBuilder = resultBuilder;
   }
 
   public static <SchemaT extends TableBasedSchemaObject> Builder<SchemaT> builder() {
@@ -37,7 +30,9 @@ public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  public CommandResult get() {
+  protected void buildCommandResult() {
+
+    super.buildCommandResult();
 
     if (includeSortVector && sortVector != null) {
       resultBuilder.addStatus(CommandStatus.SORT_VECTOR, sortVector);
@@ -47,14 +42,6 @@ public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
     attempts.completedAttempts().stream()
         .flatMap(attempt -> attempt.documents().stream())
         .forEach(resultBuilder::addDocument);
-
-    attempts.errorAttempts().stream()
-        .map(ReadAttempt::failure)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .forEach(resultBuilder::addThrowable);
-
-    return resultBuilder.build();
   }
 
   public static class Builder<SchemaT extends TableBasedSchemaObject>
@@ -84,7 +71,7 @@ public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
     @Override
     public ReadAttemptPage<SchemaT> getOperationPage() {
 
-      attempts.checkAllAttemptsTerminal();
+      attempts.throwIfNotAllTerminal();
 
       var nonEmptyPageStateAttempts =
           attempts.completedAttempts().stream()
@@ -112,7 +99,7 @@ public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
               debugMode);
 
       return new ReadAttemptPage<>(
-          attempts, pagingState, includeSortVector, sortVector, resultBuilder);
+          attempts, resultBuilder, pagingState, includeSortVector, sortVector);
     }
   }
 }

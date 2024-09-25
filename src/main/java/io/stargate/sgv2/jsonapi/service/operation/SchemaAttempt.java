@@ -31,11 +31,6 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
     return queryExecutor.executeRead(statement);
   }
 
-  @Override
-  protected SchemaAttempt<SchemaT> onSuccess(AsyncResultSet resultSet) {
-    return null;
-  }
-
   protected abstract SimpleStatement buildStatement();
 
   public static class SchemaRetryPolicy extends RetryPolicy {
