@@ -9,39 +9,27 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.Map;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-// TODO, it is currently called AddIndex, do we want to change to createIndex
 class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   String simpleTableName = "simpleTableForAddIndexTest";
 
   @BeforeAll
   public final void createSimpleTable() {
-    String tableJson =
-            """
-                          {
-                                  "name": "%s",
-                                  "definition": {
-                                      "columns": {
-                                          "id": {
-                                              "type": "text"
-                                          },
-                                          "age": {
-                                              "type": "int"
-                                          },
-                                          "name": {
-                                              "type": "text"
-                                          }
-                                      },
-                                      "primaryKey": "id"
-                                  }
-                          }
-                    """
-            .formatted(simpleTableName);
-    createTable(tableJson);
+    createTableWithColumns(
+        simpleTableName,
+        Map.of(
+            "id",
+            Map.of("type", "text"),
+            "age",
+            Map.of("type", "int"),
+            "name",
+            Map.of("type", "text")),
+        "id");
   }
 
   @Nested
