@@ -210,9 +210,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.message())
-                    .isEqualTo(
-                        "Failed to insert document with _id 'doc1': Document already exists with the given _id");
+                assertThat(error.message()).isEqualTo("Document already exists with the given _id");
                 assertThat(error.fields())
                     .containsEntry("exceptionClass", "JsonApiException")
                     .containsEntry("errorCode", "DOCUMENT_ALREADY_EXISTS");
@@ -576,7 +574,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               error -> {
                 assertThat(error.message())
                     .isEqualTo(
-                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id 'doc1': Test break #1");
+                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Test break #1");
                 assertThat(error.fields())
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
                     .containsEntry("exceptionClass", "JsonApiException");
@@ -666,7 +664,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               error -> {
                 assertThat(error.message())
                     .isEqualTo(
-                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id 'doc2': Test break #2");
+                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc2: Test break #2");
                 assertThat(error.fields())
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
                     .containsEntry("exceptionClass", "JsonApiException");
@@ -758,7 +756,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               error -> {
                 assertThat(error.message())
                     .isEqualTo(
-                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id 'doc1': Test break #1");
+                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Test break #1");
                 assertThat(error.fields())
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
                     .containsEntry("exceptionClass", "JsonApiException");
@@ -846,8 +844,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .extracting(CommandResult.Error::message)
           .containsExactlyInAnyOrder(
-              "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id 'doc1': Insert 1 failed",
-              "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id 'doc2': Insert 2 failed");
+              "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Insert 1 failed",
+              "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc2: Insert 2 failed");
     }
   }
 
