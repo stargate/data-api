@@ -9,9 +9,10 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableAttempt;
-import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableOperation;
+import io.stargate.sgv2.jsonapi.service.operation.tables.GeneralOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Arrays;
@@ -66,14 +67,14 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
             partitionKeys,
             clusteringKeys,
             comment);
+    var attempts = new OperationAttemptContainer<>(List.of(attempt));
 
     var pageBuilder =
         SchemaAttemptPage.<KeyspaceSchemaObject>builder()
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new CreateTableOperation(
-        ctx, new KeyspaceDriverExceptionHandler(), List.of(attempt), pageBuilder);
+    return new GeneralOperation<>(ctx, new KeyspaceDriverExceptionHandler(), attempts, pageBuilder);
   }
 
   @Override

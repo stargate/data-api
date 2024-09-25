@@ -3,15 +3,17 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
+import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.InsertAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.InsertAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
-import io.stargate.sgv2.jsonapi.service.operation.tables.InsertTableOperation;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertAttemptBuilder;
-import io.stargate.sgv2.jsonapi.service.operation.tables.WriteableTableRowBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
@@ -87,9 +89,17 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
         new TableInsertAttemptBuilder(
             rowShredder,
             new WriteableTableRowBuilder(ctx.schemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY));
-    var attempts = command.documents().stream().map(builder::build).toList();
 
-    return new InsertTableOperation<>(
-        ctx, new TableDriverExceptionHandler(), attempts, returnDocumentResponses);
+    var attempts =
+        new OperationAttemptContainer<TableSchemaObject, InsertAttempt<TableSchemaObject>>(ordered);
+    command.documents().stream().map(builder::build).forEach(attempts::add);
+
+    var pageBuilder =
+        InsertAttemptPage.<TableSchemaObject>builder()
+            .returnDocumentResponses(returnDocumentResponses)
+            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
+            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+
+    return new GeneralOperation<>(ctx, new TableDriverExceptionHandler(), attempts, pageBuilder);
   }
 }

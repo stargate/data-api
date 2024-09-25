@@ -52,7 +52,8 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
     LOGGER.warn("INSERT CQL: {}", boundStatement.getQuery());
     LOGGER.warn("INSERT VALUES: {}", boundStatement.getPositionalValues());
 
-    return queryExecutor.executeWrite(boundStatement);
+    throw new RuntimeException("bang" + position());
+    //    return queryExecutor.executeWrite(boundStatement);
   }
 
   protected SimpleStatement buildInsertStatement() {

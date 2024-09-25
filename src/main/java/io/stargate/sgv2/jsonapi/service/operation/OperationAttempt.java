@@ -6,10 +6,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +34,9 @@ public abstract class OperationAttempt<
   protected final RetryPolicy retryPolicy;
 
   protected final UUID attemptId = UUID.randomUUID();
+
   private Throwable failure;
+  private List<String> warnings = new ArrayList<>();
 
   // Keep this private, so sub-classes set through setter incase we need to syncronize later
   private OperationStatus status = OperationStatus.UNINITIALIZED;
@@ -51,20 +50,20 @@ public abstract class OperationAttempt<
   public Uni<SubT> execute(
       CommandQueryExecutor queryExecutor, DriverExceptionHandler<SchemaT> exceptionHandler) {
 
-    LOGGER.debug("OperationAttempt: execute starting for for attemptId {}", attemptId);
+    LOGGER.debug("OperationAttempt: execute starting for for {}", positionAndAttemptId());
 
     // First things first: did we already fail? If so, propagate
     if (status() == OperationStatus.ERROR) {
       LOGGER.debug(
-          "OperationAttempt: state was {}, propagating error for attemptId {}",
+          "OperationAttempt: state was {}, propagating error for {}",
           status(),
-          attemptId);
+          positionAndAttemptId());
 
       if (failure == null) {
         var msg =
             String.format(
-                "OperationAttempt state was %s, but failure throwable is null, attemptId %s",
-                status(), attemptId);
+                "OperationAttempt state was %s, but failure throwable is null, %s",
+                status(), positionAndAttemptId());
         throw new IllegalStateException(msg);
       }
       return Uni.createFrom().failure(failure);
@@ -72,22 +71,33 @@ public abstract class OperationAttempt<
 
     swapStatus("start execute()", OperationStatus.READY, OperationStatus.IN_PROGRESS);
 
-    try {
-      return execute(queryExecutor)
-          .onFailure(throwable -> trackAndDecideRetry(exceptionHandler, throwable))
-          .recoverWithUni(throwable -> recoveryUni(queryExecutor))
-          .onFailure(throwable -> trackAndDecideRetry(exceptionHandler, throwable))
-          .retry()
-          .atMost(retryPolicy.maxRetries())
-          .onItem()
-          .transform(this::onSuccess);
-
-    } catch (RuntimeException re) {
-      // This is here to catch an in the execute() method of the subclass, when that happens there
-      // is no
-      // Uni for the rest of the function chain to run on.
-      return Uni.createFrom().item(maybeAddFailure(exceptionHandler.maybeHandle(schemaObject, re)));
-    }
+    // .recoverWithUni(throwable -> recoveryUni(queryExecutor))
+    //        .onFailure(throwable -> trackAndDecideRetry(exceptionHandler, throwable))
+    return Uni.createFrom()
+        .item(() -> execute(queryExecutor)) // Wrap execute() error into a Uni
+        .flatMap(uni -> uni) // Unwrap Uni<Uni<AsyncResultSet>> to Uni<AsyncResultSet>
+        .onFailure(throwable -> trackAndDecideRetry(exceptionHandler, throwable))
+        .retry()
+        .withBackOff(retryPolicy.delay(), retryPolicy.delay())
+        .atMost(retryPolicy.maxRetries())
+        .onItemOrFailure()
+        .transform(
+            (resultSet, throwable) -> {
+              LOGGER.warn("onItemOrFailure for {}", positionAndAttemptId());
+              if (throwable != null) {
+                LOGGER.warn(
+                    "onItemOrFailure throwable for {} throwable={}",
+                    positionAndAttemptId(),
+                    throwable.toString());
+                return maybeAddFailure(throwable);
+              }
+              return onSuccess(resultSet);
+            });
+    //
+    //        .onFailure()
+    //        .recoverWithUni(throwable -> Uni.createFrom().item(() -> maybeAddFailure(throwable)))
+    //        .onItem()
+    //        .transform(this::onSuccess);
   }
 
   protected abstract Uni<AsyncResultSet> execute(CommandQueryExecutor queryExecutor);
@@ -95,8 +105,15 @@ public abstract class OperationAttempt<
   protected boolean trackAndDecideRetry(
       DriverExceptionHandler<SchemaT> exceptionHandler, Throwable throwable) {
 
-    maybeAddThrowable(exceptionHandler, throwable);
-    return retryPolicy.shouldRetry(throwable);
+    //    maybeAddThrowable(exceptionHandler, throwable);
+    var shouldRetry = retryPolicy.shouldRetry(throwable);
+
+    LOGGER.debug(
+        "OperationAttempt: trackAndDecideRetry for {}, shouldRetry={}, for throwable {}",
+        positionAndAttemptId(),
+        shouldRetry,
+        throwable.toString());
+    return shouldRetry;
   }
 
   protected void maybeAddThrowable(
@@ -109,7 +126,6 @@ public abstract class OperationAttempt<
   }
 
   protected Uni<AsyncResultSet> recoveryUni(CommandQueryExecutor queryExecutor) {
-    // HACK TODO: remove constants
     return Uni.createFrom()
         .deferred(() -> execute(queryExecutor))
         .onItem()
@@ -143,10 +159,10 @@ public abstract class OperationAttempt<
    */
   protected SubT setStatus(OperationStatus newStatus) {
     LOGGER.debug(
-        "OperationAttempt: status changing from {} to {} for attemptId {}",
+        "OperationAttempt: status changing from {} to {} for {}",
         status(),
         newStatus,
-        attemptId);
+        positionAndAttemptId());
     status = newStatus;
     return downcast();
   }
@@ -158,11 +174,11 @@ public abstract class OperationAttempt<
 
     var errorMsg =
         String.format(
-            "OperationAttempt: checkStatus failed for %s, expected %s but actual %s for attemptId %s",
+            "OperationAttempt: checkStatus failed for %s, expected %s but actual %s for %s",
             context,
             String.join(",", Arrays.stream(expectedStatus).map(OperationStatus::name).toList()),
             status(),
-            attemptId);
+            positionAndAttemptId());
     throw new IllegalStateException(errorMsg);
   }
 
@@ -188,7 +204,9 @@ public abstract class OperationAttempt<
       return downcast();
     }
     throw new IllegalStateException(
-        String.format("OperationAttempt: checkTerminal failed, non terminal status %s", status()));
+        String.format(
+            "OperationAttempt: checkTerminal failed, non terminal status %s %s",
+            status(), positionAndAttemptId()));
   }
 
   /**
@@ -225,12 +243,29 @@ public abstract class OperationAttempt<
   public SubT maybeAddFailure(Throwable failure) {
     if (this.failure == null) {
       this.failure = failure;
-      LOGGER.warn("OperationAttempt: maybeAddFailure for attemptId {}", attemptId, failure);
+      if (failure != null) {
+        LOGGER.warn("OperationAttempt: maybeAddFailure for {}", positionAndAttemptId(), failure);
+      }
     }
     if (this.failure != null) {
       setStatus(OperationStatus.ERROR);
     }
     return downcast();
+  }
+
+  public List<String> warnings() {
+    return List.copyOf(warnings);
+  }
+
+  public void addWarning(String warning) {
+    if (warning == null || warning.isBlank()) {
+      throw new IllegalArgumentException("warning cannot be null or blank");
+    }
+    warnings.add(warning);
+  }
+
+  private String positionAndAttemptId() {
+    return String.format("position=%d, attemptId=%s", position, attemptId);
   }
 
   @Override
@@ -273,7 +308,7 @@ public abstract class OperationAttempt<
     private final Duration delay;
 
     private RetryPolicy() {
-      this(1, Duration.ZERO);
+      this(1, Duration.ofMillis(1));
     }
 
     RetryPolicy(int maxRetries, Duration delay) {

@@ -19,9 +19,10 @@ public class CommandResultBuilder {
   }
 
   private final Map<CommandStatus, Object> cmdStatus = new HashMap<>();
-  private final List<Throwable> throwables = new ArrayList<>();
   private final List<CommandResult.Error> cmdErrors = new ArrayList<>();
   private final List<JsonNode> documents = new ArrayList<>();
+  private final List<String> warnings = new ArrayList<>();
+
   private String nextPageState = null;
 
   private final ResponseType responseType;
@@ -49,9 +50,9 @@ public class CommandResultBuilder {
     return this;
   }
 
-  public CommandResultBuilder addThrowable(Throwable error) {
-    throwables.add(error);
-    return this;
+  public CommandResultBuilder addThrowable(Throwable thorwable) {
+    var error = throwableToCommandError(thorwable);
+    return addCommandError(error);
   }
 
   public CommandResultBuilder addCommandError(CommandResult.Error error) {
@@ -64,14 +65,36 @@ public class CommandResultBuilder {
     return this;
   }
 
-  public CommandResultBuilder addDocument(List<JsonNode> documents) {
+  public CommandResultBuilder addDocuments(List<JsonNode> documents) {
     this.documents.addAll(documents);
+    return this;
+  }
+
+  public CommandResultBuilder addWarning(String warning) {
+    warnings.add(warning);
     return this;
   }
 
   public CommandResultBuilder nextPageState(String nextPageState) {
     this.nextPageState = nextPageState;
     return this;
+  }
+
+  /**
+   * Gets the appropriately formatted error given {@link #useErrorObjectV2} and {@link #debugMode}.
+   */
+  public CommandResult.Error throwableToCommandError(Throwable throwable) {
+
+    if (throwable instanceof APIException apiException) {
+      // new v2 error object, with family etc.
+      // the builder will handle the debug mode and extended errors settings to return a V1 or V2
+      // error
+      return apiExceptionToError.apply(apiException);
+    }
+
+    // the mapper handles error object v2 part
+    return ThrowableToErrorMapper.getMapperWithMessageFunction()
+        .apply(throwable, throwable.getMessage());
   }
 
   public CommandResult build() {
@@ -95,10 +118,14 @@ public class CommandResultBuilder {
         break;
     }
 
+    if (!warnings.isEmpty()) {
+      cmdStatus.put(CommandStatus.WARNINGS, warnings);
+    }
+
     // null out values that are empty, the CommandResult serialiser will ignore them when the JSON
     // is built
     var finalStatus = cmdStatus.isEmpty() ? null : cmdStatus;
-    var finalErrors = finaliseErrors();
+    var finalErrors = cmdErrors.isEmpty() ? null : cmdErrors;
 
     return switch (responseType) {
       case SINGLE_DOCUMENT ->
@@ -114,40 +141,5 @@ public class CommandResultBuilder {
               finalErrors);
       case STATUS_ONLY -> new CommandResult(null, finalStatus, finalErrors);
     };
-  }
-
-  private List<CommandResult.Error> finaliseErrors() {
-
-    if (!throwables.isEmpty() && !cmdErrors.isEmpty()) {
-      throw new IllegalStateException(
-          "CommandResultBuilder.build() - both throwables and errors added, use one or the other");
-    }
-
-    if (cmdErrors.isEmpty() && throwables.isEmpty()) {
-      return null;
-    }
-
-    if (!cmdErrors.isEmpty()) {
-      return cmdErrors;
-    }
-
-    return throwables.stream().map(this::getErrorObject).toList();
-  }
-
-  /**
-   * Gets the appropriately formatted error given {@link #useErrorObjectV2} and {@link #debugMode}.
-   */
-  private CommandResult.Error getErrorObject(Throwable throwable) {
-
-    if (throwable instanceof APIException apiException) {
-      // new v2 error object, with family etc.
-      // the builder will handle the debug mode and extended errors settings to return a V1 or V2
-      // error
-      return apiExceptionToError.apply(apiException);
-    }
-
-    // the mapper handles error object v2 part
-    return ThrowableToErrorMapper.getMapperWithMessageFunction()
-        .apply(throwable, throwable.getMessage());
   }
 }
