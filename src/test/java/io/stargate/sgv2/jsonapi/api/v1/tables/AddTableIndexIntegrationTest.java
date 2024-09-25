@@ -25,6 +25,8 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
             Map.of("type", "text"),
             "age",
             Map.of("type", "int"),
+            "vehicleId",
+            Map.of("type", "text"),
             "name",
             Map.of("type", "text")),
         "id");
@@ -35,8 +37,7 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   class AddIndexSuccess {
 
     @Test
-    @Order(1)
-    public void addIndex() {
+    public void addIndexBasic() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, simpleTableName)
           .postCommand(
               "addIndex",
@@ -46,6 +47,21 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                           "indexName": "age_index"
                   }
                   """)
+          .hasNoErrors()
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public void addIndexCaseSensitive() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, simpleTableName)
+          .postCommand(
+              "addIndex",
+              """
+                          {
+                                  "column": "vehicleId",
+                                  "indexName": "vehicleId_idx"
+                          }
+                          """)
           .hasNoErrors()
           .body("status.ok", is(1));
     }
