@@ -1,47 +1,35 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.containsString;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
+import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.Map;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-// TODO, it is currently called AddIndex, do we want to change to createIndex
 class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
-  String simpleTableName = "simpleTableForAddIndexTest";
+  String testTableName = "tableForAddIndexTest";
 
   @BeforeAll
   public final void createSimpleTable() {
-    String tableJson =
-            """
-                          {
-                                  "name": "%s",
-                                  "definition": {
-                                      "columns": {
-                                          "id": {
-                                              "type": "text"
-                                          },
-                                          "age": {
-                                              "type": "int"
-                                          },
-                                          "name": {
-                                              "type": "text"
-                                          }
-                                      },
-                                      "primaryKey": "id"
-                                  }
-                          }
-                    """
-            .formatted(simpleTableName);
-    createTable(tableJson);
+    createTableWithColumns(
+        testTableName,
+        Map.of(
+            "id",
+            Map.of("type", "text"),
+            "age",
+            Map.of("type", "int"),
+            "vehicleId",
+            Map.of("type", "text"),
+            "name",
+            Map.of("type", "text")),
+        "id");
   }
 
   @Nested
@@ -49,25 +37,32 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   class AddIndexSuccess {
 
     @Test
-    @Order(1)
-    public void addIndex() {
-      String json =
-          """
-                      {
-                          "addIndex": {
-                              "column": "age",
-                              "indexName": "age_index"
+    public void addIndexBasic() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+          .postCommand(
+              "addIndex",
+              """
+                  {
+                          "column": "age",
+                          "indexName": "age_index"
+                  }
+                  """)
+          .hasNoErrors()
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public void addIndexCaseSensitive() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+          .postCommand(
+              "addIndex",
+              """
+                          {
+                                  "column": "vehicleId",
+                                  "indexName": "vehicleId_idx"
                           }
-                      }
-                      """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, simpleTableName)
-          .then()
-          .statusCode(200)
+                          """)
+          .hasNoErrors()
           .body("status.ok", is(1));
     }
   }
@@ -76,29 +71,17 @@ class AddTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Order(2)
   class AddIndexFailure {
     @Test
-    public void addIndex() {
-      String json =
-          """
+    public void tryAddIndexMissingColumn() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+          .postCommand(
+              "addIndex",
+              """
                       {
-                          "addIndex": {
                               "column": "city",
                               "indexName": "city_index"
-                          }
                       }
-                      """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(json)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, simpleTableName)
-          .then()
-          .statusCode(200)
-          .body("errors", is(notNullValue()))
-          .body("errors", hasSize(1))
-          .body("errors[0].exceptionClass", is("JsonApiException"))
-          .body("errors[0].errorCode", is("INVALID_QUERY"))
-          .body("errors[0].message", containsString("Undefined column name city"));
+                      """)
+          .hasSingleApiError(ErrorCodeV1.INVALID_QUERY, "Undefined column name city");
     }
   }
 }
