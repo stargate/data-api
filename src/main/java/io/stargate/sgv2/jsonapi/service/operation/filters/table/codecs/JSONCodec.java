@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.DateTimeException;
 import java.util.function.Function;
 
 /**
@@ -176,6 +177,24 @@ public record JSONCodec<JavaT, CqlT>(
      */
     static <JavaT> ToCQL<JavaT, JavaT> unsafeIdentity() {
       return (toCQLType, value) -> value;
+    }
+
+    /**
+     * Method for constructing exception-handling String-to-CQL-type converter, given a function
+     * that converts a String to the target CQL type.
+     */
+    static <JavaT, CqlT> ToCQL<JavaT, CqlT> safeFromString(Function<JavaT, CqlT> function) {
+      return (toCQLType, value) -> {
+        try {
+          return function.apply(value);
+        } catch (IllegalArgumentException | DateTimeException e) {
+          throw new ToCQLCodecException(
+              value,
+              toCQLType,
+              "Invalid String value for type `%s`; problem: %s"
+                  .formatted(toCQLType, e.getMessage()));
+        }
+      };
     }
 
     /**
@@ -387,6 +406,18 @@ public record JSONCodec<JavaT, CqlT>(
      */
     static <CqlT> ToJSON<CqlT> unsafeNodeFactory(Function<CqlT, JsonNode> nodeFactoryMethod) {
       return (objectMapper, fromCQLType, value) -> nodeFactoryMethod.apply(value);
+    }
+
+    /**
+     * Returns a converter that will translate given CQL value by calling {@code value.toString()}
+     * and constructing a {@link JsonNode} (of type {@link
+     * com.fasterxml.jackson.databind.node.TextNode}) with that {@code String}.
+     *
+     * <p>See usage in the {@link JSONCodecRegistry}
+     */
+    static <CqlT> ToJSON<CqlT> toJSONUsingToString() {
+      return (objectMapper, fromCQLType, value) ->
+          objectMapper.getNodeFactory().textNode(String.valueOf(value));
     }
   }
 }

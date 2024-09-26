@@ -10,7 +10,7 @@ import java.util.List;
 public abstract class JSONCodecRegistries {
 
   public static final JSONCodecRegistry DEFAULT_REGISTRY =
-      JSONCodecRegistry.create(
+      new JSONCodecRegistry(
           List.of(
               // Numeric Codecs, integer types
               JSONCodecs.BIGINT_FROM_BIG_DECIMAL,
@@ -43,6 +43,11 @@ public abstract class JSONCodecRegistries {
               // Text Codecs
               JSONCodecs.ASCII,
               JSONCodecs.TEXT,
+              // Date/Time Codecs
+              JSONCodecs.DATE_FROM_STRING,
+              JSONCodecs.DURATION_FROM_STRING,
+              JSONCodecs.TIME_FROM_STRING,
+              JSONCodecs.TIMESTAMP_FROM_STRING,
               // Other codecs
               JSONCodecs.BINARY,
               JSONCodecs.BOOLEAN));
