@@ -5,9 +5,8 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import java.util.Map;
-
 import jakarta.ws.rs.core.Response;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -227,10 +226,10 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                 }
               }
           """)
-          // 22-Aug-2024, tatu: Not optimal, leftovers from Collections... but has to do
-          // 26 sept 2024, aaron: more not optimal, it is now a 500 UNEXPECTED_SERVER_ERROR and
-          // ALLOW FILTERING until we get better
-          ;
+      // 22-Aug-2024, tatu: Not optimal, leftovers from Collections... but has to do
+      // 26 sept 2024, aaron: more not optimal, it is now a 500 UNEXPECTED_SERVER_ERROR and
+      // ALLOW FILTERING until we get better
+      ;
     }
   }
 }
