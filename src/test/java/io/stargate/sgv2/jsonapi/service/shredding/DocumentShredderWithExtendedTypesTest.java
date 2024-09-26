@@ -12,8 +12,9 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIdType;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.*;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -202,7 +203,7 @@ public class DocumentShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSchemaObject.MISSING.withIdType(CollectionSchemaObject.IdType.UNDEFINED),
+              CollectionSchemaObject.MISSING.withIdType(CollectionIdType.UNDEFINED),
               null);
 
       DocumentId docId = doc.id();
@@ -242,7 +243,7 @@ public class DocumentShredderWithExtendedTypesTest {
               null,
               IndexingProjector.identityProjector(),
               "test",
-              CollectionSchemaObject.MISSING.withIdType(CollectionSchemaObject.IdType.OBJECT_ID),
+              CollectionSchemaObject.MISSING.withIdType(CollectionIdType.OBJECT_ID),
               null);
 
       DocumentId docId = doc.id();
@@ -275,20 +276,20 @@ public class DocumentShredderWithExtendedTypesTest {
 
     @Test
     public void shredSimpleWithoutIdGenUUIDv4() throws Exception {
-      _testShredUUIDAutoGeneration(CollectionSchemaObject.IdType.UUID, 4);
+      _testShredUUIDAutoGeneration(CollectionIdType.UUID, 4);
     }
 
     @Test
     public void shredSimpleWithoutIdGenUUIDv6() throws Exception {
-      _testShredUUIDAutoGeneration(CollectionSchemaObject.IdType.UUID_V6, 6);
+      _testShredUUIDAutoGeneration(CollectionIdType.UUID_V6, 6);
     }
 
     @Test
     public void shredSimpleWithoutIdGenUUIDv7() throws Exception {
-      _testShredUUIDAutoGeneration(CollectionSchemaObject.IdType.UUID_V7, 7);
+      _testShredUUIDAutoGeneration(CollectionIdType.UUID_V7, 7);
     }
 
-    private void _testShredUUIDAutoGeneration(CollectionSchemaObject.IdType idType, int uuidVersion)
+    private void _testShredUUIDAutoGeneration(CollectionIdType idType, int uuidVersion)
         throws Exception {
       final String inputJson = "{\"value\": 42}";
       final JsonNode inputDoc = objectMapper.readTree(inputJson);

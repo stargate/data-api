@@ -5,9 +5,9 @@ import com.bpodgursky.jbool_expressions.Variable;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cql.ColumnUtils;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
+import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -263,8 +263,7 @@ public class QueryBuilder {
     return builder.toString();
   }
 
-  public QueryBuilder similarityFunction(
-      String columnName, CollectionSchemaObject.SimilarityFunction similarityFunction) {
+  public QueryBuilder similarityFunction(String columnName, SimilarityFunction similarityFunction) {
     switch (similarityFunction) {
       case COSINE, UNDEFINED ->
           functionCalls.add(FunctionCall.similarityFunctionCall(columnName, "SIMILARITY_COSINE"));

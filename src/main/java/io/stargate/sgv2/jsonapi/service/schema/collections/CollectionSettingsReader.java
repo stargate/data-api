@@ -1,5 +1,6 @@
-package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
+package io.stargate.sgv2.jsonapi.service.schema.collections;
 
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -13,6 +14,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public interface CollectionSettingsReader {
 
+  // TODO: this interface is not used well, see the V0 implementation
   CollectionSchemaObject readCollectionSettings(
-      JsonNode jsonNode, String keyspaceName, String collectionName, ObjectMapper objectMapper);
+      JsonNode jsonNode,
+      String keyspaceName,
+      String collectionName,
+      TableMetadata tableMetadata,
+      ObjectMapper objectMapper);
 }
