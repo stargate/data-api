@@ -25,9 +25,13 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
   protected Uni<AsyncResultSet> execute(CommandQueryExecutor queryExecutor) {
     var statement = buildStatement();
 
-    LOGGER.warn("SCHEMA CQL: {}", statement.getQuery());
-    LOGGER.warn("SCHEMA VALUES: {}", statement.getPositionalValues());
-
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "execute() - {}, cql={}, values={}",
+          positionAndAttemptId(),
+          statement.getQuery(),
+          statement.getPositionalValues());
+    }
     return queryExecutor.executeRead(statement);
   }
 

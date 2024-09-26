@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createTable;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -49,8 +50,8 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
 
   protected SimpleStatement buildStatement() {
 
-    CqlIdentifier keyspaceIdentifier = CqlIdentifier.fromInternal(schemaObject.name().keyspace());
-    CqlIdentifier tableIdentifier = CqlIdentifier.fromCql(tableName);
+    var keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.name().keyspace());
+    var tableIdentifier = cqlIdentifierFromUserInput(tableName);
 
     CreateTableStart create = createTable(keyspaceIdentifier, tableIdentifier).ifNotExists();
 

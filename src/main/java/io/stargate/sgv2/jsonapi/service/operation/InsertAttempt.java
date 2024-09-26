@@ -41,13 +41,16 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
   @Override
   protected Uni<AsyncResultSet> execute(CommandQueryExecutor queryExecutor) {
     // bind and execute
-    var boundStatement = buildInsertStatement();
+    var statement = buildInsertStatement();
 
-    LOGGER.warn("INSERT CQL: {}", boundStatement.getQuery());
-    LOGGER.warn("INSERT VALUES: {}", boundStatement.getPositionalValues());
-
-    throw new RuntimeException("bang" + position());
-    //    return queryExecutor.executeWrite(boundStatement);
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "execute() - {}, cql={}, values={}",
+          positionAndAttemptId(),
+          statement.getQuery(),
+          statement.getPositionalValues());
+    }
+    return queryExecutor.executeWrite(statement);
   }
 
   protected SimpleStatement buildInsertStatement() {

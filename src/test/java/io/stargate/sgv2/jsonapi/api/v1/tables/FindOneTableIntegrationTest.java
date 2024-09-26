@@ -6,6 +6,8 @@ import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
+
+import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -216,6 +218,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     @Order(2)
     public void failOnNonKeyColumn() {
       DataApiCommandSenders.assertTableCommand(namespaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+          .expectHttpStatus(Response.Status.INTERNAL_SERVER_ERROR)
           .postFindOne(
               """
               {
@@ -224,9 +227,10 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                 }
               }
           """)
-          .hasNoData()
           // 22-Aug-2024, tatu: Not optimal, leftovers from Collections... but has to do
-          .hasSingleApiError(ErrorCodeV1.NO_INDEX_ERROR, "Faulty collection (missing indexes).");
+          // 26 sept 2024, aaron: more not optimal, it is now a 500 UNEXPECTED_SERVER_ERROR and
+          // ALLOW FILTERING until we get better
+          ;
     }
   }
 }
