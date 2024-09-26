@@ -17,7 +17,7 @@ import java.util.Objects;
  * Builds an attempt to read a row from an API Table, create a single instance and then call {@link
  * #build(WhereCQLClause)} for each different where clause the command creates.
  *
- * <p>Note: we dont need a subclass for ReadAttempt, everything is on the superclass
+ * <p>Note: we don't need a subclass for ReadAttempt, everything is on the superclass
  */
 public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<TableSchemaObject>> {
 
