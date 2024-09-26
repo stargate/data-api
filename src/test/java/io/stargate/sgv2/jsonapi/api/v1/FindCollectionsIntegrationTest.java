@@ -25,7 +25,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class FindCollectionsIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
   @Nested
   @Order(1)
@@ -53,7 +53,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(KeyspaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
           .body("status.collections", hasSize(0));
@@ -76,7 +76,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                 """
                   .formatted("collection1"))
           .when()
-          .post(KeyspaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -92,7 +92,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                   }
                   """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
           .body("status.collections", hasSize(greaterThanOrEqualTo(1)))
@@ -126,7 +126,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(KeyspaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -171,7 +171,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(KeyspaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
           .body("status.collections", hasSize(2))
@@ -195,7 +195,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                                 }
                                 """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -211,7 +211,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
                                 }
                                 """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
           .body("status.collections", hasSize(greaterThanOrEqualTo(1)))
@@ -336,7 +336,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(KeyspaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
           .body("status.ok", is(1));
@@ -383,7 +383,7 @@ class FindCollectionsIntegrationTest extends AbstractNamespaceIntegrationTestBas
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(KeyspaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
           .body("status.collections", hasSize(4))

@@ -41,7 +41,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(401)
           .body("errors", is(notNullValue()))
@@ -84,7 +84,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
             """;
       AnyOf<String> anyOf =
           AnyOf.anyOf(
-              endsWith("table %s.%s does not exist".formatted(namespaceName, "badCollection")),
+              endsWith("table %s.%s does not exist".formatted(keyspaceName, "badCollection")),
               endsWith("table %s does not exist".formatted("badCollection")),
               endsWith(
                   "Collection does not exist, collection name: %s".formatted("badCollection")));
@@ -93,7 +93,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, "badCollection")
+          .post(CollectionResource.BASE_PATH, keyspaceName, "badCollection")
           .then()
           .statusCode(200)
           .body("errors", is(notNullValue()))
@@ -114,7 +114,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
                                                 }
                                                 """)
           .when()
-          .post(KeyspaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(415)
           .body("errors", is(notNullValue()))
@@ -140,7 +140,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post("/unknown/{namespace}/{collection}", namespaceName, collectionName)
+          .post("/unknown/{namespace}/{collection}", keyspaceName, collectionName)
           .then()
           .statusCode(404);
     }
@@ -162,7 +162,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .get(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .get(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(405);
     }
@@ -186,7 +186,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(KeyspaceResource.BASE_PATH, namespaceName)
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(401)
           .body("errors", is(notNullValue()))
@@ -237,7 +237,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post("/unknown/{namespace}", namespaceName)
+          .post("/unknown/{namespace}", keyspaceName)
           .then()
           .statusCode(404);
     }
@@ -257,7 +257,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .get(KeyspaceResource.BASE_PATH, namespaceName)
+          .get(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(405);
     }
@@ -303,7 +303,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post("/unknown/{namespace}", namespaceName)
+          .post("/unknown/{namespace}", keyspaceName)
           .then()
           .statusCode(404);
     }
