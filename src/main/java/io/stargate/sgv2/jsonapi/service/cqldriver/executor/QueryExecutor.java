@@ -268,7 +268,6 @@ public class QueryExecutor {
     // else get the table
     // TODO: this should probably use CqlIdentifier.fromCql() (or .fromInternal())
     // if we want to support case-sensitive names
-    logger.warn("TABLES {}", keyspaceMetadata.getTables().values());
     return Uni.createFrom()
         .item(keyspaceMetadata.getTable(cqlIdentifierFromUserInput(collectionName)));
   }
