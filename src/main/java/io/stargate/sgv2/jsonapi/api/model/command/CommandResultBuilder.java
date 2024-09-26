@@ -127,19 +127,16 @@ public class CommandResultBuilder {
     var finalStatus = cmdStatus.isEmpty() ? null : cmdStatus;
     var finalErrors = cmdErrors.isEmpty() ? null : cmdErrors;
 
-    return switch (responseType) {
-      case SINGLE_DOCUMENT ->
-          new CommandResult(
-              new CommandResult.SingleResponseData(
-                  documents.isEmpty() ? null : documents.getFirst()),
-              finalStatus,
-              finalErrors);
-      case MULTI_DOCUMENT ->
-          new CommandResult(
-              new CommandResult.MultiResponseData(documents, nextPageState),
-              finalStatus,
-              finalErrors);
-      case STATUS_ONLY -> new CommandResult(null, finalStatus, finalErrors);
-    };
+    var responseData =
+        switch (responseType) {
+          case SINGLE_DOCUMENT ->
+              documents.isEmpty()
+                  ? null
+                  : new CommandResult.SingleResponseData(documents.getFirst());
+          case MULTI_DOCUMENT -> new CommandResult.MultiResponseData(documents, nextPageState);
+          case STATUS_ONLY -> null;
+        };
+
+    return new CommandResult(responseData, finalStatus, finalErrors);
   }
 }

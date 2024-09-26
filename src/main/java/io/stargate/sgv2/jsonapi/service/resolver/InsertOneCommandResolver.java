@@ -5,9 +5,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.InsertAttemptPage;
-import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
+import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
@@ -67,12 +65,12 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
 
     var attempts = new OperationAttemptContainer<>(builder.build(command.document()));
 
-    InsertAttemptPage.Builder<TableSchemaObject> pageBuilder =
+    var pageBuilder =
         InsertAttemptPage.<TableSchemaObject>builder()
             .returnDocumentResponses(false) // always false for single document insert
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GeneralOperation<>(ctx, new TableDriverExceptionHandler(), attempts, pageBuilder);
+    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }
 }

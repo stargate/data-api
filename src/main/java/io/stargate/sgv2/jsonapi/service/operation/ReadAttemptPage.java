@@ -6,6 +6,10 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import java.util.*;
 
+/**
+ * A page of results from a read command, use {@link #builder()} to get a builder to pass to {@link
+ * GenericOperation}.
+ */
 public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
     extends OperationAttemptPage<SchemaT, ReadAttempt<SchemaT>> {
 
@@ -70,8 +74,6 @@ public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
 
     @Override
     public ReadAttemptPage<SchemaT> getOperationPage() {
-
-      attempts.throwIfNotAllTerminal();
 
       var nonEmptyPageStateAttempts =
           attempts.completedAttempts().stream()

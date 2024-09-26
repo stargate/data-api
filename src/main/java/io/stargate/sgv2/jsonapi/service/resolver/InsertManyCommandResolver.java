@@ -6,10 +6,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.InsertAttempt;
-import io.stargate.sgv2.jsonapi.service.operation.InsertAttemptPage;
-import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
+import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
@@ -53,28 +50,6 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
     var attempts = command.documents().stream().map(builder::build).toList();
 
     return new InsertCollectionOperation(ctx, attempts, ordered, false, returnDocumentResponses);
-
-    //    final int docCount = inputDocs.size();
-    //
-    //    final List<CollectionInsertAttempt> insertions = new ArrayList<>(docCount);
-    //    for (int pos = 0; pos < docCount; ++pos) {
-    //      CollectionInsertAttempt attempt;
-    //      // Since exception thrown will prevent returning anything, need to instead pass a
-    //      // reference for Shredder to populate with the document id as soon as it knows it
-    //      // (there is at least one case fail occurs before it knows the id)
-    //      AtomicReference<DocumentId> idRef = new AtomicReference<>();
-    //      try {
-    //        final WritableShreddedDocument shredded =
-    //            documentShredder.shred(ctx, inputDocs.get(pos), null, idRef);
-    //        attempt = CollectionInsertAttempt.from(pos, shredded);
-    //      } catch (Exception e) {
-    //        // TODO: need a base Shredding exception to catch
-    //        attempt = new CollectionInsertAttempt(pos, idRef.get(), e);
-    //      }
-    //      insertions.add(attempt);
-    //    }
-    //    return new InsertCollectionOperation(ctx, insertions, ordered, false,
-    // returnDocumentResponses);
   }
 
   @Override
@@ -90,9 +65,9 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
             rowShredder,
             new WriteableTableRowBuilder(ctx.schemaObject(), JSONCodecRegistries.DEFAULT_REGISTRY));
 
-    var attempts =
-        new OperationAttemptContainer<TableSchemaObject, InsertAttempt<TableSchemaObject>>(ordered);
-    command.documents().stream().map(builder::build).forEach(attempts::add);
+    OperationAttemptContainer<TableSchemaObject, InsertAttempt<TableSchemaObject>> attempts =
+        new OperationAttemptContainer<>(ordered);
+    attempts.addAll(command.documents().stream().map(builder::build).toList());
 
     var pageBuilder =
         InsertAttemptPage.<TableSchemaObject>builder()
@@ -100,6 +75,6 @@ public class InsertManyCommandResolver implements CommandResolver<InsertManyComm
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GeneralOperation<>(ctx, new TableDriverExceptionHandler(), attempts, pageBuilder);
+    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }
 }

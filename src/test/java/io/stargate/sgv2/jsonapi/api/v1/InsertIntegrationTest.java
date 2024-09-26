@@ -74,7 +74,7 @@ public class InsertIntegrationTest extends AbstractCollectionIntegrationTestBase
           .contentType(ContentType.JSON)
           .body(json)
           .when()
-          .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
           .body("data.document", is(nullValue()))

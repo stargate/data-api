@@ -23,6 +23,10 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * An attempt to read from a table, runs the query, holds the result set, and then builds the
+ * documents on demand.
+ */
 public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
     extends OperationAttempt<ReadAttempt<SchemaT>, SchemaT> {
 
@@ -32,11 +36,14 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
   private final WhereCQLClause<Select> whereCQLClause;
   private final CqlOptions<Select> cqlOptions;
   private final CqlPagingState pagingState;
-  private DocumentSourceSupplier documentSourceSupplier;
+  // DocumentSourceSupplier is an old idea that needs refactoring at some point, is a supplier of a
+  // supplier
+  // but this class encapsulates the idea of how to convert a row into a document.
+  private final DocumentSourceSupplier documentSourceSupplier;
 
   private ReadResult readResult;
 
-  protected ReadAttempt(
+  public ReadAttempt(
       int position,
       SchemaT schemaObject,
       SelectCQLClause selectCQLClause,
@@ -52,21 +59,39 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
     this.cqlOptions = cqlOptions;
     this.pagingState = pagingState;
     this.documentSourceSupplier = documentSourceSupplier;
+
+    setStatus(OperationStatus.READY);
   }
 
-  // TODO: AARON this is ugly, just making it work first
+  /**
+   * Get the documents from the result set, the documents are not created until this method is
+   * called.
+   *
+   * @return List of JsonNode documents, never null.
+   */
   public List<JsonNode> documents() {
 
-    checkStatus("documents()", OperationStatus.COMPLETED);
+    // we must be terminal, but that does not mean we have a result set
+    checkTerminal("documents()");
 
     List<JsonNode> documents = new ArrayList<>();
-    readResult.currentPage.forEach(
-        row -> documents.add(documentSourceSupplier.documentSource(row).get()));
-
+    if (readResult != null) {
+      readResult.currentPage.forEach(
+          row -> documents.add(documentSourceSupplier.documentSource(row).get()));
+    }
     return documents;
   }
 
+  /**
+   * Get the paging state form running this command.
+   *
+   * @return {@link CqlPagingState} which is never null, if the statement did not have a paging
+   *     state then {@link CqlPagingState#EMPTY} is returned (or if the attempt is terminal but
+   *     never run the statement)
+   */
   public CqlPagingState resultPagingState() {
+    // we must be terminal, but that does not mean we have a result set
+    checkTerminal("resultPagingState()");
     return readResult == null ? CqlPagingState.EMPTY : readResult.pagingState;
   }
 
@@ -75,15 +100,20 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
 
     var statement = buildReadStatement();
 
-    LOGGER.warn("FIND CQL: {}", statement.getQuery());
-    LOGGER.warn("FIND VALUES: {}", statement.getPositionalValues());
-
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "execute() - {}, cql={}, values={}",
+          positionAndAttemptId(),
+          statement.getQuery(),
+          statement.getPositionalValues());
+    }
     return queryExecutor.executeRead(statement);
   }
 
   @Override
   protected ReadAttempt<SchemaT> onSuccess(AsyncResultSet resultSet) {
     readResult = new ReadResult(resultSet);
+    // call to make sure status is set
     return super.onSuccess(resultSet);
   }
 
@@ -94,9 +124,12 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
 
     var selectFrom = selectFrom(metadata.getKeyspace(), metadata.getName());
     var select = applySelect(selectFrom, positionalValues);
+    // these are options that go on the query builder, such as limit or allow filtering
     var bindableQuery = applyOptions(select);
     var statement = bindableQuery.build(positionalValues.toArray());
+    // these are options that go on the statement, such as page size
     statement = applyOptions(statement);
+
     return pagingState.addToStatement(statement);
   }
 
@@ -123,6 +156,8 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
     return cqlOptions.applyStatementOptions(statement);
   }
 
+  // This is a simple container for the result set so we can set one variable in the onSuccess
+  // method
   static class ReadResult {
 
     final AsyncResultSet resultSet;

@@ -4,9 +4,9 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import java.util.Objects;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,4 +101,6 @@ public class CommandQueryExecutor {
   private Uni<AsyncResultSet> executeAndWrap(SimpleStatement statement) {
     return Uni.createFrom().completionStage(session().executeAsync(statement));
   }
+
+  public static record RequestContext(Optional<String> tenantId, Optional<String> authToken) {}
 }

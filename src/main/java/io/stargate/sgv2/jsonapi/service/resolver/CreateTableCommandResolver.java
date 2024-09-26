@@ -8,11 +8,8 @@ import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
-import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
+import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableAttempt;
-import io.stargate.sgv2.jsonapi.service.operation.tables.GeneralOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Arrays;
@@ -74,7 +71,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GeneralOperation<>(ctx, new KeyspaceDriverExceptionHandler(), attempts, pageBuilder);
+    return new GenericOperation<>(attempts, pageBuilder, new KeyspaceDriverExceptionHandler());
   }
 
   @Override

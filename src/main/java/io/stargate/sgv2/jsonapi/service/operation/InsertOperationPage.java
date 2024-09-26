@@ -184,7 +184,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
     status.put(CommandStatus.INSERTED_IDS, insertedIds);
     maybeAddSchema(status);
 
-    return new CommandResult(null, status.isEmpty() ? null : status, errors);
+    return new CommandResult(null, status, errors);
   }
 
   /**
