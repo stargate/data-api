@@ -4,7 +4,6 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.api.request.RequestContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -99,7 +98,7 @@ public class GenericOperation<
     var commandQueryExecutor =
         new CommandQueryExecutor(
             queryExecutor.getCqlSessionCache(),
-            new RequestContext(
+            new CommandQueryExecutor.RequestContext(
                 dataApiRequestInfo.getTenantId(), dataApiRequestInfo.getCassandraToken()),
             CommandQueryExecutor.QueryTarget.TABLE);
 
