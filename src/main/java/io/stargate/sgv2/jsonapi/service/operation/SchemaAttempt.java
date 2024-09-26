@@ -33,7 +33,7 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
           statement.getQuery(),
           statement.getPositionalValues());
     }
-    return queryExecutor.executeRead(statement);
+    return queryExecutor.executeCreateSchema(statement);
   }
 
   protected abstract SimpleStatement buildStatement();
