@@ -13,6 +13,10 @@ import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
 import java.util.Optional;
 
+/**
+ * An attempt to insert into an API Table, overrides the {@link InsertAttempt} to provide the row id
+ * and schema.
+ */
 public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
 
   private final RowId rowId;
@@ -25,10 +29,6 @@ public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
     this.rowId = rowId;
     this.row = row;
     setStatus(OperationStatus.READY);
-  }
-
-  public Optional<WriteableTableRow> row() {
-    return Optional.ofNullable(row);
   }
 
   @Override

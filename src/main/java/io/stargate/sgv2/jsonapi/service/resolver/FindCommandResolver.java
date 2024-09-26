@@ -12,9 +12,7 @@ import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
-import io.stargate.sgv2.jsonapi.service.operation.ReadAttemptPage;
+import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
@@ -92,17 +90,16 @@ public class FindCommandResolver implements CommandResolver<FindCommand> {
     var where =
         TableWhereCQLClause.forSelect(
             ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));
-    var attempts = new OperationAttemptContainer<>(List.of(builder.build(where)));
+    var attempts = new OperationAttemptContainer<>(builder.build(where));
 
     var pageBuilder =
         ReadAttemptPage.<TableSchemaObject>builder()
             .singleResponse(false)
-            .includeSortVector(
-                command.options() == null ? false : command.options().includeSortVector())
+            .includeSortVector(command.options() != null && command.options().includeSortVector())
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GeneralOperation<>(ctx, new TableDriverExceptionHandler(), attempts, pageBuilder);
+    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }
 
   @Override

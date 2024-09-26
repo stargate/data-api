@@ -10,6 +10,13 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObjec
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import java.util.*;
 
+/**
+ * A page of results from an insert command, use {@link #builder()} to get a builder to pass to
+ * {@link GenericOperation}.
+ *
+ * <p><b>NOTE</b> a lot of this duplicates {@link InsertOperationPage}, that class will eventually
+ * be replaced by this one.
+ */
 public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
     extends OperationAttemptPage<SchemaT, InsertAttempt<SchemaT>> {
 
@@ -80,7 +87,11 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
    * @return Command result
    */
   private void buildPerDocumentResult() {
-    // New style output: detailed responses.
+    // aaron - 26 sept - this could be re-written now to simply iterate the attempts in loop and
+    // check their status,
+    // kept using the same approach as InsertOperationPage to make comparison easy until we remove
+    // the old class
+
     var results = new InsertionResult[attempts.size()];
 
     // Results array filled in order: first successful insertions
@@ -117,6 +128,10 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
     maybeAddSchema();
   }
 
+  /**
+   * Custom indexOf method that ignores the id field when used with Error Object v2 because it is
+   * different for every error.
+   */
   private int indexOf(List<CommandResult.Error> seenErrors, CommandResult.Error searchError) {
 
     for (int i = 0; i < seenErrors.size(); i++) {
@@ -176,8 +191,6 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
 
     @Override
     public InsertAttemptPage<SchemaT> getOperationPage() {
-
-      attempts.throwIfNotAllTerminal();
 
       var resultBuilder =
           new CommandResultBuilder(

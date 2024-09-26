@@ -20,26 +20,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Container for an individual Document or Row insertion attempt.
- *
- * <p>Tracks the original input position; document (if available), its id (if available) and
- * possible processing error.
- *
- * <p>Information will be needed to build responses, including the optional detail response see
- * {@link InsertOperationPage}
- *
- * <p>Is {@link Comparable} so that the attempts can be re-sorted into the order provided in the
- * user request, compares based on the {@link #position()}
+ * An attempt to insert into a table, runs the query, does not hold the result set (e.g. for applied
+ * LWT) that is for later.
  */
 public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
     extends OperationAttempt<InsertAttempt<SchemaT>, SchemaT> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(InsertAttempt.class);
+
   private final InsertValuesCQLClause insertValuesCQLClause;
 
   protected InsertAttempt(
       int position, SchemaT schemaObject, InsertValuesCQLClause insertValuesCQLClause) {
     super(position, schemaObject, RetryPolicy.NO_RETRY);
+
     // nullable, because the subclass may want to implement method itself.
     this.insertValuesCQLClause = insertValuesCQLClause;
   }
