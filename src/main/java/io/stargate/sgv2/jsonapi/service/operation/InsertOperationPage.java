@@ -181,7 +181,9 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
             .toList();
 
     Map<CommandStatus, Object> status = new HashMap<>();
-    status.put(CommandStatus.INSERTED_IDS, insertedIds);
+    if (!insertedIds.isEmpty()) {
+      status.put(CommandStatus.INSERTED_IDS, insertedIds);
+    }
     maybeAddSchema(status);
 
     return new CommandResult(null, status.isEmpty() ? null : status, errors);
