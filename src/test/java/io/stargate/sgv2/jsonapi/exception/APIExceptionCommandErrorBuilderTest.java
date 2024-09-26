@@ -20,7 +20,7 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
   public void productionModeCommandResult() {
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
     var result = new APIExceptionCommandErrorBuilder(false, true).apply(exception);
-    assertCommandError(exception, result, 4, true);
+    assertCommandError(exception, result, 5, true);
   }
 
   @Test
@@ -34,7 +34,7 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
   public void debugModeCommandResult() {
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
     var result = new APIExceptionCommandErrorBuilder(true, true).apply(exception);
-    assertCommandError(exception, result, 5, true);
+    assertCommandError(exception, result, 6, true);
 
     assertThat(result)
         .isNotNull()
@@ -88,7 +88,8 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
           .as("Error fields - fields new in v2 schema")
           .containsEntry(ErrorObjectV2Constants.Fields.FAMILY, exception.family.name())
           .containsEntry(ErrorObjectV2Constants.Fields.SCOPE, exception.scope)
-          .containsEntry(ErrorObjectV2Constants.Fields.TITLE, exception.title);
+          .containsEntry(ErrorObjectV2Constants.Fields.TITLE, exception.title)
+          .containsEntry(ErrorObjectV2Constants.Fields.ID, exception.errorId);
     }
   }
 }
