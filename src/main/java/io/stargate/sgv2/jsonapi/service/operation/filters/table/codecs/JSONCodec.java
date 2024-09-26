@@ -3,11 +3,17 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
+import com.fasterxml.jackson.core.Base64Variants;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.time.DateTimeException;
 import java.util.function.Function;
 
 /**
@@ -69,10 +75,16 @@ public record JSONCodec<JavaT, CqlT>(
    * @return True if the codec can convert the value into the type needed for the column.
    */
   public boolean testToCQL(DataType toCQLType, Object value) {
+    return handlesCQLType(toCQLType) && handlesJavaValue(value);
+  }
 
+  public boolean handlesCQLType(DataType toCQLType) {
+    return this.targetCQLType.equals(toCQLType);
+  }
+
+  public boolean handlesJavaValue(Object value) {
     // java value tests comes from TypeCodec.accepts(Object value) in the driver
-    return this.targetCQLType.equals(toCQLType)
-        && (value == null || javaType.getRawType().isAssignableFrom(value.getClass()));
+    return (value == null) || javaType.getRawType().isAssignableFrom(value.getClass());
   }
 
   /**
@@ -168,6 +180,54 @@ public record JSONCodec<JavaT, CqlT>(
     }
 
     /**
+     * Method for constructing exception-handling String-to-CQL-type converter, given a function
+     * that converts a String to the target CQL type.
+     */
+    static <JavaT, CqlT> ToCQL<JavaT, CqlT> safeFromString(Function<JavaT, CqlT> function) {
+      return (toCQLType, value) -> {
+        try {
+          return function.apply(value);
+        } catch (IllegalArgumentException | DateTimeException e) {
+          throw new ToCQLCodecException(
+              value,
+              toCQLType,
+              "Invalid String value for type `%s`; problem: %s"
+                  .formatted(toCQLType, e.getMessage()));
+        }
+      };
+    }
+
+    /**
+     * Returns given String if (and only if) it only contains 7-bit ASCII characters; otherwise it
+     * will throw an {@link ToCQLCodecException}
+     */
+    static String safeAscii(DataType targetTextType, String value) throws ToCQLCodecException {
+      // Not sure if this is strictly needed, but for now assert that the target type is ASCII
+      Preconditions.checkArgument(
+          targetTextType == DataTypes.ASCII,
+          "Should only be called for type DataTypes.ASCII, was called on %s",
+          targetTextType);
+
+      for (int i = 0, len = value.length(); i < len; ++i) {
+        /* Check if the character is ASCII: internally Unicode characters in Java are 16-bit
+         * UCS-2 (similar to UTF-16) encoded, so only characters in the range 0x0000 to 0x007F are ASCII characters.
+         * This is not only true for "regular" (Basic-Multilingual Plane, BMP) characters, but also for
+         * Unicode surrogate pairs, which are used to encode characters outside the BMP. In latter
+         * case chars are in range above 0xD400, never confused with ASCII characters.
+         */
+        if (value.charAt(i) > 0x7F) {
+          throw new ToCQLCodecException(
+              value,
+              targetTextType,
+              String.format(
+                  "String contains non-ASCII character at index #%d (length=%d): \\u%04X",
+                  i, len, (int) value.charAt(i)));
+        }
+      }
+      return value;
+    }
+
+    /**
      * Returns an instance that converts the value to the target type, catching any arithmetic
      * exceptions and throwing them as a {@link ToCQLCodecException}
      *
@@ -226,6 +286,79 @@ public record JSONCodec<JavaT, CqlT>(
       throw new ArithmeticException(
           String.format("Underflow, value too small for %s", targetCQLType));
     }
+
+    static Double doubleFromString(DataType targetCQLType, String value)
+        throws ToCQLCodecException {
+      return switch (notANumber(targetCQLType, value)) {
+        case NAN -> Double.NaN;
+        case POSITIVE_INFINITY -> Double.POSITIVE_INFINITY;
+        case NEGATIVE_INFINITY -> Double.NEGATIVE_INFINITY;
+      };
+    }
+
+    static Float floatFromString(DataType targetCQLType, String value) throws ToCQLCodecException {
+      return switch (notANumber(targetCQLType, value)) {
+        case NAN -> Float.NaN;
+        case POSITIVE_INFINITY -> Float.POSITIVE_INFINITY;
+        case NEGATIVE_INFINITY -> Float.NEGATIVE_INFINITY;
+      };
+    }
+
+    enum NotANumber {
+      NAN,
+      POSITIVE_INFINITY,
+      NEGATIVE_INFINITY
+    }
+
+    static NotANumber notANumber(DataType targetCQLType, String value) throws ToCQLCodecException {
+      return switch (value) {
+        case "NaN" -> NotANumber.NAN;
+        case "Infinity" -> NotANumber.POSITIVE_INFINITY;
+        case "-Infinity" -> NotANumber.NEGATIVE_INFINITY;
+        default ->
+            throw new ToCQLCodecException(
+                value,
+                targetCQLType,
+                "Unsupported String value: only \"NaN\", \"Infinity\" and \"-Infinity\" supported");
+      };
+    }
+
+    static ByteBuffer byteBufferFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
+        throws ToCQLCodecException {
+      if (wrapper.type() != EJSONWrapper.EJSONType.BINARY) {
+        throw new ToCQLCodecException(
+            wrapper,
+            targetCQLType,
+            "Unsupported EJSON type '%s': only '%s' supported"
+                .formatted(wrapper.type().key(), EJSONWrapper.EJSONType.BINARY.key()));
+      }
+      JsonNode value = wrapper.value();
+      byte[] binaryPayload;
+
+      try {
+        if (value.isBinary()) {
+          binaryPayload = value.binaryValue();
+        } else if (value.isTextual()) {
+          // Jackson supports multiple optimized variants: MIME, PEM, MODIFIED_FOR_URL
+          // but MIME_NO_LINEFEEDS is the most common (and default).
+          // Most variation on encoding side; for decoding less difference
+          binaryPayload = Base64Variants.MIME_NO_LINEFEEDS.decode(value.textValue());
+        } else {
+          throw new ToCQLCodecException(
+              wrapper,
+              targetCQLType,
+              "Unsupported JSON value type in EJSON $binary wrapper (%s): only STRING allowed"
+                  .formatted(value.getNodeType()));
+        }
+      } catch (IllegalArgumentException | IOException e) {
+        throw new ToCQLCodecException(
+            wrapper,
+            targetCQLType,
+            "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String; problem: %s"
+                .formatted(e.getMessage()));
+      }
+      return ByteBuffer.wrap(binaryPayload);
+    }
   }
 
   /**
@@ -273,6 +406,18 @@ public record JSONCodec<JavaT, CqlT>(
      */
     static <CqlT> ToJSON<CqlT> unsafeNodeFactory(Function<CqlT, JsonNode> nodeFactoryMethod) {
       return (objectMapper, fromCQLType, value) -> nodeFactoryMethod.apply(value);
+    }
+
+    /**
+     * Returns a converter that will translate given CQL value by calling {@code value.toString()}
+     * and constructing a {@link JsonNode} (of type {@link
+     * com.fasterxml.jackson.databind.node.TextNode}) with that {@code String}.
+     *
+     * <p>See usage in the {@link JSONCodecRegistry}
+     */
+    static <CqlT> ToJSON<CqlT> toJSONUsingToString() {
+      return (objectMapper, fromCQLType, value) ->
+          objectMapper.getNodeFactory().textNode(String.valueOf(value));
     }
   }
 }

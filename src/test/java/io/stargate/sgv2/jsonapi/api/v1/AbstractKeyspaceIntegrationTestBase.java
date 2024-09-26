@@ -31,10 +31,10 @@ import org.junit.jupiter.api.TestInstance;
  * (see https://github.com/quarkusio/quarkus/issues/7690).
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public abstract class AbstractNamespaceIntegrationTestBase {
+public abstract class AbstractKeyspaceIntegrationTestBase {
 
   // keyspace automatically created in this test
-  protected final String namespaceName = "ns" + RandomStringUtils.randomAlphanumeric(16);
+  protected final String keyspaceName = "ks" + RandomStringUtils.randomAlphanumeric(16);
 
   @BeforeAll
   public static void enableLog() {
@@ -43,7 +43,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
 
   @BeforeAll
   public void createKeyspace() {
-    createKeyspace(namespaceName);
+    createKeyspace(keyspaceName);
   }
 
   protected void createKeyspace(String nsToCreate) {
@@ -80,7 +80,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
           }
         }
         """
-            .formatted(namespaceName);
+            .formatted(keyspaceName);
 
     given()
         .port(getTestPort())
@@ -110,7 +110,7 @@ public abstract class AbstractNamespaceIntegrationTestBase {
                   """
                 .formatted(collectionToCreate))
         .when()
-        .post(KeyspaceResource.BASE_PATH, namespaceName)
+        .post(KeyspaceResource.BASE_PATH, keyspaceName)
         .then()
         .statusCode(200);
   }
