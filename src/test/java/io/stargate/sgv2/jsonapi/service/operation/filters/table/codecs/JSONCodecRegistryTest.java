@@ -5,13 +5,20 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.data.CqlDuration;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -64,9 +71,36 @@ public class JSONCodecRegistryTest {
    * @param expectedCqlValue The value we expect to pass to the CQL driver
    */
   @ParameterizedTest
-  @MethodSource("validCodecToCQLTestCases")
-  public void codecToCQL(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+  @MethodSource("validCodecToCQLTestCasesInt")
+  public void codecToCQLInts(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
 
+  @ParameterizedTest
+  @MethodSource("validCodecToCQLTestCasesFloat")
+  public void codecToCQLFloats(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToCQLTestCasesText")
+  public void codecToCQLText(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToCQLTestCasesDatetime")
+  public void codecToCQLDatetime(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToCQLTestCasesOther")
+  public void codecToCQLOther(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
+
+  private void _codecToCQL(DataType cqlType, Object fromValue, Object expectedCqlValue) {
     var codec = assertGetCodecToCQL(cqlType, fromValue);
 
     var actualCqlValue =
@@ -84,8 +118,8 @@ public class JSONCodecRegistryTest {
         .isEqualTo(expectedCqlValue);
   }
 
-  private static Stream<Arguments> validCodecToCQLTestCases() {
-    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
+  private static Stream<Arguments> validCodecToCQLTestCasesInt() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
     // Note: all Numeric types accept 3 Java types: Long, BigInteger, BigDecimal
     return Stream.of(
         // Integer types:
@@ -104,9 +138,14 @@ public class JSONCodecRegistryTest {
         Arguments.of(DataTypes.VARINT, -39999L, BigInteger.valueOf(-39999)),
         Arguments.of(DataTypes.VARINT, BigInteger.valueOf(1), BigInteger.valueOf(1)),
         Arguments.of(
-            DataTypes.VARINT, BigDecimal.valueOf(123456789.0), BigInteger.valueOf(123456789)),
+            DataTypes.VARINT, BigDecimal.valueOf(123456789.0), BigInteger.valueOf(123456789)));
+  }
 
-        // Floating-point types:
+  private static Stream<Arguments> validCodecToCQLTestCasesFloat() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
+    // Note: all Numeric types accept 3 Java types: Long, BigInteger, BigDecimal; and
+    // 2 accept String as well (for Not-a-Numbers)
+    return Stream.of(
         Arguments.of(DataTypes.DECIMAL, 123L, BigDecimal.valueOf(123L)),
         Arguments.of(DataTypes.DECIMAL, BigInteger.valueOf(34567L), BigDecimal.valueOf(34567L)),
         Arguments.of(DataTypes.DECIMAL, BigDecimal.valueOf(0.25), BigDecimal.valueOf(0.25)),
@@ -115,7 +154,69 @@ public class JSONCodecRegistryTest {
         Arguments.of(DataTypes.DOUBLE, BigDecimal.valueOf(0.25), Double.valueOf(0.25)),
         Arguments.of(DataTypes.FLOAT, 123L, Float.valueOf(123L)),
         Arguments.of(DataTypes.FLOAT, BigInteger.valueOf(34567L), Float.valueOf(34567L)),
-        Arguments.of(DataTypes.FLOAT, BigDecimal.valueOf(0.25), Float.valueOf(0.25f)));
+        Arguments.of(DataTypes.FLOAT, BigDecimal.valueOf(0.25), Float.valueOf(0.25f)),
+        // Floating-point types: not-a-numbers
+        Arguments.of(DataTypes.DOUBLE, "NaN", Double.NaN),
+        Arguments.of(DataTypes.DOUBLE, "Infinity", Double.POSITIVE_INFINITY),
+        Arguments.of(DataTypes.DOUBLE, "-Infinity", Double.NEGATIVE_INFINITY),
+        Arguments.of(DataTypes.FLOAT, "NaN", Float.NaN),
+        Arguments.of(DataTypes.FLOAT, "Infinity", Float.POSITIVE_INFINITY),
+        Arguments.of(DataTypes.FLOAT, "-Infinity", Float.NEGATIVE_INFINITY));
+  }
+
+  private static Stream<Arguments> validCodecToCQLTestCasesText() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
+    // Textual types: ASCII, TEXT (VARCHAR is an alias for TEXT).
+    return Stream.of(
+        Arguments.of(DataTypes.ASCII, TEST_DATA.STRING_ASCII_SAFE, TEST_DATA.STRING_ASCII_SAFE),
+        Arguments.of(DataTypes.TEXT, TEST_DATA.STRING_ASCII_SAFE, TEST_DATA.STRING_ASCII_SAFE),
+        Arguments.of(
+            DataTypes.TEXT,
+            TEST_DATA.STRING_WITH_2BYTE_UTF8_CHAR,
+            TEST_DATA.STRING_WITH_2BYTE_UTF8_CHAR),
+        Arguments.of(
+            DataTypes.TEXT,
+            TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR,
+            TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR));
+  }
+
+  private static Stream<Arguments> validCodecToCQLTestCasesDatetime() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
+    // Date/time types: DATE, DURATION, TIME, TIMESTAMP
+    return Stream.of(
+        Arguments.of(
+            DataTypes.DATE, TEST_DATA.DATE_VALID_STR, LocalDate.parse(TEST_DATA.DATE_VALID_STR)),
+        Arguments.of(
+            DataTypes.DURATION,
+            TEST_DATA.DURATION_VALID1_STR,
+            CqlDuration.from(TEST_DATA.DURATION_VALID1_STR)),
+        Arguments.of(
+            DataTypes.DURATION,
+            TEST_DATA.DURATION_VALID2_STR,
+            CqlDuration.from(TEST_DATA.DURATION_VALID2_STR)),
+        Arguments.of(
+            DataTypes.TIME, TEST_DATA.TIME_VALID_STR, LocalTime.parse(TEST_DATA.TIME_VALID_STR)),
+        Arguments.of(
+            DataTypes.TIMESTAMP,
+            TEST_DATA.TIMESTAMP_VALID_STR,
+            Instant.parse(TEST_DATA.TIMESTAMP_VALID_STR)));
+  }
+
+  private static Stream<Arguments> validCodecToCQLTestCasesOther() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
+    return Stream.of(
+        // Short regular base64-encoded string
+        Arguments.of(
+            DataTypes.BLOB,
+            binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR),
+            ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES)),
+        // edge case: empty String -> byte[0]
+        Arguments.of(DataTypes.BLOB, binaryWrapper(""), ByteBuffer.wrap(new byte[0])));
+  }
+
+  private static EJSONWrapper binaryWrapper(String base64Encoded) {
+    return new EJSONWrapper(
+        EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.textNode(base64Encoded));
   }
 
   @Test
@@ -275,5 +376,133 @@ public class JSONCodecRegistryTest {
         Arguments.of(DataTypes.SMALLINT, TEST_DATA.NOT_EXACT_AS_INTEGER),
         Arguments.of(DataTypes.TINYINT, TEST_DATA.NOT_EXACT_AS_INTEGER),
         Arguments.of(DataTypes.VARINT, TEST_DATA.NOT_EXACT_AS_INTEGER));
+  }
+
+  @ParameterizedTest
+  @MethodSource("nonAsciiValueFailTestCases")
+  public void nonAsciiValueFail(String valueToTest) {
+    var codec = assertGetCodecToCQL(DataTypes.ASCII, valueToTest);
+
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest),
+            String.format(
+                "Throw ToCQLCodecException when attempting to convert `%s` from non-ASCII value %s",
+                DataTypes.ASCII, valueToTest));
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(DataTypes.ASCII);
+              assertThat(e.value).isEqualTo(valueToTest);
+
+              assertThat(e.getMessage())
+                  .contains(DataTypes.ASCII.toString())
+                  .contains(valueToTest.getClass().getName())
+                  .contains(valueToTest.toString())
+                  .contains("Root cause: String contains non-ASCII character at index");
+            });
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidCodecToCQLTestCasesDatetime")
+  public void invalidDatetimeValueFail(DataType cqlDatetimeType, String valueToTest) {
+    var codec = assertGetCodecToCQL(cqlDatetimeType, valueToTest);
+
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest),
+            String.format(
+                "Throw ToCQLCodecException when attempting to convert `%s` from non-ASCII value %s",
+                cqlDatetimeType, valueToTest));
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(cqlDatetimeType);
+              assertThat(e.value).isEqualTo(valueToTest);
+
+              assertThat(e.getMessage())
+                  .contains(cqlDatetimeType.toString())
+                  .contains(valueToTest.getClass().getName())
+                  .contains(valueToTest.toString())
+                  .contains("Root cause: Invalid String value for type");
+            });
+  }
+
+  private static Stream<Arguments> invalidCodecToCQLTestCasesDatetime() {
+    // Arguments: (CQL-type, from-caller)
+    // Date/time types: DATE, DURATION, TIME, TIMESTAMP
+    return Stream.of(
+        Arguments.of(DataTypes.DATE, TEST_DATA.DATE_INVALID_STR),
+        Arguments.of(DataTypes.DURATION, TEST_DATA.DURATION_INVALID_STR),
+        Arguments.of(DataTypes.TIME, TEST_DATA.TIME_INVALID_STR),
+        Arguments.of(DataTypes.TIMESTAMP, TEST_DATA.TIMESTAMP_INVALID_STR));
+  }
+
+  // difficult to parameterize this test, so just test a few cases
+  @Test
+  public void badBinaryInputs() {
+    EJSONWrapper valueToTest1 =
+        new EJSONWrapper(
+            EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.textNode("bad-base64!"));
+    final var codec = assertGetCodecToCQL(DataTypes.BLOB, valueToTest1);
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest1),
+            "Throw ToCQLCodecException when attempting to convert DataTypes.BLOB from invalid Base64 value");
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(DataTypes.BLOB);
+              assertThat(e.value).isEqualTo(valueToTest1);
+              assertThat(e.getMessage())
+                  .contains("Root cause: Invalid content in EJSON $binary wrapper");
+            });
+
+    EJSONWrapper valueToTest2 =
+        new EJSONWrapper(EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.numberNode(42));
+
+    error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest2),
+            "Throw ToCQLCodecException when attempting to convert DataTypes.BLOB from non-String EJSONWrapper value");
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(DataTypes.BLOB);
+              assertThat(e.value).isEqualTo(valueToTest2);
+              assertThat(e.getMessage())
+                  .contains(
+                      "Root cause: Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed");
+            });
+
+    // Test with unpadded base64
+    EJSONWrapper valueToTest3 = binaryWrapper(TEST_DATA.BASE64_UNPADDED_ENCODED_STR);
+    error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest3),
+            "Throw ToCQLCodecException when attempting to convert DataTypes.BLOB from non-String EJSONWrapper value");
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(DataTypes.BLOB);
+              assertThat(e.value).isEqualTo(valueToTest3);
+              assertThat(e.getMessage())
+                  .contains("Unexpected end of base64-encoded String")
+                  .contains("expects padding");
+            });
+  }
+
+  private static Stream<Arguments> nonAsciiValueFailTestCases() {
+    return Stream.of(
+        Arguments.of(TEST_DATA.STRING_WITH_2BYTE_UTF8_CHAR),
+        Arguments.of(TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR),
+        Arguments.of(TEST_DATA.STRING_WITH_4BYTE_SURROGATE_CHAR));
   }
 }

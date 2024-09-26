@@ -8,8 +8,8 @@ See the [Data API Query Specification](dataapi-spec.md) for details of data mode
 - [Conventions](#conventions)
 - [Error handling](#error-handling)
 - [Endpoints](#endpoints)
-    - [Namespace endpoint](#namespace-endpoint)
-        - [Namespace endpoint errors](#errors)
+    - [Keyspace endpoint](#keyspace-endpoint)
+        - [Keyspace endpoint errors](#errors)
     - [Collection endpoint](#collection-endpoint)
 - [Authentication and Authorization](#authentication-and-authorization)
 
@@ -78,7 +78,7 @@ concepts that are used to describe this process are:
 
 -   **Endpoints:** The URL address for clients to send request messages.
     There are two types of endpoints which accept different messages:
-    namespace and collection endpoints.
+    keyspace and collection endpoints.
 -   **Request Message:** A message from the client to the server
     requesting the server take some action, such as inserting or finding
     documents.
@@ -145,8 +145,8 @@ encoded in the response message. To avoid doubt these errors are called
 
 The HTTP API provides two types of endpoints:
 
--   Namespace Endpoint: used to send commands which apply to the whole
-    Namespace, such as listing all the Collections.
+-   Keyspace Endpoint: used to send commands which apply to the whole
+    Keyspace, such as listing all the Collections.
 -   Collection Endpoint: used to send commands which apply to a single
     Collection, such as finding users by age.
 
@@ -163,28 +163,28 @@ Both endpoints follow these rules:
 4.  Requests **must** specify the
     `Accept:application/json; charset=UTF-8` header
 
-### Namespace Endpoint
+### Keyspace Endpoint
 
-The Namespace Endpoint has the form:
+The Keyspace Endpoint has the form:
 
 *Syntax:*
 
 ```bnf
-<namespace-endpoint> ::= <server-address>/<namespace-name>
+<keyspace-endpoint> ::= <server-address>/<keyspace-name>
 ```
 
 `<server-address>` is a Server URI using HTTP (S), scheme://host/path
 
-`<namespace-name>` must begin with an alpha-numeric character and
+`<keyspace-name>` must begin with an alpha-numeric character and
 can only contain alpha-numeric characters and underscores.
 
 *Sample:*
 
-`https://stargate.mycompany.com/my-namespace`
+`https://stargate.mycompany.com/my-keyspace`
 
-#### Namespace endpoint errors
+#### Keyspace endpoint errors
 
-Requests sent to a Namespace that was not previously created via administration tools results in a **TODO** soft error.
+Requests sent to a Keyspace that was not previously created via administration tools results in a **TODO** soft error.
 
 ### Collection Endpoint
 
@@ -193,7 +193,7 @@ Collection Endpoint has the form:
 *Syntax:*
 
 ```bnf
-<collection-endpoint> ::= <server-address>/<namespace-name>/<collection-name>
+<collection-endpoint> ::= <server-address>/<keyspace-name>/<collection-name>
 ```
 
 `<collection-name>` must begin with an alpha-numeric character
@@ -201,10 +201,10 @@ and can only contain alpha-numeric characters and underscores.
 
 *Sample:*
 
-https://stargate.mycompany.com/my-namespace/users
+https://stargate.mycompany.com/my-keyspace/users
 
 Requests sent to a Collection that does not exist (using a valid
-namespace name) result in the creation of the Collection and delivery of
+keyspace name) result in the creation of the Collection and delivery of
 the message. This may take longer than delivering a message to an
 existing Collection.
 

@@ -18,7 +18,7 @@ import org.junit.jupiter.api.BeforeAll;
  * (see https://github.com/quarkusio/quarkus/issues/7690).
  */
 public abstract class AbstractCollectionIntegrationTestBase
-    extends AbstractNamespaceIntegrationTestBase {
+    extends AbstractKeyspaceIntegrationTestBase {
 
   // collection name automatically created in this test
   protected final String collectionName = "col" + RandomStringUtils.randomAlphanumeric(16);
@@ -29,7 +29,7 @@ public abstract class AbstractCollectionIntegrationTestBase
   }
 
   protected void createSimpleCollection(String collectionToCreate) {
-    createCollection(this.namespaceName, collectionToCreate);
+    createCollection(this.keyspaceName, collectionToCreate);
   }
 
   protected void createComplexCollection(String collectionSetting) {
@@ -45,7 +45,7 @@ public abstract class AbstractCollectionIntegrationTestBase
                       """
                 .formatted(collectionSetting))
         .when()
-        .post(KeyspaceResource.BASE_PATH, namespaceName)
+        .post(KeyspaceResource.BASE_PATH, keyspaceName)
         .then()
         .statusCode(200);
   }
@@ -67,7 +67,7 @@ public abstract class AbstractCollectionIntegrationTestBase
               .contentType(ContentType.JSON)
               .body(json)
               .when()
-              .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
               .then()
               .statusCode(200)
               .body("errors", is(nullValue()))
@@ -101,7 +101,7 @@ public abstract class AbstractCollectionIntegrationTestBase
         .contentType(ContentType.JSON)
         .body(doc)
         .when()
-        .post(CollectionResource.BASE_PATH, namespaceName, collection)
+        .post(CollectionResource.BASE_PATH, keyspaceName, collection)
         .then()
         // Sanity check: let's look for non-empty inserted id
         .body("status.insertedIds[0]", not(emptyString()))
@@ -125,7 +125,7 @@ public abstract class AbstractCollectionIntegrationTestBase
         .contentType(ContentType.JSON)
         .body(doc)
         .when()
-        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
         .then()
         .body("status.insertedIds", hasSize(docsAmount))
         .statusCode(200);
@@ -135,7 +135,7 @@ public abstract class AbstractCollectionIntegrationTestBase
   protected ValidatableResponse givenHeadersPostJsonThen(String json) {
     return givenHeadersAndJson(json)
         .when()
-        .post(CollectionResource.BASE_PATH, namespaceName, collectionName)
+        .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
         .then();
   }
 
