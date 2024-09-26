@@ -5,16 +5,30 @@ import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.util.Base64;
 
-/** A marker interface for credentials. */
+/**
+ * Interface for what it means to have credentials for the CQL driver
+ *
+ * <p>Create instances using the {@link #create(String, String, String, String)} factory method,
+ * this will return the correct implementation based on the provided tokens.
+ *
+ * <p><b>NOTE:</b> Implementations should be immutable, and support comparison and hashing because
+ * they are used as part of the Session cache key. The initial ones use records for these reasons.
+ */
 interface CqlCredentials {
 
   String USERNAME_PASSWORD_PREFIX = "Cassandra:";
 
   /**
-   * Factory method to return the correct
+   * Factory method to create the correct CqlCredentials based on the provided tokens.
    *
-   * @param token
-   * @return
+   * @param fixedToken the "fixed token" from configuration, e.g. from <code>
+   *     operationsConfig.databaseConfig().fixedToken()</code> is passed in to make testing easier.
+   * @param authToken the token provided in the request, e.g. from the Authorization / Token header
+   * @param fallbackUsername the username to use if the fixedToken is set, this is from config
+   *     usually
+   * @param fallbackPassword the password to use if the fixedToken is set, this is from config
+   *     usually
+   * @return the correct CqlCredentials implementation based on the provided tokens
    */
   static CqlCredentials create(
       String fixedToken, String authToken, String fallbackUsername, String fallbackPassword) {
@@ -22,15 +36,12 @@ interface CqlCredentials {
     // This used to be in CqlSessionCache.getSession(), the fixedToken config is used in testing and
     // the API
     // checks the provided authToken is the same as the configured fixedToken.
-    // TODO: refactor / rename the "fixedToken" why is the API checking the tokens ?
     if (fixedToken != null && !fixedToken.equals(authToken)) {
       throw new UnauthorizedException(ErrorCodeV1.UNAUTHENTICATED_REQUEST.getMessage());
     }
 
     // Also from CqlSessionCache.getNewSession(), if the fixedToken is set, then we always use the
-    // configured
-    // username and password
-    // TODO: confirm the logic here, we have a fixedToken that is a string we ignore the value of
+    // configured / fallback username and password
     if (fixedToken != null) {
       return new UsernamePasswordCredentials(fallbackUsername, fallbackPassword);
     }
@@ -44,10 +55,12 @@ interface CqlCredentials {
     };
   }
 
+  /** If the credentials are anonymous, i.e. there is no auth token or username/password. */
   default boolean isAnonymous() {
     return false;
   }
 
+  /** Add the credentials to the provided CqlSessionBuilder so it can login appropriately. */
   void addToSessionBuilder(CqlSessionBuilder builder);
 
   record AnonymousCredentials() implements CqlCredentials {
@@ -64,7 +77,7 @@ interface CqlCredentials {
   }
 
   /**
-   * CqlCredentials for CQLSession cache when token is provided.
+   * Credentials when the user has provided an auth token.
    *
    * @param token auth token passed, e.g. passed on the request, must be non-null and non-blank
    */
@@ -121,8 +134,7 @@ interface CqlCredentials {
         String userName = new String(Base64.getDecoder().decode(parts[1]));
         String password = new String(Base64.getDecoder().decode(parts[2]));
         return new UsernamePasswordCredentials(userName, password);
-      } catch (Exception e) {
-        // TODO: WHat exceptions are we expecting here ? Catch at Exception is bad practice
+      } catch (IllegalArgumentException e) {
         throw new UnauthorizedException(
             "Invalid credentials format, expected `Cassandra:Base64(username):Base64(password)`");
       }

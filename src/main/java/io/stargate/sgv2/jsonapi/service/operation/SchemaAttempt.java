@@ -12,9 +12,7 @@ import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * An attempt to execute a schema change
- */
+/** An attempt to execute a schema change */
 public abstract class SchemaAttempt<SchemaT extends SchemaObject>
     extends OperationAttempt<SchemaAttempt<SchemaT>, SchemaT> {
 

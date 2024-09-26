@@ -61,8 +61,10 @@ public class CQLSessionCache {
 
   @Inject
   public CQLSessionCache(OperationsConfig operationsConfig, MeterRegistry meterRegistry) {
+
     LOGGER.info("Initializing CQLSessionCache");
     this.operationsConfig = operationsConfig;
+
     LoadingCache<SessionCacheKey, CqlSession> loadingCache =
         Caffeine.newBuilder()
             .expireAfterAccess(
@@ -111,7 +113,7 @@ public class CQLSessionCache {
    */
   private CqlSession getNewSession(SessionCacheKey cacheKey) {
 
-    // TODO: WHY IS THIS USED ?
+    // TODO: WHY IS DriverConfigLoader USED ?
     DriverConfigLoader loader =
         DriverConfigLoader.programmaticBuilder()
             .withString(DefaultDriverOption.SESSION_NAME, cacheKey.tenantId)
@@ -120,7 +122,7 @@ public class CQLSessionCache {
     var databaseConfig = operationsConfig.databaseConfig();
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace(
-          "Creating new session for tenant : {} and Database type: {}",
+          "Creating new session tenantId={} and databaseType={}",
           cacheKey.tenantId(),
           databaseConfig.type());
     }
@@ -146,47 +148,11 @@ public class CQLSessionCache {
       builder.addContactPoints(seeds);
     }
 
-    // aaron - this used to have a if / else that threw an exception if the database type was not
-    // known
-    // but we test that when creating the credentials for the cache key so no need to do it here.
+    // aaron - this used to have an if / else that threw an exception if the database type was not
+    // known but we test that when creating the credentials for the cache key so no need to do it
+    // here.
     return builder.build();
   }
-
-  //  /**
-  //   * This method checks if the session is valid for the tenant. If a token is generated for
-  // tenant A
-  //   * and if it is used to access tenant B's data, the cqlsession object still gets created
-  // without
-  //   * any error but it has no metadata or keyspaces information. So, this situation leads to
-  // return
-  //   * misleading no keyspace found error, instead of authorization error.
-  //   *
-  //   * <p>This method checks if the session is valid, first by checking if there are any keyspaces
-  // and
-  //   * returns true if there are any keyspaces. If there are no keyspaces, then it tries to
-  // execute a
-  //   * query on system_virtual_schema.tables and returns true if the query is successful. Failure
-  // to
-  //   * execute the query with an UnauthorizedException means the session is invalid i.e. not meant
-  // for
-  //   * the tenant in the request.
-  //   *
-  //   * @param cqlSession CqlSession
-  //   * @param tenantId tenant id
-  //   * @return true if the session is valid, false otherwise
-  //   */
-  //  private boolean isAstraSessionValid(CqlSession cqlSession, String tenantId) {
-  //    if (!cqlSession.getMetadata().getKeyspaces().isEmpty()) {
-  //      return true;
-  //    }
-  //    try {
-  //      cqlSession.execute("SELECT * FROM system_virtual_schema.tables");
-  //      return true;
-  //    } catch (com.datastax.oss.driver.api.core.servererrors.UnauthorizedException e) {
-  //      LOGGER.error("Unauthorized to access tenant %s's data".formatted(tenantId), e);
-  //      return false;
-  //    }
-  //  }
 
   /**
    * Get CQLSession from cache.
@@ -194,6 +160,7 @@ public class CQLSessionCache {
    * @return CQLSession
    */
   public CqlSession getSession(DataApiRequestInfo dataApiRequestInfo) {
+
     // Validation happens when creating the credentials and session key
     return getSession(
         dataApiRequestInfo.getTenantId().orElse(""),

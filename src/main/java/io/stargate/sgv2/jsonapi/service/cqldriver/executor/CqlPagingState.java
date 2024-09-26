@@ -9,9 +9,9 @@ import java.util.Optional;
 
 /**
  * Holds the paging state, either coming from the user in a request or extracted from a result set.
- * <p>
- * And then can be used to add it to a statement or to get the string representation to put into a
- * {@link io.stargate.sgv2.jsonapi.api.model.command.CommandResult}
+ *
+ * <p>And then can be used to add it to a statement or to get the string representation to put into
+ * a {@link io.stargate.sgv2.jsonapi.api.model.command.CommandResult}
  */
 public class CqlPagingState {
 
