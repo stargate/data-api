@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnDataType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -29,7 +28,11 @@ public record CreateTableCommand(
       @Valid
           @Schema(description = "API table columns definitions", type = SchemaType.OBJECT)
           @JsonInclude(JsonInclude.Include.NON_NULL)
-          Map<String, ColumnDataType> columns,
+          /* NOTE: eventual value type is ColumnDataType, but must defer deserialization
+           * into ColumnDataType until later in the processing pipeline to allow
+           * checking for APIFeature.Tables first
+           */
+          Map<String, Object> columns,
       @Valid
           @Schema(
               description = "Primary key definition for the table",

@@ -1,7 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnDataType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -9,6 +11,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableOperation;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -16,13 +19,15 @@ import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class CreateTableCommandResolver implements CommandResolver<CreateTableCommand> {
+  @Inject ObjectMapper objectMapper;
+
   @Override
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateTableCommand command) {
     String tableName = command.name();
     Map<String, ColumnType> columnTypes =
         command.definition().columns().entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().type()));
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> columnType(e.getValue())));
     List<String> partitionKeys = Arrays.stream(command.definition().primaryKey().keys()).toList();
 
     if (partitionKeys.isEmpty()) {
@@ -56,5 +61,9 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
   @Override
   public Class<CreateTableCommand> getCommandClass() {
     return CreateTableCommand.class;
+  }
+
+  private ColumnType columnType(Object typeDef) {
+    return objectMapper.convertValue(typeDef, ColumnDataType.class).type();
   }
 }
