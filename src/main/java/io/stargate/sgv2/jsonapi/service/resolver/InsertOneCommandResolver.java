@@ -9,7 +9,9 @@ import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionInsertAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.collections.InsertCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
-import io.stargate.sgv2.jsonapi.service.operation.tables.*;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableInsertAttemptBuilder;
+import io.stargate.sgv2.jsonapi.service.operation.tables.WriteableTableRowBuilder;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
@@ -38,14 +40,6 @@ public class InsertOneCommandResolver implements CommandResolver<InsertOneComman
   @Override
   public Operation resolveCollectionCommand(
       CommandContext<CollectionSchemaObject> ctx, InsertOneCommand command) {
-    //    WritableShreddedDocument shreddedDocument =
-    //        documentShredder.shred(
-    //            command.document(),
-    //            null,
-    //            ctx.schemaObject().indexingProjector(),
-    //            ctx.commandName(),
-    //            ctx.schemaObject(),
-    //            null);
 
     var builder =
         new CollectionInsertAttemptBuilder(ctx.schemaObject(), documentShredder, ctx.commandName());

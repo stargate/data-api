@@ -153,7 +153,11 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     // enable debug mode for unit tests, since it can not be injected
     SmallRyeConfig config;
     if (ApiConstants.isOffline()) {
-      config = new SmallRyeConfigBuilder().withMapping(DebugModeConfig.class).build();
+      config =
+          new SmallRyeConfigBuilder()
+              .withMapping(DebugModeConfig.class)
+              .withMapping(OperationsConfig.class)
+              .build();
     } else {
       config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
     }
