@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.Map;
 
 /**
@@ -15,7 +16,7 @@ import java.util.Map;
 public record VectorConfig(
     boolean vectorEnabled,
     int vectorSize,
-    CollectionSchemaObject.SimilarityFunction similarityFunction,
+    SimilarityFunction similarityFunction,
     VectorizeConfig vectorizeConfig) {
 
   // TODO: this is an immutable record, this can be singleton
@@ -28,8 +29,8 @@ public record VectorConfig(
   public static VectorConfig fromJson(JsonNode jsonNode, ObjectMapper objectMapper) {
     // dimension, similarityFunction, must exist
     int dimension = jsonNode.get("dimension").asInt();
-    CollectionSchemaObject.SimilarityFunction similarityFunction =
-        CollectionSchemaObject.SimilarityFunction.fromString(jsonNode.get("metric").asText());
+    SimilarityFunction similarityFunction =
+        SimilarityFunction.fromString(jsonNode.get("metric").asText());
 
     VectorizeConfig vectorizeConfig = null;
     // construct vectorizeConfig
