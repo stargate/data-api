@@ -42,23 +42,32 @@ public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegratio
   @Test
   public void failCreateWithoutFeatureEnabled() {
     DataApiCommandSenders.assertNamespaceCommand(keyspaceName)
-        .postCreateTable(simpleTableDef(TABLE_TO_CREATE))
+        .postCreateTable(simpleValidTableDef(TABLE_TO_CREATE))
+        .hasSingleApiError(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED);
+  }
+
+  // And should also fail with invalid definition
+  @Order(2)
+  @Test
+  public void failInvalidCreateWithoutFeatureEnabled() {
+    DataApiCommandSenders.assertNamespaceCommand(keyspaceName)
+        .postCreateTable(invalidTableDef(TABLE_TO_CREATE))
         .hasSingleApiError(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED);
   }
 
   // But with header override, should succeed
-  @Order(2)
+  @Order(3)
   @Test
   public void okCreateWithFeatureEnabledViaHeader() {
     DataApiCommandSenders.assertNamespaceCommand(keyspaceName)
         .header(ApiFeature.TABLES.httpHeaderName(), "true")
-        .postCreateTable(simpleTableDef(TABLE_TO_CREATE))
+        .postCreateTable(simpleValidTableDef(TABLE_TO_CREATE))
         .hasNoErrors()
         .body("status.ok", is(1));
   }
 
   // But even with table, find() should fail without Feature enabled
-  @Order(3)
+  @Order(4)
   @Test
   public void failFindWithoutFeature() {
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_TO_CREATE)
@@ -67,7 +76,7 @@ public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegratio
   }
 
   // And finally, with header override, should succeed in findOne()
-  @Order(4)
+  @Order(5)
   @Test
   public void okFindWithFeatureEnabledViaHeader() {
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_TO_CREATE)
@@ -76,7 +85,15 @@ public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegratio
         .hasNoErrors();
   }
 
-  private static String simpleTableDef(String tableName) {
+  private static String simpleValidTableDef(String tableName) {
+    return tableDef(tableName, "text");
+  }
+
+  private static String invalidTableDef(String tableName) {
+    return tableDef(tableName, "not_a_valid_cql_type");
+  }
+
+  private static String tableDef(String tableName, String nameType) {
     return
         """
                {
@@ -84,12 +101,12 @@ public class TableFeatureDisabledIntegrationTest extends AbstractTableIntegratio
                    "definition": {
                        "columns": {
                            "id": { "type": "text" },
-                           "name": { "type": "text" }
+                           "name": { "type": "%s" }
                        },
                        "primaryKey": "id"
                    }
                }
       """
-        .formatted(tableName);
+        .formatted(tableName, nameType);
   }
 }
