@@ -20,6 +20,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateTableCommand command) {
     String tableName = command.name();
+    boolean ifNotExists = command.options() != null ? command.options().ifNotExists() : false;
     Map<String, ApiDataType> columnTypes =
         command.definition().columns().entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getApiDataType()));
@@ -54,7 +55,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
     // set to empty will be used when vectorize is  supported
     String comment = "";
     return new CreateTableOperation(
-        ctx, tableName, columnTypes, partitionKeys, clusteringKeys, comment);
+        ctx, tableName, columnTypes, partitionKeys, clusteringKeys, ifNotExists, comment);
   }
 
   @Override

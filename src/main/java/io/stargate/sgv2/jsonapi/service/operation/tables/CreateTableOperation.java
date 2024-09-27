@@ -39,6 +39,7 @@ public class CreateTableOperation implements Operation {
   private final List<String> partitionKeys;
   private final List<PrimaryKey.OrderingKey> clusteringKeys;
   private final String comment;
+  private final boolean ifNotExists;
 
   public CreateTableOperation(
       CommandContext<KeyspaceSchemaObject> commandContext,
@@ -46,12 +47,14 @@ public class CreateTableOperation implements Operation {
       Map<String, ApiDataType> columnTypes,
       List<String> partitionKeys,
       List<PrimaryKey.OrderingKey> clusteringKeys,
+      boolean ifNotExists,
       String comment) {
     this.commandContext = commandContext;
     this.tableName = tableName;
     this.columnTypes = Objects.requireNonNull(columnTypes, "columnTypes must not be null");
     this.partitionKeys = partitionKeys;
     this.clusteringKeys = clusteringKeys;
+    this.ifNotExists = ifNotExists;
     this.comment = comment;
   }
 
@@ -63,6 +66,10 @@ public class CreateTableOperation implements Operation {
     CqlIdentifier tableIdentifier = CqlIdentifier.fromInternal(tableName);
     CreateTableStart create = createTable(keyspaceIdentifier, tableIdentifier).ifNotExists();
 
+    // Add if not exists flag based on request
+    if (ifNotExists) {
+      create = create.ifNotExists();
+    }
     // Add all primary keys and colunms
     CreateTable createTable = addColumnsAndKeys(create);
 
