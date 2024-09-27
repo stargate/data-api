@@ -1,10 +1,16 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 
+import com.datastax.oss.driver.api.core.data.CqlDuration;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
  * Defines the {@link JSONCodec} instances that are added to the {@link
@@ -22,6 +28,14 @@ public abstract class JSONCodecs {
           DataTypes.BOOLEAN,
           JSONCodec.ToCQL.unsafeIdentity(),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::booleanNode));
+
+  // Blob/binary
+  public static final JSONCodec<EJSONWrapper, ByteBuffer> BINARY =
+      new JSONCodec<>(
+          GenericType.of(EJSONWrapper.class),
+          DataTypes.BLOB,
+          JSONCodec.ToCQL::byteBufferFromEJSON,
+          (mapper, cqlType, value) -> EJSONWrapper.binaryWrapper(value).asJsonNode());
 
   // Numeric Codecs
   public static final JSONCodec<BigDecimal, Long> BIGINT_FROM_BIG_DECIMAL =
@@ -91,6 +105,14 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.safeNumber(Long::doubleValue),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
+  // Codec needed to support "not-a-number" values: encoded as Strings in JSON
+  public static final JSONCodec<String, Double> DOUBLE_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.DOUBLE,
+          JSONCodec.ToCQL::doubleFromString,
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
   public static final JSONCodec<BigDecimal, Float> FLOAT_FROM_BIG_DECIMAL =
       new JSONCodec<>(
           GenericType.BIG_DECIMAL,
@@ -113,6 +135,14 @@ public abstract class JSONCodecs {
           // TODO: bounds checks (over/underflow)?
           DataTypes.FLOAT,
           JSONCodec.ToCQL.safeNumber(Long::floatValue),
+          JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
+
+  // Codec needed to support "not-a-number" values: encoded as Strings in JSON
+  public static final JSONCodec<String, Float> FLOAT_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.FLOAT,
+          JSONCodec.ToCQL::floatFromString,
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
   public static final JSONCodec<BigDecimal, Integer> INT_FROM_BIG_DECIMAL =
@@ -199,12 +229,44 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.safeNumber(BigInteger::valueOf),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::numberNode));
 
+  // Date/time Codecs
+
+  public static final JSONCodec<String, LocalDate> DATE_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.DATE,
+          JSONCodec.ToCQL.safeFromString(LocalDate::parse),
+          JSONCodec.ToJSON.toJSONUsingToString());
+
+  public static final JSONCodec<String, CqlDuration> DURATION_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.DURATION,
+          // CqlDuration.from() accepts 2 formats; ISO-8601 ("P1H30M") and "1h30m" (Cassandra
+          // compact) format
+          JSONCodec.ToCQL.safeFromString(CqlDuration::from),
+          JSONCodec.ToJSON.toJSONUsingToString());
+
+  public static final JSONCodec<String, LocalTime> TIME_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.TIME,
+          JSONCodec.ToCQL.safeFromString(LocalTime::parse),
+          JSONCodec.ToJSON.toJSONUsingToString());
+
+  public static final JSONCodec<String, Instant> TIMESTAMP_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.TIMESTAMP,
+          JSONCodec.ToCQL.safeFromString(Instant::parse),
+          JSONCodec.ToJSON.toJSONUsingToString());
+
   // Text Codecs
   public static final JSONCodec<String, String> ASCII =
       new JSONCodec<>(
           GenericType.STRING,
           DataTypes.ASCII,
-          JSONCodec.ToCQL.unsafeIdentity(),
+          JSONCodec.ToCQL::safeAscii,
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::textNode));
 
   public static final JSONCodec<String, String> TEXT =

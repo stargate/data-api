@@ -9,6 +9,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 /** Tests data and utility for testing the JSON Codecs see {@link JSONCodecRegistryTest} */
@@ -37,6 +38,36 @@ public class JSONCodecRegistryTestData {
   public final BigDecimal UNDERFLOW_FOR_TINYINT = BigDecimal.valueOf(Byte.MIN_VALUE - 1L);
 
   public final BigDecimal NOT_EXACT_AS_INTEGER = new BigDecimal("1.25");
+
+  // From https://en.wikipedia.org/wiki/Base64 -- 10-to-16 character sample case, with padding
+  public final String BASE64_PADDED_DECODED_STR = "light work";
+  public final byte[] BASE64_PADDED_DECODED_BYTES =
+      BASE64_PADDED_DECODED_STR.getBytes(StandardCharsets.UTF_8);
+  public final String BASE64_PADDED_ENCODED_STR = "bGlnaHQgd29yaw==";
+  public final String BASE64_UNPADDED_ENCODED_STR = "bGlnaHQgd29yaw";
+
+  public final String STRING_ASCII_SAFE = "ascii-safe-string";
+  public final String STRING_WITH_2BYTE_UTF8_CHAR = "text-with-2-byte-utf8-\u00a2"; // cent symbol
+  public final String STRING_WITH_3BYTE_UTF8_CHAR = "text-with-3-byte-utf8-\u20ac"; // euro symbol
+
+  // Date/time test values
+  public final String DATE_VALID_STR = "2024-09-24";
+  public final String DATE_INVALID_STR = "not-a-date";
+
+  public final String DURATION_VALID1_STR = "1h30m";
+  public final String DURATION_VALID2_STR = "PT1H30M";
+  public final String DURATION_INVALID_STR = "not-a-duration";
+
+  public final String TIME_VALID_STR = "12:34:56.789";
+  public final String TIME_INVALID_STR = "not-a-time";
+
+  public final String TIMESTAMP_VALID_STR = "2024-09-12T10:15:30Z";
+  public final String TIMESTAMP_INVALID_STR = "not-a-timestamp";
+
+  // 4 byte / 2 UCS-2 char Unicode Surrogate Pair characters (see
+  // https://codepoints.net/U+10437?lang=en)
+  public final String STRING_WITH_4BYTE_SURROGATE_CHAR =
+      "text-with-4-byte-surrogate-\uD801\uDC37"; // Deseret
 
   /**
    * Returns a mocked {@link TableMetadata} that has a column of the specified type.

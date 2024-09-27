@@ -26,7 +26,7 @@ public record AddIndexOperation(
   private static final Logger logger = LoggerFactory.getLogger(AddIndexOperation.class);
 
   private static final String ADD_INDEX_TEMPLATE =
-      "CREATE CUSTOM INDEX IF NOT EXISTS \"%s\" ON  %s.%s (%s) USING 'StorageAttachedIndex'";
+      "CREATE CUSTOM INDEX IF NOT EXISTS \"%s\" ON  %s.%s (\"%s\") USING 'StorageAttachedIndex'";
 
   @Override
   public Uni<Supplier<CommandResult>> execute(

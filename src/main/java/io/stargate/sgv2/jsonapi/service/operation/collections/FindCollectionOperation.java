@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cql.builder.Query;
 import io.stargate.sgv2.jsonapi.service.cql.builder.QueryBuilder;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.ReadOperationPage;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
@@ -22,6 +21,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectio
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.util.*;
 import java.util.function.Supplier;

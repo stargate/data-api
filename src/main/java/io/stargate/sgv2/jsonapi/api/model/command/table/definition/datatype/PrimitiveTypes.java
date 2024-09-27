@@ -13,13 +13,18 @@ public class PrimitiveTypes {
 
   public static final ColumnType BOOLEAN = new Boolean();
   public static final ColumnType BIGINT = new BigInt();
+  public static final ColumnType DATE = new Date();
   public static final ColumnType DECIMAL = new Decimal();
   public static final ColumnType DOUBLE = new Double();
+  public static final ColumnType DURATION = new Duration();
   public static final ColumnType FLOAT = new Float();
   public static final ColumnType SMALLINT = new SmallInt();
+  public static final ColumnType TIME = new Time();
+  public static final ColumnType TIMESTAMP = new Timestamp();
   public static final ColumnType TINYINT = new TinyInt();
   public static final ColumnType VARINT = new VarInt();
   public static final ColumnType ASCII = new Ascii();
+  public static final ColumnType BLOB = new Blob();
 
   private static class Text implements ColumnType {
     @Override
@@ -49,6 +54,13 @@ public class PrimitiveTypes {
     }
   }
 
+  private static class Date implements ColumnType {
+    @Override
+    public DataType getCqlType() {
+      return DataTypes.DATE;
+    }
+  }
+
   private static class Decimal implements ColumnType {
     @Override
     public DataType getCqlType() {
@@ -63,6 +75,13 @@ public class PrimitiveTypes {
     }
   }
 
+  private static class Duration implements ColumnType {
+    @Override
+    public DataType getCqlType() {
+      return DataTypes.DURATION;
+    }
+  }
+
   private static class Float implements ColumnType {
     @Override
     public DataType getCqlType() {
@@ -74,6 +93,20 @@ public class PrimitiveTypes {
     @Override
     public DataType getCqlType() {
       return DataTypes.SMALLINT;
+    }
+  }
+
+  private static class Time implements ColumnType {
+    @Override
+    public DataType getCqlType() {
+      return DataTypes.TIME;
+    }
+  }
+
+  private static class Timestamp implements ColumnType {
+    @Override
+    public DataType getCqlType() {
+      return DataTypes.TIMESTAMP;
     }
   }
 
@@ -95,6 +128,13 @@ public class PrimitiveTypes {
     @Override
     public DataType getCqlType() {
       return DataTypes.ASCII;
+    }
+  }
+
+  private static class Blob implements ColumnType {
+    @Override
+    public DataType getCqlType() {
+      return DataTypes.BLOB;
     }
   }
 }

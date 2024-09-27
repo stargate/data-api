@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 
 /** tests data and mocks for working with {@link CommandContext} */
 public class CommandContextTestData {

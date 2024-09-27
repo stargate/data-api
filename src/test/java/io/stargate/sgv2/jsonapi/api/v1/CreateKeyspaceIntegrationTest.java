@@ -19,7 +19,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
   private static final String DB_NAME = "stargate";
 
@@ -88,7 +88,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
             }
           }
           """
-              .formatted(namespaceName);
+              .formatted(keyspaceName);
 
       given()
           .headers(getHeaders())
@@ -198,7 +198,7 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
             }
           }
           """
-              .formatted(namespaceName);
+              .formatted(keyspaceName);
 
       given()
           .headers(getHeaders())
@@ -282,10 +282,10 @@ class CreateNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBas
   class Metrics {
     @Test
     public void checkMetrics() {
-      CreateNamespaceIntegrationTest.super.checkMetrics("CreateKeyspaceCommand");
+      CreateKeyspaceIntegrationTest.super.checkMetrics("CreateKeyspaceCommand");
       // We decided to keep createNamespace metrics and logs, even it is a deprecated command
-      CreateNamespaceIntegrationTest.super.checkMetrics("CreateNamespaceCommand");
-      CreateNamespaceIntegrationTest.super.checkDriverMetricsTenantId();
+      CreateKeyspaceIntegrationTest.super.checkMetrics("CreateNamespaceCommand");
+      CreateKeyspaceIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }

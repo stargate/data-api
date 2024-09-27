@@ -21,6 +21,10 @@ public interface ColumnType {
         return PrimitiveTypes.BOOLEAN;
       case "bigint":
         return PrimitiveTypes.BIGINT;
+      case "date":
+        return PrimitiveTypes.DATE;
+      case "duration":
+        return PrimitiveTypes.DURATION;
       case "decimal":
         return PrimitiveTypes.DECIMAL;
       case "double":
@@ -29,12 +33,18 @@ public interface ColumnType {
         return PrimitiveTypes.FLOAT;
       case "smallint":
         return PrimitiveTypes.SMALLINT;
+      case "time":
+        return PrimitiveTypes.TIME;
+      case "timestamp":
+        return PrimitiveTypes.TIMESTAMP;
       case "tinyint":
         return PrimitiveTypes.TINYINT;
       case "varint":
         return PrimitiveTypes.VARINT;
       case "ascii":
         return PrimitiveTypes.ASCII;
+      case "blob":
+        return PrimitiveTypes.BLOB;
       default:
         throw ErrorCodeV1.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException(
             "Invalid column type: " + type);
