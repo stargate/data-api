@@ -13,12 +13,13 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.SchemaChangeResult;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,7 @@ public class CreateTableOperation implements Operation {
 
   private final CommandContext<KeyspaceSchemaObject> commandContext;
   private final String tableName;
-  private final Map<String, ColumnType> columnTypes;
+  private final Map<String, ApiDataType> columnTypes;
   private final List<String> partitionKeys;
   private final List<PrimaryKey.OrderingKey> clusteringKeys;
   private final String comment;
@@ -42,7 +43,7 @@ public class CreateTableOperation implements Operation {
   public CreateTableOperation(
       CommandContext<KeyspaceSchemaObject> commandContext,
       String tableName,
-      Map<String, ColumnType> columnTypes,
+      Map<String, ApiDataType> columnTypes,
       List<String> partitionKeys,
       List<PrimaryKey.OrderingKey> clusteringKeys,
       String comment) {
@@ -88,30 +89,32 @@ public class CreateTableOperation implements Operation {
         createTable =
             create.withPartitionKey(
                 CqlIdentifier.fromInternal(partitionKey),
-                columnTypes.get(partitionKey).getCqlType());
+                ApiDataTypeDefs.from(columnTypes.get(partitionKey)).get().getCqlType());
       } else {
         createTable =
             createTable.withPartitionKey(
                 CqlIdentifier.fromInternal(partitionKey),
-                columnTypes.get(partitionKey).getCqlType());
+                ApiDataTypeDefs.from(columnTypes.get(partitionKey)).get().getCqlType());
       }
       addedColumns.add(partitionKey);
     }
     for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
-      ColumnType columnType = columnTypes.get(clusteringKey.column());
+      ApiDataType apiDataType = columnTypes.get(clusteringKey.column());
       createTable =
           createTable.withClusteringColumn(
-              CqlIdentifier.fromInternal(clusteringKey.column()), columnType.getCqlType());
+              CqlIdentifier.fromInternal(clusteringKey.column()),
+              ApiDataTypeDefs.from(apiDataType).get().getCqlType());
       addedColumns.add(clusteringKey.column());
     }
 
-    for (Map.Entry<String, ColumnType> column : columnTypes.entrySet()) {
+    for (Map.Entry<String, ApiDataType> column : columnTypes.entrySet()) {
       if (addedColumns.contains(column.getKey())) {
         continue;
       }
       createTable =
           createTable.withColumn(
-              CqlIdentifier.fromInternal(column.getKey()), column.getValue().getCqlType());
+              CqlIdentifier.fromInternal(column.getKey()),
+              ApiDataTypeDefs.from(column.getValue()).get().getCqlType());
     }
     return createTable;
   }

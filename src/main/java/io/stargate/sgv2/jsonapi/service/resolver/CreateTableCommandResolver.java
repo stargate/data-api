@@ -3,11 +3,11 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableOperation;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Arrays;
 import java.util.List;
@@ -20,18 +20,18 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateTableCommand command) {
     String tableName = command.name();
-    Map<String, ColumnType> columnTypes =
+    Map<String, ApiDataType> columnTypes =
         command.definition().columns().entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().type()));
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getApiDataType()));
     List<String> partitionKeys = Arrays.stream(command.definition().primaryKey().keys()).toList();
 
     if (partitionKeys.isEmpty()) {
-      throw ErrorCodeV1.TABLE_MISSING_PARTITIONING_KEYS.toApiException();
+      throw SchemaException.Code.MISSING_PRIMARY_KEYS.get();
     }
     partitionKeys.forEach(
         key -> {
           if (!columnTypes.containsKey(key)) {
-            throw ErrorCodeV1.TABLE_COLUMN_DEFINITION_MISSING.toApiException("%s", key);
+            throw SchemaException.Code.COLUMN_DEFINITION_MISSING.get(Map.of("column_name", key));
           }
         });
 
@@ -43,7 +43,11 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
     clusteringKeys.forEach(
         key -> {
           if (!columnTypes.containsKey(key.column())) {
-            throw ErrorCodeV1.TABLE_COLUMN_DEFINITION_MISSING.toApiException("%s", key.column());
+            throw SchemaException.Code.COLUMN_DEFINITION_MISSING.get(
+                Map.of("column_name", key.column()));
+          }
+          if (partitionKeys.contains(key.column())) {
+            throw SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
           }
         });
 

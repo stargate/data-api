@@ -11,7 +11,9 @@ import java.util.Map;
  * used in requests and responses.
  */
 public enum ApiDataType {
+  ASCII("ascii"),
   BIGINT("bigint"),
+  BINARY("blob"),
   BOOLEAN("boolean"),
   DECIMAL("decimal"),
   DOUBLE("double"),

@@ -34,9 +34,16 @@ public abstract class ApiDataTypeDefs {
   public static final ApiDataTypeDef BOOLEAN =
       new ApiDataTypeDef(ApiDataType.BOOLEAN, DataTypes.BOOLEAN);
 
+  public static final ApiDataTypeDef BINARY =
+      new ApiDataTypeDef(ApiDataType.BINARY, DataTypes.BLOB);
+
+  public static final ApiDataTypeDef ASCII = new ApiDataTypeDef(ApiDataType.ASCII, DataTypes.ASCII);
+
   // Primitive Types
   public static final List<ApiDataTypeDef> PRIMITIVE_TYPES =
-      List.of(TEXT, BIGINT, DECIMAL, DOUBLE, FLOAT, INT, SMALLINT, TINYINT, VARINT, BOOLEAN);
+      List.of(
+          TEXT, BIGINT, DECIMAL, DOUBLE, FLOAT, INT, SMALLINT, TINYINT, VARINT, BOOLEAN, BINARY,
+          ASCII);
 
   // Private to force use of the from() method which returns an Optional
   private static final Map<DataType, ApiDataTypeDef> PRIMITIVE_TYPES_BY_CQL_TYPE =
@@ -45,5 +52,14 @@ public abstract class ApiDataTypeDefs {
 
   public static Optional<ApiDataTypeDef> from(DataType dataType) {
     return Optional.ofNullable(PRIMITIVE_TYPES_BY_CQL_TYPE.get(dataType));
+  }
+
+  // Private to force use of the from() method which returns an Optional
+  private static final Map<ApiDataType, ApiDataTypeDef> CQL_TYPES_BY_PRIMITIVE_TYPE =
+      PRIMITIVE_TYPES.stream()
+          .collect(Collectors.toMap(ApiDataTypeDef::getApiType, Function.identity()));
+
+  public static Optional<ApiDataTypeDef> from(ApiDataType dataType) {
+    return Optional.ofNullable(CQL_TYPES_BY_PRIMITIVE_TYPE.get(dataType));
   }
 }

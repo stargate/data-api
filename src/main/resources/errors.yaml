@@ -134,6 +134,93 @@ request-errors:
     body: |-
       big long message with ${vars} in it
 
+  - scope: SCHEMA
+    code: COLUMN_DEFINITION_MISSING
+    title: Column definition is missing for the provided primary key column.
+    body: |-
+      Column definition is missing for the provided primary key column: ${column_name}.
+
+  - scope: SCHEMA
+    code: COLUMN_TYPE_UNDEFINED
+    title: Column data type not provided as part of definition
+    body: |-
+      Column data type not provided as part of definition.
+      Column definition can be defined in shorthand format as : 
+        "column_name": "text"
+      
+      or in nested object structure format as:
+        "column_name": {
+          "type": "text"
+        }
+
+  - scope: SCHEMA
+    code: COLUMN_TYPE_UNSUPPORTED
+    title: Column data type used in the definition is not supported.
+    body: |-
+      Column data type ${type} used in the definition is not supported.
+      Following are the supported data types: ${supported_types}
+
+  - scope: SCHEMA
+    code: MISSING_PRIMARY_KEYS
+    title: Primary key definition needs to be provided while creating the table.
+    body: |-
+      Primary key definition needs to be provided while creating the table.
+      They can be provided in the definition in 2 ways:
+        1. A single primary key column can be defined using the shorthand format as:
+          {
+            "name": "primaryKeyAsStringTable",
+              "definition": {
+                "columns": {
+                  "id": "text",
+                  "age": "int",
+                  "name": "type": "text",
+                },
+                "primaryKey": "id"
+              }
+            }
+        2. A composite primary key can be defined using the advanced nested object structure format as:
+          {
+            "name": "primaryKeyAsStringTable",
+              "definition": {
+                "columns": {
+                  "id": "text",
+                  "age": "int",
+                  "name": "type": "text",
+                },
+                "primaryKey": {
+                  "partitionBy": [
+                    "id"
+                  ],
+                  "partitionSort": {
+                    "name" : 1, "age" : -1
+                  }
+                }
+              }
+            }    
+
+  - scope: SCHEMA
+    code: PRIMARY_KEY_DEFINITION_INCORRECT
+    title: Primary key definition provided is incorrect.
+    body: |-
+      Primary key definition provided is incorrect.
+      1. A single primary key column can be defined using the shorthand format as:
+        "primaryKey": "id"
+      2. A composite primary key can be defined using the advanced nested object structure format as:
+        "primaryKey": {
+          "partitionBy": [
+            "id"
+          ],
+          "partitionSort": {
+            "name" : 1, "age" : -1
+          }
+        }
+        Following are checked as part of composite primary keys:
+          a. partitionBy is mandatory.
+          b. partitionSort is optional.
+          c. partitionSort should not have the columns defined in partitionBy.
+          d. partitionSort values should be either `1` for ascending or `-1` for descending.
+          
+
 # ================================================================================================================
 # Server Errors
 # ================================================================================================================
