@@ -128,6 +128,10 @@ public record JSONCodec<JavaT, CqlT>(
    *     should convert this into the appropriate exception for the use case.
    */
   public JsonNode toJSON(ObjectMapper objectMapper, CqlT value) throws ToJSONCodecException {
+    // First: if caller passes nulls, convert to JSON Null so converter need to do null checks
+    if (value == null) {
+      return objectMapper.nullNode();
+    }
     return toJSON.apply(objectMapper, targetCQLType, value);
   }
 
