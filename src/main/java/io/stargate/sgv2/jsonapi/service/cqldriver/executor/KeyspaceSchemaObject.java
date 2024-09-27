@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+
 public class KeyspaceSchemaObject extends SchemaObject {
 
   public static final SchemaObjectType TYPE = SchemaObjectType.KEYSPACE;

@@ -1,8 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.model.command;
 
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 
 /**
  * Interface for filter clause to implement if it can be inverted

@@ -17,7 +17,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase {
+class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
 
   @Nested
   @Order(1)
@@ -33,7 +33,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
             }
           }
           """
-              .formatted(namespaceName);
+              .formatted(keyspaceName);
 
       given()
           .headers(getHeaders())
@@ -62,7 +62,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.keyspaces", not(hasItem(namespaceName)));
+          .body("status.keyspaces", not(hasItem(keyspaceName)));
     }
 
     @Test
@@ -185,7 +185,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
             }
           }
           """
-              .formatted(namespaceName);
+              .formatted(keyspaceName);
 
       given()
           .headers(getHeaders())
@@ -218,7 +218,7 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
-          .body("status.keyspaces", not(hasItem(namespaceName)));
+          .body("status.keyspaces", not(hasItem(keyspaceName)));
     }
 
     @Test
@@ -340,10 +340,10 @@ class DropNamespaceIntegrationTest extends AbstractNamespaceIntegrationTestBase 
   class Metrics {
     @Test
     public void checkMetrics() {
-      DropNamespaceIntegrationTest.super.checkMetrics("DropKeyspaceCommand");
+      DropKeyspaceIntegrationTest.super.checkMetrics("DropKeyspaceCommand");
       // We decided to keep dropNamespace metrics and logs, even it is a deprecated command
-      DropNamespaceIntegrationTest.super.checkMetrics("DropNamespaceCommand");
-      DropNamespaceIntegrationTest.super.checkDriverMetricsTenantId();
+      DropKeyspaceIntegrationTest.super.checkMetrics("DropNamespaceCommand");
+      DropKeyspaceIntegrationTest.super.checkDriverMetricsTenantId();
     }
   }
 }

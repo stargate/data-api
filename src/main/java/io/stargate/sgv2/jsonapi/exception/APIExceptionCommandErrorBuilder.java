@@ -61,6 +61,7 @@ public class APIExceptionCommandErrorBuilder
       errorFields.put(ErrorObjectV2Constants.Fields.FAMILY, apiException.family.name());
       errorFields.put(ErrorObjectV2Constants.Fields.SCOPE, apiException.scope);
       errorFields.put(ErrorObjectV2Constants.Fields.TITLE, apiException.title);
+      errorFields.put(ErrorObjectV2Constants.Fields.ID, apiException.errorId);
     }
     if (debugEnabled) {
       errorFields.put(

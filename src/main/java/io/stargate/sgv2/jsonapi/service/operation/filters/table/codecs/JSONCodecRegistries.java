@@ -35,12 +35,20 @@ public abstract class JSONCodecRegistries {
               JSONCodecs.DOUBLE_FROM_BIG_DECIMAL,
               JSONCodecs.DOUBLE_FROM_BIG_INTEGER,
               JSONCodecs.DOUBLE_FROM_LONG,
+              JSONCodecs.DOUBLE_FROM_STRING,
               JSONCodecs.FLOAT_FROM_BIG_DECIMAL,
               JSONCodecs.FLOAT_FROM_BIG_INTEGER,
               JSONCodecs.FLOAT_FROM_LONG,
+              JSONCodecs.FLOAT_FROM_STRING,
               // Text Codecs
               JSONCodecs.ASCII,
               JSONCodecs.TEXT,
+              // Date/Time Codecs
+              JSONCodecs.DATE_FROM_STRING,
+              JSONCodecs.DURATION_FROM_STRING,
+              JSONCodecs.TIME_FROM_STRING,
+              JSONCodecs.TIMESTAMP_FROM_STRING,
               // Other codecs
+              JSONCodecs.BINARY,
               JSONCodecs.BOOLEAN));
 }
