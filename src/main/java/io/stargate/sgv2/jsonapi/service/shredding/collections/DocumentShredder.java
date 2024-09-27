@@ -13,8 +13,9 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonProcessingMetricsReporter;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionIdType;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -211,9 +212,9 @@ public class DocumentShredder {
   }
 
   private JsonNode generateDocumentId(CollectionSchemaObject collectionSettings) {
-    CollectionSchemaObject.IdType idType = collectionSettings.idConfig().idType();
+    CollectionIdType idType = collectionSettings.idConfig().idType();
     if (idType == null) {
-      idType = CollectionSchemaObject.IdType.UNDEFINED;
+      idType = CollectionIdType.UNDEFINED;
     }
     final JsonNodeFactory jnf = objectMapper.getNodeFactory();
     switch (idType) {
