@@ -24,11 +24,12 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
   @Override
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateTableCommand command) {
-    String tableName = command.name();
-    Map<String, ColumnType> columnTypes =
+    final String tableName = command.name();
+    final Map<String, ColumnType> columnTypes =
         command.definition().columns().entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, e -> columnType(e.getValue())));
-    List<String> partitionKeys = Arrays.stream(command.definition().primaryKey().keys()).toList();
+    final PrimaryKey primaryKey = primaryKey(command.definition().primaryKey());
+    final List<String> partitionKeys = Arrays.stream(primaryKey.keys()).toList();
 
     if (partitionKeys.isEmpty()) {
       throw ErrorCodeV1.TABLE_MISSING_PARTITIONING_KEYS.toApiException();
@@ -41,9 +42,9 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
         });
 
     List<PrimaryKey.OrderingKey> clusteringKeys =
-        command.definition().primaryKey().orderingKeys() == null
+        primaryKey.orderingKeys() == null
             ? List.of()
-            : Arrays.stream(command.definition().primaryKey().orderingKeys()).toList();
+            : Arrays.stream(primaryKey.orderingKeys()).toList();
 
     clusteringKeys.forEach(
         key -> {
@@ -65,5 +66,9 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
 
   private ColumnType columnType(Object typeDef) {
     return objectMapper.convertValue(typeDef, ColumnDataType.class).type();
+  }
+
+  private PrimaryKey primaryKey(Object pkDef) {
+    return objectMapper.convertValue(pkDef, PrimaryKey.class);
   }
 }

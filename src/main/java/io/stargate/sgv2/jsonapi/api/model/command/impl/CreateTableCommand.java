@@ -38,7 +38,11 @@ public record CreateTableCommand(
               description = "Primary key definition for the table",
               anyOf = {String.class, PrimaryKey.class})
           @JsonInclude(JsonInclude.Include.NON_NULL)
-          PrimaryKey primaryKey) {}
+          /* NOTE: eventual value type is PrimaryKey, but must defer deserialization
+           * into PrimaryKey until later in the processing pipeline to allow
+           * checking for APIFeature.Tables first
+           */
+          Object primaryKey) {}
 
   /** {@inheritDoc} */
   @Override
