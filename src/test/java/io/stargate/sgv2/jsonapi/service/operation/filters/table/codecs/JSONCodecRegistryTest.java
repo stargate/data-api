@@ -22,6 +22,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -63,7 +66,7 @@ public class JSONCodecRegistryTest {
                   .isEqualTo(cqlType);
               assertThat(c.javaType().getRawType())
                   .as("Codec supports the fromValue class " + fromValue.getClass().getName())
-                  .isEqualTo(fromValue.getClass());
+                  .isAssignableFrom(fromValue.getClass());
             });
     return codec;
   }
@@ -119,12 +122,29 @@ public class JSONCodecRegistryTest {
                 "Calling codec for cqlType=%s and fromValue.class=%s",
                 cqlType, fromValue.getClass().getName()));
 
+    // Can only check exact class for non-Container types, for List/Set/Map need
+    // to use looser type check
+    final Class<?> expectedCqlValueType = cleanseType(expectedCqlValue.getClass());
+
     assertThat(actualCqlValue)
         .as(
             "Comparing expected and actual CQL value for fromValue.class=%s and fromValue.toString()=%s",
             fromValue.getClass().getName(), fromValue.toString())
-        .hasSameClassAs(expectedCqlValue)
+        .isInstanceOfAny(expectedCqlValueType)
         .isEqualTo(expectedCqlValue);
+  }
+
+  private Class<?> cleanseType(Class<?> clazz) {
+    if (List.class.isAssignableFrom(clazz)) {
+      return List.class;
+    }
+    if (Set.class.isAssignableFrom(clazz)) {
+      return Set.class;
+    }
+    if (Map.class.isAssignableFrom(clazz)) {
+      return Map.class;
+    }
+    return clazz;
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesInt() {
@@ -229,11 +249,14 @@ public class JSONCodecRegistryTest {
     return Stream.of(
         Arguments.of(
             DataTypes.frozenListOf(DataTypes.TEXT),
-            Arrays.asList(stringLiteral("a"), stringLiteral("b"), stringLiteral("c")),
+            Arrays.asList("a", "b", "c"),
             Arrays.asList("a", "b", "c")),
         Arguments.of(
             DataTypes.frozenListOf(DataTypes.INT),
-            Arrays.asList(numberLiteral(123), numberLiteral(-42)),
+            // Important: all incoming JSON numbers are represented as Long, BigInteger, or
+            // BigDecimal
+            // But CQL column here requires ints (not longs)
+            Arrays.asList(123L, -42L),
             Arrays.asList(123, -42)));
   }
 

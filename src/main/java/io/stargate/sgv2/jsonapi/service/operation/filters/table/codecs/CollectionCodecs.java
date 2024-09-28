@@ -25,7 +25,7 @@ public abstract class CollectionCodecs {
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType, List<?> listValue)
       throws ToCQLCodecException {
     List<Object> result = new ArrayList<>(listValue.size());
-    JSONCodec<?, ?> elementCodec = null;
+    JSONCodec<Object, Object> elementCodec = null;
     for (Object element : listValue) {
       if (element == null) {
         result.add(null);
@@ -34,16 +34,17 @@ public abstract class CollectionCodecs {
       if (elementCodec == null || !elementCodec.handlesJavaValue(element)) {
         elementCodec = findElementCodec(valueCodecs, elementType, element);
       }
+      result.add(elementCodec.toCQL(element));
     }
     return result;
   }
 
-  private static JSONCodec<?, ?> findElementCodec(
+  private static JSONCodec<Object, Object> findElementCodec(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Object element)
       throws ToCQLCodecException {
     for (JSONCodec<?, ?> codec : valueCodecs) {
       if (codec.handlesJavaValue(element)) {
-        return codec;
+        return (JSONCodec<Object, Object>) codec;
       }
     }
     throw new ToCQLCodecException(element, elementType, "no codec matching value type");
@@ -54,7 +55,6 @@ public abstract class CollectionCodecs {
       ObjectMapper objectMapper,
       DataType fromCQLType,
       Object value) {
-    // !!! TO IMPLEMENT
     // !!! TO IMPLEMENT
     return null;
   }
