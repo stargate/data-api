@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.ListType;
+import com.datastax.oss.driver.api.core.type.SetType;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
@@ -83,6 +84,14 @@ public class JSONCodecRegistry {
         }
         return (JSONCodec<JavaT, CqlT>)
             CollectionCodecs.buildListCodec(valueCodecCandidates, lt.getElementType());
+      }
+      if (columnType instanceof SetType st) {
+        List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(st.getElementType());
+        if (valueCodecCandidates == null) {
+          valueCodecCandidates = Collections.emptyList();
+        }
+        return (JSONCodec<JavaT, CqlT>)
+            CollectionCodecs.buildSetCodec(valueCodecCandidates, st.getElementType());
       }
 
       throw new MissingJSONCodecException(

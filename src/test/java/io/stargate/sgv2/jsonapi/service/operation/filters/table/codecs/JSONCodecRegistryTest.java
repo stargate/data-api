@@ -232,7 +232,7 @@ public class JSONCodecRegistryTest {
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesOther() {
-    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
     return Stream.of(
         // Short regular base64-encoded string
         Arguments.of(
@@ -247,17 +247,21 @@ public class JSONCodecRegistryTest {
     // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
     // Date/time types: DATE, DURATION, TIME, TIMESTAMP
     return Stream.of(
+        // // Lists:
         Arguments.of(
-            DataTypes.frozenListOf(DataTypes.TEXT),
+            DataTypes.listOf(DataTypes.TEXT),
             Arrays.asList("a", "b", "c"),
             Arrays.asList("a", "b", "c")),
         Arguments.of(
-            DataTypes.frozenListOf(DataTypes.INT),
-            // Important: all incoming JSON numbers are represented as Long, BigInteger, or
-            // BigDecimal
-            // But CQL column here requires ints (not longs)
+            DataTypes.listOf(DataTypes.INT),
+            // Important: all incoming JSON numbers are represented as Long, BigInteger,
+            // or BigDecimal. But CQL column here requires ints (not longs)
             Arrays.asList(123L, -42L),
-            Arrays.asList(123, -42)));
+            Arrays.asList(123, -42)),
+
+        // // Sets:
+        Arguments.of(DataTypes.setOf(DataTypes.TEXT), Set.of("a", "b", "c"), Set.of("a", "b", "c")),
+        Arguments.of(DataTypes.setOf(DataTypes.INT), Set.of(123L, -42L), Set.of(123, -42)));
   }
 
   private static EJSONWrapper binaryWrapper(String base64Encoded) {

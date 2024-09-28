@@ -10,6 +10,7 @@ import java.util.*;
 
 public abstract class CollectionCodecs {
   private static final GenericType<List<Object>> GENERIC_LIST = GenericType.listOf(Object.class);
+  private static final GenericType<Set<Object>> GENERIC_SET = GenericType.setOf(Object.class);
 
   public static JSONCodec<?, ?> buildListCodec(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType) {
@@ -19,7 +20,15 @@ public abstract class CollectionCodecs {
         (cqlType, value) -> toCQLList(valueCodecs, elementType, value),
         (objectMapper, cqlType, value) -> toJsonNode(valueCodecs, objectMapper, cqlType, value));
   }
-  ;
+
+  public static JSONCodec<?, ?> buildSetCodec(
+      List<JSONCodec<?, ?>> valueCodecs, DataType elementType) {
+    return new JSONCodec<>(
+        GENERIC_SET,
+        DataTypes.setOf(elementType),
+        (cqlType, value) -> toCQLSet(valueCodecs, elementType, value),
+        (objectMapper, cqlType, value) -> toJsonNode(valueCodecs, objectMapper, cqlType, value));
+  }
 
   static List<Object> toCQLList(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType, List<?> listValue)
@@ -27,6 +36,24 @@ public abstract class CollectionCodecs {
     List<Object> result = new ArrayList<>(listValue.size());
     JSONCodec<Object, Object> elementCodec = null;
     for (Object element : listValue) {
+      if (element == null) {
+        result.add(null);
+        continue;
+      }
+      if (elementCodec == null || !elementCodec.handlesJavaValue(element)) {
+        elementCodec = findElementCodec(valueCodecs, elementType, element);
+      }
+      result.add(elementCodec.toCQL(element));
+    }
+    return result;
+  }
+
+  static Set<Object> toCQLSet(
+      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Set<?> setValue)
+      throws ToCQLCodecException {
+    Set<Object> result = new HashSet<>(setValue.size());
+    JSONCodec<Object, Object> elementCodec = null;
+    for (Object element : setValue) {
       if (element == null) {
         result.add(null);
         continue;
