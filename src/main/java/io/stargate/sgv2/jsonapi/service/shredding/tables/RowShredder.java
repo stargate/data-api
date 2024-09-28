@@ -92,9 +92,10 @@ public class RowShredder {
       case NULL -> new JsonLiteral<>(null, JsonType.NULL);
       case ARRAY -> {
         ArrayNode arrayNode = (ArrayNode) value;
-        List<JsonLiteral<?>> list = new ArrayList<>();
+        List<Object> list = new ArrayList<>();
         for (JsonNode node : arrayNode) {
-          list.add(shredValue(node));
+          // Unwrap JsonLiteral so JsonCodec need not deal with it
+          list.add(shredValue(node).value());
         }
         yield new JsonLiteral<>(list, JsonType.ARRAY);
       }

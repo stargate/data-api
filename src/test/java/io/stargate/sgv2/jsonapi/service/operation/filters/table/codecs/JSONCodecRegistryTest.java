@@ -10,6 +10,8 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
@@ -19,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -97,6 +100,12 @@ public class JSONCodecRegistryTest {
   @ParameterizedTest
   @MethodSource("validCodecToCQLTestCasesOther")
   public void codecToCQLOther(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToCQLTestCasesCollections")
+  public void codecToCQLCollections(DataType cqlType, Object fromValue, Object expectedCqlValue) {
     _codecToCQL(cqlType, fromValue, expectedCqlValue);
   }
 
@@ -214,9 +223,31 @@ public class JSONCodecRegistryTest {
         Arguments.of(DataTypes.BLOB, binaryWrapper(""), ByteBuffer.wrap(new byte[0])));
   }
 
+  private static Stream<Arguments> validCodecToCQLTestCasesCollections() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
+    // Date/time types: DATE, DURATION, TIME, TIMESTAMP
+    return Stream.of(
+        Arguments.of(
+            DataTypes.frozenListOf(DataTypes.TEXT),
+            Arrays.asList(stringLiteral("a"), stringLiteral("b"), stringLiteral("c")),
+            Arrays.asList("a", "b", "c")),
+        Arguments.of(
+            DataTypes.frozenListOf(DataTypes.INT),
+            Arrays.asList(numberLiteral(123), numberLiteral(-42)),
+            Arrays.asList(123, -42)));
+  }
+
   private static EJSONWrapper binaryWrapper(String base64Encoded) {
     return new EJSONWrapper(
         EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.textNode(base64Encoded));
+  }
+
+  private static JsonLiteral<String> stringLiteral(String value) {
+    return new JsonLiteral<>(value, JsonType.STRING);
+  }
+
+  private static JsonLiteral<Number> numberLiteral(Number value) {
+    return new JsonLiteral<>(value, JsonType.NUMBER);
   }
 
   @Test

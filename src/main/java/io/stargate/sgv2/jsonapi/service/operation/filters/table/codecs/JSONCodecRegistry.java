@@ -4,11 +4,13 @@ import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.ListType;
 import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,8 +70,21 @@ public class JSONCodecRegistry {
         table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
 
     // First find candidates for CQL target type in question (if any)
-    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(columnMetadata.getType());
-    if (candidates == null) { // No codec for this CQL type
+    DataType columnType = columnMetadata.getType();
+    List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(columnType);
+    if (candidates == null) { // No scalar codec for this CQL type
+      // But maybe structured type?
+      if (columnType instanceof ListType lt) {
+        List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(lt.getElementType());
+        // Could choose to report problem here but can defer since we need to check
+        // within codec anyway (on per-element basis)
+        if (valueCodecCandidates == null) {
+          valueCodecCandidates = Collections.emptyList();
+        }
+        return (JSONCodec<JavaT, CqlT>)
+            CollectionCodecs.buildListCodec(valueCodecCandidates, lt.getElementType());
+      }
+
       throw new MissingJSONCodecException(
           table, columnMetadata, (value == null) ? null : value.getClass(), value);
     }
@@ -84,8 +99,7 @@ public class JSONCodecRegistry {
     if (match == null) {
       // Different exception for this case: CQL type supported but not from given Java type
       // (f.ex, CQL Boolean from Java/JSON number)
-      throw new ToCQLCodecException(
-          value, columnMetadata.getType(), "no codec matching value type");
+      throw new ToCQLCodecException(value, columnType, "no codec matching value type");
     }
     return match;
   }
