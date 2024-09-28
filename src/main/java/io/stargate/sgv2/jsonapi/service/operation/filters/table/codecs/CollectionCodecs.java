@@ -10,7 +10,6 @@ import java.util.*;
 
 public abstract class CollectionCodecs {
   private static final GenericType<List<Object>> GENERIC_LIST = GenericType.listOf(Object.class);
-  private static final GenericType<Set<Object>> GENERIC_SET = GenericType.setOf(Object.class);
 
   public static JSONCodec<?, ?> buildListCodec(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType) {
@@ -24,14 +23,15 @@ public abstract class CollectionCodecs {
   public static JSONCodec<?, ?> buildSetCodec(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType) {
     return new JSONCodec<>(
-        GENERIC_SET,
+        // NOTE: although we convert to Sets, RowShredder.java binds to Lists
+        GENERIC_LIST,
         DataTypes.setOf(elementType),
         (cqlType, value) -> toCQLSet(valueCodecs, elementType, value),
         (objectMapper, cqlType, value) -> toJsonNode(valueCodecs, objectMapper, cqlType, value));
   }
 
   static List<Object> toCQLList(
-      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, List<?> listValue)
+      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Collection<?> listValue)
       throws ToCQLCodecException {
     List<Object> result = new ArrayList<>(listValue.size());
     JSONCodec<Object, Object> elementCodec = null;
@@ -49,7 +49,7 @@ public abstract class CollectionCodecs {
   }
 
   static Set<Object> toCQLSet(
-      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Set<?> setValue)
+      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Collection<?> setValue)
       throws ToCQLCodecException {
     Set<Object> result = new HashSet<>(setValue.size());
     JSONCodec<Object, Object> elementCodec = null;

@@ -10,8 +10,6 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
@@ -260,21 +258,14 @@ public class JSONCodecRegistryTest {
             Arrays.asList(123, -42)),
 
         // // Sets:
-        Arguments.of(DataTypes.setOf(DataTypes.TEXT), Set.of("a", "b", "c"), Set.of("a", "b", "c")),
-        Arguments.of(DataTypes.setOf(DataTypes.INT), Set.of(123L, -42L), Set.of(123, -42)));
+        Arguments.of(
+            DataTypes.setOf(DataTypes.TEXT), List.of("a", "b", "c"), Set.of("a", "b", "c")),
+        Arguments.of(DataTypes.setOf(DataTypes.INT), List.of(123L, -42L), Set.of(123, -42)));
   }
 
   private static EJSONWrapper binaryWrapper(String base64Encoded) {
     return new EJSONWrapper(
         EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.textNode(base64Encoded));
-  }
-
-  private static JsonLiteral<String> stringLiteral(String value) {
-    return new JsonLiteral<>(value, JsonType.STRING);
-  }
-
-  private static JsonLiteral<Number> numberLiteral(Number value) {
-    return new JsonLiteral<>(value, JsonType.NUMBER);
   }
 
   @Test
