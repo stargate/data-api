@@ -57,7 +57,7 @@ blocks:
             }
           }
 
-      delete-table:
+      drop-table:
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_keyvalue>>
         Accept: "application/json"
@@ -67,7 +67,7 @@ blocks:
         ok-body: ".*\"ok\":1.*"
         body: >2
           {
-            "deleteTable": {
+            "dropTable": {
               "name": "<<table:api_table>>"
             }
           }
@@ -155,11 +155,11 @@ blocks:
           {
             "updateOne" : {
               "filter": {
-                "_id" : "{rw_key}"
+                "key" : "{rw_key}"
               },
               "update": {
                 "$set": {
-                  "{rw_key}":"{rw_value}"
+                  "value":"{rw_value}"
                 }
               }
             }
