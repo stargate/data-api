@@ -98,7 +98,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
   @Override
   public BuiltCondition get() {
     throw new UnsupportedOperationException(
-        "No supported - will be modified when we migrate collections filters java driver");
+        "Not supported - will be modified when we migrate collections filters java driver");
   }
 
   @Override

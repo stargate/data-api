@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/** API filter $in and $nin against table column. */
 public class InTableFilter extends TableFilter {
 
   private final List<Object> arrayValue;
@@ -27,7 +28,7 @@ public class InTableFilter extends TableFilter {
 
   public enum Operator {
     IN,
-    //    NIN,
+    // TODO NIN,
   }
 
   public InTableFilter(Operator operator, String path, List<Object> arrayValue) {
@@ -68,7 +69,7 @@ public class InTableFilter extends TableFilter {
   @Override
   public BuiltCondition get() {
     throw new UnsupportedOperationException(
-        "No supported - will be modified when we migrate collections filters java driver");
+        "Not supported - will be modified when we migrate collections filters java driver");
   }
 
   /**
