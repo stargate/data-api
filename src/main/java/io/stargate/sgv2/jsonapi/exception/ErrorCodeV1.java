@@ -204,7 +204,8 @@ public enum ErrorCodeV1 {
   TABLE_MISSING_PARTITIONING_KEYS("Key needs to be provided as part of partitioning definition"),
   TABLE_COLUMN_DEFINITION_MISSING("Column definition is missing for the provided key field"),
   TABLE_COLUMN_TYPE_UNSUPPORTED("Unsupported column types"),
-  TABLE_COLUMN_UNKNOWN("Column unknown");
+  TABLE_COLUMN_UNKNOWN("Column unknown"),
+  TABLE_INVALID_FILTER("Invalid table filter");
 
   private final String message;
 

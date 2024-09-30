@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.query.ExtendedOngoingWhereClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,18 +41,12 @@ public class DeleteTableOperation extends TableMutationOperation {
         deleteFrom(
             commandContext.schemaObject().tableMetadata().getKeyspace(),
             commandContext.schemaObject().tableMetadata().getName());
-
     // Delete in CQL allows you to delete columns, we do not support that, next to add is the WHERE
     // clause
     // HACK AARON - do not know how to get on the correct interface here
     Delete delete = (Delete) deleteSelection;
     List<Object> positionalValues = new ArrayList<>();
-    //    delete = whereCQLClause.apply(delete, positionalValues);
-
-    // Add the where clause
-    ExtendedOngoingWhereClause<Delete> extendedOngoingWhereClause =
-        whereCQLClause.apply(new ExtendedOngoingWhereClause<>(delete, false), positionalValues);
-    delete = extendedOngoingWhereClause.noAllowFilteringToDelete();
+    delete = whereCQLClause.apply(delete, positionalValues);
 
     var statement = delete.build(positionalValues.toArray());
 

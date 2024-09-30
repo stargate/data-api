@@ -63,6 +63,14 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
         .body("status.ok", is(1));
   }
 
+  protected DataApiResponseValidator createIndex(String tableName, String columnName) {
+    String indexName = String.format("%s_%s_index", tableName, columnName);
+    return DataApiCommandSenders.assertTableCommand(keyspaceName, tableName)
+        .postCreateIndex(columnName, indexName)
+        .hasNoErrors()
+        .body("status.ok", is(1));
+  }
+
   protected void deleteAllRowsFromTable(String tableName) {
     String json =
         """

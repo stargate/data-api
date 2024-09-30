@@ -9,12 +9,12 @@ import com.datastax.oss.driver.api.querybuilder.BuildableQuery;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
-import io.stargate.sgv2.jsonapi.service.operation.query.ExtendedOngoingWhereClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.util.ArrayList;
@@ -99,7 +99,6 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
   protected Uni<AsyncResultSet> execute(CommandQueryExecutor queryExecutor) {
 
     var statement = buildReadStatement();
-
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
           "execute() - {}, cql={}, values={}",
@@ -141,10 +140,7 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
     Select select = selectCQLClause.apply(selectFrom);
 
     // Add the where clause
-    ExtendedOngoingWhereClause<Select> extendedOngoingWhereClause =
-        whereCQLClause.apply(new ExtendedOngoingWhereClause<>(select, false), positionalValues);
-    select = extendedOngoingWhereClause.mayApplyAllowFilteringToSelect();
-
+    select = whereCQLClause.apply(select, positionalValues);
     return select;
   }
 

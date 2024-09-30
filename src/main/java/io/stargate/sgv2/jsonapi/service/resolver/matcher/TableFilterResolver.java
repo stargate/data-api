@@ -8,10 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonO
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.InTableFilter;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.NumberTableFilter;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.TextTableFilter;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
@@ -30,6 +27,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
   private static final Object DYNAMIC_DOCID_GROUP = new Object();
   private static final Object DYNAMIC_TEXT_GROUP = new Object();
   private static final Object DYNAMIC_NUMBER_GROUP = new Object();
+  private static final Object DYNAMIC_BOOL_GROUP = new Object();
   private static final Object DYNAMIC_GROUP_IN = new Object();
 
   public TableFilterResolver(OperationsConfig operationsConfig) {
@@ -67,6 +65,17 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                 ValueComparisonOperator.LT,
                 ValueComparisonOperator.LTE),
             JsonType.NUMBER)
+        .capture(DYNAMIC_BOOL_GROUP)
+        .compareValues(
+            "*",
+            EnumSet.of(
+                ValueComparisonOperator.EQ,
+                ValueComparisonOperator.NE,
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.BOOLEAN)
         // Although Tables does not have special handling for _id, our FilterClauseDeserializer
         // does, so we need to capture it here.
         .capture(DYNAMIC_DOCID_GROUP)
@@ -83,9 +92,8 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
         .capture(DYNAMIC_GROUP_IN)
         .compareValues(
             "*",
-            EnumSet.of(ValueComparisonOperator.IN, ValueComparisonOperator.NIN),
-            JsonType.ARRAY)
-        .capture(DYNAMIC_NUMBER_GROUP);
+            EnumSet.of(ValueComparisonOperator.IN),
+            JsonType.ARRAY);
     return matchRules;
   }
 
@@ -130,6 +138,22 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                                   NativeTypeTableFilter.Operator.from(
                                       (ValueComparisonOperator) expression.operator()),
                                   (BigDecimal) expression.value()));
+                        });
+                  });
+
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_BOOL_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Boolean> dynamicNumberGroup = (CaptureGroup<Boolean>) captureGroup;
+                    dynamicNumberGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addDBFilter(
+                              new BooleanTableFilter(
+                                  expression.path(),
+                                  NativeTypeTableFilter.Operator.from(
+                                      (ValueComparisonOperator) expression.operator()),
+                                  (Boolean) expression.value()));
                         });
                   });
 

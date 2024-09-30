@@ -13,7 +13,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.query.ExtendedOngoingWhereClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.util.*;
@@ -62,12 +61,7 @@ public class UpdateTableOperation extends TableMutationOperation {
     // HACK AARON - do not know how to get on the correct interface here
     Update update = (Update) updateWithAssignments;
     // Add the where clause
-    //    update = whereCQLClause.apply(update, positionalValues);
-
-    // Add the where clause
-    ExtendedOngoingWhereClause<Update> extendedOngoingWhereClause =
-        whereCQLClause.apply(new ExtendedOngoingWhereClause<>(update, false), positionalValues);
-    update = extendedOngoingWhereClause.noAllowFilteringToUpdate();
+    update = whereCQLClause.apply(update, positionalValues);
 
     var statement = update.build(positionalValues.toArray());
     LOGGER.warn("UPDATE CQL: {}", update.asCql());

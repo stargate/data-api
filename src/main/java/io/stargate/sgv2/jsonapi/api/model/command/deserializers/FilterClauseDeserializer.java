@@ -299,7 +299,14 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
           || operator == ValueComparisonOperator.GTE
           || operator == ValueComparisonOperator.LT
           || operator == ValueComparisonOperator.LTE) {
+        // Note, added 'valueObject instanceof String || valueObject instanceof Boolean', this is to
+        // unblock some table filter against non-numeric column
+        // e.g. {"event_date": {"$gt": "2024-09-24"}}, {"is_active": {"$gt": true}},
+        // {"name":{"$gt":"Tim"}}
+
         if (!(valueObject instanceof Date
+            || valueObject instanceof String
+            || valueObject instanceof Boolean
             || valueObject instanceof BigDecimal
             || (valueObject instanceof DocumentId && (value.isObject() || value.isNumber())))) {
           throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(

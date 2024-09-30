@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -84,6 +85,7 @@ public class NamespaceCache {
 
   private Uni<SchemaObject> loadSchemaObject(
       DataApiRequestInfo dataApiRequestInfo, String collectionName) {
+
 
     return queryExecutor
         .getSchema(dataApiRequestInfo, namespace, collectionName)
