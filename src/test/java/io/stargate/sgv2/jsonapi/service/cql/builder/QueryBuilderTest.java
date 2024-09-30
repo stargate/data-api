@@ -7,11 +7,11 @@ import com.bpodgursky.jbool_expressions.Expression;
 import com.bpodgursky.jbool_expressions.Variable;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import io.stargate.sgv2.jsonapi.service.cql.ExpressionUtils;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.builder.JsonTerm;
+import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -87,8 +87,7 @@ public class QueryBuilderTest {
               new QueryBuilder()
                   .select()
                   .column("a", "b", "c")
-                  .similarityFunction(
-                      "query_vector_value", CollectionSchemaObject.SimilarityFunction.COSINE)
+                  .similarityFunction("query_vector_value", SimilarityFunction.COSINE)
                   .from("ks", "tbl")
                   .limit(1)
                   .vsearch(VECTOR_COLUMN, TEST_VECTOR)
@@ -99,8 +98,7 @@ public class QueryBuilderTest {
               new QueryBuilder()
                   .select()
                   .column("a", "b", "c")
-                  .similarityFunction(
-                      "query_vector_value", CollectionSchemaObject.SimilarityFunction.DOT_PRODUCT)
+                  .similarityFunction("query_vector_value", SimilarityFunction.DOT_PRODUCT)
                   .from("ks", "tbl")
                   .limit(1)
                   .vsearch(VECTOR_COLUMN, TEST_VECTOR)
@@ -111,8 +109,7 @@ public class QueryBuilderTest {
               new QueryBuilder()
                   .select()
                   .column("a", "b", "c")
-                  .similarityFunction(
-                      VECTOR_COLUMN, CollectionSchemaObject.SimilarityFunction.EUCLIDEAN)
+                  .similarityFunction(VECTOR_COLUMN, SimilarityFunction.EUCLIDEAN)
                   .from("ks", "tbl")
                   .limit(1)
                   .vsearch("query_vector_value", TEST_VECTOR)
@@ -163,8 +160,7 @@ public class QueryBuilderTest {
               .select()
               .column("a", "b")
               .from("ks", "tbl")
-              .similarityFunction(
-                  VECTOR_COLUMN, CollectionSchemaObject.SimilarityFunction.EUCLIDEAN)
+              .similarityFunction(VECTOR_COLUMN, SimilarityFunction.EUCLIDEAN)
               .vsearch(VECTOR_COLUMN, TEST_VECTOR)
               .where(expression)
               .limit(10)

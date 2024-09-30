@@ -37,6 +37,15 @@ public abstract class ApiDataTypeDefs {
   public static final ApiDataTypeDef BINARY =
       new ApiDataTypeDef(ApiDataType.BINARY, DataTypes.BLOB);
 
+  public static final ApiDataTypeDef DATE = new ApiDataTypeDef(ApiDataType.DATE, DataTypes.DATE);
+  public static final ApiDataTypeDef DURATION =
+      new ApiDataTypeDef(ApiDataType.DURATION, DataTypes.DURATION);
+
+  public static final ApiDataTypeDef TIME = new ApiDataTypeDef(ApiDataType.TIME, DataTypes.TIME);
+
+  public static final ApiDataTypeDef TIMESTAMP =
+      new ApiDataTypeDef(ApiDataType.TIMESTAMP, DataTypes.TIMESTAMP);
+
   public static final ApiDataTypeDef ASCII = new ApiDataTypeDef(ApiDataType.ASCII, DataTypes.ASCII);
 
   // Primitive Types

@@ -31,16 +31,12 @@ public class JSONCodecRegistry {
 
   private final Map<DataType, List<JSONCodec<?, ?>>> codecsByCQLType;
 
-  private JSONCodecRegistry(List<JSONCodec<?, ?>> codecs) {
+  public JSONCodecRegistry(List<JSONCodec<?, ?>> codecs) {
     Objects.requireNonNull(codecs, "codecs must not be null");
-    this.codecsByCQLType = new HashMap<>();
+    codecsByCQLType = new HashMap<>();
     for (JSONCodec<?, ?> codec : codecs) {
       codecsByCQLType.computeIfAbsent(codec.targetCQLType(), k -> new ArrayList<>()).add(codec);
     }
-  }
-
-  public static JSONCodecRegistry create(List<JSONCodec<?, ?>> codecs) {
-    return new JSONCodecRegistry(codecs);
   }
 
   /**
@@ -58,6 +54,8 @@ public class JSONCodecRegistry {
    *     or an exception if the codec cannot be found.
    * @throws UnknownColumnException If the column is not found in the table.
    * @throws MissingJSONCodecException If no codec is found for the column and type of the value.
+   * @throws ToCQLCodecException If there is a codec for CQL type, but not one for converting from
+   *     the Java value type
    */
   public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToCQL(
       TableMetadata table, CqlIdentifier column, Object value)

@@ -103,4 +103,32 @@ public class PrimitiveTypes {
       return ApiDataType.BINARY;
     }
   }
+
+  private static class Date implements ColumnType {
+    @Override
+    public ApiDataType getApiDataType() {
+      return ApiDataType.DATE;
+    }
+  }
+
+  private static class Duration implements ColumnType {
+    @Override
+    public ApiDataType getApiDataType() {
+      return ApiDataType.DURATION;
+    }
+  }
+
+  private static class Time implements ColumnType {
+    @Override
+    public ApiDataType getApiDataType() {
+      return ApiDataType.TIME;
+    }
+  }
+
+  private static class Timestamp implements ColumnType {
+    @Override
+    public ApiDataType getApiDataType() {
+      return ApiDataType.TIMESTAMP;
+    }
+  }
 }

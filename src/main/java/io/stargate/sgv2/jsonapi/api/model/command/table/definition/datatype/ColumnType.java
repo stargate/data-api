@@ -1,15 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDefinitionDeserializer;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
-import java.util.Map;
 
-@JsonDeserialize(using = ColumnDefinitionDeserializer.class)
 /** Interface for column types. This is used to define the type of a column in a table. */
 public interface ColumnType {
-  // Returns cassandra data type.
+  // Returns api data type.
   ApiDataType getApiDataType();
 
   // Returns the column type from the string.
@@ -25,10 +20,15 @@ public interface ColumnType {
         return PrimitiveTypes.BINARY;
       case "boolean":
         return PrimitiveTypes.BOOLEAN;
+      case "date":
+        return PrimitiveTypes.DATE;
       case "decimal":
         return PrimitiveTypes.DECIMAL;
       case "double":
         return PrimitiveTypes.DOUBLE;
+      case "duration":
+        return PrimitiveTypes.DURATION;
+
       case "float":
         return PrimitiveTypes.FLOAT;
       case "int":
@@ -37,11 +37,15 @@ public interface ColumnType {
         return PrimitiveTypes.SMALLINT;
       case "text":
         return PrimitiveTypes.TEXT;
+      case "time":
+        return PrimitiveTypes.TIME;
+      case "timestamp":
+        return PrimitiveTypes.TIMESTAMP;
+
       case "tinyint":
         return PrimitiveTypes.TINYINT;
       case "varint":
         return PrimitiveTypes.VARINT;
-
       default:
         {
           Map<String, String> errorMessageFormattingValues =

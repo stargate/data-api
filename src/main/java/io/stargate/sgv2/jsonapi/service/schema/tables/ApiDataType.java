@@ -15,12 +15,16 @@ public enum ApiDataType {
   BIGINT("bigint"),
   BINARY("blob"),
   BOOLEAN("boolean"),
+  DATE("date"),
   DECIMAL("decimal"),
   DOUBLE("double"),
+  DURATION("duration"),
   FLOAT("float"),
   INT("int"),
   SMALLINT("smallint"),
   TEXT("text"),
+  TIME("time"),
+  TIMESTAMP("timestamp"),
   TINYINT("tinyint"),
   VARINT("varint");
 
