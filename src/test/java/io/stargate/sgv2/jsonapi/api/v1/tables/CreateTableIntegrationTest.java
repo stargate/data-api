@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.ArrayList;
@@ -301,9 +302,9 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
       Map<String, String> errorMessageFormattingValues =
           Map.of(
               "type",
-              "invalid_type", // type used in the create table request
+              "invalid_type",
               "supported_types",
-              "[ascii, bigint, blob, boolean, decimal, double, float, int, smallint, text, tinyint, varint]");
+              "[" + String.join(", ", ColumnType.getSupportedTypes()) + "]");
       SchemaException invalidType =
           SchemaException.Code.COLUMN_TYPE_UNSUPPORTED.get(errorMessageFormattingValues);
       testCases.add(

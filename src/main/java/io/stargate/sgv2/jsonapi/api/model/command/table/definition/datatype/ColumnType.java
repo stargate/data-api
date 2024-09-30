@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDefinitionDeserializer;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import java.util.List;
 import java.util.Map;
 
 @JsonDeserialize(using = ColumnDefinitionDeserializer.class)
@@ -12,6 +13,26 @@ import java.util.Map;
 public interface ColumnType {
   // Returns api data type.
   ApiDataType getApiDataType();
+
+  static List<String> getSupportedTypes() {
+    return List.of(
+        "ascii",
+        "bigint",
+        "blob",
+        "boolean",
+        "date",
+        "decimal",
+        "double",
+        "duration",
+        "float",
+        "int",
+        "smallint",
+        "text",
+        "time",
+        "timestamp",
+        "tinyint",
+        "varint");
+  }
 
   // Returns the column type from the string.
   static ColumnType fromString(String type) {
@@ -57,7 +78,7 @@ public interface ColumnType {
                   "type",
                   type,
                   "supported_types",
-                  "[ascii, bigint, blob, boolean, decimal, double, float, int, smallint, text, tinyint, varint]");
+                  "[" + String.join(", ", ColumnType.getSupportedTypes()) + "]");
           throw SchemaException.Code.COLUMN_TYPE_UNSUPPORTED.get(errorMessageFormattingValues);
         }
     }
