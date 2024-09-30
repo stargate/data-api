@@ -10,7 +10,7 @@ public class SchemaException extends RequestException {
 
   public enum Code implements ErrorCode<SchemaException> {
     COLUMN_DEFINITION_MISSING,
-    COLUMN_TYPE_UNDEFINED,
+    COLUMN_TYPE_INCORRECT,
     COLUMN_TYPE_UNSUPPORTED,
     MISSING_PRIMARY_KEYS,
     PRIMARY_KEY_DEFINITION_INCORRECT;

@@ -134,6 +134,8 @@ request-errors:
     body: |-
       big long message with ${vars} in it
 
+  # Schema Errors
+
   - scope: SCHEMA
     code: COLUMN_DEFINITION_MISSING
     title: Column definition is missing for the provided primary key column.
@@ -141,10 +143,10 @@ request-errors:
       Column definition is missing for the provided primary key column: ${column_name}.
 
   - scope: SCHEMA
-    code: COLUMN_TYPE_UNDEFINED
-    title: Column data type not provided as part of definition
+    code: COLUMN_TYPE_INCORRECT
+    title: Column data type not provided or format invalid in the definition
     body: |-
-      Column data type not provided as part of definition.
+      Column data type not provided or format invalid in the definition.
       Column definition can be defined in shorthand format as : 
         "column_name": "text"
       

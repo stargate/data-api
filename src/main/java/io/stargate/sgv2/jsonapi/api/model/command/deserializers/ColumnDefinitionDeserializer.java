@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import java.io.IOException;
 
 /**
@@ -27,9 +27,14 @@ public class ColumnDefinitionDeserializer extends StdDeserializer<ColumnType> {
     if (definition.isTextual()) {
       return ColumnType.fromString(definition.asText());
     }
-    if (!definition.has("type")) {
-      throw ErrorCodeV1.TABLE_COLUMN_TYPE_NOT_PROVIDED.toApiException();
+    if (definition.isObject() && definition.has("type")) {
+      return ColumnType.fromString(definition.path("type").asText());
     }
-    return ColumnType.fromString(definition.path("type").asText());
+    throw SchemaException.Code.COLUMN_TYPE_INCORRECT.get();
+  }
+
+  @Override
+  public ColumnType getNullValue(DeserializationContext ctxt) {
+    throw SchemaException.Code.COLUMN_TYPE_INCORRECT.get();
   }
 }

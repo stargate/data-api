@@ -2,9 +2,11 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -23,7 +25,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
   class CreateTable {
     @ParameterizedTest
     @MethodSource("allTableData")
-    public void primaryKeyAsString(CreateTableTestData testData) {
+    public void testCreateTable(CreateTableTestData testData) {
       if (testData.error()) {
         createTableErrorValidation(
             testData.request(), testData.errorCode(), testData.errorMessage());
@@ -113,7 +115,44 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   null,
                   null)));
 
+      // primaryKeyAsJsonObjectTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                {
+                                                  "name": "primaryKeyAsJsonObjectTable",
+                                                  "definition": {
+                                                    "columns": {
+                                                      "id": {
+                                                        "type": "text"
+                                                      },
+                                                      "age": {
+                                                        "type": "int"
+                                                      },
+                                                      "name": {
+                                                        "type": "text"
+                                                      }
+                                                    },
+                                                    "primaryKey": {
+                                                      "partitionBy": [
+                                                        "id"
+                                                      ],
+                                                      "partitionSort" : {
+                                                        "name" : 1, "age" : -1
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                                """,
+                  "primaryKeyAsJsonObjectTable",
+                  false,
+                  null,
+                  null)));
+
       // invalidPrimaryKeyTable
+      SchemaException missingDefinition =
+          SchemaException.Code.COLUMN_DEFINITION_MISSING.get(Map.of("column_name", "error_column"));
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
@@ -132,49 +171,14 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                  "type": "text"
                                              }
                                          },
-                                         "primaryKey": "invalid"
+                                         "primaryKey": "error_column"
                                      }
                                     }
                                     """,
                   "invalidPrimaryKeyTable",
                   true,
-                  "TABLE_COLUMN_DEFINITION_MISSING",
-                  "Column definition is missing for the provided primary key field: invalid")));
-
-      // primaryKeyAsJsonObjectTable
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                    {
-                                      "name": "primaryKeyAsJsonObjectTable",
-                                      "definition": {
-                                        "columns": {
-                                          "id": {
-                                            "type": "text"
-                                          },
-                                          "age": {
-                                            "type": "int"
-                                          },
-                                          "name": {
-                                            "type": "text"
-                                          }
-                                        },
-                                        "primaryKey": {
-                                          "partitionBy": [
-                                            "id"
-                                          ],
-                                          "partitionSort" : {
-                                            "name" : 1, "age" : -1
-                                          }
-                                        }
-                                      }
-                                    }
-                                    """,
-                  "primaryKeyAsJsonObjectTable",
-                  false,
-                  null,
-                  null)));
+                  missingDefinition.code,
+                  missingDefinition.body)));
 
       // invalidPartitionByTable
       testCases.add(
@@ -191,7 +195,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                         },
                                         "primaryKey": {
                                           "partitionBy": [
-                                            "invalid"
+                                            "error_column"
                                           ],
                                           "partitionSort" : {
                                             "name" : 1, "age" : -1
@@ -202,8 +206,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                     """,
                   "invalidPartitionByTable",
                   true,
-                  "TABLE_COLUMN_DEFINITION_MISSING",
-                  "Column definition is missing for the provided primary key field: invalid")));
+                  missingDefinition.code,
+                  missingDefinition.body)));
 
       // invalidPartitionSortTable
       testCases.add(
@@ -223,7 +227,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                               "id"
                                             ],
                                             "partitionSort" : {
-                                              "invalid" : 1, "age" : -1
+                                              "error_column" : 1, "age" : -1
                                             }
                                           }
                                         }
@@ -231,9 +235,10 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                     """,
                   "invalidPartitionSortTable",
                   true,
-                  "TABLE_COLUMN_DEFINITION_MISSING",
-                  "Column definition is missing for the provided primary key field: invalid")));
+                  missingDefinition.code,
+                  missingDefinition.body)));
 
+      SchemaException se = SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
       // invalidPartitionSortOrderingValueTable
       testCases.add(
           Arguments.of(
@@ -260,8 +265,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                     """,
                   "invalidPartitionSortOrderingValueTable",
                   true,
-                  "TABLE_PRIMARY_KEY_DEFINITION_INCORRECT",
-                  "Primary key definition is incorrect: partitionSort value should be 1 or -1")));
+                  se.code,
+                  se.body)));
 
       // invalidPartitionSortOrderingValueTable
       testCases.add(
@@ -289,10 +294,18 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                     """,
                   "invalidPartitionSortOrderingValueTypeTable",
                   true,
-                  "TABLE_PRIMARY_KEY_DEFINITION_INCORRECT",
-                  "Primary key definition is incorrect: partitionSort should be 1 or -1")));
+                  se.code,
+                  se.body)));
 
       // invalidColumnTypeTable
+      Map<String, String> errorMessageFormattingValues =
+          Map.of(
+              "type",
+              "invalid_type", // type used in the create table request
+              "supported_types",
+              "[ascii, bigint, blob, boolean, decimal, double, float, int, smallint, text, tinyint, varint]");
+      SchemaException invalidType =
+          SchemaException.Code.COLUMN_TYPE_UNSUPPORTED.get(errorMessageFormattingValues);
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
@@ -301,7 +314,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                       "name": "invalidColumnTypeTable",
                                       "definition": {
                                         "columns": {
-                                          "id": "invalid",
+                                          "id": "invalid_type",
                                           "age": "int",
                                           "name": "text"
                                         },
@@ -319,8 +332,39 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                     """,
                   "invalidColumnTypeTable",
                   true,
-                  "TABLE_COLUMN_TYPE_UNSUPPORTED",
-                  "Unsupported column types: Invalid column type: invalid")));
+                  invalidType.code,
+                  invalidType.body)));
+      // Column type not provided
+      SchemaException columnTypeInvalid =
+          SchemaException.Code.COLUMN_TYPE_INCORRECT.get(errorMessageFormattingValues);
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                {
+                                                  "name": "invalidColumnTypeTable",
+                                                  "definition": {
+                                                    "columns": {
+                                                      "id": null,
+                                                      "age": "int",
+                                                      "name": "text"
+                                                    },
+                                                    "primaryKey": {
+                                                      "partitionBy": [
+                                                          "id"
+                                                      ],
+                                                      "partitionSort": {
+                                                          "id": 1,
+                                                          "age": -1
+                                                      }
+                                                    }
+                                                  }
+                                                }
+                                                """,
+                  "invalidColumnTypeTable",
+                  true,
+                  columnTypeInvalid.code,
+                  columnTypeInvalid.body)));
       return testCases.stream();
     }
   }
