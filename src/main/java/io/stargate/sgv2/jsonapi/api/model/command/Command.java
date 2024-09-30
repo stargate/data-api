@@ -65,7 +65,11 @@ public interface Command {
     INSERT_MANY("insertMany"),
     INSERT_ONE("insertOne"),
     UPDATE_MANY("updateMany"),
-    UPDATE_ONE("updateOne");
+    UPDATE_ONE("updateOne"),
+    BEGIN_OFFLINE_SESSION("beginOfflineSession"),
+    END_OFFLINE_SESSION("endOfflineSession"),
+    OFFLINE_GET_STATUS("offlineGetStatus"),
+    OFFLINE_INSERT_MANY("offlineInsertMany");
 
     private final String apiName;
 

@@ -25,7 +25,7 @@ import java.util.Optional;
  *
  * <p>TODO: there are a LOT of different ways this is constructed, need to refactor
  */
-public final class CollectionSchemaObject extends TableBasedSchemaObject {
+public final class CollectionSchemaObject extends SchemaObject {
 
   public static final SchemaObjectType TYPE = SchemaObjectType.COLLECTION;
 
@@ -67,7 +67,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       IdConfig idConfig,
       VectorConfig vectorConfig,
       CollectionIndexingConfig indexingConfig) {
-    super(TYPE, name, tableMetadata);
+    super(TYPE, name);
 
     this.idConfig = idConfig;
     this.vectorConfig = vectorConfig;
