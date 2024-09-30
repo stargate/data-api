@@ -11,7 +11,7 @@ LOGLEVEL=INFO
 
 # Default to latest released version
 DATAAPITAG="v1"
-DATAAPIIMAGE="stargateio/data-api"
+DATAAPIIMAGE="stargateio/jsonapi"
 
 HCDTAG="1.0.0"
 HCDIMAGE="cr.dtsx.io/datastax/hcd"
