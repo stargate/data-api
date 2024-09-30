@@ -1,5 +1,10 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+/**
+ * Errors related to the schema definition in a request.
+ *
+ * <p>See {@link APIException} for steps to add a new code.
+ */
 public class SchemaException extends RequestException {
 
   public static final Scope SCOPE = Scope.SCHEMA;
