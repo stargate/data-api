@@ -11,12 +11,16 @@ public class PrimitiveTypes {
   public static final ColumnType BIGINT = new BigInt();
   public static final ColumnType BINARY = new Binary();
   public static final ColumnType BOOLEAN = new Boolean();
+  public static final ColumnType DATE = new Date();
   public static final ColumnType DECIMAL = new Decimal();
   public static final ColumnType DOUBLE = new Double();
+  public static final ColumnType DURATION = new Duration();
   public static final ColumnType FLOAT = new Float();
   public static final ColumnType INT = new Int();
   public static final ColumnType SMALLINT = new SmallInt();
   public static final ColumnType TEXT = new Text();
+  public static final ColumnType TIME = new Time();
+  public static final ColumnType TIMESTAMP = new Timestamp();
   public static final ColumnType TINYINT = new TinyInt();
   public static final ColumnType VARINT = new VarInt();
 

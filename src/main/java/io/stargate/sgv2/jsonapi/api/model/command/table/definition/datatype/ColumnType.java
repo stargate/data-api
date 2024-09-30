@@ -1,6 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDefinitionDeserializer;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import java.util.Map;
+
+@JsonDeserialize(using = ColumnDefinitionDeserializer.class)
 
 /** Interface for column types. This is used to define the type of a column in a table. */
 public interface ColumnType {
@@ -28,7 +34,6 @@ public interface ColumnType {
         return PrimitiveTypes.DOUBLE;
       case "duration":
         return PrimitiveTypes.DURATION;
-
       case "float":
         return PrimitiveTypes.FLOAT;
       case "int":
@@ -41,7 +46,6 @@ public interface ColumnType {
         return PrimitiveTypes.TIME;
       case "timestamp":
         return PrimitiveTypes.TIMESTAMP;
-
       case "tinyint":
         return PrimitiveTypes.TINYINT;
       case "varint":
