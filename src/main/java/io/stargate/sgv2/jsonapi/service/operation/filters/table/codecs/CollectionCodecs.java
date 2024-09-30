@@ -9,9 +9,18 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import java.util.*;
 
+/**
+ * Container for factories of codecs that handle CQL collection types(Lists and Sets for now).
+ * Seperated from main {@link JSONCodecs} to keep the code bit more modular.
+ */
 public abstract class CollectionCodecs {
   private static final GenericType<List<Object>> GENERIC_LIST = GenericType.listOf(Object.class);
 
+  /**
+   * Factory method to build a codec for a CQL List type: codec will be given set of possible value
+   * codecs (since we have one per input JSON type) and will dynamically select the right one based
+   * on the actual element values.
+   */
   public static JSONCodec<?, ?> buildListCodec(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType) {
     return new JSONCodec<>(
@@ -21,10 +30,15 @@ public abstract class CollectionCodecs {
         (objectMapper, cqlType, value) -> toJsonNode(valueCodecs, objectMapper, cqlType, value));
   }
 
+  /**
+   * Factory method to build a codec for a CQL Set type: codec will be given set of possible value
+   * codecs (since we have one per input JSON type) and will dynamically select the right one based
+   * on the actual element values.
+   */
   public static JSONCodec<?, ?> buildSetCodec(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType) {
     return new JSONCodec<>(
-        // NOTE: although we convert to Sets, RowShredder.java binds to Lists
+        // NOTE: although we convert to CQL Set, RowShredder.java binds to Lists
         GENERIC_LIST,
         DataTypes.setOf(elementType),
         (cqlType, value) -> toCQLSet(valueCodecs, elementType, value),
@@ -34,7 +48,7 @@ public abstract class CollectionCodecs {
   static List<Object> toCQLList(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Collection<?> rawListValue)
       throws ToCQLCodecException {
-    List<JsonLiteral<?>> listValue = (List<JsonLiteral<?>>) rawListValue;
+    Collection<JsonLiteral<?>> listValue = (Collection<JsonLiteral<?>>) rawListValue;
     List<Object> result = new ArrayList<>(listValue.size());
 
     JSONCodec<Object, Object> elementCodec = null;
@@ -55,7 +69,7 @@ public abstract class CollectionCodecs {
   static Set<Object> toCQLSet(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Collection<?> rawSetValue)
       throws ToCQLCodecException {
-    Collection<JsonLiteral<?>> setValue = (List<JsonLiteral<?>>) rawSetValue;
+    Collection<JsonLiteral<?>> setValue = (Collection<JsonLiteral<?>>) rawSetValue;
     Set<Object> result = new HashSet<>(setValue.size());
     JSONCodec<Object, Object> elementCodec = null;
     for (JsonLiteral<?> literalElement : setValue) {
