@@ -9,7 +9,6 @@ import com.datastax.oss.driver.api.querybuilder.BuildableQuery;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.fasterxml.jackson.databind.JsonNode;
-import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;

@@ -1339,29 +1339,33 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
     }
 
-//    @Test
-//    public void blobColumn() {
-//      String columnType = "blob";
-//      String columnName = (String) SAMPLE_COLUMN_VALUES.get(columnType).get(0);
-//      // Note, the $binary EJSON format
-//      JSONObject mayAddQuoteValue =
-//          buildJsonObjectFromMapEntry(
-//              (Map.Entry<String, String>) SAMPLE_COLUMN_VALUES.get(columnType).get(1));
-//
-//      // blobColumnSaiIndexed
-//      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
-//          .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue.toJSONString()))
-//          .hasNoErrors()
-//          .hasNoWarnings()
-//          .body("data.document.id", is(SAMPLE_ID));
-//
-//      // blobColumnNotSaiIndexed
-//      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
-//          .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue.toJSONString()))
-//          .hasNoErrors()
-//          .hasSingleApiWarning(ALLOW_FILTERING)
-//          .body("data.document.id", is(SAMPLE_ID));
-//    }
+    //    @Test
+    //    public void blobColumn() {
+    //      String columnType = "blob";
+    //      String columnName = (String) SAMPLE_COLUMN_VALUES.get(columnType).get(0);
+    //      // Note, the $binary EJSON format
+    //      JSONObject mayAddQuoteValue =
+    //          buildJsonObjectFromMapEntry(
+    //              (Map.Entry<String, String>) SAMPLE_COLUMN_VALUES.get(columnType).get(1));
+    //
+    //      // blobColumnSaiIndexed
+    //      DataApiCommandSenders.assertTableCommand(keyspaceName,
+    // TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+    //          .postFindOne(apiFilter$eqTemplate.formatted(columnName,
+    // mayAddQuoteValue.toJSONString()))
+    //          .hasNoErrors()
+    //          .hasNoWarnings()
+    //          .body("data.document.id", is(SAMPLE_ID));
+    //
+    //      // blobColumnNotSaiIndexed
+    //      DataApiCommandSenders.assertTableCommand(keyspaceName,
+    // TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+    //          .postFindOne(apiFilter$eqTemplate.formatted(columnName,
+    // mayAddQuoteValue.toJSONString()))
+    //          .hasNoErrors()
+    //          .hasSingleApiWarning(ALLOW_FILTERING)
+    //          .body("data.document.id", is(SAMPLE_ID));
+    //    }
   }
 
   private JSONObject buildJsonObjectFromMapEntry(Map.Entry<String, String> entry) {

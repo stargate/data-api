@@ -19,8 +19,6 @@ import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilterAnalyzedUsage;
 import java.util.List;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A DB Filter that can be applied on columns in a CQL Tables that use the `native-type` 's as
@@ -53,8 +51,6 @@ import org.slf4j.LoggerFactory;
  * @param <CqlT> The JSON Type , BigDecimal, String etc
  */
 public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(NativeTypeTableFilter.class);
 
   /**
    * The operations that can be performed to filter a column TIDY: we have operations defined in
@@ -132,34 +128,31 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
   /**
    * Analyze the $eq,$ne,$lt,$gt,$lte,$gte against scalar column and get corresponding usage info.
    *
-   * <p>
-   * Check if the filter is against an existing column by calling getColumn() on {@link TableFilter}
+   * <p>Check if the filter is against an existing column by calling getColumn() on {@link
+   * TableFilter}
    *
-   * <p>
-   * For comparison API filters, $lt/$gt/$lte/$gte. <br>
+   * <p>For comparison API filters, $lt/$gt/$lte/$gte. <br>
    * Can NOT use on Duration column, "Slice restrictions are not supported on duration columns" <br>
-   * If no SAI index on following 14 column types text/int/timestamp/ascii/date/time/boolean/varint/tinyint/decimal/smallint/double/bigint/float, need ALLOW FILTERING. <br>
+   * If no SAI index on following 14 column types
+   * text/int/timestamp/ascii/date/time/boolean/varint/tinyint/decimal/smallint/double/bigint/float,
+   * need ALLOW FILTERING. <br>
    * TODO, blob
    *
-   * <p>
-   * For $ne <br>
-   * If has SAI on following 10 columns, date/time/timestamp/tinyint/smallint/bigint/varint/float/double/decinal, ALLOW FILTERING is not needed. <br>
-   * For other column types, WITH or WITHOUT SAI, ALLOWING FILTERING is needed.
-   * TODO, blob
+   * <p>For $ne <br>
+   * If has SAI on following 10 columns,
+   * date/time/timestamp/tinyint/smallint/bigint/varint/float/double/decinal, ALLOW FILTERING is not
+   * needed. <br>
+   * For other column types, WITH or WITHOUT SAI, ALLOWING FILTERING is needed. TODO, blob
    *
-   * <p>
-   * For $eq <br>
-   * With SAI index on these 14 columns, date/time/timestamp/int/tinyint/smallint/bigint/varint/float/double/decimal/text/ascii/boolean, ALLOW FILTERING is not needed.
-   * We can NOT build SAI index on duration column type, so ALLOW FILTERING is also needed.
-   * TODO, blob
-   *
-   *
-   *
-   *
+   * <p>For $eq <br>
+   * With SAI index on these 14 columns,
+   * date/time/timestamp/int/tinyint/smallint/bigint/varint/float/double/decimal/text/ascii/boolean,
+   * ALLOW FILTERING is not needed. We can NOT build SAI index on duration column type, so ALLOW
+   * FILTERING is also needed. TODO, blob
    */
   @Override
   public TableFilterAnalyzedUsage analyze(TableSchemaObject tableSchemaObject) {
-    //check if filter is against an existing column
+    // check if filter is against an existing column
     final ColumnMetadata column = getColumn(tableSchemaObject);
 
     // if column is on the primary key, does not need ALLOW FILTERING to perform $eq
@@ -181,8 +174,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
       }
 
       if (!hasSaiIndexOnColumn(tableSchemaObject)) {
-        return new TableFilterAnalyzedUsage(
-            path, true, Optional.of("ALLOW FILTERING turned on"));
+        return new TableFilterAnalyzedUsage(path, true, Optional.of("ALLOW FILTERING turned on"));
       }
       return new TableFilterAnalyzedUsage(path, false, Optional.empty());
     }
@@ -204,8 +196,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
           return new TableFilterAnalyzedUsage(path, false, Optional.empty());
         }
       }
-      return new TableFilterAnalyzedUsage(
-          path, true, Optional.of("ALLOW FILTERING turned on"));
+      return new TableFilterAnalyzedUsage(path, true, Optional.of("ALLOW FILTERING turned on"));
     }
 
     if (operator == Operator.EQ) {
@@ -227,8 +218,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
           return new TableFilterAnalyzedUsage(path, false, Optional.empty());
         }
       }
-      return new TableFilterAnalyzedUsage(
-          path, true, Optional.of("ALLOW FILTERING turned on"));
+      return new TableFilterAnalyzedUsage(path, true, Optional.of("ALLOW FILTERING turned on"));
     }
 
     return new TableFilterAnalyzedUsage(path, false, Optional.empty());

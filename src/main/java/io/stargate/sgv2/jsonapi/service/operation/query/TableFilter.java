@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -9,7 +8,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.IndexUsage;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * A {@link DBFilterBase} that is applied to a table (i.e. not a Collection) to filter the rows to
@@ -105,11 +103,12 @@ public abstract class TableFilter extends DBFilterBase {
    * <p>[use case 1] If there is no index on the target column, Data API will add ALLOW FILTERING
    * despite the performance unpredictability.
    *
-   * <p>[user case 2] Some cql operators need ALLOW FILTERING on to perform the query, with or without
-   * index. Then the tableFilter implementation should know itself to add ALLOW FILTERING or not.
+   * <p>[user case 2] Some cql operators need ALLOW FILTERING on to perform the query, with or
+   * without index. Then the tableFilter implementation should know itself to add ALLOW FILTERING or
+   * not.
    *
-   * <p>
-   * TODO, We may add more complex analyze in the future
+   * <p>TODO, We may add more complex analyze in the future
+   *
    * @param tableSchemaObject tableSchemaObject
    * @return boolean
    */

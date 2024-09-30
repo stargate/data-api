@@ -10,7 +10,4 @@ import java.util.Optional;
  * @param warning
  */
 public record TableFilterAnalyzedUsage(
-    String targetColumn,
-    // TODO boolean columnExist,
-    boolean allowFiltering,
-    Optional<String> warning) {}
+    String targetColumn, boolean allowFiltering, Optional<String> warning) {}

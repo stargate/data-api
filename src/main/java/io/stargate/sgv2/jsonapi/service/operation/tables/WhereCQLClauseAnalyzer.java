@@ -23,9 +23,6 @@ import java.util.List;
  * <p>TODO, this class will be helpful for future features, such as TableFilter and Index
  * recommendation.
  */
-
-// TODO, the naming, actually it is just for table. should it be called as
-// TableWhereCQLClauseAnalyzer
 public class WhereCQLClauseAnalyzer {
 
   private final DBLogicalExpression dbLogicalExpression;
@@ -79,8 +76,5 @@ public class WhereCQLClauseAnalyzer {
     }
   }
 
-  public record WhereCQLClauseAnalyzeResult(boolean withAllowFiltering, List<String> warnings
-      //        public List<String> suggestions;
-      ) {}
-  ;
+  public record WhereCQLClauseAnalyzeResult(boolean withAllowFiltering, List<String> warnings) {}
 }

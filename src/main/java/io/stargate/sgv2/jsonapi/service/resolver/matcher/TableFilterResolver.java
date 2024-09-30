@@ -90,10 +90,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                 ValueComparisonOperator.LTE),
             JsonType.DOCUMENT_ID)
         .capture(DYNAMIC_GROUP_IN)
-        .compareValues(
-            "*",
-            EnumSet.of(ValueComparisonOperator.IN),
-            JsonType.ARRAY);
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
     return matchRules;
   }
 

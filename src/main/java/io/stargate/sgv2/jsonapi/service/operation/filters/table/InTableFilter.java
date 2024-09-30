@@ -27,7 +27,7 @@ public class InTableFilter extends TableFilter {
 
   public enum Operator {
     IN,
-//    NIN,
+    //    NIN,
   }
 
   public InTableFilter(Operator operator, String path, List<Object> arrayValue) {
@@ -73,35 +73,32 @@ public class InTableFilter extends TableFilter {
 
   /**
    * Analyze the $in API table filter and get corresponding usage info.
-   * <P>
-   * [$in against scalar columns]
-   * Without SAI index, following 14 column types text/int/timestamp/ascii/date/time/timestamp/boolean/varint/tinyint/decimal/smallint/double/bigint/float need ALLOW FILTERING. <br>
-   * We can NOT build SAI index on duration column type, so ALLOW FILTERING is also needed.
-   * TODO, blob column
    *
-   * <P>
-   * [$in against collection columns]
+   * <p>[$in against scalar columns] Without SAI index, following 14 column types
+   * text/int/timestamp/ascii/date/time/timestamp/boolean/varint/tinyint/decimal/smallint/double/bigint/float
+   * need ALLOW FILTERING. <br>
+   * We can NOT build SAI index on duration column type, so ALLOW FILTERING is also needed. TODO,
+   * blob column
    *
+   * <p>[$in against collection columns] TODO, collection columns
    *
    * @param tableSchemaObject tableSchemaObject
    * @return TableFilterAnalyzedUsage
    */
   @Override
   public TableFilterAnalyzedUsage analyze(TableSchemaObject tableSchemaObject) {
-    //check if filter is against an existing column
+    // check if filter is against an existing column
     final ColumnMetadata column = getColumn(tableSchemaObject);
 
-    // if it is against a scalar column
+    // Against a scalar column.
     // For scalar column, 15 types(no blob yet), if no SAI index on the column, need ALLOW FILTERING
     if (!hasSaiIndexOnColumn(tableSchemaObject)) {
-      return new TableFilterAnalyzedUsage(
-          path, true, Optional.of("ALLOW FILTERING turned on"));
+      return new TableFilterAnalyzedUsage(path, true, Optional.of("ALLOW FILTERING turned on"));
       // TODO, blob
     }
 
     return new TableFilterAnalyzedUsage(path, false, Optional.empty());
 
-    // if it is against a collection column
-
+    // TODO, Against a collection column.
   }
 }

@@ -63,7 +63,8 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
 
     final WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzeResult whereCQLClauseAnalyzeResult =
         whereCQLClause.analyseWhereClause();
-    // Analyse and may add AllowFiltering
+    // Analyse filter usage
+    // Step 1, may add AllowFiltering
     if (whereCQLClauseAnalyzeResult.withAllowFiltering()) {
       cqlOptions.addBuilderOption(CQLOption.ForSelect.withAllowFiltering());
     }
@@ -78,7 +79,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
             pagingState,
             documentSourceSupplier);
 
-    // Analyse and may add warning
+    // Step 2, may add warning
     whereCQLClauseAnalyzeResult.warnings().forEach(tableReadAttempt::addWarning);
 
     return tableReadAttempt;
