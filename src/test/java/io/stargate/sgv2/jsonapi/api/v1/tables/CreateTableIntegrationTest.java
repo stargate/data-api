@@ -41,6 +41,67 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
     private static Stream<Arguments> allTableData() {
       List<Arguments> testCases = new ArrayList<>();
+      // create table with all types
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                  {
+                                     "name": "allTypesTable",
+                                     "definition": {
+                                         "columns": {
+                                             "ascii_type": "ascii",
+                                             "bigint_type": "bigint",
+                                             "blob_type": "blob",
+                                             "boolean_type": "boolean",
+                                             "date_type": "date",
+                                             "decimal_type": "decimal",
+                                             "double_type": "double",
+                                             "duration_type": "duration",
+                                             "float_type": "float",
+                                             "int_type": "int",
+                                             "smallint_type": "smallint",
+                                             "text_type": "text",
+                                             "time_type": "time",
+                                             "timestamp_type": "timestamp",
+                                             "tinyint_type": "tinyint",
+                                             "varint_type": "varint"
+                                         },
+                                         "primaryKey": "text_type"
+                                     }
+                                  }
+                                  """,
+                  "allTypesTable",
+                  false,
+                  null,
+                  null)));
+      // primaryKeyAsString
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                                {
+                                                   "name": "primaryKeyAsStringTable",
+                                                   "definition": {
+                                                       "columns": {
+                                                           "id": {
+                                                               "type": "text"
+                                                           },
+                                                           "age": {
+                                                               "type": "int"
+                                                           },
+                                                           "name": {
+                                                               "type": "text"
+                                                           }
+                                                       },
+                                                       "primaryKey": "id"
+                                                   }
+                                                }
+                                                """,
+                  "primaryKeyAsStringTable",
+                  false,
+                  null,
+                  null)));
       // primaryKeyAsString
       testCases.add(
           Arguments.of(

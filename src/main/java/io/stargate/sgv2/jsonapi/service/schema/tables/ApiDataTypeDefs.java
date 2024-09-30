@@ -51,8 +51,8 @@ public abstract class ApiDataTypeDefs {
   // Primitive Types
   public static final List<ApiDataTypeDef> PRIMITIVE_TYPES =
       List.of(
-          TEXT, BIGINT, DECIMAL, DOUBLE, FLOAT, INT, SMALLINT, TINYINT, VARINT, BOOLEAN, BINARY,
-          ASCII);
+          ASCII, BIGINT, BOOLEAN, BINARY, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT, SMALLINT,
+          TEXT, TIME, TIMESTAMP, TINYINT, VARINT);
 
   // Private to force use of the from() method which returns an Optional
   private static final Map<DataType, ApiDataTypeDef> PRIMITIVE_TYPES_BY_CQL_TYPE =
