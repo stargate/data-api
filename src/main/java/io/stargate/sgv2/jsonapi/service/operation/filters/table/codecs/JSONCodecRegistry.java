@@ -6,7 +6,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.ListType;
 import com.datastax.oss.driver.api.core.type.SetType;
-import com.google.common.base.Preconditions;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
@@ -64,14 +63,14 @@ public class JSONCodecRegistry {
       TableMetadata table, CqlIdentifier column, Object value)
       throws UnknownColumnException, MissingJSONCodecException, ToCQLCodecException {
 
-    Preconditions.checkNotNull(table, "table must not be null");
-    Preconditions.checkNotNull(column, "column must not be null");
+    Objects.requireNonNull(table, "table must not be null");
+    Objects.requireNonNull(column, "column must not be null");
 
     var columnMetadata =
         table.getColumn(column).orElseThrow(() -> new UnknownColumnException(table, column));
 
     // First find candidates for CQL target type in question (if any)
-    DataType columnType = columnMetadata.getType();
+    final DataType columnType = columnMetadata.getType();
     List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(columnType);
     if (candidates == null) { // No scalar codec for this CQL type
       // But maybe structured type?
@@ -117,8 +116,8 @@ public class JSONCodecRegistry {
       TableMetadata table, CqlIdentifier columnId)
       throws UnknownColumnException, MissingJSONCodecException {
 
-    Preconditions.checkNotNull(table, "table must not be null");
-    Preconditions.checkNotNull(columnId, "column must not be null");
+    Objects.requireNonNull(table, "table must not be null");
+    Objects.requireNonNull(columnId, "column must not be null");
 
     var columnMetadata =
         table.getColumn(columnId).orElseThrow(() -> new UnknownColumnException(table, columnId));

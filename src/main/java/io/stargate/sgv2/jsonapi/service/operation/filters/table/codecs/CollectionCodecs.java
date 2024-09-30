@@ -94,7 +94,8 @@ public abstract class CollectionCodecs {
         return (JSONCodec<Object, Object>) codec;
       }
     }
-    throw new ToCQLCodecException(element, elementType, "no codec matching value type");
+    throw new ToCQLCodecException(
+        element, elementType, "no codec matching (list/set) element value type");
   }
 
   static JsonNode toJsonNode(
