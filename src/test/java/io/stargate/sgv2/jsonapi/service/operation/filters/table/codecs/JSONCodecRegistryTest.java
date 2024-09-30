@@ -10,6 +10,8 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
@@ -248,19 +250,36 @@ public class JSONCodecRegistryTest {
         // // Lists:
         Arguments.of(
             DataTypes.listOf(DataTypes.TEXT),
-            Arrays.asList("a", "b", "c"),
-            Arrays.asList("a", "b", "c")),
+            Arrays.asList(stringLiteral("a"), stringLiteral("b"), nullLiteral()),
+            Arrays.asList("a", "b", null)),
         Arguments.of(
             DataTypes.listOf(DataTypes.INT),
             // Important: all incoming JSON numbers are represented as Long, BigInteger,
             // or BigDecimal. But CQL column here requires ints (not longs)
-            Arrays.asList(123L, -42L),
-            Arrays.asList(123, -42)),
+            Arrays.asList(numberLiteral(123L), numberLiteral(-42L), nullLiteral()),
+            Arrays.asList(123, -42, null)),
 
         // // Sets:
         Arguments.of(
-            DataTypes.setOf(DataTypes.TEXT), List.of("a", "b", "c"), Set.of("a", "b", "c")),
-        Arguments.of(DataTypes.setOf(DataTypes.INT), List.of(123L, -42L), Set.of(123, -42)));
+            DataTypes.setOf(DataTypes.TEXT),
+            Arrays.asList(stringLiteral("a"), stringLiteral("b")),
+            Set.of("a", "b")),
+        Arguments.of(
+            DataTypes.setOf(DataTypes.INT),
+            Arrays.asList(numberLiteral(123L), numberLiteral(-42L)),
+            Set.of(123, -42)));
+  }
+
+  private static JsonLiteral<Number> numberLiteral(Number value) {
+    return new JsonLiteral<>(value, JsonType.NUMBER);
+  }
+
+  private static JsonLiteral<String> stringLiteral(String value) {
+    return new JsonLiteral<>(value, JsonType.STRING);
+  }
+
+  private static JsonLiteral<String> nullLiteral() {
+    return new JsonLiteral<>(null, JsonType.NULL);
   }
 
   private static EJSONWrapper binaryWrapper(String base64Encoded) {

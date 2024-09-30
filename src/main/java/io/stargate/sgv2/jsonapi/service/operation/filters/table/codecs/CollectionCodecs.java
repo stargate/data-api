@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import java.util.*;
 
@@ -31,11 +32,14 @@ public abstract class CollectionCodecs {
   }
 
   static List<Object> toCQLList(
-      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Collection<?> listValue)
+      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Collection<?> rawListValue)
       throws ToCQLCodecException {
+    List<JsonLiteral<?>> listValue = (List<JsonLiteral<?>>) rawListValue;
     List<Object> result = new ArrayList<>(listValue.size());
+
     JSONCodec<Object, Object> elementCodec = null;
-    for (Object element : listValue) {
+    for (JsonLiteral<?> literalElement : listValue) {
+      Object element = literalElement.value();
       if (element == null) {
         result.add(null);
         continue;
@@ -49,11 +53,13 @@ public abstract class CollectionCodecs {
   }
 
   static Set<Object> toCQLSet(
-      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Collection<?> setValue)
+      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Collection<?> rawSetValue)
       throws ToCQLCodecException {
+    Collection<JsonLiteral<?>> setValue = (List<JsonLiteral<?>>) rawSetValue;
     Set<Object> result = new HashSet<>(setValue.size());
     JSONCodec<Object, Object> elementCodec = null;
-    for (Object element : setValue) {
+    for (JsonLiteral<?> literalElement : setValue) {
+      Object element = literalElement.value();
       if (element == null) {
         result.add(null);
         continue;

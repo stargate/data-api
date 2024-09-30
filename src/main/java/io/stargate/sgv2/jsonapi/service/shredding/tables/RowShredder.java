@@ -29,6 +29,12 @@ import java.util.Map;
  */
 @ApplicationScoped
 public class RowShredder {
+  private static final JsonLiteral<Object> NULL_LITERAL = new JsonLiteral<>(null, JsonType.NULL);
+
+  private static final JsonLiteral<Boolean> BOOLEAN_FALSE_LITERAL =
+      new JsonLiteral<>(Boolean.FALSE, JsonType.BOOLEAN);
+  private static final JsonLiteral<Boolean> BOOLEAN_TRUE_LITERAL =
+      new JsonLiteral<>(Boolean.TRUE, JsonType.BOOLEAN);
 
   private final DocumentLimitsConfig documentLimits;
 
@@ -88,14 +94,14 @@ public class RowShredder {
     return switch (value.getNodeType()) {
       case NUMBER -> shredNumber(value);
       case STRING -> new JsonLiteral<>(value.textValue(), JsonType.STRING);
-      case BOOLEAN -> new JsonLiteral<>(value.booleanValue(), JsonType.BOOLEAN);
-      case NULL -> new JsonLiteral<>(null, JsonType.NULL);
+      case BOOLEAN -> value.booleanValue() ? BOOLEAN_TRUE_LITERAL : BOOLEAN_FALSE_LITERAL;
+      case NULL -> NULL_LITERAL;
       case ARRAY -> {
         ArrayNode arrayNode = (ArrayNode) value;
-        List<Object> list = new ArrayList<>();
+        List<JsonLiteral<?>> list = new ArrayList<>();
         for (JsonNode node : arrayNode) {
-          // Unwrap JsonLiteral so JsonCodec need not deal with it
-          list.add(shredValue(node).value());
+          // Leave JsonLiteral wrapping as-is; removed by JsonCodec
+          list.add(shredValue(node));
         }
         yield new JsonLiteral<>(list, JsonType.ARRAY);
       }
