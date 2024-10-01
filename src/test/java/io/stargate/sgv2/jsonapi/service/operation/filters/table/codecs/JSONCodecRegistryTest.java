@@ -331,8 +331,7 @@ public class JSONCodecRegistryTest {
   @ParameterizedTest
   @MethodSource("validCodecToJSONTestCasesOther")
   public void codecToJSONOther(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
-    // failing: to-fix
-    //    _codecToJSON(cqlType, fromValue, expectedJsonValue);
+    _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
   @ParameterizedTest
@@ -358,7 +357,14 @@ public class JSONCodecRegistryTest {
             "Comparing expected and actual JsonNode value for fromValue.class=%s and fromValue.toString()=%s",
             fromValue.getClass().getName(), fromValue.toString())
         .isInstanceOfAny(expectedJsonValue.getClass())
-        .isEqualTo(expectedJsonValue);
+        .matches(
+            // NOTE: we can't compare JsonNode directly, as in some cases exact node type
+            // is different (e.g. Long vs BigInteger or byte[] vs String for BLOB)
+            n -> n.toString().equals(expectedJsonValue.toString()),
+            "Expected JSON value: "
+                + expectedJsonValue
+                + ", actual JSON value: "
+                + actualJSONValue);
   }
 
   private static Stream<Arguments> validCodecToJSONTestCasesInt() {
