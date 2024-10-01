@@ -28,7 +28,8 @@ public class InTableFilter extends TableFilter {
 
   public enum Operator {
     IN,
-    // TODO NIN,
+    // TODO NIN
+    NIN
   }
 
   public InTableFilter(Operator operator, String path, List<Object> arrayValue) {
