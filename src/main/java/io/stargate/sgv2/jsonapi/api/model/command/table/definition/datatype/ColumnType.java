@@ -119,15 +119,11 @@ public interface ColumnType {
 
       case "vector":
         {
-          if (valueType == null) {
-            valueType = "float";
-          }
           if (dimension <= 0) {
             throw SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
           }
           try {
-            return new ComplexTypes.VectorType(
-                fromString(valueType, null, null, dimension), dimension);
+            return new ComplexTypes.VectorType(PrimitiveTypes.FLOAT, dimension);
           } catch (SchemaException se) {
             throw SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
           }
