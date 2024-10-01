@@ -5,10 +5,10 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ComplexApiDataType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.PrimitiveApiDataType;
 
 /** Interface for complex column types like collections */
-public interface ComplexTypes extends ColumnType {
+public class ComplexTypes {
 
-  /** A map type implimentation */
-  public static class MapType implements ComplexTypes {
+  /** A map type implementation */
+  public static class MapType implements ColumnType {
     private final ColumnType keyType;
     private final ColumnType valueType;
 
@@ -25,8 +25,8 @@ public interface ComplexTypes extends ColumnType {
     }
   }
 
-  /** A list type implimentation */
-  public static class ListType implements ComplexTypes {
+  /** A list type implementation */
+  public static class ListType implements ColumnType {
     private final ColumnType valueType;
 
     public ListType(ColumnType valueType) {
@@ -39,8 +39,8 @@ public interface ComplexTypes extends ColumnType {
     }
   }
 
-  /** A set type implimentation */
-  public static class SetType implements ComplexTypes {
+  /** A set type implementation */
+  public static class SetType implements ColumnType {
     private final ColumnType valueType;
 
     public SetType(ColumnType valueType) {
@@ -54,7 +54,7 @@ public interface ComplexTypes extends ColumnType {
   }
 
   /* Vector type */
-  public static class VectorType implements ComplexTypes {
+  public static class VectorType implements ColumnType {
     // Float will be default type for vector
     private final ColumnType valueType;
     private final int vectorSize;
