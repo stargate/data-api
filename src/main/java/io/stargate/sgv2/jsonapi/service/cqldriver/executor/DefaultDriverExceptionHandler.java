@@ -2,9 +2,18 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
+import com.datastax.oss.driver.api.core.AllNodesFailedException;
+import com.datastax.oss.driver.api.core.DriverTimeoutException;
+import com.datastax.oss.driver.api.core.NoNodeAvailableException;
+import com.datastax.oss.driver.api.core.auth.AuthenticationException;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.servererrors.*;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
+import io.stargate.sgv2.jsonapi.exception.AuthException;
 import io.stargate.sgv2.jsonapi.exception.DatabaseException;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Default implementation of the {@link DriverExceptionHandler} interface, we keep the interface so
@@ -32,5 +41,137 @@ public class DefaultDriverExceptionHandler<SchemaT extends SchemaObject>
   public RuntimeException handle(SchemaT schemaObject, ClosedConnectionException exception) {
     return DatabaseException.Code.CLOSED_CONNECTION.get(
         errVars(schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, DriverTimeoutException exception) {
+    // TODO(Hazel): Aaron said "DRIVER" is a bad code.
+    return DatabaseException.Code.DRIVER_TIMEOUT.get(
+        errVars(schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, AllNodesFailedException exception) {
+    Map<Node, List<Throwable>> allErrors = exception.getAllErrors();
+    if (!allErrors.isEmpty()) {
+      List<Throwable> errors = allErrors.values().iterator().next();
+      if (errors != null && !errors.isEmpty()) {
+        Throwable error =
+            errors.stream()
+                .findAny()
+                .filter(
+                    t ->
+                        t instanceof AuthenticationException
+                            || t instanceof IllegalArgumentException
+                            || t instanceof NoNodeAvailableException
+                            || t instanceof DriverTimeoutException)
+                .orElse(null);
+
+        if (error == null) {
+          return exception;
+        }
+
+        return switch (error) {
+          case AuthenticationException e ->
+              // connect to OSS Cassandra throws AuthenticationException for invalid credentials
+              // TODO(Hazel): AuthException and INVALID_TOKEN?
+              AuthException.Code.INVALID_TOKEN.get(errVars(e));
+          case IllegalArgumentException e -> {
+            // AstraDB throws IllegalArgumentException for invalid token/credentials
+            if (e.getMessage().contains("AUTHENTICATION ERROR")
+                || e.getMessage()
+                    .contains("Provided username token and/or password are incorrect")) {
+              // TODO(Hazel): AuthException and INVALID_TOKEN?
+              yield AuthException.Code.INVALID_TOKEN.get(errVars(e));
+            } else {
+              yield exception;
+            }
+          }
+          case NoNodeAvailableException e -> handle(schemaObject, e);
+          case DriverTimeoutException e ->
+              // [data-api#1205] Need to map DriverTimeoutException as well
+              handle(schemaObject, e);
+          default -> exception;
+        };
+      }
+    }
+    return exception;
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, NoNodeAvailableException exception) {
+    // TODO(Hazel): Aaron said NO_NODE_AVAILABLE is a bad code.
+    return DatabaseException.Code.NO_NODE_AVAILABLE.get(
+        errVars(schemaObject, map -> map.put(TemplateVars.ERROR_MESSAGE, exception.getMessage())));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, QueryValidationException exception) {
+    String message = exception.getMessage();
+    if (message.contains(
+            "If you want to execute this query despite the performance unpredictability, use ALLOW FILTERING")
+        || message.contains("ANN ordering by vector requires the column to be indexed")) {
+      // TODO(Hazel): Original code is NO_INDEX_ERROR, I think we need to change but am not sure
+      // what to change
+      return exception;
+    }
+    if (message.contains("vector<float,")) {
+      // It is tricky to find the actual vector dimension from the message, include as-is
+      // TODO(Hazel): the code VECTOR_SIZE_MISMATCH was added recently, should we keep using it?
+      return exception;
+    }
+    // Reuse the default method in the interface
+    return DriverExceptionHandler.super.handle(schemaObject, exception);
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, UnauthorizedException exception) {
+    return AuthException.Code.INVALID_TOKEN.get(errVars(exception));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, ReadFailureException exception) {
+    return DatabaseException.Code.READ_FAILURE.get(
+        errVars(
+            schemaObject,
+            m -> {
+              m.put("blockFor", String.valueOf(exception.getBlockFor()));
+              m.put("received", String.valueOf(exception.getReceived()));
+              m.put("numFailures", String.valueOf(exception.getNumFailures()));
+            }));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, ReadTimeoutException exception) {
+    return DatabaseException.Code.READ_TIMEOUT.get(
+        errVars(
+            schemaObject,
+            m -> {
+              m.put("blockFor", String.valueOf(exception.getBlockFor()));
+              m.put("received", String.valueOf(exception.getReceived()));
+            }));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, WriteFailureException exception) {
+    return DatabaseException.Code.WRITE_FAILURE.get(
+        errVars(
+            schemaObject,
+            m -> {
+              m.put("blockFor", String.valueOf(exception.getBlockFor()));
+              m.put("received", String.valueOf(exception.getReceived()));
+              m.put("numFailures", String.valueOf(exception.getNumFailures()));
+            }));
+  }
+
+  @Override
+  public RuntimeException handle(SchemaT schemaObject, WriteTimeoutException exception) {
+    return DatabaseException.Code.WRITE_TIMEOUT.get(
+        errVars(
+            schemaObject,
+            m -> {
+              m.put("blockFor", String.valueOf(exception.getBlockFor()));
+              m.put("received", String.valueOf(exception.getReceived()));
+            }));
   }
 }

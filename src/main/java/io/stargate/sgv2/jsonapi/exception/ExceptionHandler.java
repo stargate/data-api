@@ -41,7 +41,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
  *       etc is kept away the "business logic" of how to handle the exceptions.
  * </ul>
  *
- * <p>Users of the interface shoudl call {@link #maybeHandle(SchemaObject, RuntimeException)} and
+ * <p>Users of the interface should call {@link #maybeHandle(SchemaObject, RuntimeException)} and
  * then throw or otherwise deal with the object returned, which wil be the original exception or a
  * new one. Example:
  *
