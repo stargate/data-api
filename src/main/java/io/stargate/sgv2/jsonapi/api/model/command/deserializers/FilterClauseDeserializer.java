@@ -303,14 +303,16 @@ public class FilterClauseDeserializer extends StdDeserializer<FilterClause> {
         // unblock some table filter against non-numeric column
         // e.g. {"event_date": {"$gt": "2024-09-24"}}, {"is_active": {"$gt": true}},
         // {"name":{"$gt":"Tim"}}
-
+        // Also, for collection path, this will allow comparison filter against collection maps
+        // query_bool_values and query_text_values
         if (!(valueObject instanceof Date
             || valueObject instanceof String
             || valueObject instanceof Boolean
             || valueObject instanceof BigDecimal
             || (valueObject instanceof DocumentId && (value.isObject() || value.isNumber())))) {
           throw ErrorCodeV1.INVALID_FILTER_EXPRESSION.toApiException(
-              "%s operator must have `DATE` or `NUMBER` value", operator.getOperator());
+              "%s operator must have `DATE` or `NUMBER` or `TEXT` or `BOOLEAN` value",
+              operator.getOperator());
         }
       }
       ComparisonExpression expression =

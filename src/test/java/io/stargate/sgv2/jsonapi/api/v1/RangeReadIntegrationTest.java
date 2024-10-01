@@ -212,11 +212,15 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           """
         {
           "find": {
-            "filter" : {"activeUser" : {"$gt" : "data"}},
+            "filter" : {"name" : {"$gte" : "user23"}},
             "sort" : {"userId" : 1}
           }
         }
         """;
+      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
+      final ArrayNode arrayNode = nodefactory.arrayNode(testDatas.size());
+      for (int i = 0; i < testDatas.size(); i++)
+        arrayNode.add(objectMapper.valueToTree(testDatas.get(i)));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -226,11 +230,34 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body(
-              "errors[0].message",
-              is("Invalid filter expression: $gt operator must have `DATE` or `NUMBER` value"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors", is(nullValue()))
+          .body("data.documents", hasSize(2))
+          .body("data.documents", jsonEquals(arrayNode.toString()));
+    }
+
+    @Test
+    @Order(8)
+    public void rangeWithBoolean() throws Exception {
+      String json =
+          """
+            {
+              "findOne": {
+                "filter" : {"name" : {"$gte" : false}},
+                "sort" : {"userId" : 1}
+              }
+            }
+            """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", is(nullValue()));
     }
 
     @Test

@@ -1,9 +1,12 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnMetadata;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.IndexUsage;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.util.List;
@@ -91,9 +94,16 @@ public abstract class TableFilter extends DBFilterBase {
         .findFirst()
         .orElseThrow(
             () ->
-                ErrorCodeV1.TABLE_COLUMN_UNKNOWN.toApiException(
-                    "No column with name '%s' found in table '%s'",
-                    path, tableSchemaObject.tableMetadata().getName()));
+                FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
+                    errVars(
+                        tableSchemaObject,
+                        map -> {
+                          map.put(
+                              "allColumns",
+                              errFmtColumnMetadata(
+                                  tableSchemaObject.tableMetadata().getColumns().values()));
+                          map.put("unknownColumns", path);
+                        })));
   }
 
   /**

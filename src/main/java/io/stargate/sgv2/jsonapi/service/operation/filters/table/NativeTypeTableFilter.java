@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.table;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataTypes;
@@ -8,6 +9,7 @@ import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
@@ -113,11 +115,18 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
               tableSchemaObject.tableMetadata(), getPathAsCqlIdentifier(), columnValue);
       positionalValues.add(codec.toCQL(columnValue));
     } catch (UnknownColumnException e) {
-      throw ErrorCodeV1.TABLE_COLUMN_UNKNOWN.toApiException(e.getMessage());
+      throw FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "allColumns",
+                    errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
+                map.put("unknownColumns", path);
+              }));
     } catch (MissingJSONCodecException e) {
       throw ErrorCodeV1.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException(e.getMessage());
     } catch (ToCQLCodecException e) {
-      // TODO AARON - Handle error
       throw new RuntimeException(e);
     }
 
