@@ -98,6 +98,7 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
   protected Uni<AsyncResultSet> execute(CommandQueryExecutor queryExecutor) {
 
     var statement = buildReadStatement();
+
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
           "execute() - {}, cql={}, values={}",

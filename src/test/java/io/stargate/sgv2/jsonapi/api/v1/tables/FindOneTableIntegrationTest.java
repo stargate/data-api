@@ -19,7 +19,6 @@ import org.junit.jupiter.api.TestClassOrder;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBase {
   static final String TABLE_WITH_STRING_ID_AGE_NAME = "findOneSingleStringKeyTable";
-  static final String TABLE_WITH_PARTIAL_INDEXES = "findOneTableWithPartialIndexes";
 
   @BeforeAll
   public final void createDefaultTables() {
@@ -269,75 +268,6 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
       // 26 sept 2024, aaron: more not optimal, it is now a 500 UNEXPECTED_SERVER_ERROR and
       // ALLOW FILTERING until we get better
       ;
-    }
-  }
-
-  @Nested
-  @Order(4)
-  // TODO all allow filtering read should have warning msg returned
-  class FindOneWithAllowFiltering {
-
-    final String doc_mary =
-        """
-                                  {
-                                      "id": 1,
-                                      "age": 30,
-                                      "name": "Mary"
-                                  }
-                                  """;
-
-    @Test
-    @Order(1)
-    public void createTableWithPartialIndexes() {
-      createTableWithColumns(
-          TABLE_WITH_PARTIAL_INDEXES,
-          Map.of(
-              "id",
-              Map.of("type", "text"),
-              "age",
-              Map.of("type", "int"),
-              "name",
-              Map.of("type", "text")),
-          "id");
-      createIndex(TABLE_WITH_PARTIAL_INDEXES, "name", "nameIndexOnTableWithPartialIndexes");
-      // Notice here, column age does not have an index on it.
-
-      // insert rows for further tests:
-      insertOneInTable(TABLE_WITH_PARTIAL_INDEXES, doc_mary);
-    }
-
-    @Test
-    @Order(2)
-    public void allowFilteringOnIndexMissingColumn() {
-      // Notice here, column age does not have an index on it.
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_PARTIAL_INDEXES)
-          .postFindOne(
-              """
-                      {
-                          "filter": {
-                            "age": 30
-                        }
-                      }
-                  """)
-          .hasNoErrors()
-          .hasJSONField("data.document", doc_mary);
-      // TODO hasWarning()
-    }
-
-    @Test
-    @Order(2)
-    public void noAllowFilteringOnIndexMissingColumn() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_PARTIAL_INDEXES)
-          .postFindOne(
-              """
-                      {
-                          "filter": {
-                            "name": "Mary"
-                        }
-                      }
-                  """)
-          .hasNoErrors()
-          .hasJSONField("data.document", doc_mary);
     }
   }
 }

@@ -41,6 +41,7 @@ public class DeleteTableOperation extends TableMutationOperation {
         deleteFrom(
             commandContext.schemaObject().tableMetadata().getKeyspace(),
             commandContext.schemaObject().tableMetadata().getName());
+
     // Delete in CQL allows you to delete columns, we do not support that, next to add is the WHERE
     // clause
     // HACK AARON - do not know how to get on the correct interface here
