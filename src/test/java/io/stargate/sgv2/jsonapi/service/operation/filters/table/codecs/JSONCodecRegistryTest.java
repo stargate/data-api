@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -495,13 +496,15 @@ public class JSONCodecRegistryTest {
         // // Sets:
         Arguments.of(
             DataTypes.setOf(DataTypes.TEXT),
-            Set.of("a", "b"),
+            new LinkedHashSet<>(Arrays.asList("a", "b")),
             OBJECT_MAPPER.readTree("[\"a\",\"b\"]")),
         Arguments.of(
-            DataTypes.setOf(DataTypes.INT), Set.of(123, -42), OBJECT_MAPPER.readTree("[123,-42]")),
+            DataTypes.setOf(DataTypes.INT),
+            new LinkedHashSet<>(Arrays.asList(123, -42)),
+            OBJECT_MAPPER.readTree("[123,-42]")),
         Arguments.of(
             DataTypes.setOf(DataTypes.DOUBLE),
-            Set.of(0.25, -4.5),
+            new LinkedHashSet<>(Arrays.asList(0.25, -4.5)),
             OBJECT_MAPPER.readTree("[0.25,-4.5]")));
   }
 

@@ -89,7 +89,8 @@ public abstract class CollectionCodecs {
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Collection<?> rawSetValue)
       throws ToCQLCodecException {
     Collection<JsonLiteral<?>> setValue = (Collection<JsonLiteral<?>>) rawSetValue;
-    Set<Object> result = new HashSet<>(setValue.size());
+    // although not mandatory, we use LinkedHashSet to preserve order
+    Set<Object> result = new LinkedHashSet<>(setValue.size());
     JSONCodec<Object, Object> elementCodec = null;
     for (JsonLiteral<?> literalElement : setValue) {
       Object element = literalElement.value();
