@@ -68,7 +68,7 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
     @Test
     @Order(1)
     public void findOneSingleStringKey() {
-      // First, insert 2 documents:
+      // First, insert 3 documents:
       insertOneInTable(
           TABLE_WITH_STRING_ID_AGE_NAME,
           """
@@ -88,6 +88,17 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                           """;
       insertOneInTable(TABLE_WITH_STRING_ID_AGE_NAME, DOC_B_JSON);
 
+      // Third one with missing "age" and null "name"
+      insertOneInTable(
+          TABLE_WITH_STRING_ID_AGE_NAME,
+          """
+                              {
+                                  "id": "c",
+                                  "name": null
+                              }
+                              """);
+
+      // First, find the second document:
       DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .postFindOne(
               """
@@ -99,6 +110,30 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                       """)
           .hasNoErrors()
           .hasJSONField("data.document", DOC_B_JSON);
+
+      // And then third
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
+          .postFindOne(
+              """
+                                  {
+                                      "filter": {
+                                          "id": "c"
+                                      },
+                                      "projection": {
+                                            "id": 1, "age": 1, "name": 1
+                                        }
+                                  }
+                              """)
+          .hasNoErrors()
+          .hasJSONField(
+              "data.document",
+              """
+                              {
+                                  "id": "c",
+                                  "age": null,
+                                  "name": null
+                              }
+                              """);
     }
 
     @Test
@@ -153,7 +188,9 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
               "valueLong",
               Map.of("type", "bigint"),
               "valueDouble",
-              Map.of("type", "double")),
+              Map.of("type", "double"),
+              "valueBlob",
+              Map.of("type", "blob")),
           "_id");
 
       // First, insert 2 documents:
@@ -173,20 +210,21 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
                                   "_id": 2,
                                   "desc": "b",
                                   "valueLong": 42,
-                                  "valueDouble": 0.5
+                                  "valueDouble": 0.5,
+                                  "valueBlob": null
                               }
-                                  """;
+                              """;
       insertOneInTable(TABLE_NAME, DOC_B_JSON);
 
       DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_NAME)
           .postFindOne(
               """
-                                          {
-                                                "filter": {
-                                                    "_id": 2
-                                                }
-                                          }
-                                      """)
+              {
+                    "filter": {
+                        "_id": 2
+                    }
+              }
+              """)
           .hasNoErrors()
           .hasJSONField("data.document", DOC_B_JSON);
     }

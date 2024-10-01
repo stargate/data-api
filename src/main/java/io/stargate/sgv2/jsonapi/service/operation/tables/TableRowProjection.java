@@ -73,7 +73,14 @@ public record TableRowProjection(
             "Column '%s' has unsupported type '%s'", columnName, column.getType().toString());
       }
       try {
-        result.put(columnName, codec.toJSON(objectMapper, row.getObject(i)));
+        final Object columnValue = row.getObject(i);
+        // We have a choice here: convert into JSON null (explicit) or drop (save space)?
+        // For now, do former: may change or make configurable later.
+        if (columnValue == null) {
+          result.putNull(columnName);
+        } else {
+          result.put(columnName, codec.toJSON(objectMapper, columnValue));
+        }
       } catch (ToJSONCodecException e) {
         throw ErrorCodeV1.UNSUPPORTED_PROJECTION_PARAM.toApiException(
             e,

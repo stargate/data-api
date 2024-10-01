@@ -35,6 +35,7 @@ public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
     super(position, schemaObject, RetryPolicy.NO_RETRY);
 
     // nullable, because the subclass may want to implement method itself.
+    // and if there is an error shredding we will not have the insert clause
     this.insertValuesCQLClause = insertValuesCQLClause;
   }
 
