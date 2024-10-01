@@ -264,7 +264,7 @@ request-errors:
     title: Vector column data type definition provided in the request is incorrect.
     body: |-
       Vector column data type definition provided in the request is incorrect.
-      Vector type accepts `dimension` and `valueType`. `dimension` is a integer value and `valueType` is optional number data type.
+      Vector type accepts `dimension` and `valueType`. `dimension` is an integer value and `valueType` is optional number data type.
       Example map type definition:
         "column_name": {
           "type": "vector",
