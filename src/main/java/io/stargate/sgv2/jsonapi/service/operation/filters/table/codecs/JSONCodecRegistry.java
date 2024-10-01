@@ -82,7 +82,7 @@ public class JSONCodecRegistry {
           valueCodecCandidates = Collections.emptyList();
         }
         return (JSONCodec<JavaT, CqlT>)
-            CollectionCodecs.buildListCodec(valueCodecCandidates, lt.getElementType());
+            CollectionCodecs.buildToCQLListCodec(valueCodecCandidates, lt.getElementType());
       }
       if (columnType instanceof SetType st) {
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(st.getElementType());
@@ -90,7 +90,7 @@ public class JSONCodecRegistry {
           valueCodecCandidates = Collections.emptyList();
         }
         return (JSONCodec<JavaT, CqlT>)
-            CollectionCodecs.buildSetCodec(valueCodecCandidates, st.getElementType());
+            CollectionCodecs.buildToCQLSetCodec(valueCodecCandidates, st.getElementType());
       }
 
       throw new MissingJSONCodecException(
@@ -142,6 +142,21 @@ public class JSONCodecRegistry {
    */
   public <JavaT, CqlT> JSONCodec<JavaT, CqlT> codecToJSON(DataType fromCQLType) {
     List<JSONCodec<?, ?>> candidates = codecsByCQLType.get(fromCQLType);
-    return (candidates == null) ? null : JSONCodec.unchecked(candidates.get(0));
+    if (candidates
+        != null) { // Scalar type codecs found: use first one (all have same to-json handling)
+      return JSONCodec.unchecked(candidates.get(0));
+    }
+    // No? Maybe structured type?
+    if (fromCQLType instanceof ListType lt) {
+      List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(lt.getElementType());
+      // Can choose any one of codecs (since to-JSON is same for all); but must get one
+      if (valueCodecCandidates == null) {
+        return null; // so caller reports problem
+      }
+      return (JSONCodec<JavaT, CqlT>)
+          CollectionCodecs.buildToJsonListCodec(valueCodecCandidates.get(0));
+    }
+
+    return null;
   }
 }

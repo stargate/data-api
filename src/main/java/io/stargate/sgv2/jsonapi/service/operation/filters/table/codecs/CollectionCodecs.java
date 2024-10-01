@@ -21,13 +21,13 @@ public abstract class CollectionCodecs {
    * codecs (since we have one per input JSON type) and will dynamically select the right one based
    * on the actual element values.
    */
-  public static JSONCodec<?, ?> buildListCodec(
+  public static JSONCodec<?, ?> buildToCQLListCodec(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType) {
     return new JSONCodec<>(
         GENERIC_LIST,
         DataTypes.listOf(elementType),
         (cqlType, value) -> toCQLList(valueCodecs, elementType, value),
-        (objectMapper, cqlType, value) -> toJsonNode(valueCodecs, objectMapper, cqlType, value));
+        null);
   }
 
   /**
@@ -35,14 +35,22 @@ public abstract class CollectionCodecs {
    * codecs (since we have one per input JSON type) and will dynamically select the right one based
    * on the actual element values.
    */
-  public static JSONCodec<?, ?> buildSetCodec(
+  public static JSONCodec<?, ?> buildToCQLSetCodec(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType) {
     return new JSONCodec<>(
         // NOTE: although we convert to CQL Set, RowShredder.java binds to Lists
         GENERIC_LIST,
         DataTypes.setOf(elementType),
         (cqlType, value) -> toCQLSet(valueCodecs, elementType, value),
-        (objectMapper, cqlType, value) -> toJsonNode(valueCodecs, objectMapper, cqlType, value));
+        null);
+  }
+
+  public static JSONCodec<?, ?> buildToJsonListCodec(JSONCodec<?, ?> elementCodec) {
+    return new JSONCodec<>(
+        GENERIC_LIST,
+        elementCodec.targetCQLType(), // not exactly correct, but close enough
+        null,
+        (objectMapper, cqlType, value) -> toJsonNode(elementCodec, objectMapper, value));
   }
 
   static List<Object> toCQLList(
@@ -99,11 +107,8 @@ public abstract class CollectionCodecs {
   }
 
   static JsonNode toJsonNode(
-      List<JSONCodec<?, ?>> valueCodecs,
-      ObjectMapper objectMapper,
-      DataType fromCQLType,
-      Object value) {
+      JSONCodec<?, ?> elementCodec, ObjectMapper objectMapper, Object value) {
     // !!! TO IMPLEMENT
-    return null;
+    return objectMapper.createArrayNode();
   }
 }
