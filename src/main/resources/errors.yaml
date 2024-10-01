@@ -221,7 +221,56 @@ request-errors:
           b. partitionSort is optional.
           c. partitionSort should not have the columns defined in partitionBy.
           d. partitionSort values should be either `1` for ascending or `-1` for descending.
-          
+
+  - scope: SCHEMA
+    code: MAP_TYPE_INCORRECT_DEFINITION
+    title: Map column data type definition provided in the request is incorrect.
+    body: |-
+      Map column data type definition provided in the request is incorrect.
+      Map type should also be provided with `keyType` and `valueType`. `keyType` and `valueType` should be a primitive data type.
+      Example map type definition:
+        "column_name": {
+          "type": "map",
+          "keyType": "text",
+          "valueType": "text"
+        }
+
+  - scope: SCHEMA
+    code: SET_TYPE_INCORRECT_DEFINITION
+    title: Set column data type definition provided in the request is incorrect.
+    body: |-
+      Set column data type definition provided in the request is incorrect.
+      Set type should also be provided with `valueType`. `valueType` should be a primitive data type.
+      Example map type definition:
+        "column_name": {
+          "type": "set",
+          "valueType": "text"
+        }
+
+  - scope: SCHEMA
+    code: LIST_TYPE_INCORRECT_DEFINITION
+    title: List column data type definition provided in the request is incorrect.
+    body: |-
+      List column data type definition provided in the request is incorrect.
+      List type should also be provided with a `valueType`. `valueType` should be a primitive data type.
+      Example map type definition:
+        "column_name": {
+          "type": "list",
+          "valueType": "text"
+        }
+
+  - scope: SCHEMA
+    code: VECTOR_TYPE_INCORRECT_DEFINITION
+    title: Vector column data type definition provided in the request is incorrect.
+    body: |-
+      Vector column data type definition provided in the request is incorrect.
+      Vector type accepts `dimension` and `valueType`. `dimension` is a integer value and `valueType` is optional number data type.
+      Example map type definition:
+        "column_name": {
+          "type": "vector",
+          "dimension": 1536,
+          "valueType": "float" 
+        }
 
 # ================================================================================================================
 # Server Errors

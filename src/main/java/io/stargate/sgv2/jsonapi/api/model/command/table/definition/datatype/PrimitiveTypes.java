@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.PrimitiveApiDataType;
 
 /** Interface for primitive column types similar to what is defined in cassandra java driver. */
 public class PrimitiveTypes {
@@ -27,112 +28,112 @@ public class PrimitiveTypes {
   private static class Text implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.TEXT;
+      return PrimitiveApiDataType.TEXT;
     }
   }
 
   private static class Int implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.INT;
+      return PrimitiveApiDataType.INT;
     }
   }
 
   private static class Boolean implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.BOOLEAN;
+      return PrimitiveApiDataType.BOOLEAN;
     }
   }
 
   private static class BigInt implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.BIGINT;
+      return PrimitiveApiDataType.BIGINT;
     }
   }
 
   private static class Decimal implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.DECIMAL;
+      return PrimitiveApiDataType.DECIMAL;
     }
   }
 
   private static class Double implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.DOUBLE;
+      return PrimitiveApiDataType.DOUBLE;
     }
   }
 
   private static class Float implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.FLOAT;
+      return PrimitiveApiDataType.FLOAT;
     }
   }
 
   private static class SmallInt implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.SMALLINT;
+      return PrimitiveApiDataType.SMALLINT;
     }
   }
 
   private static class TinyInt implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.TINYINT;
+      return PrimitiveApiDataType.TINYINT;
     }
   }
 
   private static class VarInt implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.VARINT;
+      return PrimitiveApiDataType.VARINT;
     }
   }
 
   private static class Ascii implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.ASCII;
+      return PrimitiveApiDataType.ASCII;
     }
   }
 
   private static class Binary implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.BINARY;
+      return PrimitiveApiDataType.BINARY;
     }
   }
 
   private static class Date implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.DATE;
+      return PrimitiveApiDataType.DATE;
     }
   }
 
   private static class Duration implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.DURATION;
+      return PrimitiveApiDataType.DURATION;
     }
   }
 
   private static class Time implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.TIME;
+      return PrimitiveApiDataType.TIME;
     }
   }
 
   private static class Timestamp implements ColumnType {
     @Override
     public ApiDataType getApiDataType() {
-      return ApiDataType.TIMESTAMP;
+      return PrimitiveApiDataType.TIMESTAMP;
     }
   }
 }

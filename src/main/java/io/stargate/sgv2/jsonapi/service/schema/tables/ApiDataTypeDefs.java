@@ -12,41 +12,47 @@ import java.util.stream.Collectors;
 public abstract class ApiDataTypeDefs {
 
   // text types
-  public static final ApiDataTypeDef TEXT = new ApiDataTypeDef(ApiDataType.TEXT, DataTypes.TEXT);
+  public static final ApiDataTypeDef TEXT =
+      new ApiDataTypeDef(PrimitiveApiDataType.TEXT, DataTypes.TEXT);
 
   // Numeric types
   public static final ApiDataTypeDef BIGINT =
-      new ApiDataTypeDef(ApiDataType.BIGINT, DataTypes.BIGINT);
+      new ApiDataTypeDef(PrimitiveApiDataType.BIGINT, DataTypes.BIGINT);
   public static final ApiDataTypeDef DECIMAL =
-      new ApiDataTypeDef(ApiDataType.DECIMAL, DataTypes.DECIMAL);
+      new ApiDataTypeDef(PrimitiveApiDataType.DECIMAL, DataTypes.DECIMAL);
   public static final ApiDataTypeDef DOUBLE =
-      new ApiDataTypeDef(ApiDataType.DOUBLE, DataTypes.DOUBLE);
-  public static final ApiDataTypeDef FLOAT = new ApiDataTypeDef(ApiDataType.FLOAT, DataTypes.FLOAT);
-  public static final ApiDataTypeDef INT = new ApiDataTypeDef(ApiDataType.INT, DataTypes.INT);
+      new ApiDataTypeDef(PrimitiveApiDataType.DOUBLE, DataTypes.DOUBLE);
+  public static final ApiDataTypeDef FLOAT =
+      new ApiDataTypeDef(PrimitiveApiDataType.FLOAT, DataTypes.FLOAT);
+  public static final ApiDataTypeDef INT =
+      new ApiDataTypeDef(PrimitiveApiDataType.INT, DataTypes.INT);
   public static final ApiDataTypeDef SMALLINT =
-      new ApiDataTypeDef(ApiDataType.SMALLINT, DataTypes.SMALLINT);
+      new ApiDataTypeDef(PrimitiveApiDataType.SMALLINT, DataTypes.SMALLINT);
   public static final ApiDataTypeDef TINYINT =
-      new ApiDataTypeDef(ApiDataType.TINYINT, DataTypes.TINYINT);
+      new ApiDataTypeDef(PrimitiveApiDataType.TINYINT, DataTypes.TINYINT);
   public static final ApiDataTypeDef VARINT =
-      new ApiDataTypeDef(ApiDataType.VARINT, DataTypes.VARINT);
+      new ApiDataTypeDef(PrimitiveApiDataType.VARINT, DataTypes.VARINT);
 
   // Boolean type
   public static final ApiDataTypeDef BOOLEAN =
-      new ApiDataTypeDef(ApiDataType.BOOLEAN, DataTypes.BOOLEAN);
+      new ApiDataTypeDef(PrimitiveApiDataType.BOOLEAN, DataTypes.BOOLEAN);
 
   public static final ApiDataTypeDef BINARY =
-      new ApiDataTypeDef(ApiDataType.BINARY, DataTypes.BLOB);
+      new ApiDataTypeDef(PrimitiveApiDataType.BINARY, DataTypes.BLOB);
 
-  public static final ApiDataTypeDef DATE = new ApiDataTypeDef(ApiDataType.DATE, DataTypes.DATE);
+  public static final ApiDataTypeDef DATE =
+      new ApiDataTypeDef(PrimitiveApiDataType.DATE, DataTypes.DATE);
   public static final ApiDataTypeDef DURATION =
-      new ApiDataTypeDef(ApiDataType.DURATION, DataTypes.DURATION);
+      new ApiDataTypeDef(PrimitiveApiDataType.DURATION, DataTypes.DURATION);
 
-  public static final ApiDataTypeDef TIME = new ApiDataTypeDef(ApiDataType.TIME, DataTypes.TIME);
+  public static final ApiDataTypeDef TIME =
+      new ApiDataTypeDef(PrimitiveApiDataType.TIME, DataTypes.TIME);
 
   public static final ApiDataTypeDef TIMESTAMP =
-      new ApiDataTypeDef(ApiDataType.TIMESTAMP, DataTypes.TIMESTAMP);
+      new ApiDataTypeDef(PrimitiveApiDataType.TIMESTAMP, DataTypes.TIMESTAMP);
 
-  public static final ApiDataTypeDef ASCII = new ApiDataTypeDef(ApiDataType.ASCII, DataTypes.ASCII);
+  public static final ApiDataTypeDef ASCII =
+      new ApiDataTypeDef(PrimitiveApiDataType.ASCII, DataTypes.ASCII);
 
   // Primitive Types
   public static final List<ApiDataTypeDef> PRIMITIVE_TYPES =

@@ -26,16 +26,20 @@ public interface ColumnType {
         "duration",
         "float",
         "int",
+        "list",
+        "map",
+        "set",
         "smallint",
         "text",
         "time",
         "timestamp",
         "tinyint",
-        "varint");
+        "varint",
+        "vector");
   }
 
   // Returns the column type from the string.
-  static ColumnType fromString(String type) {
+  static ColumnType fromString(String type, String keyType, String valueType, int dimension) {
     // TODO: the name of the type should be a part of the ColumnType interface, and use a map for
     // the lookup
     switch (type) {
@@ -71,6 +75,58 @@ public interface ColumnType {
         return PrimitiveTypes.TINYINT;
       case "varint":
         return PrimitiveTypes.VARINT;
+      case "map":
+        {
+          if (keyType == null || valueType == null) {
+            throw SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get();
+          }
+          try {
+            return new ComplexTypes.MapType(
+                fromString(keyType, null, null, dimension),
+                fromString(valueType, null, null, dimension));
+          } catch (SchemaException se) {
+            throw SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get();
+          }
+        }
+      case "list":
+        {
+          if (valueType == null) {
+            throw SchemaException.Code.LIST_TYPE_INCORRECT_DEFINITION.get();
+          }
+          try {
+            return new ComplexTypes.ListType(fromString(valueType, null, null, dimension));
+          } catch (SchemaException se) {
+            throw SchemaException.Code.LIST_TYPE_INCORRECT_DEFINITION.get();
+          }
+        }
+
+      case "set":
+        {
+          if (valueType == null) {
+            throw SchemaException.Code.SET_TYPE_INCORRECT_DEFINITION.get();
+          }
+          try {
+            return new ComplexTypes.SetType(fromString(valueType, null, null, dimension));
+          } catch (SchemaException se) {
+            throw SchemaException.Code.SET_TYPE_INCORRECT_DEFINITION.get();
+          }
+        }
+
+      case "vector":
+        {
+          if (valueType == null) {
+            valueType = "float";
+          }
+          if (dimension <= 0) {
+            throw SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
+          }
+          try {
+            return new ComplexTypes.VectorType(
+                fromString(valueType, null, null, dimension), dimension);
+          } catch (SchemaException se) {
+            throw SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
+          }
+        }
       default:
         {
           Map<String, String> errorMessageFormattingValues =

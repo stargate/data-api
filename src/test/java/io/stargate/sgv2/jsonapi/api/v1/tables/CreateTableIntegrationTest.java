@@ -65,7 +65,24 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                              "time_type": "time",
                                              "timestamp_type": "timestamp",
                                              "tinyint_type": "tinyint",
-                                             "varint_type": "varint"
+                                             "varint_type": "varint",
+                                             "map_type": {
+                                                "type": "map",
+                                                "keyType": "text",
+                                                "valueType": "int"
+                                             },
+                                             "list_type": {
+                                                "type": "list",
+                                                "valueType": "text"
+                                             },
+                                             "set_type": {
+                                                "type": "set",
+                                                "valueType": "text"
+                                             },
+                                             "vector_type": {
+                                                "type": "vector",
+                                                "dimension": 5
+                                             }
                                          },
                                          "primaryKey": "text_type"
                                      }
@@ -427,6 +444,266 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   true,
                   columnTypeInvalid.code,
                   columnTypeInvalid.body)));
+
+      // Map type tests
+      SchemaException invalidMapType = SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get();
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                        {
+                                          "name": "invalidMapType",
+                                          "definition": {
+                                            "columns": {
+                                              "id": "text",
+                                              "age": "int",
+                                              "name": "text",
+                                              "map_type": {
+                                                "type": "map",
+                                                "keyType": "text"
+                                              }
+                                            },
+                                            "primaryKey": "id"
+                                          }
+                                        }
+                                                            """,
+                  "invalidMapType value type not provided",
+                  true,
+                  invalidMapType.code,
+                  invalidMapType.body)));
+
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                        {
+                                          "name": "invalidMapType",
+                                          "definition": {
+                                            "columns": {
+                                              "id": "text",
+                                              "age": "int",
+                                              "name": "text",
+                                              "map_type": {
+                                                "type": "map",
+                                                "valueType": "text"
+                                              }
+                                            },
+                                            "primaryKey": "id"
+                                          }
+                                        }
+                                                            """,
+                  "invalidMapType key type not provided",
+                  true,
+                  invalidMapType.code,
+                  invalidMapType.body)));
+
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                        {
+                                          "name": "invalidMapType",
+                                          "definition": {
+                                            "columns": {
+                                              "id": "text",
+                                              "age": "int",
+                                              "name": "text",
+                                              "map_type": {
+                                                "type": "map",
+                                                "valueType": "list",
+                                                "keyType": "text"
+                                              }
+                                            },
+                                            "primaryKey": "id"
+                                          }
+                                        }
+                                                            """,
+                  "invalidMapType not primitive type provided",
+                  true,
+                  invalidMapType.code,
+                  invalidMapType.body)));
+
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                        {
+                                          "name": "invalidMapType",
+                                          "definition": {
+                                            "columns": {
+                                              "id": "text",
+                                              "age": "int",
+                                              "name": "text",
+                                              "map_type": {
+                                                "type": "map",
+                                                "valueType": "text",
+                                                "keyType": "list"
+                                              }
+                                            },
+                                            "primaryKey": "id"
+                                          }
+                                        }
+                                                            """,
+                  "invalidMapType not primitive type provided",
+                  true,
+                  invalidMapType.code,
+                  invalidMapType.body)));
+
+      // List type tests
+      SchemaException invalidListType = SchemaException.Code.LIST_TYPE_INCORRECT_DEFINITION.get();
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                        {
+                                          "name": "invalidListType",
+                                          "definition": {
+                                            "columns": {
+                                              "id": "text",
+                                              "age": "int",
+                                              "name": "text",
+                                              "list_type": {
+                                                "type": "list"
+                                              }
+                                            },
+                                            "primaryKey": "id"
+                                          }
+                                        }
+                                                            """,
+                  "invalidListType value type not provided",
+                  true,
+                  invalidListType.code,
+                  invalidListType.body)));
+
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                        {
+                                          "name": "invalidListType",
+                                          "definition": {
+                                            "columns": {
+                                              "id": "text",
+                                              "age": "int",
+                                              "name": "text",
+                                              "list_type": {
+                                                "type": "list",
+                                                "valueType": "list"
+                                              }
+                                            },
+                                            "primaryKey": "id"
+                                          }
+                                        }
+                                                            """,
+                  "invalidListType not primitive type provided",
+                  true,
+                  invalidListType.code,
+                  invalidListType.body)));
+
+      // Set type tests
+      SchemaException invalidSetType = SchemaException.Code.SET_TYPE_INCORRECT_DEFINITION.get();
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                        {
+                                          "name": "invalidSetType",
+                                          "definition": {
+                                            "columns": {
+                                              "id": "text",
+                                              "age": "int",
+                                              "name": "text",
+                                              "set_type": {
+                                                "type": "set"
+                                              }
+                                            },
+                                            "primaryKey": "id"
+                                          }
+                                        }
+                                                            """,
+                  "invalidSetType value type not provided",
+                  true,
+                  invalidSetType.code,
+                  invalidSetType.body)));
+
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                        {
+                                          "name": "invalidSetType",
+                                          "definition": {
+                                            "columns": {
+                                              "id": "text",
+                                              "age": "int",
+                                              "name": "text",
+                                              "set_type": {
+                                                "type": "set",
+                                                "valueType": "list"
+                                              }
+                                            },
+                                            "primaryKey": "id"
+                                          }
+                                        }
+                                                            """,
+                  "invalidSetType not primitive type provided",
+                  true,
+                  invalidSetType.code,
+                  invalidSetType.body)));
+
+      // Vector type tests
+      SchemaException invalidVectorType =
+          SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                        {
+                                          "name": "invalidVectorType",
+                                          "definition": {
+                                            "columns": {
+                                              "id": "text",
+                                              "age": "int",
+                                              "name": "text",
+                                              "vector_type": {
+                                                "type": "vector",
+                                                "dimension": -5
+                                              }
+                                            },
+                                            "primaryKey": "id"
+                                          }
+                                        }
+                                                            """,
+                  "invalidVectorType value type not provided",
+                  true,
+                  invalidVectorType.code,
+                  invalidVectorType.body)));
+
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                                        {
+                                          "name": "invalidVectorType",
+                                          "definition": {
+                                            "columns": {
+                                              "id": "text",
+                                              "age": "int",
+                                              "name": "text",
+                                              "vector_type": {
+                                                "type": "vector",
+                                                "dimension": "aaa"
+                                              }
+                                            },
+                                            "primaryKey": "id"
+                                          }
+                                        }
+                                                            """,
+                  "invalidVectorType not primitive type provided",
+                  true,
+                  invalidVectorType.code,
+                  invalidVectorType.body)));
+
       return testCases.stream();
     }
   }

@@ -25,10 +25,23 @@ public class ColumnDefinitionDeserializer extends StdDeserializer<ColumnType> {
       throws IOException, JacksonException {
     JsonNode definition = deserializationContext.readTree(jsonParser);
     if (definition.isTextual()) {
-      return ColumnType.fromString(definition.asText());
+      return ColumnType.fromString(definition.asText(), null, null, -1);
     }
     if (definition.isObject() && definition.has("type")) {
-      return ColumnType.fromString(definition.path("type").asText());
+      String type = definition.path("type").asText();
+      String keyType = null;
+      String valueType = null;
+      int dimension = -1;
+      if (definition.has("keyType")) {
+        keyType = definition.path("keyType").asText();
+      }
+      if (definition.has("valueType")) {
+        valueType = definition.path("valueType").asText();
+      }
+      if (definition.has("dimension")) {
+        dimension = definition.path("dimension").asInt();
+      }
+      return ColumnType.fromString(type, keyType, valueType, dimension);
     }
     throw SchemaException.Code.COLUMN_TYPE_INCORRECT.get();
   }
