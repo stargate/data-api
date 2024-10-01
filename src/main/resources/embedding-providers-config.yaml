@@ -80,11 +80,13 @@ stargate:
             - name: "resourceName"
               type: string
               required: true
-              help: "The name of your Azure OpenAI Resource."
+              help: "Azure OpenAI Service name"
+              display-name: "Resource name"
             - name: "deploymentId"
               type: string
               required: true
-              help: "The name of your model deployment. You're required to first deploy a model before you can make calls."
+              help: "Deployment name"
+              display-name: "Deployment ID"
           properties:
             max-input-length: 16
             max-batch-size: 2048
