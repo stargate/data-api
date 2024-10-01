@@ -364,12 +364,17 @@ public class JSONCodecRegistryTest {
             fromValue.getClass().getName(), fromValue.toString())
         .isInstanceOfAny(expectedJsonValue.getClass())
         .matches(
-            // NOTE: we can't compare JsonNode directly, as in some cases exact node type
-            // is different (e.g. Long vs BigInteger or byte[] vs String for BLOB)
-            n -> n.toString().equals(expectedJsonValue.toString()),
+            n -> jsonNodesMatch(actualJSONValue, expectedJsonValue),
             String.format(
                 "Expected JSON value:%s, actual JSON value: %s",
                 expectedJsonValue, actualJSONValue));
+  }
+
+  // Helper method because of cases where JsonNode.equals() is not enough (Blob/binary)
+  private static boolean jsonNodesMatch(JsonNode actual, JsonNode expected) {
+    // NOTE: we can't compare JsonNode directly, as in some cases exact node type
+    // is different (e.g. Long vs BigInteger or byte[] vs String for BLOB)
+    return expected.equals(actual) || expected.toString().equals(actual.toString());
   }
 
   private static Stream<Arguments> validCodecToJSONTestCasesInt() {
