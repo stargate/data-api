@@ -17,12 +17,14 @@ public class PrimitiveTypes {
   public static final ColumnType DOUBLE = new Double();
   public static final ColumnType DURATION = new Duration();
   public static final ColumnType FLOAT = new Float();
+  public static final ColumnType INET = new Inet();
   public static final ColumnType INT = new Int();
   public static final ColumnType SMALLINT = new SmallInt();
   public static final ColumnType TEXT = new Text();
   public static final ColumnType TIME = new Time();
   public static final ColumnType TIMESTAMP = new Timestamp();
   public static final ColumnType TINYINT = new TinyInt();
+  public static final ColumnType UUID = new Uuid();
   public static final ColumnType VARINT = new VarInt();
 
   private static class Text implements ColumnType {
@@ -134,6 +136,20 @@ public class PrimitiveTypes {
     @Override
     public ApiDataType getApiDataType() {
       return PrimitiveApiDataType.TIMESTAMP;
+    }
+  }
+
+  private static class Inet implements ColumnType {
+    @Override
+    public ApiDataType getApiDataType() {
+      return PrimitiveApiDataType.INET;
+    }
+  }
+
+  private static class Uuid implements ColumnType {
+    @Override
+    public ApiDataType getApiDataType() {
+      return PrimitiveApiDataType.UUID;
     }
   }
 }

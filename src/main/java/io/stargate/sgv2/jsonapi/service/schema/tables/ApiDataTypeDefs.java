@@ -54,11 +54,17 @@ public abstract class ApiDataTypeDefs {
   public static final ApiDataTypeDef ASCII =
       new ApiDataTypeDef(PrimitiveApiDataType.ASCII, DataTypes.ASCII);
 
+  public static final ApiDataTypeDef UUID =
+      new ApiDataTypeDef(PrimitiveApiDataType.UUID, DataTypes.UUID);
+
+  public static final ApiDataTypeDef INET =
+      new ApiDataTypeDef(PrimitiveApiDataType.INET, DataTypes.INET);
+
   // Primitive Types
   public static final List<ApiDataTypeDef> PRIMITIVE_TYPES =
       List.of(
           ASCII, BIGINT, BOOLEAN, BINARY, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT, SMALLINT,
-          TEXT, TIME, TIMESTAMP, TINYINT, VARINT);
+          TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID);
 
   // Private to force use of the from() method which returns an Optional
   private static final Map<DataType, ApiDataTypeDef> PRIMITIVE_TYPES_BY_CQL_TYPE =

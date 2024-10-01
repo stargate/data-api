@@ -147,7 +147,7 @@ request-errors:
     title: Column data type not provided or format invalid in the definition
     body: |-
       Column data type not provided or format invalid in the definition.
-      Column definition can be defined in shorthand format as : 
+      Column definition can be defined in shorthand format as: 
         "column_name": "text"
       
       or in nested object structure format as:

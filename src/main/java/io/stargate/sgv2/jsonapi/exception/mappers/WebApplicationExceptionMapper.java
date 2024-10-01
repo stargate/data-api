@@ -38,6 +38,8 @@ public class WebApplicationExceptionMapper {
       toReport = ErrorCodeV1.SHRED_DOC_LIMIT_VIOLATION.toApiException(toReport.getMessage());
     }
 
+    // V2 Error are returned as APIException, this is required to translate the exception to
+    // CommandResult if the exception thrown as part of command deserialization
     if (toReport instanceof APIException ae) {
       var errorBuilder =
           new APIExceptionCommandErrorBuilder(

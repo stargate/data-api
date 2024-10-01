@@ -16,12 +16,14 @@ public enum PrimitiveApiDataType implements ApiDataType {
   DOUBLE("double"),
   DURATION("duration"),
   FLOAT("float"),
+  INET("inet"),
   INT("int"),
   SMALLINT("smallint"),
   TEXT("text"),
   TIME("time"),
   TIMESTAMP("timestamp"),
   TINYINT("tinyint"),
+  UUID("uuid"),
   VARINT("varint");
 
   private final String apiName;

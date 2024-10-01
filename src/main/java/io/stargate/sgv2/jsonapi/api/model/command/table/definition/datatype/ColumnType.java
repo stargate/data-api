@@ -7,9 +7,8 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.List;
 import java.util.Map;
 
-@JsonDeserialize(using = ColumnDefinitionDeserializer.class)
-
 /** Interface for column types. This is used to define the type of a column in a table. */
+@JsonDeserialize(using = ColumnDefinitionDeserializer.class)
 public interface ColumnType {
   // Returns api data type.
   ApiDataType getApiDataType();
@@ -25,6 +24,7 @@ public interface ColumnType {
         "double",
         "duration",
         "float",
+        "inet",
         "int",
         "list",
         "map",
@@ -35,6 +35,7 @@ public interface ColumnType {
         "timestamp",
         "tinyint",
         "varint",
+        "uuid",
         "vector");
   }
 
@@ -61,6 +62,8 @@ public interface ColumnType {
         return PrimitiveTypes.DURATION;
       case "float":
         return PrimitiveTypes.FLOAT;
+      case "inet":
+        return PrimitiveTypes.INET;
       case "int":
         return PrimitiveTypes.INT;
       case "smallint":
@@ -73,6 +76,8 @@ public interface ColumnType {
         return PrimitiveTypes.TIMESTAMP;
       case "tinyint":
         return PrimitiveTypes.TINYINT;
+      case "uuid":
+        return PrimitiveTypes.UUID;
       case "varint":
         return PrimitiveTypes.VARINT;
       case "map":
