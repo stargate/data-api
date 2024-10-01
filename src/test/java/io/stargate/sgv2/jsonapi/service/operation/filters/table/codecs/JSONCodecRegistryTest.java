@@ -485,6 +485,12 @@ public class JSONCodecRegistryTest {
             DataTypes.listOf(DataTypes.DOUBLE),
             Arrays.asList(0.25, -4.5, null),
             OBJECT_MAPPER.readTree("[0.25,-4.5,null]")),
+        Arguments.of(
+            DataTypes.listOf(DataTypes.BLOB),
+            Arrays.asList(ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES)),
+            OBJECT_MAPPER
+                .createArrayNode()
+                .add(binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR).asJsonNode())),
 
         // // Sets:
         Arguments.of(
