@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -262,7 +263,6 @@ public class JSONCodecRegistryTest {
 
   private static Stream<Arguments> validCodecToCQLTestCasesCollections() {
     // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
-    // Date/time types: DATE, DURATION, TIME, TIMESTAMP
     return Stream.of(
         // // Lists:
         Arguments.of(
@@ -314,6 +314,33 @@ public class JSONCodecRegistryTest {
   @MethodSource("validCodecToJSONTestCasesFloat")
   public void codecToJSONFloats(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToJSONTestCasesText")
+  public void codecToJSONText(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
+    _codecToJSON(cqlType, fromValue, expectedJsonValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToJSONTestCasesDatetime")
+  public void codecToJSONDatetime(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
+    _codecToJSON(cqlType, fromValue, expectedJsonValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToJSONTestCasesOther")
+  public void codecToJSONOther(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
+    // failing: to-fix
+    //    _codecToJSON(cqlType, fromValue, expectedJsonValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToJSONTestCasesCollections")
+  public void codecToJSONCollections(
+      DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
+    // failing: to-fix
+    // _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
   private void _codecToJSON(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
@@ -369,6 +396,83 @@ public class JSONCodecRegistryTest {
             DataTypes.FLOAT, Float.POSITIVE_INFINITY, JSONS.numberNode(Float.POSITIVE_INFINITY)),
         Arguments.of(
             DataTypes.FLOAT, Float.NEGATIVE_INFINITY, JSONS.numberNode(Float.NEGATIVE_INFINITY)));
+  }
+
+  private static Stream<Arguments> validCodecToJSONTestCasesText() {
+    // Arguments: (CQL-type, from-CQL-result-set, JsonNode-to-serialize)
+    return Stream.of(
+        Arguments.of(
+            DataTypes.ASCII,
+            TEST_DATA.STRING_ASCII_SAFE,
+            JSONS.textNode(TEST_DATA.STRING_ASCII_SAFE)),
+        Arguments.of(
+            DataTypes.TEXT,
+            TEST_DATA.STRING_ASCII_SAFE,
+            JSONS.textNode(TEST_DATA.STRING_ASCII_SAFE)),
+        Arguments.of(
+            DataTypes.TEXT,
+            TEST_DATA.STRING_WITH_2BYTE_UTF8_CHAR,
+            JSONS.textNode(TEST_DATA.STRING_WITH_2BYTE_UTF8_CHAR)),
+        Arguments.of(
+            DataTypes.TEXT,
+            TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR,
+            JSONS.textNode(TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR)));
+  }
+
+  private static Stream<Arguments> validCodecToJSONTestCasesDatetime() {
+    // Arguments: (CQL-type, from-CQL-result-set, JsonNode-to-serialize)
+    return Stream.of(
+        Arguments.of(
+            DataTypes.DATE,
+            LocalDate.parse(TEST_DATA.DATE_VALID_STR),
+            JSONS.textNode(TEST_DATA.DATE_VALID_STR)),
+        Arguments.of(
+            DataTypes.DURATION,
+            CqlDuration.from(TEST_DATA.DURATION_VALID1_STR),
+            JSONS.textNode(TEST_DATA.DURATION_VALID1_STR)),
+        Arguments.of(
+            DataTypes.TIME,
+            LocalTime.parse(TEST_DATA.TIME_VALID_STR),
+            JSONS.textNode(TEST_DATA.TIME_VALID_STR)),
+        Arguments.of(
+            DataTypes.TIMESTAMP,
+            Instant.parse(TEST_DATA.TIMESTAMP_VALID_STR),
+            JSONS.textNode(TEST_DATA.TIMESTAMP_VALID_STR)));
+  }
+
+  private static Stream<Arguments> validCodecToJSONTestCasesOther() throws IOException {
+    // Arguments: (CQL-type, from-CQL-result-set, JsonNode-to-serialize)
+    return Stream.of(
+        // Short regular base64-encoded string
+        Arguments.of(
+            DataTypes.BLOB,
+            ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES),
+            binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR).asJsonNode()),
+
+        // edge case: empty String -> byte[0]
+        Arguments.of(DataTypes.BLOB, ByteBuffer.wrap(new byte[0]), binaryWrapper("").asJsonNode()));
+  }
+
+  private static Stream<Arguments> validCodecToJSONTestCasesCollections() throws IOException {
+    // Arguments: (CQL-type, from-CQL-result-set, JsonNode-to-serialize)
+    return Stream.of(
+        // // Lists:
+        Arguments.of(
+            DataTypes.listOf(DataTypes.TEXT),
+            Arrays.asList("a", "b", null),
+            OBJECT_MAPPER.readTree("[\"a\",\"b\",null]")),
+        Arguments.of(
+            DataTypes.listOf(DataTypes.INT),
+            Arrays.asList(123, -42, null),
+            OBJECT_MAPPER.readTree("[123,-42,null]")),
+
+        // // Sets:
+        Arguments.of(
+            DataTypes.setOf(DataTypes.TEXT),
+            Set.of("a", "b"),
+            OBJECT_MAPPER.readTree("[\"a\",\"b\"]")),
+        Arguments.of(
+            DataTypes.setOf(DataTypes.INT), Set.of(123, -42), OBJECT_MAPPER.readTree("[123,-42]")));
   }
 
   @Test
