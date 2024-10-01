@@ -63,6 +63,19 @@ public class InsertCollectionOperationTest extends OperationTestBase {
   @Inject DocumentShredder documentShredder;
   @Inject ObjectMapper objectMapper;
 
+  public CollectionInsertAttempt createInsertAttempt(
+      CommandContext<CollectionSchemaObject> context, JsonNode document) {
+    return createInsertAttempt(context, List.of(document)).getFirst();
+  }
+
+  public List<CollectionInsertAttempt> createInsertAttempt(
+      CommandContext<CollectionSchemaObject> context, List<JsonNode> documents) {
+    var builder =
+        new CollectionInsertAttemptBuilder(
+            context.schemaObject(), documentShredder, context.commandName());
+    return documents.stream().map(builder::build).toList();
+  }
+
   static final String INSERT_CQL =
       "INSERT INTO \"%s\".\"%s\""
           + " (key, tx_id, doc_json, exist_keys, array_size, array_contains, query_bool_values, query_dbl_values , query_text_values, query_null_values, query_timestamp_values)"
@@ -112,9 +125,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                           """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
+      var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode);
 
-      SimpleStatement insertStmt = nonVectorInsertStatement(shredDocument);
+      SimpleStatement insertStmt = nonVectorInsertStatement(insertAttempt.document);
       List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
@@ -128,7 +141,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               });
 
       Supplier<CommandResult> execute =
-          InsertCollectionOperation.create(COMMAND_CONTEXT_NON_VECTOR, shredDocument)
+          new InsertCollectionOperation(COMMAND_CONTEXT_NON_VECTOR, List.of(insertAttempt))
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -162,9 +175,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                           """;
 
       final JsonNode jsonNode = objectMapper.readTree(doc1);
-      final WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
+      var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode);
 
-      SimpleStatement insertStmt = nonVectorInsertStatement(shredDocument);
+      SimpleStatement insertStmt = nonVectorInsertStatement(insertAttempt.document);
       // Note: FALSE is needed to "fail" insertion, producing failure message
       List<Row> rows =
           Arrays.asList(resultRow(COLUMNS_APPLIED_FAILURE, 0, Boolean.FALSE, UUID.randomUUID()));
@@ -180,7 +193,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               });
 
       Supplier<CommandResult> execute =
-          InsertCollectionOperation.create(COMMAND_CONTEXT_NON_VECTOR, shredDocument)
+          new InsertCollectionOperation(COMMAND_CONTEXT_NON_VECTOR, List.of(insertAttempt))
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -197,9 +210,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .singleElement()
           .satisfies(
               error -> {
-                assertThat(error.message())
-                    .isEqualTo(
-                        "Failed to insert document with _id 'doc1': Document already exists with the given _id");
+                assertThat(error.message()).isEqualTo("Document already exists with the given _id");
                 assertThat(error.fields())
                     .containsEntry("exceptionClass", "JsonApiException")
                     .containsEntry("errorCode", "DOCUMENT_ALREADY_EXISTS");
@@ -233,14 +244,17 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                           }
                           """;
 
+      CommandContext commandContext =
+          createCommandContextWithCommandName("jsonDocsWrittenInsertManyCommand");
+
       JsonNode jsonNode1 = objectMapper.readTree(document1);
-      WritableShreddedDocument shredDocument1 = documentShredder.shred(jsonNode1);
+      var insertAttempt1 = createInsertAttempt(commandContext, jsonNode1);
 
       JsonNode jsonNode2 = objectMapper.readTree(document2);
-      WritableShreddedDocument shredDocument2 = documentShredder.shred(jsonNode2);
+      var insertAttempt2 = createInsertAttempt(commandContext, jsonNode2);
 
-      SimpleStatement insertStmt1 = nonVectorInsertStatement(shredDocument1);
-      SimpleStatement insertStmt2 = nonVectorInsertStatement(shredDocument2);
+      SimpleStatement insertStmt1 = nonVectorInsertStatement(insertAttempt1.document);
+      SimpleStatement insertStmt2 = nonVectorInsertStatement(insertAttempt2.document);
 
       List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results1 = new MockAsyncResultSet(COLUMNS_APPLIED, rows, null);
@@ -261,11 +275,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(results2);
               });
 
-      CommandContext commandContext =
-          createCommandContextWithCommandName("jsonDocsWrittenInsertManyCommand");
       Supplier<CommandResult> execute =
-          InsertCollectionOperation.create(
-                  commandContext, List.of(shredDocument1, shredDocument2), true, false)
+          new InsertCollectionOperation(
+                  commandContext, List.of(insertAttempt1, insertAttempt2), true, false, false)
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -363,12 +375,13 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                                   """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
+      var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode);
 
-      SimpleStatement insertStmt = nonVectorInsertStatement(shredDocument);
+      SimpleStatement insertStmt = nonVectorInsertStatement(insertAttempt.document);
       List<Row> rows =
           Arrays.asList(
-              resultRow(COLUMNS_APPLIED_FAILURE, 0, Boolean.FALSE, shredDocument.nextTxID()));
+              resultRow(
+                  COLUMNS_APPLIED_FAILURE, 0, Boolean.FALSE, insertAttempt.document.nextTxID()));
       AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED_FAILURE, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
@@ -381,7 +394,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               });
 
       Supplier<CommandResult> execute =
-          InsertCollectionOperation.create(COMMAND_CONTEXT_NON_VECTOR, shredDocument)
+          new InsertCollectionOperation(COMMAND_CONTEXT_NON_VECTOR, List.of(insertAttempt))
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -427,13 +440,13 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                           """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
-      WritableShreddedDocument shredDocument1 = documentShredder.shred(jsonNode1);
+      var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
 
       JsonNode jsonNode2 = objectMapper.readTree(document2);
-      WritableShreddedDocument shredDocument2 = documentShredder.shred(jsonNode2);
+      var insertAttempt2 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode2);
 
-      SimpleStatement insertStmt1 = nonVectorInsertStatement(shredDocument1);
-      SimpleStatement insertStmt2 = nonVectorInsertStatement(shredDocument2);
+      SimpleStatement insertStmt1 = nonVectorInsertStatement(insertAttempt1.document);
+      SimpleStatement insertStmt2 = nonVectorInsertStatement(insertAttempt2.document);
 
       List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results1 = new MockAsyncResultSet(COLUMNS_APPLIED, rows, null);
@@ -455,8 +468,12 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               });
 
       Supplier<CommandResult> execute =
-          InsertCollectionOperation.create(
-                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), false, false)
+          new InsertCollectionOperation(
+                  COMMAND_CONTEXT_NON_VECTOR,
+                  List.of(insertAttempt1, insertAttempt2),
+                  false,
+                  false,
+                  false)
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -507,13 +524,13 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                           """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
-      WritableShreddedDocument shredDocument1 = documentShredder.shred(jsonNode1);
+      var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
 
       JsonNode jsonNode2 = objectMapper.readTree(document2);
-      WritableShreddedDocument shredDocument2 = documentShredder.shred(jsonNode2);
+      var insertAttempt2 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode2);
 
-      SimpleStatement insertStmt1 = nonVectorInsertStatement(shredDocument1);
-      SimpleStatement insertStmt2 = nonVectorInsertStatement(shredDocument2);
+      SimpleStatement insertStmt1 = nonVectorInsertStatement(insertAttempt1.document);
+      SimpleStatement insertStmt2 = nonVectorInsertStatement(insertAttempt2.document);
 
       final AtomicInteger callCount = new AtomicInteger();
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
@@ -532,8 +549,12 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               });
 
       Supplier<CommandResult> execute =
-          InsertCollectionOperation.create(
-                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), true, false)
+          new InsertCollectionOperation(
+                  COMMAND_CONTEXT_NON_VECTOR,
+                  List.of(insertAttempt1, insertAttempt2),
+                  true,
+                  false,
+                  false)
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -553,7 +574,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               error -> {
                 assertThat(error.message())
                     .isEqualTo(
-                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id 'doc1': Test break #1");
+                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Test break #1");
                 assertThat(error.fields())
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
                     .containsEntry("exceptionClass", "JsonApiException");
@@ -589,13 +610,13 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                           """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
-      WritableShreddedDocument shredDocument1 = documentShredder.shred(jsonNode1);
+      var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
 
       JsonNode jsonNode2 = objectMapper.readTree(document2);
-      WritableShreddedDocument shredDocument2 = documentShredder.shred(jsonNode2);
+      var insertAttempt2 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode2);
 
-      SimpleStatement insertStmt1 = nonVectorInsertStatement(shredDocument1);
-      SimpleStatement insertStmt2 = nonVectorInsertStatement(shredDocument2);
+      SimpleStatement insertStmt1 = nonVectorInsertStatement(insertAttempt1.document);
+      SimpleStatement insertStmt2 = nonVectorInsertStatement(insertAttempt2.document);
 
       List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet resultOk = new MockAsyncResultSet(COLUMNS_APPLIED, rows, null);
@@ -617,8 +638,12 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               });
 
       Supplier<CommandResult> execute =
-          InsertCollectionOperation.create(
-                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), true, false)
+          new InsertCollectionOperation(
+                  COMMAND_CONTEXT_NON_VECTOR,
+                  List.of(insertAttempt1, insertAttempt2),
+                  true,
+                  false,
+                  false)
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -639,7 +664,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               error -> {
                 assertThat(error.message())
                     .isEqualTo(
-                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id 'doc2': Test break #2");
+                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc2: Test break #2");
                 assertThat(error.fields())
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
                     .containsEntry("exceptionClass", "JsonApiException");
@@ -675,12 +700,13 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                           """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
-      WritableShreddedDocument shredDocument1 = documentShredder.shred(jsonNode1);
-      JsonNode jsonNode2 = objectMapper.readTree(document2);
-      WritableShreddedDocument shredDocument2 = documentShredder.shred(jsonNode2);
+      var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
 
-      SimpleStatement insertStmt1 = nonVectorInsertStatement(shredDocument1);
-      SimpleStatement insertStmt2 = nonVectorInsertStatement(shredDocument2);
+      JsonNode jsonNode2 = objectMapper.readTree(document2);
+      var insertAttempt2 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode2);
+
+      SimpleStatement insertStmt1 = nonVectorInsertStatement(insertAttempt1.document);
+      SimpleStatement insertStmt2 = nonVectorInsertStatement(insertAttempt2.document);
 
       List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet resultOk = new MockAsyncResultSet(COLUMNS_APPLIED, rows, null);
@@ -703,8 +729,12 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               });
 
       Supplier<CommandResult> execute =
-          InsertCollectionOperation.create(
-                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), false, false)
+          new InsertCollectionOperation(
+                  COMMAND_CONTEXT_NON_VECTOR,
+                  List.of(insertAttempt1, insertAttempt2),
+                  false,
+                  false,
+                  false)
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -726,7 +756,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               error -> {
                 assertThat(error.message())
                     .isEqualTo(
-                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id 'doc1': Test break #1");
+                        "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Test break #1");
                 assertThat(error.fields())
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
                     .containsEntry("exceptionClass", "JsonApiException");
@@ -762,13 +792,13 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                           """;
 
       JsonNode jsonNode1 = objectMapper.readTree(document1);
-      WritableShreddedDocument shredDocument1 = documentShredder.shred(jsonNode1);
+      var insertAttempt1 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode1);
 
       JsonNode jsonNode2 = objectMapper.readTree(document2);
-      WritableShreddedDocument shredDocument2 = documentShredder.shred(jsonNode2);
+      var insertAttempt2 = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode2);
 
-      SimpleStatement insertStmt1 = nonVectorInsertStatement(shredDocument1);
-      SimpleStatement insertStmt2 = nonVectorInsertStatement(shredDocument2);
+      SimpleStatement insertStmt1 = nonVectorInsertStatement(insertAttempt1.document);
+      SimpleStatement insertStmt2 = nonVectorInsertStatement(insertAttempt2.document);
 
       List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet resultOk = new MockAsyncResultSet(COLUMNS_APPLIED, rows, null);
@@ -791,8 +821,12 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               });
 
       Supplier<CommandResult> execute =
-          InsertCollectionOperation.create(
-                  COMMAND_CONTEXT_NON_VECTOR, List.of(shredDocument1, shredDocument2), false, false)
+          new InsertCollectionOperation(
+                  COMMAND_CONTEXT_NON_VECTOR,
+                  List.of(insertAttempt1, insertAttempt2),
+                  false,
+                  false,
+                  false)
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -810,8 +844,8 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .extracting(CommandResult.Error::message)
           .containsExactlyInAnyOrder(
-              "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id 'doc1': Insert 1 failed",
-              "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id 'doc2': Insert 2 failed");
+              "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc1: Insert 1 failed",
+              "Server failed: root cause: (java.lang.RuntimeException) Failed to insert document with _id doc2: Insert 2 failed");
     }
   }
 
@@ -835,9 +869,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
         """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
+      var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_VECTOR, jsonNode);
 
-      SimpleStatement insertStmt = vectorInsertStatement(shredDocument);
+      SimpleStatement insertStmt = vectorInsertStatement(insertAttempt.document);
       List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
@@ -851,7 +885,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               });
 
       Supplier<CommandResult> execute =
-          InsertCollectionOperation.create(COMMAND_CONTEXT_VECTOR, shredDocument)
+          new InsertCollectionOperation(COMMAND_CONTEXT_VECTOR, List.of(insertAttempt))
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -886,9 +920,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
         """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
+      var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_VECTOR, jsonNode);
 
-      SimpleStatement insertStmt = vectorInsertStatement(shredDocument);
+      SimpleStatement insertStmt = vectorInsertStatement(insertAttempt.document);
       List<Row> rows = Arrays.asList(resultRow(COLUMNS_APPLIED, 0, Boolean.TRUE));
       AsyncResultSet results = new MockAsyncResultSet(COLUMNS_APPLIED, rows, null);
       final AtomicInteger callCount = new AtomicInteger();
@@ -902,7 +936,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
               });
 
       Supplier<CommandResult> execute =
-          InsertCollectionOperation.create(COMMAND_CONTEXT_VECTOR, shredDocument)
+          new InsertCollectionOperation(COMMAND_CONTEXT_VECTOR, List.of(insertAttempt))
               .execute(dataApiRequestInfo, queryExecutor)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
@@ -938,9 +972,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
         """;
 
       JsonNode jsonNode = objectMapper.readTree(document);
-      WritableShreddedDocument shredDocument = documentShredder.shred(jsonNode);
+      var insertAttempt = createInsertAttempt(COMMAND_CONTEXT_NON_VECTOR, jsonNode);
       InsertCollectionOperation operation =
-          InsertCollectionOperation.create(COMMAND_CONTEXT_NON_VECTOR, shredDocument);
+          new InsertCollectionOperation(COMMAND_CONTEXT_NON_VECTOR, List.of(insertAttempt));
       QueryExecutor queryExecutor = mock(QueryExecutor.class);
 
       Throwable failure =
