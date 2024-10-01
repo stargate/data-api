@@ -17,12 +17,6 @@ public interface CQLOption<TargetT> extends Function<TargetT, TargetT>, CQLClaus
     }
   }
 
-  interface ForUpdate {
-    static CQLOption<Select> limit(int limit) {
-      return (select) -> select.limit(limit);
-    }
-  }
-
   interface ForStatement {
     static CQLOption<SimpleStatement> pageSize(int pageSize) {
       return (statement) -> statement.setPageSize(pageSize);

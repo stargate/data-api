@@ -160,6 +160,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
       return new TableFilterAnalyzedUsage(path, false, Optional.empty());
     }
 
+    // Check special cases for API filter $lt,$gt,$lte,$gte
     if (operator == Operator.LT
         || operator == Operator.GT
         || operator == Operator.LTE
