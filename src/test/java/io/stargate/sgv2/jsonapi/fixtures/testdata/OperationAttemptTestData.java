@@ -114,7 +114,7 @@ public class OperationAttemptTestData extends TestDataSuplier {
           .execute(queryExecutor(), exceptionHandler())
           .subscribe()
           .withSubscriber(UniAssertSubscriber.create())
-          .awaitItem(Duration.ofSeconds(1)) // wit up to 1 second, so retries can be handled
+          .awaitItem(Duration.ofSeconds(1)) // wait up to 1 second, so retries can be handled
           .assertCompleted();
       return this;
     }
