@@ -15,8 +15,6 @@ import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicat
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A DB Filter that can be applied on columns in a CQL Tables that use the `native-type` 's as
@@ -49,9 +47,6 @@ import org.slf4j.LoggerFactory;
  * @param <CqlT> The JSON Type , BigDecimal, String etc
  */
 public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(NativeTypeTableFilter.class);
-
   /**
    * The operations that can be performed to filter a column TIDY: we have operations defined in
    * multiple places, once we have refactored the collection operations we should centralize these

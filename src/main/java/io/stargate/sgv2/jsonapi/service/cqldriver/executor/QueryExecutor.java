@@ -262,7 +262,7 @@ public class QueryExecutor {
     // if namespace does not exist, throw error
     if (keyspaceMetadata == null) {
       return Uni.createFrom()
-          .failure(ErrorCodeV1.NAMESPACE_DOES_NOT_EXIST.toApiException("%s", namespace));
+          .failure(ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException("%s", namespace));
     }
     // else get the table
     // TODO: this should probably use CqlIdentifier.fromCql() (or .fromInternal())

@@ -11,6 +11,7 @@ public interface ErrorObjectV2Constants {
     String MESSAGE = "message";
     // Only included in debug mode, backwards compatible with old style
     String EXCEPTION_CLASS = "exceptionClass";
+    String ID = "id";
   }
 
   /** Tags used when tracking metrics */

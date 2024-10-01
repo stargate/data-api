@@ -12,11 +12,8 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.annotations.VisibleForTesting;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -268,13 +265,9 @@ public class ErrorConfig {
     if (resourceURL == null) {
       throw new FileNotFoundException("ErrorConfig Resource not found: " + path);
     }
-    URI resourceURI;
-    try {
-      resourceURI = resourceURL.toURI();
-    } catch (URISyntaxException e) {
-      throw new IOException("ErrorConfig Resource " + path + " has Invalid URI: " + resourceURL, e);
+    try (var stream = resourceURL.openStream()) {
+      return readFromYamlString(new String(stream.readAllBytes(), StandardCharsets.UTF_8));
     }
-    return readFromYamlString(Files.readString(Paths.get(resourceURI)));
   }
 
   /**

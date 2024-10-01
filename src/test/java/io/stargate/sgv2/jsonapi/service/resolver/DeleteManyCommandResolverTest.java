@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
@@ -20,6 +19,7 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.TruncateCollection
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -75,12 +75,7 @@ public class DeleteManyCommandResolverTest {
                               .isEqualTo(operationsConfig.maxDocumentDeleteCount() + 1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                         });
               });
@@ -165,12 +160,7 @@ public class DeleteManyCommandResolverTest {
                               .isEqualTo(operationsConfig.maxDocumentDeleteCount() + 1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                         });
               });

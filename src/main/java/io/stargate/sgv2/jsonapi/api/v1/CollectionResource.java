@@ -63,7 +63,7 @@ import org.jboss.resteasy.reactive.RestResponse;
 @Tag(ref = "Documents")
 public class CollectionResource {
 
-  public static final String BASE_PATH = "/v1/{namespace}/{collection}";
+  public static final String BASE_PATH = "/v1/{keyspace}/{collection}";
 
   private final MeteredCommandProcessor meteredCommandProcessor;
 
@@ -87,7 +87,7 @@ public class CollectionResource {
       description = "Executes a single command against a collection.")
   @Parameters(
       value = {
-        @Parameter(name = "namespace", ref = "namespace"),
+        @Parameter(name = "keyspace", ref = "keyspace"),
         @Parameter(name = "collection", ref = "collection")
       })
   @RequestBody(
@@ -161,19 +161,18 @@ public class CollectionResource {
   @POST
   public Uni<RestResponse<CommandResult>> postCommand(
       @NotNull @Valid CollectionCommand command,
-      @PathParam("namespace")
+      @PathParam("keyspace")
           @NotNull
           @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
           @Size(min = 1, max = 48)
-          String namespace,
+          String keyspace,
       @PathParam("collection")
           @NotNull
           @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
           @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
-        .getSchemaObject(
-            dataApiRequestInfo, dataApiRequestInfo.getTenantId(), namespace, collection)
+        .getSchemaObject(dataApiRequestInfo, dataApiRequestInfo.getTenantId(), keyspace, collection)
         .onItemOrFailure()
         .transformToUni(
             (schemaObject, throwable) -> {

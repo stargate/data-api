@@ -43,18 +43,21 @@ public interface Command {
     COUNT_DOCUMENTS("countDocuments"),
     CREATE_COLLECTION("createCollection"),
     CREATE_NAMESPACE("createNamespace"),
+    CREATE_KEYSPACE("createKeyspace"),
     CREATE_TABLE("createTable"),
     DELETE_COLLECTION("deleteCollection"),
     DELETE_MANY("deleteMany"),
     DELETE_ONE("deleteOne"),
     DROP_INDEX("dropIndex"),
     DROP_NAMESPACE("dropNamespace"),
+    DROP_KEYSPACE("dropKeyspace"),
     DROP_TABLE("dropTable"),
     ESTIMATED_DOCUMENT_COUNT("estimatedDocumentCount"),
     FIND_COLLECTIONS("findCollections"),
     FIND("find"),
     FIND_EMBEDDING_PROVIDERS("findEmbeddingProviders"),
     FIND_NAMESPACES("findNamespaces"),
+    FIND_KEYSPACES("findKeyspaces"),
     FIND_ONE_AND_DELETE("findOneAndDelete"),
     FIND_ONE_AND_REPLACE("findOneAndReplace"),
     FIND_ONE_AND_UPDATE("findOneAndUpdate"),
@@ -62,7 +65,11 @@ public interface Command {
     INSERT_MANY("insertMany"),
     INSERT_ONE("insertOne"),
     UPDATE_MANY("updateMany"),
-    UPDATE_ONE("updateOne");
+    UPDATE_ONE("updateOne"),
+    BEGIN_OFFLINE_SESSION("beginOfflineSession"),
+    END_OFFLINE_SESSION("endOfflineSession"),
+    OFFLINE_GET_STATUS("offlineGetStatus"),
+    OFFLINE_INSERT_MANY("offlineInsertMany");
 
     private final String apiName;
 

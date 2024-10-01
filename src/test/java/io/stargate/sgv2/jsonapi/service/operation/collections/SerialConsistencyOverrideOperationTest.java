@@ -22,16 +22,14 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ComparisonExpression;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectionFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
@@ -124,13 +122,10 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
                 return Uni.createFrom().item(deleteResults);
               });
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters1 =
-          List.of(
-              new IDCollectionFilter(
-                  IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters1);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addDBFilter(
+          new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1")));
 
       FindCollectionOperation findCollectionOperation =
           FindCollectionOperation.unsortedSingle(
@@ -327,10 +322,9 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       IDCollectionFilter filter =
           new IDCollectionFilter(IDCollectionFilter.Operator.EQ, DocumentId.fromString("doc1"));
 
-      LogicalExpression implicitAnd = LogicalExpression.and();
-      implicitAnd.comparisonExpressions.add(new ComparisonExpression(null, null, null));
-      List<DBFilterBase> filters1 = List.of(filter);
-      implicitAnd.comparisonExpressions.get(0).setDBFilters(filters1);
+      DBLogicalExpression implicitAnd =
+          new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
+      implicitAnd.addDBFilter(filter);
 
       FindCollectionOperation findCollectionOperation =
           FindCollectionOperation.unsortedSingle(

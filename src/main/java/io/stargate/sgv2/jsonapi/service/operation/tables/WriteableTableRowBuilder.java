@@ -73,11 +73,11 @@ public class WriteableTableRowBuilder {
     // the validation steps
     checkAllPrimaryKeys(cqlIdentifierToJsonValue.keySet());
     checkUnknownColumns(cqlIdentifierToJsonValue.keySet());
-    var decoded = decodeJsonToCQL(cqlIdentifierToJsonValue);
+    var decoded = encodeJsonToCql(cqlIdentifierToJsonValue);
 
     // now need to split the columns into key and non key columns
-    var keyColumns = new OrderedCqlNamedValueContainer();
-    var nonKeyColumns = new UnorderedCqlNamedValueContainer();
+    var keyColumns = new CqlNamedValueContainer();
+    var nonKeyColumns = new CqlNamedValueContainer();
     for (var cqlNamedValue : decoded.values()) {
       if (tableMetadata.getPrimaryKey().contains(cqlNamedValue.name())) {
         keyColumns.put(cqlNamedValue);
@@ -162,10 +162,10 @@ public class WriteableTableRowBuilder {
    * DocumentException.Code#INVALID_COLUMN_VALUES} if any of the values failed to convert to CQL
    * value.
    */
-  private UnorderedCqlNamedValueContainer decodeJsonToCQL(
+  private CqlNamedValueContainer encodeJsonToCql(
       Map<CqlIdentifier, JsonNamedValue> cqlIdentifierToRaw) {
 
-    UnorderedCqlNamedValueContainer decoded = new UnorderedCqlNamedValueContainer();
+    var cqlNamedValues = new CqlNamedValueContainer();
     Map<ColumnMetadata, MissingJSONCodecException> unsupportedErrors = new HashMap<>();
     Map<ColumnMetadata, ToCQLCodecException> codecErrors = new HashMap<>();
 
@@ -189,7 +189,7 @@ public class WriteableTableRowBuilder {
       try {
         var codec = codecRegistry.codecToCQL(tableMetadata, identifier, rawJsonValue);
         var cqlNamedValue = new CqlNamedValue(metadata, codec.toCQL(rawJsonValue));
-        decoded.put(cqlNamedValue);
+        cqlNamedValues.put(cqlNamedValue);
       } catch (UnknownColumnException e) {
         // this should not happen, we checked above but the codecs are written to be very safe and
         // will check and throw
@@ -232,12 +232,12 @@ public class WriteableTableRowBuilder {
               }));
     }
 
-    if (decoded.size() != cqlIdentifierToRaw.size()) {
+    if (cqlNamedValues.size() != cqlIdentifierToRaw.size()) {
       throw new IllegalStateException(
           String.format(
               "decodeJsonToCQL: decoded size does not match raw size, decoded=%d, raw=%d",
-              decoded.size(), cqlIdentifierToRaw.size()));
+              cqlNamedValues.size(), cqlIdentifierToRaw.size()));
     }
-    return decoded;
+    return cqlNamedValues;
   }
 }

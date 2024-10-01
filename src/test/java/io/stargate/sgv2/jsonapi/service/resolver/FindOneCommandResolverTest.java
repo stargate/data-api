@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
@@ -18,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.collection.IDCollectio
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
@@ -65,9 +65,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.pageSize()).isEqualTo(1);
                 assertThat(op.pageState()).isNull();
                 assertThat(op.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(
-                        op.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
-                    .isEqualTo(filter);
+                assertThat(op.dbLogicalExpression().dBFilters().get(0)).isEqualTo(filter);
                 assertThat(op.orderBy()).isNull();
                 assertThat(op.singleResponse()).isTrue();
               });
@@ -101,9 +99,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.pageSize()).isEqualTo(100);
                 assertThat(op.pageState()).isNull();
                 assertThat(op.readType()).isEqualTo(CollectionReadType.SORTED_DOCUMENT);
-                assertThat(
-                        op.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
-                    .isEqualTo(filter);
+                assertThat(op.dbLogicalExpression().dBFilters().get(0)).isEqualTo(filter);
                 assertThat(op.orderBy()).hasSize(2);
                 assertThat(op.orderBy())
                     .isEqualTo(
@@ -148,9 +144,7 @@ public class FindOneCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isTrue();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(
-                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
-                    .isEqualTo(filter);
+                assertThat(find.dbLogicalExpression().dBFilters().get(0)).isEqualTo(filter);
               });
     }
 
@@ -191,9 +185,7 @@ public class FindOneCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isTrue();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(
-                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
-                    .isEqualTo(filter);
+                assertThat(find.dbLogicalExpression().dBFilters().get(0)).isEqualTo(filter);
                 assertThat(find.includeSortVector()).isFalse();
               });
     }
@@ -235,9 +227,7 @@ public class FindOneCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isTrue();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(
-                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
-                    .isEqualTo(filter);
+                assertThat(find.dbLogicalExpression().dBFilters().get(0)).isEqualTo(filter);
                 assertThat(find.includeSortVector()).isTrue();
               });
     }
@@ -277,9 +267,7 @@ public class FindOneCommandResolverTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isTrue();
                 assertThat(find.vector()).isNull();
-                assertThat(
-                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
-                    .isEqualTo(filter);
+                assertThat(find.dbLogicalExpression().dBFilters().get(0)).isEqualTo(filter);
                 assertThat(find.includeSortVector()).isTrue();
               });
     }
@@ -308,7 +296,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.pageSize()).isEqualTo(1);
                 assertThat(op.pageState()).isNull();
                 assertThat(op.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(op.logicalExpression().comparisonExpressions).isEmpty();
+                assertThat(op.dbLogicalExpression().dBFilters()).isEmpty();
                 assertThat(op.singleResponse()).isTrue();
               });
     }
@@ -337,7 +325,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.pageSize()).isEqualTo(1);
                 assertThat(op.pageState()).isNull();
                 assertThat(op.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(op.logicalExpression().comparisonExpressions).isEmpty();
+                assertThat(op.dbLogicalExpression().dBFilters()).isEmpty();
                 assertThat(op.singleResponse()).isTrue();
               });
     }
@@ -369,9 +357,7 @@ public class FindOneCommandResolverTest {
                 assertThat(op.pageSize()).isEqualTo(1);
                 assertThat(op.pageState()).isNull();
                 assertThat(op.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                assertThat(
-                        op.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
-                    .isEqualTo(filter);
+                assertThat(op.dbLogicalExpression().dBFilters().get(0)).isEqualTo(filter);
                 assertThat(op.singleResponse()).isTrue();
               });
     }

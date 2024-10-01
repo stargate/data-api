@@ -3,24 +3,24 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteManyCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.TruncateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DeleteTableOperation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.FilterResolver;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.TableFilterResolver;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -91,18 +91,18 @@ public class DeleteManyCommandResolver implements CommandResolver<DeleteManyComm
 
   private FindCollectionOperation getFindOperation(
       CommandContext<CollectionSchemaObject> ctx, DeleteManyCommand command) {
-    LogicalExpression logicalExpression = collectionFilterResolver.resolve(ctx, command);
+    final DBLogicalExpression dbLogicalExpression = collectionFilterResolver.resolve(ctx, command);
     // Read One extra document than delete limit so return moreData flag
     addToMetrics(
         meterRegistry,
         dataApiRequestInfo,
         jsonApiMetricsConfig,
         command,
-        logicalExpression,
+        dbLogicalExpression,
         ctx.schemaObject().newIndexUsage());
     return FindCollectionOperation.unsorted(
         ctx,
-        logicalExpression,
+        dbLogicalExpression,
         DocumentProjector.includeAllProjector(),
         null,
         operationsConfig.maxDocumentDeleteCount() + 1,

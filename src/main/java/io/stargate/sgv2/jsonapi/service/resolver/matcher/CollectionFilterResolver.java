@@ -6,14 +6,15 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.*;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
+import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocValueHasher;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.util.JsonUtil;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.function.BiConsumer;
 
 /**
  * A {@link FilterResolver} for resolving {@link FilterClause} against a {@link
@@ -148,196 +149,330 @@ public class CollectionFilterResolver<T extends Command & Filterable>
     return matchRules;
   }
 
-  private static List<DBFilterBase> findById(CaptureExpression captureExpression) {
-    List<DBFilterBase> filters = new ArrayList<>();
-    for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
-      if (captureExpression.marker() == ID_GROUP) {
-        filters.add(
-            new IDCollectionFilter(
-                IDCollectionFilter.Operator.EQ, (DocumentId) filterOperation.operand().value()));
-      }
-      // TIDY: Resolve the unchecked cast (List<DocumentId>) below and in other places in this file
-      if (captureExpression.marker() == ID_GROUP_IN) {
-        filters.add(
-            new IDCollectionFilter(
-                IDCollectionFilter.Operator.IN,
-                (List<DocumentId>) filterOperation.operand().value()));
-      }
-    }
-    return filters;
+  public static DBLogicalExpression findById(
+      DBLogicalExpression currentDbLogicalExpression, CaptureGroups currentCaptureGroups) {
+
+    BiConsumer<CaptureGroups, DBLogicalExpression> consumer =
+        (captureGroups, dbLogicalExpression) -> {
+          // convert captureGroup to DBFilter
+
+          captureGroups
+              .getGroupIfPresent(ID_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<DocumentId> idGroup = (CaptureGroup<DocumentId>) captureGroup;
+                    idGroup.consumeAllCaptures(
+                        expression ->
+                            dbLogicalExpression.addDBFilter(
+                                new IDCollectionFilter(
+                                    IDCollectionFilter.Operator.EQ,
+                                    (DocumentId) expression.value())));
+                  });
+
+          captureGroups
+              .getGroupIfPresent(ID_GROUP_IN)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<DocumentId> idInGroup = (CaptureGroup<DocumentId>) captureGroup;
+                    idInGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addDBFilter(
+                              new IDCollectionFilter(
+                                  IDCollectionFilter.Operator.IN,
+                                  (List<DocumentId>) expression.value()));
+                        });
+                  });
+        };
+
+    currentCaptureGroups.consumeAll(currentDbLogicalExpression, consumer);
+
+    return currentDbLogicalExpression;
   }
 
-  public static List<DBFilterBase> findNoFilter(CaptureExpression captureExpression) {
-    return List.of();
+  public static DBLogicalExpression findNoFilter(
+      DBLogicalExpression currentDbLogicalExpression, CaptureGroups currentCaptureGroups) {
+    return currentDbLogicalExpression;
   }
 
-  public static List<DBFilterBase> findDynamic(CaptureExpression captureExpression) {
-    List<DBFilterBase> filters = new ArrayList<>();
-    for (FilterOperation<?> filterOperation : captureExpression.filterOperations()) {
-      if (captureExpression.marker() == ID_GROUP) {
-        switch ((ValueComparisonOperator) filterOperation.operator()) {
-          case EQ:
-            filters.add(
-                new IDCollectionFilter(
-                    IDCollectionFilter.Operator.EQ,
-                    (DocumentId) filterOperation.operand().value()));
-            break;
-          case NE:
-            filters.add(
-                new IDCollectionFilter(
-                    IDCollectionFilter.Operator.NE,
-                    (DocumentId) filterOperation.operand().value()));
-            break;
-          default:
-            throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-                "%s", filterOperation.operator().getOperator());
-        }
-      }
-      if (captureExpression.marker() == ID_GROUP_IN) {
-        switch ((ValueComparisonOperator) filterOperation.operator()) {
-          case IN:
-            filters.add(
-                new IDCollectionFilter(
-                    IDCollectionFilter.Operator.IN,
-                    (List<DocumentId>) filterOperation.operand().value()));
-            break;
-          case NIN:
-            filters.add(
-                new InCollectionFilter(
-                    getInFilterBaseOperator(filterOperation.operator()),
-                    captureExpression.path(),
-                    (List<Object>) filterOperation.operand().value()));
-            break;
-          default:
-            throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
-                "%s", filterOperation.operator().getOperator());
-        }
-      }
+  public static DBLogicalExpression findDynamic(
+      DBLogicalExpression currentDbLogicalExpression, CaptureGroups currentCaptureGroups) {
 
-      if (captureExpression.marker() == ID_GROUP_RANGE) {
-        final DocumentId value = (DocumentId) filterOperation.operand().value();
-        if (value.value() instanceof BigDecimal bdv) {
-          filters.add(
-              new NumberCollectionFilter(
-                  DocumentConstants.Fields.DOC_ID,
-                  getMapFilterBaseOperator(filterOperation.operator()),
-                  bdv));
-        }
-        if (value.value() instanceof Map) {
-          filters.add(
-              new DateCollectionFilter(
-                  DocumentConstants.Fields.DOC_ID,
-                  getMapFilterBaseOperator(filterOperation.operator()),
-                  JsonUtil.createDateFromDocumentId(value)));
-        }
-      }
+    BiConsumer<CaptureGroups, DBLogicalExpression> consumer =
+        (captureGroups, dbLogicalExpression) -> {
+          captureGroups
+              .getGroupIfPresent(ID_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<DocumentId> idGroup = (CaptureGroup<DocumentId>) captureGroup;
+                    idGroup.consumeAllCaptures(
+                        expression -> {
+                          switch ((ValueComparisonOperator) expression.operator()) {
+                            case EQ:
+                              dbLogicalExpression.addDBFilter(
+                                  new IDCollectionFilter(
+                                      IDCollectionFilter.Operator.EQ, expression.value()));
+                              break;
+                            case NE:
+                              dbLogicalExpression.addDBFilter(
+                                  new IDCollectionFilter(
+                                      IDCollectionFilter.Operator.NE, expression.value()));
+                              break;
+                            default:
+                              throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+                                  "%s", expression.operator());
+                          }
+                        });
+                  });
 
-      if (captureExpression.marker() == DYNAMIC_GROUP_IN) {
-        filters.add(
-            new InCollectionFilter(
-                getInFilterBaseOperator(filterOperation.operator()),
-                captureExpression.path(),
-                (List<Object>) filterOperation.operand().value()));
-      }
+          captureGroups
+              .getGroupIfPresent(ID_GROUP_IN)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> idInGroup = (CaptureGroup<Object>) captureGroup;
+                    idInGroup.consumeAllCaptures(
+                        expression -> {
+                          switch ((ValueComparisonOperator) expression.operator()) {
+                            case IN:
+                              dbLogicalExpression.addDBFilter(
+                                  new IDCollectionFilter(
+                                      IDCollectionFilter.Operator.IN,
+                                      (List<DocumentId>) expression.value()));
+                              break;
+                            case NIN:
+                              dbLogicalExpression.addDBFilter(
+                                  new InCollectionFilter(
+                                      getInFilterBaseOperator(expression.operator()),
+                                      expression.path(),
+                                      (List<Object>) expression.value()));
+                              break;
+                            default:
+                              throw ErrorCodeV1.UNSUPPORTED_FILTER_OPERATION.toApiException(
+                                  "%s", expression.operator());
+                          }
+                        });
+                  });
 
-      if (captureExpression.marker() == DYNAMIC_TEXT_GROUP) {
-        filters.add(
-            new TextCollectionFilter(
-                captureExpression.path(),
-                getMapFilterBaseOperator(filterOperation.operator()),
-                (String) filterOperation.operand().value()));
-      }
+          captureGroups
+              .getGroupIfPresent(ID_GROUP_RANGE)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<DocumentId> idRangeGroup = (CaptureGroup<DocumentId>) captureGroup;
+                    idRangeGroup.consumeAllCaptures(
+                        expression -> {
+                          final DocumentId value = (DocumentId) expression.value();
+                          if (value.value() instanceof BigDecimal bdv) {
+                            dbLogicalExpression.addDBFilter(
+                                new NumberCollectionFilter(
+                                    DocumentConstants.Fields.DOC_ID,
+                                    getMapFilterBaseOperator(expression.operator()),
+                                    bdv));
+                          }
+                          if (value.value() instanceof Map) {
+                            dbLogicalExpression.addDBFilter(
+                                new DateCollectionFilter(
+                                    DocumentConstants.Fields.DOC_ID,
+                                    getMapFilterBaseOperator(expression.operator()),
+                                    JsonUtil.createDateFromDocumentId(value)));
+                          }
+                        });
+                  });
 
-      if (captureExpression.marker() == DYNAMIC_BOOL_GROUP) {
-        filters.add(
-            new BoolCollectionFilter(
-                captureExpression.path(),
-                getMapFilterBaseOperator(filterOperation.operator()),
-                (Boolean) filterOperation.operand().value()));
-      }
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_GROUP_IN)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> dynamicInGroup = (CaptureGroup<Object>) captureGroup;
+                    dynamicInGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addDBFilter(
+                              new InCollectionFilter(
+                                  getInFilterBaseOperator(expression.operator()),
+                                  expression.path(),
+                                  (List<Object>) expression.value()));
+                        });
+                  });
 
-      if (captureExpression.marker() == DYNAMIC_NUMBER_GROUP) {
-        filters.add(
-            new NumberCollectionFilter(
-                captureExpression.path(),
-                getMapFilterBaseOperator(filterOperation.operator()),
-                (BigDecimal) filterOperation.operand().value()));
-      }
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_TEXT_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<String> dynamicTextGroup = (CaptureGroup<String>) captureGroup;
+                    dynamicTextGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addDBFilter(
+                              new TextCollectionFilter(
+                                  expression.path(),
+                                  getMapFilterBaseOperator(expression.operator()),
+                                  expression.value()));
+                        });
+                  });
 
-      if (captureExpression.marker() == DYNAMIC_NULL_GROUP) {
-        filters.add(
-            new IsNullCollectionFilter(
-                captureExpression.path(), getSetFilterBaseOperator(filterOperation.operator())));
-      }
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_BOOL_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Boolean> dynamicBoolGroup = (CaptureGroup<Boolean>) captureGroup;
+                    dynamicBoolGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addDBFilter(
+                              new BoolCollectionFilter(
+                                  expression.path(),
+                                  getMapFilterBaseOperator(expression.operator()),
+                                  expression.value()));
+                        });
+                  });
 
-      if (captureExpression.marker() == DYNAMIC_DATE_GROUP) {
-        filters.add(
-            new DateCollectionFilter(
-                captureExpression.path(),
-                getMapFilterBaseOperator(filterOperation.operator()),
-                (Date) filterOperation.operand().value()));
-      }
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_NUMBER_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<BigDecimal> numberGroup = (CaptureGroup<BigDecimal>) captureGroup;
+                    numberGroup.consumeAllCaptures(
+                        expression ->
+                            dbLogicalExpression.addDBFilter(
+                                new NumberCollectionFilter(
+                                    expression.path(),
+                                    getMapFilterBaseOperator(expression.operator()),
+                                    expression.value())));
+                  });
 
-      if (captureExpression.marker() == EXISTS_GROUP) {
-        Boolean bool = (Boolean) filterOperation.operand().value();
-        filters.add(new ExistsCollectionFilter(captureExpression.path(), bool));
-      }
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_NULL_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> nullGroup = (CaptureGroup<Object>) captureGroup;
+                    nullGroup.consumeAllCaptures(
+                        expression ->
+                            dbLogicalExpression.addDBFilter(
+                                new IsNullCollectionFilter(
+                                    expression.path(),
+                                    getSetFilterBaseOperator(expression.operator()))));
+                  });
 
-      if (captureExpression.marker() == ALL_GROUP) {
-        List<Object> arrayValue = (List<Object>) filterOperation.operand().value();
-        filters.add(new AllCollectionFilter(captureExpression.path(), arrayValue, false));
-      }
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_DATE_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Date> dateGroup = (CaptureGroup<Date>) captureGroup;
+                    dateGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addDBFilter(
+                              new DateCollectionFilter(
+                                  expression.path(),
+                                  getMapFilterBaseOperator(expression.operator()),
+                                  (Date) expression.value()));
+                        });
+                  });
 
-      if (captureExpression.marker() == NOT_ANY_GROUP) {
-        List<Object> arrayValue = (List<Object>) filterOperation.operand().value();
-        filters.add(new AllCollectionFilter(captureExpression.path(), arrayValue, true));
-      }
+          captureGroups
+              .getGroupIfPresent(EXISTS_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Boolean> existsGroup = (CaptureGroup<Boolean>) captureGroup;
+                    existsGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addDBFilter(
+                              new ExistsCollectionFilter(expression.path(), expression.value()));
+                        });
+                  });
 
-      if (captureExpression.marker() == SIZE_GROUP) {
-        if (filterOperation.operand().value() instanceof Boolean) {
-          // This is the special case, e.g. {"$not":{"ages":{"$size":0}}}
-          filters.add(
-              new SizeCollectionFilter(
-                  captureExpression.path(), MapCollectionFilter.Operator.MAP_NOT_EQUALS, 0));
-        } else {
-          BigDecimal bigDecimal = (BigDecimal) filterOperation.operand().value();
-          // Flipping size operator will multiply the value by -1
-          // Negative means check array_size[?] != ?
-          int size = bigDecimal.intValue();
-          MapCollectionFilter.Operator operator;
-          if (size >= 0) {
-            operator = MapCollectionFilter.Operator.MAP_EQUALS;
-          } else {
-            operator = MapCollectionFilter.Operator.MAP_NOT_EQUALS;
-          }
-          filters.add(new SizeCollectionFilter(captureExpression.path(), operator, Math.abs(size)));
-        }
-      }
+          captureGroups
+              .getGroupIfPresent(ALL_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> allGroup = (CaptureGroup<Object>) captureGroup;
+                    allGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addDBFilter(
+                              new AllCollectionFilter(
+                                  expression.path(), (List<Object>) expression.value(), false));
+                        });
+                  });
 
-      if (captureExpression.marker() == ARRAY_EQUALS) {
-        filters.add(
-            new ArrayEqualsCollectionFilter(
-                new DocValueHasher(),
-                captureExpression.path(),
-                (List<Object>) filterOperation.operand().value(),
-                filterOperation.operator().equals(ValueComparisonOperator.EQ)
-                    ? MapCollectionFilter.Operator.MAP_EQUALS
-                    : MapCollectionFilter.Operator.MAP_NOT_EQUALS));
-      }
+          captureGroups
+              .getGroupIfPresent(NOT_ANY_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> notAnyGroup = (CaptureGroup<Object>) captureGroup;
+                    notAnyGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addDBFilter(
+                              new AllCollectionFilter(
+                                  expression.path(), (List<Object>) expression.value(), true));
+                        });
+                  });
 
-      if (captureExpression.marker() == SUB_DOC_EQUALS) {
-        filters.add(
-            new SubDocEqualsCollectionFilter(
-                new DocValueHasher(),
-                captureExpression.path(),
-                (Map<String, Object>) filterOperation.operand().value(),
-                filterOperation.operator().equals(ValueComparisonOperator.EQ)
-                    ? MapCollectionFilter.Operator.MAP_EQUALS
-                    : MapCollectionFilter.Operator.MAP_NOT_EQUALS));
-      }
-    }
+          captureGroups
+              .getGroupIfPresent(SIZE_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> sizeGroup = (CaptureGroup<Object>) captureGroup;
+                    sizeGroup.consumeAllCaptures(
+                        expression -> {
+                          if (expression.value() instanceof Boolean) {
+                            // This is the special case, e.g. {"$not":{"ages":{"$size":0}}}
+                            dbLogicalExpression.addDBFilter(
+                                new SizeCollectionFilter(
+                                    expression.path(),
+                                    MapCollectionFilter.Operator.MAP_NOT_EQUALS,
+                                    0));
+                          } else {
+                            BigDecimal bigDecimal = (BigDecimal) expression.value();
+                            // Flipping size operator will multiply the value by -1
+                            // Negative means check array_size[?] != ?
+                            int size = bigDecimal.intValue();
+                            MapCollectionFilter.Operator operator;
+                            if (size >= 0) {
+                              operator = MapCollectionFilter.Operator.MAP_EQUALS;
+                            } else {
+                              operator = MapCollectionFilter.Operator.MAP_NOT_EQUALS;
+                            }
+                            dbLogicalExpression.addDBFilter(
+                                new SizeCollectionFilter(
+                                    expression.path(), operator, Math.abs(size)));
+                          }
+                        });
+                  });
 
-    return filters;
+          captureGroups
+              .getGroupIfPresent(ARRAY_EQUALS)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> arrayEqualsGroup = (CaptureGroup<Object>) captureGroup;
+                    arrayEqualsGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addDBFilter(
+                              new ArrayEqualsCollectionFilter(
+                                  new DocValueHasher(),
+                                  expression.path(),
+                                  (List<Object>) expression.value(),
+                                  expression.operator().equals(ValueComparisonOperator.EQ)
+                                      ? MapCollectionFilter.Operator.MAP_EQUALS
+                                      : MapCollectionFilter.Operator.MAP_NOT_EQUALS));
+                        });
+                  });
+
+          captureGroups
+              .getGroupIfPresent(SUB_DOC_EQUALS)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> subDocEqualsGroup = (CaptureGroup<Object>) captureGroup;
+                    subDocEqualsGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addDBFilter(
+                              new SubDocEqualsCollectionFilter(
+                                  new DocValueHasher(),
+                                  expression.path(),
+                                  (Map<String, Object>) expression.value(),
+                                  expression.operator().equals(ValueComparisonOperator.EQ)
+                                      ? MapCollectionFilter.Operator.MAP_EQUALS
+                                      : MapCollectionFilter.Operator.MAP_NOT_EQUALS));
+                        });
+                  });
+        };
+
+    currentCaptureGroups.consumeAll(currentDbLogicalExpression, consumer);
+    return currentDbLogicalExpression;
   }
 
   // TIDY move these to the MapCollectionFilter etc enums

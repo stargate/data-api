@@ -22,10 +22,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
+import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
@@ -81,8 +83,9 @@ public class InsertCollectionOperationTest extends OperationTestBase {
         new CommandContext<>(
             new CollectionSchemaObject(
                 SCHEMA_OBJECT_NAME,
-                CollectionSchemaObject.IdConfig.defaultIdConfig(),
-                new VectorConfig(true, -1, CollectionSchemaObject.SimilarityFunction.COSINE, null),
+                null,
+                IdConfig.defaultIdConfig(),
+                new VectorConfig(true, -1, SimilarityFunction.COSINE, null),
                 null),
             null,
             "testCommand",

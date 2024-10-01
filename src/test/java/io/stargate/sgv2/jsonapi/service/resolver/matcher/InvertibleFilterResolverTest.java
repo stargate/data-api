@@ -7,10 +7,11 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 import io.stargate.sgv2.jsonapi.TestConstants;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.api.model.command.InvertibleCommandClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.*;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindCommand;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
@@ -31,8 +32,7 @@ public class InvertibleFilterResolverTest {
 
     @Test
     public void simpleNot() throws Exception {
-      FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver =
-          new CollectionFilterResolver<>(operationsConfig);
+
       String json =
           """
                     {
@@ -46,8 +46,8 @@ public class InvertibleFilterResolverTest {
                    }
           """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final LogicalExpression logicalExpression =
-          collectionFilterResolver.resolve(commandContext, findCommand);
+      final LogicalExpression logicalExpression = findCommand.filterClause().logicalExpression();
+      InvertibleCommandClause.maybeInvert(commandContext, findCommand.filterClause());
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
@@ -63,8 +63,7 @@ public class InvertibleFilterResolverTest {
 
     @Test
     public void comparisonOperatorsWithNot() throws Exception {
-      FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver =
-          new CollectionFilterResolver<>(operationsConfig);
+
       String json =
           """
                             {
@@ -90,8 +89,8 @@ public class InvertibleFilterResolverTest {
                            }
                   """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final LogicalExpression logicalExpression =
-          collectionFilterResolver.resolve(commandContext, findCommand);
+      final LogicalExpression logicalExpression = findCommand.filterClause().logicalExpression();
+      InvertibleCommandClause.maybeInvert(commandContext, findCommand.filterClause());
       final ComparisonExpression eq =
           new ComparisonExpression(
               "f1",
@@ -277,8 +276,7 @@ public class InvertibleFilterResolverTest {
 
     @Test
     public void twoLevelNot() throws Exception {
-      FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver =
-          new CollectionFilterResolver<>(operationsConfig);
+
       String json =
           """
                             {
@@ -290,8 +288,8 @@ public class InvertibleFilterResolverTest {
                            }
                   """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final LogicalExpression logicalExpression =
-          collectionFilterResolver.resolve(commandContext, findCommand);
+      final LogicalExpression logicalExpression = findCommand.filterClause().logicalExpression();
+      InvertibleCommandClause.maybeInvert(commandContext, findCommand.filterClause());
 
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
@@ -309,8 +307,6 @@ public class InvertibleFilterResolverTest {
     @Test
     public void multipleLevel() throws Exception {
 
-      FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver =
-          new CollectionFilterResolver<>(operationsConfig);
       String json =
           """
                   {
@@ -343,8 +339,8 @@ public class InvertibleFilterResolverTest {
                                }
                   """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final LogicalExpression logicalExpression =
-          collectionFilterResolver.resolve(commandContext, findCommand);
+      final LogicalExpression logicalExpression = findCommand.filterClause().logicalExpression();
+      InvertibleCommandClause.maybeInvert(commandContext, findCommand.filterClause());
 
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
@@ -436,8 +432,7 @@ public class InvertibleFilterResolverTest {
 
     @Test
     public void multipleLevelNot() throws Exception {
-      FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver =
-          new CollectionFilterResolver<>(operationsConfig);
+
       String json =
           """
                             {
@@ -449,8 +444,9 @@ public class InvertibleFilterResolverTest {
                            }
                   """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final LogicalExpression logicalExpression =
-          collectionFilterResolver.resolve(commandContext, findCommand);
+      final LogicalExpression logicalExpression = findCommand.filterClause().logicalExpression();
+      InvertibleCommandClause.maybeInvert(commandContext, findCommand.filterClause());
+
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "name",
@@ -466,8 +462,7 @@ public class InvertibleFilterResolverTest {
 
     @Test
     public void notLogicalOperatorOR() throws Exception {
-      FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver =
-          new CollectionFilterResolver<>(operationsConfig);
+
       String json =
           """
                                {
@@ -488,8 +483,9 @@ public class InvertibleFilterResolverTest {
                                }
                       """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final LogicalExpression logicalExpression =
-          collectionFilterResolver.resolve(commandContext, findCommand);
+      final LogicalExpression logicalExpression = findCommand.filterClause().logicalExpression();
+      InvertibleCommandClause.maybeInvert(commandContext, findCommand.filterClause());
+
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "address",
@@ -529,8 +525,7 @@ public class InvertibleFilterResolverTest {
 
     @Test
     public void notLogicalOperatorAND() throws Exception {
-      FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver =
-          new CollectionFilterResolver<>(operationsConfig);
+
       String json =
           """
                                {
@@ -551,8 +546,9 @@ public class InvertibleFilterResolverTest {
                                }
                       """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final LogicalExpression logicalExpression =
-          collectionFilterResolver.resolve(commandContext, findCommand);
+      final LogicalExpression logicalExpression = findCommand.filterClause().logicalExpression();
+      InvertibleCommandClause.maybeInvert(commandContext, findCommand.filterClause());
+
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "address",
@@ -592,8 +588,7 @@ public class InvertibleFilterResolverTest {
 
     @Test
     public void notMultipleLogicalOperators() throws Exception {
-      FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver =
-          new CollectionFilterResolver<>(operationsConfig);
+
       String json =
           """
                          {
@@ -622,8 +617,9 @@ public class InvertibleFilterResolverTest {
                          }
                       """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final LogicalExpression logicalExpression =
-          collectionFilterResolver.resolve(commandContext, findCommand);
+      final LogicalExpression logicalExpression = findCommand.filterClause().logicalExpression();
+      InvertibleCommandClause.maybeInvert(commandContext, findCommand.filterClause());
+
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "address",
@@ -697,8 +693,7 @@ public class InvertibleFilterResolverTest {
 
     @Test
     public void notLogicalOperatorWithComparisonExpression() throws Exception {
-      FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver =
-          new CollectionFilterResolver<>(operationsConfig);
+
       String json =
           """
                        {
@@ -720,8 +715,9 @@ public class InvertibleFilterResolverTest {
                        }
                       """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final LogicalExpression logicalExpression =
-          collectionFilterResolver.resolve(commandContext, findCommand);
+      final LogicalExpression logicalExpression = findCommand.filterClause().logicalExpression();
+      InvertibleCommandClause.maybeInvert(commandContext, findCommand.filterClause());
+
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "address",
@@ -763,8 +759,7 @@ public class InvertibleFilterResolverTest {
 
     @Test
     public void notMultipleComparisonExpression() throws Exception {
-      FilterResolver<FindCommand, CollectionSchemaObject> collectionFilterResolver =
-          new CollectionFilterResolver<>(operationsConfig);
+
       String json =
           """
                           {
@@ -780,8 +775,9 @@ public class InvertibleFilterResolverTest {
                           }
                       """;
       FindCommand findCommand = objectMapper.readValue(json, FindCommand.class);
-      final LogicalExpression logicalExpression =
-          collectionFilterResolver.resolve(commandContext, findCommand);
+      final LogicalExpression logicalExpression = findCommand.filterClause().logicalExpression();
+      InvertibleCommandClause.maybeInvert(commandContext, findCommand.filterClause());
+
       final ComparisonExpression expectedResult1 =
           new ComparisonExpression(
               "address",

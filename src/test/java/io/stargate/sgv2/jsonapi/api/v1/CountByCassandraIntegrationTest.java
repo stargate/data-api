@@ -36,7 +36,7 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
   @Test
   @Order(1)
   public void setUp() {
-    createNamespace();
+    createKeyspace();
     createSimpleCollection();
 
     insertDoc(

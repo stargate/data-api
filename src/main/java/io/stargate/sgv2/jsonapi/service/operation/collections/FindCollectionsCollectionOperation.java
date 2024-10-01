@@ -11,10 +11,10 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import java.util.List;
 import java.util.Map;
@@ -64,8 +64,8 @@ public record FindCollectionsCollectionOperation(
     if (keyspaceMetadata == null) {
       return Uni.createFrom()
           .failure(
-              ErrorCodeV1.NAMESPACE_DOES_NOT_EXIST.toApiException(
-                  "Unknown namespace '%s', you must create it first",
+              ErrorCodeV1.KEYSPACE_DOES_NOT_EXIST.toApiException(
+                  "Unknown keyspace '%s', you must create it first",
                   commandContext.schemaObject().name().keyspace()));
     }
     return Uni.createFrom()

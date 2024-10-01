@@ -22,7 +22,6 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObjectName;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizerService;
@@ -33,6 +32,9 @@ import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOper
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.MapCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.collection.TextCollectionFilter;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
+import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentShredder;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.WritableShreddedDocument;
 import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
@@ -79,8 +81,9 @@ public class CommandResolverWithVectorizerTest {
         new CommandContext<>(
             new CollectionSchemaObject(
                 new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME),
-                CollectionSchemaObject.IdConfig.defaultIdConfig(),
-                new VectorConfig(true, -1, CollectionSchemaObject.SimilarityFunction.COSINE, null),
+                null,
+                IdConfig.defaultIdConfig(),
+                new VectorConfig(true, -1, SimilarityFunction.COSINE, null),
                 null),
             null,
             null,
@@ -131,7 +134,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isFalse();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(find.logicalExpression().comparisonExpressions).isEmpty();
+                assertThat(find.dbLogicalExpression().dBFilters()).isEmpty();
               });
     }
 
@@ -220,12 +223,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.orderBy()).isNull();
                           assertThat(find.vector()).isNotNull();
@@ -303,12 +301,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
@@ -401,12 +394,7 @@ public class CommandResolverWithVectorizerTest {
                           assertThat(find.limit()).isEqualTo(1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.DOCUMENT);
-                          assertThat(
-                                  find.logicalExpression()
-                                      .comparisonExpressions
-                                      .get(0)
-                                      .getDbFilters()
-                                      .get(0))
+                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
                               .isEqualTo(filter);
                           assertThat(find.vector()).isNotNull();
                           assertThat(find.vector()).containsExactly(0.25f, 0.25f, 0.25f);
@@ -463,9 +451,7 @@ public class CommandResolverWithVectorizerTest {
                 assertThat(find.maxSortReadLimit()).isZero();
                 assertThat(find.singleResponse()).isTrue();
                 assertThat(find.vector()).containsExactly(vector);
-                assertThat(
-                        find.logicalExpression().comparisonExpressions.get(0).getDbFilters().get(0))
-                    .isEqualTo(filter);
+                assertThat(find.dbLogicalExpression().dBFilters().get(0)).isEqualTo(filter);
               });
     }
 

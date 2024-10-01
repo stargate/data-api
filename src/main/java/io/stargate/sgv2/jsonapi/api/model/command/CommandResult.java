@@ -7,9 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.core.Response;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
@@ -140,15 +138,6 @@ public record CommandResult(
           String nextPageState)
       implements ResponseData {
 
-    /**
-     * Constructor that sets documents without next page state.
-     *
-     * @param documents Documents, must not be <code>null</code>.
-     */
-    public MultiResponseData(List<JsonNode> documents) {
-      this(documents, null);
-    }
-
     /** {@inheritDoc} */
     @Override
     public List<JsonNode> getResponseDocuments() {
@@ -207,5 +196,25 @@ public record CommandResult(
       }
     }
     return RestResponse.ok(this);
+  }
+
+  /**
+   * returned a new CommandResult with warning message added in status map
+   *
+   * @param warning message
+   * @return CommandResult
+   */
+  public CommandResult withWarning(String warning) {
+    Map<CommandStatus, Object> newStatus = new HashMap<>();
+    if (status != null) {
+      newStatus.putAll(status);
+    }
+    List<String> newWarnings =
+        newStatus.get(CommandStatus.WARNINGS) != null
+            ? new ArrayList<>((List<String>) newStatus.get(CommandStatus.WARNINGS))
+            : new ArrayList<>();
+    newWarnings.add(warning);
+    newStatus.put(CommandStatus.WARNINGS, newWarnings);
+    return new CommandResult(this.data, newStatus, errors);
   }
 }
