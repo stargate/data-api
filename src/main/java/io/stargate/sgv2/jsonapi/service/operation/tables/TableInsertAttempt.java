@@ -24,7 +24,10 @@ public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
 
   TableInsertAttempt(
       TableSchemaObject tableSchemaObject, int position, RowId rowId, WriteableTableRow row) {
-    super(position, tableSchemaObject, new TableInsertValuesCQLClause(tableSchemaObject, row));
+    super(
+        position,
+        tableSchemaObject,
+        row == null ? null : new TableInsertValuesCQLClause(tableSchemaObject, row));
 
     this.rowId = rowId;
     this.row = row;
