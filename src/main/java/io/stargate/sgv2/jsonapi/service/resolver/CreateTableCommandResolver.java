@@ -4,10 +4,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
+import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
+import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableOperation;
+import io.stargate.sgv2.jsonapi.service.operation.*;
+import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Arrays;
 import java.util.List;
@@ -49,8 +52,26 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
 
     // set to empty will be used when vectorize is  supported
     String comment = "";
-    return new CreateTableOperation(
-        ctx, tableName, columnTypes, partitionKeys, clusteringKeys, comment);
+
+    var attempt =
+        new CreateTableAttempt(
+            0,
+            ctx.schemaObject(),
+            ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis(),
+            2, // AARON - could not find a config for this
+            tableName,
+            columnTypes,
+            partitionKeys,
+            clusteringKeys,
+            comment);
+    var attempts = new OperationAttemptContainer<>(List.of(attempt));
+
+    var pageBuilder =
+        SchemaAttemptPage.<KeyspaceSchemaObject>builder()
+            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
+            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+
+    return new GenericOperation<>(attempts, pageBuilder, new KeyspaceDriverExceptionHandler());
   }
 
   @Override

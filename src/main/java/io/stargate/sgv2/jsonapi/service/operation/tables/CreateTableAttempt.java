@@ -1,65 +1,58 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.*;
+import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createTable;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
-import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
-import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
-import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.collections.SchemaChangeResult;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Supplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
+import java.time.Duration;
+import java.util.*;
 
-public class CreateTableOperation implements Operation {
+public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(CreateTableOperation.class);
-
-  private final CommandContext<KeyspaceSchemaObject> commandContext;
   private final String tableName;
   private final Map<String, ColumnType> columnTypes;
   private final List<String> partitionKeys;
   private final List<PrimaryKey.OrderingKey> clusteringKeys;
   private final String comment;
 
-  public CreateTableOperation(
-      CommandContext<KeyspaceSchemaObject> commandContext,
+  public CreateTableAttempt(
+      int position,
+      KeyspaceSchemaObject schemaObject,
+      int retryDelayMillis,
+      int maxRetries,
       String tableName,
       Map<String, ColumnType> columnTypes,
       List<String> partitionKeys,
       List<PrimaryKey.OrderingKey> clusteringKeys,
       String comment) {
-    this.commandContext = commandContext;
+    super(
+        position,
+        schemaObject,
+        new SchemaRetryPolicy(maxRetries, Duration.ofMillis(retryDelayMillis)));
+
     this.tableName = tableName;
     this.columnTypes = Objects.requireNonNull(columnTypes, "columnTypes must not be null");
     this.partitionKeys = partitionKeys;
     this.clusteringKeys = clusteringKeys;
     this.comment = comment;
+
+    setStatus(OperationStatus.READY);
   }
 
-  @Override
-  public Uni<Supplier<CommandResult>> execute(
-      DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
-    CqlIdentifier keyspaceIdentifier =
-        CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace());
-    CqlIdentifier tableIdentifier = CqlIdentifier.fromInternal(tableName);
+  protected SimpleStatement buildStatement() {
+
+    var keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.name().keyspace());
+    var tableIdentifier = cqlIdentifierFromUserInput(tableName);
+
     CreateTableStart create = createTable(keyspaceIdentifier, tableIdentifier).ifNotExists();
 
     // Add all primary keys and colunms
@@ -71,13 +64,7 @@ public class CreateTableOperation implements Operation {
     // Add the clustering key order
     createWithOptions = addClusteringOrder(createWithOptions);
 
-    final SimpleStatement statement = createWithOptions.build();
-    LOGGER.warn("CREATE TABLE CQL: {}", createWithOptions.asCql());
-
-    final Uni<AsyncResultSet> resultSetUni =
-        queryExecutor.executeCreateSchemaChange(dataApiRequestInfo, statement);
-
-    return resultSetUni.onItem().transform(rs -> new SchemaChangeResult(true));
+    return createWithOptions.build();
   }
 
   private CreateTable addColumnsAndKeys(CreateTableStart create) {
