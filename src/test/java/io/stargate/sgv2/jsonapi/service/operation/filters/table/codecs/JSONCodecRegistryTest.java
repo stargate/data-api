@@ -255,7 +255,7 @@ public class JSONCodecRegistryTest {
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesCollections() {
-    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
+    // Arguments: (CQL-type, from-caller-json, bound-by-driver-for-cql)
     return Stream.of(
         // // Lists:
         Arguments.of(
@@ -268,6 +268,14 @@ public class JSONCodecRegistryTest {
             // or BigDecimal. But CQL column here requires ints (not longs)
             Arrays.asList(numberLiteral(123L), numberLiteral(-42L), nullLiteral()),
             Arrays.asList(123, -42, null)),
+        Arguments.of(
+            DataTypes.listOf(DataTypes.DOUBLE),
+            // All JSON fps bound as BigDecimal:
+            Arrays.asList(
+                numberLiteral(new BigDecimal(0.25)),
+                numberLiteral(new BigDecimal(-7.5)),
+                nullLiteral()),
+            Arrays.asList(0.25, -7.5, null)),
 
         // // Sets:
         Arguments.of(
@@ -277,7 +285,13 @@ public class JSONCodecRegistryTest {
         Arguments.of(
             DataTypes.setOf(DataTypes.INT),
             Arrays.asList(numberLiteral(123L), numberLiteral(-42L)),
-            Set.of(123, -42)));
+            Set.of(123, -42)),
+        Arguments.of(
+            DataTypes.setOf(DataTypes.DOUBLE),
+            // All JSON fps bound as BigDecimal:
+            Arrays.asList(
+                numberLiteral(new BigDecimal(-0.75)), numberLiteral(new BigDecimal(42.5))),
+            Set.of(-0.75, 42.5)));
   }
 
   private static JsonLiteral<Number> numberLiteral(Number value) {
@@ -462,6 +476,10 @@ public class JSONCodecRegistryTest {
             DataTypes.listOf(DataTypes.INT),
             Arrays.asList(123, -42, null),
             OBJECT_MAPPER.readTree("[123,-42,null]")),
+        Arguments.of(
+            DataTypes.listOf(DataTypes.DOUBLE),
+            Arrays.asList(0.25, -4.5, null),
+            OBJECT_MAPPER.readTree("[0.25,-4.5,null]")),
 
         // // Sets:
         Arguments.of(
@@ -469,7 +487,11 @@ public class JSONCodecRegistryTest {
             Set.of("a", "b"),
             OBJECT_MAPPER.readTree("[\"a\",\"b\"]")),
         Arguments.of(
-            DataTypes.setOf(DataTypes.INT), Set.of(123, -42), OBJECT_MAPPER.readTree("[123,-42]")));
+            DataTypes.setOf(DataTypes.INT), Set.of(123, -42), OBJECT_MAPPER.readTree("[123,-42]")),
+        Arguments.of(
+            DataTypes.setOf(DataTypes.DOUBLE),
+            Set.of(0.25, -4.5),
+            OBJECT_MAPPER.readTree("[0.25,-4.5]")));
   }
 
   @Test
