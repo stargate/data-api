@@ -5,8 +5,10 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
 import java.util.*;
 
 /**
@@ -47,6 +49,15 @@ public abstract class CollectionCodecs {
 
   public static JSONCodec<?, ?> buildToJsonListCodec(JSONCodec<?, ?> elementCodec) {
     return new JSONCodec<>(
+        GENERIC_LIST,
+        elementCodec.targetCQLType(), // not exactly correct, but close enough
+        null, // not used for JSON encoding
+        (objectMapper, cqlType, value) -> toJsonNode(elementCodec, objectMapper, value));
+  }
+
+  public static JSONCodec<?, ?> buildToJsonSetCodec(JSONCodec<?, ?> elementCodec) {
+    return new JSONCodec<>(
+        // NOTE: although we convert to CQL Set, RowShredder.java binds to Lists
         GENERIC_LIST,
         elementCodec.targetCQLType(), // not exactly correct, but close enough
         null,
@@ -106,9 +117,22 @@ public abstract class CollectionCodecs {
         element, elementType, "no codec matching (list/set) element value type");
   }
 
+  /**
+   * Method that will convert from driver-provided CQL collection (list, set) type into JSON output.
+   */
   static JsonNode toJsonNode(
-      JSONCodec<?, ?> elementCodec, ObjectMapper objectMapper, Object value) {
-    // !!! TO IMPLEMENT
-    return objectMapper.createArrayNode();
+      JSONCodec<?, ?> elementCodec0, ObjectMapper objectMapper, Object collectionValue)
+      throws ToJSONCodecException {
+    JSONCodec<?, Object> elementCodec = (JSONCodec<?, Object>) elementCodec0;
+    final ArrayNode result = objectMapper.createArrayNode();
+    for (Object element : (Collection<Object>) collectionValue) {
+      if (element == null) {
+        result.addNull();
+      } else {
+        JsonNode jsonValue = elementCodec.toJSON(objectMapper, element);
+        result.add(jsonValue);
+      }
+    }
+    return result;
   }
 }

@@ -156,6 +156,15 @@ public class JSONCodecRegistry {
       return (JSONCodec<JavaT, CqlT>)
           CollectionCodecs.buildToJsonListCodec(valueCodecCandidates.get(0));
     }
+    if (fromCQLType instanceof SetType st) {
+      List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(st.getElementType());
+      // Can choose any one of codecs (since to-JSON is same for all); but must get one
+      if (valueCodecCandidates == null) {
+        return null; // so caller reports problem
+      }
+      return (JSONCodec<JavaT, CqlT>)
+          CollectionCodecs.buildToJsonSetCodec(valueCodecCandidates.get(0));
+    }
 
     return null;
   }
