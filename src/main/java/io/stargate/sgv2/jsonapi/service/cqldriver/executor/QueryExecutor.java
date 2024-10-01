@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
@@ -254,7 +255,7 @@ public class QueryExecutor {
               .getSession(dataApiRequestInfo)
               .getMetadata()
               .getKeyspaces()
-              .get(CqlIdentifier.fromInternal(namespace));
+              .get(cqlIdentifierFromUserInput(namespace));
     } catch (Exception e) {
       // TODO: this ^^ is a very wide error catch, confirm what it should actually be catching
       return Uni.createFrom().failure(e);
@@ -267,7 +268,8 @@ public class QueryExecutor {
     // else get the table
     // TODO: this should probably use CqlIdentifier.fromCql() (or .fromInternal())
     // if we want to support case-sensitive names
-    return Uni.createFrom().item(keyspaceMetadata.getTable("\"" + collectionName + "\""));
+    return Uni.createFrom()
+        .item(keyspaceMetadata.getTable(cqlIdentifierFromUserInput(collectionName)));
   }
 
   /**

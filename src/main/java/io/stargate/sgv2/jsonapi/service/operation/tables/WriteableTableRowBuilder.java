@@ -41,7 +41,7 @@ public class WriteableTableRowBuilder {
       TableSchemaObject tableSchemaObject, JSONCodecRegistry codecRegistry) {
     this.tableSchemaObject =
         Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
-    this.tableMetadata = tableSchemaObject.tableMetadata;
+    this.tableMetadata = tableSchemaObject.tableMetadata();
     this.codecRegistry = Objects.requireNonNull(codecRegistry, "codecRegistry cannot be null");
   }
 
