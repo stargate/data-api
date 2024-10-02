@@ -212,7 +212,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           """
         {
           "find": {
-            "filter" : {"name" : {"$gte" : "user23"}},
+            "filter" : {"username" : {"$gt" : "user23"}},
             "sort" : {"userId" : 1}
           }
         }
@@ -242,7 +242,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           """
             {
               "findOne": {
-                "filter" : {"name" : {"$gte" : false}},
+                "filter" : {"activeUser" : {"$gte" : false}},
                 "sort" : {"userId" : 1}
               }
             }
@@ -257,7 +257,7 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .statusCode(200)
           .body("status", is(nullValue()))
           .body("errors", is(nullValue()))
-          .body("data.documents", is(nullValue()));
+          .body("data.documents", notNullValue());
     }
 
     @Test

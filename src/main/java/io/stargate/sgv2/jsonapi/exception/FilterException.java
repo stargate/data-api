@@ -14,10 +14,9 @@ public class FilterException extends RequestException {
   }
 
   public enum Code implements ErrorCode<FilterException> {
-    // TODO, these Codes do not have a match in errors.yaml.
-    //    MULTIPLE_ID_FILTER,
-    //    FIELDS_LIMIT_VIOLATION,
-    UNKNOWN_TABLE_COLUMNS;
+    UNKNOWN_TABLE_COLUMNS,
+    INVALID_FILTER,
+    UNSUPPORTED_COLUMN_TYPES;
 
     private final ErrorTemplate<FilterException> template;
 

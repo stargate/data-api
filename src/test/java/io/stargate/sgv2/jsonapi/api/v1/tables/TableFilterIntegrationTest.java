@@ -5,7 +5,7 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.List;
 import java.util.Map;
@@ -1319,7 +1319,10 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
-            .hasSingleApiError(ErrorCodeV1.TABLE_INVALID_FILTER)
+            .hasSingleApiError(
+                FilterException.Code.INVALID_FILTER,
+                FilterException.class,
+                "The filter clause is invalid")
             .hasNoWarnings();
       }
 

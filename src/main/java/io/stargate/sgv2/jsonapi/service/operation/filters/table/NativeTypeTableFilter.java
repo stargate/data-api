@@ -8,7 +8,7 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
@@ -125,7 +125,15 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
                 map.put("unknownColumns", path);
               }));
     } catch (MissingJSONCodecException e) {
-      throw ErrorCodeV1.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException(e.getMessage());
+      throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "allColumns",
+                    errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
+                map.put("unsupportedColumns", path);
+              }));
     } catch (ToCQLCodecException e) {
       throw new RuntimeException(e);
     }
@@ -176,11 +184,17 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
         || operator == Operator.GTE) {
       // Slice restrictions are not supported on duration columns (with or without index)
       if (column.getType().equals(DataTypes.DURATION)) {
-        // TODO, do we need to explain detail here, like "Slice restrictions are not supported on
-        // duration columns"
-        throw ErrorCodeV1.TABLE_INVALID_FILTER.toApiException(
-            "'%s' is not supported on duration column '%s', Slice restrictions are not supported on duration columns.",
-            operator.predicate.cql, path);
+        // TODO, the template message of this v2 ERROR CODE INVALID_FILTER may need to be refactored
+        throw FilterException.Code.INVALID_FILTER.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put(
+                      "filter",
+                      String.format(
+                          "'%s' is not supported on duration column '%s', Slice restrictions are not supported on duration columns.",
+                          operator.predicate.cql, path));
+                }));
       }
 
       if (!hasSaiIndexOnColumn(tableSchemaObject)) {

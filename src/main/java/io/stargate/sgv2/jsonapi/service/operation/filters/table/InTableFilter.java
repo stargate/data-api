@@ -8,7 +8,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
@@ -69,7 +69,16 @@ public class InTableFilter extends TableFilter {
                   map.put("unknownColumns", path);
                 }));
       } catch (MissingJSONCodecException e) {
-        throw ErrorCodeV1.TABLE_COLUMN_TYPE_UNSUPPORTED.toApiException(e.getMessage());
+        throw DocumentException.Code.UNSUPPORTED_COLUMN_TYPES.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put(
+                      "allColumns",
+                      errFmtColumnMetadata(
+                          tableSchemaObject.tableMetadata().getColumns().values()));
+                  map.put("unsupportedColumns", path);
+                }));
       } catch (ToCQLCodecException e) {
         throw new RuntimeException(e);
       }
