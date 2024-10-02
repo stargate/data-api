@@ -92,7 +92,7 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
   }
 
   @Override
-  public WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzeResult analyseWhereClause() {
-    return new WhereCQLClauseAnalyzer(dbLogicalExpression, tableSchemaObject).analyse();
+  public WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzedResult analyseWhereClause() {
+    return new WhereCQLClauseAnalyzer(tableSchemaObject).analyse(dbLogicalExpression);
   }
 }

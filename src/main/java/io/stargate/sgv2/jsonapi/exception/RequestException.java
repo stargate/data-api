@@ -24,7 +24,9 @@ public class RequestException extends APIException {
     /** See {@link FilterException} */
     FILTER,
     /** See {@link SchemaException} */
-    SCHEMA;
+    SCHEMA,
+    /** See {@link WarningException} */
+    WARNING;
 
     @Override
     public String scope() {

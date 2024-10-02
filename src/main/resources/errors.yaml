@@ -150,6 +150,12 @@ request-errors:
       
       Resend the request using only supported column types.  
 
+  - scope: WARNING
+    code: ALLOW_FILTERING
+    title: ALLOW FILTERING is enabled
+    body: |-
+      ${reason}, ALLOW FILTERING is enabled, notice the performance of the query can be unpredictable.
+
   # Schema Errors
 
   - scope: SCHEMA

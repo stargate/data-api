@@ -63,7 +63,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
 
     CqlOptions<Select> newCqlOptions = cqlOptions;
 
-    final WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzeResult whereCQLClauseAnalyzeResult =
+    final WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzedResult whereCQLClauseAnalyzeResult =
         whereCQLClause.analyseWhereClause();
     // Analyse filter usage
     // Step 1, may add AllowFiltering
