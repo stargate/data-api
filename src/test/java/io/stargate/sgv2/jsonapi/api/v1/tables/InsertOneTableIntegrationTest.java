@@ -23,6 +23,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   static final String TABLE_WITH_FP_COLUMNS = "findOneFpColumnsTable";
   static final String TABLE_WITH_BINARY_COLUMN = "findOneBinaryColumnsTable";
   static final String TABLE_WITH_DATETIME_COLUMNS = "findOneDateTimeColumnsTable";
+  static final String TABLE_WITH_COLLECTION_COLUMNS = "findOneDateTimeCollectionsTable";
 
   final JSONCodecRegistryTestData codecTestData = new JSONCodecRegistryTestData();
 
@@ -31,60 +32,50 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     createTableWithColumns(
         TABLE_WITH_TEXT_COLUMNS,
         Map.of(
-            "idText",
-            Map.of("type", "text"),
-            "asciiText",
-            Map.of("type", "ascii"),
-            "varcharText",
-            Map.of("type", "text")),
+            "idText", "text",
+            "asciiText", "ascii",
+            "varcharText", "text"),
         "idText");
     createTableWithColumns(
         TABLE_WITH_INT_COLUMNS,
         Map.of(
-            "id",
-            Map.of("type", "text"),
-            "intValue",
-            Map.of("type", "int"),
-            "longValue",
-            Map.of("type", "bigint"),
-            "shortValue",
-            Map.of("type", "smallint"),
-            "byteValue",
-            Map.of("type", "tinyint"),
-            "bigIntegerValue",
-            Map.of("type", "varint")),
+            "id", "text",
+            "intValue", "int",
+            "longValue", "bigint",
+            "shortValue", "smallint",
+            "byteValue", "tinyint",
+            "bigIntegerValue", "varint"),
         "id");
     createTableWithColumns(
         TABLE_WITH_FP_COLUMNS,
         Map.of(
-            "id",
-            Map.of("type", "text"),
-            "floatValue",
-            Map.of("type", "float"),
-            "doubleValue",
-            Map.of("type", "double"),
-            "decimalValue",
-            Map.of("type", "decimal")),
+            "id", "text",
+            "floatValue", "float",
+            "doubleValue", "double",
+            "decimalValue", "decimal"),
         "id");
     createTableWithColumns(
-        TABLE_WITH_BINARY_COLUMN,
-        Map.of("id", Map.of("type", "text"), "binaryValue", Map.of("type", "blob")),
-        "id");
+        TABLE_WITH_BINARY_COLUMN, Map.of("id", "text", "binaryValue", "blob"), "id");
 
     createTableWithColumns(
         TABLE_WITH_DATETIME_COLUMNS,
         Map.of(
-            "id",
-            Map.of("type", "text"),
-            "dateValue",
-            Map.of("type", "date"),
-            "durationValue",
-            Map.of("type", "duration"),
-            "timeValue",
-            Map.of("type", "time"),
-            "timestampValue",
+            "id", "text",
+            "dateValue", "date",
+            "durationValue", "duration",
+            "timeValue", "time",
+            "timestampValue", "timestamp"),
+        "id");
+
+    /*
+    createTableWithColumns(
+        TABLE_WITH_COLLECTION_COLUMNS,
+        Map.of(
+            "id", "text",
+            "stringListValue",
             Map.of("type", "timestamp")),
         "id");
+     */
   }
 
   @Nested
