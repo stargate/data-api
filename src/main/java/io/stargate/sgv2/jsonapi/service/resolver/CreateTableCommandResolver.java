@@ -89,6 +89,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
       // Versioning for vectorize json. This needs can be adapted in future as needed
       customProperties.put("vectorize_schema_version", "1");
     } catch (JsonProcessingException e) {
+      // this should never happen
       throw new RuntimeException(e);
     }
 
