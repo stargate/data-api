@@ -200,9 +200,7 @@ public enum ErrorCodeV1 {
   TABLE_FEATURE_NOT_ENABLED("API Table feature is not enabled"),
 
   TABLE_COLUMN_TYPE_NOT_PROVIDED("Column data type not provided as part of definition"),
-  TABLE_PRIMARY_KEY_DEFINITION_INCORRECT("Primary key definition is incorrect"),
-  TABLE_MISSING_PARTITIONING_KEYS("Key needs to be provided as part of partitioning definition"),
-  TABLE_COLUMN_DEFINITION_MISSING("Column definition is missing for the provided key field"),
+
   TABLE_COLUMN_TYPE_UNSUPPORTED("Unsupported column types"),
   TABLE_COLUMN_UNKNOWN("Column unknown");
 

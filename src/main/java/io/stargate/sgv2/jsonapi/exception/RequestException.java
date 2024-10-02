@@ -19,11 +19,13 @@ public class RequestException extends APIException {
   }
 
   public enum Scope implements ErrorScope {
-    DOCUMENT,
     /** See {@link DocumentException} */
-    FILTER;
-
+    DOCUMENT,
     /** See {@link FilterException} */
+    FILTER,
+    /** See {@link SchemaException} */
+    SCHEMA;
+
     @Override
     public String scope() {
       return name();
