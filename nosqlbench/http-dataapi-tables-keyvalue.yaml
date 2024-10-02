@@ -13,6 +13,10 @@ description: >2
 
 scenarios:
   default:
+    schema: run driver=http tags==block:schema* threads==1 cycles==UNDEF
+    rampup: run driver=http tags==block:rampup cycles===TEMPLATE(rampup-cycles,TEMPLATE(rowscount,10000000)) threads=auto
+    main: run driver=http tags==block:main cycles===TEMPLATE(main-cycles,TEMPLATE(rowscount,10000000)) threads=auto
+  astra:
     schema: run driver=http tags==block:schema threads==1 cycles==UNDEF
     rampup: run driver=http tags==block:rampup cycles===TEMPLATE(rampup-cycles,TEMPLATE(rowscount,10000000)) threads=auto
     main: run driver=http tags==block:main cycles===TEMPLATE(main-cycles,TEMPLATE(rowscount,10000000)) threads=auto
@@ -40,7 +44,7 @@ bindings:
   rw_value: Hash(); <<valdist:Uniform(0,<<keycount:10000000>>)->int>>; ToString() -> String
 
 blocks:
-  schema:
+  schema_local:
     ops:
       create-namespace:
         method: POST
@@ -56,7 +60,8 @@ blocks:
               "name": "<<namespace:dataapi_keyvalue>>"
             }
           }
-
+  schema:
+    ops:
       drop-table:
         method: POST
         uri: <<protocol:http>>://{weighted_hosts}:<<dataapi_port:8181>><<path_prefix:>>/v1/<<namespace:dataapi_keyvalue>>
