@@ -465,4 +465,87 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
       return "\"" + s + "\"";
     }
   }
+
+  @Nested
+  @Order(6)
+  class InsertListColumns {
+    @Test
+    void insertValidListValues() {
+      // First with values for all fields (note: harder to use helper methods)
+      String docJSON =
+          """
+                      { "id": "listValidFull",
+                        "stringList": ["abc", "xyz"],
+                        "intList": [1, 2, -42],
+                        "doubleList": [0.0, -0.5, 3.125]
+                      }
+                      """;
+      insertOneInTable(TABLE_WITH_LIST_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"listValidFull\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+
+      // And then just for int-list; null for string, missing double
+      insertOneInTable(
+          TABLE_WITH_LIST_COLUMNS,
+          """
+                      { "id": "listValidPartial",
+                        "stringList": null,
+                        "intList": [3, -999, 42]
+                      }
+                      """);
+      // If we ask for all (select * basically), get explicit empty Lists:
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"listValidPartial\" } }")
+          .hasNoErrors()
+          .hasJSONField(
+              "data.document",
+              """
+                      { "id": "listValidPartial",
+                        "stringList": [ ],
+                        "intList": [3, -999, 42],
+                        "doubleList": [ ]
+                      }
+                      """);
+
+      // But if specifically just for intList, get just that
+      // NOTE: id column(s) not auto-included unlike with Collections and "_id"
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .postFindOne(
+              """
+                  { "filter": { "id": "listValidPartial" },
+                    "projection": { "intList": 1 }
+                  }
+              """)
+          .hasNoErrors()
+          .hasJSONField(
+              "data.document",
+              """
+                      {
+                        "intList": [3, -999, 42]
+                      }
+                      """);
+    }
+
+    /*
+    @Test
+    void failOnNonArrayListValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .postInsertOne(
+              """
+      {
+        "id":"listInvalid",
+              "stringList":"abc"
+      }
+      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `DATE` from",
+              "Text 'xxx'");
+    }
+     */
+  }
 }
