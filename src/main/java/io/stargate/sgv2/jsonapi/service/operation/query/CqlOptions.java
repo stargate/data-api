@@ -12,6 +12,11 @@ public class CqlOptions<QueryT extends BuildableQuery> implements CQLClause {
 
   public CqlOptions() {}
 
+  public CqlOptions(CqlOptions<QueryT> copyFromCqlOptions) {
+    builderOptions.addAll(copyFromCqlOptions.builderOptions);
+    statementOptions.addAll(copyFromCqlOptions.statementOptions);
+  }
+
   public CqlOptions<QueryT> addBuilderOption(CQLOption<QueryT> option) {
     builderOptions.add(option);
     return this;

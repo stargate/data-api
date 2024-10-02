@@ -127,12 +127,28 @@ request-errors:
       The filter clause is invalid. ${filter}
       
       ${SNIPPET.CONTACT_SUPPORT}
- # FILTER request errors
+  # FILTER request errors: filter against unknown columns
   - scope: FILTER
-    code: MULTIPLE_ID_FILTER
-    title: the title for the error
+    code: UNKNOWN_TABLE_COLUMNS
+    title: Unknown table columns in filter
     body: |-
-      big long message with ${vars} in it
+      Only columns defined in the table schema can be filtered.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included the following unknown columns: ${unknownColumns}.
+      
+      Resend the request using only defined columns.
+  # FILTER request errors: filter against a column type that is not supported
+  - scope: FILTER
+    code: UNSUPPORTED_COLUMN_TYPES
+    title: Unsupported table column data types in filter
+    body: |-
+      Only supported column types can be filtered
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included the following columns that have unsupported data types: ${unsupportedColumns}.
+      
+      Resend the request using only supported column types.  
 
   # Schema Errors
 

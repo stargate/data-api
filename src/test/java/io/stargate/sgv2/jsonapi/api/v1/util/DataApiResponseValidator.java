@@ -97,4 +97,16 @@ public class DataApiResponseValidator {
   public DataApiResponseValidator hasJSONField(String path, String rawJson) {
     return body(path, jsonEquals(rawJson));
   }
+
+  public DataApiResponseValidator hasNoWarnings() {
+    return body("warnings", is(nullValue()));
+  }
+
+  public DataApiResponseValidator hasSingleApiWarning(String warningKeyword) {
+    return hasSingleApiWarning(containsString(warningKeyword));
+  }
+
+  private DataApiResponseValidator hasSingleApiWarning(Matcher<String> stringMatcher) {
+    return body("status.warnings", hasSize(1)).body("status.warnings[0]", stringMatcher);
+  }
 }

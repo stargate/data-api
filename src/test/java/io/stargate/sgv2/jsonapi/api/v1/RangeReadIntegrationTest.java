@@ -206,17 +206,19 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
     @Test
     @Order(8)
     public void rangeWithText() throws Exception {
-      int[] ids = {24, 25};
-      List<Object> testDatas = getDocuments(ids);
       String json =
           """
         {
           "find": {
-            "filter" : {"activeUser" : {"$gt" : "data"}},
+            "filter" : {"username" : {"$gt" : "user23"}},
             "sort" : {"userId" : 1}
           }
         }
         """;
+      JsonNodeFactory nodefactory = objectMapper.getNodeFactory();
+      final ArrayNode arrayNode = nodefactory.arrayNode(testDatas.size());
+      for (int i = 0; i < testDatas.size(); i++)
+        arrayNode.add(objectMapper.valueToTree(testDatas.get(i)));
       given()
           .headers(getHeaders())
           .contentType(ContentType.JSON)
@@ -226,11 +228,33 @@ public class RangeReadIntegrationTest extends AbstractCollectionIntegrationTestB
           .then()
           .statusCode(200)
           .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body(
-              "errors[0].message",
-              is("Invalid filter expression: $gt operator must have `DATE` or `NUMBER` value"))
-          .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"));
+          .body("errors", is(nullValue()))
+          .body("data.documents", notNullValue());
+    }
+
+    @Test
+    @Order(8)
+    public void rangeWithBoolean() throws Exception {
+      String json =
+          """
+            {
+              "find": {
+                "filter" : {"activeUser" : {"$gt" : false}},
+                "sort" : {"userId" : 1}
+              }
+            }
+            """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(json)
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status", is(nullValue()))
+          .body("errors", is(nullValue()))
+          .body("data.documents", notNullValue());
     }
 
     @Test
