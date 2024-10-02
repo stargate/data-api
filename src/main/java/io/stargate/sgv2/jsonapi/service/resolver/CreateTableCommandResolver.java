@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
-import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -60,17 +60,17 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
     String comment = "";
 
     var attempt =
-        new CreateTableAttempt(
-            0,
-            ctx.schemaObject(),
-            ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis(),
-            2, // AARON - could not find a config for this
-            tableName,
-            columnTypes,
-            partitionKeys,
-            clusteringKeys,
-            ifNotExists,
-            comment);
+        new CreateTableAttemptBuilder(0, ctx.schemaObject())
+            .retryDelayMillis(
+                ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis())
+            .maxRetries(2)
+            .tableName(tableName)
+            .columnTypes(columnTypes)
+            .partitionKeys(partitionKeys)
+            .clusteringKeys(clusteringKeys)
+            .ifNotExists(ifNotExists)
+            .comment(comment)
+            .build();
     var attempts = new OperationAttemptContainer<>(List.of(attempt));
 
     var pageBuilder =

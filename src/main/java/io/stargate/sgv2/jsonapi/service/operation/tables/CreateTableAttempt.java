@@ -33,7 +33,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
   private final String comment;
   private final boolean ifNotExists;
 
-  public CreateTableAttempt(
+  protected CreateTableAttempt(
       int position,
       KeyspaceSchemaObject schemaObject,
       int retryDelayMillis,
