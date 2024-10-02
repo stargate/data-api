@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.List;
 import java.util.Map;
 
+/** Builds a {@link CreateTableAttempt}. */
 public class CreateTableAttemptBuilder {
   private int position;
   private KeyspaceSchemaObject schemaObject;
