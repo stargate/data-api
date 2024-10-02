@@ -64,7 +64,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     var keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.name().keyspace());
     var tableIdentifier = cqlIdentifierFromUserInput(tableName);
 
-    CreateTableStart create = createTable(keyspaceIdentifier, tableIdentifier).ifNotExists();
+    CreateTableStart create = createTable(keyspaceIdentifier, tableIdentifier);
 
     // Add if not exists flag based on request
     if (ifNotExists) {
