@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
+import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ComplexApiDataType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.PrimitiveApiDataType;
@@ -58,16 +59,26 @@ public class ComplexTypes {
     // Float will be default type for vector
     private final ColumnType valueType;
     private final int vectorSize;
+    private final VectorizeConfig vectorConfig;
 
-    public VectorType(ColumnType valueType, int vectorSize) {
+    public VectorType(ColumnType valueType, int vectorSize, VectorizeConfig vectorConfig) {
       this.valueType = valueType;
       this.vectorSize = vectorSize;
+      this.vectorConfig = vectorConfig;
     }
 
     @Override
     public ApiDataType getApiDataType() {
       return new ComplexApiDataType.VectorType(
           (PrimitiveApiDataType) valueType.getApiDataType(), vectorSize);
+    }
+
+    public VectorizeConfig getVectorConfig() {
+      return vectorConfig;
+    }
+
+    public int getDimension() {
+      return vectorSize;
     }
   }
 }

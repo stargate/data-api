@@ -16,7 +16,7 @@ public class CreateTableAttemptBuilder {
   private Map<String, ApiDataType> columnTypes;
   private List<String> partitionKeys;
   private List<PrimaryKey.OrderingKey> clusteringKeys;
-  private String comment;
+  private Map<String, String> customProperties;
   private boolean ifNotExists;
 
   public CreateTableAttemptBuilder(int position, KeyspaceSchemaObject schemaObject) {
@@ -55,8 +55,8 @@ public class CreateTableAttemptBuilder {
     return this;
   }
 
-  public CreateTableAttemptBuilder comment(String comment) {
-    this.comment = comment;
+  public CreateTableAttemptBuilder comment(Map<String, String> customProperties) {
+    this.customProperties = customProperties;
     return this;
   }
 
@@ -77,6 +77,6 @@ public class CreateTableAttemptBuilder {
         partitionKeys,
         clusteringKeys,
         ifNotExists,
-        comment);
+        customProperties);
   }
 }

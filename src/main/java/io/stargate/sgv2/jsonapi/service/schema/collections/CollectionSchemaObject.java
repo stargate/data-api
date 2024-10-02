@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
@@ -280,14 +281,14 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     CreateCollectionCommand.Options.IndexingConfig indexingConfig = null;
     // populate the vectorSearchConfig
     if (collectionSetting.vectorConfig().vectorEnabled()) {
-      CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig vectorizeConfig = null;
+      VectorizeConfig vectorizeConfig = null;
       if (collectionSetting.vectorConfig().vectorizeConfig() != null) {
         Map<String, String> authentication =
             collectionSetting.vectorConfig().vectorizeConfig().authentication();
         Map<String, Object> parameters =
             collectionSetting.vectorConfig().vectorizeConfig().parameters();
         vectorizeConfig =
-            new CreateCollectionCommand.Options.VectorSearchConfig.VectorizeConfig(
+            new VectorizeConfig(
                 collectionSetting.vectorConfig().vectorizeConfig().provider(),
                 collectionSetting.vectorConfig().vectorizeConfig().modelName(),
                 authentication == null ? null : Map.copyOf(authentication),

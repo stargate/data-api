@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDefinitionDeserializer;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.List;
@@ -40,7 +41,8 @@ public interface ColumnType {
   }
 
   // Returns the column type from the string.
-  static ColumnType fromString(String type, String keyType, String valueType, int dimension) {
+  static ColumnType fromString(
+      String type, String keyType, String valueType, int dimension, VectorizeConfig vectorConfig) {
     // TODO: the name of the type should be a part of the ColumnType interface, and use a map for
     // the lookup
     switch (type) {
@@ -87,8 +89,8 @@ public interface ColumnType {
           }
           try {
             return new ComplexTypes.MapType(
-                fromString(keyType, null, null, dimension),
-                fromString(valueType, null, null, dimension));
+                fromString(keyType, null, null, dimension, vectorConfig),
+                fromString(valueType, null, null, dimension, vectorConfig));
           } catch (SchemaException se) {
             throw SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get();
           }
@@ -99,7 +101,8 @@ public interface ColumnType {
             throw SchemaException.Code.LIST_TYPE_INCORRECT_DEFINITION.get();
           }
           try {
-            return new ComplexTypes.ListType(fromString(valueType, null, null, dimension));
+            return new ComplexTypes.ListType(
+                fromString(valueType, null, null, dimension, vectorConfig));
           } catch (SchemaException se) {
             throw SchemaException.Code.LIST_TYPE_INCORRECT_DEFINITION.get();
           }
@@ -111,7 +114,8 @@ public interface ColumnType {
             throw SchemaException.Code.SET_TYPE_INCORRECT_DEFINITION.get();
           }
           try {
-            return new ComplexTypes.SetType(fromString(valueType, null, null, dimension));
+            return new ComplexTypes.SetType(
+                fromString(valueType, null, null, dimension, vectorConfig));
           } catch (SchemaException se) {
             throw SchemaException.Code.SET_TYPE_INCORRECT_DEFINITION.get();
           }
@@ -123,7 +127,7 @@ public interface ColumnType {
             throw SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
           }
           try {
-            return new ComplexTypes.VectorType(PrimitiveTypes.FLOAT, dimension);
+            return new ComplexTypes.VectorType(PrimitiveTypes.FLOAT, dimension, vectorConfig);
           } catch (SchemaException se) {
             throw SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
           }

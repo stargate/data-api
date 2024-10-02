@@ -16,6 +16,7 @@ import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ComplexApiDataType;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.HashSet;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
 
@@ -30,7 +32,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
   private final Map<String, ApiDataType> columnTypes;
   private final List<String> partitionKeys;
   private final List<PrimaryKey.OrderingKey> clusteringKeys;
-  private final String comment;
+  private final Map<String, String> customProperties;
   private final boolean ifNotExists;
 
   protected CreateTableAttempt(
@@ -43,7 +45,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
       List<String> partitionKeys,
       List<PrimaryKey.OrderingKey> clusteringKeys,
       boolean ifNotExists,
-      String comment) {
+      Map<String, String> customProperties) {
     super(
         position,
         schemaObject,
@@ -54,7 +56,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     this.partitionKeys = partitionKeys;
     this.clusteringKeys = clusteringKeys;
     this.ifNotExists = ifNotExists;
-    this.comment = comment;
+    this.customProperties = customProperties;
 
     setStatus(OperationStatus.READY);
   }
@@ -73,13 +75,34 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     // Add all primary keys and colunms
     CreateTable createTable = addColumnsAndKeys(create);
 
-    // Add comment which has table properties for vectorize
-    CreateTableWithOptions createWithOptions = createTable.withComment(comment);
+    // Add customProperties which has table properties for vectorize
+    // Convert value to ByteBuffer since extension option accepts ByteBuffer
+    final Map<String, String> extensions =
+        customProperties.entrySet().stream()
+            .collect(Collectors.toMap(e -> e.getKey(), e -> stringToHex(e.getValue())));
+
+    CreateTableWithOptions createWithOptions = createTable.withOption("extensions", extensions);
 
     // Add the clustering key order
     createWithOptions = addClusteringOrder(createWithOptions);
 
     return createWithOptions.build();
+  }
+
+  // Method to convert String to "0x" + hex format this the value format accepted by extensions map.
+  public static String stringToHex(String input) {
+    StringBuilder hexString = new StringBuilder("0x");
+
+    // Convert each character to hexadecimal
+    for (byte b : input.getBytes(StandardCharsets.UTF_8)) {
+      String hex = Integer.toHexString(0xFF & b); // Convert byte to hex
+      if (hex.length() == 1) {
+        hexString.append('0'); // Append leading zero if hex value is single digit
+      }
+      hexString.append(hex);
+    }
+
+    return hexString.toString();
   }
 
   private CreateTable addColumnsAndKeys(CreateTableStart create) {

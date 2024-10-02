@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import java.io.IOException;
@@ -25,13 +26,14 @@ public class ColumnDefinitionDeserializer extends StdDeserializer<ColumnType> {
       throws IOException, JacksonException {
     JsonNode definition = deserializationContext.readTree(jsonParser);
     if (definition.isTextual()) {
-      return ColumnType.fromString(definition.asText(), null, null, -1);
+      return ColumnType.fromString(definition.asText(), null, null, -1, null);
     }
     if (definition.isObject() && definition.has("type")) {
       String type = definition.path("type").asText();
       String keyType = null;
       String valueType = null;
       int dimension = -1;
+      VectorizeConfig vectorConfig = null;
       if (definition.has("keyType")) {
         keyType = definition.path("keyType").asText();
       }
@@ -41,7 +43,11 @@ public class ColumnDefinitionDeserializer extends StdDeserializer<ColumnType> {
       if (definition.has("dimension")) {
         dimension = definition.path("dimension").asInt();
       }
-      return ColumnType.fromString(type, keyType, valueType, dimension);
+      if (definition.has("service")) {
+        JsonNode service = definition.path("service");
+        vectorConfig = deserializationContext.readTreeAsValue(service, VectorizeConfig.class);
+      }
+      return ColumnType.fromString(type, keyType, valueType, dimension, vectorConfig);
     }
     throw SchemaException.Code.COLUMN_TYPE_INCORRECT.get();
   }
