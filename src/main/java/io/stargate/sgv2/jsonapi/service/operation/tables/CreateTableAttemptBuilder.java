@@ -55,7 +55,7 @@ public class CreateTableAttemptBuilder {
     return this;
   }
 
-  public CreateTableAttemptBuilder comment(Map<String, String> customProperties) {
+  public CreateTableAttemptBuilder customProperties(Map<String, String> customProperties) {
     this.customProperties = customProperties;
     return this;
   }

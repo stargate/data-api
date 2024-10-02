@@ -21,31 +21,31 @@ import org.junit.jupiter.params.provider.MethodSource;
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
-    @Nested
-    @Order(1)
-    class CreateTable {
-        @ParameterizedTest
-        @MethodSource("allTableData")
-        public void testCreateTable(CreateTableTestData testData) {
-            if (testData.error()) {
-                createTableErrorValidation(
-                        testData.request(), testData.errorCode(), testData.errorMessage());
-            } else {
-                createTable(testData.request());
-                deleteTable(testData.tableName());
-            }
-        }
+  @Nested
+  @Order(1)
+  class CreateTable {
+    @ParameterizedTest
+    @MethodSource("allTableData")
+    public void testCreateTable(CreateTableTestData testData) {
+      if (testData.error()) {
+        createTableErrorValidation(
+            testData.request(), testData.errorCode(), testData.errorMessage());
+      } else {
+        createTable(testData.request());
+        deleteTable(testData.tableName());
+      }
+    }
 
-        private record CreateTableTestData(
-                String request, String tableName, boolean error, String errorCode, String errorMessage) {}
+    private record CreateTableTestData(
+        String request, String tableName, boolean error, String errorCode, String errorMessage) {}
 
-        private static Stream<Arguments> allTableData() {
-            List<Arguments> testCases = new ArrayList<>();
-            // create table with all types
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+    private static Stream<Arguments> allTableData() {
+      List<Arguments> testCases = new ArrayList<>();
+      // create table with all types
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                     {
                                                        "name": "allTypesTable",
                                                        "definition": {
@@ -90,15 +90,15 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                        }
                                                     }
                                                     """,
-                                    "allTypesTable",
-                                    false,
-                                    null,
-                                    null)));
-            // primaryKeyAsString
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+                  "allTypesTable",
+                  false,
+                  null,
+                  null)));
+      // primaryKeyAsString
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                                   {
                                                                      "name": "primaryKeyAsStringTable",
                                                                      "definition": {
@@ -117,15 +117,15 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                                      }
                                                                   }
                                                                   """,
-                                    "primaryKeyAsStringTable",
-                                    false,
-                                    null,
-                                    null)));
-            // primaryKeyAsString
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+                  "primaryKeyAsStringTable",
+                  false,
+                  null,
+                  null)));
+      // primaryKeyAsString
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                       {
                                                          "name": "primaryKeyAsStringTable",
                                                          "definition": {
@@ -144,16 +144,16 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                          }
                                                       }
                                                       """,
-                                    "primaryKeyAsStringTable",
-                                    false,
-                                    null,
-                                    null)));
+                  "primaryKeyAsStringTable",
+                  false,
+                  null,
+                  null)));
 
-            // primaryKeyWithQuotable
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      // primaryKeyWithQuotable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                       {
                                                             "name": "primaryKeyWithQuotable",
                                                             "definition": {
@@ -169,16 +169,16 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                             }
                                                         }
                                                       """,
-                                    "primaryKeyWithQuotable",
-                                    false,
-                                    null,
-                                    null)));
+                  "primaryKeyWithQuotable",
+                  false,
+                  null,
+                  null)));
 
-            // columnTypeusingShortHandTable
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      // columnTypeusingShortHandTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                       {
                                                          "name": "columnTypeusingShortHandTable",
                                                          "definition": {
@@ -191,16 +191,16 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                          }
                                                       }
                                                       """,
-                                    "columnTypeusingShortHandTable",
-                                    false,
-                                    null,
-                                    null)));
+                  "columnTypeusingShortHandTable",
+                  false,
+                  null,
+                  null)));
 
-            // primaryKeyAsJsonObjectTable
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      // primaryKeyAsJsonObjectTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                                   {
                                                                     "name": "primaryKeyAsJsonObjectTable",
                                                                     "definition": {
@@ -226,18 +226,18 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                                     }
                                                                   }
                                                                   """,
-                                    "primaryKeyAsJsonObjectTable",
-                                    false,
-                                    null,
-                                    null)));
+                  "primaryKeyAsJsonObjectTable",
+                  false,
+                  null,
+                  null)));
 
-            // invalidPrimaryKeyTable
-            SchemaException missingDefinition =
-                    SchemaException.Code.COLUMN_DEFINITION_MISSING.get(Map.of("column_name", "error_column"));
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      // invalidPrimaryKeyTable
+      SchemaException missingDefinition =
+          SchemaException.Code.COLUMN_DEFINITION_MISSING.get(Map.of("column_name", "error_column"));
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                       {
                                                        "name": "invalidPrimaryKeyTable",
                                                        "definition": {
@@ -256,16 +256,16 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                        }
                                                       }
                                                       """,
-                                    "invalidPrimaryKeyTable",
-                                    true,
-                                    missingDefinition.code,
-                                    missingDefinition.body)));
+                  "invalidPrimaryKeyTable",
+                  true,
+                  missingDefinition.code,
+                  missingDefinition.body)));
 
-            // invalidPartitionByTable
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      // invalidPartitionByTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                       {
                                                         "name": "invalidPartitionByTable",
                                                         "definition": {
@@ -285,16 +285,16 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                         }
                                                       }
                                                       """,
-                                    "invalidPartitionByTable",
-                                    true,
-                                    missingDefinition.code,
-                                    missingDefinition.body)));
+                  "invalidPartitionByTable",
+                  true,
+                  missingDefinition.code,
+                  missingDefinition.body)));
 
-            // invalidPartitionSortTable
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      // invalidPartitionSortTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                       {
                                                           "name": "invalidPartitionSortTable",
                                                           "definition": {
@@ -314,17 +314,17 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                           }
                                                         }
                                                       """,
-                                    "invalidPartitionSortTable",
-                                    true,
-                                    missingDefinition.code,
-                                    missingDefinition.body)));
+                  "invalidPartitionSortTable",
+                  true,
+                  missingDefinition.code,
+                  missingDefinition.body)));
 
-            SchemaException se = SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
-            // invalidPartitionSortOrderingValueTable
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      SchemaException se = SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
+      // invalidPartitionSortOrderingValueTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                       {
                                                         "name": "invalidPartitionSortOrderingValueTable",
                                                         "definition": {
@@ -344,16 +344,16 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                         }
                                                       }
                                                       """,
-                                    "invalidPartitionSortOrderingValueTable",
-                                    true,
-                                    se.code,
-                                    se.body)));
+                  "invalidPartitionSortOrderingValueTable",
+                  true,
+                  se.code,
+                  se.body)));
 
-            // invalidPartitionSortOrderingValueTable
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      // invalidPartitionSortOrderingValueTable
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                       {
                                                           "name": "invalidPartitionSortOrderingValueTypeTable",
                                                           "definition": {
@@ -373,24 +373,24 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                           }
                                                         }
                                                       """,
-                                    "invalidPartitionSortOrderingValueTypeTable",
-                                    true,
-                                    se.code,
-                                    se.body)));
+                  "invalidPartitionSortOrderingValueTypeTable",
+                  true,
+                  se.code,
+                  se.body)));
 
-            // invalidColumnTypeTable
-            Map<String, String> errorMessageFormattingValues =
-                    Map.of(
-                            "type",
-                            "invalid_type",
-                            "supported_types",
-                            "[" + String.join(", ", ColumnType.getSupportedTypes()) + "]");
-            SchemaException invalidType =
-                    SchemaException.Code.COLUMN_TYPE_UNSUPPORTED.get(errorMessageFormattingValues);
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      // invalidColumnTypeTable
+      Map<String, String> errorMessageFormattingValues =
+          Map.of(
+              "type",
+              "invalid_type",
+              "supported_types",
+              "[" + String.join(", ", ColumnType.getSupportedTypes()) + "]");
+      SchemaException invalidType =
+          SchemaException.Code.COLUMN_TYPE_UNSUPPORTED.get(errorMessageFormattingValues);
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                       {
                                                         "name": "invalidColumnTypeTable",
                                                         "definition": {
@@ -411,17 +411,17 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                         }
                                                       }
                                                       """,
-                                    "invalidColumnTypeTable",
-                                    true,
-                                    invalidType.code,
-                                    invalidType.body)));
-            // Column type not provided
-            SchemaException columnTypeInvalid =
-                    SchemaException.Code.COLUMN_TYPE_INCORRECT.get(errorMessageFormattingValues);
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+                  "invalidColumnTypeTable",
+                  true,
+                  invalidType.code,
+                  invalidType.body)));
+      // Column type not provided
+      SchemaException columnTypeInvalid =
+          SchemaException.Code.COLUMN_TYPE_INCORRECT.get(errorMessageFormattingValues);
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                                   {
                                                                     "name": "invalidColumnTypeTable",
                                                                     "definition": {
@@ -442,17 +442,17 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                                     }
                                                                   }
                                                                   """,
-                                    "invalidColumnTypeTable",
-                                    true,
-                                    columnTypeInvalid.code,
-                                    columnTypeInvalid.body)));
+                  "invalidColumnTypeTable",
+                  true,
+                  columnTypeInvalid.code,
+                  columnTypeInvalid.body)));
 
-            // Map type tests
-            SchemaException invalidMapType = SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get();
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      // Map type tests
+      SchemaException invalidMapType = SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get();
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                           {
                                                             "name": "invalidMapType",
                                                             "definition": {
@@ -469,15 +469,15 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                             }
                                                           }
                                                                               """,
-                                    "invalidMapType value type not provided",
-                                    true,
-                                    invalidMapType.code,
-                                    invalidMapType.body)));
+                  "invalidMapType value type not provided",
+                  true,
+                  invalidMapType.code,
+                  invalidMapType.body)));
 
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                           {
                                                             "name": "invalidMapType",
                                                             "definition": {
@@ -494,15 +494,15 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                             }
                                                           }
                                                                               """,
-                                    "invalidMapType key type not provided",
-                                    true,
-                                    invalidMapType.code,
-                                    invalidMapType.body)));
+                  "invalidMapType key type not provided",
+                  true,
+                  invalidMapType.code,
+                  invalidMapType.body)));
 
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                           {
                                                             "name": "invalidMapType",
                                                             "definition": {
@@ -520,15 +520,15 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                             }
                                                           }
                                                                               """,
-                                    "invalidMapType not primitive type provided",
-                                    true,
-                                    invalidMapType.code,
-                                    invalidMapType.body)));
+                  "invalidMapType not primitive type provided",
+                  true,
+                  invalidMapType.code,
+                  invalidMapType.body)));
 
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                           {
                                                             "name": "invalidMapType",
                                                             "definition": {
@@ -546,17 +546,17 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                             }
                                                           }
                                                                               """,
-                                    "invalidMapType not primitive type provided",
-                                    true,
-                                    invalidMapType.code,
-                                    invalidMapType.body)));
+                  "invalidMapType not primitive type provided",
+                  true,
+                  invalidMapType.code,
+                  invalidMapType.body)));
 
-            // List type tests
-            SchemaException invalidListType = SchemaException.Code.LIST_TYPE_INCORRECT_DEFINITION.get();
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      // List type tests
+      SchemaException invalidListType = SchemaException.Code.LIST_TYPE_INCORRECT_DEFINITION.get();
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                           {
                                                             "name": "invalidListType",
                                                             "definition": {
@@ -572,15 +572,15 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                             }
                                                           }
                                                                               """,
-                                    "invalidListType value type not provided",
-                                    true,
-                                    invalidListType.code,
-                                    invalidListType.body)));
+                  "invalidListType value type not provided",
+                  true,
+                  invalidListType.code,
+                  invalidListType.body)));
 
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                           {
                                                             "name": "invalidListType",
                                                             "definition": {
@@ -597,17 +597,17 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                             }
                                                           }
                                                                               """,
-                                    "invalidListType not primitive type provided",
-                                    true,
-                                    invalidListType.code,
-                                    invalidListType.body)));
+                  "invalidListType not primitive type provided",
+                  true,
+                  invalidListType.code,
+                  invalidListType.body)));
 
-            // Set type tests
-            SchemaException invalidSetType = SchemaException.Code.SET_TYPE_INCORRECT_DEFINITION.get();
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      // Set type tests
+      SchemaException invalidSetType = SchemaException.Code.SET_TYPE_INCORRECT_DEFINITION.get();
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                           {
                                                             "name": "invalidSetType",
                                                             "definition": {
@@ -623,15 +623,15 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                             }
                                                           }
                                                                               """,
-                                    "invalidSetType value type not provided",
-                                    true,
-                                    invalidSetType.code,
-                                    invalidSetType.body)));
+                  "invalidSetType value type not provided",
+                  true,
+                  invalidSetType.code,
+                  invalidSetType.body)));
 
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                           {
                                                             "name": "invalidSetType",
                                                             "definition": {
@@ -648,18 +648,18 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                             }
                                                           }
                                                                               """,
-                                    "invalidSetType not primitive type provided",
-                                    true,
-                                    invalidSetType.code,
-                                    invalidSetType.body)));
+                  "invalidSetType not primitive type provided",
+                  true,
+                  invalidSetType.code,
+                  invalidSetType.body)));
 
-            // Vector type tests
-            SchemaException invalidVectorType =
-                    SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      // Vector type tests
+      SchemaException invalidVectorType =
+          SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                           {
                                                             "name": "invalidVectorType",
                                                             "definition": {
@@ -676,15 +676,15 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                             }
                                                           }
                                                                               """,
-                                    "invalidVectorType value type not provided",
-                                    true,
-                                    invalidVectorType.code,
-                                    invalidVectorType.body)));
+                  "invalidVectorType value type not provided",
+                  true,
+                  invalidVectorType.code,
+                  invalidVectorType.body)));
 
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                                           {
                                                             "name": "invalidVectorType",
                                                             "definition": {
@@ -701,15 +701,15 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                             }
                                                           }
                                                                               """,
-                                    "invalidVectorType not primitive type provided",
-                                    true,
-                                    invalidVectorType.code,
-                                    invalidVectorType.body)));
-// vector type with vectorize
-            testCases.add(
-                    Arguments.of(
-                            new CreateTableTestData(
-                                    """
+                  "invalidVectorType not primitive type provided",
+                  true,
+                  invalidVectorType.code,
+                  invalidVectorType.body)));
+      // vector type with vectorize
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
                                     {
                                        "name": "vectorizeConfigTest",
                                        "definition": {
@@ -733,11 +733,11 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                        }
                                     }
                                     """,
-                                    "primaryKeyAsStringTable",
-                                    false,
-                                    null,
-                                    null)));
-            return testCases.stream();
-        }
+                  "primaryKeyAsStringTable",
+                  false,
+                  null,
+                  null)));
+      return testCases.stream();
     }
+  }
 }
