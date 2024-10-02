@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -38,6 +39,14 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
         .postCreateTable(tableDefAsJSON)
         .hasNoErrors()
         .body("status.ok", is(1));
+  }
+
+  protected DataApiResponseValidator createTableErrorValidation(
+      String tableDefAsJSON, String errorCode, String message) {
+    return DataApiCommandSenders.assertNamespaceCommand(keyspaceName)
+        .postCreateTable(tableDefAsJSON)
+        .body("errors[0].errorCode", is(errorCode))
+        .body("errors[0].message", containsString(message));
   }
 
   protected DataApiResponseValidator deleteTable(String tableName) {

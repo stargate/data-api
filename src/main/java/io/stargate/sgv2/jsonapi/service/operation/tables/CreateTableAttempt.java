@@ -6,33 +6,43 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromU
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
+import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ComplexApiDataType;
 import java.time.Duration;
 import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
 
   private final String tableName;
-  private final Map<String, ColumnType> columnTypes;
+  private final Map<String, ApiDataType> columnTypes;
   private final List<String> partitionKeys;
   private final List<PrimaryKey.OrderingKey> clusteringKeys;
   private final String comment;
+  private final boolean ifNotExists;
 
-  public CreateTableAttempt(
+  protected CreateTableAttempt(
       int position,
       KeyspaceSchemaObject schemaObject,
       int retryDelayMillis,
       int maxRetries,
       String tableName,
-      Map<String, ColumnType> columnTypes,
+      Map<String, ApiDataType> columnTypes,
       List<String> partitionKeys,
       List<PrimaryKey.OrderingKey> clusteringKeys,
+      boolean ifNotExists,
       String comment) {
     super(
         position,
@@ -43,6 +53,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     this.columnTypes = Objects.requireNonNull(columnTypes, "columnTypes must not be null");
     this.partitionKeys = partitionKeys;
     this.clusteringKeys = clusteringKeys;
+    this.ifNotExists = ifNotExists;
     this.comment = comment;
 
     setStatus(OperationStatus.READY);
@@ -53,8 +64,12 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     var keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.name().keyspace());
     var tableIdentifier = cqlIdentifierFromUserInput(tableName);
 
-    CreateTableStart create = createTable(keyspaceIdentifier, tableIdentifier).ifNotExists();
+    CreateTableStart create = createTable(keyspaceIdentifier, tableIdentifier);
 
+    // Add if not exists flag based on request
+    if (ifNotExists) {
+      create = create.ifNotExists();
+    }
     // Add all primary keys and colunms
     CreateTable createTable = addColumnsAndKeys(create);
 
@@ -71,36 +86,40 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     Set<String> addedColumns = new HashSet<>();
     CreateTable createTable = null;
     for (String partitionKey : partitionKeys) {
+      DataType dataType = getCqlDataType(columnTypes.get(partitionKey));
       if (createTable == null) {
-        createTable =
-            create.withPartitionKey(
-                CqlIdentifier.fromInternal(partitionKey),
-                columnTypes.get(partitionKey).getCqlType());
+        createTable = create.withPartitionKey(CqlIdentifier.fromInternal(partitionKey), dataType);
       } else {
         createTable =
-            createTable.withPartitionKey(
-                CqlIdentifier.fromInternal(partitionKey),
-                columnTypes.get(partitionKey).getCqlType());
+            createTable.withPartitionKey(CqlIdentifier.fromInternal(partitionKey), dataType);
       }
       addedColumns.add(partitionKey);
     }
     for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
-      ColumnType columnType = columnTypes.get(clusteringKey.column());
+      ApiDataType apiDataType = columnTypes.get(clusteringKey.column());
+      DataType dataType = getCqlDataType(apiDataType);
       createTable =
           createTable.withClusteringColumn(
-              CqlIdentifier.fromInternal(clusteringKey.column()), columnType.getCqlType());
+              CqlIdentifier.fromInternal(clusteringKey.column()), dataType);
       addedColumns.add(clusteringKey.column());
     }
 
-    for (Map.Entry<String, ColumnType> column : columnTypes.entrySet()) {
+    for (Map.Entry<String, ApiDataType> column : columnTypes.entrySet()) {
       if (addedColumns.contains(column.getKey())) {
         continue;
       }
-      createTable =
-          createTable.withColumn(
-              CqlIdentifier.fromInternal(column.getKey()), column.getValue().getCqlType());
+      DataType dataType = getCqlDataType(column.getValue());
+      createTable = createTable.withColumn(CqlIdentifier.fromInternal(column.getKey()), dataType);
     }
     return createTable;
+  }
+
+  private DataType getCqlDataType(ApiDataType apiDataType) {
+    if (apiDataType instanceof ComplexApiDataType) {
+      return ((ComplexApiDataType) apiDataType).getCqlType();
+    } else {
+      return ApiDataTypeDefs.from(apiDataType).get().getCqlType();
+    }
   }
 
   private CreateTableWithOptions addClusteringOrder(CreateTableWithOptions createTableWithOptions) {

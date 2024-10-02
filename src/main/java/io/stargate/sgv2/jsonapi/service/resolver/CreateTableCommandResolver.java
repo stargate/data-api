@@ -3,14 +3,15 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.*;
-import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Arrays;
 import java.util.List;
@@ -23,18 +24,19 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateTableCommand command) {
     String tableName = command.name();
-    Map<String, ColumnType> columnTypes =
+    boolean ifNotExists = command.options() != null ? command.options().ifNotExists() : false;
+    Map<String, ApiDataType> columnTypes =
         command.definition().columns().entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().type()));
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getApiDataType()));
     List<String> partitionKeys = Arrays.stream(command.definition().primaryKey().keys()).toList();
 
     if (partitionKeys.isEmpty()) {
-      throw ErrorCodeV1.TABLE_MISSING_PARTITIONING_KEYS.toApiException();
+      throw SchemaException.Code.MISSING_PRIMARY_KEYS.get();
     }
     partitionKeys.forEach(
         key -> {
           if (!columnTypes.containsKey(key)) {
-            throw ErrorCodeV1.TABLE_COLUMN_DEFINITION_MISSING.toApiException("%s", key);
+            throw SchemaException.Code.COLUMN_DEFINITION_MISSING.get(Map.of("column_name", key));
           }
         });
 
@@ -46,7 +48,11 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
     clusteringKeys.forEach(
         key -> {
           if (!columnTypes.containsKey(key.column())) {
-            throw ErrorCodeV1.TABLE_COLUMN_DEFINITION_MISSING.toApiException("%s", key.column());
+            throw SchemaException.Code.COLUMN_DEFINITION_MISSING.get(
+                Map.of("column_name", key.column()));
+          }
+          if (partitionKeys.contains(key.column())) {
+            throw SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
           }
         });
 
@@ -54,16 +60,17 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
     String comment = "";
 
     var attempt =
-        new CreateTableAttempt(
-            0,
-            ctx.schemaObject(),
-            ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis(),
-            2, // AARON - could not find a config for this
-            tableName,
-            columnTypes,
-            partitionKeys,
-            clusteringKeys,
-            comment);
+        new CreateTableAttemptBuilder(0, ctx.schemaObject())
+            .retryDelayMillis(
+                ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis())
+            .maxRetries(2)
+            .tableName(tableName)
+            .columnTypes(columnTypes)
+            .partitionKeys(partitionKeys)
+            .clusteringKeys(clusteringKeys)
+            .ifNotExists(ifNotExists)
+            .comment(comment)
+            .build();
     var attempts = new OperationAttemptContainer<>(List.of(attempt));
 
     var pageBuilder =
