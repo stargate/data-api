@@ -23,7 +23,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   static final String TABLE_WITH_FP_COLUMNS = "findOneFpColumnsTable";
   static final String TABLE_WITH_BINARY_COLUMN = "findOneBinaryColumnsTable";
   static final String TABLE_WITH_DATETIME_COLUMNS = "findOneDateTimeColumnsTable";
-  static final String TABLE_WITH_COLLECTION_COLUMNS = "findOneDateTimeCollectionsTable";
+  static final String TABLE_WITH_LIST_COLUMNS = "findOneListColumnsTable";
+  static final String TABLE_WITH_SET_COLUMNS = "findOneSetColumnsTable";
 
   final JSONCodecRegistryTestData codecTestData = new JSONCodecRegistryTestData();
 
@@ -67,15 +68,31 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
             "timestampValue", "timestamp"),
         "id");
 
-    /*
     createTableWithColumns(
-        TABLE_WITH_COLLECTION_COLUMNS,
+        TABLE_WITH_LIST_COLUMNS,
         Map.of(
-            "id", "text",
-            "stringListValue",
-            Map.of("type", "timestamp")),
+            "id",
+            "text",
+            "stringList",
+            Map.of("type", "list", "valueType", "text"),
+            "intList",
+            Map.of("type", "list", "valueType", "int"),
+            "doubleList",
+            Map.of("type", "list", "valueType", "double")),
         "id");
-     */
+
+    createTableWithColumns(
+        TABLE_WITH_SET_COLUMNS,
+        Map.of(
+            "id",
+            "text",
+            "stringSet",
+            Map.of("type", "set", "valueType", "text"),
+            "intSet",
+            Map.of("type", "set", "valueType", "int"),
+            "doubleSet",
+            Map.of("type", "set", "valueType", "double")),
+        "id");
   }
 
   @Nested
