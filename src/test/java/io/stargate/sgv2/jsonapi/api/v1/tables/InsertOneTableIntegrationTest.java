@@ -86,12 +86,12 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
         Map.of(
             "id",
             "text",
-            "stringSet",
-            Map.of("type", "set", "valueType", "text"),
             "intSet",
             Map.of("type", "set", "valueType", "int"),
             "doubleSet",
-            Map.of("type", "set", "valueType", "double")),
+            Map.of("type", "set", "valueType", "double"),
+            "stringSet",
+            Map.of("type", "set", "valueType", "text")),
         "id");
   }
 
@@ -547,5 +547,78 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "Text 'xxx'");
     }
      */
+  }
+
+  @Nested
+  @Order(7)
+  class InsertSetColumns {
+    @Test
+    void insertValidSetValues() {
+      // First with values for all fields (note: harder to use helper methods)
+      String docJSON =
+          """
+                      { "id": "setValidFull",
+                        "doubleSet": [0.0, -0.5, 3.125],
+                        "intSet": [1, 2, -42],
+                        "stringSet": ["abc", "xyz"]
+                      }
+                      """;
+      insertOneInTable(TABLE_WITH_SET_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"setValidFull\" } }")
+          .hasNoErrors()
+          // also: ordering by data store is lexicographic, so differs from input order;
+          // plus actual values are sorted as well
+          .hasJSONField(
+              "data.document",
+              """
+                      { "id": "setValidFull",
+                        "doubleSet": [-0.5, 0.0, 3.125],
+                        "intSet": [-42, 1, 2],
+                        "stringSet": ["abc", "xyz"]
+                      }
+                      """);
+
+      // And then just for int-list; null for string, missing double
+      insertOneInTable(
+          TABLE_WITH_SET_COLUMNS,
+          """
+                      { "id": "setValidPartial",
+                        "stringSet": null,
+                        "intSet": [3, -999, 42]
+                      }
+                      """);
+      // If we ask for all (select * basically), get explicit empty Sets:
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"setValidPartial\" } }")
+          .hasNoErrors()
+          .hasJSONField(
+              "data.document",
+              """
+                              { "id": "setValidPartial",
+                                "doubleSet": [ ],
+                                "intSet": [-999, 3, 42],
+                                "stringSet": [ ]
+                              }
+                              """);
+
+      // But if specifically just for intSet, get just that
+      // NOTE: id column(s) not auto-included unlike with Collections and "_id"
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .postFindOne(
+              """
+                                  { "filter": { "id": "setValidPartial" },
+                                    "projection": { "intSet": 1 }
+                                  }
+                              """)
+          .hasNoErrors()
+          .hasJSONField(
+              "data.document",
+              """
+                              {
+                                "intSet": [-999, 3, 42]
+                              }
+                              """);
+    }
   }
 }

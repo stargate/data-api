@@ -114,8 +114,11 @@ public abstract class CollectionCodecs {
         return (JSONCodec<Object, Object>) codec;
       }
     }
-    throw new ToCQLCodecException(
-        element, elementType, "no codec matching (list/set) element value type");
+    String msg =
+        String.format(
+            "no codec matching (list/set) declared element type `%s`, actual value type `%s`",
+            elementType, element.getClass());
+    throw new ToCQLCodecException(element, elementType, msg);
   }
 
   /**

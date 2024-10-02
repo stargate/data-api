@@ -10,7 +10,6 @@ import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,21 +75,18 @@ public class JSONCodecRegistry {
       // But maybe structured type?
       if (columnType instanceof ListType lt) {
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(lt.getElementType());
-        // Could choose to report problem here but can defer since we need to check
-        // within codec anyway (on per-element basis)
-        if (valueCodecCandidates == null) {
-          valueCodecCandidates = Collections.emptyList();
+        if (valueCodecCandidates != null) {
+          return (JSONCodec<JavaT, CqlT>)
+              CollectionCodecs.buildToCQLListCodec(valueCodecCandidates, lt.getElementType());
         }
-        return (JSONCodec<JavaT, CqlT>)
-            CollectionCodecs.buildToCQLListCodec(valueCodecCandidates, lt.getElementType());
-      }
-      if (columnType instanceof SetType st) {
+        // fall through
+      } else if (columnType instanceof SetType st) {
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(st.getElementType());
-        if (valueCodecCandidates == null) {
-          valueCodecCandidates = Collections.emptyList();
+        if (valueCodecCandidates != null) {
+          return (JSONCodec<JavaT, CqlT>)
+              CollectionCodecs.buildToCQLSetCodec(valueCodecCandidates, st.getElementType());
         }
-        return (JSONCodec<JavaT, CqlT>)
-            CollectionCodecs.buildToCQLSetCodec(valueCodecCandidates, st.getElementType());
+        // fall through
       }
 
       throw new MissingJSONCodecException(
