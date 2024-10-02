@@ -91,8 +91,8 @@ public class WriteableTableRow implements PrettyPrintable {
 
   public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
     prettyToStringBuilder
-        .append("keyspace", tableSchemaObject.tableMetadata.getKeyspace())
-        .append("table", tableSchemaObject.tableMetadata.getName())
+        .append("keyspace", tableSchemaObject.tableMetadata().getKeyspace())
+        .append("table", tableSchemaObject.tableMetadata().getName())
         .append("keyColumns", keyColumns)
         .append("nonKeyColumns", nonKeyColumns);
     return prettyToStringBuilder;

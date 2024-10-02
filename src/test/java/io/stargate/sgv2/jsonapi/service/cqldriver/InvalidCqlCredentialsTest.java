@@ -31,10 +31,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
-@TestProfile(InvalidCredentialsTest.TestProfile.class)
+@TestProfile(InvalidCqlCredentialsTest.TestProfile.class)
 // Since Quarkus 3.13, will not automatically get global test resources so need this:
 @WithTestResource(DseTestResource.class)
-public class InvalidCredentialsTest {
+public class InvalidCqlCredentialsTest {
   public static class TestProfile implements QuarkusTestProfile {
     // Alas, we do need actual DB backend so cannot do:
     // public boolean disableGlobalTestResources() { return true; }
