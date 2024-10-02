@@ -705,7 +705,38 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   true,
                   invalidVectorType.code,
                   invalidVectorType.body)));
-
+// vector type with vectorize
+      testCases.add(
+        Arguments.of(
+          new CreateTableTestData(
+            """
+            {
+               "name": "vectorizeConfigTest",
+               "definition": {
+                   "columns": {
+                       "id": {
+                           "type": "text"
+                       },
+                       "age": {
+                           "type": "int"
+                       },
+                       "content": {
+                         "type": "vector",
+                         "dimension": 1024,
+                         "service": {
+                           "provider": "nvidia",
+                           "modelName": "NV-Embed-QA"
+                         }
+                       }
+                   },
+                   "primaryKey": "id"
+               }
+            }
+            """,
+  "primaryKeyAsStringTable",
+  false,
+  null,
+  null)));
       return testCases.stream();
     }
   }

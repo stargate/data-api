@@ -268,7 +268,11 @@ request-errors:
       Example map type definition:
         "column_name": {
           "type": "vector",
-          "dimension": 1536
+          "dimension": 1024,
+          "service": {
+            "provider": "nvidia",
+            "modelName": "NV-Embed-QA"
+          }
         }
 
 # ================================================================================================================
