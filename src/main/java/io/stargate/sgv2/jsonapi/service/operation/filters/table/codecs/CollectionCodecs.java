@@ -13,7 +13,7 @@ import java.util.*;
 
 /**
  * Container for factories of codecs that handle CQL collection types(Lists and Sets for now).
- * Seperated from main {@link JSONCodecs} to keep the code bit more modular.
+ * Separated from main {@link JSONCodecs} to keep the code bit more modular.
  */
 public abstract class CollectionCodecs {
   private static final GenericType<List<Object>> GENERIC_LIST = GenericType.listOf(Object.class);
@@ -29,6 +29,7 @@ public abstract class CollectionCodecs {
         GENERIC_LIST,
         DataTypes.listOf(elementType),
         (cqlType, value) -> toCQLList(valueCodecs, elementType, value),
+        // This code only for to-cql case, not to-json, so we don't need this
         null);
   }
 
@@ -44,6 +45,7 @@ public abstract class CollectionCodecs {
         GENERIC_LIST,
         DataTypes.setOf(elementType),
         (cqlType, value) -> toCQLSet(valueCodecs, elementType, value),
+        // This code only for to-cql case, not to-json, so we don't need this
         null);
   }
 
@@ -51,7 +53,8 @@ public abstract class CollectionCodecs {
     return new JSONCodec<>(
         GENERIC_LIST,
         elementCodec.targetCQLType(), // not exactly correct, but close enough
-        null, // not used for JSON encoding
+        // This code only for to-json case, not to-cql, so we don't need this
+        null,
         (objectMapper, cqlType, value) -> toJsonNode(elementCodec, objectMapper, value));
   }
 
@@ -60,6 +63,7 @@ public abstract class CollectionCodecs {
         // NOTE: although we convert to CQL Set, RowShredder.java binds to Lists
         GENERIC_LIST,
         elementCodec.targetCQLType(), // not exactly correct, but close enough
+        // This code only for to-json case, not to-cql, so we don't need this
         null,
         (objectMapper, cqlType, value) -> toJsonNode(elementCodec, objectMapper, value));
   }
