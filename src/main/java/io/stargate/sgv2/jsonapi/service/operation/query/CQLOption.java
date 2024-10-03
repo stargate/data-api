@@ -11,6 +11,10 @@ public interface CQLOption<TargetT> extends Function<TargetT, TargetT>, CQLClaus
     static CQLOption<Select> limit(int limit) {
       return (select) -> select.limit(limit);
     }
+
+    static CQLOption<Select> withAllowFiltering() {
+      return Select::allowFiltering;
+    }
   }
 
   interface ForStatement {
