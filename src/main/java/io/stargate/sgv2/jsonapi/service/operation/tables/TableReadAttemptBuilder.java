@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSourceSupplier;
@@ -63,11 +64,16 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
 
     CqlOptions<Select> newCqlOptions = cqlOptions;
 
-    final WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzedResult analyzedResult =
-        whereCQLClause.analyseWhereClause();
+    WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzedResult analyzedResult = null;
+    Exception exception = null;
 
-    // TODO, decision of to add ALLOW FILTERING?
-    if (!analyzedResult.warningExceptions().isEmpty()) {
+    try {
+      analyzedResult = whereCQLClause.analyseWhereClause();
+    } catch (FilterException filterException) {
+      exception = filterException;
+    }
+
+    if (analyzedResult != null && analyzedResult.requiresAllowFiltering()) {
       // Create a copy of cqlOptions, this is to avoid build() function is executed with its own
       // exclusive newCqlOptions, instead of modifying the shared one
       newCqlOptions = new CqlOptions<>(cqlOptions);
@@ -84,15 +90,13 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
             pagingState,
             documentSourceSupplier);
 
-    // Add FilterException
-    // TODO, this is designed to have one failure, but different filterException will be
-    // accumulated, do we want to fit them into one?
-    if (!analyzedResult.filterExceptions().isEmpty()) {
-      tableReadAttempt.maybeAddFailure(analyzedResult.filterExceptions().getFirst());
+    tableReadAttempt.maybeAddFailure(exception);
+
+    if (analyzedResult != null) {
+      analyzedResult
+          .warningExceptions()
+          .forEach(warningException -> tableReadAttempt.addWarning(warningException.getMessage()));
     }
-    analyzedResult
-        .warningExceptions()
-        .forEach(warningException -> tableReadAttempt.addWarning(warningException.getMessage()));
 
     return tableReadAttempt;
   }
