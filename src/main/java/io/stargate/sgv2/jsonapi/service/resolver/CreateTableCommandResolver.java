@@ -84,10 +84,11 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
     // set to empty will be used when vectorize is  supported
     Map<String, String> customProperties = new HashMap<>();
     try {
+      customProperties.put("com.datastax.data-api.schema-type", "table");
+      // Versioning for schema json. This needs can be adapted in future as needed
+      customProperties.put("com.datastax.data-api.schema-def-version", "1");
       String vectorizeConfigToStore = objectMapper.writeValueAsString(vectorizeConfigMap);
-      customProperties.put("vectorize", vectorizeConfigToStore);
-      // Versioning for vectorize json. This needs can be adapted in future as needed
-      customProperties.put("vectorize_schema_version", "1");
+      customProperties.put("com.datastax.data-api.vectorize-config", vectorizeConfigToStore);
     } catch (JsonProcessingException e) {
       // this should never happen
       throw new RuntimeException(e);

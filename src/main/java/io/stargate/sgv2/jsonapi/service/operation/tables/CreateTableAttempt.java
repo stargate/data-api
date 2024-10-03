@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromU
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.data.ByteUtils;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
@@ -16,7 +17,6 @@ import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ComplexApiDataType;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.HashSet;
@@ -79,7 +79,9 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     // Convert value to ByteBuffer since extension option accepts ByteBuffer
     final Map<String, String> extensions =
         customProperties.entrySet().stream()
-            .collect(Collectors.toMap(e -> e.getKey(), e -> stringToHex(e.getValue())));
+            .collect(
+                Collectors.toMap(
+                    e -> e.getKey(), e -> ByteUtils.toHexString(e.getValue().getBytes())));
 
     CreateTableWithOptions createWithOptions = createTable.withOption("extensions", extensions);
 
@@ -87,22 +89,6 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     createWithOptions = addClusteringOrder(createWithOptions);
 
     return createWithOptions.build();
-  }
-
-  // Method to convert String to "0x" + hex format this the value format accepted by extensions map.
-  public static String stringToHex(String input) {
-    StringBuilder hexString = new StringBuilder("0x");
-
-    // Convert each character to hexadecimal
-    for (byte b : input.getBytes(StandardCharsets.UTF_8)) {
-      String hex = Integer.toHexString(0xFF & b); // Convert byte to hex
-      if (hex.length() == 1) {
-        hexString.append('0'); // Append leading zero if hex value is single digit
-      }
-      hexString.append(hex);
-    }
-
-    return hexString.toString();
   }
 
   private CreateTable addColumnsAndKeys(CreateTableStart create) {
