@@ -108,12 +108,24 @@ public class CollectionFilterResolver<T extends Command & Filterable>
         .capture(DYNAMIC_TEXT_GROUP)
         .compareValues(
             "*",
-            EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
+            EnumSet.of(
+                ValueComparisonOperator.EQ,
+                ValueComparisonOperator.NE,
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
             JsonType.STRING)
         .capture(DYNAMIC_BOOL_GROUP)
         .compareValues(
             "*",
-            EnumSet.of(ValueComparisonOperator.EQ, ValueComparisonOperator.NE),
+            EnumSet.of(
+                ValueComparisonOperator.EQ,
+                ValueComparisonOperator.NE,
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
             JsonType.BOOLEAN)
         .capture(DYNAMIC_NULL_GROUP)
         .compareValues(
