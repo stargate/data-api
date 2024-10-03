@@ -43,6 +43,10 @@ public abstract class ErrorFormatters {
     return errFmtJoin(identifiers, ErrorFormatters::errFmt);
   }
 
+  public static String errFmtFilterPath(Collection<String> filterPaths) {
+    return errFmtJoin(filterPaths, String::toString);
+  }
+
   public static String errFmt(ColumnMetadata column) {
     return String.format("%s(%s)", errFmt(column.getName()), errFmt(column.getType()));
   }

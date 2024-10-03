@@ -1,30 +1,27 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnMetadata;
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.InTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * The purpose for this analyzer class is to analyze the whereCQLClause.
  *
- * <p>TODO, the analysis flow is not determined yet. It will traverse the DBLogicalExpression and
- * analyze the individual {@link TableFilter}. Then analyze the primary key filtering. It finally
- * gives an overall analysis result.
- *
- * <p>TODO, this class will be helpful for future features, such as TableFilter and Index
- * recommendation.
+ * <p>There are two kinds of rules to check:<br>
+ * 1. Validation check, gather all FilterException and terminate the analyze flow. 2. Warning check,
+ * if the filter is valid, then do the warning check, gather all WarningException
  */
 public class WhereCQLClauseAnalyzer {
 
@@ -34,80 +31,222 @@ public class WhereCQLClauseAnalyzer {
     this.tableSchemaObject = tableSchemaObject;
   }
 
-  /**
-   * The entrance of analyzing process for WhereCQLClause.
-   *
-   * <p>Step 1:<br>
-   * Recursively traverse through the DBLogicalExpression, analyze individual TableFilter. <br>
-   * The result of analyze individual TableFilter will be should ALLOW FILTERING be turned on.
-   *
-   * <p>Step 2:<br>
-   * TODO
-   */
   public WhereCQLClauseAnalyzedResult analyse(DBLogicalExpression dbLogicalExpression) {
 
-    // Step 1: Analyze individual TableFilter first.
-    List<TableFilterAnalyzedResult> tableFilterAnalyzedResults = new ArrayList<>();
-    traverseDBLogicalExpression(dbLogicalExpression, tableFilterAnalyzedResults);
+    List<FilterException> filterExceptions = new ArrayList<>();
+    List<WarningException> warningExceptions = new ArrayList<>();
 
-    // Step 2: PK
-    // TODO
+    // TableFilter validation check rules.
+    validateColumnsExist(filterExceptions, dbLogicalExpression);
+    validateComparisonFilterAgainstDuration(filterExceptions, dbLogicalExpression);
 
-    // Step 3: Make decision.
-
-    boolean withAllowFiltering = false;
-    List<String> warnings = new ArrayList<>();
-    for (TableFilterAnalyzedResult tableFilterAnalyzedResult : tableFilterAnalyzedResults) {
-      withAllowFiltering |= tableFilterAnalyzedResult.withAllowFiltering();
-      tableFilterAnalyzedResult
-          .warning()
-          .ifPresent(warningException -> warnings.add(warningException.getMessage()));
+    // If the clause is invalid, terminate the analysis flow.
+    if (!filterExceptions.isEmpty()) {
+      return new WhereCQLClauseAnalyzedResult(filterExceptions, warningExceptions);
     }
 
-    return new WhereCQLClauseAnalyzedResult(withAllowFiltering, warnings);
+    // TableFilter warning check rules.
+    checkSaiOnFilterColumns(warningExceptions, dbLogicalExpression);
+    check$neOnIndexedColumn(warningExceptions, dbLogicalExpression);
+
+    return new WhereCQLClauseAnalyzedResult(filterExceptions, warningExceptions);
+
+    // TODO PK
+  }
+
+  /**
+   * Validation check rule: validate if filtering columns exist
+   *
+   * <p>
+   *
+   * @param filterExceptions, list of collecting all FilterException
+   * @param dbLogicalExpression, expression contains all TableFilters
+   */
+  private void validateColumnsExist(
+      List<FilterException> filterExceptions, DBLogicalExpression dbLogicalExpression) {
+
+    List<String> unKnownColumns = new ArrayList<>();
+    // Consumer of collect UNKNOWN_TABLE_COLUMNS FilterException
+    Consumer<TableFilter> validateColumnsExistRule =
+        tableFilter -> {
+          ColumnMetadata column =
+              tableSchemaObject
+                  .tableMetadata()
+                  .getColumns()
+                  .get(CqlIdentifier.fromInternal(tableFilter.path));
+          if (column == null) {
+            unKnownColumns.add(tableFilter.path);
+          }
+        };
+    // consume by traverse all TableFilters
+    consumeOnAllTableFilters(dbLogicalExpression, validateColumnsExistRule);
+
+    if (!unKnownColumns.isEmpty()) {
+      filterExceptions.add(
+          FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
+              errVars(
+                  tableSchemaObject,
+                  map -> {
+                    map.put(
+                        "allColumns",
+                        errFmtColumnMetadata(
+                            tableSchemaObject.tableMetadata().getColumns().values()));
+                    map.put("unknownColumns", errFmtFilterPath(unKnownColumns));
+                  })));
+    }
+  }
+
+  /**
+   * Validation check rule: validate if a comparison filter is against duration datatype column.
+   *
+   * <p>Can NOT apply $lt,$gt,$lte,$gte to duration datatype columns, because of "Slice restrictions
+   * are not supported on duration columns".
+   *
+   * @param filterExceptions, collect all FilterException
+   * @param dbLogicalExpression, expression contains all TableFilters
+   */
+  private void validateComparisonFilterAgainstDuration(
+      List<FilterException> filterExceptions, DBLogicalExpression dbLogicalExpression) {
+
+    List<String> invalidDurationColumnsUseComparisonFilterAgainstDuration = new ArrayList<>();
+    Consumer<TableFilter> durationAgainstComparisonFilterRule =
+        tableFilter -> {
+          if (tableFilter instanceof NativeTypeTableFilter nativeTypeTableFilter) {
+            if (NativeTypeTableFilter.Operator.isComparisonOperator(
+                nativeTypeTableFilter.operator)) {
+              final ColumnMetadata column = getColumn(nativeTypeTableFilter);
+
+              if (column.getType() == DataTypes.DURATION
+                  && (NativeTypeTableFilter.Operator.isComparisonOperator(
+                      nativeTypeTableFilter.operator))) {
+
+                invalidDurationColumnsUseComparisonFilterAgainstDuration.add(tableFilter.path);
+              }
+            }
+          }
+        };
+    consumeOnAllTableFilters(dbLogicalExpression, durationAgainstComparisonFilterRule);
+
+    if (!invalidDurationColumnsUseComparisonFilterAgainstDuration.isEmpty()) {
+      filterExceptions.add(
+          FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION_COLUMN.get(
+              errVars(
+                  tableSchemaObject,
+                  map -> {
+                    map.put(
+                        "allColumns",
+                        errFmtColumnMetadata(
+                            tableSchemaObject.tableMetadata().getColumns().values()));
+                    map.put(
+                        "invalidDurationColumns",
+                        errFmtFilterPath(invalidDurationColumnsUseComparisonFilterAgainstDuration));
+                  })));
+    }
+  }
+
+  /**
+   * Warning check rule: check if filter column is on SAI index.
+   *
+   * <p>Scalar datatype column: <br>
+   * Without SAI index on column, ALLOW FILTERING is suggested. ($eq,$ne,$lt,$gt,$lte,$gte,$in TODO)
+   *
+   * <p>Collection datatype column: <br>
+   * TODO
+   *
+   * @param warningExceptions, collect all warningException
+   * @param dbLogicalExpression, expression contains all TableFilters
+   */
+  private void checkSaiOnFilterColumns(
+      List<WarningException> warningExceptions, DBLogicalExpression dbLogicalExpression) {
+
+    List<String> filterOnMissingIndexColumns = new ArrayList<>();
+    Consumer<TableFilter> columnExistConsumer =
+        tableFilter -> {
+          if (!hasSaiIndexOnColumn(tableFilter)) {
+            filterOnMissingIndexColumns.add(tableFilter.path);
+          }
+        };
+    consumeOnAllTableFilters(dbLogicalExpression, columnExistConsumer);
+
+    if (!filterOnMissingIndexColumns.isEmpty()) {
+      warningExceptions.add(
+          WarningException.Code.MISSING_SAI_INDEX.get(
+              errVars(
+                  tableSchemaObject,
+                  map -> {
+                    map.put("missingIndexColumns", errFmtFilterPath(filterOnMissingIndexColumns));
+                  })));
+    }
+  }
+
+  /**
+   * Warning check rule: $ne filter against column that is on SAI index but still needs ALLOW
+   * FILTERING.
+   *
+   * <p>E.G. [perform $ne against a text column 'name' that has SAI index on it] <br>
+   * Error from Driver: "Column 'name' has an index but does not support the operators specified in
+   * the query. If you want to execute this query despite the performance unpredictability, use
+   * ALLOW FILTERING"
+   *
+   * @param warningExceptions, list of collecting all warningExceptions
+   * @param dbLogicalExpression, expression contains all TableFilters
+   */
+  private void check$neOnIndexedColumn(
+      List<WarningException> warningExceptions, DBLogicalExpression dbLogicalExpression) {
+
+    List<String> allowFiltering$neOnIndexedColumns = new ArrayList<>();
+    Consumer<TableFilter> checkComparisonFilterRule =
+        tableFilter -> {
+          ColumnMetadata column =
+              tableSchemaObject
+                  .tableMetadata()
+                  .getColumns()
+                  .get(CqlIdentifier.fromInternal(tableFilter.path));
+
+          if (hasSaiIndexOnColumn(tableFilter)
+              && (tableFilter instanceof NativeTypeTableFilter nativeTypeTableFilter)) {
+            if (nativeTypeTableFilter.operator == NativeTypeTableFilter.Operator.NE
+                && ALLOW_FILTERING_NEEDED_$NE_DATATYPES_ON_SAI.contains(column.getType())) {
+              allowFiltering$neOnIndexedColumns.add(tableFilter.path);
+            }
+          }
+        };
+
+    // consume by traverse all TableFilters
+    consumeOnAllTableFilters(dbLogicalExpression, checkComparisonFilterRule);
+
+    if (!allowFiltering$neOnIndexedColumns.isEmpty()) {
+      warningExceptions.add(
+          WarningException.Code.FILTER_NE_AGAINST_SAI_INDEXED_COLUMN_THAT_NEED_ALLOWING_FILTERING
+              .get(
+                  errVars(
+                      tableSchemaObject,
+                      map -> {
+                        map.put(
+                            "allowFilteringNeOnIndexedColumns",
+                            errFmtFilterPath(allowFiltering$neOnIndexedColumns));
+                      })));
+    }
   }
 
   /**
    * The private helper method to recursively traverse the DBLogicalExpression. <br>
-   * During the traverse, it will call the to analyze individual TableFilter
+   * During the traverse, it will analyze each tableFilter per each rule
    *
    * @param dbLogicalExpression Logical relation container of DBFilters
-   * @param dbFilterUsages List of analyse result for DBFilters
+   * @param analyzeRule consumer to analyze
    */
-  private void traverseDBLogicalExpression(
-      DBLogicalExpression dbLogicalExpression,
-      List<TableFilterAnalyzedResult> tableFilterAnalyzedResults) {
-
+  public void consumeOnAllTableFilters(
+      DBLogicalExpression dbLogicalExpression, Consumer<TableFilter> analyzeRule) {
     // traverse all dBFilters at current level of DBLogicalExpression
     for (DBFilterBase dbFilterBase : dbLogicalExpression.dBFilters()) {
       TableFilter tableFilter = (TableFilter) dbFilterBase;
-      tableFilterAnalyzedResults.add(analyzeIndividualTableFilter(tableFilter));
+      analyzeRule.accept(tableFilter);
     }
     // traverse sub dBLogicalExpression
     for (DBLogicalExpression subDBlogicalExpression : dbLogicalExpression.dbLogicalExpressions()) {
-      traverseDBLogicalExpression(subDBlogicalExpression, tableFilterAnalyzedResults);
+      consumeOnAllTableFilters(subDBlogicalExpression, analyzeRule);
     }
-  }
-
-  /**
-   * Analyze individual TableFilter and return TableFilterAnalyzedResult.
-   *
-   * @param tableFilter, target TableFilter to be analyzed
-   * @return TableFilterAnalyzedResult, analyzed result for individual TableFilter
-   */
-  private TableFilterAnalyzedResult analyzeIndividualTableFilter(TableFilter tableFilter) {
-
-    // Analyze if tableFilter is a NativeTypeTableFilter
-    if (tableFilter instanceof NativeTypeTableFilter nativeTypeTableFilter) {
-      return analyseNativeTypeTableFilter(nativeTypeTableFilter);
-    }
-
-    // Analyze if tableFilter is an InTableFilter
-    if (tableFilter instanceof InTableFilter inTableFilter) {
-      return analyseInTableFilter(inTableFilter);
-    }
-
-    return new TableFilterAnalyzedResult(false, Optional.empty());
   }
 
   private static final Set<DataType> scalarDatatypes =
@@ -129,7 +268,7 @@ public class WhereCQLClauseAnalyzer {
           DataTypes.DURATION,
           DataTypes.BLOB);
 
-  // Datatypes that need ALLOW FILTERING when column is on SAI when filtering on $ne
+  // Datatypes that need ALLOW FILTERING when column is on SAI and filtering on $ne
   private static final Set<DataType> ALLOW_FILTERING_NEEDED_$NE_DATATYPES_ON_SAI =
       Set.of(
           DataTypes.TEXT, DataTypes.ASCII, DataTypes.BOOLEAN, DataTypes.DURATION, DataTypes.BLOB);
@@ -150,141 +289,9 @@ public class WhereCQLClauseAnalyzer {
           DataTypes.TIME);
 
   /**
-   * Analyse a NativeTypeTableFilter and return TableFilterAnalyzedResult.<br>
-   *
-   * <p>check 1: If filter is against an existing column, get the columnMetadata.
-   *
-   * <p>check 2: Operator $eq.<br>
-   * For all scalar data types: <br>
-   * --- If without SAI, ALLOW FILTERING is needed. <br>
-   * --- Above rule also covers Duration and Blob, since both can NOT have SAI. TODO Collection
-   * Types.
-   *
-   * <p>check 3: Operator $ne.<br>
-   * For all scalar data types: <br>
-   * --- If without SAI, ALLOW FILTERING is needed. <br>
-   * --- With SAI, Datatypes in ALLOW_FILTERING_NEEDED_$NE_DATATYPES_ON_SAI need ALLOW FILTERING.
-   * <br>
-   * --- With SAI, DataTypes in ALLOW_FILTERING_NOT_NEEDED_$NE_DATATYPES_ON_SAI do NOT need ALLOW
-   * FILTERING <br>
-   * TODO Collection Types
-   *
-   * <p>check 4: Operator $gt,$lt,$gte,$lte.<br>
-   * For all scalar data types: <br>
-   * --- Duration column can not perform $gt,$lt,$gte,$lte, since "Slice restrictions are not
-   * supported on duration columns" <br>
-   * --- If without SAI, ALLOW FILTERING is needed. <br>
-   * TODO Collection Types
-   *
-   * @param nativeTypeTableFilter nativeTypeTableFilter
-   * @return TableFilterAnalyzedResult
-   */
-  private TableFilterAnalyzedResult analyseNativeTypeTableFilter(
-      NativeTypeTableFilter nativeTypeTableFilter) {
-    // Check 1, if column exists
-    final ColumnMetadata column = getColumn(nativeTypeTableFilter);
-    final boolean hasSaiIndexOnColumn = hasSaiIndexOnColumn(nativeTypeTableFilter);
-    final DataType dataType = column.getType();
-    final String predicateCql = nativeTypeTableFilter.operator.predicate.cql;
-    final String columnName = nativeTypeTableFilter.path;
-
-    // Check 2, operator $eq
-    if (nativeTypeTableFilter.operator == NativeTypeTableFilter.Operator.EQ) {
-      // If column is not on SAI, turn on ALLOW FILTERING.
-      if (!hasSaiIndexOnColumn) {
-        return TableFilterAnalyzedResult.needAllowFiltering(
-            tableSchemaObject,
-            String.format(
-                "'%s' against column '%s' that is NOT on SAI index", predicateCql, columnName));
-      }
-    }
-
-    // Check 3, operator $ne
-    if (nativeTypeTableFilter.operator == NativeTypeTableFilter.Operator.NE) {
-      // If column is not on SAI, turn on ALLOW FILTERING.
-      if (!hasSaiIndexOnColumn) {
-        return TableFilterAnalyzedResult.needAllowFiltering(
-            tableSchemaObject,
-            String.format(
-                "'%s' against column '%s' that is NOT on SAI index", predicateCql, columnName));
-      }
-      // If column is on SAI and column type is one of ALLOW_FILTERING_NEEDED_$NE_DATATYPES_ON_SAI,
-      // turn on ALLOW FILTERING
-      if (hasSaiIndexOnColumn && ALLOW_FILTERING_NEEDED_$NE_DATATYPES_ON_SAI.contains(dataType)) {
-        return TableFilterAnalyzedResult.needAllowFiltering(
-            tableSchemaObject,
-            String.format(
-                "'%s' is not supported for datatype '%s' on column '%s'",
-                predicateCql, dataType, columnName));
-      }
-    }
-
-    // check 4, operator $lt,$gt,$lte,$gte
-    if (NativeTypeTableFilter.Operator.isComparisonOperator(nativeTypeTableFilter.operator)) {
-
-      // Check Duration type first, can not perform comparison API filter since "Slice restrictions
-      // are not supported on duration columns"
-      if (dataType == DataTypes.DURATION) {
-        throw FilterException.Code.INVALID_FILTER.get(
-            errVars(
-                tableSchemaObject,
-                map -> {
-                  map.put(
-                      "filter",
-                      String.format(
-                          "'%s' is not supported on duration column '%s', Slice restrictions are not supported on duration columns.",
-                          predicateCql, columnName));
-                }));
-      }
-
-      if (!hasSaiIndexOnColumn) {
-        // This covers Blob column, since C* can not build SAI on Blob column.
-        return TableFilterAnalyzedResult.needAllowFiltering(
-            tableSchemaObject,
-            String.format(
-                "'%s' against column '%s' that is NOT on SAI index", predicateCql, columnName));
-      }
-    }
-
-    return new TableFilterAnalyzedResult(false, Optional.empty());
-  }
-
-  /**
-   * Analyse an InTableFilter and returned TableFilterAnalyzedResult.<br>
-   *
-   * <p>check 1: If filter is against an existing column, get the columnMetadata.
-   *
-   * <p>check 2: scalar data types <br>
-   * --- If without SAI, ALLOW FILTERING is needed. <br>
-   * --- Above rule also covers Duration and Blob, since both can NOT have SAI. TODO Collection
-   * Types.
-   *
-   * @param InTableFilter inTableFilter
-   * @return TableFilterAnalyzedResult
-   */
-  private TableFilterAnalyzedResult analyseInTableFilter(InTableFilter inTableFilter) {
-    // Check 1: If filter is against an existing column
-    final ColumnMetadata column = getColumn(inTableFilter);
-    final boolean hasSaiIndexOnColumn = hasSaiIndexOnColumn(inTableFilter);
-    final String predicateCql = inTableFilter.operator.predicate.cql;
-    final String columnName = inTableFilter.path;
-
-    // Check 2:
-    if (!hasSaiIndexOnColumn && scalarDatatypes.contains(column.getType())) {
-      return TableFilterAnalyzedResult.needAllowFiltering(
-          tableSchemaObject,
-          String.format(
-              "'%s' against column '%s' that is NOT on SAI index", predicateCql, columnName));
-    }
-
-    return new TableFilterAnalyzedResult(false, Optional.empty());
-    // TODO, Against a collection column.
-  }
-
-  /**
    * This method will check the tableSchema and see if the filter column(path) has SAI index on it.
    *
-   * @param TableFilter tableFilter
+   * @param tableFilter tableFilter
    * @return boolean to indicate if there is a SAI index on the column
    */
   private boolean hasSaiIndexOnColumn(TableFilter tableFilter) {
@@ -298,10 +305,11 @@ public class WhereCQLClauseAnalyzer {
    * This method will check the tableSchema and see if the filter column(path) is on the primary
    * key.
    *
-   * @param TableFilter tableFilter
+   * @param tableFilter tableFilter
    * @return boolean to indicate if there is an index on the primary key
    */
   public boolean hasPrimaryKeyOnColumn(TableFilter tableFilter) {
+
     // Check if the column is a primary key (partition key or clustering column)
     boolean isPrimaryKey =
         tableSchemaObject.tableMetadata().getPartitionKey().stream()
@@ -315,58 +323,40 @@ public class WhereCQLClauseAnalyzer {
    * Get the target columnMetaData if the column exists. Otherwise, throw V2 TABLE_COLUMN_UNKNOWN
    * Data API exception.
    *
-   * @param TableFilter tableFilter
+   * @param tableFilter tableFilter
    * @return Optional<ColumnMetadata>, columnMetadata
    */
   public ColumnMetadata getColumn(TableFilter tableFilter) {
-    return tableSchemaObject.tableMetadata().getColumns().entrySet().stream()
-        .filter(entry -> entry.getKey().asInternal().equals(tableFilter.path))
-        .map(Map.Entry::getValue)
-        .findFirst()
-        .orElseThrow(
-            () ->
-                FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
-                    errVars(
-                        tableSchemaObject,
-                        map -> {
-                          map.put(
-                              "allColumns",
-                              errFmtColumnMetadata(
-                                  tableSchemaObject.tableMetadata().getColumns().values()));
-                          map.put("unknownColumns", tableFilter.path);
-                        })));
+
+    ColumnMetadata column =
+        tableSchemaObject
+            .tableMetadata()
+            .getColumns()
+            .get(CqlIdentifier.fromInternal(tableFilter.path));
+    if (column == null) {
+      throw FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put(
+                    "allColumns",
+                    errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
+                map.put("unknownColumns", tableFilter.path);
+              }));
+    }
+
+    return column;
   }
 
   /**
-   * The analyzed result of individual TableFilter
+   * The analysis result of WhereCQLClause.
    *
-   * @param withAllowFiltering
-   * @param warning
+   * <p>TODO this record is may not needed, keep it in case we want other information to be
+   * returned.
+   *
+   * @param filterExceptions
+   * @param warningExceptions
    */
-  public record TableFilterAnalyzedResult(
-      boolean withAllowFiltering, Optional<WarningException> warning) {
-
-    public static TableFilterAnalyzedResult needAllowFiltering(
-        TableSchemaObject tableSchemaObject, String allowFilteringReason) {
-      return new TableFilterAnalyzedResult(
-          true,
-          Optional.of(
-              WarningException.Code.ALLOW_FILTERING.get(
-                  errVars(
-                      tableSchemaObject,
-                      map -> {
-                        map.put("reason", allowFilteringReason);
-                      }))));
-    }
-
-    public static TableFilterAnalyzedResult noAllowFiltering() {
-      return new TableFilterAnalyzedResult(false, Optional.empty());
-    }
-  }
-
-  /**
-   * @param withAllowFiltering
-   * @param warnings
-   */
-  public record WhereCQLClauseAnalyzedResult(boolean withAllowFiltering, List<String> warnings) {}
+  public record WhereCQLClauseAnalyzedResult(
+      List<FilterException> filterExceptions, List<WarningException> warningExceptions) {}
 }

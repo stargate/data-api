@@ -63,11 +63,11 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
 
     CqlOptions<Select> newCqlOptions = cqlOptions;
 
-    final WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzedResult whereCQLClauseAnalyzeResult =
+    final WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzedResult analyzedResult =
         whereCQLClause.analyseWhereClause();
-    // Analyse filter usage
-    // Step 1, may add AllowFiltering
-    if (whereCQLClauseAnalyzeResult.withAllowFiltering()) {
+
+    // TODO, decision of to add ALLOW FILTERING?
+    if (!analyzedResult.warningExceptions().isEmpty()) {
       // Create a copy of cqlOptions, this is to avoid build() function is executed with its own
       // exclusive newCqlOptions, instead of modifying the shared one
       newCqlOptions = new CqlOptions<>(cqlOptions);
@@ -84,8 +84,15 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
             pagingState,
             documentSourceSupplier);
 
-    // Step 2, may add warning
-    whereCQLClauseAnalyzeResult.warnings().forEach(tableReadAttempt::addWarning);
+    // Add FilterException
+    // TODO, this is designed to have one failure, but different filterException will be
+    // accumulated, do we want to fit them into one?
+    if (!analyzedResult.filterExceptions().isEmpty()) {
+      tableReadAttempt.maybeAddFailure(analyzedResult.filterExceptions().getFirst());
+    }
+    analyzedResult
+        .warningExceptions()
+        .forEach(warningException -> tableReadAttempt.addWarning(warningException.getMessage()));
 
     return tableReadAttempt;
   }

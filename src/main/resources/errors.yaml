@@ -143,18 +143,40 @@ request-errors:
     code: UNSUPPORTED_COLUMN_TYPES
     title: Unsupported table column data types in filter
     body: |-
-      Only supported column types can be filtered
+      Only supported column types can be filtered.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The request included the following columns that have unsupported data types: ${unsupportedColumns}.
       
       Resend the request using only supported column types.  
+  # FILTER request errors: comparison filter against Duration datatype column.
+  - scope: FILTER
+    code: COMPARISON_FILTER_AGAINST_DURATION_COLUMN
+    title: Invalid usage of comparison filter against Duration datatype column
+    body: |-
+      Can not perform '$lt/$gt/$lte/$gte' to Duration datatype column.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included the following columns that have the issue. ${invalidDurationColumns}.
+
+  # Warnings
 
   - scope: WARNING
-    code: ALLOW_FILTERING
-    title: ALLOW FILTERING is enabled
+    code: MISSING_SAI_INDEX
+    title: Filter against columns that do not have a SAI index
     body: |-
-      ${reason}, ALLOW FILTERING is enabled, notice the performance of the query can be unpredictable.
+      Filter against the following '${missingIndexColumns}' columns that are not on SAI index.
+      
+      ALLOW FILTERING is enabled, notice the performance of the query can be unpredictable.
+
+  - scope: WARNING
+    code: FILTER_NE_AGAINST_SAI_INDEXED_COLUMN_THAT_NEED_ALLOWING_FILTERING
+    title: Filter $ne against columns on SAI but need ALLOW FILTERING
+    body: |-
+      Perform '$ne' on columns '${allowFilteringNeOnIndexedColumns}', columns have index but does not support the operators specified in the query.
+  
+      ALLOW FILTERING is enabled, notice the performance of the query can be unpredictable.
+
 
   # Schema Errors
 
