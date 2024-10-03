@@ -61,13 +61,32 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
 
     readPosition += 1;
 
-    return new ReadAttempt<>(
-        readPosition,
-        tableSchemaObject,
-        selectCQLClause,
-        whereCQLClause,
-        cqlOptions,
-        pagingState,
-        documentSourceSupplier);
+    CqlOptions<Select> newCqlOptions = cqlOptions;
+
+    final WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzeResult whereCQLClauseAnalyzeResult =
+        whereCQLClause.analyseWhereClause();
+    // Analyse filter usage
+    // Step 1, may add AllowFiltering
+    if (whereCQLClauseAnalyzeResult.withAllowFiltering()) {
+      // Create a copy of cqlOptions, this is to avoid build() function is executed with its own
+      // exclusive newCqlOptions, instead of modifying the shared one
+      newCqlOptions = new CqlOptions<>(cqlOptions);
+      newCqlOptions.addBuilderOption(CQLOption.ForSelect.withAllowFiltering());
+    }
+
+    var tableReadAttempt =
+        new ReadAttempt<>(
+            readPosition,
+            tableSchemaObject,
+            selectCQLClause,
+            whereCQLClause,
+            newCqlOptions,
+            pagingState,
+            documentSourceSupplier);
+
+    // Step 2, may add warning
+    whereCQLClauseAnalyzeResult.warnings().forEach(tableReadAttempt::addWarning);
+
+    return tableReadAttempt;
   }
 }

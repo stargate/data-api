@@ -69,7 +69,13 @@ public class FilterClauseDeserializerTest {
           Arguments.of(
               "{\"dob\": {\"$gte\" : {\"$date\" : 1672531200000}}}",
               ValueComparisonOperator.GTE,
-              "dob"));
+              "dob"),
+          Arguments.of(
+              "{\"stringColumn\": {\"$lte\" : \"abc\"}}",
+              ValueComparisonOperator.LTE,
+              "stringColumn"),
+          Arguments.of(
+              "{\"boolColumn\": {\"$lte\" : false}}", ValueComparisonOperator.LTE, "boolColumn"));
     }
 
     @ParameterizedTest
@@ -91,24 +97,6 @@ public class FilterClauseDeserializerTest {
           .isEqualTo(operator);
       assertThat(filterClause.logicalExpression().comparisonExpressions.get(0).getPath())
           .isEqualTo(column);
-    }
-
-    @Test
-    public void mustErrorNonNumberAndDateRange() throws Exception {
-      String json =
-          """
-        {"amount": {"$gte" : "ABC"}}
-        """;
-
-      Throwable throwable = catchThrowable(() -> objectMapper.readValue(json, FilterClause.class));
-      assertThat(throwable)
-          .isInstanceOf(JsonApiException.class)
-          .satisfies(
-              t -> {
-                assertThat(t.getMessage())
-                    .contains(
-                        "Invalid filter expression: $gte operator must have `DATE` or `NUMBER` value");
-              });
     }
 
     @Test
