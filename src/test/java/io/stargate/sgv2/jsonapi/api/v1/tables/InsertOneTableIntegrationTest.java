@@ -528,7 +528,6 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                       """);
     }
 
-    /*
     @Test
     void failOnNonArrayListValue() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
@@ -536,17 +535,34 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               """
       {
         "id":"listInvalid",
-              "stringList":"abc"
+        "stringList":"abc"
       }
       """)
           .hasSingleApiError(
               DocumentException.Code.INVALID_COLUMN_VALUES,
               DocumentException.class,
               "Only values that are supported by",
-              "Error trying to convert to targetCQLType `DATE` from",
-              "Text 'xxx'");
+              "Error trying to convert to targetCQLType `List(TEXT",
+              "no codec matching value type");
     }
-     */
+
+    @Test
+    void failOnWrongListElementValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .postInsertOne(
+              """
+              {
+                "id":"listInvalid",
+                "intList":["abc"]
+              }
+              """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `INT`",
+              "no codec matching (list/set) declared element type");
+    }
   }
 
   @Nested
@@ -619,6 +635,43 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                                 "intSet": [-999, 3, 42]
                               }
                               """);
+    }
+
+    @Test
+    void failOnNonArraySetValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .postInsertOne(
+              """
+              {
+                "id":"setInvalid",
+                "intSet":"abc"
+              }
+              """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `Set(INT",
+              "no codec matching value type");
+    }
+
+    @Test
+    void failOnWrongSetElementValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .postInsertOne(
+              """
+              {
+                "id":"setInvalid",
+                "doubleSet":["abc"]
+              }
+              """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `DOUBLE`",
+              // Double is special since there are NaNs represented by Strings
+              "Unsupported String value: only");
     }
   }
 }

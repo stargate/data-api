@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -694,6 +695,13 @@ public class JSONCodecRegistryTest {
             });
   }
 
+  private static Stream<Arguments> nonAsciiValueFailTestCases() {
+    return Stream.of(
+        Arguments.of(TEST_DATA.STRING_WITH_2BYTE_UTF8_CHAR),
+        Arguments.of(TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR),
+        Arguments.of(TEST_DATA.STRING_WITH_4BYTE_SURROGATE_CHAR));
+  }
+
   @ParameterizedTest
   @MethodSource("invalidCodecToCQLTestCasesDatetime")
   public void invalidDatetimeValueFail(DataType cqlDatetimeType, String valueToTest) {
@@ -733,7 +741,7 @@ public class JSONCodecRegistryTest {
 
   // difficult to parameterize this test, so just test a few cases
   @Test
-  public void badBinaryInputs() {
+  public void invalidBinaryInputs() {
     EJSONWrapper valueToTest1 =
         new EJSONWrapper(
             EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.textNode("bad-base64!"));
@@ -788,10 +796,41 @@ public class JSONCodecRegistryTest {
             });
   }
 
-  private static Stream<Arguments> nonAsciiValueFailTestCases() {
-    return Stream.of(
-        Arguments.of(TEST_DATA.STRING_WITH_2BYTE_UTF8_CHAR),
-        Arguments.of(TEST_DATA.STRING_WITH_3BYTE_UTF8_CHAR),
-        Arguments.of(TEST_DATA.STRING_WITH_4BYTE_SURROGATE_CHAR));
+  @Test
+  public void invalidListValueFail() {
+    DataType cqlTypeToTest = DataTypes.listOf(DataTypes.INT);
+    List<JsonLiteral<?>> valueToTest = List.of(stringLiteral("abc"));
+    var codec = assertGetCodecToCQL(cqlTypeToTest, new ArrayList<>());
+
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest),
+            "Throw ToCQLCodecException when attempting to convert List<INT> from List<TEXT>");
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.getMessage()).contains("no codec matching (list/set)");
+            });
+  }
+
+  @Test
+  public void invalidSetValueFail() {
+    DataType cqlTypeToTest = DataTypes.setOf(DataTypes.INT);
+    List<JsonLiteral<?>> valueToTest = List.of(stringLiteral("xyz"));
+    var codec = assertGetCodecToCQL(cqlTypeToTest, new ArrayList<>());
+
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest),
+            "Throw ToCQLCodecException when attempting to convert List<INT> from List<TEXT>");
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.getMessage()).contains("no codec matching (list/set)");
+            });
   }
 }
