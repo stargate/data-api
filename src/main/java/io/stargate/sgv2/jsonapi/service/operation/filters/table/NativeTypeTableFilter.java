@@ -83,8 +83,8 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
       };
     }
 
-    public static boolean isComparisonOperator(Operator operator) {
-      return operator == LTE || operator == GTE || operator == LT || operator == GT;
+    public boolean isComparisonOperator() {
+      return this == LTE || this == GTE || this == LT || this == GT;
     }
   }
 

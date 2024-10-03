@@ -1,9 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
@@ -13,6 +15,7 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableF
 import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
+
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -26,30 +29,37 @@ import java.util.function.Consumer;
 public class WhereCQLClauseAnalyzer {
 
   private final TableSchemaObject tableSchemaObject;
+  private final TableMetadata tableMetadata;
 
   public WhereCQLClauseAnalyzer(TableSchemaObject tableSchemaObject) {
-    this.tableSchemaObject = tableSchemaObject;
+    this.tableSchemaObject = Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
+    this.tableMetadata = tableSchemaObject.tableMetadata();
   }
 
   public WhereCQLClauseAnalyzedResult analyse(DBLogicalExpression dbLogicalExpression) {
 
+    Map<CqlIdentifier, TableFilter> identifierToFilter = new HashMap<>();
+    consumeOnAllTableFilters(
+        dbLogicalExpression,
+        tableFilter -> {
+          identifierToFilter.put(
+              cqlIdentifierFromUserInput(tableFilter.path), tableFilter);
+        });
+
     List<FilterException> filterExceptions = new ArrayList<>();
     List<WarningException> warningExceptions = new ArrayList<>();
 
-    // TableFilter validation check rules.
-    validateColumnsExist(filterExceptions, dbLogicalExpression);
-    validateComparisonFilterAgainstDuration(filterExceptions, dbLogicalExpression);
-
-    // If the clause is invalid, terminate the analysis flow.
-    if (!filterExceptions.isEmpty()) {
-      return new WhereCQLClauseAnalyzedResult(filterExceptions, warningExceptions);
-    }
+    // TableFilter validation check rules, these will throw is there is an error
+    checkAllColumnsExist(identifierToFilter);
+    checkComparisonFilterAgainstDuration(identifierToFilter);
 
     // TableFilter warning check rules.
-    checkSaiOnFilterColumns(warningExceptions, dbLogicalExpression);
+    List<WarningException> warnings = new ArrayList<>();
+    warnMissingSaiOnFilterColumns(identifierToFilter).ifPresent(warnings::add);
+
     check$neOnIndexedColumn(warningExceptions, dbLogicalExpression);
 
-    return new WhereCQLClauseAnalyzedResult(filterExceptions, warningExceptions);
+    return new WhereCQLClauseAnalyzedResult(!warnings.isEmpty(), warnings);
 
     // TODO PK
   }
@@ -62,37 +72,20 @@ public class WhereCQLClauseAnalyzer {
    * @param filterExceptions, list of collecting all FilterException
    * @param dbLogicalExpression, expression contains all TableFilters
    */
-  private void validateColumnsExist(
-      List<FilterException> filterExceptions, DBLogicalExpression dbLogicalExpression) {
+  private void checkAllColumnsExist(Map<CqlIdentifier, TableFilter> identifierToFilter) {
 
-    List<String> unKnownColumns = new ArrayList<>();
-    // Consumer of collect UNKNOWN_TABLE_COLUMNS FilterException
-    Consumer<TableFilter> validateColumnsExistRule =
-        tableFilter -> {
-          ColumnMetadata column =
-              tableSchemaObject
-                  .tableMetadata()
-                  .getColumns()
-                  .get(CqlIdentifier.fromInternal(tableFilter.path));
-          if (column == null) {
-            unKnownColumns.add(tableFilter.path);
-          }
-        };
-    // consume by traverse all TableFilters
-    consumeOnAllTableFilters(dbLogicalExpression, validateColumnsExistRule);
+    var unknownColumns = identifierToFilter.keySet().stream()
+        .filter(identifier -> !tableSchemaObject.tableMetadata().getColumns().containsKey(identifier))
+        .toList();
 
-    if (!unKnownColumns.isEmpty()) {
-      filterExceptions.add(
-          FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
+    if (!unknownColumns.isEmpty()) {
+      throw FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
               errVars(
                   tableSchemaObject,
                   map -> {
-                    map.put(
-                        "allColumns",
-                        errFmtColumnMetadata(
-                            tableSchemaObject.tableMetadata().getColumns().values()));
-                    map.put("unknownColumns", errFmtFilterPath(unKnownColumns));
-                  })));
+                    map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
+                    map.put("unknownColumns", errFmtCqlIdentifier(unknownColumns));
+                  }));
     }
   }
 
@@ -105,31 +98,25 @@ public class WhereCQLClauseAnalyzer {
    * @param filterExceptions, collect all FilterException
    * @param dbLogicalExpression, expression contains all TableFilters
    */
-  private void validateComparisonFilterAgainstDuration(
-      List<FilterException> filterExceptions, DBLogicalExpression dbLogicalExpression) {
+  private void checkComparisonFilterAgainstDuration(Map<CqlIdentifier, TableFilter> identifierToFilter) {
 
-    List<String> invalidDurationColumnsUseComparisonFilterAgainstDuration = new ArrayList<>();
-    Consumer<TableFilter> durationAgainstComparisonFilterRule =
-        tableFilter -> {
-          if (tableFilter instanceof NativeTypeTableFilter nativeTypeTableFilter) {
-            if (NativeTypeTableFilter.Operator.isComparisonOperator(
-                nativeTypeTableFilter.operator)) {
-              final ColumnMetadata column = getColumn(nativeTypeTableFilter);
+    // assumed the checkAllColumnsExist has already run and the columns exist
+    var filteredDurationColumns = identifierToFilter.entrySet().stream()
+        .filter(entry -> {
+          TableFilter tableFilter = entry.getValue();
+          return (tableFilter instanceof NativeTypeTableFilter<?> nativeTypeTableFilter)
+              && nativeTypeTableFilter.operator.isComparisonOperator();
+        })
+        .filter(entry -> {
+          ColumnMetadata metadata = tableMetadata.getColumns().get(entry.getKey());
+          return metadata.getType() == DataTypes.DURATION;
+        })
+        .map(Map.Entry::getKey)
+        .toList();
 
-              if (column.getType() == DataTypes.DURATION
-                  && (NativeTypeTableFilter.Operator.isComparisonOperator(
-                      nativeTypeTableFilter.operator))) {
 
-                invalidDurationColumnsUseComparisonFilterAgainstDuration.add(tableFilter.path);
-              }
-            }
-          }
-        };
-    consumeOnAllTableFilters(dbLogicalExpression, durationAgainstComparisonFilterRule);
-
-    if (!invalidDurationColumnsUseComparisonFilterAgainstDuration.isEmpty()) {
-      filterExceptions.add(
-          FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION_COLUMN.get(
+    if (!filteredDurationColumns.isEmpty()) {
+      throw FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION_COLUMN.get(
               errVars(
                   tableSchemaObject,
                   map -> {
@@ -138,9 +125,8 @@ public class WhereCQLClauseAnalyzer {
                         errFmtColumnMetadata(
                             tableSchemaObject.tableMetadata().getColumns().values()));
                     map.put(
-                        "invalidDurationColumns",
-                        errFmtFilterPath(invalidDurationColumnsUseComparisonFilterAgainstDuration));
-                  })));
+                        "invalidDurationColumns", errFmtCqlIdentifier(filteredDurationColumns));
+                  }));
     }
   }
 
@@ -156,28 +142,24 @@ public class WhereCQLClauseAnalyzer {
    * @param warningExceptions, collect all warningException
    * @param dbLogicalExpression, expression contains all TableFilters
    */
-  private void checkSaiOnFilterColumns(
-      List<WarningException> warningExceptions, DBLogicalExpression dbLogicalExpression) {
+  private Optional<WarningException> warnMissingSaiOnFilterColumns(
+      Map<CqlIdentifier, TableFilter> identifierToFilter) {
 
-    List<String> filterOnMissingIndexColumns = new ArrayList<>();
-    Consumer<TableFilter> columnExistConsumer =
-        tableFilter -> {
-          if (!hasSaiIndexOnColumn(tableFilter)) {
-            filterOnMissingIndexColumns.add(tableFilter.path);
-          }
-        };
-    consumeOnAllTableFilters(dbLogicalExpression, columnExistConsumer);
-
-    if (!filterOnMissingIndexColumns.isEmpty()) {
-      warningExceptions.add(
-          WarningException.Code.MISSING_SAI_INDEX.get(
-              errVars(
-                  tableSchemaObject,
-                  map -> {
-                    map.put("missingIndexColumns", errFmtFilterPath(filterOnMissingIndexColumns));
-                  })));
-    }
+    var missingSAIColumns =  identifierToFilter.keySet().stream()
+        .filter(identifier -> !isIndexOnColumn(identifier))
+        .toList();
+    
+    return missingSAIColumns.isEmpty() ? 
+        Optional.empty() : 
+        Optional.of(
+            WarningException.Code.MISSING_SAI_INDEX.get(
+                errVars(
+                    tableSchemaObject,
+                    map -> {
+                      map.put("missingIndexColumns", errFmtCqlIdentifier(missingSAIColumns));
+                    })));
   }
+
 
   /**
    * Warning check rule: $ne filter against column that is on SAI index but still needs ALLOW
@@ -203,7 +185,7 @@ public class WhereCQLClauseAnalyzer {
                   .getColumns()
                   .get(CqlIdentifier.fromInternal(tableFilter.path));
 
-          if (hasSaiIndexOnColumn(tableFilter)
+          if (isIndexOnColumn(tableFilter)
               && (tableFilter instanceof NativeTypeTableFilter nativeTypeTableFilter)) {
             if (nativeTypeTableFilter.operator == NativeTypeTableFilter.Operator.NE
                 && ALLOW_FILTERING_NEEDED_$NE_DATATYPES_ON_SAI.contains(column.getType())) {
@@ -294,11 +276,11 @@ public class WhereCQLClauseAnalyzer {
    * @param tableFilter tableFilter
    * @return boolean to indicate if there is a SAI index on the column
    */
-  private boolean hasSaiIndexOnColumn(TableFilter tableFilter) {
+  private boolean isIndexOnColumn(CqlIdentifier column) {
 
-    // Check if the column has SAI index on it
-    return tableSchemaObject.tableMetadata().getIndexes().values().stream()
-        .anyMatch(index -> index.getTarget().equals(tableFilter.path));
+    // NOTE: does not check the type of the secondary index, assuming all is SAI
+    return tableMetadata().getIndexes().values().stream()
+        .anyMatch(index -> index.getTarget().equals(column.asInternal()));
   }
 
   /**
@@ -347,7 +329,7 @@ public class WhereCQLClauseAnalyzer {
 
     return column;
   }
-
+  
   /**
    * The analysis result of WhereCQLClause.
    *
@@ -358,5 +340,5 @@ public class WhereCQLClauseAnalyzer {
    * @param warningExceptions
    */
   public record WhereCQLClauseAnalyzedResult(
-      List<FilterException> filterExceptions, List<WarningException> warningExceptions) {}
+      boolean requiresAllowFiltering, List<WarningException> warningExceptions) {}
 }
