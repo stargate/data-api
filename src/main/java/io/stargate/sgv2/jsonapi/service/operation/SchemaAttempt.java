@@ -23,7 +23,7 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
   }
 
   @Override
-  protected Uni<AsyncResultSet> execute(CommandQueryExecutor queryExecutor) {
+  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
     var statement = buildStatement();
 
     if (LOGGER.isDebugEnabled()) {
@@ -45,7 +45,7 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
     }
 
     @Override
-    boolean shouldRetry(Throwable throwable) {
+    public boolean shouldRetry(Throwable throwable) {
       // AARON - this is copied from QueryExecutor.executeSchemaChange()
       return throwable instanceof DriverTimeoutException
           || throwable instanceof InvalidQueryException

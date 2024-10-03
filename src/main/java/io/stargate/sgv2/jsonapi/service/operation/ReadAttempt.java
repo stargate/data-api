@@ -95,7 +95,7 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  protected Uni<AsyncResultSet> execute(CommandQueryExecutor queryExecutor) {
+  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
 
     var statement = buildReadStatement();
 

@@ -121,23 +121,15 @@ public abstract class OperationAttempt<
           getClass().getSimpleName(),
           positionAndAttemptId());
     }
-    // First things first: did we already fail? If so we do not execute, we can just return self.
-    // Note we do not return a Failure UNI, we just return self, because the state of the attempt is
-    // tracked in object
-    if (status() == OperationStatus.ERROR) {
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug(
-            "execute() - state was {}, will not execute {}", status(), positionAndAttemptId());
-      }
+
+    if (!swapStatus("start execute()", OperationStatus.READY, OperationStatus.IN_PROGRESS)) {
       return Uni.createFrom().item(downcast());
     }
 
-    swapStatus("start execute()", OperationStatus.READY, OperationStatus.IN_PROGRESS);
-
     return Uni.createFrom()
-        .item(() -> execute(queryExecutor)) // Wraps any error from execute() into a Uni
+        .item(() -> executeIfInProgress(queryExecutor)) // Wraps any error from execute() into a Uni
         .flatMap(uni -> uni) // Unwrap Uni<Uni<AsyncResultSet>> to Uni<AsyncResultSet>
-        .onFailure(throwable -> decideRetry(throwable))
+        .onFailure(this::decideRetry)
         .retry()
         .withBackOff(retryPolicy.delay(), retryPolicy.delay())
         .atMost(retryPolicy.maxRetries())
@@ -154,16 +146,39 @@ public abstract class OperationAttempt<
             });
   }
 
+  protected Uni<AsyncResultSet> executeIfInProgress(CommandQueryExecutor queryExecutor) {
+    // First things first: did we already fail? If so we do not execute, we can just return self.
+    // In practice this should not happen, because the execute() ensures the state is READY before
+    // starting it is
+    // here incase we hae missed something in the retry
+    if (status() == OperationStatus.ERROR) {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(
+            "executeIfInProgress() - state was {}, will not execute {}",
+            status(),
+            positionAndAttemptId());
+      }
+      return Uni.createFrom().item(null);
+    }
+
+    // same as above for this checkProgress , we should only be IN_PROGRESS is anything else
+    // checkProgress will
+    // set a failure and return false.
+    return checkStatus("executeIfInProgress", OperationStatus.IN_PROGRESS)
+        ? executeStatement(queryExecutor)
+        : Uni.createFrom().item(null);
+  }
+
   /**
-   * Sublasses must implement this method to build the query and execute it, they should do anything
-   * with Uni for retry etc, that is handled in the base class {@link #execute(CommandQueryExecutor,
-   * DriverExceptionHandler)}.
+   * Sublasses must implement this method to build the query and execute it, they should not do
+   * anything with Uni for retry etc, that is handled in the base class {@link
+   * #execute(CommandQueryExecutor, DriverExceptionHandler)}.
    *
    * @param queryExecutor the {@link CommandQueryExecutor} , subclasses should call the appropriate
    *     execute method
    * @return A {@link Uni} of the {@link AsyncResultSet} for processing the query.
    */
-  protected abstract Uni<AsyncResultSet> execute(CommandQueryExecutor queryExecutor);
+  protected abstract Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor);
 
   /**
    * Decides if the operation should be retried, using the {@link #retryPolicy} and the {@link
@@ -175,6 +190,17 @@ public abstract class OperationAttempt<
    */
   protected boolean decideRetry(Throwable throwable) {
 
+    // we should only be called when IN_PROGRESS, anything else is an invalid state e.g. if we were
+    // in ERROR it means
+    // we tracked an error, and then kept retrying.
+    // because this function can only return boolean, we throw
+    if (!checkStatus("decideRetry", OperationStatus.IN_PROGRESS)) {
+      throw new IllegalStateException(
+          String.format(
+              "decideRetry() called when not IN_PROGRESS status=%s, %s",
+              status(), positionAndAttemptId()));
+    }
+
     var shouldRetry = retryPolicy.shouldRetry(throwable);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
@@ -183,6 +209,7 @@ public abstract class OperationAttempt<
           positionAndAttemptId(),
           throwable.toString());
     }
+
     return shouldRetry;
   }
 
@@ -205,19 +232,43 @@ public abstract class OperationAttempt<
       AsyncResultSet resultSet,
       Throwable throwable) {
 
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "onCompletion() - resultSetIsNull={}, throwable={}, {}",
+          resultSet == null,
+          Objects.toString(throwable, "NULL"),
+          positionAndAttemptId());
+    }
+
+    // sanity check, if we do not have a result set then we should have an exception
+    if (resultSet == null && throwable == null) {
+      throw new IllegalStateException(
+          String.format(
+              "onCompletion() - resultSet and throwable are both null, %s",
+              positionAndAttemptId()));
+    }
+
     var handledException =
         throwable instanceof RuntimeException
             ? exceptionHandler.maybeHandle(schemaObject, (RuntimeException) throwable)
             : throwable;
 
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("onCompletion() - throwable={}, {}", throwable, positionAndAttemptId());
       if (handledException != throwable) {
         LOGGER.debug(
             "onCompletion() - handledException={}, {}", handledException, positionAndAttemptId());
       }
     }
-    return throwable == null ? onSuccess(resultSet) : maybeAddFailure(handledException);
+
+    return switch (status()) {
+      case IN_PROGRESS ->
+          handledException == null ? onSuccess(resultSet) : maybeAddFailure(handledException);
+      case ERROR -> downcast();
+      default ->
+          throw new IllegalStateException(
+              String.format(
+                  "onCompletion() unsupported status=%s, %s", status(), positionAndAttemptId()));
+    };
   }
 
   /**
@@ -269,18 +320,21 @@ public abstract class OperationAttempt<
    *
    * @param context short descriptive text about what is being checked, used in the exception
    * @param expectedStatus The status that is expected
-   * @return this object, cast to {@link SubT} for chaining methods.
+   * @return True if the attempt is in the expected state, otherwise a {@link IllegalStateException}
+   *     is added to the attempt, ERROR state set, and false is returned.
    */
-  protected SubT checkStatus(String context, OperationStatus expectedStatus) {
+  protected boolean checkStatus(String context, OperationStatus expectedStatus) {
 
     if (status().equals(expectedStatus)) {
-      return downcast();
+      return true;
     }
-    ;
-    throw new IllegalStateException(
-        String.format(
-            "OperationAttempt: checkStatus() failed for %s, expected %s but actual %s for %s",
-            context, expectedStatus, status(), positionAndAttemptId()));
+
+    maybeAddFailure(
+        new IllegalStateException(
+            String.format(
+                "OperationAttempt: checkStatus() failed for %s, expected %s but actual %s for %s",
+                context, expectedStatus, status(), positionAndAttemptId())));
+    return false;
   }
 
   /**
@@ -305,13 +359,18 @@ public abstract class OperationAttempt<
   }
 
   /**
-   * Swap the status of the attempt, if the current status is the expected status then set the new
-   * status, otherwise throw an {@link IllegalStateException}.
+   * Swap the status of the attempt
+   *
+   * @return True is the status was swapped, false otherwise
    */
-  protected SubT swapStatus(
+  protected boolean swapStatus(
       String context, OperationStatus expectedStatus, OperationStatus newStatus) {
-    checkStatus(context, expectedStatus);
-    return setStatus(newStatus);
+
+    if (checkStatus(context, expectedStatus)) {
+      setStatus(newStatus);
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -325,7 +384,8 @@ public abstract class OperationAttempt<
    * @return this object, cast to {@link SubT} for chaining methods.
    */
   public SubT setSkippedIfReady() {
-    return swapStatus("setSkippedIfReady()", OperationStatus.READY, OperationStatus.SKIPPED);
+    swapStatus("setSkippedIfReady()", OperationStatus.READY, OperationStatus.SKIPPED);
+    return downcast();
   }
 
   /**
@@ -354,7 +414,8 @@ public abstract class OperationAttempt<
    * <p>OK to add a failure to the attempt before calling execute, we do this for shredding errors,
    * because the attempt will not execute if there was an error.
    *
-   * @param failure An error that happened when trying to process the attempt, ok to pass <code>null
+   * @param throwable An error that happened when trying to process the attempt, ok to pass <code>
+   *     null
    *     </code> it will be ignored. If a non-null failure has already been added this call will be
    *     ignored.
    * @return This object, cast to {@link SubT} for chaining methods.
@@ -449,9 +510,9 @@ public abstract class OperationAttempt<
    * <p>To implement a custom retry policy, subclass this class and override {@link
    * #shouldRetry(Throwable)}.
    */
-  protected static class RetryPolicy {
+  public static class RetryPolicy {
 
-    static final RetryPolicy NO_RETRY = new RetryPolicy();
+    public static final RetryPolicy NO_RETRY = new RetryPolicy();
 
     private final int maxRetries;
     private final Duration delay;
@@ -466,7 +527,7 @@ public abstract class OperationAttempt<
      * @param maxRetries the number of retries after the initial attempt, must be >= 1
      * @param delay the delay between retries, must not be <code>null</code>
      */
-    RetryPolicy(int maxRetries, Duration delay) {
+    public RetryPolicy(int maxRetries, Duration delay) {
       // This is a requirement of UniRetryAtMost that is it >= 1, however UniRetry.atMost() says it
       // must be >= 0
       if (maxRetries < 1) {
@@ -476,15 +537,15 @@ public abstract class OperationAttempt<
       this.delay = Objects.requireNonNull(delay, "delay cannot be null");
     }
 
-    int maxRetries() {
+    public int maxRetries() {
       return maxRetries;
     }
 
-    Duration delay() {
+    public Duration delay() {
       return delay;
     }
 
-    boolean shouldRetry(Throwable throwable) {
+    public boolean shouldRetry(Throwable throwable) {
       return false;
     }
   }
