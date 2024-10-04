@@ -110,7 +110,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                     CaptureGroup<String> dynamicTextGroup = (CaptureGroup<String>) captureGroup;
                     dynamicTextGroup.consumeAllCaptures(
                         expression -> {
-                          dbLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addFilter(
                               new TextTableFilter(
                                   expression.path(),
                                   NativeTypeTableFilter.Operator.from(
@@ -127,7 +127,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                         (CaptureGroup<BigDecimal>) captureGroup;
                     dynamicNumberGroup.consumeAllCaptures(
                         expression -> {
-                          dbLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addFilter(
                               new NumberTableFilter(
                                   expression.path(),
                                   NativeTypeTableFilter.Operator.from(
@@ -143,7 +143,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                     CaptureGroup<Boolean> dynamicNumberGroup = (CaptureGroup<Boolean>) captureGroup;
                     dynamicNumberGroup.consumeAllCaptures(
                         expression -> {
-                          dbLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addFilter(
                               new BooleanTableFilter(
                                   expression.path(),
                                   NativeTypeTableFilter.Operator.from(
@@ -161,14 +161,14 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                         expression -> {
                           Object rhsValue = ((DocumentId) expression.value()).value();
                           if (rhsValue instanceof String) {
-                            dbLogicalExpression.addDBFilter(
+                            dbLogicalExpression.addFilter(
                                 new TextTableFilter(
                                     expression.path(),
                                     NativeTypeTableFilter.Operator.from(
                                         (ValueComparisonOperator) expression.operator()),
                                     (String) rhsValue));
                           } else if (rhsValue instanceof Number) {
-                            dbLogicalExpression.addDBFilter(
+                            dbLogicalExpression.addFilter(
                                 new NumberTableFilter(
                                     expression.path(),
                                     NativeTypeTableFilter.Operator.from(
@@ -188,7 +188,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                     CaptureGroup<Object> dynamicInGroup = (CaptureGroup<Object>) captureGroup;
                     dynamicInGroup.consumeAllCaptures(
                         expression -> {
-                          dbLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addFilter(
                               new InTableFilter(
                                   InTableFilter.Operator.from(
                                       (ValueComparisonOperator) expression.operator()),

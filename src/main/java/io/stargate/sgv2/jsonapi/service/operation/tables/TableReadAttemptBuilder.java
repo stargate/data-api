@@ -13,6 +13,8 @@ import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Builds an attempt to read a row from an API Table, create a single instance and then call {@link
@@ -21,6 +23,8 @@ import java.util.Objects;
  * <p>Note: we don't need a subclass for ReadAttempt, everything is on the superclass
  */
 public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<TableSchemaObject>> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(TableReadAttemptBuilder.class);
 
   // first value is zero, but we increment before we use it
   private int readPosition = -1;
@@ -62,22 +66,19 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
 
     readPosition += 1;
 
-    CqlOptions<Select> newCqlOptions = cqlOptions;
-
-    WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzedResult analyzedResult = null;
+    WhereCQLClauseAnalyzer.WhereClauseAnalysis analyzedResult = null;
     Exception exception = null;
-
     try {
       analyzedResult = whereCQLClause.analyseWhereClause();
     } catch (FilterException filterException) {
       exception = filterException;
     }
 
+    var atttemptCqlOptions = cqlOptions;
     if (analyzedResult != null && analyzedResult.requiresAllowFiltering()) {
-      // Create a copy of cqlOptions, this is to avoid build() function is executed with its own
-      // exclusive newCqlOptions, instead of modifying the shared one
-      newCqlOptions = new CqlOptions<>(cqlOptions);
-      newCqlOptions.addBuilderOption(CQLOption.ForSelect.withAllowFiltering());
+      // Create a copy of cqlOptions, so we do not impact other attempts
+      atttemptCqlOptions = new CqlOptions<>(atttemptCqlOptions);
+      atttemptCqlOptions.addBuilderOption(CQLOption.ForSelect.withAllowFiltering());
     }
 
     var tableReadAttempt =
@@ -86,13 +87,28 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
             tableSchemaObject,
             selectCQLClause,
             whereCQLClause,
-            newCqlOptions,
+            atttemptCqlOptions,
             pagingState,
             documentSourceSupplier);
 
+    // ok to pass null exception, will be ignored
     tableReadAttempt.maybeAddFailure(exception);
 
     if (analyzedResult != null) {
+      if (LOGGER.isDebugEnabled()) {
+        if (analyzedResult.requiresAllowFiltering()) {
+          LOGGER.debug(
+              "build() - enabled ALLOW FILTERING for attempt {}",
+              tableReadAttempt.positionAndAttemptId());
+        }
+        if (!analyzedResult.warningExceptions().isEmpty()) {
+          LOGGER.debug(
+              "build() - adding warnings for attempt {}, warnings={}",
+              tableReadAttempt.positionAndAttemptId(),
+              analyzedResult.warningExceptions());
+        }
+      }
+
       analyzedResult
           .warningExceptions()
           .forEach(warningException -> tableReadAttempt.addWarning(warningException.getMessage()));

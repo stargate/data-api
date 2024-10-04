@@ -406,7 +406,7 @@ public abstract class OperationAttempt<
   }
 
   /** helper method to build a string with the position and attemptId, used in logging. */
-  protected String positionAndAttemptId() {
+  public String positionAndAttemptId() {
     return String.format("position=%d, attemptId=%s", position, attemptId);
   }
 

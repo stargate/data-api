@@ -4,6 +4,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpressio
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * DBLogicalExpression is what we use in DB level. (LogicalExpression in API level) Similarly to
@@ -45,64 +47,70 @@ public class DBLogicalExpression {
     }
   }
 
-  private final DBLogicalOperator dbLogicalOperator;
+  private final DBLogicalOperator operator;
+  private final List<DBFilterBase> filters = new ArrayList<>();
+  private final List<DBLogicalExpression> subExpressions = new ArrayList<>();
 
-  private final List<DBFilterBase> dbFilters = new ArrayList<>();
+  public DBLogicalExpression(DBLogicalOperator operator) {
+    this.operator = operator;
+  }
 
-  private final List<DBLogicalExpression> dbLogicalExpressions = new ArrayList<>();
+  public <T> void visitAllFilters(Class<T> filterClass, Consumer<T> analyzeRule) {
 
-  public DBLogicalExpression(DBLogicalOperator dbLogicalOperator) {
-    this.dbLogicalOperator = dbLogicalOperator;
+    filters.stream().filter(filterClass::isInstance).map(filterClass::cast).forEach(analyzeRule);
+
+    subExpressions.forEach(
+        subExpression -> subExpression.visitAllFilters(filterClass, analyzeRule));
   }
 
   /**
    * Add a sub dbLogicalExpression as subExpression to current caller dbLogicalExpression
    *
-   * @param DBLogicalExpression subDBLogicalExpression
-   * @return subDBLogicalExpression
+   * @param DBLogicalExpression subExpression
+   * @return subExpression
    */
-  public DBLogicalExpression addDBLogicalExpression(DBLogicalExpression subDBLogicalExpression) {
-    dbLogicalExpressions.add(subDBLogicalExpression);
-    return subDBLogicalExpression;
+  public DBLogicalExpression addSubExpression(DBLogicalExpression subExpression) {
+    subExpressions.add(Objects.requireNonNull(subExpression, "subExpressions cannot be null"));
+    return subExpression;
   }
 
   /**
    * Add a dbFilter to current caller dbLogicalExpression. This new DBFilter will be added in the
    * dbFilter List, it will be in the relation context of this dbLogicalExpression.
    *
-   * @param DBFilterBase dBFilter
+   * @param DBFilterBase filter
    * @return DBFilterBase
    */
-  public DBFilterBase addDBFilter(DBFilterBase dBFilter) {
-    dbFilters.add(dBFilter);
-    return dBFilter;
+  public DBFilterBase addFilter(DBFilterBase filter) {
+    filters.add(Objects.requireNonNull(filter, "filter cannot be null"));
+    return filter;
   }
 
   public DBLogicalOperator operator() {
-    return dbLogicalOperator;
+    return operator;
   }
 
   public boolean isEmpty() {
-    return dbLogicalExpressions.isEmpty() && dbFilters.isEmpty();
+    return subExpressions.isEmpty() && filters.isEmpty();
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("DBLogicalExpression{");
-    sb.append("dbLogicalOperator='").append(dbLogicalOperator).append("'");
-    sb.append(", dbLogicalExpressions=").append(dbLogicalExpressions);
-    sb.append(", dbFilters=").append(dbFilters);
+    sb.append("operator='").append(operator).append("'");
+    sb.append(", subExpressions=").append(subExpressions);
+    sb.append(", filters=").append(filters);
     sb.append("}");
     return sb.toString();
   }
 
-  public List<DBFilterBase> dBFilters() {
-    return List.copyOf(dbFilters);
+  public List<DBFilterBase> filters() {
+    return List.copyOf(filters);
   }
 
-  public List<DBLogicalExpression> dbLogicalExpressions() {
-    return List.copyOf(dbLogicalExpressions);
+  public List<DBLogicalExpression> subExpressions() {
+    return List.copyOf(subExpressions);
   }
 
   /**
@@ -113,7 +121,7 @@ public class DBLogicalExpression {
    */
   public int totalFilterCount() {
     var childCounts =
-        dbLogicalExpressions().stream().mapToInt(DBLogicalExpression::totalFilterCount).sum();
-    return childCounts + dbFilters.size();
+        subExpressions().stream().mapToInt(DBLogicalExpression::totalFilterCount).sum();
+    return childCounts + filters.size();
   }
 }

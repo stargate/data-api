@@ -14,8 +14,10 @@ public class WarningException extends RequestException {
   }
 
   public enum Code implements ErrorCode<WarningException> {
-    MISSING_SAI_INDEX,
-    FILTER_NE_AGAINST_SAI_INDEXED_COLUMN_THAT_NEED_ALLOWING_FILTERING;
+    MISSING_INDEX,
+    NOT_EQUALS_UNSUPPORTED_BY_INDEXING,
+    ZERO_FILTER_OPERATIONS,
+    INCOMPLETE_PRIMARY_KEY_FILTER;
 
     private final ErrorTemplate<WarningException> template;
 

@@ -29,5 +29,5 @@ import java.util.function.BiFunction;
 public interface WhereCQLClause<T extends OngoingWhereClause<T>>
     extends BiFunction<T, List<Object>, T>, CQLClause {
 
-  WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzedResult analyseWhereClause();
+  WhereCQLClauseAnalyzer.WhereClauseAnalysis analyseWhereClause();
 }

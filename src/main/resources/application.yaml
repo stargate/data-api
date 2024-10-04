@@ -116,7 +116,7 @@ quarkus:
       'com.datastax.oss.driver':
         level: WARN
       'io.stargate':
-        level: WARN
+        level: DEBUG
 
     min-level: trace
 

@@ -165,10 +165,10 @@ public interface CommandResolver<C extends Command> {
   }
 
   private void getIndexUsageTags(DBLogicalExpression dbLogicalExpression, IndexUsage indexUsage) {
-    for (DBFilterBase dbFilter : dbLogicalExpression.dBFilters()) {
+    for (DBFilterBase dbFilter : dbLogicalExpression.filters()) {
       indexUsage.merge(dbFilter.indexUsage);
     }
-    for (DBLogicalExpression subDBLogicalExpression : dbLogicalExpression.dbLogicalExpressions()) {
+    for (DBLogicalExpression subDBLogicalExpression : dbLogicalExpression.subExpressions()) {
       getIndexUsageTags(subDBLogicalExpression, indexUsage);
     }
   }

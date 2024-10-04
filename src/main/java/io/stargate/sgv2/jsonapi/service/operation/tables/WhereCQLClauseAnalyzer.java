@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromU
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
@@ -12,11 +13,14 @@ import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBFilterBase;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
 import java.util.*;
-import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The purpose for this analyzer class is to analyze the whereCQLClause.
@@ -26,21 +30,33 @@ import java.util.function.Consumer;
  * if the filter is valid, then do the warning check, gather all WarningException
  */
 public class WhereCQLClauseAnalyzer {
+  private static final Logger LOGGER = LoggerFactory.getLogger(WhereCQLClauseAnalyzer.class);
+
+  // Datatypes that need ALLOW FILTERING even when there is a SAI on the column when Not Equals is
+  // used.
+  private static final Set<DataType> ALLOW_FILTERING_NEEDED_FOR_$NE =
+      Set.of(
+          DataTypes.TEXT, DataTypes.ASCII, DataTypes.BOOLEAN, DataTypes.DURATION, DataTypes.BLOB);
 
   private final TableSchemaObject tableSchemaObject;
   private final TableMetadata tableMetadata;
+  private final Map<CqlIdentifier, ColumnMetadata> tablePKColumns;
 
   public WhereCQLClauseAnalyzer(TableSchemaObject tableSchemaObject) {
     this.tableSchemaObject =
         Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
-    this.tableMetadata = tableSchemaObject.tableMetadata();
+
+    tableMetadata = tableSchemaObject.tableMetadata();
+    tablePKColumns =
+        tableMetadata.getPrimaryKey().stream()
+            .collect(Collectors.toMap(ColumnMetadata::getName, Function.identity()));
   }
 
-  public WhereCQLClauseAnalyzedResult analyse(DBLogicalExpression dbLogicalExpression) {
+  public WhereClauseAnalysis analyse(DBLogicalExpression expression) {
 
     Map<CqlIdentifier, TableFilter> identifierToFilter = new HashMap<>();
-    consumeOnAllTableFilters(
-        dbLogicalExpression,
+    expression.visitAllFilters(
+        TableFilter.class,
         tableFilter -> {
           identifierToFilter.put(cqlIdentifierFromUserInput(tableFilter.path), tableFilter);
         });
@@ -51,22 +67,16 @@ public class WhereCQLClauseAnalyzer {
 
     // TableFilter warning check rules.
     List<WarningException> warnings = new ArrayList<>();
-    warnMissingSaiOnFilterColumns(identifierToFilter).ifPresent(warnings::add);
-    warn$neOnIndexedColumn(identifierToFilter).ifPresent(warnings::add);
 
-    return new WhereCQLClauseAnalyzedResult(!warnings.isEmpty(), warnings);
+    warnMissingIndexOnScalar(identifierToFilter).ifPresent(warnings::add);
+    warnNotEqUnsupportedByIndexing(identifierToFilter).ifPresent(warnings::add);
+    warnNoFilters(identifierToFilter).ifPresent(warnings::add);
+    warnPkNotFullySpecified(identifierToFilter).ifPresent(warnings::add);
 
-    // TODO PK
+    return new WhereClauseAnalysis(!warnings.isEmpty(), warnings);
   }
 
-  /**
-   * Validation check rule: validate if filtering columns exist
-   *
-   * <p>
-   *
-   * @param filterExceptions, list of collecting all FilterException
-   * @param dbLogicalExpression, expression contains all TableFilters
-   */
+  /** Check all filters are on columns that exist in the table. */
   private void checkAllColumnsExist(Map<CqlIdentifier, TableFilter> identifierToFilter) {
 
     var unknownColumns =
@@ -88,13 +98,10 @@ public class WhereCQLClauseAnalyzer {
   }
 
   /**
-   * Validation check rule: validate if a comparison filter is against duration datatype column.
+   * Check the filter does not contain any comparison operations on duration data type
    *
-   * <p>Can NOT apply $lt,$gt,$lte,$gte to duration datatype columns, because of "Slice restrictions
-   * are not supported on duration columns".
-   *
-   * @param filterExceptions, collect all FilterException
-   * @param dbLogicalExpression, expression contains all TableFilters
+   * <p>Can NOT apply $lt,$gt,$lte,$gte to duration datatype columns, returns error from DB "Slice
+   * restrictions are not supported on duration columns".
    */
   private void checkComparisonFilterAgainstDuration(
       Map<CqlIdentifier, TableFilter> identifierToFilter) {
@@ -108,74 +115,91 @@ public class WhereCQLClauseAnalyzer {
                   return (tableFilter instanceof NativeTypeTableFilter<?> nativeTypeTableFilter)
                       && nativeTypeTableFilter.operator.isComparisonOperator();
                 })
+            .map((Map.Entry::getKey))
             .filter(
-                entry -> {
-                  ColumnMetadata metadata = tableMetadata.getColumns().get(entry.getKey());
-                  return metadata.getType() == DataTypes.DURATION;
-                })
-            .map(Map.Entry::getKey)
+                column -> tableMetadata.getColumns().get(column).getType() == DataTypes.DURATION)
             .toList();
 
     if (!filteredDurationColumns.isEmpty()) {
-      throw FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION_COLUMN.get(
+      throw FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION.get(
           errVars(
               tableSchemaObject,
               map -> {
                 map.put(
                     "allColumns",
                     errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
-                map.put("invalidDurationColumns", errFmtCqlIdentifier(filteredDurationColumns));
+                map.put("durationFilters", errFmtCqlIdentifier(filteredDurationColumns));
               }));
     }
   }
 
   /**
-   * Warning check rule: check if filter column is on SAI index.
+   * Warn if the filter is on columns that do not have an index on them, special handling for
+   * primary key columns.
    *
-   * <p>Scalar datatype column: <br>
-   * Without SAI index on column, ALLOW FILTERING is suggested. ($eq,$ne,$lt,$gt,$lte,$gte,$in TODO)
-   *
-   * <p>Collection datatype column: <br>
-   * TODO
-   *
-   * @param warningExceptions, collect all warningException
-   * @param dbLogicalExpression, expression contains all TableFilters
+   * <p>Only considers filters on the native, non collection types,
    */
-  private Optional<WarningException> warnMissingSaiOnFilterColumns(
+  private Optional<WarningException> warnMissingIndexOnScalar(
       Map<CqlIdentifier, TableFilter> identifierToFilter) {
 
-    var missingSAIColumns =
+    var pkFullySpecified =
+        identifierToFilter.keySet().stream().allMatch(tablePKColumns::containsKey);
+
+    var unmatched =
         identifierToFilter.keySet().stream()
-            .filter(identifier -> !isIndexOnColumn(identifier))
+            .filter(column -> !tablePKColumns.containsKey(column))
             .toList();
 
-    return missingSAIColumns.isEmpty()
-        ? Optional.empty()
-        : Optional.of(
-            WarningException.Code.MISSING_SAI_INDEX.get(
-                errVars(
-                    tableSchemaObject,
-                    map -> {
-                      map.put("missingIndexColumns", errFmtCqlIdentifier(missingSAIColumns));
-                    })));
+    // if the Pk is fully specified, then we only check the filters on non-pk columns
+    // otherwise we check all filters because the PK will not be used.
+    var filtersToCheck =
+        pkFullySpecified
+            ? identifierToFilter.keySet().stream()
+                .filter(tableFilter -> !tablePKColumns.containsKey(tableFilter))
+                .toList()
+            : identifierToFilter.keySet().stream().toList();
+
+    var scalarTypeFilters =
+        filtersToCheck.stream()
+            .filter(
+                identifier ->
+                    ApiDataTypeDefs.PRIMITIVE_TYPES_BY_CQL_TYPE.containsKey(
+                        tableMetadata.getColumns().get(identifier).getType()))
+            .toList();
+
+    var missingSAIColumns =
+        scalarTypeFilters.stream().filter(identifier -> !isIndexOnColumn(identifier)).toList();
+
+    if (missingSAIColumns.isEmpty()) {
+      return Optional.empty();
+    }
+
+    var indexedColumns =
+        tableMetadata.getIndexes().values().stream().map(IndexMetadata::getTarget).toList();
+    return Optional.of(
+        WarningException.Code.MISSING_INDEX.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put("primaryKey", errFmtColumnMetadata(tableMetadata.getPrimaryKey()));
+                  map.put("indexedColumns", errFmtJoin(indexedColumns));
+                  map.put("unindexedFilters", errFmtCqlIdentifier(missingSAIColumns));
+                })));
   }
 
   /**
-   * Warning check rule: $ne filter against column that is on SAI index but still needs ALLOW
-   * FILTERING.
+   * Wrn if a filter is on a column that, while it has an index still needs ALLOW FILTERING because
+   * not equals is used.
    *
    * <p>E.G. [perform $ne against a text column 'name' that has SAI index on it] <br>
    * Error from Driver: "Column 'name' has an index but does not support the operators specified in
    * the query. If you want to execute this query despite the performance unpredictability, use
    * ALLOW FILTERING"
-   *
-   * @param warningExceptions, list of collecting all warningExceptions
-   * @param dbLogicalExpression, expression contains all TableFilters
    */
-  private Optional<WarningException> warn$neOnIndexedColumn(
+  private Optional<WarningException> warnNotEqUnsupportedByIndexing(
       Map<CqlIdentifier, TableFilter> identifierToFilter) {
 
-    var notSupportedColumn =
+    var inefficientFilters =
         identifierToFilter.entrySet().stream()
             .filter(
                 entry -> {
@@ -184,156 +208,111 @@ public class WhereCQLClauseAnalyzer {
                       && isIndexOnColumn(entry.getKey())
                       && nativeTypeTableFilter.operator == NativeTypeTableFilter.Operator.NE);
                 })
-            .filter(
-                entry -> {
-                  ColumnMetadata metadata = tableMetadata.getColumns().get(entry.getKey());
-                  return ALLOW_FILTERING_NEEDED_$NE_DATATYPES_ON_SAI.contains(metadata.getType());
-                })
             .map(Map.Entry::getKey)
+            .filter(
+                column ->
+                    ALLOW_FILTERING_NEEDED_FOR_$NE.contains(
+                        tableMetadata.getColumns().get(column).getType()))
             .toList();
 
-    return notSupportedColumn.isEmpty()
-        ? Optional.empty()
-        : Optional.of(
-            WarningException.Code.FILTER_NE_AGAINST_SAI_INDEXED_COLUMN_THAT_NEED_ALLOWING_FILTERING
-                .get(
-                    errVars(
-                        tableSchemaObject,
-                        map -> {
-                          map.put(
-                              "allowFilteringNeOnIndexedColumns",
-                              errFmtCqlIdentifier(notSupportedColumn));
-                        })));
+    if (inefficientFilters.isEmpty()) {
+      return Optional.empty();
+    }
+
+    var inefficientDataTypes =
+        ALLOW_FILTERING_NEEDED_FOR_$NE.stream().map(DataType::toString).toList();
+
+    var inefficientColumns =
+        tableMetadata.getColumns().values().stream()
+            .filter(column -> ALLOW_FILTERING_NEEDED_FOR_$NE.contains(column.getType()))
+            .toList();
+
+    return Optional.of(
+        WarningException.Code.NOT_EQUALS_UNSUPPORTED_BY_INDEXING.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put("inefficientDataTypes", errFmtJoin(inefficientDataTypes));
+                  map.put("inefficientColumns", errFmtColumnMetadata(inefficientColumns));
+                  map.put("inefficientFilters", errFmtCqlIdentifier(inefficientFilters));
+                })));
   }
 
-  /**
-   * The private helper method to recursively traverse the DBLogicalExpression. <br>
-   * During the traverse, it will analyze each tableFilter per each rule
-   *
-   * @param dbLogicalExpression Logical relation container of DBFilters
-   * @param analyzeRule consumer to analyze
-   */
-  public void consumeOnAllTableFilters(
-      DBLogicalExpression dbLogicalExpression, Consumer<TableFilter> analyzeRule) {
-    // traverse all dBFilters at current level of DBLogicalExpression
-    for (DBFilterBase dbFilterBase : dbLogicalExpression.dBFilters()) {
-      TableFilter tableFilter = (TableFilter) dbFilterBase;
-      analyzeRule.accept(tableFilter);
+  private Optional<WarningException> warnNoFilters(
+      Map<CqlIdentifier, TableFilter> identifierToFilter) {
+
+    if (!identifierToFilter.isEmpty()) {
+      return Optional.empty();
     }
-    // traverse sub dBLogicalExpression
-    for (DBLogicalExpression subDBlogicalExpression : dbLogicalExpression.dbLogicalExpressions()) {
-      consumeOnAllTableFilters(subDBlogicalExpression, analyzeRule);
-    }
+
+    var indexedColumns =
+        tableMetadata.getIndexes().values().stream().map(IndexMetadata::getTarget).toList();
+
+    return Optional.of(
+        WarningException.Code.ZERO_FILTER_OPERATIONS.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put("primaryKey", errFmtColumnMetadata(tableMetadata.getPrimaryKey()));
+                  map.put("indexedColumns", errFmtJoin(indexedColumns));
+                })));
   }
 
-  private static final Set<DataType> scalarDatatypes =
-      Set.of(
-          DataTypes.TEXT,
-          DataTypes.ASCII,
-          DataTypes.BOOLEAN,
-          DataTypes.INT,
-          DataTypes.DOUBLE,
-          DataTypes.FLOAT,
-          DataTypes.SMALLINT,
-          DataTypes.TINYINT,
-          DataTypes.BIGINT,
-          DataTypes.VARINT,
-          DataTypes.DECIMAL,
-          DataTypes.TIMESTAMP,
-          DataTypes.DATE,
-          DataTypes.TIME,
-          DataTypes.DURATION,
-          DataTypes.BLOB);
+  private Optional<WarningException> warnPkNotFullySpecified(
+      Map<CqlIdentifier, TableFilter> identifierToFilter) {
 
-  // Datatypes that need ALLOW FILTERING when column is on SAI and filtering on $ne
-  private static final Set<DataType> ALLOW_FILTERING_NEEDED_$NE_DATATYPES_ON_SAI =
-      Set.of(
-          DataTypes.TEXT, DataTypes.ASCII, DataTypes.BOOLEAN, DataTypes.DURATION, DataTypes.BLOB);
+    // If there are no filters, it is handled by the warnNoFilters method
+    // this is only for OK is partially filtered
+    if (identifierToFilter.isEmpty()) {
+      return Optional.empty();
+    }
+    var allFiltersOnPkColumns =
+        identifierToFilter.keySet().stream().allMatch(tablePKColumns::containsKey);
+    // this rule only applies if all the filters are on PK columns
+    if (!allFiltersOnPkColumns) {
+      return Optional.empty();
+    }
 
-  // Datatypes that do not need ALLOW FILTERING when column is on SAI and filtering on $ne
-  private static final Set<DataType> ALLOW_FILTERING_NOT_NEEDED_$NE_DATATYPES_ON_SAI =
-      Set.of(
-          DataTypes.INT,
-          DataTypes.DOUBLE,
-          DataTypes.FLOAT,
-          DataTypes.SMALLINT,
-          DataTypes.TINYINT,
-          DataTypes.BIGINT,
-          DataTypes.VARINT,
-          DataTypes.DECIMAL,
-          DataTypes.TIMESTAMP,
-          DataTypes.DATE,
-          DataTypes.TIME);
+    var missingPartitionKeyMetadata =
+        tableMetadata.getPartitionKey().stream()
+            .filter(column -> !identifierToFilter.containsKey(column.getName()))
+            .toList();
 
-  /**
-   * This method will check the tableSchema and see if the filter column(path) has SAI index on it.
-   *
-   * @param tableFilter tableFilter
-   * @return boolean to indicate if there is a SAI index on the column
-   */
+    var missingClusteringMetadata =
+        tableMetadata.getClusteringColumns().keySet().stream()
+            .filter(column -> !identifierToFilter.containsKey(column.getName()))
+            .toList();
+
+    if (missingPartitionKeyMetadata.isEmpty() && missingClusteringMetadata.isEmpty()) {
+      return Optional.empty();
+    }
+
+    // the filter is only on the PK columns, but does not specify the full PK
+    return Optional.of(
+        WarningException.Code.INCOMPLETE_PRIMARY_KEY_FILTER.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put("primaryKeys", errFmtColumnMetadata(tableMetadata.getPrimaryKey()));
+                  map.put("filterColumns", errFmtCqlIdentifier(identifierToFilter.keySet()));
+                })));
+  }
+
   private boolean isIndexOnColumn(CqlIdentifier column) {
-
     // NOTE: does not check the type of the secondary index, assuming all is SAI
+    // have to use list because the indexes are keyed on the index name, not the column name.
+    // TODO: confirm it is OK to not check the index type and properties
     return tableMetadata.getIndexes().values().stream()
         .anyMatch(index -> index.getTarget().equals(column.asInternal()));
   }
 
   /**
-   * This method will check the tableSchema and see if the filter column(path) is on the primary
-   * key.
+   * The result of the where clause analysis.
    *
-   * @param tableFilter tableFilter
-   * @return boolean to indicate if there is an index on the primary key
+   * @param requiresAllowFiltering TRUE if the query requires ALLOW FILTERING, FALSE otherwise.
+   * @param warningExceptions List of warning exceptions that should be outputted with the query,
+   *     NOTE there may be warnings without needing ALLOW FILTERING.
    */
-  public boolean hasPrimaryKeyOnColumn(TableFilter tableFilter) {
-
-    // Check if the column is a primary key (partition key or clustering column)
-    boolean isPrimaryKey =
-        tableSchemaObject.tableMetadata().getPartitionKey().stream()
-                .anyMatch(column -> column.getName().equals(tableFilter.path))
-            || tableSchemaObject.tableMetadata().getClusteringColumns().keySet().stream()
-                .anyMatch(column -> column.getName().equals(tableFilter.path));
-    return isPrimaryKey;
-  }
-
-  /**
-   * Get the target columnMetaData if the column exists. Otherwise, throw V2 TABLE_COLUMN_UNKNOWN
-   * Data API exception.
-   *
-   * @param tableFilter tableFilter
-   * @return Optional<ColumnMetadata>, columnMetadata
-   */
-  public ColumnMetadata getColumn(TableFilter tableFilter) {
-
-    ColumnMetadata column =
-        tableSchemaObject
-            .tableMetadata()
-            .getColumns()
-            .get(CqlIdentifier.fromInternal(tableFilter.path));
-    if (column == null) {
-      throw FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
-          errVars(
-              tableSchemaObject,
-              map -> {
-                map.put(
-                    "allColumns",
-                    errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
-                map.put("unknownColumns", tableFilter.path);
-              }));
-    }
-
-    return column;
-  }
-
-  /**
-   * The analysis result of WhereCQLClause.
-   *
-   * <p>TODO this record is may not needed, keep it in case we want other information to be
-   * returned.
-   *
-   * @param filterExceptions
-   * @param warningExceptions
-   */
-  public record WhereCQLClauseAnalyzedResult(
+  public record WhereClauseAnalysis(
       boolean requiresAllowFiltering, List<WarningException> warningExceptions) {}
 }
