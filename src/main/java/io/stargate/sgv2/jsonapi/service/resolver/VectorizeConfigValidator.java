@@ -16,14 +16,18 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Class that has validation for vectorize configuration. It is used by both collection and tables
+ * api.
+ */
 @ApplicationScoped
-public class ValidateVectorize {
+public class VectorizeConfigValidator {
   private final OperationsConfig operationsConfig;
   private final EmbeddingProvidersConfig embeddingProvidersConfig;
   private final ValidateCredentials validateCredentials;
 
   @Inject
-  public ValidateVectorize(
+  public VectorizeConfigValidator(
       OperationsConfig operationsConfig,
       EmbeddingProvidersConfig embeddingProvidersConfig,
       ValidateCredentials validateCredentials) {

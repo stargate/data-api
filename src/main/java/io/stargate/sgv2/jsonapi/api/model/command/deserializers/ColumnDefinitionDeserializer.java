@@ -45,7 +45,11 @@ public class ColumnDefinitionDeserializer extends StdDeserializer<ColumnType> {
       }
       if (definition.has("service")) {
         JsonNode service = definition.path("service");
-        vectorConfig = deserializationContext.readTreeAsValue(service, VectorizeConfig.class);
+        try {
+          vectorConfig = deserializationContext.readTreeAsValue(service, VectorizeConfig.class);
+        } catch (JacksonException je) {
+          throw SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
+        }
       }
       return ColumnType.fromString(type, keyType, valueType, dimension, vectorConfig);
     }

@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class CreateTableCommandResolver implements CommandResolver<CreateTableCommand> {
   @Inject ObjectMapper objectMapper;
-  @Inject ValidateVectorize validateVectorize;
+  @Inject VectorizeConfigValidator validateVectorize;
 
   @Override
   public Operation resolveKeyspaceCommand(

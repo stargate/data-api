@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
+import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.ArrayList;
@@ -737,6 +738,105 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   false,
                   null,
                   null)));
+
+      // vector type with invalid vectorixe config
+      testCases.add(
+          Arguments.of(
+              new CreateTableTestData(
+                  """
+                  {
+                     "name": "invalidVectorizeServiceNameConfig",
+                     "definition": {
+                         "columns": {
+                             "id": {
+                                 "type": "text"
+                             },
+                             "age": {
+                                 "type": "int"
+                             },
+                             "content": {
+                               "type": "vector",
+                               "dimension": 1024,
+                               "service": {
+                                 "provider": "invalid_service",
+                                 "modelName": "NV-Embed-QA"
+                               }
+                             }
+                         },
+                         "primaryKey": "id"
+                     }
+                  }
+                  """,
+                  "invalidVectorizeServiceNameConfig",
+                  false,
+                      ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
+                      "The provided options are invalid: Service provider 'invalid_service' is not supported")));
+
+      // vector type with invalid model name config
+      testCases.add(
+        Arguments.of(
+          new CreateTableTestData(
+            """
+            {
+               "name": "invalidVectorizeModelNameConfig",
+               "definition": {
+                   "columns": {
+                       "id": {
+                           "type": "text"
+                       },
+                       "age": {
+                           "type": "int"
+                       },
+                       "content": {
+                         "type": "vector",
+                         "dimension": 1024,
+                         "service": {
+                          "provider": "mistral",
+                          "modelName": "mistral-embed-invalid"
+                        }
+                       }
+                   },
+                   "primaryKey": "id"
+               }
+            }
+            """,
+            "invalidVectorizeModelNameConfig",
+            false,
+            ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
+            "The provided options are invalid: Model name 'mistral-embed-invalid' for provider 'mistral' is not supported")));
+
+      // vector type with dimension mismatch
+      testCases.add(
+        Arguments.of(
+          new CreateTableTestData(
+            """
+            {
+               "name": "invalidVectorizeModelNameConfig",
+               "definition": {
+                   "columns": {
+                       "id": {
+                           "type": "text"
+                       },
+                       "age": {
+                           "type": "int"
+                       },
+                       "content": {
+                         "type": "vector",
+                         "dimension": 1536,
+                         "service": {
+                          "provider": "mistral",
+                          "modelName": "mistral-embed"
+                        }
+                       }
+                   },
+                   "primaryKey": "id"
+               }
+            }
+            """,
+            "invalidVectorizeModelNameConfig",
+            false,
+            ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
+            "The provided options are invalid: The provided dimension value '1536' doesn't match the model's supported dimension value '1024'")));
       return testCases.stream();
     }
   }

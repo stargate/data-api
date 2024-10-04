@@ -17,7 +17,6 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.*;
 
 @ApplicationScoped
 public class CreateCollectionCommandResolver implements CommandResolver<CreateCollectionCommand> {
@@ -27,7 +26,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
   private final DocumentLimitsConfig documentLimitsConfig;
   private final DatabaseLimitsConfig dbLimitsConfig;
   private final OperationsConfig operationsConfig;
-  private final ValidateVectorize validateVectorize;
+  private final VectorizeConfigValidator validateVectorize;
 
   @Inject
   public CreateCollectionCommandResolver(
@@ -36,7 +35,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       DocumentLimitsConfig documentLimitsConfig,
       DatabaseLimitsConfig dbLimitsConfig,
       OperationsConfig operationsConfig,
-      ValidateVectorize validateVectorize) {
+      VectorizeConfigValidator validateVectorize) {
     this.objectMapper = objectMapper;
     this.cqlSessionCache = cqlSessionCache;
     this.documentLimitsConfig = documentLimitsConfig;

@@ -76,7 +76,9 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     CreateTable createTable = addColumnsAndKeys(create);
 
     // Add customProperties which has table properties for vectorize
-    // Convert value to ByteBuffer since extension option accepts ByteBuffer
+    // Convert value to hex string using the ByteUtils.toHexString
+    // This needs to use `createTable.withExtensions()` method in driver when PR
+    // (https://github.com/apache/cassandra-java-driver/pull/1964) is released
     final Map<String, String> extensions =
         customProperties.entrySet().stream()
             .collect(
