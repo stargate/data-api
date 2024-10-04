@@ -23,6 +23,8 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   static final String TABLE_WITH_FP_COLUMNS = "findOneFpColumnsTable";
   static final String TABLE_WITH_BINARY_COLUMN = "findOneBinaryColumnsTable";
   static final String TABLE_WITH_DATETIME_COLUMNS = "findOneDateTimeColumnsTable";
+  static final String TABLE_WITH_LIST_COLUMNS = "findOneListColumnsTable";
+  static final String TABLE_WITH_SET_COLUMNS = "findOneSetColumnsTable";
 
   final JSONCodecRegistryTestData codecTestData = new JSONCodecRegistryTestData();
 
@@ -31,59 +33,65 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
     createTableWithColumns(
         TABLE_WITH_TEXT_COLUMNS,
         Map.of(
-            "idText",
-            Map.of("type", "text"),
-            "asciiText",
-            Map.of("type", "ascii"),
-            "varcharText",
-            Map.of("type", "text")),
+            "idText", "text",
+            "asciiText", "ascii",
+            "varcharText", "text"),
         "idText");
     createTableWithColumns(
         TABLE_WITH_INT_COLUMNS,
         Map.of(
-            "id",
-            Map.of("type", "text"),
-            "intValue",
-            Map.of("type", "int"),
-            "longValue",
-            Map.of("type", "bigint"),
-            "shortValue",
-            Map.of("type", "smallint"),
-            "byteValue",
-            Map.of("type", "tinyint"),
-            "bigIntegerValue",
-            Map.of("type", "varint")),
+            "id", "text",
+            "intValue", "int",
+            "longValue", "bigint",
+            "shortValue", "smallint",
+            "byteValue", "tinyint",
+            "bigIntegerValue", "varint"),
         "id");
     createTableWithColumns(
         TABLE_WITH_FP_COLUMNS,
         Map.of(
-            "id",
-            Map.of("type", "text"),
-            "floatValue",
-            Map.of("type", "float"),
-            "doubleValue",
-            Map.of("type", "double"),
-            "decimalValue",
-            Map.of("type", "decimal")),
+            "id", "text",
+            "floatValue", "float",
+            "doubleValue", "double",
+            "decimalValue", "decimal"),
         "id");
     createTableWithColumns(
-        TABLE_WITH_BINARY_COLUMN,
-        Map.of("id", Map.of("type", "text"), "binaryValue", Map.of("type", "blob")),
-        "id");
+        TABLE_WITH_BINARY_COLUMN, Map.of("id", "text", "binaryValue", "blob"), "id");
 
     createTableWithColumns(
         TABLE_WITH_DATETIME_COLUMNS,
         Map.of(
+            "id", "text",
+            "dateValue", "date",
+            "durationValue", "duration",
+            "timeValue", "time",
+            "timestampValue", "timestamp"),
+        "id");
+
+    createTableWithColumns(
+        TABLE_WITH_LIST_COLUMNS,
+        Map.of(
             "id",
-            Map.of("type", "text"),
-            "dateValue",
-            Map.of("type", "date"),
-            "durationValue",
-            Map.of("type", "duration"),
-            "timeValue",
-            Map.of("type", "time"),
-            "timestampValue",
-            Map.of("type", "timestamp")),
+            "text",
+            "stringList",
+            Map.of("type", "list", "valueType", "text"),
+            "intList",
+            Map.of("type", "list", "valueType", "int"),
+            "doubleList",
+            Map.of("type", "list", "valueType", "double")),
+        "id");
+
+    createTableWithColumns(
+        TABLE_WITH_SET_COLUMNS,
+        Map.of(
+            "id",
+            "text",
+            "intSet",
+            Map.of("type", "set", "valueType", "int"),
+            "doubleSet",
+            Map.of("type", "set", "valueType", "double"),
+            "stringSet",
+            Map.of("type", "set", "valueType", "text")),
         "id");
   }
 
@@ -455,6 +463,215 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
         return "null";
       }
       return "\"" + s + "\"";
+    }
+  }
+
+  @Nested
+  @Order(6)
+  class InsertListColumns {
+    @Test
+    void insertValidListValues() {
+      // First with values for all fields (note: harder to use helper methods)
+      String docJSON =
+          """
+                      { "id": "listValidFull",
+                        "stringList": ["abc", "xyz"],
+                        "intList": [1, 2, -42],
+                        "doubleList": [0.0, -0.5, 3.125]
+                      }
+                      """;
+      insertOneInTable(TABLE_WITH_LIST_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"listValidFull\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+
+      // And then just for int-list; null for string, missing double
+      insertOneInTable(
+          TABLE_WITH_LIST_COLUMNS,
+          """
+                      { "id": "listValidPartial",
+                        "stringList": null,
+                        "intList": [3, -999, 42]
+                      }
+                      """);
+      // If we ask for all (select * basically), get explicit empty Lists:
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"listValidPartial\" } }")
+          .hasNoErrors()
+          .hasJSONField(
+              "data.document",
+              """
+                      { "id": "listValidPartial",
+                        "stringList": [ ],
+                        "intList": [3, -999, 42],
+                        "doubleList": [ ]
+                      }
+                      """);
+
+      // But if specifically just for intList, get just that
+      // NOTE: id column(s) not auto-included unlike with Collections and "_id"
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .postFindOne(
+              """
+                  { "filter": { "id": "listValidPartial" },
+                    "projection": { "intList": 1 }
+                  }
+              """)
+          .hasNoErrors()
+          .hasJSONField(
+              "data.document",
+              """
+                      {
+                        "intList": [3, -999, 42]
+                      }
+                      """);
+    }
+
+    @Test
+    void failOnNonArrayListValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .postInsertOne(
+              """
+      {
+        "id":"listInvalid",
+        "stringList":"abc"
+      }
+      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `List(TEXT",
+              "no codec matching value type");
+    }
+
+    @Test
+    void failOnWrongListElementValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_LIST_COLUMNS)
+          .postInsertOne(
+              """
+              {
+                "id":"listInvalid",
+                "intList":["abc"]
+              }
+              """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `INT`",
+              "no codec matching (list/set) declared element type");
+    }
+  }
+
+  @Nested
+  @Order(7)
+  class InsertSetColumns {
+    @Test
+    void insertValidSetValues() {
+      // First with values for all fields (note: harder to use helper methods)
+      String docJSON =
+          """
+                      { "id": "setValidFull",
+                        "doubleSet": [0.0, -0.5, 3.125],
+                        "intSet": [1, 2, -42],
+                        "stringSet": ["abc", "xyz"]
+                      }
+                      """;
+      insertOneInTable(TABLE_WITH_SET_COLUMNS, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"setValidFull\" } }")
+          .hasNoErrors()
+          // also: ordering by data store is lexicographic, so differs from input order;
+          // plus actual values are sorted as well
+          .hasJSONField(
+              "data.document",
+              """
+                      { "id": "setValidFull",
+                        "doubleSet": [-0.5, 0.0, 3.125],
+                        "intSet": [-42, 1, 2],
+                        "stringSet": ["abc", "xyz"]
+                      }
+                      """);
+
+      // And then just for int-list; null for string, missing double
+      insertOneInTable(
+          TABLE_WITH_SET_COLUMNS,
+          """
+                      { "id": "setValidPartial",
+                        "stringSet": null,
+                        "intSet": [3, -999, 42]
+                      }
+                      """);
+      // If we ask for all (select * basically), get explicit empty Sets:
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"setValidPartial\" } }")
+          .hasNoErrors()
+          .hasJSONField(
+              "data.document",
+              """
+                              { "id": "setValidPartial",
+                                "doubleSet": [ ],
+                                "intSet": [-999, 3, 42],
+                                "stringSet": [ ]
+                              }
+                              """);
+
+      // But if specifically just for intSet, get just that
+      // NOTE: id column(s) not auto-included unlike with Collections and "_id"
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .postFindOne(
+              """
+                                  { "filter": { "id": "setValidPartial" },
+                                    "projection": { "intSet": 1 }
+                                  }
+                              """)
+          .hasNoErrors()
+          .hasJSONField(
+              "data.document",
+              """
+                              {
+                                "intSet": [-999, 3, 42]
+                              }
+                              """);
+    }
+
+    @Test
+    void failOnNonArraySetValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .postInsertOne(
+              """
+              {
+                "id":"setInvalid",
+                "intSet":"abc"
+              }
+              """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `Set(INT",
+              "no codec matching value type");
+    }
+
+    @Test
+    void failOnWrongSetElementValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_SET_COLUMNS)
+          .postInsertOne(
+              """
+              {
+                "id":"setInvalid",
+                "doubleSet":["abc"]
+              }
+              """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `DOUBLE`",
+              // Double is special since there are NaNs represented by Strings
+              "Unsupported String value: only");
     }
   }
 }
