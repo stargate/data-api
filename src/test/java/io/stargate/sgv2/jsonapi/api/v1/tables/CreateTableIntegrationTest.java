@@ -768,7 +768,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   }
                   """,
                   "invalidVectorizeServiceNameConfig",
-                  false,
+                  true,
                   ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
                   "The provided options are invalid: Service provider 'invalid_service' is not supported")));
 
@@ -801,7 +801,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
             }
             """,
                   "invalidVectorizeModelNameConfig",
-                  false,
+                  true,
                   ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
                   "The provided options are invalid: Model name 'mistral-embed-invalid' for provider 'mistral' is not supported")));
 
@@ -834,7 +834,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
             }
             """,
                   "invalidVectorizeModelNameConfig",
-                  false,
+                  true,
                   ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.name(),
                   "The provided options are invalid: The provided dimension value '1536' doesn't match the model's supported dimension value '1024'")));
       return testCases.stream();
