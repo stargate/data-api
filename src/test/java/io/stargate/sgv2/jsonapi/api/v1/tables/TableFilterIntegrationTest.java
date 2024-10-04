@@ -1320,9 +1320,8 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
             .hasSingleApiError(
-                FilterException.Code.INVALID_FILTER,
-                FilterException.class,
-                "The filter clause is invalid")
+                FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION_COLUMN,
+                FilterException.class)
             .hasNoWarnings();
       }
 
