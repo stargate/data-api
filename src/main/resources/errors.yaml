@@ -359,10 +359,15 @@ request-errors:
     body: |-
       Vector column data type definition provided in the request is incorrect.
       Vector type accepts `dimension`. `dimension` is an integer value.
+      `service` definition is optional for vector type. It's used if the embedding needs to be done using data-api.
       Example map type definition:
         "column_name": {
           "type": "vector",
-          "dimension": 1536
+          "dimension": 1024,
+          "service": {
+            "provider": "nvidia",
+            "modelName": "NV-Embed-QA"
+          }
         }
 
 # ================================================================================================================

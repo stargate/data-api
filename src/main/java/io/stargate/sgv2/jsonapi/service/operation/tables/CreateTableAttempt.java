@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromU
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.data.ByteUtils;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
 
@@ -30,7 +32,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
   private final Map<String, ApiDataType> columnTypes;
   private final List<String> partitionKeys;
   private final List<PrimaryKey.OrderingKey> clusteringKeys;
-  private final String comment;
+  private final Map<String, String> customProperties;
   private final boolean ifNotExists;
 
   protected CreateTableAttempt(
@@ -43,7 +45,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
       List<String> partitionKeys,
       List<PrimaryKey.OrderingKey> clusteringKeys,
       boolean ifNotExists,
-      String comment) {
+      Map<String, String> customProperties) {
     super(
         position,
         schemaObject,
@@ -54,7 +56,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     this.partitionKeys = partitionKeys;
     this.clusteringKeys = clusteringKeys;
     this.ifNotExists = ifNotExists;
-    this.comment = comment;
+    this.customProperties = customProperties;
 
     setStatus(OperationStatus.READY);
   }
@@ -73,8 +75,17 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     // Add all primary keys and colunms
     CreateTable createTable = addColumnsAndKeys(create);
 
-    // Add comment which has table properties for vectorize
-    CreateTableWithOptions createWithOptions = createTable.withComment(comment);
+    // Add customProperties which has table properties for vectorize
+    // Convert value to hex string using the ByteUtils.toHexString
+    // This needs to use `createTable.withExtensions()` method in driver when PR
+    // (https://github.com/apache/cassandra-java-driver/pull/1964) is released
+    final Map<String, String> extensions =
+        customProperties.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    e -> e.getKey(), e -> ByteUtils.toHexString(e.getValue().getBytes())));
+
+    CreateTableWithOptions createWithOptions = createTable.withOption("extensions", extensions);
 
     // Add the clustering key order
     createWithOptions = addClusteringOrder(createWithOptions);
