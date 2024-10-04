@@ -24,6 +24,13 @@ scenarios:
     schema: run driver=cql tags==block:schema_astra threads==1 cycles==UNDEF
     rampup: run driver=cql tags==block:rampup cycles===TEMPLATE(rampup-cycles,10000000) threads=auto
     main: run driver=cql tags==block:"main.*" cycles===TEMPLATE(main-cycles,10000000) threads=auto
+  astra_read_only:
+    schema: run driver=cql tags==block:schema_astra threads==1 cycles==UNDEF
+    rampup: run driver=cql tags==block:rampup cycles===TEMPLATE(rampup-cycles,10000000) threads=auto
+    main: run driver=cql tags==block:main_read cycles===TEMPLATE(main-cycles,10000000) threads=auto
+  asta_write_only:
+    schema: run driver=cql tags==block:schema_astra threads==1 cycles==UNDEF
+    main: run driver=cql tags==block:main_write cycles===TEMPLATE(main-cycles,10000000) threads=auto
   basic_check:
     schema: run driver=cql tags==block:schema threads==1 cycles==UNDEF
     rampup: run driver=cql tags==block:rampup cycles===TEMPLATE(rampup-cycles,10) threads=auto

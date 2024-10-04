@@ -15,11 +15,18 @@ scenarios:
   default:
     schema: run driver=http tags==block:schema* threads==1 cycles==UNDEF
     rampup: run driver=http tags==block:rampup cycles===TEMPLATE(rampup-cycles,TEMPLATE(rowscount,10000000)) threads=auto
-    main: run driver=http tags==block:main cycles===TEMPLATE(main-cycles,TEMPLATE(rowscount,10000000)) threads=auto
+    main: run driver=http tags==block:"main.*" cycles===TEMPLATE(main-cycles,TEMPLATE(rowscount,10000000)) threads=auto
   astra:
     schema: run driver=http tags==block:schema threads==1 cycles==UNDEF
     rampup: run driver=http tags==block:rampup cycles===TEMPLATE(rampup-cycles,TEMPLATE(rowscount,10000000)) threads=auto
-    main: run driver=http tags==block:main cycles===TEMPLATE(main-cycles,TEMPLATE(rowscount,10000000)) threads=auto
+    main: run driver=http tags==block:"main.*" cycles===TEMPLATE(main-cycles,TEMPLATE(rowscount,10000000)) threads=auto
+  astra_findone_only:
+    schema: run driver=http tags==block:schema threads==1 cycles==UNDEF
+    rampup: run driver=http tags==block:rampup cycles===TEMPLATE(rampup-cycles,TEMPLATE(rowscount,10000000)) threads=auto
+    main: run driver=http tags==block:main-findone cycles===TEMPLATE(main-cycles,TEMPLATE(rowscount,10000000)) threads=auto
+  astra_insertone_only:
+    schema: run driver=http tags==block:schema threads==1 cycles==UNDEF
+    main: run driver=http tags==block:main-insertone cycles===TEMPLATE(main-cycles,TEMPLATE(rowscount,10000000)) threads=auto
 
 bindings:
   # To enable an optional weighted set of hosts in place of a load balancer
@@ -124,9 +131,7 @@ blocks:
             }
           }
 
-  main:
-    params:
-      ratio: <<read_ratio:5>>
+  main-findone:
     ops:
       main-select:
         space: "{space}"
@@ -145,7 +150,8 @@ blocks:
               }
             }
           }
-          
+  main-insertone:
+    ops:
       main-write:
         space: "{space}"
         method: POST
@@ -155,17 +161,13 @@ blocks:
         Token: "{token}"
         Content-Type: "application/json"
         # because this is not an upsert, modified count could be 0 or 1
-        ok-body: ".*\"modifiedCount\":[0,1].*"
+        ok-body: '.*\"insertedIds\":\[.*\].*'
         body: >2          
           {
-            "updateOne" : {
-              "filter": {
-                "key" : "{rw_key}"
-              },
-              "update": {
-                "$set": {
-                  "value":"{rw_value}"
-                }
+            "insertOne" : {
+              "document" : {
+                "key"   :  "{seq_key}",
+                "value" :  "{seq_value}"
               }
             }
           }
