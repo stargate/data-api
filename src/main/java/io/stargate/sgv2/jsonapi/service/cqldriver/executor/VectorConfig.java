@@ -15,6 +15,7 @@ import java.util.Map;
  */
 public record VectorConfig(
     boolean vectorEnabled,
+    String fieldName,
     int vectorSize,
     SimilarityFunction similarityFunction,
     VectorizeConfig vectorizeConfig) {
@@ -22,20 +23,43 @@ public record VectorConfig(
   // TODO: this is an immutable record, this can be singleton
   // TODO: Remove the use of NULL for the objects like vectorizeConfig
   public static VectorConfig notEnabledVectorConfig() {
-    return new VectorConfig(false, -1, null, null);
+    return new VectorConfig(false, "", -1, null, null);
   }
 
-  // convert a vector jsonNode from table comment to vectorConfig
+  // convert a vector jsonNode from table comment to vectorConfig, used for collection
   public static VectorConfig fromJson(JsonNode jsonNode, ObjectMapper objectMapper) {
     // dimension, similarityFunction, must exist
     int dimension = jsonNode.get("dimension").asInt();
     SimilarityFunction similarityFunction =
         SimilarityFunction.fromString(jsonNode.get("metric").asText());
 
+    return fromJson("$vectorize", dimension, similarityFunction, jsonNode, objectMapper);
+  }
+
+  // convert a vector jsonNode from table extension to vectorConfig, used for tables
+  public static VectorConfig fromJson(
+      String fieldName,
+      int dimension,
+      SimilarityFunction similarityFunction,
+      JsonNode jsonNode,
+      ObjectMapper objectMapper) {
     VectorizeConfig vectorizeConfig = null;
     // construct vectorizeConfig
     JsonNode vectorizeServiceNode = jsonNode.get("service");
     if (vectorizeServiceNode != null) {
+      vectorizeConfig = VectorizeConfig.fromJson(vectorizeServiceNode, objectMapper);
+    }
+    return new VectorConfig(true, fieldName, dimension, similarityFunction, vectorizeConfig);
+  }
+
+  public record VectorizeConfig(
+      String provider,
+      String modelName,
+      Map<String, String> authentication,
+      Map<String, Object> parameters) {
+
+    protected static VectorizeConfig fromJson(
+        JsonNode vectorizeServiceNode, ObjectMapper objectMapper) {
       // provider, modelName, must exist
       String provider = vectorizeServiceNode.get("provider").asText();
       String modelName = vectorizeServiceNode.get("modelName").asText();
@@ -51,17 +75,8 @@ public record VectorConfig(
           vectorizeServiceParameterNode == null
               ? null
               : objectMapper.convertValue(vectorizeServiceParameterNode, Map.class);
-      vectorizeConfig =
-          new VectorizeConfig(
-              provider, modelName, vectorizeServiceAuthentication, vectorizeServiceParameter);
+      return new VectorizeConfig(
+          provider, modelName, vectorizeServiceAuthentication, vectorizeServiceParameter);
     }
-
-    return new VectorConfig(true, dimension, similarityFunction, vectorizeConfig);
   }
-
-  public record VectorizeConfig(
-      String provider,
-      String modelName,
-      Map<String, String> authentication,
-      Map<String, Object> parameters) {}
 }

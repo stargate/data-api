@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ public class DataVectorizer {
   private final JsonNodeFactory nodeFactory;
   private final EmbeddingCredentials embeddingCredentials;
   private final SchemaObject schemaObject;
+  private final VectorConfig vectorConfig;
 
   /**
    * Constructor
@@ -49,6 +51,8 @@ public class DataVectorizer {
     this.nodeFactory = nodeFactory;
     this.embeddingCredentials = embeddingCredentials;
     this.schemaObject = schemaObject;
+    vectorConfig =
+        schemaObject.vectorConfigs().isEmpty() ? null : schemaObject.vectorConfigs().get(0);
   }
 
   /**
@@ -114,7 +118,7 @@ public class DataVectorizer {
                   if (vectorData.size() != vectorizeTexts.size()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                         "Embedding provider '%s' didn't return the expected number of embeddings. Expect: '%d'. Actual: '%d'",
-                        schemaObject.vectorConfig().vectorizeConfig().provider(),
+                        vectorConfig.vectorizeConfig().provider(),
                         vectorizeTexts.size(),
                         vectorData.size());
                   }
@@ -125,11 +129,11 @@ public class DataVectorizer {
                     JsonNode document = documents.get(position);
                     float[] vector = vectorData.get(vectorPosition);
                     // check if all vectors have the expected size
-                    if (vector.length != schemaObject.vectorConfig().vectorSize()) {
+                    if (vector.length != vectorConfig.vectorSize()) {
                       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                           "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                          schemaObject.vectorConfig().vectorizeConfig().provider(),
-                          schemaObject.vectorConfig().vectorSize(),
+                          vectorConfig.vectorizeConfig().provider(),
+                          vectorConfig.vectorSize(),
                           vector.length);
                     }
                     final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
@@ -170,11 +174,11 @@ public class DataVectorizer {
             vectorData -> {
               float[] vector = vectorData.get(0);
               // check if vector have the expected size
-              if (vector.length != schemaObject.vectorConfig().vectorSize()) {
+              if (vector.length != vectorConfig.vectorSize()) {
                 throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                     "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                    schemaObject.vectorConfig().vectorizeConfig().provider(),
-                    schemaObject.vectorConfig().vectorSize(),
+                    vectorConfig.vectorizeConfig().provider(),
+                    vectorConfig.vectorSize(),
                     vector.length);
               }
               return vector;
@@ -212,11 +216,11 @@ public class DataVectorizer {
                 vectorData -> {
                   float[] vector = vectorData.get(0);
                   // check if vector have the expected size
-                  if (vector.length != schemaObject.vectorConfig().vectorSize()) {
+                  if (vector.length != vectorConfig.vectorSize()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                         "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                        schemaObject.vectorConfig().vectorizeConfig().provider(),
-                        schemaObject.vectorConfig().vectorSize(),
+                        vectorConfig.vectorizeConfig().provider(),
+                        vectorConfig.vectorSize(),
                         vector.length);
                   }
                   sortExpressions.clear();

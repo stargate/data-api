@@ -6,6 +6,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
+import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 
 /**
@@ -26,7 +27,7 @@ public final class TestConstants {
           SCHEMA_OBJECT_NAME,
           null,
           IdConfig.defaultIdConfig(),
-          VectorConfig.notEnabledVectorConfig(),
+          List.of(VectorConfig.notEnabledVectorConfig()),
           null);
 
   public static final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT =
@@ -34,7 +35,7 @@ public final class TestConstants {
           SCHEMA_OBJECT_NAME,
           null,
           IdConfig.defaultIdConfig(),
-          new VectorConfig(true, -1, SimilarityFunction.COSINE, null),
+          List.of(new VectorConfig(true, "$vectorize", -1, SimilarityFunction.COSINE, null)),
           null);
 
   public static final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =

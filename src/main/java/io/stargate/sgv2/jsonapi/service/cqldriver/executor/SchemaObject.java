@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
+import java.util.List;
+
 /** A Collection or Table the command works on */
 public abstract class SchemaObject {
 
@@ -29,12 +31,13 @@ public abstract class SchemaObject {
   }
 
   /**
-   * Subclasses must always return an instance of VectorConfig, if there is no vector config they
-   * should return VectorConfig.notEnabledVectorConfig()
+   * Subclasses must always return List of VectorConfig, if there is no vector config they should
+   * return VectorConfig.notEnabledVectorConfig(). This needs to be a list because a table can have
+   * multiple vector columns.
    *
    * @return
    */
-  public abstract VectorConfig vectorConfig();
+  public abstract List<VectorConfig> vectorConfigs();
 
   /**
    * Call to get an instance of the appropriate {@link IndexUsage} for this schema object

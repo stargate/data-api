@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import java.util.List;
 
 public class TableSchemaObject extends TableBasedSchemaObject {
 
@@ -11,8 +12,8 @@ public class TableSchemaObject extends TableBasedSchemaObject {
   }
 
   @Override
-  public VectorConfig vectorConfig() {
-    return VectorConfig.notEnabledVectorConfig();
+  public List<VectorConfig> vectorConfigs() {
+    return List.of(VectorConfig.notEnabledVectorConfig());
   }
 
   @Override

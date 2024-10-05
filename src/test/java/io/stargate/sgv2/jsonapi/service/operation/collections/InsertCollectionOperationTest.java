@@ -98,7 +98,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 SCHEMA_OBJECT_NAME,
                 null,
                 IdConfig.defaultIdConfig(),
-                new VectorConfig(true, -1, SimilarityFunction.COSINE, null),
+                List.of(new VectorConfig(true, "$vectorize", -1, SimilarityFunction.COSINE, null)),
                 null),
             null,
             "testCommand",

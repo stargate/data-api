@@ -19,11 +19,13 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
               TestConstants.SCHEMA_OBJECT_NAME,
               null,
               IdConfig.defaultIdConfig(),
-              new VectorConfig(
-                  true,
-                  3,
-                  SimilarityFunction.COSINE,
-                  new VectorConfig.VectorizeConfig("custom", "custom", null, null)),
+              List.of(
+                  new VectorConfig(
+                      true,
+                      "Svectorize",
+                      3,
+                      SimilarityFunction.COSINE,
+                      new VectorConfig.VectorizeConfig("custom", "custom", null, null))),
               null),
           new TestEmbeddingProvider(),
           "testCommand",

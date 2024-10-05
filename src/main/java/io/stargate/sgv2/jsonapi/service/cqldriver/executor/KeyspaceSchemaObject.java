@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
+import java.util.List;
 
 public class KeyspaceSchemaObject extends SchemaObject {
 
@@ -39,8 +40,8 @@ public class KeyspaceSchemaObject extends SchemaObject {
   }
 
   @Override
-  public VectorConfig vectorConfig() {
-    return VectorConfig.notEnabledVectorConfig();
+  public List<VectorConfig> vectorConfigs() {
+    return List.of(VectorConfig.notEnabledVectorConfig());
   }
 
   @Override

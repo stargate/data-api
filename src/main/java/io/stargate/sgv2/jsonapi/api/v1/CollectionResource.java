@@ -198,7 +198,7 @@ public class CollectionResource {
                 // TODO: refactor this code to be cleaner so it assigns on one line
                 EmbeddingProvider embeddingProvider = null;
                 final VectorConfig.VectorizeConfig vectorizeConfig =
-                    schemaObject.vectorConfig().vectorizeConfig();
+                    schemaObject.vectorConfigs().get(0).vectorizeConfig();
                 if (vectorizeConfig != null) {
                   embeddingProvider =
                       embeddingProviderFactory.getConfiguration(
@@ -206,7 +206,7 @@ public class CollectionResource {
                           dataApiRequestInfo.getCassandraToken(),
                           vectorizeConfig.provider(),
                           vectorizeConfig.modelName(),
-                          schemaObject.vectorConfig().vectorSize(),
+                          schemaObject.vectorConfigs().get(0).vectorSize(),
                           vectorizeConfig.parameters(),
                           vectorizeConfig.authentication(),
                           command.getClass().getSimpleName());

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import java.util.List;
 
 /**
  * schema_version 0 is before we introduce schema_version into the C* table comment of data api
@@ -26,7 +27,8 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
       int vectorSize,
       SimilarityFunction function) {
 
-    VectorConfig vectorConfig = new VectorConfig(vectorEnabled, vectorSize, function, null);
+    VectorConfig vectorConfig =
+        new VectorConfig(vectorEnabled, "$vector", vectorSize, function, null);
     CollectionIndexingConfig indexingConfig = null;
     JsonNode indexing = commentConfigNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
     if (!indexing.isMissingNode()) {
@@ -37,7 +39,7 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
         collectionName,
         tableMetadata,
         IdConfig.defaultIdConfig(),
-        vectorConfig,
+        List.of(vectorConfig),
         indexingConfig);
   }
 

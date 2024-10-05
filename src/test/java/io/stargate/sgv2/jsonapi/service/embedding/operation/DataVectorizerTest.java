@@ -230,11 +230,13 @@ public class DataVectorizerTest {
               "collections",
               null,
               IdConfig.defaultIdConfig(),
-              new VectorConfig(
-                  true,
-                  4,
-                  SimilarityFunction.COSINE,
-                  new VectorConfig.VectorizeConfig("custom", "custom", null, null)),
+              List.of(
+                  new VectorConfig(
+                      true,
+                      "$vectorize",
+                      4,
+                      SimilarityFunction.COSINE,
+                      new VectorConfig.VectorizeConfig("custom", "custom", null, null))),
               null);
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {

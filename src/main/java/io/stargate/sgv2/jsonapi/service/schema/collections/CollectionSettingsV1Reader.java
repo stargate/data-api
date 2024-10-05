@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import java.util.List;
 
 /**
  * schema_version 1 sample:
@@ -44,6 +45,11 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
     }
 
     return new CollectionSchemaObject(
-        keyspaceName, collectionName, tableMetadata, idConfig, vectorConfig, indexingConfig);
+        keyspaceName,
+        collectionName,
+        tableMetadata,
+        idConfig,
+        List.of(vectorConfig),
+        indexingConfig);
   }
 }
