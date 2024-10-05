@@ -33,7 +33,7 @@ public class TableSchemaObject extends TableBasedSchemaObject {
   }
 
   @Override
-  public VectorConfig vectorConfig() {
+   public VectorConfig vectorConfig() {
     return vectorConfig;
   }
 

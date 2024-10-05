@@ -13,6 +13,7 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
@@ -30,7 +31,7 @@ public class CollectionSchemaObjectTest {
             "collectionName",
             null,
             IdConfig.defaultIdConfig(),
-            VectorConfig.notEnabledVectorConfig(),
+            List.of(VectorConfig.notEnabledVectorConfig()),
             indexingConfig);
     IndexingProjector indexingProj = settings.indexingProjector();
     assertThat(indexingProj)

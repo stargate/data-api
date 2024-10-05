@@ -245,7 +245,7 @@ public class MeteredCommandProcessor {
     }
 
     Tag vectorEnabled =
-        commandContext.schemaObject().vectorConfig().vectorEnabled()
+        commandContext.schemaObject().vectorConfigs().get(0).vectorEnabled()
             ? Tag.of(jsonApiMetricsConfig.vectorEnabled(), "true")
             : Tag.of(jsonApiMetricsConfig.vectorEnabled(), "false");
     JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(command);
