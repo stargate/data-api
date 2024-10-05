@@ -52,4 +52,12 @@ public class TestData {
   public ResultSetTestData resultSet() {
     return getOrCache(ResultSetTestData.class);
   }
+
+  public LogicalExpressionTestData logicalExpression() {
+    return getOrCache(LogicalExpressionTestData.class);
+  }
+
+  public WhereAnalyzerTestData whereAnalyzer() {
+    return getOrCache(WhereAnalyzerTestData.class);
+  }
 }

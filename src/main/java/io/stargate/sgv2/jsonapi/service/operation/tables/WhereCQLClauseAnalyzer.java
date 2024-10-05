@@ -283,8 +283,37 @@ public class WhereCQLClauseAnalyzer {
             .filter(column -> !identifierToFilter.containsKey(column.getName()))
             .toList();
 
-    if (missingPartitionKeyMetadata.isEmpty() && missingClusteringMetadata.isEmpty()) {
-      return Optional.empty();
+    var clusteringColumnAimToFilterOn =
+        tableMetadata.getClusteringColumns().keySet().stream()
+            .filter(column -> identifierToFilter.containsKey(column.getName()))
+            .toList();
+
+    boolean isSkippingClusteringKey = false;
+    // We may have a skipping clusteringKey situation
+    if (!clusteringColumnAimToFilterOn.isEmpty()
+        && clusteringColumnAimToFilterOn.size() < tableMetadata.getClusteringColumns().size()) {
+      // This is the correct order of clusteringKeys
+      var tableClusteringColumns = tableMetadata.getClusteringColumns().keySet().stream().toList();
+      // As long as we are not skipping the last one, we are fine
+      for (int i = 0; i < tableClusteringColumns.size() - 1; i++) {
+        if (!clusteringColumnAimToFilterOn.contains(tableClusteringColumns.get(i))) {
+          isSkippingClusteringKey = true;
+          break;
+        }
+      }
+    }
+
+    // 3 situations are considered as a valid PrimaryKey filtering
+    // 1. Just filtering on all partitionKeys, and all specified
+    // 2. All partitionKeys and clusteringKeys are specified in filter
+    // 3. All partitionKeys are specified, and not skipping clusteringKeys
+    if (missingPartitionKeyMetadata.isEmpty()) {
+      // 1,2,3 situations
+      if (clusteringColumnAimToFilterOn.isEmpty()
+          || missingClusteringMetadata.isEmpty()
+          || !isSkippingClusteringKey) {
+        return Optional.empty();
+      }
     }
 
     // the filter is only on the PK columns, but does not specify the full PK
