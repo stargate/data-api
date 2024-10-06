@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
@@ -38,8 +38,7 @@ public class PrimaryKeyDeserializer extends StdDeserializer<PrimaryKey> {
           }
 
         } else {
-          throw ErrorCodeV1.TABLE_PRIMARY_KEY_DEFINITION_INCORRECT.toApiException(
-              "partitionBy needs to be array of column names");
+          throw SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
         }
 
         if (primaryKey.has("partitionSort")) {
@@ -60,12 +59,10 @@ public class PrimaryKeyDeserializer extends StdDeserializer<PrimaryKey> {
                   orderingKeys[i] =
                       new PrimaryKey.OrderingKey(columnName, PrimaryKey.OrderingKey.Order.DESC);
                 } else {
-                  throw ErrorCodeV1.TABLE_PRIMARY_KEY_DEFINITION_INCORRECT.toApiException(
-                      "partitionSort value should be 1 or -1");
+                  throw SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
                 }
               } else {
-                throw ErrorCodeV1.TABLE_PRIMARY_KEY_DEFINITION_INCORRECT.toApiException(
-                    "partitionSort should be 1 or -1");
+                throw SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
               }
               i++;
             }
@@ -73,11 +70,9 @@ public class PrimaryKeyDeserializer extends StdDeserializer<PrimaryKey> {
         }
         return new PrimaryKey(keys, orderingKeys);
       } else {
-        throw ErrorCodeV1.TABLE_PRIMARY_KEY_DEFINITION_INCORRECT.toApiException(
-            "partitionBy keys is mandatory");
+        throw SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
       }
     }
-    throw ErrorCodeV1.TABLE_PRIMARY_KEY_DEFINITION_INCORRECT.toApiException(
-        "Primary key should be text or Object");
+    throw SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
   }
 }

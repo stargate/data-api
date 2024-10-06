@@ -7,7 +7,8 @@ import java.util.Objects;
 
 /**
  * Base for any operations that works with CQL Tables with rows, rather than Collections of
- * Documents
+ * Documents * 26 sept 2024 - aaron - this will be removed when we migrate the delete and update
+ * table ops to use OperationAttempt
  */
 abstract class TableOperation implements Operation {
 

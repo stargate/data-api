@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -24,17 +25,18 @@ import java.util.function.Supplier;
  * and successful attempts. This is used as an aggregator for {@link
  * io.smallrye.mutiny.groups.MultiCollect#in(Supplier, BiConsumer)}
  */
-public class InsertOperationPage implements Supplier<CommandResult> {
+public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
+    implements Supplier<CommandResult> {
 
   // All the insertions that are going to be attempted
-  private final List<InsertAttempt> allInsertions;
+  private final List<InsertAttempt<SchemaT>> allInsertions;
 
   // True if the response should include detailed info for each document
   private final boolean returnDocumentResponses;
 
   // The success and failed lists are mutable and are used to build the response
-  private final List<InsertAttempt> successfulInsertions;
-  private final List<InsertAttempt> failedInsertions;
+  private final List<InsertAttempt<SchemaT>> successfulInsertions;
+  private final List<InsertAttempt<SchemaT>> failedInsertions;
 
   // If the debug mode is enabled, errors include the errorclass
   private final boolean debugMode;
@@ -47,7 +49,8 @@ public class InsertOperationPage implements Supplier<CommandResult> {
 
   /** Create an instance that has debug false and useErrorIbhectV2 false */
   public InsertOperationPage(
-      List<? extends InsertAttempt> allAttemptedInsertions, boolean returnDocumentResponses) {
+      List<? extends InsertAttempt<SchemaT>> allAttemptedInsertions,
+      boolean returnDocumentResponses) {
     this(allAttemptedInsertions, returnDocumentResponses, false, false);
   }
 
@@ -62,13 +65,14 @@ public class InsertOperationPage implements Supplier<CommandResult> {
    * @param useErrorObjectV2 Flagged true to include the new error object v2.
    */
   public InsertOperationPage(
-      List<? extends InsertAttempt> allAttemptedInsertions,
+      List<? extends InsertAttempt<SchemaT>> allAttemptedInsertions,
       boolean returnDocumentResponses,
       boolean debugMode,
       boolean useErrorObjectV2) {
 
     Objects.requireNonNull(allAttemptedInsertions, "allAttemptedInsertions cannot be null");
-    this.allInsertions = allAttemptedInsertions.stream().map(InsertAttempt.class::cast).toList();
+    this.allInsertions =
+        allAttemptedInsertions.stream().map(attempt -> (InsertAttempt<SchemaT>) attempt).toList();
     this.returnDocumentResponses = returnDocumentResponses;
 
     this.successfulInsertions = new ArrayList<>(allAttemptedInsertions.size());
@@ -118,12 +122,12 @@ public class InsertOperationPage implements Supplier<CommandResult> {
     List<CommandResult.Error> errors = new ArrayList<>();
 
     // Results array filled in order: first successful insertions
-    for (InsertAttempt okInsertion : successfulInsertions) {
+    for (var okInsertion : successfulInsertions) {
       results[okInsertion.position()] =
           new InsertionResult(okInsertion.docRowID().orElseThrow(), InsertionStatus.OK, null);
     }
     // Second: failed insertions; output in order of insertion
-    for (InsertAttempt failedInsertion : failedInsertions) {
+    for (var failedInsertion : failedInsertions) {
       // TODO AARON - confirm the null handling in the getError
       CommandResult.Error error = getErrorObject(failedInsertion);
 
@@ -179,6 +183,7 @@ public class InsertOperationPage implements Supplier<CommandResult> {
     Map<CommandStatus, Object> status = new HashMap<>();
     status.put(CommandStatus.INSERTED_IDS, insertedIds);
     maybeAddSchema(status);
+
     return new CommandResult(null, status, errors);
   }
 
@@ -204,7 +209,7 @@ public class InsertOperationPage implements Supplier<CommandResult> {
   /**
    * Gets the appropriately formatted error given {@link #useErrorObjectV2} and {@link #debugMode}.
    */
-  private CommandResult.Error getErrorObject(InsertAttempt insertAttempt) {
+  private CommandResult.Error getErrorObject(InsertAttempt<SchemaT> insertAttempt) {
 
     var throwable = insertAttempt.failure().orElse(null);
     if (throwable instanceof APIException apiException) {
@@ -231,7 +236,7 @@ public class InsertOperationPage implements Supplier<CommandResult> {
    * for we fail the IT's in {@link InsertIntegrationTest.InsertManyFails} for per doc responses. In
    * this reference version this was the function "getError(Throwable throwable)"
    */
-  private CommandResult.Error getErrorObjectV1(InsertAttempt insertAttempt) {
+  private CommandResult.Error getErrorObjectV1(InsertAttempt<SchemaT> insertAttempt) {
 
     // aaron we should not be here unless the attempt has failed.
     var throwable =
@@ -249,9 +254,18 @@ public class InsertOperationPage implements Supplier<CommandResult> {
           .apply(throwable, throwable.getMessage());
     }
 
+    // aaron 23 sept - the insertAttempt.docRowID().orElse.. below is because if we fail to shred we
+    // do not have the id
+    // previously this type of error would bubble to the top of the stack, it is not handled as part
+    // of building the
+    // insert page. This is ugly, need to fix later.
+    var docRowID = insertAttempt.docRowID().orElse(() -> "UNKNOWN").value();
+
     String message =
-        "Failed to insert document with _id %s: %s"
-            .formatted(insertAttempt.docRowID().orElseThrow(), throwable.getMessage());
+        allInsertions.size() == 1
+            ? throwable.getMessage()
+            : "Failed to insert document with _id " + docRowID + ": " + throwable.getMessage();
+
     /// TODO: confirm the null handling in the getMapperWithMessageFunction
     // passing null is what would have happened before changing to optional
     // BUG: this does not handle if the debug flag is set.
@@ -275,7 +289,7 @@ public class InsertOperationPage implements Supplier<CommandResult> {
    *
    * @param insertion Document insertion attempt
    */
-  public void registerCompletedAttempt(InsertAttempt insertion) {
+  public void registerCompletedAttempt(InsertAttempt<SchemaT> insertion) {
     // TODO: AARON: confirm this should not add to the allInsertions list. It would seem better if
     // it did
     insertion

@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -40,6 +41,14 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
         .body("status.ok", is(1));
   }
 
+  protected DataApiResponseValidator createTableErrorValidation(
+      String tableDefAsJSON, String errorCode, String message) {
+    return DataApiCommandSenders.assertNamespaceCommand(keyspaceName)
+        .postCreateTable(tableDefAsJSON)
+        .body("errors[0].errorCode", is(errorCode))
+        .body("errors[0].message", containsString(message));
+  }
+
   protected DataApiResponseValidator deleteTable(String tableName) {
     // 09-Sep-2024, tatu: No separate "deleteTable" command, so use "deleteCollection":
     return DataApiCommandSenders.assertNamespaceCommand(keyspaceName)
@@ -53,6 +62,22 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
         .postInsertOne(documentJSON)
         .hasNoErrors()
         .body("status.insertedIds", hasSize(1));
+  }
+
+  protected DataApiResponseValidator createIndex(
+      String tableName, String columnName, String indexName) {
+    return DataApiCommandSenders.assertTableCommand(keyspaceName, tableName)
+        .postCreateIndex(columnName, indexName)
+        .hasNoErrors()
+        .body("status.ok", is(1));
+  }
+
+  protected DataApiResponseValidator createIndex(String tableName, String columnName) {
+    String indexName = String.format("%s_%s_index", tableName, columnName);
+    return DataApiCommandSenders.assertTableCommand(keyspaceName, tableName)
+        .postCreateIndex(columnName, indexName)
+        .hasNoErrors()
+        .body("status.ok", is(1));
   }
 
   protected void deleteAllRowsFromTable(String tableName) {

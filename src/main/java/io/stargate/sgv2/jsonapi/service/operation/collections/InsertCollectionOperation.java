@@ -31,42 +31,48 @@ public record InsertCollectionOperation(
     boolean returnDocumentResponses)
     implements CollectionModifyOperation {
 
-  public static InsertCollectionOperation create(
-      CommandContext commandContext,
-      List<WritableShreddedDocument> documents,
-      boolean ordered,
-      boolean offlineMode,
-      boolean returnDocumentResponses) {
-    return new InsertCollectionOperation(
-        commandContext,
-        CollectionInsertAttempt.from(documents),
-        ordered,
-        offlineMode,
-        returnDocumentResponses);
+  public InsertCollectionOperation(
+      CommandContext<CollectionSchemaObject> commandContext,
+      List<CollectionInsertAttempt> insertions) {
+    this(commandContext, insertions, false, false, false);
   }
 
-  public static InsertCollectionOperation create(
-      CommandContext commandContext,
-      List<WritableShreddedDocument> documents,
-      boolean ordered,
-      boolean returnDocumentResponses) {
-    return new InsertCollectionOperation(
-        commandContext,
-        CollectionInsertAttempt.from(documents),
-        ordered,
-        false,
-        returnDocumentResponses);
-  }
-
-  public static InsertCollectionOperation create(
-      CommandContext commandContext, WritableShreddedDocument document) {
-    return new InsertCollectionOperation(
-        commandContext,
-        Collections.singletonList(CollectionInsertAttempt.from(0, document)),
-        false,
-        false,
-        false);
-  }
+  //  public static InsertCollectionOperation create(
+  //      CommandContext commandContext,
+  //      List<WritableShreddedDocument> documents,
+  //      boolean ordered,
+  //      boolean offlineMode,
+  //      boolean returnDocumentResponses) {
+  //    return new InsertCollectionOperation(
+  //        commandContext,
+  //        CollectionInsertAttempt.from(documents),
+  //        ordered,
+  //        offlineMode,
+  //        returnDocumentResponses);
+  //  }
+  //
+  //  public static InsertCollectionOperation create(
+  //      CommandContext commandContext,
+  //      List<WritableShreddedDocument> documents,
+  //      boolean ordered,
+  //      boolean returnDocumentResponses) {
+  //    return new InsertCollectionOperation(
+  //        commandContext,
+  //        CollectionInsertAttempt.from(documents),
+  //        ordered,
+  //        false,
+  //        returnDocumentResponses);
+  //  }
+  //
+  //  public static InsertCollectionOperation create(
+  //      CommandContext commandContext, WritableShreddedDocument document) {
+  //    return new InsertCollectionOperation(
+  //        commandContext,
+  //        Collections.singletonList(CollectionInsertAttempt.from(0, document)),
+  //        false,
+  //        false,
+  //        false);
+  //  }
 
   /** {@inheritDoc} */
   @Override

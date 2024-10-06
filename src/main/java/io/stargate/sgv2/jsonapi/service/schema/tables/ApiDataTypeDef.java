@@ -10,8 +10,8 @@ import java.util.Optional;
  *
  * <p>Singleton instances are created in {@link ApiDataTypeDefs} for the supported types.
  *
- * <p>The {@link ApiDataType} is the names of the types, this class is used to define how the type
- * works and defines the de/serialisation of the type.
+ * <p>The {@link PrimitiveApiDataType} is the names of the types, this class is used to define how
+ * the type works and defines the de/serialisation of the type.
  *
  * <p>aaron - 9 sept 2024 - avoiding a record for now as assume will use subclasses for collections
  */

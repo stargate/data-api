@@ -1,29 +1,75 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
+import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
+import com.datastax.oss.driver.api.querybuilder.insert.InsertInto;
+import com.datastax.oss.driver.api.querybuilder.insert.OngoingValues;
+import com.datastax.oss.driver.api.querybuilder.insert.RegularInsert;
+import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.query.InsertValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Container for an individual Document or Row insertion attempt.
- *
- * <p>Tracks the original input position; document (if available), its id (if available) and
- * possible processing error.
- *
- * <p>Information will be needed to build responses, including the optional detail response see
- * {@link InsertOperationPage}
- *
- * <p>Is {@link Comparable} so that the attempts can be re-sorted into the order provided in the
- * user request, compares based on the {@link #position()}
+ * An attempt to insert into a table, runs the query, does not hold the result set (e.g. for applied
+ * LWT) that is for later.
  */
-public interface InsertAttempt extends Comparable<InsertAttempt> {
+public abstract class InsertAttempt<SchemaT extends TableBasedSchemaObject>
+    extends OperationAttempt<InsertAttempt<SchemaT>, SchemaT> {
 
-  /**
-   * The zero based position of the document or row in the request from the user.
-   *
-   * @return integer position
-   */
-  int position();
+  private static final Logger LOGGER = LoggerFactory.getLogger(InsertAttempt.class);
+
+  private final InsertValuesCQLClause insertValuesCQLClause;
+
+  protected InsertAttempt(
+      int position, SchemaT schemaObject, InsertValuesCQLClause insertValuesCQLClause) {
+    super(position, schemaObject, RetryPolicy.NO_RETRY);
+
+    // nullable, because the subclass may want to implement method itself.
+    // and if there is an error shredding we will not have the insert clause
+    this.insertValuesCQLClause = insertValuesCQLClause;
+  }
+
+  @Override
+  protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
+    // bind and execute
+    var statement = buildInsertStatement();
+
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "execute() - {}, cql={}, values={}",
+          positionAndAttemptId(),
+          statement.getQuery(),
+          statement.getPositionalValues());
+    }
+    return queryExecutor.executeWrite(statement);
+  }
+
+  protected SimpleStatement buildInsertStatement() {
+
+    var metadata = schemaObject.tableMetadata();
+
+    InsertInto insertInto = QueryBuilder.insertInto(metadata.getKeyspace(), metadata.getName());
+
+    List<Object> positionalValues = new ArrayList<>();
+    RegularInsert regularInsert = applyInsertValues(insertInto, positionalValues);
+    return SimpleStatement.newInstance(regularInsert.asCql(), positionalValues.toArray());
+  }
+
+  protected RegularInsert applyInsertValues(
+      OngoingValues ongoingValues, List<Object> positionalValues) {
+    Objects.requireNonNull(insertValuesCQLClause, "insertValuesCQLClause must not be null");
+    return insertValuesCQLClause.apply(ongoingValues, positionalValues);
+  }
 
   /**
    * The document _id or the row primary key, if known, used to build the response that includes the
@@ -35,25 +81,7 @@ public interface InsertAttempt extends Comparable<InsertAttempt> {
    *
    * @return The {@link DocRowIdentifer} that identifies the document or row by ID
    */
-  Optional<DocRowIdentifer> docRowID();
-
-  /**
-   * The first error that happened trying to run this insert.
-   *
-   * @return
-   */
-  Optional<Throwable> failure();
-
-  /**
-   * Updates the attempt with an error that happened when trying to process the insert.
-   *
-   * <p>Implementations must only remember the first error that happened.
-   *
-   * @param failure An error that happened when trying to process the insert.
-   * @return Return the updated {@link InsertAttempt}, must be the same instance the method was
-   *     called on.
-   */
-  InsertAttempt maybeAddFailure(Throwable failure);
+  public abstract Optional<DocRowIdentifer> docRowID();
 
   /**
    * Called to get the description of the schema to use when building the response.
@@ -61,16 +89,5 @@ public interface InsertAttempt extends Comparable<InsertAttempt> {
    * @return The optional object that describes the schema, if present the object will be serialised
    *     to JSON and included in the response status as {@link CommandStatus#PRIMARY_KEY_SCHEMA}.
    */
-  Optional<Object> schemaDescription();
-
-  /**
-   * Compares the position of this attempt to another.
-   *
-   * @param other the object to be compared.
-   * @return Result of {@link Integer#compare(int, int)}
-   */
-  @Override
-  default int compareTo(InsertAttempt other) {
-    return Integer.compare(position(), other.position());
-  }
+  public abstract Optional<Object> schemaDescription();
 }

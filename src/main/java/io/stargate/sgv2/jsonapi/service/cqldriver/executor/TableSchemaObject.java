@@ -2,19 +2,12 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 
-public class TableSchemaObject extends SchemaObject {
+public class TableSchemaObject extends TableBasedSchemaObject {
 
   public static final SchemaObjectType TYPE = SchemaObjectType.TABLE;
 
-  public final TableMetadata tableMetadata;
-
   public TableSchemaObject(TableMetadata tableMetadata) {
-    // uses asCql(pretty) so the names do not always include double quotes
-    super(
-        TYPE,
-        new SchemaObjectName(
-            tableMetadata.getKeyspace().asCql(true), tableMetadata.getName().asCql(true)));
-    this.tableMetadata = tableMetadata;
+    super(TYPE, tableMetadata);
   }
 
   @Override
