@@ -333,7 +333,13 @@ public class DocumentShredder {
         throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
             "The key for the %s object must be '%s'", path, BINARY.encodedName());
       }
-      callback.shredVector(path, obj);
+      JsonNode binaryValue = entry.getValue();
+      if (!binaryValue.isTextual()) {
+        throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
+            "Unsupported JSON value type in EJSON $binary wrapper (%s): only STRING allowed",
+            binaryValue.getNodeType());
+      }
+      callback.shredVector(path, binaryValue.textValue());
     } else {
       throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
           value.getNodeType().toString());
