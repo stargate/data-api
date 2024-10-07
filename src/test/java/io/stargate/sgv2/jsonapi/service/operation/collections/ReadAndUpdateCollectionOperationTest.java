@@ -23,6 +23,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.serializer.CQLBindValues;
@@ -117,7 +118,14 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
                 SCHEMA_OBJECT_NAME,
                 null,
                 IdConfig.defaultIdConfig(),
-                new VectorConfig(true, -1, SimilarityFunction.COSINE, null),
+                new VectorConfig(
+                    true,
+                    List.of(
+                        new VectorConfig.ColumnVectorDefinition(
+                            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                            -1,
+                            SimilarityFunction.COSINE,
+                            null))),
                 null),
             null,
             "testCommand",

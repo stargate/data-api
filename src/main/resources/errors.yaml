@@ -371,6 +371,18 @@ request-errors:
             "modelName": "NV-Embed-QA"
           }
         }
+  - scope: SCHEMA
+    code: INVALID_CONFIGURATION
+    title: Unable to parse configuration, schema invalid.
+    body: |-
+      Unable to parse configuration, schema invalid.
+
+  - scope: SCHEMA
+    code: INVALID_VECTORIZE_CONFIGURATION
+    title: Unable to parse vectorize configuration, schema invalid.
+    body: |-
+      Unable to parse vectorize configuration, schema invalid for field ${field}.
+  
 
 # ================================================================================================================
 # Server Errors
