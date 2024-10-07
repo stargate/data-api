@@ -31,10 +31,12 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
     VectorConfig vectorConfig =
         new VectorConfig(
             vectorEnabled,
-            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-            vectorSize,
-            function,
-            null);
+            List.of(
+                new VectorConfig.ColumnVectorDefinition(
+                    DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                    vectorSize,
+                    function,
+                    null)));
     CollectionIndexingConfig indexingConfig = null;
     JsonNode indexing = commentConfigNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
     if (!indexing.isMissingNode()) {
@@ -45,7 +47,7 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
         collectionName,
         tableMetadata,
         IdConfig.defaultIdConfig(),
-        List.of(vectorConfig),
+        vectorConfig,
         indexingConfig);
   }
 

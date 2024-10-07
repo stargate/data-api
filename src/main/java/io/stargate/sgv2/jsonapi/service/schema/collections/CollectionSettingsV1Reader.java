@@ -26,7 +26,9 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
     VectorConfig vectorConfig = VectorConfig.notEnabledVectorConfig();
     JsonNode vector = collectionOptionsNode.path(TableCommentConstants.COLLECTION_VECTOR_KEY);
     if (!vector.isMissingNode()) {
-      vectorConfig = VectorConfig.fromJson(vector, objectMapper);
+      VectorConfig.ColumnVectorDefinition columnVectorDefinition =
+          VectorConfig.ColumnVectorDefinition.fromJson(vector, objectMapper);
+      vectorConfig = new VectorConfig(true, List.of(columnVectorDefinition));
     }
     // construct collectionSettings IndexingConfig
     CollectionIndexingConfig indexingConfig = null;
@@ -45,11 +47,6 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
     }
 
     return new CollectionSchemaObject(
-        keyspaceName,
-        collectionName,
-        tableMetadata,
-        idConfig,
-        List.of(vectorConfig),
-        indexingConfig);
+        keyspaceName, collectionName, tableMetadata, idConfig, vectorConfig, indexingConfig);
   }
 }

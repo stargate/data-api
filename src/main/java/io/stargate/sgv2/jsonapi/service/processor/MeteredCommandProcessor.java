@@ -22,14 +22,12 @@ import io.stargate.sgv2.jsonapi.api.v1.metrics.MetricsConfig;
 import io.stargate.sgv2.jsonapi.config.CommandLevelLoggingConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -245,12 +243,9 @@ public class MeteredCommandProcessor {
               result.errors().get(0).fieldsForMetricsTag().getOrDefault("errorCode", UNKNOWN_VALUE);
       errorCodeTag = Tag.of(jsonApiMetricsConfig.errorCode(), errorCode);
     }
-    final Optional<VectorConfig> first =
-        commandContext.schemaObject().vectorConfigs().stream()
-            .filter(a -> a.vectorEnabled())
-            .findFirst();
+
     Tag vectorEnabled =
-        first.isPresent()
+        commandContext.schemaObject().vectorConfig().vectorEnabled()
             ? Tag.of(jsonApiMetricsConfig.vectorEnabled(), "true")
             : Tag.of(jsonApiMetricsConfig.vectorEnabled(), "false");
     JsonApiMetricsConfig.SortType sortType = getVectorTypeTag(command);

@@ -46,7 +46,7 @@ public class OperationTestBase {
           SCHEMA_OBJECT_NAME,
           null,
           IdConfig.defaultIdConfig(),
-          List.of(VectorConfig.notEnabledVectorConfig()),
+          VectorConfig.notEnabledVectorConfig(),
           null);
   protected final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
       KeyspaceSchemaObject.fromSchemaObject(COLLECTION_SCHEMA_OBJECT);

@@ -40,7 +40,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getApiDataType()));
     List<String> partitionKeys = Arrays.stream(command.definition().primaryKey().keys()).toList();
 
-    Map<String, VectorConfig.VectorizeConfig> vectorizeConfigMap =
+    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
         command.definition().columns().entrySet().stream()
             .filter(
                 e ->
@@ -53,8 +53,8 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
                       ComplexTypes.VectorType vectorType = ((ComplexTypes.VectorType) e.getValue());
                       final VectorizeConfig vectorizeConfig = vectorType.getVectorConfig();
                       validateVectorize.validateService(vectorizeConfig, vectorType.getDimension());
-                      VectorConfig.VectorizeConfig dbVectorConfig =
-                          new VectorConfig.VectorizeConfig(
+                      VectorConfig.ColumnVectorDefinition.VectorizeConfig dbVectorConfig =
+                          new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
                               vectorizeConfig.provider(),
                               vectorizeConfig.modelName(),
                               vectorizeConfig.authentication(),
