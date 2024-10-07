@@ -315,28 +315,28 @@ public class DocumentShredder {
     if (value.isNull()) {
       return;
     }
+
     // should be either array or object
-    if (!value.isArray() && !value.isObject()) {
-      throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
-          value.getNodeType().toString());
-    }
-    // e.g. "$vector": [0.25, 0.25]
     if (value.isArray()) {
+      // e.g. "$vector": [0.25, 0.25]
       ArrayNode arr = (ArrayNode) value;
       if (arr.size() == 0) {
         throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
       }
       callback.shredVector(path, arr);
-    }
-    // e.g. "$vector": {"$binary": "c3VyZS4="}
-    if (value.isObject()) {
+    } else if (value.isObject()) {
+      // e.g. "$vector": {"$binary": "c3VyZS4="}
       ObjectNode obj = (ObjectNode) value;
       final Map.Entry<String, JsonNode> entry = obj.fields().next();
       JsonExtensionType keyType = JsonExtensionType.fromEncodedName(entry.getKey());
       if (keyType != BINARY) {
-        throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(entry.getKey());
+        throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
+            "The key for the %s object must be '%s'", path, BINARY.encodedName());
       }
       callback.shredVector(path, obj);
+    } else {
+      throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
+          value.getNodeType().toString());
     }
   }
 
