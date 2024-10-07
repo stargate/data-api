@@ -76,6 +76,11 @@ quarkus:
 
   # HTTP settings
   http:
+    # access log format, must be explicitly enabled
+    access-log:
+      enabled: true
+      pattern: "%h %l %t \"%r\" %s %b"
+
     # every /v1 path is authenticated by default
     # adapt if changing the authentication mechanism
     auth:
@@ -86,10 +91,6 @@ quarkus:
         default:
           paths: /v1/*
           policy: authenticated
-
-    # access log format, must be explicitly enabled
-    access-log:
-      pattern: "%h %l %t \"%r\" %s %b"
 
     limits:
       # Let's limit low-level maximum HTTP request size to 20 megs: stricter
@@ -115,6 +116,8 @@ quarkus:
         level: ERROR
       'com.datastax.oss.driver':
         level: WARN
+      'io.quarkus.http.access-log':
+        level: INFO
       'io.stargate':
         level: WARN
 
