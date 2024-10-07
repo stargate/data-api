@@ -6,13 +6,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.NumberTableFilter;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.TextTableFilter;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.shredding.collections.DocumentId;
 import java.math.BigDecimal;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.function.BiConsumer;
 
 /**
@@ -26,6 +25,8 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
   private static final Object DYNAMIC_DOCID_GROUP = new Object();
   private static final Object DYNAMIC_TEXT_GROUP = new Object();
   private static final Object DYNAMIC_NUMBER_GROUP = new Object();
+  private static final Object DYNAMIC_BOOL_GROUP = new Object();
+  private static final Object DYNAMIC_GROUP_IN = new Object();
 
   public TableFilterResolver(OperationsConfig operationsConfig) {
     super(operationsConfig);
@@ -45,7 +46,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
             "*",
             EnumSet.of(
                 ValueComparisonOperator.EQ,
-                //                ValueComparisonOperator.NE, // TODO: not sure this is supported
+                ValueComparisonOperator.NE,
                 ValueComparisonOperator.GT,
                 ValueComparisonOperator.GTE,
                 ValueComparisonOperator.LT,
@@ -56,12 +57,23 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
             "*",
             EnumSet.of(
                 ValueComparisonOperator.EQ,
-                //                ValueComparisonOperator.NE, - TODO - not supported
+                ValueComparisonOperator.NE,
                 ValueComparisonOperator.GT,
                 ValueComparisonOperator.GTE,
                 ValueComparisonOperator.LT,
                 ValueComparisonOperator.LTE),
             JsonType.NUMBER)
+        .capture(DYNAMIC_BOOL_GROUP)
+        .compareValues(
+            "*",
+            EnumSet.of(
+                ValueComparisonOperator.EQ,
+                ValueComparisonOperator.NE,
+                ValueComparisonOperator.GT,
+                ValueComparisonOperator.GTE,
+                ValueComparisonOperator.LT,
+                ValueComparisonOperator.LTE),
+            JsonType.BOOLEAN)
         // Although Tables does not have special handling for _id, our FilterClauseDeserializer
         // does, so we need to capture it here.
         .capture(DYNAMIC_DOCID_GROUP)
@@ -74,8 +86,9 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                 ValueComparisonOperator.GTE,
                 ValueComparisonOperator.LT,
                 ValueComparisonOperator.LTE),
-            JsonType.DOCUMENT_ID);
-
+            JsonType.DOCUMENT_ID)
+        .capture(DYNAMIC_GROUP_IN)
+        .compareValues("*", EnumSet.of(ValueComparisonOperator.IN), JsonType.ARRAY);
     return matchRules;
   }
 
@@ -97,7 +110,7 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                     CaptureGroup<String> dynamicTextGroup = (CaptureGroup<String>) captureGroup;
                     dynamicTextGroup.consumeAllCaptures(
                         expression -> {
-                          dbLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addFilter(
                               new TextTableFilter(
                                   expression.path(),
                                   NativeTypeTableFilter.Operator.from(
@@ -114,12 +127,28 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                         (CaptureGroup<BigDecimal>) captureGroup;
                     dynamicNumberGroup.consumeAllCaptures(
                         expression -> {
-                          dbLogicalExpression.addDBFilter(
+                          dbLogicalExpression.addFilter(
                               new NumberTableFilter(
                                   expression.path(),
                                   NativeTypeTableFilter.Operator.from(
                                       (ValueComparisonOperator) expression.operator()),
                                   (BigDecimal) expression.value()));
+                        });
+                  });
+
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_BOOL_GROUP)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Boolean> dynamicNumberGroup = (CaptureGroup<Boolean>) captureGroup;
+                    dynamicNumberGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addFilter(
+                              new BooleanTableFilter(
+                                  expression.path(),
+                                  NativeTypeTableFilter.Operator.from(
+                                      (ValueComparisonOperator) expression.operator()),
+                                  (Boolean) expression.value()));
                         });
                   });
 
@@ -132,14 +161,14 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                         expression -> {
                           Object rhsValue = ((DocumentId) expression.value()).value();
                           if (rhsValue instanceof String) {
-                            dbLogicalExpression.addDBFilter(
+                            dbLogicalExpression.addFilter(
                                 new TextTableFilter(
                                     expression.path(),
                                     NativeTypeTableFilter.Operator.from(
                                         (ValueComparisonOperator) expression.operator()),
                                     (String) rhsValue));
                           } else if (rhsValue instanceof Number) {
-                            dbLogicalExpression.addDBFilter(
+                            dbLogicalExpression.addFilter(
                                 new NumberTableFilter(
                                     expression.path(),
                                     NativeTypeTableFilter.Operator.from(
@@ -149,6 +178,22 @@ public class TableFilterResolver<CmdT extends Command & Filterable>
                             throw new UnsupportedOperationException(
                                 "Unsupported DocumentId type: " + rhsValue.getClass().getName());
                           }
+                        });
+                  });
+
+          captureGroups
+              .getGroupIfPresent(DYNAMIC_GROUP_IN)
+              .ifPresent(
+                  captureGroup -> {
+                    CaptureGroup<Object> dynamicInGroup = (CaptureGroup<Object>) captureGroup;
+                    dynamicInGroup.consumeAllCaptures(
+                        expression -> {
+                          dbLogicalExpression.addFilter(
+                              new InTableFilter(
+                                  InTableFilter.Operator.from(
+                                      (ValueComparisonOperator) expression.operator()),
+                                  expression.path(),
+                                  (List<Object>) expression.value()));
                         });
                   });
         };

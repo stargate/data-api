@@ -9,6 +9,8 @@ import java.util.Objects;
 /**
  * Builds a {@link TableInsertAttempt}.
  *
+ * <p>Create an instance and then call {@link #build(JsonNode)} for each attempt you want to create.
+ *
  * <p>NOTE: Uses the {@link RowShredder} and {@link WriteableTableRowBuilder} which both check the
  * data is valid, the first that the document does not exceed the limits, and the second that the
  * data is valid for the table.
@@ -37,7 +39,7 @@ public class TableInsertAttemptBuilder implements InsertAttemptBuilder<TableInse
     try {
       var jsonContainer = rowShredder.shred(jsonNode);
       writeableRow = writeableTableRowBuilder.build(jsonContainer);
-    } catch (Exception e) {
+    } catch (RuntimeException e) {
       exception = e;
     }
 

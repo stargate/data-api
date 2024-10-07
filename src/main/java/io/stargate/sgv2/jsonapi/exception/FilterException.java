@@ -14,8 +14,10 @@ public class FilterException extends RequestException {
   }
 
   public enum Code implements ErrorCode<FilterException> {
-    MULTIPLE_ID_FILTER,
-    FIELDS_LIMIT_VIOLATION;
+    UNKNOWN_TABLE_COLUMNS,
+    INVALID_FILTER,
+    UNSUPPORTED_COLUMN_TYPES,
+    COMPARISON_FILTER_AGAINST_DURATION;
 
     private final ErrorTemplate<FilterException> template;
 

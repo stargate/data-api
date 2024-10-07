@@ -12,38 +12,74 @@ import java.util.stream.Collectors;
 public abstract class ApiDataTypeDefs {
 
   // text types
-  public static final ApiDataTypeDef TEXT = new ApiDataTypeDef(ApiDataType.TEXT, DataTypes.TEXT);
+  public static final ApiDataTypeDef TEXT =
+      new ApiDataTypeDef(PrimitiveApiDataType.TEXT, DataTypes.TEXT);
 
   // Numeric types
   public static final ApiDataTypeDef BIGINT =
-      new ApiDataTypeDef(ApiDataType.BIGINT, DataTypes.BIGINT);
+      new ApiDataTypeDef(PrimitiveApiDataType.BIGINT, DataTypes.BIGINT);
   public static final ApiDataTypeDef DECIMAL =
-      new ApiDataTypeDef(ApiDataType.DECIMAL, DataTypes.DECIMAL);
+      new ApiDataTypeDef(PrimitiveApiDataType.DECIMAL, DataTypes.DECIMAL);
   public static final ApiDataTypeDef DOUBLE =
-      new ApiDataTypeDef(ApiDataType.DOUBLE, DataTypes.DOUBLE);
-  public static final ApiDataTypeDef FLOAT = new ApiDataTypeDef(ApiDataType.FLOAT, DataTypes.FLOAT);
-  public static final ApiDataTypeDef INT = new ApiDataTypeDef(ApiDataType.INT, DataTypes.INT);
+      new ApiDataTypeDef(PrimitiveApiDataType.DOUBLE, DataTypes.DOUBLE);
+  public static final ApiDataTypeDef FLOAT =
+      new ApiDataTypeDef(PrimitiveApiDataType.FLOAT, DataTypes.FLOAT);
+  public static final ApiDataTypeDef INT =
+      new ApiDataTypeDef(PrimitiveApiDataType.INT, DataTypes.INT);
   public static final ApiDataTypeDef SMALLINT =
-      new ApiDataTypeDef(ApiDataType.SMALLINT, DataTypes.SMALLINT);
+      new ApiDataTypeDef(PrimitiveApiDataType.SMALLINT, DataTypes.SMALLINT);
   public static final ApiDataTypeDef TINYINT =
-      new ApiDataTypeDef(ApiDataType.TINYINT, DataTypes.TINYINT);
+      new ApiDataTypeDef(PrimitiveApiDataType.TINYINT, DataTypes.TINYINT);
   public static final ApiDataTypeDef VARINT =
-      new ApiDataTypeDef(ApiDataType.VARINT, DataTypes.VARINT);
+      new ApiDataTypeDef(PrimitiveApiDataType.VARINT, DataTypes.VARINT);
 
   // Boolean type
   public static final ApiDataTypeDef BOOLEAN =
-      new ApiDataTypeDef(ApiDataType.BOOLEAN, DataTypes.BOOLEAN);
+      new ApiDataTypeDef(PrimitiveApiDataType.BOOLEAN, DataTypes.BOOLEAN);
+
+  public static final ApiDataTypeDef BINARY =
+      new ApiDataTypeDef(PrimitiveApiDataType.BINARY, DataTypes.BLOB);
+
+  public static final ApiDataTypeDef DATE =
+      new ApiDataTypeDef(PrimitiveApiDataType.DATE, DataTypes.DATE);
+  public static final ApiDataTypeDef DURATION =
+      new ApiDataTypeDef(PrimitiveApiDataType.DURATION, DataTypes.DURATION);
+
+  public static final ApiDataTypeDef TIME =
+      new ApiDataTypeDef(PrimitiveApiDataType.TIME, DataTypes.TIME);
+
+  public static final ApiDataTypeDef TIMESTAMP =
+      new ApiDataTypeDef(PrimitiveApiDataType.TIMESTAMP, DataTypes.TIMESTAMP);
+
+  public static final ApiDataTypeDef ASCII =
+      new ApiDataTypeDef(PrimitiveApiDataType.ASCII, DataTypes.ASCII);
+
+  public static final ApiDataTypeDef UUID =
+      new ApiDataTypeDef(PrimitiveApiDataType.UUID, DataTypes.UUID);
+
+  public static final ApiDataTypeDef INET =
+      new ApiDataTypeDef(PrimitiveApiDataType.INET, DataTypes.INET);
 
   // Primitive Types
   public static final List<ApiDataTypeDef> PRIMITIVE_TYPES =
-      List.of(TEXT, BIGINT, DECIMAL, DOUBLE, FLOAT, INT, SMALLINT, TINYINT, VARINT, BOOLEAN);
+      List.of(
+          ASCII, BIGINT, BOOLEAN, BINARY, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT, SMALLINT,
+          TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID);
 
-  // Private to force use of the from() method which returns an Optional
-  private static final Map<DataType, ApiDataTypeDef> PRIMITIVE_TYPES_BY_CQL_TYPE =
+  public static final Map<DataType, ApiDataTypeDef> PRIMITIVE_TYPES_BY_CQL_TYPE =
       PRIMITIVE_TYPES.stream()
           .collect(Collectors.toMap(ApiDataTypeDef::getCqlType, Function.identity()));
 
   public static Optional<ApiDataTypeDef> from(DataType dataType) {
     return Optional.ofNullable(PRIMITIVE_TYPES_BY_CQL_TYPE.get(dataType));
+  }
+
+  // Private to force use of the from() method which returns an Optional
+  private static final Map<ApiDataType, ApiDataTypeDef> CQL_TYPES_BY_PRIMITIVE_TYPE =
+      PRIMITIVE_TYPES.stream()
+          .collect(Collectors.toMap(ApiDataTypeDef::getApiType, Function.identity()));
+
+  public static Optional<ApiDataTypeDef> from(ApiDataType dataType) {
+    return Optional.ofNullable(CQL_TYPES_BY_PRIMITIVE_TYPE.get(dataType));
   }
 }

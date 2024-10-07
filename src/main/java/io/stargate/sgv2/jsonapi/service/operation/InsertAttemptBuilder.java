@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  * @param <T> The type of {@link InsertAttempt} that will be created.
  */
 @FunctionalInterface
-public interface InsertAttemptBuilder<T extends InsertAttempt> {
+public interface InsertAttemptBuilder<AttemptT extends InsertAttempt<?>> {
 
   /**
    * Create an {@link InsertAttempt} from the {@link JsonNode}.
@@ -21,5 +21,5 @@ public interface InsertAttemptBuilder<T extends InsertAttempt> {
    * @param jsonNode The {@link JsonNode} to create the {@link InsertAttempt} from.
    * @return The {@link InsertAttempt} created from the {@link JsonNode}.
    */
-  T build(JsonNode jsonNode);
+  AttemptT build(JsonNode jsonNode);
 }

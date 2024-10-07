@@ -58,6 +58,18 @@ snippets:
     body: |-
       It is safe to retry this request.
 
+  - name: INEFFICIENT_QUERY
+    body: |-
+      The query was executed without taking advantage of the primary key or indexes on the table, this can have performance implications on large tables.
+      
+      See documentation at XXXX for best practices for filtering.
+
+  - name: RESEND_USING_ONLY_DEFINED_COLUMNS
+    body: |-
+      Resend the request using only defined columns.
+
+
+
 # ================================================================================================================
 # Request Errors
 # ================================================================================================================
@@ -86,6 +98,7 @@ request-errors:
       
       Resend the request with the missing primary key columns.
 
+  # NOTE: UNKNOWN_TABLE_COLUMNS is also in the FILTER scope
   - scope: DOCUMENT
     code: UNKNOWN_TABLE_COLUMNS
     title: Unknown table columns in document
@@ -95,7 +108,7 @@ request-errors:
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
       The request included the following unknown columns: ${unknownColumns}.
       
-      Resend the request using only defined columns.
+      {SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
 
   - scope: DOCUMENT
     code: UNSUPPORTED_COLUMN_TYPES
@@ -127,12 +140,237 @@ request-errors:
       The filter clause is invalid. ${filter}
       
       ${SNIPPET.CONTACT_SUPPORT}
- # FILTER request errors
+
+  # NOTE: UNKNOWN_TABLE_COLUMNS is also in the DOCUMENT scope
   - scope: FILTER
-    code: MULTIPLE_ID_FILTER
-    title: the title for the error
+    code: UNKNOWN_TABLE_COLUMNS
+    title: Unknown table columns in filter
     body: |-
-      big long message with ${vars} in it
+      Only columns defined in the table schema can be filtered on.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The filter included the following unknown columns: ${unknownColumns}.
+      
+      ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
+
+  - scope: FILTER
+    code: UNSUPPORTED_COLUMN_TYPES
+    title: Unsupported table column data types in filter
+    body: |-
+      Only supported column types can be filtered.
+      
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request included the following columns that have unsupported data types: ${unsupportedColumns}.
+      
+      Resend the request using only supported column types.  
+
+  - scope: FILTER
+    code: COMPARISON_FILTER_AGAINST_DURATION
+    title: Cannot perform comparison filter against duration data type
+    body: |-
+      The filter used one of the comparison operations ($lt, $gt, $lte, $gte) against a column with a duration data type.
+    
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The request used a comparison operation on duration columns: ${durationFilters}.
+      
+      Resend the request using only supported operations on duration columns. 
+
+  # Warnings
+
+  - scope: WARNING
+    code: MISSING_INDEX
+    title: Filter includes columns that are not indexed
+    body: |-
+      The filter includes columns that are not indexed. 
+      
+      The table ${keyspace}.${table} has the primary key: ${primaryKey}.
+      And has indexes on the columns: ${indexedColumns}.
+      The request filtered on the un-indexed columns: ${unindexedFilters}.
+      
+      ${SNIPPET.INEFFICIENT_QUERY}
+
+  - scope: WARNING
+    code: NOT_EQUALS_UNSUPPORTED_BY_INDEXING
+    title: Use of $ne (not equals) on indexed columns
+    body: |-
+      The filter uses $ne (not equals) on columns that, while indexed, are still inefficient to filter on using not equals.  
+      
+      Filtering using $ne on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
+      
+      The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
+      The request applied $ne to the columns: ${inefficientFilters}.
+      
+      ${SNIPPET.INEFFICIENT_QUERY}
+
+  - scope: WARNING
+    code: ZERO_FILTER_OPERATIONS
+    title: Zero operations provided in query filter
+    body: |-
+      Zero filters were provided in the filer for this query. 
+      
+      Providing zero filters will return all rows in the table, which may have poor performance when the table is large. For the best performance, include one or more filters using the primary key or indexes.
+      
+      The table ${keyspace}.${table} has the primary key: ${primaryKey}.
+      And has indexes on the columns: ${indexedColumns}.
+      
+      ${SNIPPET.INEFFICIENT_QUERY}
+
+  - scope: WARNING
+    code: INCOMPLETE_PRIMARY_KEY_FILTER
+    title: Incomplete filter on table primary key
+    body: |-
+      The filter only specified columns from the primary key, but did not specify the full primary key for the table.  
+      
+      The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
+      The filter has the following issues: 
+        - Missing Partition Keys: ${missingPartitionKeys}.
+        - Out of order Partition Sort Keys: ${outOfOrderClusteringKeys}.
+      
+      For the best performance, filter on all partition columns and optionally on clustering columns in the order they are specified. 
+      
+      ${SNIPPET.INEFFICIENT_QUERY}      
+
+  # Schema Errors
+
+  - scope: SCHEMA
+    code: COLUMN_DEFINITION_MISSING
+    title: Column definition is missing for the provided primary key column.
+    body: |-
+      Column definition is missing for the provided primary key column: ${column_name}.
+
+  - scope: SCHEMA
+    code: COLUMN_TYPE_INCORRECT
+    title: Column data type not provided or format invalid in the definition
+    body: |-
+      Column data type not provided or format invalid in the definition.
+      Column definition can be defined in shorthand format as: 
+        "column_name": "text"
+      
+      or in nested object structure format as:
+        "column_name": {
+          "type": "text"
+        }
+
+  - scope: SCHEMA
+    code: COLUMN_TYPE_UNSUPPORTED
+    title: Column data type used in the definition is not supported.
+    body: |-
+      Column data type ${type} used in the definition is not supported.
+      Following are the supported data types: ${supported_types}
+
+  - scope: SCHEMA
+    code: MISSING_PRIMARY_KEYS
+    title: Primary key definition needs to be provided while creating the table.
+    body: |-
+      Primary key definition needs to be provided while creating the table.
+      They can be provided in the definition in 2 ways:
+        1. A single primary key column can be defined using the shorthand format as:
+          {
+            "name": "primaryKeyAsStringTable",
+              "definition": {
+                "columns": {
+                  "id": "text",
+                  "age": "int",
+                  "name": "type": "text",
+                },
+                "primaryKey": "id"
+              }
+            }
+        2. A composite primary key can be defined using the advanced nested object structure format as:
+          {
+            "name": "primaryKeyAsStringTable",
+              "definition": {
+                "columns": {
+                  "id": "text",
+                  "age": "int",
+                  "name": "type": "text",
+                },
+                "primaryKey": {
+                  "partitionBy": [
+                    "id"
+                  ],
+                  "partitionSort": {
+                    "name" : 1, "age" : -1
+                  }
+                }
+              }
+            }    
+
+  - scope: SCHEMA
+    code: PRIMARY_KEY_DEFINITION_INCORRECT
+    title: Primary key definition provided is incorrect.
+    body: |-
+      Primary key definition provided is incorrect.
+      1. A single primary key column can be defined using the shorthand format as:
+        "primaryKey": "id"
+      2. A composite primary key can be defined using the advanced nested object structure format as:
+        "primaryKey": {
+          "partitionBy": [
+            "id"
+          ],
+          "partitionSort": {
+            "name" : 1, "age" : -1
+          }
+        }
+        Following are checked as part of composite primary keys:
+          a. partitionBy is mandatory.
+          b. partitionSort is optional.
+          c. partitionSort should not have the columns defined in partitionBy.
+          d. partitionSort values should be either `1` for ascending or `-1` for descending.
+
+  - scope: SCHEMA
+    code: MAP_TYPE_INCORRECT_DEFINITION
+    title: Map column data type definition provided in the request is incorrect.
+    body: |-
+      Map column data type definition provided in the request is incorrect.
+      Map type should also be provided with `keyType` and `valueType`. `keyType` and `valueType` should be a primitive data type.
+      Example map type definition:
+        "column_name": {
+          "type": "map",
+          "keyType": "text",
+          "valueType": "text"
+        }
+
+  - scope: SCHEMA
+    code: SET_TYPE_INCORRECT_DEFINITION
+    title: Set column data type definition provided in the request is incorrect.
+    body: |-
+      Set column data type definition provided in the request is incorrect.
+      Set type should also be provided with `valueType`. `valueType` should be a primitive data type.
+      Example map type definition:
+        "column_name": {
+          "type": "set",
+          "valueType": "text"
+        }
+
+  - scope: SCHEMA
+    code: LIST_TYPE_INCORRECT_DEFINITION
+    title: List column data type definition provided in the request is incorrect.
+    body: |-
+      List column data type definition provided in the request is incorrect.
+      List type should also be provided with a `valueType`. `valueType` should be a primitive data type.
+      Example map type definition:
+        "column_name": {
+          "type": "list",
+          "valueType": "text"
+        }
+
+  - scope: SCHEMA
+    code: VECTOR_TYPE_INCORRECT_DEFINITION
+    title: Vector column data type definition provided in the request is incorrect.
+    body: |-
+      Vector column data type definition provided in the request is incorrect.
+      Vector type accepts `dimension`. `dimension` is an integer value.
+      `service` definition is optional for vector type. It's used if the embedding needs to be done using data-api.
+      Example map type definition:
+        "column_name": {
+          "type": "vector",
+          "dimension": 1024,
+          "service": {
+            "provider": "nvidia",
+            "modelName": "NV-Embed-QA"
+          }
+        }
 
 # ================================================================================================================
 # Server Errors

@@ -50,8 +50,8 @@ public class UpdateTableOperation extends TableMutationOperation {
     // Start the select
     UpdateStart updateStart =
         update(
-            commandContext.schemaObject().tableMetadata.getKeyspace(),
-            commandContext.schemaObject().tableMetadata.getName());
+            commandContext.schemaObject().tableMetadata().getKeyspace(),
+            commandContext.schemaObject().tableMetadata().getName());
 
     // Update the columns
     List<Object> positionalValues = new ArrayList<>();

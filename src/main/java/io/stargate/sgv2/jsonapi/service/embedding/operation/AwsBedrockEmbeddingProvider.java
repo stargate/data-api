@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.embedding.operation;
 import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_AUTHENTICATION_ACCESS_ID_HEADER_NAME;
 import static io.stargate.sgv2.jsonapi.config.constants.HttpConstants.EMBEDDING_AUTHENTICATION_SECRET_ID_HEADER_NAME;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -161,6 +162,7 @@ public class AwsBedrockEmbeddingProvider extends EmbeddingProvider {
   private record EmbeddingRequest(
       String inputText, @JsonInclude(value = JsonInclude.Include.NON_DEFAULT) int dimensions) {}
 
+  @JsonIgnoreProperties({"embeddingsByType"})
   private record EmbeddingResponse(float[] embedding, int inputTextTokenCount) {}
 
   @Override
