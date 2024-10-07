@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.shredding.collections;
 
+import static io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType.BINARY;
+
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -313,15 +315,29 @@ public class DocumentShredder {
     if (value.isNull()) {
       return;
     }
-    if (!value.isArray()) {
+    // should be either array or object
+    if (!value.isArray() && !value.isObject()) {
       throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
           value.getNodeType().toString());
     }
-    ArrayNode arr = (ArrayNode) value;
-    if (arr.size() == 0) {
-      throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+    // e.g. "$vector": [0.25, 0.25]
+    if (value.isArray()) {
+      ArrayNode arr = (ArrayNode) value;
+      if (arr.size() == 0) {
+        throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+      }
+      callback.shredVector(path, arr);
     }
-    callback.shredVector(path, arr);
+    // e.g. "$vector": {"$binary": "c3VyZS4="}
+    if (value.isObject()) {
+      ObjectNode obj = (ObjectNode) value;
+      final Map.Entry<String, JsonNode> entry = obj.fields().next();
+      JsonExtensionType keyType = JsonExtensionType.fromEncodedName(entry.getKey());
+      if (keyType != BINARY) {
+        throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(entry.getKey());
+      }
+      callback.shredVector(path, obj);
+    }
   }
 
   private void traverseVectorize(JsonPath path, JsonNode value, DocumentShredderListener callback) {

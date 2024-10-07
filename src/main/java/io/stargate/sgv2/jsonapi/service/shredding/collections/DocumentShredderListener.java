@@ -27,5 +27,7 @@ public interface DocumentShredderListener {
 
   void shredVector(JsonPath path, ArrayNode vector);
 
+  void shredVector(JsonPath path, ObjectNode vector);
+
   void shredVectorize(JsonPath path);
 }
