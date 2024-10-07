@@ -23,7 +23,7 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
               List.of(
                   new VectorConfig(
                       true,
-                          DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                      DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                       3,
                       SimilarityFunction.COSINE,
                       new VectorConfig.VectorizeConfig("custom", "custom", null, null))),

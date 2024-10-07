@@ -234,7 +234,7 @@ public class DataVectorizerTest {
               List.of(
                   new VectorConfig(
                       true,
-                          DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                      DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                       4,
                       SimilarityFunction.COSINE,
                       new VectorConfig.VectorizeConfig("custom", "custom", null, null))),
