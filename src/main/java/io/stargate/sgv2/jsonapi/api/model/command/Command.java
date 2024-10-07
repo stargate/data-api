@@ -64,6 +64,7 @@ public interface Command {
     FIND_ONE("findOne"),
     INSERT_MANY("insertMany"),
     INSERT_ONE("insertOne"),
+    LIST_TABLES("listTables"),
     UPDATE_MANY("updateMany"),
     UPDATE_ONE("updateOne"),
     BEGIN_OFFLINE_SESSION("beginOfflineSession"),

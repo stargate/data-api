@@ -24,6 +24,19 @@ public class ComplexTypes {
           (PrimitiveApiDataType) keyType.getApiDataType(),
           (PrimitiveApiDataType) valueType.getApiDataType());
     }
+
+    @Override
+    public String name() {
+      return getApiDataType().getApiName();
+    }
+
+    public String keyType() {
+      return keyType.getApiDataType().getApiName();
+    }
+
+    public String valueType() {
+      return valueType.getApiDataType().getApiName();
+    }
   }
 
   /** A list type implementation */
@@ -38,6 +51,15 @@ public class ComplexTypes {
     public ApiDataType getApiDataType() {
       return new ComplexApiDataType.ListType((PrimitiveApiDataType) valueType.getApiDataType());
     }
+
+    @Override
+    public String name() {
+      return "list";
+    }
+
+    public String valueType() {
+      return valueType.getApiDataType().getApiName();
+    }
   }
 
   /** A set type implementation */
@@ -51,6 +73,15 @@ public class ComplexTypes {
     @Override
     public ApiDataType getApiDataType() {
       return new ComplexApiDataType.SetType((PrimitiveApiDataType) valueType.getApiDataType());
+    }
+
+    @Override
+    public String name() {
+      return "set";
+    }
+
+    public String valueType() {
+      return valueType.getApiDataType().getApiName();
     }
   }
 
@@ -75,6 +106,11 @@ public class ComplexTypes {
 
     public VectorizeConfig getVectorConfig() {
       return vectorConfig;
+    }
+
+    @Override
+    public String name() {
+      return "vector";
     }
 
     public int getDimension() {
