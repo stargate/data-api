@@ -87,7 +87,7 @@ public class ExpressionBuilder {
     List<Expression<BuiltCondition>> conditionExpressions = new ArrayList<>();
     // first for loop, is to iterate all subLogicalExpression
     // each iteration goes into another recursive build
-    for (DBLogicalExpression subLogicalExpression : dbLogicalExpression.dbLogicalExpressions()) {
+    for (DBLogicalExpression subLogicalExpression : dbLogicalExpression.subExpressions()) {
       final Expression<BuiltCondition> subExpressionCondition =
           buildExpressionRecursive(
               subLogicalExpression, additionalIdFilter, idConditionExpressions);
@@ -105,7 +105,7 @@ public class ExpressionBuilder {
     boolean ninFilterThisLevelWithEmptyArray = true;
 
     // second for loop, is to iterate dbFilters
-    for (DBFilterBase dbFilter : dbLogicalExpression.dBFilters()) {
+    for (DBFilterBase dbFilter : dbLogicalExpression.filters()) {
       if (dbFilter instanceof AllCollectionFilter allFilter) {
         List<BuiltCondition> allFilterConditions = allFilter.getAll();
         List<Variable<BuiltCondition>> allFilterVariables =

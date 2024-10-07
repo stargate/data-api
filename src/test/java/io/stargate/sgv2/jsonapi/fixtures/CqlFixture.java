@@ -63,7 +63,7 @@ public class CqlFixture {
     this.cqlData = cqlData;
     this.tableFixture = tableFixture;
     this.tableMetadata = tableFixture.tableMetadata(identifiers);
-    this.tableSchemaObject = TableSchemaObject.getTableSettings(tableMetadata, new ObjectMapper());
+    this.tableSchemaObject = TableSchemaObject.from(tableMetadata, new ObjectMapper());
   }
 
   public FixtureIdentifiers identifiers() {

@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * incorporates vectorizeConfig into vectorConfig
  *
- * @param vectorEnabled - IF vector field is available for the table
+ * @param vectorEnabled - If vector field is available for the table
  * @param columnVectorDefinitions - List of columnVectorDefinitions each with respect to a
  *     column/field
  */

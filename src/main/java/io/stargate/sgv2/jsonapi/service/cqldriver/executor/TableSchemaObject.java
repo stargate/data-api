@@ -61,8 +61,7 @@ public class TableSchemaObject extends TableBasedSchemaObject {
    * @param objectMapper
    * @return
    */
-  public static TableSchemaObject getTableSettings(
-      TableMetadata tableMetadata, ObjectMapper objectMapper) {
+  public static TableSchemaObject from(TableMetadata tableMetadata, ObjectMapper objectMapper) {
     Map<String, ByteBuffer> extensions =
         (Map<String, ByteBuffer>)
             tableMetadata.getOptions().get(CqlIdentifier.fromInternal("extensions"));
@@ -83,13 +82,18 @@ public class TableSchemaObject extends TableBasedSchemaObject {
         Iterator<Map.Entry<String, JsonNode>> it = vectorizeByColumns.fields();
         while (it.hasNext()) {
           Map.Entry<String, JsonNode> entry = it.next();
-          VectorConfig.ColumnVectorDefinition.VectorizeConfig vectorizeConfig =
-              objectMapper.treeToValue(
-                  entry.getValue(), VectorConfig.ColumnVectorDefinition.VectorizeConfig.class);
-          vectorizeConfigMap.put(entry.getKey(), vectorizeConfig);
+          try {
+            VectorConfig.ColumnVectorDefinition.VectorizeConfig vectorizeConfig =
+                objectMapper.treeToValue(
+                    entry.getValue(), VectorConfig.ColumnVectorDefinition.VectorizeConfig.class);
+            vectorizeConfigMap.put(entry.getKey(), vectorizeConfig);
+          } catch (JsonProcessingException | IllegalArgumentException e) {
+            throw SchemaException.Code.INVALID_VECTORIZE_CONFIGURATION.get(
+                Map.of("field", entry.getKey()));
+          }
         }
-      } catch (JsonProcessingException | IllegalArgumentException e) {
-        throw SchemaException.Code.INVALID_VECTORIZE_CONFIGURATION.get();
+      } catch (JsonProcessingException e) {
+        throw SchemaException.Code.INVALID_CONFIGURATION.get();
       }
     }
     VectorConfig vectorConfig;
