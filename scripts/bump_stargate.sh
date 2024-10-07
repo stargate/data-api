@@ -26,4 +26,4 @@ if [[ $OSTYPE == 'darwin'* ]]; then
 fi
 
 # update parent version only
-sed -i '0,/<\/parent>/ { /<version>/ { s|<version>[^<]*<\/version>|<version>'"$STARGATE_VERSION_NUMBER"'<\/version>|; } }' pom.xml
+sed -i 's/<stargate.version>.*<\/stargate.version>/<stargate.version>'"$STARGATE_VERSION_NUMBER"'<\/stargate.version>/' pom.xml
