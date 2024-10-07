@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.stargate</groupId>
   <artifactId>sgv2-jsonapi</artifactId>
-  <version>1.0.17-SNAPSHOT</version>
+  <version>1.1.1</version>
   <properties>
     <stargate.version>v2.1.0-BETA-17</stargate.version>
     <!-- 17-May-2023, tatu: [json-api#172] Need at least Jackson 2.15.x -->
@@ -59,21 +59,21 @@
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
-        <version>${jackson.version}</version>
+        <version>1.1.1</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>${quarkus.platform.artifact-id}</artifactId>
-        <version>${quarkus.platform.version}</version>
+        <version>1.1.1</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>software.amazon.awssdk</groupId>
         <artifactId>bom</artifactId>
-        <version>2.26.12</version>
+        <version>1.1.1</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -149,12 +149,12 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-      <version>1.12.0</version>
+      <version>1.1.1</version>
     </dependency>
     <dependency>
       <groupId>com.bpodgursky</groupId>
       <artifactId>jbool_expressions</artifactId>
-      <version>1.23</version>
+      <version>1.1.1</version>
     </dependency>
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
@@ -175,7 +175,7 @@
     <dependency>
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-core</artifactId>
-      <version>${driver.version}</version>
+      <version>1.1.1</version>
       <exclusions>
         <exclusion>
           <groupId>io.dropwizard.metrics</groupId>
@@ -190,12 +190,12 @@
     <dependency>
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-metrics-micrometer</artifactId>
-      <version>${driver.version}</version>
+      <version>1.1.1</version>
     </dependency>
     <dependency>
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-query-builder</artifactId>
-      <version>${driver.version}</version>
+      <version>1.1.1</version>
     </dependency>
     <!-- Jackson YAML module for config file loading
       -->
@@ -213,13 +213,13 @@
       <!-- for generating UUIDs of versions not supported by JDK -->
       <groupId>com.fasterxml.uuid</groupId>
       <artifactId>java-uuid-generator</artifactId>
-      <version>5.1.0</version>
+      <version>1.1.1</version>
     </dependency>
     <dependency>
       <!-- for ObjectId handling -->
       <groupId>org.mongodb</groupId>
       <artifactId>bson</artifactId>
-      <version>5.0.0</version>
+      <version>1.1.1</version>
     </dependency>
     <!-- Test dependencies -->
     <dependency>
@@ -235,7 +235,7 @@
     <dependency>
       <groupId>org.junit-pioneer</groupId>
       <artifactId>junit-pioneer</artifactId>
-      <version>2.2.0</version>
+      <version>1.1.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -246,7 +246,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.22.0</version>
+      <version>1.1.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -257,27 +257,27 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-junit-jupiter</artifactId>
-      <version>${mockito.version}</version>
+      <version>1.1.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>net.javacrumbs.json-unit</groupId>
       <artifactId>json-unit</artifactId>
-      <version>2.35.0</version>
+      <version>1.1.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.wiremock</groupId>
       <artifactId>wiremock</artifactId>
       <scope>test</scope>
-      <version>${wiremock.version}</version>
+      <version>1.1.1</version>
     </dependency>
   </dependencies>
   <build>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
-        <version>${compiler-plugin.version}</version>
+        <version>1.1.1</version>
         <configuration>
           <compilerArgs>
             <arg>-parameters</arg>
@@ -286,7 +286,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>${surefire-plugin.version}</version>
+        <version>1.1.1</version>
         <configuration>
           <argLine>-Xmx4g</argLine>
           <systemPropertyVariables>
@@ -302,7 +302,7 @@
       <plugin>
         <groupId>com.spotify.fmt</groupId>
         <artifactId>fmt-maven-plugin</artifactId>
-        <version>2.23</version>
+        <version>1.1.1</version>
         <executions>
           <execution>
             <phase>process-sources</phase>
@@ -315,7 +315,7 @@
       <plugin>
         <groupId>au.com.acegi</groupId>
         <artifactId>xml-format-maven-plugin</artifactId>
-        <version>3.2.2</version>
+        <version>1.1.1</version>
         <executions>
           <execution>
             <goals>
@@ -333,7 +333,7 @@
       <plugin>
         <groupId>io.smallrye</groupId>
         <artifactId>jandex-maven-plugin</artifactId>
-        <version>3.1.6</version>
+        <version>1.1.1</version>
         <executions>
           <execution>
             <id>make-index</id>
@@ -346,7 +346,7 @@
       <plugin>
         <groupId>${quarkus.platform.group-id}</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${quarkus.platform.version}</version>
+        <version>1.1.1</version>
         <extensions>true</extensions>
         <executions>
           <execution>
@@ -360,7 +360,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>${surefire-plugin.version}</version>
+        <version>1.1.1</version>
         <executions>
           <execution>
             <goals>
