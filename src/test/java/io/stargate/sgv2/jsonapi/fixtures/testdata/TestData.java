@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class TestData {
 
-  protected final TestDataNames names;
+  public final TestDataNames names;
 
   private final Map<Class<?>, Object> cache = new HashMap<>();
 
@@ -51,5 +51,13 @@ public class TestData {
 
   public ResultSetTestData resultSet() {
     return getOrCache(ResultSetTestData.class);
+  }
+
+  public LogicalExpressionTestData logicalExpression() {
+    return getOrCache(LogicalExpressionTestData.class);
+  }
+
+  public WhereAnalyzerTestData whereAnalyzer() {
+    return getOrCache(WhereAnalyzerTestData.class);
   }
 }

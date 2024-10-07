@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.BuildableQuery;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class CqlOptions<QueryT extends BuildableQuery> implements CQLClause {
 
@@ -12,9 +13,10 @@ public class CqlOptions<QueryT extends BuildableQuery> implements CQLClause {
 
   public CqlOptions() {}
 
-  public CqlOptions(CqlOptions<QueryT> copyFromCqlOptions) {
-    builderOptions.addAll(copyFromCqlOptions.builderOptions);
-    statementOptions.addAll(copyFromCqlOptions.statementOptions);
+  public CqlOptions(CqlOptions<QueryT> source) {
+    Objects.requireNonNull(source, "source must not be null");
+    builderOptions.addAll(source.builderOptions);
+    statementOptions.addAll(source.statementOptions);
   }
 
   public CqlOptions<QueryT> addBuilderOption(CQLOption<QueryT> option) {

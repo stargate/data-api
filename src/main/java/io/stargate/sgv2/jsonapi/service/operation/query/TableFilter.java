@@ -1,16 +1,10 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnMetadata;
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
-
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
-import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.IndexUsage;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.util.List;
-import java.util.Map;
 
 /**
  * A {@link DBFilterBase} that is applied to a table (i.e. not a Collection) to filter the rows to
@@ -47,80 +41,4 @@ public abstract class TableFilter extends DBFilterBase {
    */
   public abstract <StmtT extends OngoingWhereClause<StmtT>> StmtT apply(
       TableSchemaObject tableSchemaObject, StmtT ongoingWhereClause, List<Object> positionalValues);
-
-  /**
-   * All subClass tableFilter have access to this method. This method will check the tableSchema and
-   * see if the filter column(path) has SAI index on it.
-   *
-   * @param tableSchemaObject tableSchemaObject
-   * @return boolean to indicate if there is a SAI index on the column
-   */
-  public boolean hasSaiIndexOnColumn(TableSchemaObject tableSchemaObject) {
-
-    // Check if the column has SAI index on it
-    return tableSchemaObject.tableMetadata().getIndexes().values().stream()
-        .anyMatch(index -> index.getTarget().equals(path));
-  }
-
-  /**
-   * All subClass tableFilter have access to this method. This method will check the tableSchema and
-   * see if the filter column(path) is on the primary key.
-   *
-   * @param tableSchemaObject tableSchemaObject
-   * @return boolean to indicate if there is an index on the primary key
-   */
-  public boolean hasPrimaryKeyOnColumn(TableSchemaObject tableSchemaObject) {
-
-    // Check if the column is a primary key (partition key or clustering column)
-    boolean isPrimaryKey =
-        tableSchemaObject.tableMetadata().getPartitionKey().stream()
-                .anyMatch(column -> column.getName().equals(path))
-            || tableSchemaObject.tableMetadata().getClusteringColumns().keySet().stream()
-                .anyMatch(column -> column.getName().equals(path));
-    return isPrimaryKey;
-  }
-
-  /**
-   * Get the target columnMetaData if the column exists. Otherwise, throw TABLE_COLUMN_UNKNOWN Data
-   * API exception.
-   *
-   * @param tableSchemaObject tableSchemaObject
-   * @return Optional<ColumnMetadata>, columnMetadata
-   */
-  public ColumnMetadata getColumn(TableSchemaObject tableSchemaObject) {
-    return tableSchemaObject.tableMetadata().getColumns().entrySet().stream()
-        .filter(entry -> entry.getKey().asInternal().equals(path))
-        .map(Map.Entry::getValue)
-        .findFirst()
-        .orElseThrow(
-            () ->
-                FilterException.Code.UNKNOWN_TABLE_COLUMNS.get(
-                    errVars(
-                        tableSchemaObject,
-                        map -> {
-                          map.put(
-                              "allColumns",
-                              errFmtColumnMetadata(
-                                  tableSchemaObject.tableMetadata().getColumns().values()));
-                          map.put("unknownColumns", path);
-                        })));
-  }
-
-  /**
-   * Method to check if current tableFilter needs ALLOW FILTERING on. All tableFilter will implement
-   * this abstract method.
-   *
-   * <p>[use case 1] If there is no index on the target column, Data API will add ALLOW FILTERING
-   * despite the performance unpredictability.
-   *
-   * <p>[user case 2] Some cql operators need ALLOW FILTERING on to perform the query, with or
-   * without index. Then the tableFilter implementation should know itself to add ALLOW FILTERING or
-   * not.
-   *
-   * <p>TODO, We may add more complex analyze in the future
-   *
-   * @param tableSchemaObject tableSchemaObject
-   * @return boolean
-   */
-  public abstract TableFilterAnalyzedUsage analyze(TableSchemaObject tableSchemaObject);
 }
