@@ -49,8 +49,7 @@ public class TableSchemaObject extends TableBasedSchemaObject {
    * @param objectMapper
    * @return
    */
-  public static TableSchemaObject getTableSettings(
-      TableMetadata tableMetadata, ObjectMapper objectMapper) {
+  public static TableSchemaObject from(TableMetadata tableMetadata, ObjectMapper objectMapper) {
     Map<String, ByteBuffer> extensions =
         (Map<String, ByteBuffer>)
             tableMetadata.getOptions().get(CqlIdentifier.fromInternal("extensions"));

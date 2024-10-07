@@ -33,6 +33,6 @@ public class DefaultDriverExceptionHandlerTestData {
             Map.of(),
             Map.of(),
             Map.of());
-    TABLE_SCHEMA_OBJECT = TableSchemaObject.getTableSettings(tableMetadata, new ObjectMapper());
+    TABLE_SCHEMA_OBJECT = TableSchemaObject.from(tableMetadata, new ObjectMapper());
   }
 }
