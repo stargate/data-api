@@ -25,6 +25,7 @@ if [[ $OSTYPE == 'darwin'* ]]; then
   exit 1
 fi
 
+STARGATE_VERSION="v123"
 echo "this is a new script"
 # update parent version only
 sed -i 's|<stargate.version>[^<]*</stargate.version>|<stargate.version>'"$STARGATE_VERSION_NUMBER"'</stargate.version>|' pom.xml
