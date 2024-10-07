@@ -92,7 +92,8 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     public void callAnalyze() {
       LOGGER.warn("Analyzing: {}\n {}", message, toString(true));
       // store the result in this fixture for later
-      analysisResult = analyzer.analyse(TableWhereCQLClause.forSelect(tableSchemaObject, expression.expression));
+      analysisResult =
+          analyzer.analyse(TableWhereCQLClause.forSelect(tableSchemaObject, expression.expression));
       LOGGER.warn("Analysis result: {}", analysisResult);
     }
 
