@@ -32,7 +32,7 @@ public abstract class SchemaObject {
 
   /**
    * Subclasses must always return List of VectorConfig, if there is no vector config they should
-   * return VectorConfig.notEnabledVectorConfig(). This needs to be a list because a table can have
+   * return VectorConfig.notEnabledVectorConfig(). This needs to be a list to support tables with
    * multiple vector columns.
    *
    * @return
