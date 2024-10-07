@@ -5,7 +5,7 @@ stargate:
 # change test port from 8081 (used by other SG services)
 quarkus:
   http:
-    # access log format, disable for tests to reduce noise
+    # access log format, disabled for tests to reduce noise
     access-log:
       enabled: false
     test-port: 9080

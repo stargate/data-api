@@ -116,6 +116,8 @@ quarkus:
         level: ERROR
       'com.datastax.oss.driver':
         level: WARN
+      'io.quarkus.http.access-log':
+        level: INFO
       'io.stargate':
         level: WARN
 
