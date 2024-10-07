@@ -36,16 +36,16 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           SchemaObjectName.MISSING,
           null,
           IdConfig.defaultIdConfig(),
-          List.of(VectorConfig.notEnabledVectorConfig()),
+          VectorConfig.notEnabledVectorConfig(),
           null);
 
   private final IdConfig idConfig;
-  private final List<VectorConfig> vectorConfigs;
+  private final VectorConfig vectorConfig;
   private final CollectionIndexingConfig indexingConfig;
   private final TableMetadata tableMetadata;
 
   /**
-   * @param vectorConfigs
+   * @param vectorConfig
    * @param indexingConfig
    */
   public CollectionSchemaObject(
@@ -53,13 +53,13 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       String name,
       TableMetadata tableMetadata,
       IdConfig idConfig,
-      List<VectorConfig> vectorConfigs,
+      VectorConfig vectorConfig,
       CollectionIndexingConfig indexingConfig) {
     this(
         new SchemaObjectName(keypaceName, name),
         tableMetadata,
         idConfig,
-        vectorConfigs,
+        vectorConfig,
         indexingConfig);
   }
 
@@ -67,12 +67,12 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       SchemaObjectName name,
       TableMetadata tableMetadata,
       IdConfig idConfig,
-      List<VectorConfig> vectorConfigs,
+      VectorConfig vectorConfig,
       CollectionIndexingConfig indexingConfig) {
     super(TYPE, name, tableMetadata);
 
     this.idConfig = idConfig;
-    this.vectorConfigs = vectorConfigs;
+    this.vectorConfig = vectorConfig;
     this.indexingConfig = indexingConfig;
     this.tableMetadata = tableMetadata;
   }
@@ -81,12 +81,12 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   // effectively
   public CollectionSchemaObject withIdType(CollectionIdType idType) {
     return new CollectionSchemaObject(
-        name(), tableMetadata, new IdConfig(idType), vectorConfigs, indexingConfig);
+        name(), tableMetadata, new IdConfig(idType), vectorConfig, indexingConfig);
   }
 
   @Override
-  public List<VectorConfig> vectorConfigs() {
-    return vectorConfigs;
+  public VectorConfig vectorConfig() {
+    return vectorConfig;
   }
 
   @Override
@@ -221,13 +221,14 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             collectionName,
             tableMetadata,
             IdConfig.defaultIdConfig(),
-            List.of(
-                new VectorConfig(
-                    true,
-                    DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-                    vectorSize,
-                    function,
-                    null)),
+            new VectorConfig(
+                true,
+                List.of(
+                    new VectorConfig.ColumnVectorDefinition(
+                        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                        vectorSize,
+                        function,
+                        null))),
             null);
       } else {
         return new CollectionSchemaObject(
@@ -235,7 +236,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             collectionName,
             tableMetadata,
             IdConfig.defaultIdConfig(),
-            List.of(VectorConfig.notEnabledVectorConfig()),
+            VectorConfig.notEnabledVectorConfig(),
             null);
       }
     } else {
@@ -280,13 +281,14 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   }
 
   // convert a vector jsonNode from cql table comment to vectorConfig, used for collection
-  private static VectorConfig fromJson(JsonNode jsonNode, ObjectMapper objectMapper) {
+  private static VectorConfig.ColumnVectorDefinition fromJson(
+      JsonNode jsonNode, ObjectMapper objectMapper) {
     // dimension, similarityFunction, must exist
     int dimension = jsonNode.get("dimension").asInt();
     SimilarityFunction similarityFunction =
         SimilarityFunction.fromString(jsonNode.get("metric").asText());
 
-    return VectorConfig.fromJson(
+    return VectorConfig.ColumnVectorDefinition.fromJson(
         DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
         dimension,
         similarityFunction,
@@ -303,23 +305,26 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     CreateCollectionCommand.Options.IndexingConfig indexingConfig = null;
     // populate the vectorSearchConfig, Default will be the index 0 since there is only one vector
     // column supported for collection
-    final VectorConfig vectorConfig = collectionSetting.vectorConfigs().get(0);
+    final VectorConfig vectorConfig = collectionSetting.vectorConfig();
     if (vectorConfig.vectorEnabled()) {
+      // This will be size 1 for collection
+      VectorConfig.ColumnVectorDefinition vectorConfigColumn =
+          vectorConfig.columnVectorDefinitions().get(0);
       VectorizeConfig vectorizeConfig = null;
-      if (vectorConfig.vectorizeConfig() != null) {
-        Map<String, String> authentication = vectorConfig.vectorizeConfig().authentication();
-        Map<String, Object> parameters = vectorConfig.vectorizeConfig().parameters();
+      if (vectorConfigColumn.vectorizeConfig() != null) {
+        Map<String, String> authentication = vectorConfigColumn.vectorizeConfig().authentication();
+        Map<String, Object> parameters = vectorConfigColumn.vectorizeConfig().parameters();
         vectorizeConfig =
             new VectorizeConfig(
-                vectorConfig.vectorizeConfig().provider(),
-                vectorConfig.vectorizeConfig().modelName(),
+                vectorConfigColumn.vectorizeConfig().provider(),
+                vectorConfigColumn.vectorizeConfig().modelName(),
                 authentication == null ? null : Map.copyOf(authentication),
                 parameters == null ? null : Map.copyOf(parameters));
       }
       vectorSearchConfig =
           new CreateCollectionCommand.Options.VectorSearchConfig(
-              vectorConfig.vectorSize(),
-              vectorConfig.similarityFunction().name().toLowerCase(),
+              vectorConfigColumn.vectorSize(),
+              vectorConfigColumn.similarityFunction().name().toLowerCase(),
               vectorizeConfig);
     }
     // populate the indexingConfig
@@ -353,11 +358,11 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
   // TODO: these helper functions break encapsulation for very little benefit
   public SimilarityFunction similarityFunction() {
-    return vectorConfigs().get(0).similarityFunction();
+    return vectorConfig().columnVectorDefinitions().get(0).similarityFunction();
   }
 
   public boolean isVectorEnabled() {
-    return !(vectorConfigs().isEmpty()) && vectorConfigs().get(0).vectorEnabled();
+    return vectorConfig().vectorEnabled();
   }
 
   // TODO: the overrides below were auto added when migrating from a record to a class, not sure
@@ -369,13 +374,13 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     var that = (CollectionSchemaObject) obj;
     return Objects.equals(this.name, that.name)
         && Objects.equals(this.idConfig, that.idConfig)
-        && Objects.equals(this.vectorConfigs, that.vectorConfigs)
+        && Objects.equals(this.vectorConfig, that.vectorConfig)
         && Objects.equals(this.indexingConfig, that.indexingConfig);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, idConfig, vectorConfigs, indexingConfig);
+    return Objects.hash(name, idConfig, vectorConfig, indexingConfig);
   }
 
   @Override
@@ -387,8 +392,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         + "idConfig="
         + idConfig
         + ", "
-        + "vectorConfigs="
-        + vectorConfigs
+        + "vectorConfig="
+        + vectorConfig
         + ", "
         + "indexingConfig="
         + indexingConfig

@@ -31,7 +31,6 @@ public class DataVectorizer {
   private final JsonNodeFactory nodeFactory;
   private final EmbeddingCredentials embeddingCredentials;
   private final SchemaObject schemaObject;
-  private final VectorConfig vectorConfig;
 
   /**
    * Constructor
@@ -51,9 +50,6 @@ public class DataVectorizer {
     this.nodeFactory = nodeFactory;
     this.embeddingCredentials = embeddingCredentials;
     this.schemaObject = schemaObject;
-    // This is getting element at 0 since only one vector is stored in the schema.
-    // This logic needs to be changed to handle multiple vectors columns for tables,
-    vectorConfig = schemaObject.vectorConfigs().get(0);
   }
 
   /**
@@ -115,11 +111,16 @@ public class DataVectorizer {
             .onItem()
             .transform(
                 vectorData -> {
+                  final VectorConfig vectorConfig = schemaObject.vectorConfig();
+                  // This will be the first element for collection
+                  final VectorConfig.ColumnVectorDefinition collectionVectorDefinition =
+                      vectorConfig.columnVectorDefinitions().get(0);
+
                   // check if we get back the same number of vectors that we asked for
                   if (vectorData.size() != vectorizeTexts.size()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                         "Embedding provider '%s' didn't return the expected number of embeddings. Expect: '%d'. Actual: '%d'",
-                        vectorConfig.vectorizeConfig().provider(),
+                        collectionVectorDefinition.vectorizeConfig().provider(),
                         vectorizeTexts.size(),
                         vectorData.size());
                   }
@@ -130,11 +131,11 @@ public class DataVectorizer {
                     JsonNode document = documents.get(position);
                     float[] vector = vectorData.get(vectorPosition);
                     // check if all vectors have the expected size
-                    if (vector.length != vectorConfig.vectorSize()) {
+                    if (vector.length != collectionVectorDefinition.vectorSize()) {
                       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                           "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                          vectorConfig.vectorizeConfig().provider(),
-                          vectorConfig.vectorSize(),
+                          collectionVectorDefinition.vectorizeConfig().provider(),
+                          collectionVectorDefinition.vectorSize(),
                           vector.length);
                     }
                     final ArrayNode arrayNode = nodeFactory.arrayNode(vector.length);
@@ -173,13 +174,17 @@ public class DataVectorizer {
         .onItem()
         .transform(
             vectorData -> {
+              final VectorConfig vectorConfig = schemaObject.vectorConfig();
+              // This will be the first element for collection
+              final VectorConfig.ColumnVectorDefinition collectionVectorDefinition =
+                  vectorConfig.columnVectorDefinitions().get(0);
               float[] vector = vectorData.get(0);
               // check if vector have the expected size
-              if (vector.length != vectorConfig.vectorSize()) {
+              if (vector.length != collectionVectorDefinition.vectorSize()) {
                 throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                     "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                    vectorConfig.vectorizeConfig().provider(),
-                    vectorConfig.vectorSize(),
+                    collectionVectorDefinition.vectorizeConfig().provider(),
+                    collectionVectorDefinition.vectorSize(),
                     vector.length);
               }
               return vector;
@@ -216,12 +221,16 @@ public class DataVectorizer {
             .transform(
                 vectorData -> {
                   float[] vector = vectorData.get(0);
+                  final VectorConfig vectorConfig = schemaObject.vectorConfig();
+                  // This will be the first element for collection
+                  final VectorConfig.ColumnVectorDefinition collectionVectorDefinition =
+                      vectorConfig.columnVectorDefinitions().get(0);
                   // check if vector have the expected size
-                  if (vector.length != vectorConfig.vectorSize()) {
+                  if (vector.length != collectionVectorDefinition.vectorSize()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                         "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                        vectorConfig.vectorizeConfig().provider(),
-                        vectorConfig.vectorSize(),
+                        collectionVectorDefinition.vectorizeConfig().provider(),
+                        collectionVectorDefinition.vectorSize(),
                         vector.length);
                   }
                   sortExpressions.clear();

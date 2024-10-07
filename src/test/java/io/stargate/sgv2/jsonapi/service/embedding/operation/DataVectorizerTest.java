@@ -231,13 +231,15 @@ public class DataVectorizerTest {
               "collections",
               null,
               IdConfig.defaultIdConfig(),
-              List.of(
-                  new VectorConfig(
-                      true,
-                      DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-                      4,
-                      SimilarityFunction.COSINE,
-                      new VectorConfig.VectorizeConfig("custom", "custom", null, null))),
+              new VectorConfig(
+                  true,
+                  List.of(
+                      new VectorConfig.ColumnVectorDefinition(
+                          DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                          4,
+                          SimilarityFunction.COSINE,
+                          new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
+                              "custom", "custom", null, null)))),
               null);
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {

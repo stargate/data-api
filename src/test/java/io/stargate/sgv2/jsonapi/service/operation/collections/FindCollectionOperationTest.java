@@ -83,13 +83,14 @@ public class FindCollectionOperationTest extends OperationTestBase {
                 SCHEMA_OBJECT_NAME,
                 null,
                 IdConfig.defaultIdConfig(),
-                List.of(
-                    new VectorConfig(
-                        true,
-                        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-                        -1,
-                        SimilarityFunction.COSINE,
-                        null)),
+                new VectorConfig(
+                    true,
+                    List.of(
+                        new VectorConfig.ColumnVectorDefinition(
+                            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                            -1,
+                            SimilarityFunction.COSINE,
+                            null))),
                 null),
             null,
             "testCommand",

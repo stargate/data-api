@@ -20,13 +20,15 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
               TestConstants.SCHEMA_OBJECT_NAME,
               null,
               IdConfig.defaultIdConfig(),
-              List.of(
-                  new VectorConfig(
-                      true,
-                      DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-                      3,
-                      SimilarityFunction.COSINE,
-                      new VectorConfig.VectorizeConfig("custom", "custom", null, null))),
+              new VectorConfig(
+                  true,
+                  List.of(
+                      new VectorConfig.ColumnVectorDefinition(
+                          DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                          3,
+                          SimilarityFunction.COSINE,
+                          new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
+                              "custom", "custom", null, null)))),
               null),
           new TestEmbeddingProvider(),
           "testCommand",
