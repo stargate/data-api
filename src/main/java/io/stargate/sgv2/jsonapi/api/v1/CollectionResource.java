@@ -199,7 +199,8 @@ public class CollectionResource {
                 EmbeddingProvider embeddingProvider = null;
                 VectorConfig vectorConfig = schemaObject.vectorConfig();
                 final VectorConfig.ColumnVectorDefinition columnVectorDefinition =
-                    vectorConfig.columnVectorDefinitions().isEmpty()
+                    vectorConfig.columnVectorDefinitions() == null
+                            || vectorConfig.columnVectorDefinitions().isEmpty()
                         ? null
                         : vectorConfig.columnVectorDefinitions().get(0);
                 final VectorConfig.ColumnVectorDefinition.VectorizeConfig vectorizeConfig =
