@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.service.operation.query;
 
 import com.datastax.oss.driver.api.querybuilder.QueryBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
-import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -29,5 +28,5 @@ import java.util.function.BiFunction;
 public interface WhereCQLClause<T extends OngoingWhereClause<T>>
     extends BiFunction<T, List<Object>, T>, CQLClause {
 
-  WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzeResult analyseWhereClause();
+  DBLogicalExpression getLogicalExpression();
 }

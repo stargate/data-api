@@ -402,7 +402,7 @@ public record FindCollectionOperation(
     while (!stack.empty()) {
       var currentDbLogicalExpression = stack.pop();
 
-      for (DBFilterBase filter : dbLogicalExpression.dBFilters()) {
+      for (DBFilterBase filter : dbLogicalExpression.filters()) {
         // every filter must be a collection filter, because we are making a new document and we
         // only do this for docs
         if (filter instanceof IDCollectionFilter) {
@@ -422,7 +422,7 @@ public record FindCollectionOperation(
         }
       }
 
-      currentDbLogicalExpression.dbLogicalExpressions().forEach(stack::push);
+      currentDbLogicalExpression.subExpressions().forEach(stack::push);
     }
     return ReadDocument.from(documentId, null, rootNode);
   }

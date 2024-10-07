@@ -3,8 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
@@ -18,9 +16,9 @@ import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.TableFilterAnalyzedUsage;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * A DB Filter that can be applied on columns in a CQL Tables that use the `native-type` 's as
@@ -52,7 +50,7 @@ import java.util.Optional;
  *
  * @param <CqlT> The JSON Type , BigDecimal, String etc
  */
-public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
+public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements PrettyPrintable {
 
   /**
    * The operations that can be performed to filter a column TIDY: we have operations defined in
@@ -69,7 +67,7 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
     LTE(BuiltConditionPredicate.LTE),
     GTE(BuiltConditionPredicate.GTE);
 
-    final BuiltConditionPredicate predicate;
+    public final BuiltConditionPredicate predicate;
 
     Operator(BuiltConditionPredicate predicate) {
       this.predicate = predicate;
@@ -86,9 +84,13 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
         default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
       };
     }
+
+    public boolean isComparisonOperator() {
+      return this == LTE || this == GTE || this == LT || this == GT;
+    }
   }
 
-  protected final Operator operator;
+  public final Operator operator;
   protected final CqlT columnValue;
 
   protected NativeTypeTableFilter(String path, Operator operator, CqlT columnValue) {
@@ -142,109 +144,26 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
         Relation.column(getPathAsCqlIdentifier()).build(operator.predicate.cql, bindMarker()));
   }
 
-  /**
-   * Analyze the $eq,$ne,$lt,$gt,$lte,$gte against scalar column and get corresponding usage info.
-   *
-   * <p>Check if the filter is against an existing column by calling getColumn() on {@link
-   * TableFilter}
-   *
-   * <p>For comparison API filters, $lt/$gt/$lte/$gte. <br>
-   * Can NOT use on Duration column, "Slice restrictions are not supported on duration columns" <br>
-   * If no SAI index on following 14 column types
-   * text/int/timestamp/ascii/date/time/boolean/varint/tinyint/decimal/smallint/double/bigint/float,
-   * need ALLOW FILTERING. <br>
-   * TODO, blob
-   *
-   * <p>For $ne <br>
-   * If has SAI on following 10 columns,
-   * date/time/timestamp/tinyint/smallint/bigint/varint/float/double/decinal, ALLOW FILTERING is not
-   * needed. <br>
-   * For other column types, WITH or WITHOUT SAI, ALLOWING FILTERING is needed. TODO, blob
-   *
-   * <p>For $eq <br>
-   * With SAI index on these 14 columns,
-   * date/time/timestamp/int/tinyint/smallint/bigint/varint/float/double/decimal/text/ascii/boolean,
-   * ALLOW FILTERING is not needed. We can NOT build SAI index on duration column type, so ALLOW
-   * FILTERING is also needed. TODO, blob
-   */
   @Override
-  public TableFilterAnalyzedUsage analyze(TableSchemaObject tableSchemaObject) {
-    // check if filter is against an existing column
-    final ColumnMetadata column = getColumn(tableSchemaObject);
+  public String toString() {
+    return toString(false);
+  }
 
-    // if column is on the primary key, does not need ALLOW FILTERING to perform $eq
-    if (hasPrimaryKeyOnColumn(tableSchemaObject) && operator == Operator.EQ) {
-      return new TableFilterAnalyzedUsage(path, false, Optional.empty());
-    }
+  public String toString(boolean pretty) {
+    return toString(new PrettyToStringBuilder(getClass(), pretty)).toString();
+  }
 
-    // Check special cases for API filter $lt,$gt,$lte,$gte
-    if (operator == Operator.LT
-        || operator == Operator.GT
-        || operator == Operator.LTE
-        || operator == Operator.GTE) {
-      // Slice restrictions are not supported on duration columns (with or without index)
-      if (column.getType().equals(DataTypes.DURATION)) {
-        // TODO, the template message of this v2 ERROR CODE INVALID_FILTER may need to be refactored
-        throw FilterException.Code.INVALID_FILTER.get(
-            errVars(
-                tableSchemaObject,
-                map -> {
-                  map.put(
-                      "filter",
-                      String.format(
-                          "'%s' is not supported on duration column '%s', Slice restrictions are not supported on duration columns.",
-                          operator.predicate.cql, path));
-                }));
-      }
+  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+    prettyToStringBuilder
+        .append("path", path)
+        .append("operator", operator)
+        .append("columnValue", columnValue);
+    return prettyToStringBuilder;
+  }
 
-      if (!hasSaiIndexOnColumn(tableSchemaObject)) {
-        return new TableFilterAnalyzedUsage(path, true, Optional.of("ALLOW FILTERING turned on"));
-      }
-      return new TableFilterAnalyzedUsage(path, false, Optional.empty());
-    }
-
-    // Check special cases for API filter $eq
-    if (operator == Operator.NE) {
-      if (hasSaiIndexOnColumn(tableSchemaObject)) {
-        if (column.getType().equals(DataTypes.DATE)
-            || column.getType().equals(DataTypes.TIME)
-            || column.getType().equals(DataTypes.TIMESTAMP)
-            || column.getType().equals(DataTypes.INT)
-            || column.getType().equals(DataTypes.TINYINT)
-            || column.getType().equals(DataTypes.SMALLINT)
-            || column.getType().equals(DataTypes.BIGINT)
-            || column.getType().equals(DataTypes.VARINT)
-            || column.getType().equals(DataTypes.FLOAT)
-            || column.getType().equals(DataTypes.DOUBLE)
-            || column.getType().equals(DataTypes.DECIMAL)) {
-          return new TableFilterAnalyzedUsage(path, false, Optional.empty());
-        }
-      }
-      return new TableFilterAnalyzedUsage(path, true, Optional.of("ALLOW FILTERING turned on"));
-    }
-
-    if (operator == Operator.EQ) {
-      if (hasSaiIndexOnColumn(tableSchemaObject)) {
-        if (column.getType().equals(DataTypes.DATE)
-            || column.getType().equals(DataTypes.TIME)
-            || column.getType().equals(DataTypes.TIMESTAMP)
-            || column.getType().equals(DataTypes.INT)
-            || column.getType().equals(DataTypes.TINYINT)
-            || column.getType().equals(DataTypes.SMALLINT)
-            || column.getType().equals(DataTypes.BIGINT)
-            || column.getType().equals(DataTypes.VARINT)
-            || column.getType().equals(DataTypes.FLOAT)
-            || column.getType().equals(DataTypes.DOUBLE)
-            || column.getType().equals(DataTypes.DECIMAL)
-            || column.getType().equals(DataTypes.TEXT)
-            || column.getType().equals(DataTypes.ASCII)
-            || column.getType().equals(DataTypes.BOOLEAN)) {
-          return new TableFilterAnalyzedUsage(path, false, Optional.empty());
-        }
-      }
-      return new TableFilterAnalyzedUsage(path, true, Optional.of("ALLOW FILTERING turned on"));
-    }
-
-    return new TableFilterAnalyzedUsage(path, false, Optional.empty());
+  @Override
+  public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
+    var sb = prettyToStringBuilder.beginSubBuilder(getClass());
+    return toString(sb).endSubBuilder();
   }
 }
