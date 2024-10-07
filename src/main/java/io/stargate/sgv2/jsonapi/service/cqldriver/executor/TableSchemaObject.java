@@ -22,10 +22,12 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -61,21 +63,26 @@ public class TableSchemaObject extends TableBasedSchemaObject {
    */
   public static TableSchemaObject getTableSettings(
       TableMetadata tableMetadata, ObjectMapper objectMapper) {
-    Map<String, String> extensions =
-        (Map<String, String>)
+    Map<String, ByteBuffer> extensions =
+        (Map<String, ByteBuffer>)
             tableMetadata.getOptions().get(CqlIdentifier.fromInternal("extensions"));
-    String vectorize = extensions != null ? extensions.get("vectorize") : null;
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> resultMap = new HashMap<>();
-    if (vectorize != null) {
+    String vectorizeJson = null;
+    if (extensions != null) {
+      ByteBuffer vectorizeBuffer =
+          (ByteBuffer) extensions.get("com.datastax.data-api.vectorize-config");
+      vectorizeJson =
+          vectorizeBuffer != null
+              ? new String(ByteUtils.getArray(vectorizeBuffer.duplicate()), StandardCharsets.UTF_8)
+              : null;
+    }
+    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
+        new HashMap<>();
+    if (vectorizeJson != null) {
       try {
-        String vectorizeJson =
-            new String(ByteUtils.fromHexString(vectorize).array(), StandardCharsets.UTF_8);
-        // Convert JSON string to Map
         JsonNode vectorizeByColumns = objectMapper.readTree(vectorizeJson);
-        Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
-            new HashMap<>();
-        while (vectorizeByColumns.fields().hasNext()) {
-          Map.Entry<String, JsonNode> entry = vectorizeByColumns.fields().next();
+        Iterator<Map.Entry<String, JsonNode>> it = vectorizeByColumns.fields();
+        while (it.hasNext()) {
+          Map.Entry<String, JsonNode> entry = it.next();
           VectorConfig.ColumnVectorDefinition.VectorizeConfig vectorizeConfig =
               objectMapper.treeToValue(
                   entry.getValue(), VectorConfig.ColumnVectorDefinition.VectorizeConfig.class);
@@ -105,7 +112,7 @@ public class TableSchemaObject extends TableBasedSchemaObject {
                 column.getKey().asInternal(),
                 dimension,
                 similarityFunction,
-                resultMap.get(column.getKey().asInternal()));
+                vectorizeConfigMap.get(column.getKey().asInternal()));
         columnVectorDefinitions.add(columnVectorDefinition);
       }
     }
@@ -145,9 +152,7 @@ public class TableSchemaObject extends TableBasedSchemaObject {
             partitionBy.toArray(new String[0]),
             partitionSort.toArray(new PrimaryKey.OrderingKey[0]));
     return new TableResponse(
-        tableName,
-        new TableResponse.TableDefinition(
-            new TableResponse.TableDefinition.ColumnsDefinition(columnsDefinition), primaryKey));
+        tableName, new TableResponse.TableDefinition(columnsDefinition, primaryKey));
   }
 
   // Need to handle frozen types
@@ -190,15 +195,12 @@ public class TableSchemaObject extends TableBasedSchemaObject {
     }
   }
 
-  @JsonPropertyOrder({"_id", "definition"})
+  @JsonPropertyOrder({"name", "definition"})
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  public record TableResponse(String name, TableDefinition tableDefinition) {
+  public record TableResponse(String name, TableDefinition definition) {
 
     @JsonPropertyOrder({"columns", "primaryKey"})
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    record TableDefinition(ColumnsDefinition columns, PrimaryKey primaryKey) {
-
-      record ColumnsDefinition(Map<String, ColumnType> columns) {}
-    }
+    record TableDefinition(Map<String, ColumnType> columns, PrimaryKey primaryKey) {}
   }
 }

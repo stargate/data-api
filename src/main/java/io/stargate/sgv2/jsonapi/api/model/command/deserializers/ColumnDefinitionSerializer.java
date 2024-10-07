@@ -25,10 +25,10 @@ public class ColumnDefinitionSerializer extends JsonSerializer<ColumnType> {
     } else if (columnType instanceof ComplexTypes.ListType lt) {
       jsonGenerator.writeStringField("valueType", lt.valueType());
     } else if (columnType instanceof ComplexTypes.SetType st) {
-      jsonGenerator.writeStringField("st", lt.valueType());
+      jsonGenerator.writeStringField("st", st.valueType());
     } else if (columnType instanceof ComplexTypes.VectorType vt) {
-      jsonGenerator.writeNumberField("dimension", vectorType.dimension());
-      if (vectorType.getVectorConfig() != null)
+      jsonGenerator.writeNumberField("dimension", vt.getDimension());
+      if (vt.getVectorConfig() != null)
         jsonGenerator.writeObjectField("service", vt.getVectorConfig());
     }
     jsonGenerator.writeEndObject();
