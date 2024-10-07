@@ -51,8 +51,9 @@ public class DataVectorizer {
     this.nodeFactory = nodeFactory;
     this.embeddingCredentials = embeddingCredentials;
     this.schemaObject = schemaObject;
-    vectorConfig =
-        schemaObject.vectorConfigs().isEmpty() ? null : schemaObject.vectorConfigs().get(0);
+    // This is getting element at 0 since only one vector is stored in the schema.
+    // This logic needs to be changed to handle multiple vectors columns for tables,
+    vectorConfig = schemaObject.vectorConfigs().get(0);
   }
 
   /**
