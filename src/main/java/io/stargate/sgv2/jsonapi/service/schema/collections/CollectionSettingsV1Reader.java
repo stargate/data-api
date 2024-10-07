@@ -47,11 +47,6 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
     }
 
     return new CollectionSchemaObject(
-        keyspaceName,
-        collectionName,
-        tableMetadata,
-        idConfig,
-        List.of(vectorConfig),
-        indexingConfig);
+        keyspaceName, collectionName, tableMetadata, idConfig, vectorConfig, indexingConfig);
   }
 }

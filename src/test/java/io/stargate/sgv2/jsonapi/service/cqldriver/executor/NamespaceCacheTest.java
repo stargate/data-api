@@ -164,7 +164,7 @@ public class NamespaceCacheTest {
       assertThat(schemaObject)
           .satisfies(
               s -> {
-                assertThat(s.vectorConfigs().get(0).vectorEnabled()).isFalse();
+                assertThat(s.vectorConfig().vectorEnabled()).isFalse();
                 assertThat(s.name.table()).isEqualTo("table");
               });
     }
@@ -296,7 +296,7 @@ public class NamespaceCacheTest {
       assertThat(collectionSchemaObject)
           .satisfies(
               s -> {
-                assertThat(s.vectorConfigs().get(0).vectorEnabled()).isFalse();
+                assertThat(s.vectorConfig().vectorEnabled()).isFalse();
                 assertThat(s.name.table()).isEqualTo("table");
                 assertThat(s.indexingConfig().denied()).containsExactly("comment");
               });
