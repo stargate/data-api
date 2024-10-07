@@ -16,16 +16,14 @@ else
 fi
 
 # macOS will not work
-if [[ $OSTYPE == 'darwin'* ]]; then
-  echo 'You are running macOS, which is not supported by this script'
-  echo 'You can automatically bump the Stargate version using the GitHub workflow https://github.com/stargate/jsonapi/actions/workflows/update-parent-version.yaml'
-  echo 'If you still want to bump the version manually, then follow the steps below:'
-  echo ' 1. Update the version of the sgv2-api-parent parent in the pom.xml'
-  echo ' 2. Commit and push your changes'
-  exit 1
-fi
+#if [[ $OSTYPE == 'darwin'* ]]; then
+#  echo 'You are running macOS, which is not supported by this script'
+#  echo 'You can automatically bump the Stargate version using the GitHub workflow https://github.com/stargate/jsonapi/actions/workflows/update-parent-version.yaml'
+#  echo 'If you still want to bump the version manually, then follow the steps below:'
+#  echo ' 1. Update the version of the sgv2-api-parent parent in the pom.xml'
+#  echo ' 2. Commit and push your changes'
+#  exit 1
+#fi
 
-STARGATE_VERSION="v123"
-echo "this is a new script"
 # update parent version only
 sed -i 's|<stargate.version>[^<]*</stargate.version>|<stargate.version>'"$STARGATE_VERSION_NUMBER"'</stargate.version>|' pom.xml
