@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
+import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
 import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
@@ -45,6 +46,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
 
     private final String message;
     private final TableMetadata tableMetadata;
+    private final TableSchemaObject tableSchemaObject;
     private final WhereCQLClauseAnalyzer analyzer;
     private final LogicalExpressionTestData.ExpressionBuilder<WhereAnalyzerFixture> expression;
 
@@ -57,6 +59,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       this.message = message;
       this.tableMetadata = tableMetadata;
       this.analyzer = new WhereCQLClauseAnalyzer(new TableSchemaObject(tableMetadata));
+      this.tableSchemaObject = new TableSchemaObject(tableMetadata);
       this.expression =
           new LogicalExpressionTestData.ExpressionBuilder<>(this, expression, tableMetadata);
     }
@@ -73,6 +76,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
               this::callAnalyze,
               "Expected exception %s when: %s".formatted(exceptionClass, message));
 
+      LOGGER.warn("Analysis Error: {}\n {}", message, this.exception.toString());
       return this;
     }
 
@@ -88,7 +92,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     public void callAnalyze() {
       LOGGER.warn("Analyzing: {}\n {}", message, toString(true));
       // store the result in this fixture for later
-      analysisResult = analyzer.analyse(expression.expression);
+      analysisResult = analyzer.analyse(TableWhereCQLClause.forSelect(tableSchemaObject, expression.expression));
       LOGGER.warn("Analysis result: {}", analysisResult);
     }
 

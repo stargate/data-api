@@ -206,7 +206,7 @@ public class WhereAnalyzerTest {
         .expression()
         .eqAllPartitionKeys()
         .expression()
-        .eqSkipOneClusteringKeys(3)
+        .eqSkipOneClusteringKeys(2)
         .analyze()
         .assertNoFilteringNoWarnings();
   }
@@ -238,6 +238,21 @@ public class WhereAnalyzerTest {
         .eqOnlyOneClusteringKey(0)
         .analyze()
         .assertNoFilteringNoWarnings();
+  }
+
+  @Test
+  public void skip1and3of3ClusteringKey() {
+
+    var fixture =
+        TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("skip2and3of3ClusteringKey()");
+    fixture
+        .expression()
+        .eqAllPartitionKeys()
+        .expression()
+        .eqOnlyOneClusteringKey(1)
+        .analyze()
+        .assertOneWarning(WarningException.Code.INCOMPLETE_PRIMARY_KEY_FILTER)
+        .assertWarnOnOutOfOrder(names().COL_CLUSTERING_KEY_2);
   }
 
   // ==================================================================================================================

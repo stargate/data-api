@@ -31,9 +31,10 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
 
   private final TableSchemaObject tableSchemaObject;
   private final SelectCQLClause selectCQLClause;
-  private CqlPagingState pagingState = CqlPagingState.EMPTY;
   private final DocumentSourceSupplier documentSourceSupplier;
+  private final WhereCQLClauseAnalyzer whereCQLClauseAnalyzer;
 
+  private CqlPagingState pagingState = CqlPagingState.EMPTY;
   private final CqlOptions<Select> cqlOptions = new CqlOptions<>();
 
   public TableReadAttemptBuilder(
@@ -44,6 +45,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
     this.tableSchemaObject = tableSchemaObject;
     this.selectCQLClause = selectCQLClause;
     this.documentSourceSupplier = documentSourceSupplier;
+    this.whereCQLClauseAnalyzer = new WhereCQLClauseAnalyzer(tableSchemaObject);
   }
 
   public TableReadAttemptBuilder addBuilderOption(CQLOption<Select> option) {
@@ -69,7 +71,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
     WhereCQLClauseAnalyzer.WhereClauseAnalysis analyzedResult = null;
     Exception exception = null;
     try {
-      analyzedResult = whereCQLClause.analyseWhereClause();
+      analyzedResult = whereCQLClauseAnalyzer.analyse(whereCQLClause);
     } catch (FilterException filterException) {
       exception = filterException;
     }

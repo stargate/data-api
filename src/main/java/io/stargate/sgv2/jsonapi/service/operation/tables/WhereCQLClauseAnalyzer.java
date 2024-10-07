@@ -13,8 +13,8 @@ import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
-import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
+import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
 import java.util.*;
 import java.util.function.Function;
@@ -54,14 +54,16 @@ public class WhereCQLClauseAnalyzer {
             .collect(Collectors.toMap(ColumnMetadata::getName, Function.identity()));
   }
 
-  public WhereClauseAnalysis analyse(DBLogicalExpression expression) {
+  public WhereClauseAnalysis analyse(WhereCQLClause<?> whereCQLClause) {
 
     Map<CqlIdentifier, TableFilter> identifierToFilter = new HashMap<>();
-    expression.visitAllFilters(
-        TableFilter.class,
-        tableFilter -> {
-          identifierToFilter.put(cqlIdentifierFromUserInput(tableFilter.path), tableFilter);
-        });
+    whereCQLClause
+        .getLogicalExpression()
+        .visitAllFilters(
+            TableFilter.class,
+            tableFilter -> {
+              identifierToFilter.put(cqlIdentifierFromUserInput(tableFilter.path), tableFilter);
+            });
 
     // TableFilter validation check rules, these will throw is there is an error
     checkAllColumnsExist(identifierToFilter);

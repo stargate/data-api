@@ -77,6 +77,11 @@ public class LogicalExpressionTestData extends TestDataSuplier {
     }
 
     public FixtureT eqSkipOneClusteringKeys(int skipIndex) {
+
+      if (skipIndex >= tableMetadata.getClusteringColumns().size()) {
+        throw new IllegalArgumentException(
+            "Skip index is greater than the number of clustering keys");
+      }
       int index = -1;
       for (ColumnMetadata columnMetadata : tableMetadata.getClusteringColumns().keySet()) {
         index++;
