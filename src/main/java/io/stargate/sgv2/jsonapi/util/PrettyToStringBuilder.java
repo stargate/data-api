@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.util;
 
 import io.stargate.sgv2.jsonapi.service.shredding.JsonNamedValueContainer;
+import java.util.List;
 
 /**
  * Helper used to print the objects when testing, for example the {@link JsonNamedValueContainer}
@@ -79,6 +80,21 @@ public class PrettyToStringBuilder {
     sb.append(key).append("=");
     if (value instanceof PrettyPrintable pp) {
       pp.appendTo(this);
+    } else if (value instanceof List<?> list) {
+      sb.append("[");
+      boolean first = true;
+      for (Object item : list) {
+        if (!first) {
+          sb.append(", ");
+        }
+        if (item instanceof PrettyPrintable ppItem) {
+          ppItem.appendTo(this);
+        } else {
+          sb.append(item);
+        }
+        first = false;
+      }
+      sb.append("]");
     } else {
       sb.append(value);
     }

@@ -75,8 +75,7 @@ public class DeleteManyCommandResolverTest {
                               .isEqualTo(operationsConfig.maxDocumentDeleteCount() + 1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
-                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
-                              .isEqualTo(filter);
+                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
                         });
               });
     }
@@ -160,8 +159,7 @@ public class DeleteManyCommandResolverTest {
                               .isEqualTo(operationsConfig.maxDocumentDeleteCount() + 1);
                           assertThat(find.pageState()).isNull();
                           assertThat(find.readType()).isEqualTo(CollectionReadType.KEY);
-                          assertThat(find.dbLogicalExpression().dBFilters().get(0))
-                              .isEqualTo(filter);
+                          assertThat(find.dbLogicalExpression().filters().get(0)).isEqualTo(filter);
                         });
               });
     }
