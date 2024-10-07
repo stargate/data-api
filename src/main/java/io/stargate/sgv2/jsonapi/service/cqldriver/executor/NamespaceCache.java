@@ -104,7 +104,7 @@ public class NamespaceCache {
               }
 
               // 04-Sep-2024, tatu: Used to check that API Tables enabled; no longer checked here
-              return new TableSchemaObject(table);
+              return TableSchemaObject.getTableSettings(table, objectMapper);
             });
   }
 

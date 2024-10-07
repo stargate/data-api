@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.internal.core.metadata.schema.DefaultTableMetadata;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -32,6 +33,6 @@ public class DefaultDriverExceptionHandlerTestData {
             Map.of(),
             Map.of(),
             Map.of());
-    TABLE_SCHEMA_OBJECT = new TableSchemaObject(tableMetadata);
+    TABLE_SCHEMA_OBJECT = TableSchemaObject.getTableSettings(tableMetadata, new ObjectMapper());
   }
 }
