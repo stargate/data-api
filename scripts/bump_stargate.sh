@@ -15,7 +15,7 @@ else
    exit 1
 fi
 
-#macOS will not work
+# macOS will not work
 if [[ $OSTYPE == 'darwin'* ]]; then
   echo 'You are running macOS, which is not supported by this script'
   echo 'You can automatically bump the Stargate version using the GitHub workflow https://github.com/stargate/jsonapi/actions/workflows/update-parent-version.yaml'
