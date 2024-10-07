@@ -59,8 +59,11 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
 
       this.message = message;
       this.tableMetadata = tableMetadata;
-      this.analyzer = new WhereCQLClauseAnalyzer(TableSchemaObject.getTableSettings(tableMetadata, new ObjectMapper()));
-      this.tableSchemaObject = TableSchemaObject.getTableSettings(tableMetadata, new ObjectMapper());
+      this.analyzer =
+          new WhereCQLClauseAnalyzer(
+              TableSchemaObject.getTableSettings(tableMetadata, new ObjectMapper()));
+      this.tableSchemaObject =
+          TableSchemaObject.getTableSettings(tableMetadata, new ObjectMapper());
       this.expression =
           new LogicalExpressionTestData.ExpressionBuilder<>(this, expression, tableMetadata);
     }
