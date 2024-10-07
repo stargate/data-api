@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.Map;
 
@@ -23,7 +24,7 @@ public record VectorConfig(
   // TODO: this is an immutable record, this can be singleton
   // TODO: Remove the use of NULL for the objects like vectorizeConfig
   public static VectorConfig notEnabledVectorConfig() {
-    return new VectorConfig(false, "", -1, null, null);
+    return new VectorConfig(false, null, -1, null, null);
   }
 
   // convert a vector jsonNode from table comment to vectorConfig, used for collection
@@ -33,7 +34,12 @@ public record VectorConfig(
     SimilarityFunction similarityFunction =
         SimilarityFunction.fromString(jsonNode.get("metric").asText());
 
-    return fromJson("$vectorize", dimension, similarityFunction, jsonNode, objectMapper);
+    return fromJson(
+        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+        dimension,
+        similarityFunction,
+        jsonNode,
+        objectMapper);
   }
 
   // convert a vector jsonNode from table extension to vectorConfig, used for tables

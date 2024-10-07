@@ -221,7 +221,13 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             collectionName,
             tableMetadata,
             IdConfig.defaultIdConfig(),
-            List.of(new VectorConfig(true, "$vector", vectorSize, function, null)),
+            List.of(
+                new VectorConfig(
+                    true,
+                    DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                    vectorSize,
+                    function,
+                    null)),
             null);
       } else {
         return new CollectionSchemaObject(
@@ -273,14 +279,19 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     }
   }
 
-  // convert a vector jsonNode from table comment to vectorConfig, used for collection
+  // convert a vector jsonNode from cql table comment to vectorConfig, used for collection
   private static VectorConfig fromJson(JsonNode jsonNode, ObjectMapper objectMapper) {
     // dimension, similarityFunction, must exist
     int dimension = jsonNode.get("dimension").asInt();
     SimilarityFunction similarityFunction =
         SimilarityFunction.fromString(jsonNode.get("metric").asText());
 
-    return VectorConfig.fromJson("$vector", dimension, similarityFunction, jsonNode, objectMapper);
+    return VectorConfig.fromJson(
+        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+        dimension,
+        similarityFunction,
+        jsonNode,
+        objectMapper);
   }
 
   public static CreateCollectionCommand collectionSettingToCreateCollectionCommand(

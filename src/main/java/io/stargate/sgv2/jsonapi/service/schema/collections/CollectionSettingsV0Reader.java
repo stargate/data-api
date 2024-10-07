@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema.collections;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.TableCommentConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
@@ -28,7 +29,12 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
       SimilarityFunction function) {
 
     VectorConfig vectorConfig =
-        new VectorConfig(vectorEnabled, "$vector", vectorSize, function, null);
+        new VectorConfig(
+            vectorEnabled,
+            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+            vectorSize,
+            function,
+            null);
     CollectionIndexingConfig indexingConfig = null;
     JsonNode indexing = commentConfigNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
     if (!indexing.isMissingNode()) {

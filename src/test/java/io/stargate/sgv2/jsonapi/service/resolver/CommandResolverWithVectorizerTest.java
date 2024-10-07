@@ -19,6 +19,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -84,7 +85,7 @@ public class CommandResolverWithVectorizerTest {
                 new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME),
                 null,
                 IdConfig.defaultIdConfig(),
-                List.of(new VectorConfig(true, "$vectorize", -1, SimilarityFunction.COSINE, null)),
+                List.of(new VectorConfig(true, DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, -1, SimilarityFunction.COSINE, null)),
                 null),
             null,
             null,

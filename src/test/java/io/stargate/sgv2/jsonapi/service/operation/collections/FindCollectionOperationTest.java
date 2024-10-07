@@ -25,6 +25,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -82,7 +83,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
                 SCHEMA_OBJECT_NAME,
                 null,
                 IdConfig.defaultIdConfig(),
-                List.of(new VectorConfig(true, "$vectorize", -1, SimilarityFunction.COSINE, null)),
+                List.of(new VectorConfig(true, DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, -1, SimilarityFunction.COSINE, null)),
                 null),
             null,
             "testCommand",

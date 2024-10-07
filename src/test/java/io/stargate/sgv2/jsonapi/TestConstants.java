@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
@@ -35,7 +36,7 @@ public final class TestConstants {
           SCHEMA_OBJECT_NAME,
           null,
           IdConfig.defaultIdConfig(),
-          List.of(new VectorConfig(true, "$vectorize", -1, SimilarityFunction.COSINE, null)),
+          List.of(new VectorConfig(true, DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD, -1, SimilarityFunction.COSINE, null)),
           null);
 
   public static final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =
