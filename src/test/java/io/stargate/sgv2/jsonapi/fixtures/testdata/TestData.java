@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class TestData {
 
-  protected final TestDataNames names;
+  public final TestDataNames names;
 
   private final Map<Class<?>, Object> cache = new HashMap<>();
 

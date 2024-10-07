@@ -2,6 +2,8 @@ package io.stargate.sgv2.jsonapi.service.operation.query;
 
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -14,7 +16,7 @@ import java.util.function.Consumer;
  * <p>fields dbLogicalExpressionList and dbFilterList are mutable, because we need to construct the
  * DBLogicalExpression recursively by adding new dbFilters and subDbLogicalExpression.
  */
-public class DBLogicalExpression {
+public class DBLogicalExpression implements PrettyPrintable {
 
   /**
    * This is another enum class for LogicalOperator. We have this one because LogicalOperator here
@@ -94,17 +96,6 @@ public class DBLogicalExpression {
     return subExpressions.isEmpty() && filters.isEmpty();
   }
 
-  @Override
-  public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("DBLogicalExpression{");
-    sb.append("operator='").append(operator).append("'");
-    sb.append(", subExpressions=").append(subExpressions);
-    sb.append(", filters=").append(filters);
-    sb.append("}");
-    return sb.toString();
-  }
-
   public List<DBFilterBase> filters() {
     return List.copyOf(filters);
   }
@@ -123,5 +114,28 @@ public class DBLogicalExpression {
     var childCounts =
         subExpressions().stream().mapToInt(DBLogicalExpression::totalFilterCount).sum();
     return childCounts + filters.size();
+  }
+
+  @Override
+  public String toString() {
+    return toString(false);
+  }
+
+  public String toString(boolean pretty) {
+    return toString(new PrettyToStringBuilder(getClass(), pretty)).toString();
+  }
+
+  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+    prettyToStringBuilder
+        .append("operator", operator)
+        .append("subExpressions", subExpressions)
+        .append("filters", filters);
+    return prettyToStringBuilder;
+  }
+
+  @Override
+  public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
+    var sb = prettyToStringBuilder.beginSubBuilder(getClass());
+    return toString(sb).endSubBuilder();
   }
 }

@@ -16,6 +16,8 @@ import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltCondition;
 import io.stargate.sgv2.jsonapi.service.operation.builder.BuiltConditionPredicate;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.util.List;
 
 /**
@@ -48,7 +50,7 @@ import java.util.List;
  *
  * @param <CqlT> The JSON Type , BigDecimal, String etc
  */
-public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
+public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements PrettyPrintable {
 
   /**
    * The operations that can be performed to filter a column TIDY: we have operations defined in
@@ -140,5 +142,28 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter {
 
     return ongoingWhereClause.where(
         Relation.column(getPathAsCqlIdentifier()).build(operator.predicate.cql, bindMarker()));
+  }
+
+  @Override
+  public String toString() {
+    return toString(false);
+  }
+
+  public String toString(boolean pretty) {
+    return toString(new PrettyToStringBuilder(getClass(), pretty)).toString();
+  }
+
+  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+    prettyToStringBuilder
+        .append("path", path)
+        .append("operator", operator)
+        .append("columnValue", columnValue);
+    return prettyToStringBuilder;
+  }
+
+  @Override
+  public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
+    var sb = prettyToStringBuilder.beginSubBuilder(getClass());
+    return toString(sb).endSubBuilder();
   }
 }

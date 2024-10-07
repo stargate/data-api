@@ -222,7 +222,9 @@ request-errors:
       The filter only specified columns from the primary key, but did not specify the full primary key for the table.  
       
       The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
-      However the filter only specified the following primary key columns: ${filterColumns}.
+      The filter has the following issues: 
+        - Missing Partition Keys: ${missingPartitionKeys}.
+        - Out of order Partition Sort Keys: ${outOfOrderClusteringKeys}.
       
       For the best performance, filter on all partition columns and optionally on clustering columns in the order they are specified. 
       

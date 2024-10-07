@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.*;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
@@ -23,11 +23,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The purpose for this analyzer class is to analyze the whereCQLClause.
+ * <b>NOTES:</b>
  *
- * <p>There are two kinds of rules to check:<br>
- * 1. Validation check, gather all FilterException and terminate the analyze flow. 2. Warning check,
- * if the filter is valid, then do the warning check, gather all WarningException
+ * <ul>
+ *   <li>To make testing easier, any list of columns in the warnings are sorted by the column name.
+ *       This is for the columns that failed some sort of test, the list of columns or PKs etc in
+ *       the table are the order from the table metadata.
+ * </ul>
  */
 public class WhereCQLClauseAnalyzer {
   private static final Logger LOGGER = LoggerFactory.getLogger(WhereCQLClauseAnalyzer.class);
@@ -84,6 +86,7 @@ public class WhereCQLClauseAnalyzer {
             .filter(
                 identifier ->
                     !tableSchemaObject.tableMetadata().getColumns().containsKey(identifier))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
     if (!unknownColumns.isEmpty()) {
@@ -118,6 +121,7 @@ public class WhereCQLClauseAnalyzer {
             .map((Map.Entry::getKey))
             .filter(
                 column -> tableMetadata.getColumns().get(column).getType() == DataTypes.DURATION)
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
     if (!filteredDurationColumns.isEmpty()) {
@@ -145,11 +149,6 @@ public class WhereCQLClauseAnalyzer {
     var pkFullySpecified =
         identifierToFilter.keySet().stream().allMatch(tablePKColumns::containsKey);
 
-    var unmatched =
-        identifierToFilter.keySet().stream()
-            .filter(column -> !tablePKColumns.containsKey(column))
-            .toList();
-
     // if the Pk is fully specified, then we only check the filters on non-pk columns
     // otherwise we check all filters because the PK will not be used.
     var filtersToCheck =
@@ -168,14 +167,21 @@ public class WhereCQLClauseAnalyzer {
             .toList();
 
     var missingSAIColumns =
-        scalarTypeFilters.stream().filter(identifier -> !isIndexOnColumn(identifier)).toList();
+        scalarTypeFilters.stream()
+            .filter(identifier -> !isIndexOnColumn(identifier))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
 
     if (missingSAIColumns.isEmpty()) {
       return Optional.empty();
     }
 
     var indexedColumns =
-        tableMetadata.getIndexes().values().stream().map(IndexMetadata::getTarget).toList();
+        tableMetadata.getIndexes().values().stream()
+            .map(IndexMetadata::getTarget)
+            .sorted(String::compareTo)
+            .toList();
+
     return Optional.of(
         WarningException.Code.MISSING_INDEX.get(
             errVars(
@@ -213,6 +219,7 @@ public class WhereCQLClauseAnalyzer {
                 column ->
                     ALLOW_FILTERING_NEEDED_FOR_$NE.contains(
                         tableMetadata.getColumns().get(column).getType()))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
     if (inefficientFilters.isEmpty()) {
@@ -225,6 +232,7 @@ public class WhereCQLClauseAnalyzer {
     var inefficientColumns =
         tableMetadata.getColumns().values().stream()
             .filter(column -> ALLOW_FILTERING_NEEDED_FOR_$NE.contains(column.getType()))
+            .sorted(COLUMN_METADATA_COMPARATOR)
             .toList();
 
     return Optional.of(
@@ -276,44 +284,43 @@ public class WhereCQLClauseAnalyzer {
     var missingPartitionKeyMetadata =
         tableMetadata.getPartitionKey().stream()
             .filter(column -> !identifierToFilter.containsKey(column.getName()))
+            .sorted(COLUMN_METADATA_COMPARATOR)
             .toList();
 
-    var missingClusteringMetadata =
+    //    var missingClusteringMetadata =
+    //        tableMetadata.getClusteringColumns().keySet().stream()
+    //            .filter(column -> !identifierToFilter.containsKey(column.getName()))
+    //            .toList();
+
+    // If we are filtering on any clustering keys, then we need to make sure we are not skipping any
+    // i.e. if clustering is (a,b,c) and we are filtering on (a,c) then we are skipping b
+    final boolean[] skipped = {false};
+    var noClusteringKeyFilters =
         tableMetadata.getClusteringColumns().keySet().stream()
-            .filter(column -> !identifierToFilter.containsKey(column.getName()))
-            .toList();
+            .noneMatch(metadata -> identifierToFilter.containsKey(metadata.getName()));
 
-    var clusteringColumnAimToFilterOn =
-        tableMetadata.getClusteringColumns().keySet().stream()
-            .filter(column -> identifierToFilter.containsKey(column.getName()))
-            .toList();
+    List<ColumnMetadata> outOfOrderClusteringKeys =
+        noClusteringKeyFilters
+            ? Collections.emptyList()
+            : tableMetadata.getClusteringColumns().keySet().stream()
+                .filter(
+                    metadata -> {
+                      if (identifierToFilter.containsKey(metadata.getName())) {
+                        // if we have a filter for this clustering key, then we must not have
+                        // skipped any previously
+                        // we are out of order if we have skipped any previously
+                        return skipped[0];
+                      }
+                      // we have skipped this clustering key that is OK
+                      // just need to remember we skipped one incase we try to set another later
+                      skipped[0] = true;
+                      return false;
+                    })
+                .sorted(COLUMN_METADATA_COMPARATOR)
+                .toList();
 
-    boolean isSkippingClusteringKey = false;
-    // We may have a skipping clusteringKey situation
-    if (!clusteringColumnAimToFilterOn.isEmpty()
-        && clusteringColumnAimToFilterOn.size() < tableMetadata.getClusteringColumns().size()) {
-      // This is the correct order of clusteringKeys
-      var tableClusteringColumns = tableMetadata.getClusteringColumns().keySet().stream().toList();
-      // As long as we are not skipping the last one, we are fine
-      for (int i = 0; i < tableClusteringColumns.size() - 1; i++) {
-        if (!clusteringColumnAimToFilterOn.contains(tableClusteringColumns.get(i))) {
-          isSkippingClusteringKey = true;
-          break;
-        }
-      }
-    }
-
-    // 3 situations are considered as a valid PrimaryKey filtering
-    // 1. Just filtering on all partitionKeys, and all specified
-    // 2. All partitionKeys and clusteringKeys are specified in filter
-    // 3. All partitionKeys are specified, and not skipping clusteringKeys
-    if (missingPartitionKeyMetadata.isEmpty()) {
-      // 1,2,3 situations
-      if (clusteringColumnAimToFilterOn.isEmpty()
-          || missingClusteringMetadata.isEmpty()
-          || !isSkippingClusteringKey) {
-        return Optional.empty();
-      }
+    if (missingPartitionKeyMetadata.isEmpty() && outOfOrderClusteringKeys.isEmpty()) {
+      return Optional.empty();
     }
 
     // the filter is only on the PK columns, but does not specify the full PK
@@ -323,7 +330,10 @@ public class WhereCQLClauseAnalyzer {
                 tableSchemaObject,
                 map -> {
                   map.put("primaryKeys", errFmtColumnMetadata(tableMetadata.getPrimaryKey()));
-                  map.put("filterColumns", errFmtCqlIdentifier(identifierToFilter.keySet()));
+                  map.put(
+                      "missingPartitionKeys", errFmtColumnMetadata(missingPartitionKeyMetadata));
+                  map.put(
+                      "outOfOrderClusteringKeys", errFmtColumnMetadata(outOfOrderClusteringKeys));
                 })));
   }
 
