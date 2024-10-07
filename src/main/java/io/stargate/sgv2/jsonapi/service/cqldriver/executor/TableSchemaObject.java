@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,9 +23,9 @@ public class TableSchemaObject extends TableBasedSchemaObject {
 
   private final List<VectorConfig> vectorConfigs;
 
-  private TableSchemaObject(TableMetadata tableMetadata) {
+  private TableSchemaObject(TableMetadata tableMetadata, List<VectorConfig> vectorConfigs) {
     super(TYPE, tableMetadata);
-    vectorConfigs = new ArrayList<>();
+    this.vectorConfigs = vectorConfigs;
   }
 
   @Override
@@ -37,6 +38,13 @@ public class TableSchemaObject extends TableBasedSchemaObject {
     return IndexUsage.NO_OP;
   }
 
+  /**
+   * Get table schema object from table metadata
+   *
+   * @param tableMetadata
+   * @param objectMapper
+   * @return
+   */
   public static TableSchemaObject getTableSettings(
       TableMetadata tableMetadata, ObjectMapper objectMapper) {
     Map<String, String> extensions =
@@ -57,8 +65,8 @@ public class TableSchemaObject extends TableBasedSchemaObject {
         throw new RuntimeException(e);
       }
     }
-    TableSchemaObject tableSchemaObject = new TableSchemaObject(tableMetadata);
 
+    List<VectorConfig> vectorConfigs = new ArrayList<>();
     for (Map.Entry<CqlIdentifier, ColumnMetadata> column : tableMetadata.getColumns().entrySet()) {
       if (column.getValue().getType() instanceof VectorType vectorType) {
         final Optional<IndexMetadata> index = tableMetadata.getIndex(column.getKey());
@@ -79,12 +87,12 @@ public class TableSchemaObject extends TableBasedSchemaObject {
                 dimension,
                 similarityFunction,
                 resultMap.get(column.getKey().asInternal()));
-        tableSchemaObject.vectorConfigs.add(vectorConfig);
+        vectorConfigs.add(vectorConfig);
       }
     }
-    if (tableSchemaObject.vectorConfigs.isEmpty()) {
-      tableSchemaObject.vectorConfigs().add(VectorConfig.notEnabledVectorConfig());
+    if (vectorConfigs.isEmpty()) {
+      vectorConfigs.add(VectorConfig.notEnabledVectorConfig());
     }
-    return tableSchemaObject;
+    return new TableSchemaObject(tableMetadata, Collections.unmodifiableList(vectorConfigs));
   }
 }
