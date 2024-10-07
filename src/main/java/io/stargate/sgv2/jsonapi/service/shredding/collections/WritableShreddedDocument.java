@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.shredding.collections;
 
 import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.fasterxml.jackson.core.Base64Variants;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -305,7 +304,13 @@ public record WritableShreddedDocument(
       String binaryString = vector.get(JsonExtensionType.BINARY.encodedName()).asText();
 
       byte[] binaryPayload;
-      binaryPayload = Base64Variants.MIME_NO_LINEFEEDS.decode(binaryString);
+      try {
+        binaryPayload = Base64.getDecoder().decode(binaryString);
+      } catch (IllegalArgumentException e) {
+        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
+            "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String; problem: %s",
+            e.getMessage());
+      }
 
       int numFloats = binaryPayload.length / 4;
       float[] floatArray = new float[numFloats];
