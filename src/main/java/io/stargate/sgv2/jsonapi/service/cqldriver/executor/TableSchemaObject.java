@@ -178,15 +178,42 @@ public class TableSchemaObject extends TableBasedSchemaObject {
                   columnVectorDefinition.vectorizeConfig().parameters());
       return new ComplexTypes.VectorType(PrimitiveTypes.FLOAT, vt.getDimensions(), vectorizeConfig);
     } else if (columnMetadata.getType() instanceof MapType mt) {
-      return new ComplexTypes.MapType(
-          PrimitiveTypes.fromString(mt.getKeyType().toString()),
-          PrimitiveTypes.fromString(mt.getValueType().toString()));
+      if (!mt.isFrozen()) {
+        final Optional<ApiDataTypeDef> apiDataTypeDefKey = ApiDataTypeDefs.from(mt.getKeyType());
+        final Optional<ApiDataTypeDef> apiDataTypeDefValue =
+            ApiDataTypeDefs.from(mt.getValueType());
+        if (apiDataTypeDefKey.isPresent() && apiDataTypeDefValue.isPresent()) {
+          return new ComplexTypes.MapType(
+              PrimitiveTypes.fromString(apiDataTypeDefKey.get().getApiType().getApiName()),
+              PrimitiveTypes.fromString(apiDataTypeDefValue.get().getApiType().getApiName()));
+        }
+      }
+      // return unsupported format
+      return new ComplexTypes.UnsupportedType(mt.asCql(true, false));
+
     } else if (columnMetadata.getType()
         instanceof com.datastax.oss.driver.api.core.type.ListType lt) {
-      return new ComplexTypes.ListType(PrimitiveTypes.fromString(lt.getElementType().toString()));
+      if (!lt.isFrozen()) {
+        final Optional<ApiDataTypeDef> apiDataTypeDef = ApiDataTypeDefs.from(lt.getElementType());
+        if (apiDataTypeDef.isPresent()) {
+          return new ComplexTypes.ListType(
+              PrimitiveTypes.fromString(apiDataTypeDef.get().getApiType().getApiName()));
+        }
+      }
+      // return unsupported format
+      return new ComplexTypes.UnsupportedType(lt.asCql(true, false));
+
     } else if (columnMetadata.getType()
         instanceof com.datastax.oss.driver.api.core.type.SetType st) {
-      return new ComplexTypes.SetType(PrimitiveTypes.fromString(st.getElementType().toString()));
+      if (!st.isFrozen()) {
+        final Optional<ApiDataTypeDef> apiDataTypeDef = ApiDataTypeDefs.from(st.getElementType());
+        if (apiDataTypeDef.isPresent()) {
+          return new ComplexTypes.SetType(
+              PrimitiveTypes.fromString(apiDataTypeDef.get().getApiType().getApiName()));
+        }
+      }
+      // return unsupported format
+      return new ComplexTypes.UnsupportedType(st.asCql(true, false));
     } else {
       final Optional<ApiDataTypeDef> apiDataTypeDef =
           ApiDataTypeDefs.from(columnMetadata.getType());

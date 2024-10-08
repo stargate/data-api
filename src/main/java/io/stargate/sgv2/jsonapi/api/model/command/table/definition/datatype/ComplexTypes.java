@@ -117,4 +117,35 @@ public class ComplexTypes {
       return vectorSize;
     }
   }
+
+  /**
+   * Unsupported type implementation, returned in response when cql table has unsupported format
+   * column
+   */
+  public static class UnsupportedType implements ColumnType {
+    private final String cqlFormat;
+
+    public UnsupportedType(String cqlFormat) {
+      this.cqlFormat = cqlFormat;
+    }
+
+    @Override
+    public ApiDataType getApiDataType() {
+      throw new UnsupportedOperationException("Unsupported type");
+    }
+
+    @Override
+    public String name() {
+      return "UNSUPPORTED";
+    }
+
+    @Override
+    public String getApiName() {
+      return "UNSUPPORTED";
+    }
+
+    public String cqlFormat() {
+      return cqlFormat;
+    }
+  }
 }

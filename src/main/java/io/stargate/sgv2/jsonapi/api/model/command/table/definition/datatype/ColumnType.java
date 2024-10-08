@@ -19,6 +19,10 @@ public interface ColumnType {
 
   public String name();
 
+  default String getApiName() {
+    return getApiDataType().getApiName();
+  }
+
   static List<String> getSupportedTypes() {
     return List.of(
         "ascii",
