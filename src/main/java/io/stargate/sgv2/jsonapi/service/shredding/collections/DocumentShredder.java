@@ -335,7 +335,7 @@ public class DocumentShredder {
       }
       JsonNode binaryValue = entry.getValue();
       if (!binaryValue.isTextual()) {
-        throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
+        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
             "Unsupported JSON value type in EJSON $binary wrapper (%s): only STRING allowed",
             binaryValue.getNodeType());
       }

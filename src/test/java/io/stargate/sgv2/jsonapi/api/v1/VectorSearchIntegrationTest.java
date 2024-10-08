@@ -460,6 +460,121 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
       // Step 7: Verify that the decoded float array is equal to the expected vector
       Assertions.assertArrayEquals(expectedVector, decodedVector, 0.0001f);
     }
+
+    @Test
+    public void insertBinaryVectorWithInvalidBinaryString() {
+      final String invalidBinaryString = "@#$%^&*()";
+      String doc =
+              """
+                  {
+                    "name": "aaron",
+                    "$vector": {"$binary": "%s"}
+                  }
+              """
+              .formatted(invalidBinaryString);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper: not valid Base64-encoded String; problem: Illegal character '@' (code 0x40) in base64 content"));
+    }
+
+    @Test
+    public void insertBinaryVectorWithInvalidBinaryValue() {
+      String doc =
+          """
+                  {
+                    "name": "aaron",
+                    "$vector": {"$binary": 1234}
+                  }
+              """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Bad $vector document type to shred : Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed"));
+    }
+
+    @Test
+    public void insertBinaryVectorWithInvalidVectorObject() {
+      String doc =
+          """
+                  {
+                    "name": "aaron",
+                    "$vector": {"binary": "PoAAAD6AAAA+gAAAPoAAAD6AAAA="}
+                  }
+                  """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCUMENT_VECTOR_TYPE"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Bad $vector document type to shred : The key for the $vector object must be '$binary'"));
+    }
+
+    @Test
+    public void insertBinaryVectorWithInvalidDecodedValue() {
+      String doc =
+          """
+                      {
+                        "name": "aaron",
+                        "$vector": {"$binary": "1234"}
+                      }
+                  """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper: decoded value is not a multiple of 4 bytes long"));
+    }
   }
 
   @Nested
