@@ -134,24 +134,24 @@ public class TableSchemaObject extends TableBasedSchemaObject {
    * @return
    */
   public TableResponse toTableResponse() {
-    String tableName = name().table();
+    String tableName = removeQuotes(tableMetadata().getName());
     HashMap<String, ColumnType> columnsDefinition = new HashMap<>();
     for (Map.Entry<CqlIdentifier, ColumnMetadata> column :
         tableMetadata().getColumns().entrySet()) {
       ColumnType type = getColumnType(column.getKey().asInternal(), column.getValue());
-      columnsDefinition.put(column.getKey().asInternal(), type);
+      columnsDefinition.put(removeQuotes(column.getKey()), type);
     }
 
     final List<String> partitionBy =
         tableMetadata().getPartitionKey().stream()
-            .map(column -> column.getName().asInternal())
+            .map(column -> removeQuotes(column.getName()))
             .collect(Collectors.toList());
     final List<PrimaryKey.OrderingKey> partitionSort =
         tableMetadata().getClusteringColumns().entrySet().stream()
             .map(
                 entry ->
                     new PrimaryKey.OrderingKey(
-                        entry.getKey().getName().asInternal(),
+                        removeQuotes(entry.getKey().getName()),
                         entry.getValue() == ClusteringOrder.ASC
                             ? PrimaryKey.OrderingKey.Order.ASC
                             : PrimaryKey.OrderingKey.Order.DESC))
@@ -229,6 +229,11 @@ public class TableSchemaObject extends TableBasedSchemaObject {
         throw new RuntimeException("Unknown data type: " + columnMetadata.getType());
       }
     }
+  }
+
+  // Remove the quotes from the identifier
+  public String removeQuotes(CqlIdentifier identifier) {
+    return identifier.asCql(true).replaceAll("\"", "");
   }
 
   /**

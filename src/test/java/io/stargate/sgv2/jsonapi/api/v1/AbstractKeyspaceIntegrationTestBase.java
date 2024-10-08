@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
+import com.datastax.oss.driver.api.core.CqlSession;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
@@ -249,4 +250,5 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
   protected RequestSpecification givenHeadersAndJson(String json) {
     return given().headers(getHeaders()).contentType(ContentType.JSON).body(json);
   }
+
 }

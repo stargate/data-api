@@ -100,12 +100,16 @@ public record ListTablesOperation(
                 .map(tableSchemaObject -> tableSchemaObject.toTableResponse())
                 .toList();
         Map<CommandStatus, Object> statuses =
-            Map.of(CommandStatus.EXISTING_COLLECTIONS, createCollectionCommands);
+            Map.of(CommandStatus.EXISTING_TABLES, createCollectionCommands);
         return new CommandResult(statuses);
       } else {
         List<String> tables =
-            tables().stream().map(schemaObject -> schemaObject.name().table()).toList();
-        Map<CommandStatus, Object> statuses = Map.of(CommandStatus.EXISTING_COLLECTIONS, tables);
+            tables().stream()
+                .map(
+                    schemaObject ->
+                        schemaObject.removeQuotes(schemaObject.tableMetadata().getName()))
+                .toList();
+        Map<CommandStatus, Object> statuses = Map.of(CommandStatus.EXISTING_TABLES, tables);
         return new CommandResult(statuses);
       }
     }
