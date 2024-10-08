@@ -200,7 +200,7 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
 
           // Check the second table name
           .body("status.tables[1].name", equalTo("person"));
-          // Not checking second table types as the data types used are same as first table
+      // Not checking second table types as the data types used are same as first table
     }
 
     @Test
