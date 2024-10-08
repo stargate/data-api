@@ -25,11 +25,11 @@ public class ComplexTypes {
           (PrimitiveApiDataType) valueType.getApiDataType());
     }
 
-    public String keyType() {
+    public String keyTypeName() {
       return keyType.getApiDataType().getApiName();
     }
 
-    public String valueType() {
+    public String valueTypeName() {
       return valueType.getApiDataType().getApiName();
     }
   }
@@ -47,7 +47,7 @@ public class ComplexTypes {
       return new ComplexApiDataType.ListType((PrimitiveApiDataType) valueType.getApiDataType());
     }
 
-    public String valueType() {
+    public String valueTypeName() {
       return valueType.getApiDataType().getApiName();
     }
   }
@@ -65,7 +65,7 @@ public class ComplexTypes {
       return new ComplexApiDataType.SetType((PrimitiveApiDataType) valueType.getApiDataType());
     }
 
-    public String valueType() {
+    public String valueTypeName() {
       return valueType.getApiDataType().getApiName();
     }
   }

@@ -20,12 +20,12 @@ public class ColumnDefinitionSerializer extends JsonSerializer<ColumnType> {
     jsonGenerator.writeStartObject();
     jsonGenerator.writeStringField("type", columnType.getApiName());
     if (columnType instanceof ComplexTypes.MapType mt) {
-      jsonGenerator.writeStringField("keyType", mt.keyType());
-      jsonGenerator.writeStringField("valueType", mt.valueType());
+      jsonGenerator.writeStringField("keyType", mt.keyTypeName());
+      jsonGenerator.writeStringField("valueType", mt.valueTypeName());
     } else if (columnType instanceof ComplexTypes.ListType lt) {
-      jsonGenerator.writeStringField("valueType", lt.valueType());
+      jsonGenerator.writeStringField("valueType", lt.valueTypeName());
     } else if (columnType instanceof ComplexTypes.SetType st) {
-      jsonGenerator.writeStringField("valueType", st.valueType());
+      jsonGenerator.writeStringField("valueType", st.valueTypeName());
     } else if (columnType instanceof ComplexTypes.VectorType vt) {
       jsonGenerator.writeNumberField("dimension", vt.getDimension());
       if (vt.getVectorConfig() != null)
