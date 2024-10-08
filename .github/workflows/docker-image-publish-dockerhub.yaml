@@ -1,4 +1,4 @@
-name: Publish Docker Image to docker hub
+name: Publish Image to docker hub
 
 # runs on
 # * manual trigger
