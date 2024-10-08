@@ -51,8 +51,4 @@ public enum PrimitiveTypes implements ColumnType {
   public static ColumnType fromString(String type) {
     return columnTypeMap.get(type);
   }
-
-  public static String typeAsString(ColumnType type) {
-    return type.getApiDataType().getApiName();
-  }
 }
