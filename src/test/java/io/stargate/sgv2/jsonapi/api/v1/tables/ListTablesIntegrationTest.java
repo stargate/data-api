@@ -147,6 +147,12 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
           .body(
               "status.tables[0].definition.columns.vector_type.dimension",
               equalTo(1024)) // Additional dimension check for vector type
+          .body(
+              "status.tables[0].definition.columns.vector_type.service.provider",
+              equalTo("mistral"))
+          .body(
+              "status.tables[0].definition.columns.vector_type.service.modelName",
+              equalTo("mistral-embed"))
           .body("status.tables[0].definition.columns.duration_type.type", equalTo("duration"))
           .body("status.tables[0].definition.columns.timestamp_type.type", equalTo("timestamp"))
           .body("status.tables[0].definition.columns.set_type.type", equalTo("set"))
@@ -175,7 +181,12 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
           .body("status.tables[0].definition.columns.float_type.type", equalTo("float"))
           .body("status.tables[0].definition.columns.ascii_type.type", equalTo("ascii"))
           .body("status.tables[0].definition.columns.double_type.type", equalTo("double"))
-          .body("status.tables[0].definition.columns.smallint_type.type", equalTo("smallint"));
+          .body("status.tables[0].definition.columns.smallint_type.type", equalTo("smallint"))
+
+          // Validate the primary key;
+          .body("status.tables[0].definition.primaryKey.partitionBy[0]", equalTo("text_type"))
+          .body("status.tables[0].definition.primaryKey.partitionSort.int_type", equalTo(1))
+          .body("status.tables[0].definition.primaryKey.partitionSort.bigint_type", equalTo(-1));
     }
   }
 }
