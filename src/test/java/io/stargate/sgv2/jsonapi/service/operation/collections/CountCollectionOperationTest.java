@@ -109,7 +109,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression dbLogicalExpression =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      dbLogicalExpression.addDBFilter(
+      dbLogicalExpression.addFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
       CountCollectionOperation countCollectionOperation =
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, -1);
@@ -155,7 +155,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression dbLogicalExpression =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      dbLogicalExpression.addDBFilter(
+      dbLogicalExpression.addFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user_all"));
       CountCollectionOperation countCollectionOperation =
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, -1);
@@ -287,7 +287,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression dbLogicalExpression =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      dbLogicalExpression.addDBFilter(
+      dbLogicalExpression.addFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user2"));
       CountCollectionOperation countCollectionOperation =
           new CountCollectionOperation(COLLECTION_CONTEXT, dbLogicalExpression, 100, 10);
@@ -332,7 +332,7 @@ public class CountCollectionOperationTest extends OperationTestBase {
 
       DBLogicalExpression implicitAnd =
           new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
-      implicitAnd.addDBFilter(
+      implicitAnd.addFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user_all"));
 
       CountCollectionOperation countCollectionOperation =

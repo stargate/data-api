@@ -78,21 +78,21 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
   }
 
   @Override
+  public DBLogicalExpression getLogicalExpression() {
+    return dbLogicalExpression;
+  }
+
+  @Override
   public T apply(T tOngoingWhereClause, List<Object> objects) {
     // TODO BUG: this probably breaks order for nested expressions, for now enough to get this
     // tested
     var tableFilters =
-        dbLogicalExpression.dBFilters().stream().map(dbFilter -> (TableFilter) dbFilter).toList();
+        dbLogicalExpression.filters().stream().map(dbFilter -> (TableFilter) dbFilter).toList();
 
     // Add the where clause operations
     for (TableFilter tableFilter : tableFilters) {
       tOngoingWhereClause = tableFilter.apply(tableSchemaObject, tOngoingWhereClause, objects);
     }
     return tOngoingWhereClause;
-  }
-
-  @Override
-  public WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzeResult analyseWhereClause() {
-    return new WhereCQLClauseAnalyzer(dbLogicalExpression, tableSchemaObject).analyse();
   }
 }

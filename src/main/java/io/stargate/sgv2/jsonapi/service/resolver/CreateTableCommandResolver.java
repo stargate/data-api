@@ -11,6 +11,7 @@ import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableAttemptBuilder;
@@ -39,7 +40,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
             .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getApiDataType()));
     List<String> partitionKeys = Arrays.stream(command.definition().primaryKey().keys()).toList();
 
-    Map<String, VectorizeConfig> vectorizeConfigMap =
+    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
         command.definition().columns().entrySet().stream()
             .filter(
                 e ->
@@ -50,9 +51,15 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
                     Map.Entry::getKey,
                     e -> {
                       ComplexTypes.VectorType vectorType = ((ComplexTypes.VectorType) e.getValue());
-                      final VectorizeConfig vectorConfig = vectorType.getVectorConfig();
-                      validateVectorize.validateService(vectorConfig, vectorType.getDimension());
-                      return vectorConfig;
+                      final VectorizeConfig vectorizeConfig = vectorType.getVectorConfig();
+                      validateVectorize.validateService(vectorizeConfig, vectorType.getDimension());
+                      VectorConfig.ColumnVectorDefinition.VectorizeConfig dbVectorConfig =
+                          new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
+                              vectorizeConfig.provider(),
+                              vectorizeConfig.modelName(),
+                              vectorizeConfig.authentication(),
+                              vectorizeConfig.parameters());
+                      return dbVectorConfig;
                     }));
 
     if (partitionKeys.isEmpty()) {

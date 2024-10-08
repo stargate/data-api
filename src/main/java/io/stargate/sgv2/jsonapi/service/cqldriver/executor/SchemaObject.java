@@ -29,8 +29,8 @@ public abstract class SchemaObject {
   }
 
   /**
-   * Subclasses must always return an instance of VectorConfig, if there is no vector config they
-   * should return VectorConfig.notEnabledVectorConfig()
+   * Subclasses must always return VectorConfig, if there is no vector config they should return
+   * VectorConfig.notEnabledVectorConfig().
    *
    * @return
    */

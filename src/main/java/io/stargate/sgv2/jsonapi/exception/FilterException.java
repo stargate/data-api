@@ -16,7 +16,8 @@ public class FilterException extends RequestException {
   public enum Code implements ErrorCode<FilterException> {
     UNKNOWN_TABLE_COLUMNS,
     INVALID_FILTER,
-    UNSUPPORTED_COLUMN_TYPES;
+    UNSUPPORTED_COLUMN_TYPES,
+    COMPARISON_FILTER_AGAINST_DURATION;
 
     private final ErrorTemplate<FilterException> template;
 
