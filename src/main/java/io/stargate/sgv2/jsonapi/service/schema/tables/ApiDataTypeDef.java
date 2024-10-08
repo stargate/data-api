@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.type.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * The definition of a type the API supports for a table column.
@@ -40,18 +39,6 @@ public class ApiDataTypeDef {
 
   public boolean isContainer() {
     return cqlType instanceof ContainerType;
-  }
-
-  public Optional<ListType> cqlTypeAsList() {
-    return cqlType instanceof ListType listType ? Optional.of(listType) : Optional.empty();
-  }
-
-  public Optional<SetType> cqlTypeAsSet() {
-    return cqlType instanceof SetType setType ? Optional.of(setType) : Optional.empty();
-  }
-
-  public Optional<MapType> cqlTypeAsMap() {
-    return cqlType instanceof MapType mapType ? Optional.of(mapType) : Optional.empty();
   }
 
   @Override
