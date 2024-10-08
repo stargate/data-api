@@ -66,8 +66,7 @@ public abstract class ApiDataTypeDefs {
           ASCII, BIGINT, BOOLEAN, BINARY, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT, SMALLINT,
           TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID);
 
-  // Private to force use of the from() method which returns an Optional
-  private static final Map<DataType, ApiDataTypeDef> PRIMITIVE_TYPES_BY_CQL_TYPE =
+  public static final Map<DataType, ApiDataTypeDef> PRIMITIVE_TYPES_BY_CQL_TYPE =
       PRIMITIVE_TYPES.stream()
           .collect(Collectors.toMap(ApiDataTypeDef::getCqlType, Function.identity()));
 
