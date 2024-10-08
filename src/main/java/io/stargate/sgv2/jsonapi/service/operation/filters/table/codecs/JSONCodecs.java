@@ -277,7 +277,7 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.unsafeIdentity(),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::textNode));
 
-  // uuID Codecs
+  // UUID Codecs
 
   public static final JSONCodec<String, java.util.UUID> UUID_FROM_STRING =
       new JSONCodec<>(
@@ -286,6 +286,8 @@ public abstract class JSONCodecs {
           JSONCodec.ToCQL.safeFromString(UUID::fromString),
           JSONCodec.ToJSON.toJSONUsingToString());
 
+  // While not allowed to be created as column type, we do support reading/writing
+  // of columns of this type in existing tables.
   public static final JSONCodec<String, java.util.UUID> TIMEUUID_FROM_STRING =
       new JSONCodec<>(
           GenericType.STRING,
