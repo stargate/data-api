@@ -103,8 +103,7 @@ public class NamespaceCache {
                     optionalTable.get(), objectMapper);
               }
 
-              // 04-Sep-2024, tatu: Used to check that API Tables enabled; no longer checked here
-              return new TableSchemaObject(table);
+              return TableSchemaObject.from(table, objectMapper);
             });
   }
 

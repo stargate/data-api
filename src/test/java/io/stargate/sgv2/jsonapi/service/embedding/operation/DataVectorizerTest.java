@@ -13,6 +13,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -232,9 +233,13 @@ public class DataVectorizerTest {
               IdConfig.defaultIdConfig(),
               new VectorConfig(
                   true,
-                  4,
-                  SimilarityFunction.COSINE,
-                  new VectorConfig.VectorizeConfig("custom", "custom", null, null)),
+                  List.of(
+                      new VectorConfig.ColumnVectorDefinition(
+                          DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                          4,
+                          SimilarityFunction.COSINE,
+                          new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
+                              "custom", "custom", null, null)))),
               null);
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {
