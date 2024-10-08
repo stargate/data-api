@@ -128,6 +128,11 @@ public class TableSchemaObject extends TableBasedSchemaObject {
     return new TableSchemaObject(tableMetadata, vectorConfig);
   }
 
+  /**
+   * Convert table schema object to table response which is returned as response for `listTables`
+   *
+   * @return
+   */
   public TableResponse toTableResponse() {
     String tableName = name().table();
     HashMap<String, ColumnType> columnsDefinition = new HashMap<>();
@@ -226,6 +231,12 @@ public class TableSchemaObject extends TableBasedSchemaObject {
     }
   }
 
+  /**
+   * Object used to build the response for listTables command
+   *
+   * @param name
+   * @param definition
+   */
   @JsonPropertyOrder({"name", "definition"})
   @JsonInclude(JsonInclude.Include.NON_NULL)
   public record TableResponse(String name, TableDefinition definition) {

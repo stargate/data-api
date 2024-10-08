@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * The schema check against the table is done in the {@link CollectionTableMatcher} and ignores
  * them.
  *
- * @param explain - returns collection options if `true`; returns only collection names if `false`
+ * @param explain - returns tables schema if `true`; returns only tables names if `false`
  * @param objectMapper {@link ObjectMapper}
  * @param cqlSessionCache {@link CQLSessionCache}
  * @param tableMatcher {@link CollectionTableMatcher}
