@@ -1,18 +1,23 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
+import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestClassOrder;
+import org.junit.jupiter.api.TestMethodOrder;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -102,9 +107,11 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
 
   @Nested
   @Order(1)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class ListTables {
 
     @Test
+    @Order(1)
     public void listTablesOnly() {
       String listTablesOnly =
           """
@@ -124,6 +131,7 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
     }
 
     @Test
+    @Order(2)
     public void listTablesWithSchema() {
       String listTablesWithSchema =
           """
@@ -188,7 +196,64 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
           // Validate the primary key;
           .body("status.tables[0].definition.primaryKey.partitionBy[0]", equalTo("text_type"))
           .body("status.tables[0].definition.primaryKey.partitionSort.int_type", equalTo(1))
-          .body("status.tables[0].definition.primaryKey.partitionSort.bigint_type", equalTo(-1));
+          .body("status.tables[0].definition.primaryKey.partitionSort.bigint_type", equalTo(-1))
+
+          // Check the second table name
+          .body("status.tables[1].name", equalTo("person"));
+    }
+
+    @Test
+    @Order(3)
+    public void ignoreCollections() {
+      String simpleCollectionToIgnore =
+          """
+                {
+                  "createCollection": {
+                    "name": "simple_collection_to_ignore"
+                  }
+                }
+                """;
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body(simpleCollectionToIgnore)
+          .when()
+          .post(KeyspaceResource.BASE_PATH, keyspaceName)
+          .then()
+          .statusCode(200);
+
+      String listTablesOnly =
+          """
+                        {}
+                        """;
+      listTables(listTablesOnly)
+          .hasNoErrors()
+          // Validate that status.tables is not null
+          .body("status.tables", notNullValue())
+
+          // Validate the number of tables in the response
+          .body("status.tables", hasSize(2))
+
+          // Validate the specific table names in the position
+          .body("status.tables[0]", equalTo("allTypesTable"))
+          .body("status.tables[1]", equalTo("person"));
+
+      String listTablesWithSchema =
+          """
+                  {
+                    "options" : {
+                      "explain" : true
+                    }
+                  }
+                  """;
+      listTables(listTablesWithSchema)
+          .hasNoErrors()
+          // Validate that status.tables is not null and contains one table: allTypesTable
+          .body("status.tables", notNullValue())
+          .body("status.tables", hasSize(2))
+          .body("status.tables[0].name", equalTo("allTypesTable"))
+          .body("status.tables[1].name", equalTo("person"));
     }
   }
 }
