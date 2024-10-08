@@ -310,6 +310,12 @@ public record WritableShreddedDocument(
             e.getMessage());
       }
 
+      if ((binaryPayload.length & 3) != 0) {
+        // report error
+        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
+            "Invalid content in EJSON $binary wrapper: decoded value is not a multiple of 4 bytes long");
+      }
+
       int numFloats = binaryPayload.length / 4;
       float[] floatArray = new float[numFloats];
       ByteBuffer byteBuffer = ByteBuffer.wrap(binaryPayload);
