@@ -261,6 +261,14 @@ public class JSONCodecRegistryTest {
         Arguments.of(
             DataTypes.UUID,
             TEST_DATA.UUID_VALID_STR_UC,
+            java.util.UUID.fromString(TEST_DATA.UUID_VALID_STR_UC)),
+        Arguments.of(
+            DataTypes.TIMEUUID,
+            TEST_DATA.UUID_VALID_STR_LC,
+            java.util.UUID.fromString(TEST_DATA.UUID_VALID_STR_LC)),
+        Arguments.of(
+            DataTypes.TIMEUUID,
+            TEST_DATA.UUID_VALID_STR_UC,
             java.util.UUID.fromString(TEST_DATA.UUID_VALID_STR_UC)));
   }
 
@@ -495,7 +503,17 @@ public class JSONCodecRegistryTest {
         Arguments.of(
             DataTypes.UUID,
             UUID.fromString(TEST_DATA.UUID_VALID_STR_UC),
-            JSONS.textNode(TEST_DATA.UUID_VALID_STR_UC)));
+            // JSON codec accepts either casing but always writes lowercase UUIDs
+            JSONS.textNode(TEST_DATA.UUID_VALID_STR_UC.toLowerCase())),
+        Arguments.of(
+            DataTypes.TIMEUUID,
+            UUID.fromString(TEST_DATA.UUID_VALID_STR_LC),
+            JSONS.textNode(TEST_DATA.UUID_VALID_STR_LC)),
+        Arguments.of(
+            DataTypes.TIMEUUID,
+            UUID.fromString(TEST_DATA.UUID_VALID_STR_UC),
+            // JSON codec accepts either casing but always writes lowercase UUIDs
+            JSONS.textNode(TEST_DATA.UUID_VALID_STR_UC.toLowerCase())));
   }
 
   private static Stream<Arguments> validCodecToJSONTestCasesOther() {
