@@ -80,7 +80,7 @@ public record ListTablesOperation(
                       // filter for valid collections
                       .filter(tableMatcher.negate())
                       // map to name
-                      .map(table -> TableSchemaObject.getTableSettings(table, objectMapper))
+                      .map(table -> TableSchemaObject.from(table, objectMapper))
                       // get as list
                       .toList();
               // Wrap the properties list into a command result

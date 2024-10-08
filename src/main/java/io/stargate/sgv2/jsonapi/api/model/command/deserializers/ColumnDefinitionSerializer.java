@@ -18,19 +18,25 @@ public class ColumnDefinitionSerializer extends JsonSerializer<ColumnType> {
       ColumnType columnType, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
       throws IOException {
     jsonGenerator.writeStartObject();
-    jsonGenerator.writeStringField("type", columnType.name());
+    jsonGenerator.writeStringField("type", columnType.getApiName());
     if (columnType instanceof ComplexTypes.MapType mt) {
       jsonGenerator.writeStringField("keyType", mt.keyType());
       jsonGenerator.writeStringField("valueType", mt.valueType());
     } else if (columnType instanceof ComplexTypes.ListType lt) {
       jsonGenerator.writeStringField("valueType", lt.valueType());
     } else if (columnType instanceof ComplexTypes.SetType st) {
-      jsonGenerator.writeStringField("st", st.valueType());
+      jsonGenerator.writeStringField("valueType", st.valueType());
     } else if (columnType instanceof ComplexTypes.VectorType vt) {
       jsonGenerator.writeNumberField("dimension", vt.getDimension());
       if (vt.getVectorConfig() != null)
         jsonGenerator.writeObjectField("service", vt.getVectorConfig());
+    } else if (columnType instanceof ComplexTypes.UnsupportedType ut) {
+      jsonGenerator.writeObjectField(
+          "apiSupport", new ApiSupport(false, false, false, ut.cqlFormat()));
     }
     jsonGenerator.writeEndObject();
   }
+
+  public record ApiSupport(
+      boolean createTable, boolean insert, boolean read, String cqlDefinition) {}
 }
