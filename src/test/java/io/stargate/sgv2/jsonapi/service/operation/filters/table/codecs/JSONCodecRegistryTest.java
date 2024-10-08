@@ -521,7 +521,7 @@ public class JSONCodecRegistryTest {
             JSONS.textNode(TEST_DATA.UUID_VALID_STR_UC.toLowerCase())));
   }
 
-  private static Stream<Arguments> validCodecToJSONTestCasesOther() {
+  private static Stream<Arguments> validCodecToJSONTestCasesOther() throws Exception {
     // Arguments: (CQL-type, from-CQL-result-set, JsonNode-to-serialize)
     return Stream.of(
         // Short regular base64-encoded string
