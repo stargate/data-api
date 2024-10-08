@@ -4,19 +4,17 @@ import static io.restassured.RestAssured.given;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
+import com.fasterxml.jackson.core.Base64Variants;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestClassOrder;
-import org.junit.jupiter.api.TestMethodOrder;
+import java.nio.ByteBuffer;
+import java.util.UUID;
+import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -404,6 +402,63 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("errors[0].message", startsWith("$vector value needs to be array of numbers"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void insertSimpleBinaryVector() {
+      final String id = UUID.randomUUID().toString();
+      final float[] expectedVector = new float[] {0.25f, 0.25f, 0.25f, 0.25f, 0.25f};
+      final String binaryVector = generateBase64EncodedBinaryVector(expectedVector);
+      String doc =
+              """
+                  {
+                    "_id": "%s",
+                    "name": "aaron",
+                    "$vector": {"$binary": "%s"}
+                  }
+              """
+              .formatted(id, binaryVector);
+
+      // insert the document
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(notNullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      // get the document and verify the vector value
+      Response response =
+          given()
+              .headers(getHeaders())
+              .contentType(ContentType.JSON)
+              .body("{\"find\": { \"projection\" : {\"$vector\" : 1}}}")
+              .when()
+              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+              .then()
+              .statusCode(200)
+              .body("data.documents[0]", jsonEquals(doc))
+              .body("errors", is(nullValue()))
+              .extract()
+              .response();
+
+      // Extract the Base64 encoded string from the response
+      String binaryVectorFromResponse =
+          response.jsonPath().getString("data.documents[0].$vector.$binary");
+
+      // Verify the Base64 encoded binary string is equal to the original binaryVector string
+      Assertions.assertEquals(binaryVectorFromResponse, binaryVector);
+
+      // Convert the byte array to a float array
+      float[] decodedVector = decodeBase64BinaryVectorToFloatArray(binaryVectorFromResponse);
+
+      // Step 7: Verify that the decoded float array is equal to the expected vector
+      Assertions.assertArrayEquals(expectedVector, decodedVector, 0.0001f);
     }
   }
 
@@ -1864,6 +1919,32 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
       sb.append(nums[ix]);
     }
     return sb.toString();
+  }
+
+  private String generateBase64EncodedBinaryVector(float[] vector) {
+    ByteBuffer byteBuffer = ByteBuffer.allocate(vector.length * 4); // 4 bytes per float
+
+    for (float val : vector) {
+      byteBuffer.putInt(Float.floatToIntBits(val)); // Convert float to raw int bits
+    }
+
+    // Get the byte array from the ByteBuffer
+    byte[] byteArray = byteBuffer.array();
+
+    // Encode the byte array into a Base64 string
+    return Base64Variants.MIME_NO_LINEFEEDS.encode(byteArray);
+  }
+
+  private float[] decodeBase64BinaryVectorToFloatArray(String binaryVector) {
+    // Decode the Base64 string to a byte array
+    byte[] decodedBytes = Base64Variants.MIME_NO_LINEFEEDS.decode(binaryVector);
+
+    float[] floats = new float[decodedBytes.length / 4];
+    ByteBuffer byteBuffer = ByteBuffer.wrap(decodedBytes);
+    for (int i = 0; i < floats.length; i++) {
+      floats[i] = byteBuffer.getFloat();
+    }
+    return floats;
   }
 
   @Nested
