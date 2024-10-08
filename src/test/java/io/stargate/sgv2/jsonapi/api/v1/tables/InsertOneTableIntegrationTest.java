@@ -18,13 +18,14 @@ import org.junit.jupiter.api.TestClassOrder;
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestBase {
-  static final String TABLE_WITH_TEXT_COLUMNS = "findOneTextColumnsTable";
-  static final String TABLE_WITH_INT_COLUMNS = "findOneIntColumnsTable";
-  static final String TABLE_WITH_FP_COLUMNS = "findOneFpColumnsTable";
-  static final String TABLE_WITH_BINARY_COLUMN = "findOneBinaryColumnsTable";
-  static final String TABLE_WITH_DATETIME_COLUMNS = "findOneDateTimeColumnsTable";
-  static final String TABLE_WITH_LIST_COLUMNS = "findOneListColumnsTable";
-  static final String TABLE_WITH_SET_COLUMNS = "findOneSetColumnsTable";
+  static final String TABLE_WITH_TEXT_COLUMNS = "insertOneTextColumnsTable";
+  static final String TABLE_WITH_INT_COLUMNS = "insertOneIntColumnsTable";
+  static final String TABLE_WITH_FP_COLUMNS = "insertOneFpColumnsTable";
+  static final String TABLE_WITH_BINARY_COLUMN = "insertOneBinaryColumnsTable";
+  static final String TABLE_WITH_DATETIME_COLUMNS = "insertOneDateTimeColumnsTable";
+  static final String TABLE_WITH_UUID_COLUMN = "insertOneUuidColumnTable";
+  static final String TABLE_WITH_LIST_COLUMNS = "insertOneListColumnsTable";
+  static final String TABLE_WITH_SET_COLUMNS = "insertOneSetColumnsTable";
 
   final JSONCodecRegistryTestData codecTestData = new JSONCodecRegistryTestData();
 
@@ -66,6 +67,13 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
             "durationValue", "duration",
             "timeValue", "time",
             "timestampValue", "timestamp"),
+        "id");
+
+    createTableWithColumns(
+        TABLE_WITH_UUID_COLUMN,
+        Map.of(
+            "id", "text",
+            "uuidValue", "uuid"),
         "id");
 
     createTableWithColumns(
@@ -468,6 +476,56 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
   @Nested
   @Order(6)
+  class InsertUUIDColumns {
+    @Test
+    void insertValidUUIDValue() {
+      final String docJSON = uuidDoc("uuidValid", "\"123e4567-e89b-12d3-a456-426614174000\"");
+      insertOneInTable(TABLE_WITH_UUID_COLUMN, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_UUID_COLUMN)
+          .postFindOne("{ \"filter\": { \"id\": \"uuidValid\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    @Test
+    void failOnInvalidUUIDString() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_UUID_COLUMN)
+          .postInsertOne(uuidDoc("uuidInvalid", "\"xxx\""))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `UUID` from",
+              "problem: Invalid UUID string: xxx");
+    }
+
+    // Test for non-String input
+    @Test
+    void failOnInvalidUUIDArray() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_UUID_COLUMN)
+          .postInsertOne(uuidDoc("uuidInvalid", "[1, 2, 3, 4]"))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `UUID` from",
+              "Root cause: no codec matching value type");
+    }
+
+    private String uuidDoc(String id, String uuidValueStr) {
+      return
+          """
+                      {
+                          "id": "%s",
+                          "uuidValue": %s
+                      }
+                      """
+          .formatted(id, uuidValueStr);
+    }
+  }
+
+  @Nested
+  @Order(7)
   class InsertListColumns {
     @Test
     void insertValidListValues() {
@@ -566,7 +624,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   }
 
   @Nested
-  @Order(7)
+  @Order(8)
   class InsertSetColumns {
     @Test
     void insertValidSetValues() {
