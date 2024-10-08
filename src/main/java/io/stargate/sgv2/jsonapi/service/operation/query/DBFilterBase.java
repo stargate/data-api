@@ -27,7 +27,7 @@ public abstract class DBFilterBase implements Supplier<BuiltCondition> {
   // TODO: change the supplier to be a list so the IDFilter does not have a special getAll
 
   /** Filter condition element path. */
-  protected final String path;
+  public final String path;
 
   public final IndexUsage indexUsage;
 
