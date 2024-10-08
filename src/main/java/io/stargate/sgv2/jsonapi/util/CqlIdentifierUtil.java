@@ -26,4 +26,9 @@ public abstract class CqlIdentifierUtil {
   public static String cqlIdentifierToStringForUser(CqlIdentifier identifier) {
     return identifier.asCql(true);
   }
+
+  /** Remove the quotes from the identifier */
+  public static String externalRepresentation(CqlIdentifier identifier) {
+    return identifier.asInternal();
+  }
 }

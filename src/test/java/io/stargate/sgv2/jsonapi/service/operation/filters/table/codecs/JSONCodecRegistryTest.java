@@ -30,6 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -110,6 +111,12 @@ public class JSONCodecRegistryTest {
   @ParameterizedTest
   @MethodSource("validCodecToCQLTestCasesDatetime")
   public void codecToCQLDatetime(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToCQLTestCasesUuid")
+  public void codecToCQLUuid(DataType cqlType, Object fromValue, Object expectedCqlValue) {
     _codecToCQL(cqlType, fromValue, expectedCqlValue);
   }
 
@@ -244,6 +251,27 @@ public class JSONCodecRegistryTest {
             Instant.parse(TEST_DATA.TIMESTAMP_VALID_STR)));
   }
 
+  private static Stream<Arguments> validCodecToCQLTestCasesUuid() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
+    return Stream.of(
+        Arguments.of(
+            DataTypes.UUID,
+            TEST_DATA.UUID_VALID_STR_LC,
+            java.util.UUID.fromString(TEST_DATA.UUID_VALID_STR_LC)),
+        Arguments.of(
+            DataTypes.UUID,
+            TEST_DATA.UUID_VALID_STR_UC,
+            java.util.UUID.fromString(TEST_DATA.UUID_VALID_STR_UC)),
+        Arguments.of(
+            DataTypes.TIMEUUID,
+            TEST_DATA.UUID_VALID_STR_LC,
+            java.util.UUID.fromString(TEST_DATA.UUID_VALID_STR_LC)),
+        Arguments.of(
+            DataTypes.TIMEUUID,
+            TEST_DATA.UUID_VALID_STR_UC,
+            java.util.UUID.fromString(TEST_DATA.UUID_VALID_STR_UC)));
+  }
+
   private static Stream<Arguments> validCodecToCQLTestCasesOther() {
     // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
     return Stream.of(
@@ -334,6 +362,12 @@ public class JSONCodecRegistryTest {
   @ParameterizedTest
   @MethodSource("validCodecToJSONTestCasesDatetime")
   public void codecToJSONDatetime(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
+    _codecToJSON(cqlType, fromValue, expectedJsonValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToJSONTestCasesUuid")
+  public void codecToJSONUuid(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
@@ -458,7 +492,31 @@ public class JSONCodecRegistryTest {
             JSONS.textNode(TEST_DATA.TIMESTAMP_VALID_STR)));
   }
 
-  private static Stream<Arguments> validCodecToJSONTestCasesOther() throws IOException {
+  private static Stream<Arguments> validCodecToJSONTestCasesUuid() {
+    // Arguments: (CQL-type, from-CQL-result-set, JsonNode-to-serialize)
+    return Stream.of(
+        // Short regular base64-encoded string
+        Arguments.of(
+            DataTypes.UUID,
+            UUID.fromString(TEST_DATA.UUID_VALID_STR_LC),
+            JSONS.textNode(TEST_DATA.UUID_VALID_STR_LC)),
+        Arguments.of(
+            DataTypes.UUID,
+            UUID.fromString(TEST_DATA.UUID_VALID_STR_UC),
+            // JSON codec accepts either casing but always writes lowercase UUIDs
+            JSONS.textNode(TEST_DATA.UUID_VALID_STR_UC.toLowerCase())),
+        Arguments.of(
+            DataTypes.TIMEUUID,
+            UUID.fromString(TEST_DATA.UUID_VALID_STR_LC),
+            JSONS.textNode(TEST_DATA.UUID_VALID_STR_LC)),
+        Arguments.of(
+            DataTypes.TIMEUUID,
+            UUID.fromString(TEST_DATA.UUID_VALID_STR_UC),
+            // JSON codec accepts either casing but always writes lowercase UUIDs
+            JSONS.textNode(TEST_DATA.UUID_VALID_STR_UC.toLowerCase())));
+  }
+
+  private static Stream<Arguments> validCodecToJSONTestCasesOther() {
     // Arguments: (CQL-type, from-CQL-result-set, JsonNode-to-serialize)
     return Stream.of(
         // Short regular base64-encoded string

@@ -24,6 +24,14 @@ public class ComplexTypes {
           (PrimitiveApiDataType) keyType.getApiDataType(),
           (PrimitiveApiDataType) valueType.getApiDataType());
     }
+
+    public String keyTypeName() {
+      return keyType.getApiDataType().getApiName();
+    }
+
+    public String valueTypeName() {
+      return valueType.getApiDataType().getApiName();
+    }
   }
 
   /** A list type implementation */
@@ -38,6 +46,10 @@ public class ComplexTypes {
     public ApiDataType getApiDataType() {
       return new ComplexApiDataType.ListType((PrimitiveApiDataType) valueType.getApiDataType());
     }
+
+    public String valueTypeName() {
+      return valueType.getApiDataType().getApiName();
+    }
   }
 
   /** A set type implementation */
@@ -51,6 +63,10 @@ public class ComplexTypes {
     @Override
     public ApiDataType getApiDataType() {
       return new ComplexApiDataType.SetType((PrimitiveApiDataType) valueType.getApiDataType());
+    }
+
+    public String valueTypeName() {
+      return valueType.getApiDataType().getApiName();
     }
   }
 
@@ -79,6 +95,32 @@ public class ComplexTypes {
 
     public int getDimension() {
       return vectorSize;
+    }
+  }
+
+  /**
+   * Unsupported type implementation, returned in response when cql table has unsupported format
+   * column
+   */
+  public static class UnsupportedType implements ColumnType {
+    private final String cqlFormat;
+
+    public UnsupportedType(String cqlFormat) {
+      this.cqlFormat = cqlFormat;
+    }
+
+    @Override
+    public ApiDataType getApiDataType() {
+      throw new UnsupportedOperationException("Unsupported type");
+    }
+
+    @Override
+    public String getApiName() {
+      return "UNSUPPORTED";
+    }
+
+    public String cqlFormat() {
+      return cqlFormat;
     }
   }
 }
