@@ -25,11 +25,6 @@ public class ComplexTypes {
           (PrimitiveApiDataType) valueType.getApiDataType());
     }
 
-    @Override
-    public String name() {
-      return getApiDataType().getApiName();
-    }
-
     public String keyType() {
       return keyType.getApiDataType().getApiName();
     }
@@ -52,11 +47,6 @@ public class ComplexTypes {
       return new ComplexApiDataType.ListType((PrimitiveApiDataType) valueType.getApiDataType());
     }
 
-    @Override
-    public String name() {
-      return "list";
-    }
-
     public String valueType() {
       return valueType.getApiDataType().getApiName();
     }
@@ -73,11 +63,6 @@ public class ComplexTypes {
     @Override
     public ApiDataType getApiDataType() {
       return new ComplexApiDataType.SetType((PrimitiveApiDataType) valueType.getApiDataType());
-    }
-
-    @Override
-    public String name() {
-      return "set";
     }
 
     public String valueType() {
@@ -108,11 +93,6 @@ public class ComplexTypes {
       return vectorConfig;
     }
 
-    @Override
-    public String name() {
-      return "vector";
-    }
-
     public int getDimension() {
       return vectorSize;
     }
@@ -132,11 +112,6 @@ public class ComplexTypes {
     @Override
     public ApiDataType getApiDataType() {
       throw new UnsupportedOperationException("Unsupported type");
-    }
-
-    @Override
-    public String name() {
-      return "UNSUPPORTED";
     }
 
     @Override

@@ -3,8 +3,8 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDefinitionDeserializer;
-import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDefinitionSerializer;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
+import io.stargate.sgv2.jsonapi.api.model.command.serializer.ColumnDefinitionSerializer;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.List;
@@ -17,8 +17,7 @@ public interface ColumnType {
   // Returns api data type.
   ApiDataType getApiDataType();
 
-  public String name();
-
+  // Returns the name of the column type to be used in the API request.
   default String getApiName() {
     return getApiDataType().getApiName();
   }

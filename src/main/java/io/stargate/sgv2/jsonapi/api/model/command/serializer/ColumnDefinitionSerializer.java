@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.api.model.command.deserializers;
+package io.stargate.sgv2.jsonapi.api.model.command.serializer;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;

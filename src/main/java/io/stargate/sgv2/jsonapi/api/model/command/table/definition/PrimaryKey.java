@@ -3,7 +3,9 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.PrimaryKeyDeserializer;
+import io.stargate.sgv2.jsonapi.api.model.command.serializer.OrderingKeySerializer;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -25,6 +27,7 @@ public record PrimaryKey(
     @Nullable
         @Schema(description = "Columns that make the ordering keys", type = SchemaType.ARRAY)
         @JsonProperty("partitionSort")
+        @JsonSerialize(using = OrderingKeySerializer.class)
         OrderingKey[] orderingKeys) {
 
   public record OrderingKey(String column, Order order) {
