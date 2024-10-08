@@ -34,9 +34,10 @@ jobs:
         id: resolve_tag
         run: |
           TAG=DataAPITableBuild
-#          TAG=${{ inputs.tag != null && inputs.tag || steps.vars.outputs.tag }}
           echo "Resolved tag for the release $TAG"
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
+#          TAG=${{ inputs.tag != null && inputs.tag || steps.vars.outputs.tag }}
+
 
   # publishes the docker image to docker hub
   publish-image-dockerhub:
