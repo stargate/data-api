@@ -1,0 +1,86 @@
+name: Publish Docker Image to docker hub
+
+# runs on
+# * manual trigger
+on:
+  workflow_dispatch:
+
+
+# global env vars, available in all jobs and steps
+env:
+  MAVEN_OPTS: '-Xmx4g'
+
+# Jobs structure:
+#
+# 1. Runs unit tests
+# 2. Then 2 jobs in parallel
+#  a) Integration tests with docker image
+jobs:
+
+  # resolves tag value
+  # outputs the resolved release tag value in the release-tag output var
+  resolve-tag:
+    name: Resolve tag
+    runs-on: ubuntu-latest
+    outputs:
+      release-tag: ${{ steps.resolve_tag.outputs.tag }}
+    steps:
+      - name: Set reference
+        id: vars
+        run: echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+
+      - name: Resolve tag
+        id: resolve_tag
+        run: |
+          TAG=${{ inputs.tag != null && inputs.tag || steps.vars.outputs.tag }}
+          echo "Resolved tag for the release $TAG"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+  # publishes the docker image to docker hub
+  publish-image-dockerhub:
+    name: Publish docker image to docker hub
+    needs: resolve-tag
+    runs-on: ubuntu-latest
+
+    # matrix props:
+    strategy:
+      matrix:
+        type: [ docker ]
+        include:
+          - type: docker
+            profile: ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: maven
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # only set version here
+      - name: Install
+        run: |
+          ./mvnw -B -ntp versions:set -DremoveSnapshot versions:commit
+
+      # build and push OSS image to Docker hub
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build data-api image and push (Docker Hub)
+        if: ${{ !inputs.skipPublish }}
+        run: |
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true  -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}} -Dquarkus.container-image.name=data-api ${{ matrix.profile }}
+
+      - name: Build data-api image and push (Docker Hub)
+        if: ${{ !inputs.skipPublish }}
+        run: |
+          ./mvnw -B -ntp clean package -DskipTests -Dquarkus.container-image.build=true -Dquarkus.docker.buildx.platform=linux/amd64,linux/arm64 -Dquarkus.container-image.push=true  -Dquarkus.container-image.tag=${{needs.resolve-tag.outputs.release-tag}} -Dquarkus.container-image.name=jsonapi ${{ matrix.profile }}
