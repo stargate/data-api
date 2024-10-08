@@ -517,7 +517,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body(
               "errors[0].message",
               is(
-                  "Bad $vector document type to shred : Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed"));
+                  "Bad binary vector value to shred: Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed"));
     }
 
     @Test
