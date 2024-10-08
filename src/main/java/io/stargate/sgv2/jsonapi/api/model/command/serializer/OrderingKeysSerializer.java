@@ -10,7 +10,7 @@ import java.io.IOException;
  * Custom serializer to encode the column type to the JSON payload This is required because
  * composite and custom column types may need additional properties to be serialized
  */
-public class OrderingKeySerializer extends JsonSerializer<PrimaryKey.OrderingKey[]> {
+public class OrderingKeysSerializer extends JsonSerializer<PrimaryKey.OrderingKey[]> {
 
   @Override
   public void serialize(
@@ -28,6 +28,15 @@ public class OrderingKeySerializer extends JsonSerializer<PrimaryKey.OrderingKey
     jsonGenerator.writeEndObject();
   }
 
-  public record ApiSupport(
+  /**
+   * This is used when a unsupported type column is present in a table. How to use this class will
+   * evolve as different unsupported types are analyzed.
+   *
+   * @param createTable
+   * @param insert
+   * @param read
+   * @param cqlDefinition
+   */
+  private record ApiSupport(
       boolean createTable, boolean insert, boolean read, String cqlDefinition) {}
 }

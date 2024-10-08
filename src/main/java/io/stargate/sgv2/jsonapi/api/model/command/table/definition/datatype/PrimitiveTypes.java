@@ -7,9 +7,6 @@ import java.util.Map;
 
 /** Interface for primitive column types similar to what is defined in cassandra java driver. */
 public enum PrimitiveTypes implements ColumnType {
-
-  // TODO: add a private ctor to stop this class from being instantiated or make abstract
-
   ASCII(PrimitiveApiDataType.ASCII),
   BIGINT(PrimitiveApiDataType.BIGINT),
   BINARY(PrimitiveApiDataType.BINARY),
@@ -40,15 +37,15 @@ public enum PrimitiveTypes implements ColumnType {
 
   private ApiDataType getApiDataType;
 
-  private static Map<String, ColumnType> columnTypeMap = new HashMap<>();
+  private static Map<String, ColumnType> primitiveTypes = new HashMap<>();
 
   static {
     for (PrimitiveTypes type : PrimitiveTypes.values()) {
-      columnTypeMap.put(type.getApiDataType().getApiName(), type);
+      primitiveTypes.put(type.getApiDataType().getApiName(), type);
     }
   }
 
   public static ColumnType fromString(String type) {
-    return columnTypeMap.get(type);
+    return primitiveTypes.get(type);
   }
 }

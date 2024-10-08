@@ -118,8 +118,9 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
           // Validate the number of tables in the response
           .body("status.tables", hasSize(2))
 
-          // Validate the specific table names in any order
-          .body("status.tables[0]", equalTo("allTypesTable"));
+          // Validate the specific table names in the position
+          .body("status.tables[0]", equalTo("allTypesTable"))
+          .body("status.tables[1]", equalTo("person"));
     }
 
     @Test
@@ -136,6 +137,7 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
           .hasNoErrors()
           // Validate that status.tables is not null and contains one table: allTypesTable
           .body("status.tables", notNullValue())
+          .body("status.tables", hasSize(2))
           .body("status.tables[0].name", equalTo("allTypesTable"))
 
           // Validate that the table contains the expected columns and types

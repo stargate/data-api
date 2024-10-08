@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
@@ -15,6 +14,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -60,7 +60,9 @@ public record ListTablesOperation(
             .getSession(dataApiRequestInfo)
             .getMetadata()
             .getKeyspaces()
-            .get(CqlIdentifier.fromInternal(commandContext.schemaObject().name().keyspace()));
+            .get(
+                CqlIdentifierUtil.cqlIdentifierFromUserInput(
+                    commandContext.schemaObject().name().keyspace()));
     if (keyspaceMetadata == null) {
       return Uni.createFrom()
           .failure(
@@ -107,7 +109,8 @@ public record ListTablesOperation(
             tables().stream()
                 .map(
                     schemaObject ->
-                        schemaObject.removeQuotes(schemaObject.tableMetadata().getName()))
+                        CqlIdentifierUtil.externalRepresentation(
+                            schemaObject.tableMetadata().getName()))
                 .toList();
         Map<CommandStatus, Object> statuses = Map.of(CommandStatus.EXISTING_TABLES, tables);
         return new CommandResult(statuses);

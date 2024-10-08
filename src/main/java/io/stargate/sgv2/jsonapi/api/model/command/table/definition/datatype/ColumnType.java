@@ -17,7 +17,9 @@ public interface ColumnType {
   // Returns api data type.
   ApiDataType getApiDataType();
 
-  // Returns the name of the column type to be used in the API request.
+  /*
+  Returns the name of the column type to be used in the API request.
+   */
   default String getApiName() {
     return getApiDataType().getApiName();
   }

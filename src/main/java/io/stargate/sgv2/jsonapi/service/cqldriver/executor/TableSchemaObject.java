@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -134,24 +135,24 @@ public class TableSchemaObject extends TableBasedSchemaObject {
    * @return
    */
   public TableResponse toTableResponse() {
-    String tableName = removeQuotes(tableMetadata().getName());
+    String tableName = CqlIdentifierUtil.externalRepresentation(tableMetadata().getName());
     HashMap<String, ColumnType> columnsDefinition = new HashMap<>();
     for (Map.Entry<CqlIdentifier, ColumnMetadata> column :
         tableMetadata().getColumns().entrySet()) {
       ColumnType type = getColumnType(column.getKey().asInternal(), column.getValue());
-      columnsDefinition.put(removeQuotes(column.getKey()), type);
+      columnsDefinition.put(CqlIdentifierUtil.externalRepresentation(column.getKey()), type);
     }
 
     final List<String> partitionBy =
         tableMetadata().getPartitionKey().stream()
-            .map(column -> removeQuotes(column.getName()))
+            .map(column -> CqlIdentifierUtil.externalRepresentation(column.getName()))
             .collect(Collectors.toList());
     final List<PrimaryKey.OrderingKey> partitionSort =
         tableMetadata().getClusteringColumns().entrySet().stream()
             .map(
                 entry ->
                     new PrimaryKey.OrderingKey(
-                        removeQuotes(entry.getKey().getName()),
+                        CqlIdentifierUtil.externalRepresentation(entry.getKey().getName()),
                         entry.getValue() == ClusteringOrder.ASC
                             ? PrimaryKey.OrderingKey.Order.ASC
                             : PrimaryKey.OrderingKey.Order.DESC))
@@ -164,7 +165,6 @@ public class TableSchemaObject extends TableBasedSchemaObject {
         tableName, new TableResponse.TableDefinition(columnsDefinition, primaryKey));
   }
 
-  // Need to handle frozen types
   private ColumnType getColumnType(String columnName, ColumnMetadata columnMetadata) {
     if (columnMetadata.getType() instanceof VectorType vt) {
       // Schema will always have VectorConfig for vector type
@@ -226,14 +226,9 @@ public class TableSchemaObject extends TableBasedSchemaObject {
         return PrimitiveTypes.fromString(apiDataTypeDef.get().getApiType().getApiName());
       else {
         // Need to return unsupported type
-        throw new RuntimeException("Unknown data type: " + columnMetadata.getType());
+        return new ComplexTypes.UnsupportedType(columnMetadata.getType().asCql(true, false));
       }
     }
-  }
-
-  // Remove the quotes from the identifier
-  public String removeQuotes(CqlIdentifier identifier) {
-    return identifier.asCql(true).replaceAll("\"", "");
   }
 
   /**
