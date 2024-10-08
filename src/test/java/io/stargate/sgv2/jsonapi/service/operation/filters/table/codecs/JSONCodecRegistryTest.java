@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -244,7 +245,7 @@ public class JSONCodecRegistryTest {
             Instant.parse(TEST_DATA.TIMESTAMP_VALID_STR)));
   }
 
-  private static Stream<Arguments> validCodecToCQLTestCasesOther() {
+  private static Stream<Arguments> validCodecToCQLTestCasesOther() throws Exception {
     // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
     return Stream.of(
         // Short regular base64-encoded string
@@ -253,7 +254,11 @@ public class JSONCodecRegistryTest {
             binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR),
             ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES)),
         // edge case: empty String -> byte[0]
-        Arguments.of(DataTypes.BLOB, binaryWrapper(""), ByteBuffer.wrap(new byte[0])));
+        Arguments.of(DataTypes.BLOB, binaryWrapper(""), ByteBuffer.wrap(new byte[0])),
+        Arguments.of(
+            DataTypes.INET,
+            TEST_DATA.INET_ADDRESS_VALID_STRING,
+            InetAddress.getByName(TEST_DATA.INET_ADDRESS_VALID_STRING)));
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesCollections() {
@@ -468,7 +473,11 @@ public class JSONCodecRegistryTest {
             binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR).asJsonNode()),
 
         // edge case: empty String -> byte[0]
-        Arguments.of(DataTypes.BLOB, ByteBuffer.wrap(new byte[0]), binaryWrapper("").asJsonNode()));
+        Arguments.of(DataTypes.BLOB, ByteBuffer.wrap(new byte[0]), binaryWrapper("").asJsonNode()),
+        Arguments.of(
+            DataTypes.INET,
+            InetAddress.getByName(TEST_DATA.INET_ADDRESS_VALID_STRING),
+            JSONS.textNode(TEST_DATA.INET_ADDRESS_VALID_STRING)));
   }
 
   private static Stream<Arguments> validCodecToJSONTestCasesCollections() throws IOException {
