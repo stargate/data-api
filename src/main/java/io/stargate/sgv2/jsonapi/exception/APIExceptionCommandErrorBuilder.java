@@ -1,20 +1,21 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import jakarta.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Builder that creates a {@link CommandResult.Error} from an {@link APIException}.
  *
  * <p>This class encapsulates the mapping between the APIException and the API tier to keep it out
- * of the core exception classes.
+ * of the core exception classes. <b>NOTE:</b> aaron 9-oct-2024 needed to tweak this class to work
+ * with the new CommandErrorV2, once we have rolled out the use of CommandErrorV2 everywhere we can
+ * remove the legacy CommandResult.Error
  */
-public class APIExceptionCommandErrorBuilder
-    implements Function<APIException, CommandResult.Error> {
+public class APIExceptionCommandErrorBuilder {
 
   private final boolean debugEnabled;
   private final boolean returnErrorObjectV2;
@@ -40,8 +41,7 @@ public class APIExceptionCommandErrorBuilder
    * @param apiException the exception that is going to be returned.
    * @return a {@link CommandResult.Error} that represents the <code>apiException</code>.
    */
-  @Override
-  public CommandResult.Error apply(APIException apiException) {
+  public CommandResult.Error buildLegacyCommandResultError(APIException apiException) {
     // Note, in the old JsonApiException the code also traverses the cause, we do not want to do
     // that in
     // error objects V2 because the proper error is created by the template etc.
@@ -73,6 +73,42 @@ public class APIExceptionCommandErrorBuilder
         tagsForMetrics(apiException),
         errorFields,
         Response.Status.fromStatusCode(apiException.httpStatus));
+  }
+
+  /**
+   * Create a new instance that will create a {@link CommandErrorV2} that represents the <code>
+   * apiException</code>.
+   *
+   * @param apiException the exception that is going to be returned.
+   * @return a {@link CommandErrorV2} that represents the <code>apiException</code>.
+   */
+  public CommandErrorV2 buildCommandErrorV2(APIException apiException) {
+    if (!returnErrorObjectV2) {
+      // aaron - oct 9 - I know this seems silly, we are in the process on moving all the errors to
+      // the V2
+      // i added this function to be used with WARNING errors, once we have rolled out the use of
+      // CommandErrorV2
+      // everywhere we wont need this test and there will be one build function
+      throw new IllegalStateException(
+          "Cannot build a V2 error object when returnErrorObjectV2 is false");
+    }
+
+    var builder = CommandErrorV2.builderV2();
+
+    if (debugEnabled) {
+      builder.errorClass(apiException.getClass().getSimpleName());
+    }
+
+    return builder
+        .errorCode(apiException.code)
+        .message(apiException.body)
+        .httpStatus(Response.Status.fromStatusCode(apiException.httpStatus))
+        .metricsTags(tagsForMetrics(apiException))
+        .family(apiException.family.name())
+        .scope(apiException.scope)
+        .title(apiException.title)
+        .id(apiException.errorId)
+        .build();
   }
 
   private Map<String, Object> tagsForMetrics(APIException apiException) {
