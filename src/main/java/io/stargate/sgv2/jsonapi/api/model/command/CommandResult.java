@@ -12,14 +12,10 @@ import org.eclipse.microprofile.openapi.annotations.media.SchemaProperty;
 import org.jboss.resteasy.reactive.RestResponse;
 
 /**
- * POJO object (data no behavior) that has the result of running a command, either documents, list
- * of documents modified, or errors.
+ * Use the {@link CommandResultBuilder} to create a {@link CommandResult} for a command response,
+ * for creation see {@link #singleDocumentBuilder(boolean, boolean)} and the other factory methods.
  *
- * <p>This class is part of the Command layer and is the bridge from the internal Command back to
- * the Message layer.
- *
- * <p>Because it is in the Command layer this is where we de-shred and do the Projection of what
- * fields we want from the document.
+ * <p>Comments on {@link CommandResultBuilder} explain future work here.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record CommandResult(
