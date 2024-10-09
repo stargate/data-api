@@ -239,6 +239,7 @@ public class MeteredCommandProcessor {
               result.errors().get(0).fieldsForMetricsTag().getOrDefault("errorCode", UNKNOWN_VALUE);
       errorCodeTag = Tag.of(jsonApiMetricsConfig.errorCode(), errorCode);
     }
+
     Tag vectorEnabled =
         commandContext.schemaObject().vectorConfig().vectorEnabled()
             ? Tag.of(jsonApiMetricsConfig.vectorEnabled(), "true")
