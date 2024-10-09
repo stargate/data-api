@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -272,7 +273,7 @@ public class JSONCodecRegistryTest {
             java.util.UUID.fromString(TEST_DATA.UUID_VALID_STR_UC)));
   }
 
-  private static Stream<Arguments> validCodecToCQLTestCasesOther() {
+  private static Stream<Arguments> validCodecToCQLTestCasesOther() throws Exception {
     // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
     return Stream.of(
         // Short regular base64-encoded string
@@ -281,7 +282,11 @@ public class JSONCodecRegistryTest {
             binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR),
             ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES)),
         // edge case: empty String -> byte[0]
-        Arguments.of(DataTypes.BLOB, binaryWrapper(""), ByteBuffer.wrap(new byte[0])));
+        Arguments.of(DataTypes.BLOB, binaryWrapper(""), ByteBuffer.wrap(new byte[0])),
+        Arguments.of(
+            DataTypes.INET,
+            TEST_DATA.INET_ADDRESS_VALID_STRING,
+            InetAddress.getByName(TEST_DATA.INET_ADDRESS_VALID_STRING)));
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesCollections() {
@@ -516,7 +521,7 @@ public class JSONCodecRegistryTest {
             JSONS.textNode(TEST_DATA.UUID_VALID_STR_UC.toLowerCase())));
   }
 
-  private static Stream<Arguments> validCodecToJSONTestCasesOther() {
+  private static Stream<Arguments> validCodecToJSONTestCasesOther() throws Exception {
     // Arguments: (CQL-type, from-CQL-result-set, JsonNode-to-serialize)
     return Stream.of(
         // Short regular base64-encoded string
@@ -526,7 +531,11 @@ public class JSONCodecRegistryTest {
             binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR).asJsonNode()),
 
         // edge case: empty String -> byte[0]
-        Arguments.of(DataTypes.BLOB, ByteBuffer.wrap(new byte[0]), binaryWrapper("").asJsonNode()));
+        Arguments.of(DataTypes.BLOB, ByteBuffer.wrap(new byte[0]), binaryWrapper("").asJsonNode()),
+        Arguments.of(
+            DataTypes.INET,
+            InetAddress.getByName(TEST_DATA.INET_ADDRESS_VALID_STRING),
+            JSONS.textNode(TEST_DATA.INET_ADDRESS_VALID_STRING)));
   }
 
   private static Stream<Arguments> validCodecToJSONTestCasesCollections() throws IOException {
@@ -851,6 +860,26 @@ public class JSONCodecRegistryTest {
               assertThat(e.getMessage())
                   .contains("Unexpected end of base64-encoded String")
                   .contains("expects padding");
+            });
+  }
+
+  @Test
+  public void invalidInetAddress() {
+    final String valueToTest = TEST_DATA.INET_ADDRESS_INVALID_STRING;
+    final var codec = assertGetCodecToCQL(DataTypes.INET, valueToTest);
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest),
+            "Throw ToCQLCodecException when attempting to convert DataTypes.INET from invalid Base64 value");
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(DataTypes.INET);
+              assertThat(e.value).isEqualTo(valueToTest);
+              assertThat(e.getMessage())
+                  .contains("Root cause: Invalid String value for type `INET`")
+                  .contains("Invalid IP address value");
             });
   }
 

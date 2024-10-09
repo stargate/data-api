@@ -49,6 +49,9 @@ public class JSONCodecRegistryTestData {
   public final String BASE64_PADDED_ENCODED_STR = "bGlnaHQgd29yaw==";
   public final String BASE64_UNPADDED_ENCODED_STR = "bGlnaHQgd29yaw";
 
+  public final String INET_ADDRESS_VALID_STRING = "192.168.1.3";
+  public final String INET_ADDRESS_INVALID_STRING = "not-an-ip-address";
+
   public final String STRING_ASCII_SAFE = "ascii-safe-string";
   public final String STRING_WITH_2BYTE_UTF8_CHAR = "text-with-2-byte-utf8-\u00a2"; // cent symbol
   public final String STRING_WITH_3BYTE_UTF8_CHAR = "text-with-3-byte-utf8-\u20ac"; // euro symbol
