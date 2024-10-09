@@ -14,7 +14,7 @@ import java.util.Base64;
  * <p><b>NOTE:</b> Implementations should be immutable, and support comparison and hashing because
  * they are used as part of the Session cache key. The initial ones use records for these reasons.
  */
-interface CqlCredentials {
+public interface CqlCredentials {
 
   String USERNAME_PASSWORD_PREFIX = "Cassandra:";
 
