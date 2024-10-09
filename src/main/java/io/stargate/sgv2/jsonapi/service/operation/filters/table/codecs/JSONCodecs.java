@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.UUID;
 
 /**
  * Defines the {@link JSONCodec} instances that are added to the {@link
@@ -275,4 +276,22 @@ public abstract class JSONCodecs {
           DataTypes.TEXT,
           JSONCodec.ToCQL.unsafeIdentity(),
           JSONCodec.ToJSON.unsafeNodeFactory(JsonNodeFactory.instance::textNode));
+
+  // UUID Codecs
+
+  public static final JSONCodec<String, java.util.UUID> UUID_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.UUID,
+          JSONCodec.ToCQL.safeFromString(UUID::fromString),
+          JSONCodec.ToJSON.toJSONUsingToString());
+
+  // While not allowed to be created as column type, we do support reading/writing
+  // of columns of this type in existing tables.
+  public static final JSONCodec<String, java.util.UUID> TIMEUUID_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.TIMEUUID,
+          JSONCodec.ToCQL.safeFromString(UUID::fromString),
+          JSONCodec.ToJSON.toJSONUsingToString());
 }

@@ -48,6 +48,10 @@ public abstract class JSONCodecRegistries {
               JSONCodecs.DURATION_FROM_STRING,
               JSONCodecs.TIME_FROM_STRING,
               JSONCodecs.TIMESTAMP_FROM_STRING,
+              // UUID codecs
+              JSONCodecs.UUID_FROM_STRING,
+              JSONCodecs.TIMEUUID_FROM_STRING,
+
               // Other codecs
               JSONCodecs.BINARY,
               JSONCodecs.BOOLEAN));

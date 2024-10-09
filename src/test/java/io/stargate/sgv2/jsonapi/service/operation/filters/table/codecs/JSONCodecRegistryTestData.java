@@ -39,6 +39,9 @@ public class JSONCodecRegistryTestData {
 
   public final BigDecimal NOT_EXACT_AS_INTEGER = new BigDecimal("1.25");
 
+  public final String UUID_VALID_STR_LC = "123e4567-e89b-12d3-a456-426614174000";
+  public final String UUID_VALID_STR_UC = "A34FACED-F158-4FDB-AA32-C4128D25A20F";
+
   // From https://en.wikipedia.org/wiki/Base64 -- 10-to-16 character sample case, with padding
   public final String BASE64_PADDED_DECODED_STR = "light work";
   public final byte[] BASE64_PADDED_DECODED_BYTES =
