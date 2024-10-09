@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
+import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.DocumentSourceSupplier;
@@ -12,6 +13,8 @@ import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Builds an attempt to read a row from an API Table, create a single instance and then call {@link
@@ -21,14 +24,17 @@ import java.util.Objects;
  */
 public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<TableSchemaObject>> {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(TableReadAttemptBuilder.class);
+
   // first value is zero, but we increment before we use it
   private int readPosition = -1;
 
   private final TableSchemaObject tableSchemaObject;
   private final SelectCQLClause selectCQLClause;
-  private CqlPagingState pagingState = CqlPagingState.EMPTY;
   private final DocumentSourceSupplier documentSourceSupplier;
+  private final WhereCQLClauseAnalyzer whereCQLClauseAnalyzer;
 
+  private CqlPagingState pagingState = CqlPagingState.EMPTY;
   private final CqlOptions<Select> cqlOptions = new CqlOptions<>();
 
   public TableReadAttemptBuilder(
@@ -39,6 +45,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
     this.tableSchemaObject = tableSchemaObject;
     this.selectCQLClause = selectCQLClause;
     this.documentSourceSupplier = documentSourceSupplier;
+    this.whereCQLClauseAnalyzer = new WhereCQLClauseAnalyzer(tableSchemaObject);
   }
 
   public TableReadAttemptBuilder addBuilderOption(CQLOption<Select> option) {
@@ -61,17 +68,19 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
 
     readPosition += 1;
 
-    CqlOptions<Select> newCqlOptions = cqlOptions;
+    WhereCQLClauseAnalyzer.WhereClauseAnalysis analyzedResult = null;
+    Exception exception = null;
+    try {
+      analyzedResult = whereCQLClauseAnalyzer.analyse(whereCQLClause);
+    } catch (FilterException filterException) {
+      exception = filterException;
+    }
 
-    final WhereCQLClauseAnalyzer.WhereCQLClauseAnalyzeResult whereCQLClauseAnalyzeResult =
-        whereCQLClause.analyseWhereClause();
-    // Analyse filter usage
-    // Step 1, may add AllowFiltering
-    if (whereCQLClauseAnalyzeResult.withAllowFiltering()) {
-      // Create a copy of cqlOptions, this is to avoid build() function is executed with its own
-      // exclusive newCqlOptions, instead of modifying the shared one
-      newCqlOptions = new CqlOptions<>(cqlOptions);
-      newCqlOptions.addBuilderOption(CQLOption.ForSelect.withAllowFiltering());
+    var atttemptCqlOptions = cqlOptions;
+    if (analyzedResult != null && analyzedResult.requiresAllowFiltering()) {
+      // Create a copy of cqlOptions, so we do not impact other attempts
+      atttemptCqlOptions = new CqlOptions<>(atttemptCqlOptions);
+      atttemptCqlOptions.addBuilderOption(CQLOption.ForSelect.withAllowFiltering());
     }
 
     var tableReadAttempt =
@@ -80,12 +89,30 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
             tableSchemaObject,
             selectCQLClause,
             whereCQLClause,
-            newCqlOptions,
+            atttemptCqlOptions,
             pagingState,
             documentSourceSupplier);
 
-    // Step 2, may add warning
-    whereCQLClauseAnalyzeResult.warnings().forEach(tableReadAttempt::addWarning);
+    // ok to pass null exception, will be ignored
+    tableReadAttempt.maybeAddFailure(exception);
+
+    if (analyzedResult != null) {
+      if (LOGGER.isDebugEnabled()) {
+        if (analyzedResult.requiresAllowFiltering()) {
+          LOGGER.debug(
+              "build() - enabled ALLOW FILTERING for attempt {}",
+              tableReadAttempt.positionAndAttemptId());
+        }
+        if (!analyzedResult.warningExceptions().isEmpty()) {
+          LOGGER.debug(
+              "build() - adding warnings for attempt {}, warnings={}",
+              tableReadAttempt.positionAndAttemptId(),
+              analyzedResult.warningExceptions());
+        }
+      }
+
+      analyzedResult.warningExceptions().forEach(tableReadAttempt::addWarning);
+    }
 
     return tableReadAttempt;
   }

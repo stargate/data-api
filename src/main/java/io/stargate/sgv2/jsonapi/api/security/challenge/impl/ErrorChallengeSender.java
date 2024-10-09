@@ -13,7 +13,6 @@ import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.Collections;
-import java.util.List;
 import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +44,8 @@ public class ErrorChallengeSender
     CommandResult.Error error =
         new CommandResult.Error(
             message, Collections.emptyMap(), Collections.emptyMap(), Response.Status.UNAUTHORIZED);
-    commandResult = new CommandResult(List.of(error));
+    commandResult =
+        CommandResult.statusOnlyBuilder(false, false).addCommandResultError(error).build();
   }
 
   /** {@inheritDoc} */

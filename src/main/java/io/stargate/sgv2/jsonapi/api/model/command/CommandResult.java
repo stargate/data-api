@@ -3,9 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
-import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.core.Response;
 import java.util.*;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
@@ -29,7 +27,7 @@ public record CommandResult(
             description =
                 "A response data holding documents that were returned as the result of a command.",
             nullable = true,
-            oneOf = {CommandResult.MultiResponseData.class, CommandResult.SingleResponseData.class})
+            oneOf = {ResponseData.MultiResponseData.class, ResponseData.SingleResponseData.class})
         ResponseData data,
     @Schema(
             description =
@@ -44,105 +42,51 @@ public record CommandResult(
                   implementation = String.class,
                   nullable = true)
             })
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
         Map<CommandStatus, Object> status,
     @JsonInclude(JsonInclude.Include.NON_EMPTY) @Schema(nullable = true) List<Error> errors) {
 
-  /**
-   * Constructor for only specifying the {@link MultiResponseData}.
-   *
-   * @param responseData {@link MultiResponseData}
-   */
-  public CommandResult(ResponseData responseData) {
-    this(responseData, null, null);
-  }
+  public CommandResult {
 
-  /**
-   * Constructor for specifying the {@link MultiResponseData} and statuses.
-   *
-   * @param responseData {@link MultiResponseData}
-   * @param status Map of status information.
-   */
-  public CommandResult(ResponseData responseData, Map<CommandStatus, Object> status) {
-    this(responseData, status, null);
-  }
-
-  /**
-   * Constructor for only specifying the status.
-   *
-   * @param status Map of status information.
-   */
-  public CommandResult(Map<CommandStatus, Object> status) {
-    this(null, status, null);
-  }
-
-  /**
-   * Constructor for only specifying the errors.
-   *
-   * @param errors List of errors.
-   */
-  public CommandResult(List<Error> errors) {
-    this(null, null, errors);
-  }
-
-  public interface ResponseData {
-
-    /**
-     * @return Simple shared method to get the response documents. Usually used only in tests,
-     *     ignored in JSON response.
-     */
-    @JsonIgnore
-    List<JsonNode> getResponseDocuments();
-  }
-
-  /**
-   * Response data object that's included in the {@link CommandResult}, for a single document
-   * responses.
-   *
-   * @param document Document.
-   */
-  @Schema(description = "Response data for a single document commands.")
-  public record SingleResponseData(
-      @NotNull
-          @Schema(
-              description = "Document that resulted from a command.",
-              type = SchemaType.OBJECT,
-              implementation = Object.class,
-              nullable = true)
-          JsonNode document)
-      implements ResponseData {
-
-    /** {@inheritDoc} */
-    @Override
-    public List<JsonNode> getResponseDocuments() {
-      return List.of(document);
+    // make both of these not null, so they can be mutated if needed
+    // the decorators on the record fields tell Jackson to exclude when they are null or empty
+    if (null == status) {
+      status = new HashMap<>();
+    }
+    if (null == errors) {
+      errors = new ArrayList<>();
     }
   }
 
   /**
-   * Response data object that's included in the {@link CommandResult}, for multi document
-   * responses.
+   * Get a builder for the {@link CommandResult} for a single document response, see {@link
+   * CommandResultBuilder}
    *
-   * @param documents Documents.
-   * @param nextPageState Optional next page state.
+   * <p><b>NOTE:</b> aaron 9-oct-2024 I kept the errorObjectV2 and debugMode params to make it clear
+   * how inconsistency we are configuring these settings. Ultimately useErrorObjectV2 will go away,
+   * but we will still have the debugMode setting. I will create ticket so that we create the
+   * builder in resolver or similar and then pass it around rather than creating in many places.
+   * Also the {@link io.stargate.sgv2.jsonapi.service.operation.OperationAttemptPageBuilder} is how
+   * things will turn out.
    */
-  @Schema(description = "Response data for multiple documents commands.")
-  public record MultiResponseData(
-      @NotNull
-          @Schema(
-              description = "Documents that resulted from a command.",
-              type = SchemaType.ARRAY,
-              implementation = Object.class,
-              minItems = 0)
-          List<JsonNode> documents,
-      @Schema(description = "Next page state for pagination.", nullable = true)
-          String nextPageState)
-      implements ResponseData {
+  public static CommandResultBuilder singleDocumentBuilder(
+      boolean useErrorObjectV2, boolean debugMode) {
+    return new CommandResultBuilder(
+        CommandResultBuilder.ResponseType.SINGLE_DOCUMENT, useErrorObjectV2, debugMode);
+  }
 
-    /** {@inheritDoc} */
-    @Override
-    public List<JsonNode> getResponseDocuments() {
-      return documents;
-    }
+  /** See {@link #singleDocumentBuilder(boolean, boolean)} */
+  public static CommandResultBuilder multiDocumentBuilder(
+      boolean useErrorObjectV2, boolean debugMode) {
+    return new CommandResultBuilder(
+        CommandResultBuilder.ResponseType.MULTI_DOCUMENT, useErrorObjectV2, debugMode);
+  }
+
+  /** See {@link #singleDocumentBuilder(boolean, boolean)} */
+  public static CommandResultBuilder statusOnlyBuilder(
+      boolean useErrorObjectV2, boolean debugMode) {
+    return new CommandResultBuilder(
+        CommandResultBuilder.ResponseType.STATUS_ONLY, useErrorObjectV2, debugMode);
   }
 
   /**
@@ -202,19 +146,11 @@ public record CommandResult(
    * returned a new CommandResult with warning message added in status map
    *
    * @param warning message
-   * @return CommandResult
    */
-  public CommandResult withWarning(String warning) {
-    Map<CommandStatus, Object> newStatus = new HashMap<>();
-    if (status != null) {
-      newStatus.putAll(status);
-    }
-    List<String> newWarnings =
-        newStatus.get(CommandStatus.WARNINGS) != null
-            ? new ArrayList<>((List<String>) newStatus.get(CommandStatus.WARNINGS))
-            : new ArrayList<>();
-    newWarnings.add(warning);
-    newStatus.put(CommandStatus.WARNINGS, newWarnings);
-    return new CommandResult(this.data, newStatus, errors);
+  public void addWarning(CommandErrorV2 warning) {
+    List<CommandErrorV2> warnings =
+        (List<CommandErrorV2>)
+            status.computeIfAbsent(CommandStatus.WARNINGS, k -> new ArrayList<>());
+    warnings.add(warning);
   }
 }

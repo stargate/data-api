@@ -134,17 +134,17 @@ public class JsonApiException extends RuntimeException implements Supplier<Comma
     if (message == null) {
       message = errorCode.getMessage();
     }
-    // construct and return
-    CommandResult.Error error = getCommandResultError(message, httpStatus);
 
+    var builder = CommandResult.statusOnlyBuilder(false, false);
+
+    // construct and return
+    builder.addCommandResultError(getCommandResultError(message, httpStatus));
     // handle cause as well
     Throwable cause = getCause();
-    if (null == cause) {
-      return new CommandResult(List.of(error));
-    } else {
-      CommandResult.Error causeError = ThrowableToErrorMapper.getMapperFunction().apply(cause);
-      return new CommandResult(List.of(error, causeError));
+    if (null != cause) {
+      builder.addCommandResultError(ThrowableToErrorMapper.getMapperFunction().apply(cause));
     }
+    return builder.build();
   }
 
   public CommandResult.Error getCommandResultError(String message, Response.Status status) {
