@@ -864,6 +864,26 @@ public class JSONCodecRegistryTest {
   }
 
   @Test
+  public void invalidInetAddress() {
+    final String valueToTest = TEST_DATA.INET_ADDRESS_INVALID_STRING;
+    final var codec = assertGetCodecToCQL(DataTypes.INET, valueToTest);
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest),
+            "Throw ToCQLCodecException when attempting to convert DataTypes.INET from invalid Base64 value");
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(DataTypes.INET);
+              assertThat(e.value).isEqualTo(valueToTest);
+              assertThat(e.getMessage())
+                  .contains("Root cause: Invalid String value for type `INET`")
+                  .contains("Invalid IP address value");
+            });
+  }
+
+  @Test
   public void invalidListValueFail() {
     DataType cqlTypeToTest = DataTypes.listOf(DataTypes.INT);
     List<JsonLiteral<?>> valueToTest = List.of(stringLiteral("abc"));
