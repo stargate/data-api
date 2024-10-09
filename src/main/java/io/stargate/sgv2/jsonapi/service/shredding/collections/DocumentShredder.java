@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.shredding.collections;
 
+import static io.stargate.sgv2.jsonapi.service.shredding.collections.JsonExtensionType.BINARY;
+
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -313,15 +315,35 @@ public class DocumentShredder {
     if (value.isNull()) {
       return;
     }
-    if (!value.isArray()) {
+
+    // should be either array or object
+    if (value.isArray()) {
+      // e.g. "$vector": [0.25, 0.25]
+      ArrayNode arr = (ArrayNode) value;
+      if (arr.size() == 0) {
+        throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+      }
+      callback.shredVector(path, arr);
+    } else if (value.isObject()) {
+      // e.g. "$vector": {"$binary": "c3VyZS4="}
+      ObjectNode obj = (ObjectNode) value;
+      final Map.Entry<String, JsonNode> entry = obj.fields().next();
+      JsonExtensionType keyType = JsonExtensionType.fromEncodedName(entry.getKey());
+      if (keyType != BINARY) {
+        throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
+            "The key for the %s object must be '%s'", path, BINARY.encodedName());
+      }
+      JsonNode binaryValue = entry.getValue();
+      if (!binaryValue.isTextual()) {
+        throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
+            "Unsupported JSON value type in EJSON $binary wrapper (%s): only STRING allowed",
+            binaryValue.getNodeType());
+      }
+      callback.shredVector(path, binaryValue.textValue());
+    } else {
       throw ErrorCodeV1.SHRED_BAD_DOCUMENT_VECTOR_TYPE.toApiException(
           value.getNodeType().toString());
     }
-    ArrayNode arr = (ArrayNode) value;
-    if (arr.size() == 0) {
-      throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
-    }
-    callback.shredVector(path, arr);
   }
 
   private void traverseVectorize(JsonPath path, JsonNode value, DocumentShredderListener callback) {

@@ -13,6 +13,8 @@ import java.util.Map;
 public enum JsonExtensionType {
   EJSON_DATE("$date"),
 
+  BINARY("$binary"),
+
   OBJECT_ID("$objectId"),
 
   UUID("$uuid");

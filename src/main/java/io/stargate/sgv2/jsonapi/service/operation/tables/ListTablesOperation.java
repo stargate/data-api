@@ -16,7 +16,6 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -96,14 +95,15 @@ public record ListTablesOperation(
 
     @Override
     public CommandResult get() {
+
+      var builder = CommandResult.statusOnlyBuilder(false, false);
+
       if (explain) {
         final List<TableSchemaObject.TableResponse> createCollectionCommands =
             tables().stream()
                 .map(tableSchemaObject -> tableSchemaObject.toTableResponse())
                 .toList();
-        Map<CommandStatus, Object> statuses =
-            Map.of(CommandStatus.EXISTING_TABLES, createCollectionCommands);
-        return new CommandResult(statuses);
+        builder.addStatus(CommandStatus.EXISTING_TABLES, createCollectionCommands);
       } else {
         List<String> tables =
             tables().stream()
@@ -112,9 +112,9 @@ public record ListTablesOperation(
                         CqlIdentifierUtil.externalRepresentation(
                             schemaObject.tableMetadata().getName()))
                 .toList();
-        Map<CommandStatus, Object> statuses = Map.of(CommandStatus.EXISTING_TABLES, tables);
-        return new CommandResult(statuses);
+        builder.addStatus(CommandStatus.EXISTING_TABLES, tables);
       }
+      return builder.build();
     }
   }
 }
