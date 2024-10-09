@@ -37,8 +37,7 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
   }
 
   public DataApiResponseValidator postCreateIndex(String columnName, String indexName) {
-    String createIndex =
-        "{\"column\":\"%s\", \"indexName\":\"%s\"}".formatted(columnName, indexName);
+    String createIndex = "{\"column\":\"%s\", \"name\":\"%s\"}".formatted(columnName, indexName);
     return postCommand("addIndex", createIndex);
   }
 }

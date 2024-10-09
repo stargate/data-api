@@ -1,14 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.AddIndexCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropIndexCommand;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DropIndexOperation;
 import jakarta.enterprise.context.ApplicationScoped;
 
-/** Resolver for the {@link AddIndexCommand}. */
+/** Resolver for the {@link CreateIndexCommand}. */
 @ApplicationScoped
 public class DropIndexCommandResolver implements CommandResolver<DropIndexCommand> {
   @Override
