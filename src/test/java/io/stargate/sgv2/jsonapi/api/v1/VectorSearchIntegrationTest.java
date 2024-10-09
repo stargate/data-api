@@ -407,7 +407,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     @Test
     public void insertSimpleBinaryVector() {
       final String id = UUID.randomUUID().toString();
-      final float[] expectedVector = new float[] {0.25f, 0.25f, 0.25f, 0.25f, 0.25f};
+      final float[] expectedVector = new float[] {0.25f, -1.5f, 0.00f, 0.75f, 0.5f};
       final String base64Vector = generateBase64EncodedBinaryVector(expectedVector);
       String doc =
               """
@@ -437,7 +437,9 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           given()
               .headers(getHeaders())
               .contentType(ContentType.JSON)
-              .body("{\"find\": { \"projection\" : {\"$vector\" : 1}}}")
+              .body(
+                  "{\"find\": { \"filter\" : {\"_id\" : \"%s\"}, \"projection\" : {\"$vector\" : 1}}}"
+                      .formatted(id))
               .when()
               .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
               .then()
@@ -573,7 +575,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body(
               "errors[0].message",
               is(
-                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper: decoded value is not a multiple of 4 bytes long"));
+                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper: decoded value is not a multiple of 4 bytes long (3 bytes)"));
     }
   }
 

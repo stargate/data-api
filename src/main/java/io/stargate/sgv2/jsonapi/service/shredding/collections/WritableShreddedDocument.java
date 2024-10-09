@@ -312,9 +312,9 @@ public record WritableShreddedDocument(
       }
 
       if ((binaryPayload.length & 3) != 0) {
-        // report error
         throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
-            "Invalid content in EJSON $binary wrapper: decoded value is not a multiple of 4 bytes long");
+            "Invalid content in EJSON $binary wrapper: decoded value is not a multiple of 4 bytes long (%d bytes)",
+            binaryPayload.length);
       }
 
       int numFloats = binaryPayload.length / 4;
