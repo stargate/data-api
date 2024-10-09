@@ -333,6 +333,31 @@ public class DocumentShredderWithExtendedTypesTest {
   }
 
   @Nested
+  class OkCasesBinaryVector {
+    @Test
+    public void shredSimpleBinaryVector() throws Exception {
+      final String inputJson =
+          """
+                  {
+                    "age" : 39,
+                    "$vector": {"$binary": "PoAAAD6AAAA+gAAAPoAAAD6AAAA="}
+                  }
+                  """;
+      final JsonNode inputDoc = objectMapper.readTree(inputJson);
+      WritableShreddedDocument doc = documentShredder.shred(inputDoc);
+
+      List<JsonPath> expPaths =
+          Arrays.asList(JsonPath.from("_id"), JsonPath.from("age"), JsonPath.from("$vector"));
+
+      // First verify paths
+      assertThat(doc.existKeys()).isEqualTo(new HashSet<>(expPaths));
+
+      float[] vector = {0.25f, 0.25f, 0.25f, 0.25f, 0.25f};
+      assertThat(doc.queryVectorValues()).containsOnly(vector);
+    }
+  }
+
+  @Nested
   class ErrorCasesDocId {
     @Test
     public void docInvalidObjectAsDocId() {
