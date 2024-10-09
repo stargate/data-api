@@ -4,10 +4,6 @@
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.17...HEAD)
 
-**Closed issues:**
-
-- Data API JsonCodec impl: misc other type\(s\) \(inet\) [\#1386](https://github.com/stargate/data-api/issues/1386)
-
 ## [v1.0.17](https://github.com/stargate/data-api/tree/v1.0.17) (2024-10-09)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.16...v1.0.17)
@@ -32,6 +28,7 @@
 - Optimize `JSONCodecRegistry` to-CQL codec lookup: linear search won't scale [\#1417](https://github.com/stargate/data-api/issues/1417)
 - addIndex seems to fail on names with uppercase \(missing double quotes\)? [\#1404](https://github.com/stargate/data-api/issues/1404)
 - Data API JsonCodec impl: "blob" \(Binary\) type [\#1403](https://github.com/stargate/data-api/issues/1403)
+- Data API JsonCodec impl: misc other type\(s\) \(inet\) [\#1386](https://github.com/stargate/data-api/issues/1386)
 - Data API JsonCodec impl: date/time values \(date, duration, time, timestamp\) [\#1385](https://github.com/stargate/data-api/issues/1385)
 - Add new keyspace commands, deprecate namespace commands [\#1376](https://github.com/stargate/data-api/issues/1376)
 - Data API, JsonCodec testing: textual values \(ascii, text, varchar\) [\#1364](https://github.com/stargate/data-api/issues/1364)
@@ -72,7 +69,6 @@
 - Refactor to add  OperationAttempt [\#1434](https://github.com/stargate/data-api/pull/1434) ([amorton](https://github.com/amorton))
 - Fixes \#1428: support "not a number" values for 'float', 'double' columns [\#1433](https://github.com/stargate/data-api/pull/1433) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
 - Fixes \#1429: add ITs to verify handling of "fractional ints" \(allowed/non-allowed\) [\#1432](https://github.com/stargate/data-api/pull/1432) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
-- Bumping version for next data-api release [\#1431](https://github.com/stargate/data-api/pull/1431) ([github-actions[bot]](https://github.com/apps/github-actions))
 - add xml-format plugin [\#1430](https://github.com/stargate/data-api/pull/1430) ([Yuqi-Du](https://github.com/Yuqi-Du))
 - Start refactoring CollectionSchemaObject [\#1427](https://github.com/stargate/data-api/pull/1427) ([amorton](https://github.com/amorton))
 
