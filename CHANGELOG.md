@@ -2,11 +2,79 @@
 
 ## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
 
-[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.16...HEAD)
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.17...HEAD)
 
 **Closed issues:**
 
+- Data API JsonCodec impl: misc other type\(s\) \(inet\) [\#1386](https://github.com/stargate/data-api/issues/1386)
+
+## [v1.0.17](https://github.com/stargate/data-api/tree/v1.0.17) (2024-10-09)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.16...v1.0.17)
+
+**Implemented enhancements:**
+
+- adding tracing ID [\#593](https://github.com/stargate/data-api/issues/593)
+
+**Closed issues:**
+
+- Implement `listTables` command [\#1500](https://github.com/stargate/data-api/issues/1500)
+- Support binary vectors for Collections [\#1494](https://github.com/stargate/data-api/issues/1494)
+- Unexpected Field "embeddingsByType" in Response from `amazon.titan-embed-text-v2:0` Model Causing Deserialization Error [\#1486](https://github.com/stargate/data-api/issues/1486)
+- Handle `null` from CQL driver when converting column values to JSON \(`findOne` etc\) [\#1460](https://github.com/stargate/data-api/issues/1460)
+- Data API JsonCodec impl: unfrozen container types \(Set, List\) [\#1450](https://github.com/stargate/data-api/issues/1450)
+- Incorporate warning msg with Table read path [\#1447](https://github.com/stargate/data-api/issues/1447)
+- Data API JsonCodec impl: UUID \(uuid, timeuuid\) [\#1442](https://github.com/stargate/data-api/issues/1442)
+- bridge related documentation cleanups  [\#1441](https://github.com/stargate/data-api/issues/1441)
+- Add tests to ensure that "fractional" values like `10.0` and scientific notation like `1.23E+02` accepted as integer values [\#1429](https://github.com/stargate/data-api/issues/1429)
+- Tables number codec: support "NaN", "Infinity", "-Infinity" for `float`, `double` CQL types [\#1428](https://github.com/stargate/data-api/issues/1428)
+- refactor table insert operation, move calling the driver to TableInsertAttempt [\#1424](https://github.com/stargate/data-api/issues/1424)
+- Optimize `JSONCodecRegistry` to-CQL codec lookup: linear search won't scale [\#1417](https://github.com/stargate/data-api/issues/1417)
+- addIndex seems to fail on names with uppercase \(missing double quotes\)? [\#1404](https://github.com/stargate/data-api/issues/1404)
+- Data API JsonCodec impl: "blob" \(Binary\) type [\#1403](https://github.com/stargate/data-api/issues/1403)
+- Data API JsonCodec impl: date/time values \(date, duration, time, timestamp\) [\#1385](https://github.com/stargate/data-api/issues/1385)
+- Add new keyspace commands, deprecate namespace commands [\#1376](https://github.com/stargate/data-api/issues/1376)
 - Data API, JsonCodec testing: textual values \(ascii, text, varchar\) [\#1364](https://github.com/stargate/data-api/issues/1364)
+- Create collection fails if there is an existing CQL table of the same name [\#1198](https://github.com/stargate/data-api/issues/1198)
+- Azure OpenAI: use "deployment name" instead of "deployment ID" [\#1126](https://github.com/stargate/data-api/issues/1126)
+
+**Merged pull requests:**
+
+- Add "inet" codec [\#1517](https://github.com/stargate/data-api/pull/1517) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- use stargate-v2.1.0-BETA-18 [\#1512](https://github.com/stargate/data-api/pull/1512) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- List tables command [\#1510](https://github.com/stargate/data-api/pull/1510) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix bump\_stargate script [\#1507](https://github.com/stargate/data-api/pull/1507) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Support binary vectors for Collections [\#1506](https://github.com/stargate/data-api/pull/1506) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- use stargate-v2.1.0-BETA-17 [\#1505](https://github.com/stargate/data-api/pull/1505) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1498: enable access/request log by default [\#1503](https://github.com/stargate/data-api/pull/1503) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Add instruction for Data API on-prem support [\#1502](https://github.com/stargate/data-api/pull/1502) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- SchemaObject changes to support multiple vector configs [\#1499](https://github.com/stargate/data-api/pull/1499) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix \#1442: add codecs for UUID type\(s\) [\#1496](https://github.com/stargate/data-api/pull/1496) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Table filter refactor [\#1490](https://github.com/stargate/data-api/pull/1490) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Add vectorize config to tables [\#1489](https://github.com/stargate/data-api/pull/1489) ([maheshrajamani](https://github.com/maheshrajamani))
+- Fix `Unable to parse embedding provider response message` errors from Bedrock `amazon.titan-embed-text-v2:0` [\#1487](https://github.com/stargate/data-api/pull/1487) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Update display name and help text for Azure OpenAI parameters [\#1483](https://github.com/stargate/data-api/pull/1483) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Offline Mode Fix [\#1475](https://github.com/stargate/data-api/pull/1475) ([kathirsvn](https://github.com/kathirsvn))
+- Create table command implementation [\#1473](https://github.com/stargate/data-api/pull/1473) ([maheshrajamani](https://github.com/maheshrajamani))
+- Unit tests for operation attempt [\#1472](https://github.com/stargate/data-api/pull/1472) ([amorton](https://github.com/amorton))
+- Fix \#1450: add support for List, Set codecs [\#1471](https://github.com/stargate/data-api/pull/1471) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fix \#1460, handle CQL nulls to  JSON gracefully [\#1464](https://github.com/stargate/data-api/pull/1464) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Offline mode fix [\#1456](https://github.com/stargate/data-api/pull/1456) ([kathirsvn](https://github.com/kathirsvn))
+- Refactor CQLSessionCache and CqlCredentials [\#1455](https://github.com/stargate/data-api/pull/1455) ([amorton](https://github.com/amorton))
+- Include error ID in the error response for new error format [\#1454](https://github.com/stargate/data-api/pull/1454) ([amorton](https://github.com/amorton))
+- Add CommandResultBuilder [\#1453](https://github.com/stargate/data-api/pull/1453) ([amorton](https://github.com/amorton))
+- Fix \#1404: failing addIndex with case-sensitive name [\#1452](https://github.com/stargate/data-api/pull/1452) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1385: add date/time codec support [\#1449](https://github.com/stargate/data-api/pull/1449) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Table Filters for scalar column, ALLOW FILTERING, WARNING [\#1448](https://github.com/stargate/data-api/pull/1448) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- clean up stargate bridge related documentation [\#1444](https://github.com/stargate/data-api/pull/1444) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1417: optimize/improve codec lookup handling [\#1443](https://github.com/stargate/data-api/pull/1443) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1403: Add support for Blob types for insert [\#1435](https://github.com/stargate/data-api/pull/1435) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Refactor to add  OperationAttempt [\#1434](https://github.com/stargate/data-api/pull/1434) ([amorton](https://github.com/amorton))
+- Fixes \#1428: support "not a number" values for 'float', 'double' columns [\#1433](https://github.com/stargate/data-api/pull/1433) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Fixes \#1429: add ITs to verify handling of "fractional ints" \(allowed/non-allowed\) [\#1432](https://github.com/stargate/data-api/pull/1432) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- Bumping version for next data-api release [\#1431](https://github.com/stargate/data-api/pull/1431) ([github-actions[bot]](https://github.com/apps/github-actions))
+- add xml-format plugin [\#1430](https://github.com/stargate/data-api/pull/1430) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Start refactoring CollectionSchemaObject [\#1427](https://github.com/stargate/data-api/pull/1427) ([amorton](https://github.com/amorton))
 
 ## [v1.0.16](https://github.com/stargate/data-api/tree/v1.0.16) (2024-09-17)
 
