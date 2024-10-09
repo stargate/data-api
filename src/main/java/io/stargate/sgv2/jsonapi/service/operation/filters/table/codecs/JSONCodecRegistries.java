@@ -54,5 +54,6 @@ public abstract class JSONCodecRegistries {
 
               // Other codecs
               JSONCodecs.BINARY,
-              JSONCodecs.BOOLEAN));
+              JSONCodecs.BOOLEAN,
+              JSONCodecs.INET_FROM_STRING));
 }

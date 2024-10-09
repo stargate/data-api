@@ -66,6 +66,8 @@ public enum ErrorCodeV1 {
 
   KEYSPACE_DOES_NOT_EXIST("The provided keyspace does not exist"),
 
+  SHRED_BAD_BINARY_VECTOR_VALUE("Bad binary vector value to shred"),
+
   SHRED_BAD_DOCUMENT_TYPE("Bad document type to shred"),
 
   SHRED_BAD_DOCID_TYPE("Bad type for '_id' property"),

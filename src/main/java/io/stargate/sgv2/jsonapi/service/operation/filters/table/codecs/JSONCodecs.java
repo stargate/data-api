@@ -294,4 +294,13 @@ public abstract class JSONCodecs {
           DataTypes.TIMEUUID,
           JSONCodec.ToCQL.safeFromString(UUID::fromString),
           JSONCodec.ToJSON.toJSONUsingToString());
+
+  // Misc other Codecs
+  public static final JSONCodec<String, java.net.InetAddress> INET_FROM_STRING =
+      new JSONCodec<>(
+          GenericType.STRING,
+          DataTypes.INET,
+          JSONCodec.ToCQL.safeFromString(JSONCodec.ToCQL::inetAddressFromString),
+          (objectMapper, fromCQLType, value) ->
+              objectMapper.getNodeFactory().textNode(value.getHostAddress()));
 }
