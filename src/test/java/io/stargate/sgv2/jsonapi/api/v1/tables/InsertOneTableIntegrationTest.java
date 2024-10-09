@@ -24,6 +24,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   static final String TABLE_WITH_BINARY_COLUMN = "insertOneBinaryColumnsTable";
   static final String TABLE_WITH_DATETIME_COLUMNS = "insertOneDateTimeColumnsTable";
   static final String TABLE_WITH_UUID_COLUMN = "insertOneUuidColumnTable";
+  static final String TABLE_WITH_INET_COLUMN = "insertOneInetColumnTable";
   static final String TABLE_WITH_LIST_COLUMNS = "insertOneListColumnsTable";
   static final String TABLE_WITH_SET_COLUMNS = "insertOneSetColumnsTable";
 
@@ -74,6 +75,13 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
         Map.of(
             "id", "text",
             "uuidValue", "uuid"),
+        "id");
+
+    createTableWithColumns(
+        TABLE_WITH_INET_COLUMN,
+        Map.of(
+            "id", "text",
+            "inetValue", "inet"),
         "id");
 
     createTableWithColumns(
@@ -526,6 +534,56 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
   @Nested
   @Order(7)
+  class InsertInetColumn {
+    @Test
+    void insertValidInetValue() {
+      final String docJSON = inetDoc("inetValid", "\"192.168.5.99\"");
+      insertOneInTable(TABLE_WITH_INET_COLUMN, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INET_COLUMN)
+          .postFindOne("{ \"filter\": { \"id\": \"inetValid\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    @Test
+    void failOnInvalidInetString() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INET_COLUMN)
+          .postInsertOne(inetDoc("inetInvalid", "\"xxx\""))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `INET` from",
+              "problem: Invalid IP address value 'xxx'");
+    }
+
+    // Test for non-String input
+    @Test
+    void failOnInvalidInetArray() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_INET_COLUMN)
+          .postInsertOne(inetDoc("inetInvalid", "[1, 2, 3, 4]"))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `INET` from",
+              "Root cause: no codec matching value type");
+    }
+
+    private String inetDoc(String id, String inetValueStr) {
+      return
+          """
+                          {
+                              "id": "%s",
+                              "inetValue": %s
+                          }
+                          """
+          .formatted(id, inetValueStr);
+    }
+  }
+
+  @Nested
+  @Order(8)
   class InsertListColumns {
     @Test
     void insertValidListValues() {
@@ -624,7 +682,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   }
 
   @Nested
-  @Order(8)
+  @Order(9)
   class InsertSetColumns {
     @Test
     void insertValidSetValues() {
