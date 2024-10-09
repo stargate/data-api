@@ -298,13 +298,13 @@ public record WritableShreddedDocument(
     }
 
     @Override
-    public void shredVector(JsonPath path, String binaryVector) {
+    public void shredVector(JsonPath path, String base64Vector) {
       // vector data is added only to queryVectorValues and exists keys index
       addKey(path);
 
       byte[] binaryPayload;
       try {
-        binaryPayload = Base64Variants.MIME_NO_LINEFEEDS.decode(binaryVector);
+        binaryPayload = Base64Variants.MIME_NO_LINEFEEDS.decode(base64Vector);
       } catch (IllegalArgumentException e) {
         throw ErrorCodeV1.SHRED_BAD_BINARY_VECTOR_VALUE.toApiException(
             "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String; problem: %s",

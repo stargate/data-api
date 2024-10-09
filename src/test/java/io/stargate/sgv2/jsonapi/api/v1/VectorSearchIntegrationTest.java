@@ -408,7 +408,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     public void insertSimpleBinaryVector() {
       final String id = UUID.randomUUID().toString();
       final float[] expectedVector = new float[] {0.25f, 0.25f, 0.25f, 0.25f, 0.25f};
-      final String binaryVector = generateBase64EncodedBinaryVector(expectedVector);
+      final String base64Vector = generateBase64EncodedBinaryVector(expectedVector);
       String doc =
               """
                   {
@@ -417,7 +417,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
                     "$vector": {"$binary": "%s"}
                   }
               """
-              .formatted(id, binaryVector);
+              .formatted(id, base64Vector);
 
       // insert the document
       given()
@@ -448,14 +448,14 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
               .response();
 
       // Extract the Base64 encoded string from the response
-      String binaryVectorFromResponse =
+      String base64VectorFromResponse =
           response.jsonPath().getString("data.documents[0].$vector.$binary");
 
-      // Verify the Base64 encoded binary string is equal to the original binaryVector string
-      Assertions.assertEquals(binaryVectorFromResponse, binaryVector);
+      // Verify the Base64 encoded binary string is equal to the original base64Vector string
+      Assertions.assertEquals(base64VectorFromResponse, base64Vector);
 
       // Convert the byte array to a float array
-      float[] decodedVector = decodeBase64BinaryVectorToFloatArray(binaryVectorFromResponse);
+      float[] decodedVector = decodeBase64BinaryVectorToFloatArray(base64VectorFromResponse);
 
       // Step 7: Verify that the decoded float array is equal to the expected vector
       Assertions.assertArrayEquals(expectedVector, decodedVector, 0.0001f);
