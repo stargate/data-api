@@ -93,7 +93,7 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
 
     CreateIndexStart createIndexStart =
         SchemaBuilder.createIndex(CqlIdentifier.fromCql(indexName)).custom("StorageAttachedIndex");
-    if (!ifNotExists) {
+    if (ifNotExists) {
       createIndexStart = createIndexStart.ifNotExists();
     }
     final CreateIndexOnTable createIndexOnTable =
