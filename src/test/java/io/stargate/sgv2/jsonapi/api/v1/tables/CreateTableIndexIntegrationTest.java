@@ -14,7 +14,7 @@ import org.junit.jupiter.api.*;
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
-  String testTableName = "tableForAddIndexTest";
+  String testTableName = "tableForCreateIndexTest";
 
   @BeforeAll
   public final void createSimpleTable() {
@@ -45,7 +45,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   class CreateIndexSuccess {
 
     @Test
-    public void addIndexBasic() {
+    public void createIndexBasic() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -62,7 +62,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addIndexCaseSensitive() {
+    public void createIndexCaseSensitive() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -79,7 +79,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addIndexCaseInsensitive() {
+    public void createIndexCaseInsensitive() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -99,7 +99,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addIndexConvertAscii() {
+    public void createIndexConvertAscii() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -119,7 +119,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addIndexNormalize() {
+    public void createIndexNormalize() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -139,7 +139,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addTextIndexAllOptions() {
+    public void createTextIndexAllOptions() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -161,7 +161,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addListIndex() {
+    public void createListIndex() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -178,7 +178,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addSetIndex() {
+    public void createSetIndex() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -195,7 +195,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addMapIndex() {
+    public void createMapIndex() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -212,7 +212,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addvectorIndex() {
+    public void createVectorIndex() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -229,7 +229,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addvectorIndexWithSourceModel() {
+    public void createVectorIndexWithSourceModel() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -249,7 +249,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addvectorIndexWithMetric() {
+    public void createVectorIndexWithMetric() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -269,7 +269,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addIndexForQuotedColumn() {
+    public void createIndexForQuotedColumn() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -286,7 +286,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addIndexForWithIfNotExist() {
+    public void createIndexForWithIfNotExist() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -324,7 +324,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   @Order(2)
   class CreateIndexFailure {
     @Test
-    public void tryAddIndexMissingColumn() {
+    public void tryCreateIndexMissingColumn() {
       final SchemaException schemaException =
           SchemaException.Code.INVALID_INDEX_DEFINITION.get(
               Map.of("reason", "Column not defined in the table"));
