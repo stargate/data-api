@@ -38,11 +38,9 @@ public record CommandResult(
                   implementation = String.class,
                   nullable = true)
             })
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    Map<CommandStatus, Object> status,
-
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    @Schema(nullable = true) List<Error> errors) {
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        Map<CommandStatus, Object> status,
+    @JsonInclude(JsonInclude.Include.NON_EMPTY) @Schema(nullable = true) List<Error> errors) {
 
   public CommandResult {
 
