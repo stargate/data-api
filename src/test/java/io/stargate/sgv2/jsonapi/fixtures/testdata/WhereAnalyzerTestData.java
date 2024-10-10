@@ -43,6 +43,18 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
         message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
   }
 
+  public WhereAnalyzerFixture tableAllColumnDatatypesIndexed(String message) {
+    var tableMetaData = testData.tableMetadata().tableAllDatatypesIndexed();
+    return new WhereAnalyzerFixture(
+        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+  }
+
+  public WhereAnalyzerFixture tableAllColumnDatatypesNotIndexed(String message) {
+    var tableMetaData = testData.tableMetadata().tableAllDatatypesNotIndexed();
+    return new WhereAnalyzerFixture(
+        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+  }
+
   public static class WhereAnalyzerFixture implements PrettyPrintable {
 
     private final String message;
