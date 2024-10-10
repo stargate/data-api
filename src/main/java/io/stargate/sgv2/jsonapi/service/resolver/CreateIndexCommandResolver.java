@@ -96,6 +96,10 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
         }
       }
     }
+    // Default Similarity Function to COSINE
+    if (similarityFunction == null && sourceModel == null) {
+      similarityFunction = SimilarityFunction.COSINE;
+    }
 
     var attempt =
         new CreateIndexAttemptBuilder(0, ctx.schemaObject())

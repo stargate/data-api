@@ -21,7 +21,9 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-/** An attempt to create index for a table's column */
+/*
+ An attempt to create index for a table's column.
+*/
 public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
   private final String columnName;
   private final String indexName;
@@ -30,6 +32,17 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
   private final DataType dataType;
   private final boolean ifNotExists;
 
+  /*
+   * @param position The position of the attempt in the sequence, for create index it's  always 0.
+   * @param schemaObject The schema object representing the table.
+   * @param columnName The name of the column to create the index on.
+   * @param dataType The data type of the column.
+   * @param indexName The name of the index to create.
+   * @param textIndexOptions The options for a text column type index.
+   * @param vectorIndexOptions The options for a vector column type index.
+   * @param ifNotExists Flag to ignore if index already exists.
+   * @return The attempt to create the index.
+   */
   protected CreateIndexAttempt(
       int position,
       TableSchemaObject schemaObject,
@@ -91,14 +104,19 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
     var keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.name().keyspace());
     var tableIdentifier = cqlIdentifierFromUserInput(schemaObject.name().table());
 
+    // Set as StorageAttachedIndex as default
     CreateIndexStart createIndexStart =
         SchemaBuilder.createIndex(CqlIdentifier.fromCql(indexName)).custom("StorageAttachedIndex");
+
+    // If `ifNotExists` is true, then set the flag to ignore if index already exists
     if (ifNotExists) {
       createIndexStart = createIndexStart.ifNotExists();
     }
+    // Set the keyspace and table name
     final CreateIndexOnTable createIndexOnTable =
         createIndexStart.onTable(keyspaceIdentifier, tableIdentifier);
 
+    // Set the column name
     CreateIndex createIndex;
     if (dataType instanceof MapType) {
       createIndex = createIndexOnTable.andColumnEntries(cqlIdentifierFromUserInput(columnName));
@@ -107,6 +125,7 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
     } else {
       createIndex = createIndexOnTable.andColumn(cqlIdentifierFromUserInput(columnName));
     }
+    // Set the options for the index
     Map<String, Object> options = new HashMap<>();
     if (textIndexOptions != null && !textIndexOptions.getOptions().isEmpty()) {
       createIndex = createIndex.withOption("OPTIONS", textIndexOptions.getOptions());
@@ -115,7 +134,7 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
       createIndex = createIndex.withOption("OPTIONS", vectorIndexOptions.getOptions());
     }
 
-    // Hack code to fix the issue
+    // Hack code to fix the issue with respect to quoted columns
     ExtendedCreateIndex extendedCreateIndex =
         new ExtendedCreateIndex((DefaultCreateIndex) createIndex);
 

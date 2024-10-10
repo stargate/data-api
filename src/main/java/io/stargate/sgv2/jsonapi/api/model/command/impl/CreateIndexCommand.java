@@ -22,7 +22,7 @@ public record CreateIndexCommand(
         String name,
     @NotNull
         @Schema(
-            description = "Column definition for which index is created.",
+            description = "Definition for created index for a column.",
             type = SchemaType.OBJECT)
         Definition definition)
     implements NoOptionsCommand, CollectionCommand {
@@ -31,7 +31,7 @@ public record CreateIndexCommand(
       @NotNull
           @Size(min = 1, max = 48)
           @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-          @Schema(description = "Name of the column to create the index on")
+          @Schema(description = "Name of the column for which index to be created.")
           String column,
       @Nullable @Schema(description = "Options for creating index.", type = SchemaType.OBJECT)
           Options options) {
