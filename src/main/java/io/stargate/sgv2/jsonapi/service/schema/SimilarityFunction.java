@@ -14,27 +14,27 @@ public enum SimilarityFunction {
   DOT_PRODUCT("dot_product"),
   UNDEFINED("undefined");
 
-  private String name;
+  private String metric;
   private static Map<String, SimilarityFunction> functionMap = new HashMap<>();
 
   static {
     for (SimilarityFunction similarityFunction : SimilarityFunction.values()) {
-      functionMap.put(similarityFunction.name, similarityFunction);
+      functionMap.put(similarityFunction.getMetric(), similarityFunction);
     }
   }
 
-  private SimilarityFunction(String name) {
-    this.name = name();
+  private SimilarityFunction(String metric) {
+    this.metric = metric;
   }
 
-  public String getName() {
-    return name;
+  public String getMetric() {
+    return metric;
   }
 
   // TODO: store the name of the enum in the enum itself
   public static SimilarityFunction fromString(String similarityFunction) {
     if (similarityFunction == null) return UNDEFINED;
-    SimilarityFunction function = functionMap.get(similarityFunction.toLowerCase());
+    SimilarityFunction function = functionMap.get(similarityFunction);
     if (function == null) {
       throw ErrorCodeV1.VECTOR_SEARCH_INVALID_FUNCTION_NAME.toApiException(
           "'%s'", similarityFunction);

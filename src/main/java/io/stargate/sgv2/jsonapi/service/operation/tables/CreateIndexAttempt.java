@@ -90,7 +90,7 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
     public Map<String, Object> getOptions() {
       Map<String, Object> options = new HashMap<>();
       if (similarityFunction != null) {
-        options.put("similarity_function", similarityFunction.getName());
+        options.put("similarity_function", similarityFunction.getMetric());
       }
       if (sourceModel != null) {
         options.put("source_model", sourceModel);
