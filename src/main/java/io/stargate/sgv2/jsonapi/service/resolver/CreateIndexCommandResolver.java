@@ -32,6 +32,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
     return CreateIndexCommand.class;
   }
 
+  // Supported Source Models for Vector Index in Cassandra
   public static final Set<String> supportedSources =
       Set.of(
           "ada002", "openai_v3_small", "openai_v3_large", "bert", "gecko", "nv_qa_4", "cohere_v3");
