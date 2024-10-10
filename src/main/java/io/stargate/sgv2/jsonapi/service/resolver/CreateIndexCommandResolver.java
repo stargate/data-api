@@ -98,7 +98,9 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
       }
     }
     // Default Similarity Function to COSINE
-    if (similarityFunction == null && sourceModel == null) {
+    if (columnMetadata.getType() instanceof VectorType
+        && similarityFunction == null
+        && sourceModel == null) {
       similarityFunction = SimilarityFunction.COSINE;
     }
 
