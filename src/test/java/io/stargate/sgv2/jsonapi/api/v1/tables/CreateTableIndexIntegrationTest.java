@@ -23,6 +23,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
         Map.ofEntries(
             Map.entry("id", Map.of("type", "text")),
             Map.entry("age", Map.of("type", "int")),
+            Map.entry("comment", Map.of("type", "text")),
             Map.entry("vehicle_id", Map.of("type", "text")),
             Map.entry("vehicle_id_1", Map.of("type", "text")),
             Map.entry("vehicle_id_2", Map.of("type", "text")),
@@ -268,7 +269,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addIdexForQuotedColumn() {
+    public void addIndexForQuotedColumn() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -280,6 +281,40 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                             }
                                           }
                                           """)
+          .hasNoErrors()
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public void addIndexForWithIfNotExist() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+          .postCommand(
+              "createIndex",
+              """
+                                {
+                                  "name": "comment_idx",
+                                  "definition": {
+                                    "column": "comment"
+                                  }
+                                }
+                                """)
+          .hasNoErrors()
+          .body("status.ok", is(1));
+
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+          .postCommand(
+              "createIndex",
+              """
+                                {
+                                  "name": "comment_idx",
+                                  "definition": {
+                                    "column": "comment",
+                                    "options": {
+                                      "ifNotExists": true
+                                    }
+                                  }
+                                }
+                                """)
           .hasNoErrors()
           .body("status.ok", is(1));
     }

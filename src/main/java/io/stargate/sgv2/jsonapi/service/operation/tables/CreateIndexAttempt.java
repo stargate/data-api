@@ -11,6 +11,7 @@ import com.datastax.oss.driver.api.core.type.SetType;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndex;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexOnTable;
+import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexStart;
 import com.datastax.oss.driver.internal.querybuilder.schema.DefaultCreateIndex;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
@@ -27,6 +28,7 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
   private final TextIndexOptions textIndexOptions;
   private final VectorIndexOptions vectorIndexOptions;
   private final DataType dataType;
+  private final boolean ifNotExists;
 
   protected CreateIndexAttempt(
       int position,
@@ -35,7 +37,8 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
       DataType dataType,
       String indexName,
       TextIndexOptions textIndexOptions,
-      VectorIndexOptions vectorIndexOptions) {
+      VectorIndexOptions vectorIndexOptions,
+      boolean ifNotExists) {
     super(position, schemaObject, new SchemaRetryPolicy(2, Duration.ofMillis(10)));
 
     this.columnName = columnName;
@@ -43,7 +46,7 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
     this.indexName = indexName;
     this.textIndexOptions = textIndexOptions;
     this.vectorIndexOptions = vectorIndexOptions;
-
+    this.ifNotExists = ifNotExists;
     setStatus(OperationStatus.READY);
   }
 
@@ -87,17 +90,22 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
   protected SimpleStatement buildStatement() {
     var keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.name().keyspace());
     var tableIdentifier = cqlIdentifierFromUserInput(schemaObject.name().table());
-    final CreateIndexOnTable indexTableUsingSai =
-        SchemaBuilder.createIndex(CqlIdentifier.fromCql(indexName))
-            .custom("StorageAttachedIndex")
-            .onTable(keyspaceIdentifier, tableIdentifier);
+
+    CreateIndexStart createIndexStart =
+        SchemaBuilder.createIndex(CqlIdentifier.fromCql(indexName)).custom("StorageAttachedIndex");
+    if (!ifNotExists) {
+      createIndexStart = createIndexStart.ifNotExists();
+    }
+    final CreateIndexOnTable createIndexOnTable =
+        createIndexStart.onTable(keyspaceIdentifier, tableIdentifier);
+
     CreateIndex createIndex;
     if (dataType instanceof MapType) {
-      createIndex = indexTableUsingSai.andColumnEntries(cqlIdentifierFromUserInput(columnName));
+      createIndex = createIndexOnTable.andColumnEntries(cqlIdentifierFromUserInput(columnName));
     } else if (dataType instanceof ListType || dataType instanceof SetType) {
-      createIndex = indexTableUsingSai.andColumnValues(cqlIdentifierFromUserInput(columnName));
+      createIndex = createIndexOnTable.andColumnValues(cqlIdentifierFromUserInput(columnName));
     } else {
-      createIndex = indexTableUsingSai.andColumn(cqlIdentifierFromUserInput(columnName));
+      createIndex = createIndexOnTable.andColumn(cqlIdentifierFromUserInput(columnName));
     }
     Map<String, Object> options = new HashMap<>();
     if (textIndexOptions != null && !textIndexOptions.getOptions().isEmpty()) {

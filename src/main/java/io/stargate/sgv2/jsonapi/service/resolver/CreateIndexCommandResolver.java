@@ -60,8 +60,11 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
     Boolean ascii = options != null ? options.ascii() : null;
     SimilarityFunction similarityFunction = options != null ? options.metric() : null;
     String sourceModel = options != null ? options.sourceModel() : null;
-
+    boolean ifNotExists = false;
     if (options != null) {
+      if (options.ifNotExists() != null) {
+        ifNotExists = options.ifNotExists();
+      }
       // Validate Options
       if (!columnMetadata.getType().equals(DataTypes.TEXT)) {
         if (caseSensitive != null || normalize != null || ascii != null) {
@@ -98,6 +101,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
         new CreateIndexAttemptBuilder(0, ctx.schemaObject())
             .columnName(columnName)
             .indexName(indexName)
+            .ifNotExists(ifNotExists)
             .textIndexOptions(caseSensitive, normalize, ascii)
             .vectorIndexOptions(similarityFunction, sourceModel)
             .build();

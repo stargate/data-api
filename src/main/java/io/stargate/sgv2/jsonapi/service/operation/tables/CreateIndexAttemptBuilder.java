@@ -14,6 +14,7 @@ public class CreateIndexAttemptBuilder {
   private String indexName;
   private CreateIndexAttempt.TextIndexOptions textIndexOptions;
   private CreateIndexAttempt.VectorIndexOptions vectorIndexOptions;
+  private boolean ifNotExists;
 
   public CreateIndexAttemptBuilder(int position, TableSchemaObject schemaObject) {
     this.position = position;
@@ -48,6 +49,11 @@ public class CreateIndexAttemptBuilder {
     return this;
   }
 
+  public CreateIndexAttemptBuilder ifNotExists(boolean ifNotExists) {
+    this.ifNotExists = ifNotExists;
+    return this;
+  }
+
   public CreateIndexAttemptBuilder textIndexOptions(
       Boolean caseSensitive, Boolean normalize, Boolean ascii) {
     this.textIndexOptions =
@@ -78,6 +84,7 @@ public class CreateIndexAttemptBuilder {
         dataType,
         indexName,
         textIndexOptions,
-        vectorIndexOptions);
+        vectorIndexOptions,
+        ifNotExists);
   }
 }

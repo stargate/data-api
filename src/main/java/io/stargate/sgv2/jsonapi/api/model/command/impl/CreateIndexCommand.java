@@ -11,9 +11,8 @@ import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
-// TODO, hide table feature detail before it goes public,
-// https://github.com/stargate/data-api/pull/1360
-// @Schema(description = "Command that creates an index for a column in a table.")
+// TODO, hide table feature detail before it goes public
+@Schema(description = "Command that creates an index for a column in a table.")
 @JsonTypeName("createIndex")
 public record CreateIndexCommand(
     @NotNull
@@ -38,6 +37,12 @@ public record CreateIndexCommand(
           Options options) {
 
     public record Options(
+        @Schema(
+                description = "Flag to ignore if index already exists",
+                defaultValue = "false",
+                type = SchemaType.BOOLEAN,
+                implementation = Boolean.class)
+            Boolean ifNotExists,
         @Nullable
             @Schema(
                 description = "Ignore case in matching string values.",
