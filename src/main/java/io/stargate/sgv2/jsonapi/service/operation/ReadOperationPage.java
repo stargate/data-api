@@ -1,11 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -33,20 +30,22 @@ public record ReadOperationPage(
   @Override
   public CommandResult get() {
 
-    Map<CommandStatus, Object> status =
-        includeSortVector ? Collections.singletonMap(CommandStatus.SORT_VECTOR, vector) : null;
-
-    List<JsonNode> jsonDocs =
-        documentSources.stream()
-            .limit(singleResponse ? 1 : Long.MAX_VALUE)
-            .map(DocumentSource::get)
-            .toList();
-
-    var responseData =
+    var builder =
         singleResponse
-            ? new CommandResult.SingleResponseData(jsonDocs.isEmpty() ? null : jsonDocs.get(0))
-            : new CommandResult.MultiResponseData(jsonDocs, nextPageState);
+            ? CommandResult.singleDocumentBuilder(false, false)
+            : CommandResult.multiDocumentBuilder(false, false);
 
-    return new CommandResult(responseData, status);
+    if (includeSortVector) {
+      builder.addStatus(CommandStatus.SORT_VECTOR, vector);
+    } else {
+      builder.nextPageState(nextPageState);
+    }
+
+    documentSources.stream()
+        .limit(singleResponse ? 1 : Long.MAX_VALUE)
+        .map(DocumentSource::get)
+        .forEach(builder::addDocument);
+
+    return builder.build();
   }
 }

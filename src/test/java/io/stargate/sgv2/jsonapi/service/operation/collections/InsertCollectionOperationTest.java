@@ -164,7 +164,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       assertThat(result.status())
           .hasSize(1)
           .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -302,7 +302,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .containsEntry(
               CommandStatus.INSERTED_IDS,
               List.of(new DocumentId.StringId("doc1"), new DocumentId.StringId("doc2")));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
 
       // verify metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
@@ -417,7 +417,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       assertThat(result.status())
           .hasSize(1)
           .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -498,7 +498,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .asList()
           .containsExactlyInAnyOrder(
               new DocumentId.StringId("doc1"), new DocumentId.StringId("doc2"));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     // failure modes
@@ -908,7 +908,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       assertThat(result.status())
           .hasSize(1)
           .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -959,7 +959,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       assertThat(result.status())
           .hasSize(1)
           .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test

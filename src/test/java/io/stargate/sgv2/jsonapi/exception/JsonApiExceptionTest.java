@@ -23,7 +23,7 @@ class JsonApiExceptionTest {
       CommandResult result = ex.get();
 
       assertThat(result.data()).isNull();
-      assertThat(result.status()).isNull();
+      assertThat(result.status()).isEmpty();
       assertThat(result.errors())
           .singleElement()
           .satisfies(
@@ -44,7 +44,7 @@ class JsonApiExceptionTest {
       CommandResult result = ex.get();
 
       assertThat(result.data()).isNull();
-      assertThat(result.status()).isNull();
+      assertThat(result.status()).isEmpty();
       assertThat(result.errors())
           .singleElement()
           .satisfies(
@@ -65,7 +65,7 @@ class JsonApiExceptionTest {
       CommandResult result = ex.get();
 
       assertThat(result.data()).isNull();
-      assertThat(result.status()).isNull();
+      assertThat(result.status()).isEmpty();
       assertThat(result.errors())
           .hasSize(2)
           .anySatisfy(

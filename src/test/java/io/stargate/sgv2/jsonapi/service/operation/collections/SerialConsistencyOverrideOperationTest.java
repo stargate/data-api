@@ -239,7 +239,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
       assertThat(result.status())
           .hasSize(1)
           .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
   }
 
@@ -384,7 +384,7 @@ public class SerialConsistencyOverrideOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
   }
 

@@ -11,7 +11,6 @@ import io.stargate.sgv2.jsonapi.util.ExceptionUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -32,9 +31,16 @@ public record DeleteOperationPage(
 
   @Override
   public CommandResult get() {
+    // aaron - 9 octo 2024 - this class had multiple return statements, which is ok but when I
+    // changed to
+    // use the CommandResultBuilder, I left the structure as it was to reduce the amount of changes.
+    // when we move to use OperationAttempt for the collection commands we can refactor
     if (deletedInformation == null) {
-      return new CommandResult(null, Map.of(CommandStatus.DELETED_COUNT, -1), null);
+      return CommandResult.singleDocumentBuilder(false, false)
+          .addStatus(CommandStatus.DELETED_COUNT, -1)
+          .build();
     }
+
     int deletedCount =
         (int)
             deletedInformation.stream()
@@ -76,15 +82,20 @@ public record DeleteOperationPage(
     // return the result
     // note that we always target a single document to be returned
     // thus fixed to the SingleResponseData
-    if (moreData)
-      return new CommandResult(
-          deletedDoc.isEmpty() ? null : new CommandResult.SingleResponseData(deletedDoc.get(0)),
-          Map.of(CommandStatus.DELETED_COUNT, deletedCount, CommandStatus.MORE_DATA, true),
-          errors.isEmpty() ? null : errors);
-    else
-      return new CommandResult(
-          deletedDoc.isEmpty() ? null : new CommandResult.SingleResponseData(deletedDoc.get(0)),
-          Map.of(CommandStatus.DELETED_COUNT, deletedCount),
-          errors.isEmpty() ? null : errors);
+
+    // aaron 9-oct-2024 the original code had this to create the "ResponseData"for the command
+    // result
+    // which looks like it would be statusOnly if there were no docs, otherwise singleDoc
+    // deletedDoc.isEmpty() ? null : new ResponseData.SingleResponseData(deletedDoc.get(0)),
+    var builder =
+        deletedDoc.isEmpty()
+            ? CommandResult.statusOnlyBuilder(false, false)
+            : CommandResult.singleDocumentBuilder(false, false).addDocument(deletedDoc.getFirst());
+
+    builder.addStatus(CommandStatus.DELETED_COUNT, deletedCount).addCommandResultError(errors);
+    if (moreData) {
+      builder.addStatus(CommandStatus.MORE_DATA, true);
+    }
+    return builder.build();
   }
 }

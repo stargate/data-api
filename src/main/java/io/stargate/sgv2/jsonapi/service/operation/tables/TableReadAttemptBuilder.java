@@ -111,9 +111,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
         }
       }
 
-      analyzedResult
-          .warningExceptions()
-          .forEach(warningException -> tableReadAttempt.addWarning(warningException.getMessage()));
+      analyzedResult.warningExceptions().forEach(tableReadAttempt::addWarning);
     }
 
     return tableReadAttempt;

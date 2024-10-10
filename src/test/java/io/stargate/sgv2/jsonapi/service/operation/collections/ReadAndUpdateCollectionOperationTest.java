@@ -290,7 +290,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -375,7 +375,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
       assertThat(result.data().getResponseDocuments()).hasSize(1);
 
       // verify metrics
@@ -674,7 +674,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
 
       // verify metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
@@ -902,7 +902,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -1002,7 +1002,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .containsEntry(CommandStatus.MATCHED_COUNT, 0)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0)
           .containsEntry(CommandStatus.UPSERTED_ID, new DocumentId.StringId("doc1"));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -1168,7 +1168,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -1329,7 +1329,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 1)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 1);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -1426,7 +1426,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .containsEntry(CommandStatus.MATCHED_COUNT, 0)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0)
           .containsEntry(CommandStatus.UPSERTED_ID, new DocumentId.StringId("doc1"));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -1499,7 +1499,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 0)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
   }
 
@@ -1650,7 +1650,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 2)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 2);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -1747,7 +1747,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .containsEntry(CommandStatus.MATCHED_COUNT, 0)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0)
           .containsEntry(CommandStatus.UPSERTED_ID, new DocumentId.StringId("doc1"));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -1822,7 +1822,7 @@ public class ReadAndUpdateCollectionOperationTest extends OperationTestBase {
           .hasSize(2)
           .containsEntry(CommandStatus.MATCHED_COUNT, 0)
           .containsEntry(CommandStatus.MODIFIED_COUNT, 0);
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
   }
 }
