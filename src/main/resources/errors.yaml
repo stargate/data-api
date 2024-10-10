@@ -382,6 +382,12 @@ request-errors:
     title: Unable to parse vectorize configuration, schema invalid.
     body: |-
       Unable to parse vectorize configuration, schema invalid for field ${field}.
+
+  - scope: SCHEMA
+    code: INVALID_INDEX_DEFINITION
+    title: Provided index configuration is not valid.
+    body: |-
+      Provided index configuration is not valid: ${reason}.
   
 
 # ================================================================================================================
