@@ -26,6 +26,10 @@ public enum CommandStatus {
   /** Status for reporting existing collections. */
   @JsonProperty("collections")
   EXISTING_COLLECTIONS,
+  /** Status for reporting existing collections. */
+  @JsonProperty("tables")
+  EXISTING_TABLES,
+
   /**
    * List of response entries, one for each document we tried to insert with {@code insertMany}
    * command. Each entry has 2 mandatory fields: {@code _id} (document id), and {@code status} (one

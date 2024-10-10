@@ -20,6 +20,7 @@ import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -30,6 +31,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -110,6 +112,12 @@ public class JSONCodecRegistryTest {
   @ParameterizedTest
   @MethodSource("validCodecToCQLTestCasesDatetime")
   public void codecToCQLDatetime(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToCQLTestCasesUuid")
+  public void codecToCQLUuid(DataType cqlType, Object fromValue, Object expectedCqlValue) {
     _codecToCQL(cqlType, fromValue, expectedCqlValue);
   }
 
@@ -244,7 +252,28 @@ public class JSONCodecRegistryTest {
             Instant.parse(TEST_DATA.TIMESTAMP_VALID_STR)));
   }
 
-  private static Stream<Arguments> validCodecToCQLTestCasesOther() {
+  private static Stream<Arguments> validCodecToCQLTestCasesUuid() {
+    // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
+    return Stream.of(
+        Arguments.of(
+            DataTypes.UUID,
+            TEST_DATA.UUID_VALID_STR_LC,
+            java.util.UUID.fromString(TEST_DATA.UUID_VALID_STR_LC)),
+        Arguments.of(
+            DataTypes.UUID,
+            TEST_DATA.UUID_VALID_STR_UC,
+            java.util.UUID.fromString(TEST_DATA.UUID_VALID_STR_UC)),
+        Arguments.of(
+            DataTypes.TIMEUUID,
+            TEST_DATA.UUID_VALID_STR_LC,
+            java.util.UUID.fromString(TEST_DATA.UUID_VALID_STR_LC)),
+        Arguments.of(
+            DataTypes.TIMEUUID,
+            TEST_DATA.UUID_VALID_STR_UC,
+            java.util.UUID.fromString(TEST_DATA.UUID_VALID_STR_UC)));
+  }
+
+  private static Stream<Arguments> validCodecToCQLTestCasesOther() throws Exception {
     // Arguments: (CQL-type, from-caller, bound-by-driver-for-cql)
     return Stream.of(
         // Short regular base64-encoded string
@@ -253,7 +282,11 @@ public class JSONCodecRegistryTest {
             binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR),
             ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES)),
         // edge case: empty String -> byte[0]
-        Arguments.of(DataTypes.BLOB, binaryWrapper(""), ByteBuffer.wrap(new byte[0])));
+        Arguments.of(DataTypes.BLOB, binaryWrapper(""), ByteBuffer.wrap(new byte[0])),
+        Arguments.of(
+            DataTypes.INET,
+            TEST_DATA.INET_ADDRESS_VALID_STRING,
+            InetAddress.getByName(TEST_DATA.INET_ADDRESS_VALID_STRING)));
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesCollections() {
@@ -334,6 +367,12 @@ public class JSONCodecRegistryTest {
   @ParameterizedTest
   @MethodSource("validCodecToJSONTestCasesDatetime")
   public void codecToJSONDatetime(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
+    _codecToJSON(cqlType, fromValue, expectedJsonValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToJSONTestCasesUuid")
+  public void codecToJSONUuid(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
@@ -458,7 +497,31 @@ public class JSONCodecRegistryTest {
             JSONS.textNode(TEST_DATA.TIMESTAMP_VALID_STR)));
   }
 
-  private static Stream<Arguments> validCodecToJSONTestCasesOther() throws IOException {
+  private static Stream<Arguments> validCodecToJSONTestCasesUuid() {
+    // Arguments: (CQL-type, from-CQL-result-set, JsonNode-to-serialize)
+    return Stream.of(
+        // Short regular base64-encoded string
+        Arguments.of(
+            DataTypes.UUID,
+            UUID.fromString(TEST_DATA.UUID_VALID_STR_LC),
+            JSONS.textNode(TEST_DATA.UUID_VALID_STR_LC)),
+        Arguments.of(
+            DataTypes.UUID,
+            UUID.fromString(TEST_DATA.UUID_VALID_STR_UC),
+            // JSON codec accepts either casing but always writes lowercase UUIDs
+            JSONS.textNode(TEST_DATA.UUID_VALID_STR_UC.toLowerCase())),
+        Arguments.of(
+            DataTypes.TIMEUUID,
+            UUID.fromString(TEST_DATA.UUID_VALID_STR_LC),
+            JSONS.textNode(TEST_DATA.UUID_VALID_STR_LC)),
+        Arguments.of(
+            DataTypes.TIMEUUID,
+            UUID.fromString(TEST_DATA.UUID_VALID_STR_UC),
+            // JSON codec accepts either casing but always writes lowercase UUIDs
+            JSONS.textNode(TEST_DATA.UUID_VALID_STR_UC.toLowerCase())));
+  }
+
+  private static Stream<Arguments> validCodecToJSONTestCasesOther() throws Exception {
     // Arguments: (CQL-type, from-CQL-result-set, JsonNode-to-serialize)
     return Stream.of(
         // Short regular base64-encoded string
@@ -468,7 +531,11 @@ public class JSONCodecRegistryTest {
             binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR).asJsonNode()),
 
         // edge case: empty String -> byte[0]
-        Arguments.of(DataTypes.BLOB, ByteBuffer.wrap(new byte[0]), binaryWrapper("").asJsonNode()));
+        Arguments.of(DataTypes.BLOB, ByteBuffer.wrap(new byte[0]), binaryWrapper("").asJsonNode()),
+        Arguments.of(
+            DataTypes.INET,
+            InetAddress.getByName(TEST_DATA.INET_ADDRESS_VALID_STRING),
+            JSONS.textNode(TEST_DATA.INET_ADDRESS_VALID_STRING)));
   }
 
   private static Stream<Arguments> validCodecToJSONTestCasesCollections() throws IOException {
@@ -793,6 +860,26 @@ public class JSONCodecRegistryTest {
               assertThat(e.getMessage())
                   .contains("Unexpected end of base64-encoded String")
                   .contains("expects padding");
+            });
+  }
+
+  @Test
+  public void invalidInetAddress() {
+    final String valueToTest = TEST_DATA.INET_ADDRESS_INVALID_STRING;
+    final var codec = assertGetCodecToCQL(DataTypes.INET, valueToTest);
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest),
+            "Throw ToCQLCodecException when attempting to convert DataTypes.INET from invalid Base64 value");
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(DataTypes.INET);
+              assertThat(e.value).isEqualTo(valueToTest);
+              assertThat(e.getMessage())
+                  .contains("Root cause: Invalid String value for type `INET`")
+                  .contains("Invalid IP address value");
             });
   }
 

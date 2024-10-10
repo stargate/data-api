@@ -4,19 +4,17 @@ import static io.restassured.RestAssured.given;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
 
+import com.fasterxml.jackson.core.Base64Variants;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
-import org.junit.jupiter.api.ClassOrderer;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestClassOrder;
-import org.junit.jupiter.api.TestMethodOrder;
+import java.nio.ByteBuffer;
+import java.util.UUID;
+import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
@@ -404,6 +402,180 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
           .body("errors[0].message", startsWith("$vector value needs to be array of numbers"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTOR_VALUE"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
+    }
+
+    @Test
+    public void insertSimpleBinaryVector() {
+      final String id = UUID.randomUUID().toString();
+      final float[] expectedVector = new float[] {0.25f, -1.5f, 0.00f, 0.75f, 0.5f};
+      final String base64Vector = generateBase64EncodedBinaryVector(expectedVector);
+      String doc =
+              """
+                  {
+                    "_id": "%s",
+                    "name": "aaron",
+                    "$vector": {"$binary": "%s"}
+                  }
+              """
+              .formatted(id, base64Vector);
+
+      // insert the document
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(notNullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", is(nullValue()));
+
+      // get the document and verify the vector value
+      Response response =
+          given()
+              .headers(getHeaders())
+              .contentType(ContentType.JSON)
+              .body(
+                  "{\"find\": { \"filter\" : {\"_id\" : \"%s\"}, \"projection\" : {\"$vector\" : 1}}}"
+                      .formatted(id))
+              .when()
+              .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+              .then()
+              .statusCode(200)
+              .body("data.documents[0]", jsonEquals(doc))
+              .body("errors", is(nullValue()))
+              .extract()
+              .response();
+
+      // Extract the Base64 encoded string from the response
+      String base64VectorFromResponse =
+          response.jsonPath().getString("data.documents[0].$vector.$binary");
+
+      // Verify the Base64 encoded binary string is equal to the original base64Vector string
+      Assertions.assertEquals(base64VectorFromResponse, base64Vector);
+
+      // Convert the byte array to a float array
+      float[] decodedVector = decodeBase64BinaryVectorToFloatArray(base64VectorFromResponse);
+
+      // Step 7: Verify that the decoded float array is equal to the expected vector
+      Assertions.assertArrayEquals(expectedVector, decodedVector, 0.0001f);
+    }
+
+    @Test
+    public void insertBinaryVectorWithInvalidBinaryString() {
+      final String invalidBinaryString = "@#$%^&*()";
+      String doc =
+              """
+                  {
+                    "name": "aaron",
+                    "$vector": {"$binary": "%s"}
+                  }
+              """
+              .formatted(invalidBinaryString);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper: not valid Base64-encoded String; problem: Illegal character '@' (code 0x40) in base64 content"));
+    }
+
+    @Test
+    public void insertBinaryVectorWithInvalidBinaryValue() {
+      String doc =
+          """
+                  {
+                    "name": "aaron",
+                    "$vector": {"$binary": 1234}
+                  }
+              """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Bad binary vector value to shred: Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed"));
+    }
+
+    @Test
+    public void insertBinaryVectorWithInvalidVectorObject() {
+      String doc =
+          """
+                  {
+                    "name": "aaron",
+                    "$vector": {"binary": "PoAAAD6AAAA+gAAAPoAAAD6AAAA="}
+                  }
+                  """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_DOCUMENT_VECTOR_TYPE"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Bad $vector document type to shred : The key for the $vector object must be '$binary'"));
+    }
+
+    @Test
+    public void insertBinaryVectorWithInvalidDecodedValue() {
+      String doc =
+          """
+                      {
+                        "name": "aaron",
+                        "$vector": {"$binary": "1234"}
+                      }
+                  """;
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("SHRED_BAD_BINARY_VECTOR_VALUE"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper: decoded value is not a multiple of 4 bytes long (3 bytes)"));
     }
   }
 
@@ -1864,6 +2036,32 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
       sb.append(nums[ix]);
     }
     return sb.toString();
+  }
+
+  private String generateBase64EncodedBinaryVector(float[] vector) {
+    ByteBuffer byteBuffer = ByteBuffer.allocate(vector.length * 4); // 4 bytes per float
+
+    for (float val : vector) {
+      byteBuffer.putInt(Float.floatToIntBits(val)); // Convert float to raw int bits
+    }
+
+    // Get the byte array from the ByteBuffer
+    byte[] byteArray = byteBuffer.array();
+
+    // Encode the byte array into a Base64 string
+    return Base64Variants.MIME_NO_LINEFEEDS.encode(byteArray);
+  }
+
+  private float[] decodeBase64BinaryVectorToFloatArray(String binaryVector) {
+    // Decode the Base64 string to a byte array
+    byte[] decodedBytes = Base64Variants.MIME_NO_LINEFEEDS.decode(binaryVector);
+
+    float[] floats = new float[decodedBytes.length / 4];
+    ByteBuffer byteBuffer = ByteBuffer.wrap(decodedBytes);
+    for (int i = 0; i < floats.length; i++) {
+      floats[i] = byteBuffer.getFloat();
+    }
+    return floats;
   }
 
   @Nested

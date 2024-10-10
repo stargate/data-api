@@ -9,17 +9,14 @@ public abstract class ComplexApiDataType implements ApiDataType {
   private final String apiName;
   private final PrimitiveApiDataType keyType;
   private final PrimitiveApiDataType valueType;
-  private final int vectorSize;
+  private final int dimension;
 
   public ComplexApiDataType(
-      String apiName,
-      PrimitiveApiDataType keyType,
-      PrimitiveApiDataType valueType,
-      int vectorSize) {
+      String apiName, PrimitiveApiDataType keyType, PrimitiveApiDataType valueType, int dimension) {
     this.apiName = apiName;
     this.keyType = keyType;
     this.valueType = valueType;
-    this.vectorSize = vectorSize;
+    this.dimension = dimension;
   }
 
   public PrimitiveApiDataType getKeyType() {
@@ -30,8 +27,8 @@ public abstract class ComplexApiDataType implements ApiDataType {
     return valueType;
   }
 
-  public int getVectorSize() {
-    return vectorSize;
+  public int getDimension() {
+    return dimension;
   }
 
   public abstract DataType getCqlType();
@@ -77,14 +74,14 @@ public abstract class ComplexApiDataType implements ApiDataType {
   }
 
   public static class VectorType extends ComplexApiDataType {
-    public VectorType(PrimitiveApiDataType valueType, int vectorSize) {
-      super("vector", null, valueType, vectorSize);
+    public VectorType(PrimitiveApiDataType valueType, int dimension) {
+      super("vector", null, valueType, dimension);
     }
 
     @Override
     public DataType getCqlType() {
       return new ExtendedVectorType(
-          ApiDataTypeDefs.from(getValueType()).get().getCqlType(), getVectorSize());
+          ApiDataTypeDefs.from(getValueType()).get().getCqlType(), getDimension());
     }
   }
 
