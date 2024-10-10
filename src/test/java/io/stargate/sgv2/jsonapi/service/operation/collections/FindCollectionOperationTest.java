@@ -312,9 +312,8 @@ public class FindCollectionOperationTest extends OperationTestBase {
       assertThat(result.data().getResponseDocuments())
           .hasSize(2)
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
-      assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
-      assertThat(result.status()).isNull();
+      assertThat(result.status()).isEmpty();;
     }
 
     @Test
@@ -2746,7 +2745,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
-      assertThat(result.status()).isNull();
+      assertThat(result.status()).isEmpty();;
     }
 
     @Test
