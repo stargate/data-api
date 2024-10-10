@@ -387,7 +387,7 @@ request-errors:
     code: INVALID_INDEX_DEFINITION
     title: Provided index configuration is not valid.
     body: |-
-      Provided index configuration is not valid ${reason}.
+      Provided index configuration is not valid: ${reason}.
   
 
 # ================================================================================================================

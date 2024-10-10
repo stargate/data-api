@@ -23,17 +23,18 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
         Map.ofEntries(
             Map.entry("id", Map.of("type", "text")),
             Map.entry("age", Map.of("type", "int")),
-            Map.entry("vehicleId", Map.of("type", "text")),
-            Map.entry("vehicleId_1", Map.of("type", "text")),
-            Map.entry("vehicleId_2", Map.of("type", "text")),
-            Map.entry("vehicleId_3", Map.of("type", "text")),
-            Map.entry("vehicleId_4", Map.of("type", "text")),
+            Map.entry("vehicle_id", Map.of("type", "text")),
+            Map.entry("vehicle_id_1", Map.of("type", "text")),
+            Map.entry("vehicle_id_2", Map.of("type", "text")),
+            Map.entry("vehicle_id_3", Map.of("type", "text")),
+            Map.entry("vehicle_id_4", Map.of("type", "text")),
             Map.entry("invalid_text", Map.of("type", "int")),
+            Map.entry("physicalAddress", Map.of("type", "text")),
             Map.entry("list_type", Map.of("type", "list", "valueType", "text")),
             Map.entry("set_type", Map.of("type", "set", "valueType", "text")),
             Map.entry("map_type", Map.of("type", "map", "keyType", "text", "valueType", "text")),
             Map.entry("vector_type_1", Map.of("type", "vector", "dimension", 1024)),
-            Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1024)),
+            Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1536)),
             Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024))),
         "id");
   }
@@ -66,9 +67,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               "createIndex",
               """
                           {
-                            "name": "vehicleId_idx",
+                            "name": "vehicle_id_idx",
                             "definition": {
-                                    "column": "vehicleId"
+                                    "column": "vehicle_id"
                             }
                           }
                           """)
@@ -82,14 +83,16 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .postCommand(
               "createIndex",
               """
-                                  "name": "vehicleId_1_idx",
-                                  "definition": {
-                                    "column": "vehicleId_1",
-                                    "options": {
-                                       "caseSensitive": false
-                                    }
-                                  }
-                                  """)
+            {
+              "name": "vehicle_id_1_idx",
+              "definition": {
+                "column": "vehicle_id_1",
+                "options": {
+                   "caseSensitive": false
+                }
+              }
+            }
+            """)
           .hasNoErrors()
           .body("status.ok", is(1));
     }
@@ -101,9 +104,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               "createIndex",
               """
                                   {
-                                    "name": "vehicleId_2_idx",
+                                    "name": "vehicle_id_2_idx",
                                     "definition": {
-                                      "column": "vehicleId_2",
+                                      "column": "vehicle_id_2",
                                       "options": {
                                          "ascii": true
                                       }
@@ -121,9 +124,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               "createIndex",
               """
                                   {
-                                    "name": "vehicleId_3_idx",
+                                    "name": "vehicle_id_3_idx",
                                     "definition": {
-                                      "column": "vehicleId_3",
+                                      "column": "vehicle_id_3",
                                       "options": {
                                         "normalize": true
                                       }
@@ -140,15 +143,17 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .postCommand(
               "createIndex",
               """
-                              "name": "vehicleId_4_idx",
-                              "definition": {
-                                "column": "vehicleId_4",
-                                "options": {
-                                   "caseSensitive": true,
-                                   "normalize": true,
-                                   "ascii": true
-                                }
-                              }
+                      {
+                        "name": "vehicle_id_4_idx",
+                        "definition": {
+                          "column": "vehicle_id_4",
+                          "options": {
+                            "caseSensitive": true,
+                            "normalize": true,
+                            "ascii": true
+                          }
+                        }
+                      }
                               """)
           .hasNoErrors()
           .body("status.ok", is(1));
@@ -223,26 +228,6 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void addvectorIndexWithMetric() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
-          .postCommand(
-              "createIndex",
-              """
-                                  {
-                                    "name": "vector_type_2_idx",
-                                    "definition": {
-                                      "column": "vector_type_2",
-                                      "options": {
-                                        "metric": "euclidean"
-                                      }
-                                    }
-                                  }
-                                  """)
-          .hasNoErrors()
-          .body("status.ok", is(1));
-    }
-
-    @Test
     public void addvectorIndexWithSourceModel() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
@@ -253,11 +238,48 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                     "definition": {
                                       "column": "vector_type_2",
                                       "options": {
-                                        "sourceModel": "mistral-embed"
+                                        "sourceModel": "openai_v3_small"
                                       }
                                     }
                                   }
                                   """)
+          .hasNoErrors()
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public void addvectorIndexWithMetric() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+          .postCommand(
+              "createIndex",
+              """
+              {
+                "name": "vector_type_3_idx",
+                "definition": {
+                  "column": "vector_type_3",
+                  "options": {
+                    "metric": "euclidean"
+                  }
+                }
+              }
+              """)
+          .hasNoErrors()
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public void addIdexForQuotedColumn() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+          .postCommand(
+              "createIndex",
+              """
+                                          {
+                                            "name": "physicalAddress_idx",
+                                            "definition": {
+                                              "column": "physicalAddress"
+                                            }
+                                          }
+                                          """)
           .hasNoErrors()
           .body("status.ok", is(1));
     }
@@ -276,11 +298,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               "createIndex",
               """
                       {
-                        {
-                          "name": "city_index",
-                          "definition": {
-                              "column": "city"
-                          }
+                        "name": "city_index",
+                        "definition": {
+                          "column": "city"
                         }
                       }
                       """)
@@ -358,7 +378,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                               {
                                       "name": "vector_type_3_idx",
                                       "definition": {
-                                        "column": "invalid_text",
+                                        "column": "vector_type_3",
                                         "options": {
                                           "metric": "cosine",
                                           "sourceModel": "mistral-embed"

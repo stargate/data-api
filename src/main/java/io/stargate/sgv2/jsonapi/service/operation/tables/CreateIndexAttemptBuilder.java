@@ -26,7 +26,12 @@ public class CreateIndexAttemptBuilder {
   public CreateIndexAttemptBuilder columnName(String columnName) {
     this.columnName = columnName;
     // It will not be null since null check is already done in the resolver
-    this.dataType = schemaObject.tableMetadata().getColumn(CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName)).get().getType();
+    this.dataType =
+        schemaObject
+            .tableMetadata()
+            .getColumn(CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName))
+            .get()
+            .getType();
     return this;
   }
 

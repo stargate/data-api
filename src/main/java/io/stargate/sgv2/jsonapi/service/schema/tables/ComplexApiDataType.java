@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
-import com.datastax.oss.driver.internal.core.type.DefaultVectorType;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
 
 /** Interface defining the api data type for complex types */
 public abstract class ComplexApiDataType implements ApiDataType {
@@ -82,25 +82,6 @@ public abstract class ComplexApiDataType implements ApiDataType {
     public DataType getCqlType() {
       return new ExtendedVectorType(
           ApiDataTypeDefs.from(getValueType()).get().getCqlType(), getDimension());
-    }
-  }
-
-  /**
-   * Extended vector type to support vector size This is needed because java drivers
-   * DataTypes.vectorOf() method has a bug
-   */
-  public static class ExtendedVectorType extends DefaultVectorType {
-    public ExtendedVectorType(DataType subtype, int vectorSize) {
-      super(subtype, vectorSize);
-    }
-
-    @Override
-    public String asCql(boolean includeFrozen, boolean pretty) {
-      return "VECTOR<"
-          + getElementType().asCql(includeFrozen, pretty)
-          + ","
-          + getDimensions()
-          + ">";
     }
   }
 }

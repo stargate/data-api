@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.ListType;
@@ -10,7 +11,9 @@ import com.datastax.oss.driver.api.core.type.SetType;
 import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndex;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexOnTable;
+import com.datastax.oss.driver.internal.querybuilder.schema.DefaultCreateIndex;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.time.Duration;
@@ -71,7 +74,7 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
     public Map<String, Object> getOptions() {
       Map<String, Object> options = new HashMap<>();
       if (similarityFunction != null) {
-        options.put("similarity_function", similarityFunction);
+        options.put("similarity_function", similarityFunction.getName());
       }
       if (sourceModel != null) {
         options.put("source_model", sourceModel);
@@ -85,7 +88,7 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
     var keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.name().keyspace());
     var tableIdentifier = cqlIdentifierFromUserInput(schemaObject.name().table());
     final CreateIndexOnTable indexTableUsingSai =
-        SchemaBuilder.createIndex()
+        SchemaBuilder.createIndex(CqlIdentifier.fromCql(indexName))
             .custom("StorageAttachedIndex")
             .onTable(keyspaceIdentifier, tableIdentifier);
     CreateIndex createIndex;
@@ -97,16 +100,17 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
       createIndex = indexTableUsingSai.andColumn(cqlIdentifierFromUserInput(columnName));
     }
     Map<String, Object> options = new HashMap<>();
-    if (textIndexOptions != null) {
-      for (Map.Entry<String, Object> entry : textIndexOptions.getOptions().entrySet()) {
-        createIndex = createIndex.withOption(entry.getKey(), entry.getValue());
-      }
+    if (textIndexOptions != null && !textIndexOptions.getOptions().isEmpty()) {
+      createIndex = createIndex.withOption("OPTIONS", textIndexOptions.getOptions());
     }
-    if (vectorIndexOptions != null) {
-      for (Map.Entry<String, Object> entry : vectorIndexOptions.getOptions().entrySet()) {
-        createIndex = createIndex.withOption(entry.getKey(), entry.getValue());
-      }
+    if (vectorIndexOptions != null && !vectorIndexOptions.getOptions().isEmpty()) {
+      createIndex = createIndex.withOption("OPTIONS", vectorIndexOptions.getOptions());
     }
-    return createIndex.build();
+
+    // Hack code to fix the issue
+    ExtendedCreateIndex extendedCreateIndex =
+        new ExtendedCreateIndex((DefaultCreateIndex) createIndex);
+
+    return extendedCreateIndex.build();
   }
 }

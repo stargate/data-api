@@ -22,6 +22,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /** Resolver for the {@link CreateIndexCommand}. */
 @ApplicationScoped
@@ -30,6 +31,10 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
   public Class<CreateIndexCommand> getCommandClass() {
     return CreateIndexCommand.class;
   }
+
+  public static final Set<String> supportedSources =
+      Set.of(
+          "ada002", "openai_v3_small", "openai_v3_large", "bert", "gecko", "nv_qa_4", "cohere_v3");
 
   @Override
   public Operation resolveTableCommand(
@@ -42,7 +47,9 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
     TableMetadata tableMetadata = ctx.schemaObject().tableMetadata();
     // Validate Column present in Table
     final Optional<ColumnMetadata> column =
-        ctx.schemaObject().tableMetadata().getColumn(CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName));
+        ctx.schemaObject()
+            .tableMetadata()
+            .getColumn(CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName));
     ColumnMetadata columnMetadata =
         column.orElseThrow(
             () ->
@@ -77,6 +84,12 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
               Map.of(
                   "reason",
                   "Only one of `metric` or `sourceModel` options should be used for vector type column"));
+        }
+        if (sourceModel != null && !supportedSources.contains(sourceModel)) {
+          throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
+              Map.of(
+                  "reason",
+                  "Invalid source model. Supported source models are: " + supportedSources));
         }
       }
     }
