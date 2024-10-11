@@ -464,7 +464,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     }
 
     @Test
-    public void insertBinaryVectorWithInvalidBinaryString() {
+    public void failToInsertBinaryVectorWithInvalidBinaryString() {
       final String invalidBinaryString = "@#$%^&*()";
       String doc =
               """
@@ -495,7 +495,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     }
 
     @Test
-    public void insertBinaryVectorWithInvalidBinaryValue() {
+    public void failToInsertBinaryVectorWithInvalidBinaryValue() {
       String doc =
           """
                   {
@@ -523,7 +523,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     }
 
     @Test
-    public void insertBinaryVectorWithInvalidVectorObject() {
+    public void failToInsertBinaryVectorWithInvalidVectorObject() {
       String doc =
           """
                   {
@@ -551,7 +551,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     }
 
     @Test
-    public void insertBinaryVectorWithInvalidDecodedValue() {
+    public void failToInsertBinaryVectorWithInvalidDecodedValue() {
       String doc =
           """
                       {
@@ -579,7 +579,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     }
 
     @Test
-    public void insertBinaryVectorWithUnmatchedVectorDimension() {
+    public void failToInsertBinaryVectorWithUnmatchedVectorDimension() {
       final float[] wrongVectorDimension = new float[] {0.25f, -1.5f, 0.00f};
       final String base64Vector = generateBase64EncodedBinaryVector(wrongVectorDimension);
       String doc =
