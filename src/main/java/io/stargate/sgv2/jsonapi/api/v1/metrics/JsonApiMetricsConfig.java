@@ -86,6 +86,10 @@ public interface JsonApiMetricsConfig {
   @WithDefault("index.usage.count")
   String indexUsageCounterMetrics();
 
+  @NotBlank
+  @WithDefault("command.processor.latency")
+  String commandProcessorLatencyMetrics();
+
   /** List of values that can be used as value for metrics sort_type. */
   enum SortType {
     // Uses vertor search sorting for document resolution
