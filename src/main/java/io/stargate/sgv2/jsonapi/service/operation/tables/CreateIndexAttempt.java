@@ -101,8 +101,8 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
 
   @Override
   protected SimpleStatement buildStatement() {
-    var keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.name().keyspace());
-    var tableIdentifier = cqlIdentifierFromUserInput(schemaObject.name().table());
+    CqlIdentifier keyspaceIdentifier = cqlIdentifierFromUserInput(schemaObject.name().keyspace());
+    CqlIdentifier tableIdentifier = cqlIdentifierFromUserInput(schemaObject.name().table());
 
     // Set as StorageAttachedIndex as default
     CreateIndexStart createIndexStart =
