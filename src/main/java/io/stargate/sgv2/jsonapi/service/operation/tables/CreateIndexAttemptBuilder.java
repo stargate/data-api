@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
@@ -7,11 +8,11 @@ import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 
 /** Builder for a {@link CreateIndexAttempt}. */
 public class CreateIndexAttemptBuilder {
-  private int position;
+  private final int position;
   private TableSchemaObject schemaObject;
-  private String columnName;
+  private CqlIdentifier columnName;
   private DataType dataType;
-  private String indexName;
+  private CqlIdentifier indexName;
   private CreateIndexAttempt.TextIndexOptions textIndexOptions;
   private CreateIndexAttempt.VectorIndexOptions vectorIndexOptions;
   private boolean ifNotExists;
@@ -25,14 +26,9 @@ public class CreateIndexAttemptBuilder {
    * Column name for which index is to be created.
    */
   public CreateIndexAttemptBuilder columnName(String columnName) {
-    this.columnName = columnName;
+    this.columnName = CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName);
     // It will not be null since null check is already done in the resolver
-    this.dataType =
-        schemaObject
-            .tableMetadata()
-            .getColumn(CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName))
-            .get()
-            .getType();
+    this.dataType = schemaObject.tableMetadata().getColumn(columnName).get().getType();
     return this;
   }
 
@@ -45,7 +41,7 @@ public class CreateIndexAttemptBuilder {
   }
 
   public CreateIndexAttemptBuilder indexName(String indexName) {
-    this.indexName = indexName;
+    this.indexName = CqlIdentifierUtil.cqlIdentifierFromUserInput(indexName);
     return this;
   }
 
@@ -58,7 +54,6 @@ public class CreateIndexAttemptBuilder {
       Boolean caseSensitive, Boolean normalize, Boolean ascii) {
     this.textIndexOptions =
         new CreateIndexAttempt.TextIndexOptions(caseSensitive, normalize, ascii);
-    this.textIndexOptions = textIndexOptions;
     return this;
   }
 

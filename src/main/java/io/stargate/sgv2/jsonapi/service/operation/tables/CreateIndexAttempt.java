@@ -25,8 +25,8 @@ import java.util.Map;
  An attempt to create index for a table's column.
 */
 public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
-  private final String columnName;
-  private final String indexName;
+  private final CqlIdentifier columnName;
+  private final CqlIdentifier indexName;
   private final TextIndexOptions textIndexOptions;
   private final VectorIndexOptions vectorIndexOptions;
   private final DataType dataType;
@@ -46,9 +46,9 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
   protected CreateIndexAttempt(
       int position,
       TableSchemaObject schemaObject,
-      String columnName,
+      CqlIdentifier columnName,
       DataType dataType,
-      String indexName,
+      CqlIdentifier indexName,
       TextIndexOptions textIndexOptions,
       VectorIndexOptions vectorIndexOptions,
       boolean ifNotExists) {
@@ -106,7 +106,7 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
 
     // Set as StorageAttachedIndex as default
     CreateIndexStart createIndexStart =
-        SchemaBuilder.createIndex(CqlIdentifier.fromCql(indexName)).custom("StorageAttachedIndex");
+        SchemaBuilder.createIndex(indexName).custom("StorageAttachedIndex");
 
     // If `ifNotExists` is true, then set the flag to ignore if index already exists
     if (ifNotExists) {
@@ -119,11 +119,11 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
     // Set the column name
     CreateIndex createIndex;
     if (dataType instanceof MapType) {
-      createIndex = createIndexOnTable.andColumnEntries(cqlIdentifierFromUserInput(columnName));
+      createIndex = createIndexOnTable.andColumnEntries(columnName);
     } else if (dataType instanceof ListType || dataType instanceof SetType) {
-      createIndex = createIndexOnTable.andColumnValues(cqlIdentifierFromUserInput(columnName));
+      createIndex = createIndexOnTable.andColumnValues(columnName);
     } else {
-      createIndex = createIndexOnTable.andColumn(cqlIdentifierFromUserInput(columnName));
+      createIndex = createIndexOnTable.andColumn(columnName);
     }
     // Set the options for the index
     Map<String, Object> options = new HashMap<>();
