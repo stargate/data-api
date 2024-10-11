@@ -8,6 +8,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
@@ -22,7 +23,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 /** Resolver for the {@link CreateIndexCommand}. */
 @ApplicationScoped
@@ -31,11 +31,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
   public Class<CreateIndexCommand> getCommandClass() {
     return CreateIndexCommand.class;
   }
-
-  // Supported Source Models for Vector Index in Cassandra
-  public static final Set<String> supportedSources =
-      Set.of(
-          "ada002", "openai_v3_small", "openai_v3_large", "bert", "gecko", "nv_qa_4", "cohere_v3");
+  ;
 
   @Override
   public Operation resolveTableCommand(
@@ -86,11 +82,12 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
                   "reason",
                   "Only one of `metric` or `sourceModel` options should be used for vector type column"));
         }
-        if (sourceModel != null && !supportedSources.contains(sourceModel)) {
+        if (sourceModel != null && !VectorConstant.SUPPORTED_SOURCES.contains(sourceModel)) {
           throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
               Map.of(
                   "reason",
-                  "Invalid source model. Supported source models are: " + supportedSources));
+                  "Invalid source model. Supported source models are: "
+                      + VectorConstant.SUPPORTED_SOURCES));
         }
       }
     }
