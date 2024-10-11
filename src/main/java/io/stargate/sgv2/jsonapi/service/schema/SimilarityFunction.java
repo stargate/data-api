@@ -15,11 +15,11 @@ public enum SimilarityFunction {
   UNDEFINED("undefined");
 
   private String metric;
-  private static Map<String, SimilarityFunction> functionMap = new HashMap<>();
+  private static Map<String, SimilarityFunction> FUNCTIONS_MAP = new HashMap<>();
 
   static {
     for (SimilarityFunction similarityFunction : SimilarityFunction.values()) {
-      functionMap.put(similarityFunction.getMetric(), similarityFunction);
+      FUNCTIONS_MAP.put(similarityFunction.getMetric(), similarityFunction);
     }
   }
 
@@ -34,7 +34,7 @@ public enum SimilarityFunction {
   // TODO: store the name of the enum in the enum itself
   public static SimilarityFunction fromString(String similarityFunction) {
     if (similarityFunction == null) return UNDEFINED;
-    SimilarityFunction function = functionMap.get(similarityFunction);
+    SimilarityFunction function = FUNCTIONS_MAP.get(similarityFunction);
     if (function == null) {
       throw ErrorCodeV1.VECTOR_SEARCH_INVALID_FUNCTION_NAME.toApiException(
           "'%s'", similarityFunction);
