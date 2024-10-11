@@ -10,6 +10,8 @@ import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -231,7 +233,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return 1000000L;
       }
       if (type.equals(DataTypes.DECIMAL)) {
-        return 19.99;
+        return BigDecimal.valueOf(19.99);
       }
       if (type.equals(DataTypes.DOUBLE)) {
         return 4.5d;
@@ -240,13 +242,13 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return 70.5f;
       }
       if (type.equals(DataTypes.SMALLINT)) {
-        return 3;
+        return (short) 3;
       }
       if (type.equals(DataTypes.TINYINT)) {
-        return 1;
+        return (byte) 1;
       }
       if (type.equals(DataTypes.VARINT)) {
-        return 123456789;
+        return BigInteger.valueOf(123456789);
       }
       if (type.equals(DataTypes.BOOLEAN)) {
         return true;
