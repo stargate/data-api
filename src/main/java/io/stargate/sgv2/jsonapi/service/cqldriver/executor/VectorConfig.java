@@ -8,19 +8,26 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * incorporates vectorizeConfig into vectorConfig
+ * Definition of vector config for a collection or table
  *
- * @param vectorEnabled - If vector field is available for the table
  * @param columnVectorDefinitions - List of columnVectorDefinitions each with respect to a
  *     column/field
  */
-public record VectorConfig(
-    boolean vectorEnabled, List<ColumnVectorDefinition> columnVectorDefinitions) {
+public record VectorConfig(List<ColumnVectorDefinition> columnVectorDefinitions) {
 
   // TODO: this is an immutable record, this can be singleton
   // TODO: Remove the use of NULL for the objects like vectorizeConfig
   public static VectorConfig notEnabledVectorConfig() {
-    return new VectorConfig(false, null);
+    return new VectorConfig(null);
+  }
+
+  /**
+   * Return vector enabled if columnVectorDefinitions is not null and not empty
+   *
+   * @return
+   */
+  public boolean vectorEnabled() {
+    return columnVectorDefinitions != null && !columnVectorDefinitions.isEmpty();
   }
 
   /**

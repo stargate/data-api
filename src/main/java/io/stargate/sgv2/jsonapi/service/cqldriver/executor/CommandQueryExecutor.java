@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import java.util.Objects;
@@ -76,6 +77,10 @@ public class CommandQueryExecutor {
 
     statement = withExecutionProfile(statement, QueryType.WRITE);
     return executeAndWrap(statement);
+  }
+
+  public Optional<KeyspaceMetadata> getKeyspaceMetadata(String keyspace) {
+    return session().getMetadata().getKeyspace(keyspace);
   }
 
   public Uni<AsyncResultSet> executeCreateSchema(SimpleStatement statement) {

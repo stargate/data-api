@@ -232,7 +232,6 @@ public class DataVectorizerTest {
               null,
               IdConfig.defaultIdConfig(),
               new VectorConfig(
-                  true,
                   List.of(
                       new VectorConfig.ColumnVectorDefinition(
                           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,

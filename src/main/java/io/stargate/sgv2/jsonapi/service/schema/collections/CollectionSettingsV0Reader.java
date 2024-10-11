@@ -30,7 +30,6 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
 
     VectorConfig vectorConfig =
         new VectorConfig(
-            vectorEnabled,
             List.of(
                 new VectorConfig.ColumnVectorDefinition(
                     DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
