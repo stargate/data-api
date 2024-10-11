@@ -4,6 +4,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,6 +40,13 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
         .postCreateTable(tableDefAsJSON)
         .hasNoErrors()
         .body("status.ok", is(1));
+  }
+
+  protected DataApiResponseValidator listTables(String tableDefAsJSON) {
+    return DataApiCommandSenders.assertNamespaceCommand(keyspaceName)
+        .postListTables(tableDefAsJSON)
+        .hasNoErrors()
+        .body("status.tables", notNullValue());
   }
 
   protected DataApiResponseValidator createTableErrorValidation(

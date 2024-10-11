@@ -12,6 +12,8 @@ import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.time.DateTimeException;
 import java.util.function.Function;
@@ -362,6 +364,14 @@ public record JSONCodec<JavaT, CqlT>(
                 .formatted(e.getMessage()));
       }
       return ByteBuffer.wrap(binaryPayload);
+    }
+
+    static InetAddress inetAddressFromString(String value) throws IllegalArgumentException {
+      try {
+        return InetAddress.getByName(value);
+      } catch (UnknownHostException e) {
+        throw new IllegalArgumentException("Invalid IP address value '%s'".formatted(value));
+      }
     }
   }
 

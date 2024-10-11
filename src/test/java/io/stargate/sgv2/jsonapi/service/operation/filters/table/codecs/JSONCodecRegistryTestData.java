@@ -39,12 +39,18 @@ public class JSONCodecRegistryTestData {
 
   public final BigDecimal NOT_EXACT_AS_INTEGER = new BigDecimal("1.25");
 
+  public final String UUID_VALID_STR_LC = "123e4567-e89b-12d3-a456-426614174000";
+  public final String UUID_VALID_STR_UC = "A34FACED-F158-4FDB-AA32-C4128D25A20F";
+
   // From https://en.wikipedia.org/wiki/Base64 -- 10-to-16 character sample case, with padding
   public final String BASE64_PADDED_DECODED_STR = "light work";
   public final byte[] BASE64_PADDED_DECODED_BYTES =
       BASE64_PADDED_DECODED_STR.getBytes(StandardCharsets.UTF_8);
   public final String BASE64_PADDED_ENCODED_STR = "bGlnaHQgd29yaw==";
   public final String BASE64_UNPADDED_ENCODED_STR = "bGlnaHQgd29yaw";
+
+  public final String INET_ADDRESS_VALID_STRING = "192.168.1.3";
+  public final String INET_ADDRESS_INVALID_STRING = "not-an-ip-address";
 
   public final String STRING_ASCII_SAFE = "ascii-safe-string";
   public final String STRING_WITH_2BYTE_UTF8_CHAR = "text-with-2-byte-utf8-\u00a2"; // cent symbol
