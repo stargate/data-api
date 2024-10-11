@@ -65,7 +65,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
           throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
               Map.of(
                   "reason",
-                  "`caseSensitive`, `normalize` and `ascii` options are valid only for text column"));
+                  "`caseSensitive`, `normalize` and `ascii` options are valid only for `text` column"));
         }
       }
       if (!(columnMetadata.getType() instanceof VectorType)) {
@@ -73,20 +73,20 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
           throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
               Map.of(
                   "reason",
-                  "`metric` and `sourceModel` options are valid only for vector type column"));
+                  "`metric` and `sourceModel` options are valid only for `vector` type column"));
         }
       } else {
         if (similarityFunction != null && sourceModel != null) {
           throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
               Map.of(
                   "reason",
-                  "Only one of `metric` or `sourceModel` options should be used for vector type column"));
+                  "Only one of `metric` or `sourceModel` options should be used for `vector` type column"));
         }
         if (sourceModel != null && !VectorConstant.SUPPORTED_SOURCES.contains(sourceModel)) {
           throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
               Map.of(
                   "reason",
-                  "Invalid source model. Supported source models are: "
+                  "Invalid `sourceModel`. Supported source models are: "
                       + VectorConstant.SUPPORTED_SOURCES));
         }
       }
@@ -107,9 +107,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
     }
 
     var attempt =
-        new CreateIndexAttemptBuilder(0, ctx.schemaObject())
-            .columnName(columnName)
-            .indexName(indexName)
+        new CreateIndexAttemptBuilder(0, ctx.schemaObject(), columnName, indexName)
             .ifNotExists(ifNotExists)
             .textIndexOptions(caseSensitive, normalize, ascii)
             .vectorIndexOptions(similarityFunction, sourceModel)

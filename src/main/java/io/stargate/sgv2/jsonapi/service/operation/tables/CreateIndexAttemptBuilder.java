@@ -17,32 +17,13 @@ public class CreateIndexAttemptBuilder {
   private CreateIndexAttempt.VectorIndexOptions vectorIndexOptions;
   private boolean ifNotExists;
 
-  public CreateIndexAttemptBuilder(int position, TableSchemaObject schemaObject) {
+  public CreateIndexAttemptBuilder(
+      int position, TableSchemaObject schemaObject, String columnName, String indexName) {
     this.position = position;
     this.schemaObject = schemaObject;
-  }
-
-  /*
-   * Column name for which index is to be created.
-   */
-  public CreateIndexAttemptBuilder columnName(String columnName) {
     this.columnName = CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName);
-    // It will not be null since null check is already done in the resolver
-    this.dataType = schemaObject.tableMetadata().getColumn(columnName).get().getType();
-    return this;
-  }
-
-  /*
-   * Column name for which index is to be created.
-   */
-  public CreateIndexAttemptBuilder dataType(DataType dataType) {
-    this.dataType = dataType;
-    return this;
-  }
-
-  public CreateIndexAttemptBuilder indexName(String indexName) {
     this.indexName = CqlIdentifierUtil.cqlIdentifierFromUserInput(indexName);
-    return this;
+    this.dataType = schemaObject.tableMetadata().getColumn(columnName).get().getType();
   }
 
   public CreateIndexAttemptBuilder ifNotExists(boolean ifNotExists) {
