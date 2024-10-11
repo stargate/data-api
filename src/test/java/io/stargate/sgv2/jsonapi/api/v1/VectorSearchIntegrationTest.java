@@ -459,12 +459,12 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
       // Convert the byte array to a float array
       float[] decodedVector = decodeBase64BinaryVectorToFloatArray(base64VectorFromResponse);
 
-      // Step 7: Verify that the decoded float array is equal to the expected vector
+      // Verify that the decoded float array is equal to the expected vector
       Assertions.assertArrayEquals(expectedVector, decodedVector, 0.0001f);
     }
 
     @Test
-    public void insertBinaryVectorWithInvalidBinaryString() {
+    public void failToInsertBinaryVectorWithInvalidBinaryString() {
       final String invalidBinaryString = "@#$%^&*()";
       String doc =
               """
@@ -495,7 +495,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     }
 
     @Test
-    public void insertBinaryVectorWithInvalidBinaryValue() {
+    public void failToInsertBinaryVectorWithInvalidBinaryValue() {
       String doc =
           """
                   {
@@ -523,7 +523,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     }
 
     @Test
-    public void insertBinaryVectorWithInvalidVectorObject() {
+    public void failToInsertBinaryVectorWithInvalidVectorObject() {
       String doc =
           """
                   {
@@ -551,7 +551,7 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
     }
 
     @Test
-    public void insertBinaryVectorWithInvalidDecodedValue() {
+    public void failToInsertBinaryVectorWithInvalidDecodedValue() {
       String doc =
           """
                       {
@@ -576,6 +576,38 @@ public class VectorSearchIntegrationTest extends AbstractKeyspaceIntegrationTest
               "errors[0].message",
               is(
                   "Bad binary vector value to shred: Invalid content in EJSON $binary wrapper: decoded value is not a multiple of 4 bytes long (3 bytes)"));
+    }
+
+    @Test
+    public void failToInsertBinaryVectorWithUnmatchedVectorDimension() {
+      final float[] wrongVectorDimension = new float[] {0.25f, -1.5f, 0.00f};
+      final String base64Vector = generateBase64EncodedBinaryVector(wrongVectorDimension);
+      String doc =
+              """
+                  {
+                    "name": "aaron",
+                    "$vector": {"$binary": "%s"}
+                  }
+              """
+              .formatted(base64Vector);
+
+      given()
+          .headers(getHeaders())
+          .contentType(ContentType.JSON)
+          .body("{ \"insertOne\": { \"document\": %s }}".formatted(doc))
+          .when()
+          .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
+          .then()
+          .statusCode(200)
+          .body("status.insertedIds[0]", is(nullValue()))
+          .body("data", is(nullValue()))
+          .body("errors", is(notNullValue()))
+          .body("errors[0].exceptionClass", is("JsonApiException"))
+          .body("errors[0].errorCode", is("VECTOR_SIZE_MISMATCH"))
+          .body(
+              "errors[0].message",
+              is(
+                  "Length of vector parameter different from declared '$vector' dimension: root cause = (InvalidQueryException) Not enough bytes to read a vector<float, 5>"));
     }
   }
 
