@@ -351,7 +351,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           SchemaException.Code.INVALID_INDEX_DEFINITION.get(
               Map.of(
                   "reason",
-                  "`caseSensitive`, `normalize` and `ascii` options are valid only for text column"));
+                  "`caseSensitive`, `normalize` and `ascii` options are valid only for `text` column"));
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -378,7 +378,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           SchemaException.Code.INVALID_INDEX_DEFINITION.get(
               Map.of(
                   "reason",
-                  "`metric` and `sourceModel` options are valid only for vector type column"));
+                  "`metric` and `sourceModel` options are valid only for `vector` type column"));
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",
@@ -405,7 +405,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           SchemaException.Code.INVALID_INDEX_DEFINITION.get(
               Map.of(
                   "reason",
-                  "Only one of `metric` or `sourceModel` options should be used for vector type column"));
+                  "Only one of `metric` or `sourceModel` options should be used for `vector` type column"));
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createIndex",

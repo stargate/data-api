@@ -23,7 +23,7 @@ public class CreateIndexAttemptBuilder {
     this.schemaObject = schemaObject;
     this.columnName = CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName);
     this.indexName = CqlIdentifierUtil.cqlIdentifierFromUserInput(indexName);
-    this.dataType = schemaObject.tableMetadata().getColumn(columnName).get().getType();
+    this.dataType = schemaObject.tableMetadata().getColumn(this.columnName).get().getType();
   }
 
   public CreateIndexAttemptBuilder ifNotExists(boolean ifNotExists) {
