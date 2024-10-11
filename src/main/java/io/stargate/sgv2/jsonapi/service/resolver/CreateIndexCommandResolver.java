@@ -43,7 +43,7 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
 
     String columnName = command.definition().column();
     String indexName = command.name();
-    final CreateIndexCommand.Definition.Options options = command.definition().options();
+    final CreateIndexCommand.Definition.Options definitionOptions = command.definition().options();
 
     TableMetadata tableMetadata = ctx.schemaObject().tableMetadata();
     // Validate Column present in Table
@@ -56,16 +56,13 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
             () ->
                 SchemaException.Code.INVALID_INDEX_DEFINITION.get(
                     Map.of("reason", "Column not defined in the table")));
-    Boolean caseSensitive = options != null ? options.caseSensitive() : null;
-    Boolean normalize = options != null ? options.normalize() : null;
-    Boolean ascii = options != null ? options.ascii() : null;
-    SimilarityFunction similarityFunction = options != null ? options.metric() : null;
-    String sourceModel = options != null ? options.sourceModel() : null;
-    boolean ifNotExists = false;
-    if (options != null) {
-      if (options.ifNotExists() != null) {
-        ifNotExists = options.ifNotExists();
-      }
+    Boolean caseSensitive = definitionOptions != null ? definitionOptions.caseSensitive() : null;
+    Boolean normalize = definitionOptions != null ? definitionOptions.normalize() : null;
+    Boolean ascii = definitionOptions != null ? definitionOptions.ascii() : null;
+    SimilarityFunction similarityFunction =
+        definitionOptions != null ? definitionOptions.metric() : null;
+    String sourceModel = definitionOptions != null ? definitionOptions.sourceModel() : null;
+    if (definitionOptions != null) {
       // Validate Options
       if (!columnMetadata.getType().equals(DataTypes.TEXT)) {
         if (caseSensitive != null || normalize != null || ascii != null) {
@@ -97,6 +94,14 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
         }
       }
     }
+
+    // Command level option for ifNotExists
+    boolean ifNotExists = false;
+    final CreateIndexCommand.Options commandOptions = command.options();
+    if (commandOptions != null && commandOptions.ifNotExists() != null) {
+      ifNotExists = commandOptions.ifNotExists();
+    }
+
     // Default Similarity Function to COSINE
     if (columnMetadata.getType() instanceof VectorType
         && similarityFunction == null

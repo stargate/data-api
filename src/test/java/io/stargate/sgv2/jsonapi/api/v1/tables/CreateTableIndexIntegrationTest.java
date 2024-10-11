@@ -308,10 +308,10 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 {
                                   "name": "comment_idx",
                                   "definition": {
-                                    "column": "comment",
-                                    "options": {
-                                      "ifNotExists": true
-                                    }
+                                    "column": "comment"
+                                  },
+                                  "options": {
+                                    "ifNotExists": true
                                   }
                                 }
                                 """)
