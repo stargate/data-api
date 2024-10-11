@@ -24,6 +24,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.Comp
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveTypes;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
@@ -39,7 +40,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 public abstract class MetadataAttempt<SchemaT extends KeyspaceSchemaObject>
-    extends OperationAttempt<MetadataAttempt<SchemaT>, SchemaT> {
+        extends OperationAttempt<MetadataAttempt<SchemaT>, SchemaT>{
+  // this will be set on executeStatement
   private Optional<KeyspaceMetadata> keyspaceMetadata;
   private static ObjectMapper objectMapper = new ObjectMapper();
   private static final CollectionTableMatcher TABLE_MATCHER = new CollectionTableMatcher();
@@ -66,28 +68,11 @@ public abstract class MetadataAttempt<SchemaT extends KeyspaceSchemaObject>
   }
 
   /**
-   * Get table names from the keyspace metadata.
-   *
-   * @return
-   */
-  protected List<String> getNames() {
-    return getTables().stream()
-        .map(
-            schemaObject ->
-                CqlIdentifierUtil.externalRepresentation(schemaObject.tableMetadata().getName()))
-        .toList();
-  }
-
-  private List<TableResponse> getSchema() {
-    return getTables().stream().map(this::getTableSchema).toList();
-  }
-
-  /**
    * Convert table schema object to table response which is returned as response for `listTables`
    *
    * @return
    */
-  private TableResponse getTableSchema(TableSchemaObject tableSchemaObject) {
+  protected TableResponse getTableSchema(TableSchemaObject tableSchemaObject) {
     TableMetadata tableMetadata = tableSchemaObject.tableMetadata();
     String tableName = CqlIdentifierUtil.externalRepresentation(tableMetadata.getName());
     HashMap<String, ColumnType> columnsDefinition = new HashMap<>();
@@ -202,7 +187,7 @@ public abstract class MetadataAttempt<SchemaT extends KeyspaceSchemaObject>
     record TableDefinition(Map<String, ColumnType> columns, PrimaryKey primaryKey) {}
   }
 
-  private List<TableSchemaObject> getTables() {
+  protected List<TableSchemaObject> getTables() {
     return keyspaceMetadata
         .get()
         // get all tables
