@@ -42,10 +42,6 @@ stargate:
       max-attempts: 1
       policy: custom
 
-  jsonapi:
-     operations:
-       extend-error: true
-
   # metrics properties
   metrics:
     global-tags:
