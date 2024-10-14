@@ -6,17 +6,17 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-/**
- * Definition of vector config for a collection or table
- *
- * @param columnVectorDefinitions - List of columnVectorDefinitions each with respect to a
- *     column/field
- */
+/** Definition of vector config for a collection or table */
 public class VectorConfig {
   private final List<ColumnVectorDefinition> columnVectorDefinitions;
   private final boolean vectorEnabled;
 
+  /*
+   * @param columnVectorDefinitions - List of columnVectorDefinitions each with respect to a
+   *     column/field
+   */
   public VectorConfig(List<ColumnVectorDefinition> columnVectorDefinitions) {
     this.columnVectorDefinitions = columnVectorDefinitions;
     this.vectorEnabled = columnVectorDefinitions != null && !columnVectorDefinitions.isEmpty();
@@ -30,6 +30,20 @@ public class VectorConfig {
 
   public List<ColumnVectorDefinition> columnVectorDefinitions() {
     return columnVectorDefinitions;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    VectorConfig that = (VectorConfig) o;
+    return vectorEnabled == that.vectorEnabled
+        && Objects.equals(columnVectorDefinitions, that.columnVectorDefinitions);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(columnVectorDefinitions, vectorEnabled);
   }
 
   /**
