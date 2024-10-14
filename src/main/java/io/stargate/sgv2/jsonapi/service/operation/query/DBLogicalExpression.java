@@ -5,6 +5,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -71,7 +72,7 @@ public class DBLogicalExpression implements PrettyPrintable {
    * @param DBLogicalExpression subExpression
    * @return subExpression
    */
-  public DBLogicalExpression addSubExpression(DBLogicalExpression subExpression) {
+  public DBLogicalExpression addSubExpressionReturnSub(DBLogicalExpression subExpression) {
     subExpressions.add(Objects.requireNonNull(subExpression, "subExpressions cannot be null"));
     return subExpression;
   }
@@ -138,4 +139,38 @@ public class DBLogicalExpression implements PrettyPrintable {
     var sb = prettyToStringBuilder.beginSubBuilder(getClass());
     return toString(sb).endSubBuilder();
   }
+
+  // ==================================================================================================================
+  // These methods below are created to help construct DBLogicalExpression in unit tests
+  public static DBLogicalExpression and() {
+    return new DBLogicalExpression(DBLogicalOperator.AND);
+  }
+
+  public static DBLogicalExpression and(TableFilter... filters) {
+    var and = and();
+    Arrays.stream(filters).forEach(and::addFilter);
+    return and;
+  }
+
+  public static DBLogicalExpression or() {
+    return new DBLogicalExpression(DBLogicalOperator.OR);
+  }
+
+  public static DBLogicalExpression or(TableFilter... filters) {
+    var or = or();
+    Arrays.stream(filters).forEach(or::addFilter);
+    return or;
+  }
+
+  public DBLogicalExpression addFilters(TableFilter... filters) {
+    Arrays.stream(filters).forEach(this::addFilter);
+    return this;
+  }
+
+  public DBLogicalExpression addSubExpression(DBLogicalExpression subExpression) {
+    subExpressions.add(Objects.requireNonNull(subExpression, "subExpressions cannot be null"));
+    return this;
+  }
+  // ==============================================================================================
+
 }

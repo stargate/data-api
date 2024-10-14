@@ -2,24 +2,24 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.datastax.oss.driver.api.querybuilder.delete.Delete;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
+import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
-import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.LogicalExpression;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
+import io.stargate.sgv2.jsonapi.service.operation.query.extendedDriverQuerybuilder.DefaultSubConditionRelation;
+import io.stargate.sgv2.jsonapi.service.operation.query.extendedDriverQuerybuilder.ExtendedSelect;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
- * Builds the WHERE clause in a CQL statment when using the Java Driver Query Builder.
- *
- * <p>TODO: this accepts the {@link LogicalExpression} to build the statement, we want to stop
- * handing that down to the operations but keeping for now for POC work.
+ * Builds the WHERE clause in a CQL statement when using the Java Driver Query Builder.
  *
  * <p>NOTE: Using a class so the ctor can be made private to force use fo the static factories that
  * solve the generic typing needed for the {@link OngoingWhereClause}.
  *
- * @param <T> The type of Query Builder stament that the where clause is being added to, use the
+ * @param <T> The type of Query Builder statement that the where clause is being added to, use the
  *     static factory methods like {@link #forSelect(TableSchemaObject, DBLogicalExpression)} to get
  *     the correct type.
  */
@@ -82,17 +82,71 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
     return dbLogicalExpression;
   }
 
+  /**
+   * Apply the TableWhereCQLClause to the OnGoingWhereClause.
+   *
+   * <p>tOngoingWhereClause is {@link ExtendedSelect} applied from {@link SelectCQLClause}.
+   *
+   * <p>This method should iterate though the dbLogicalExpression, apply each logicalRelation to the
+   * tOngoingWhereClause and apply each TableFilter to the tOngoingWhereClause
+   *
+   * @param tOngoingWhereClause the first function argument
+   * @param objects the second function argument
+   * @return
+   */
   @Override
   public T apply(T tOngoingWhereClause, List<Object> objects) {
-    // TODO BUG: this probably breaks order for nested expressions, for now enough to get this
-    // tested
-    var tableFilters =
-        dbLogicalExpression.filters().stream().map(dbFilter -> (TableFilter) dbFilter).toList();
+    return tOngoingWhereClause.where(applyLogicalRelation(dbLogicalExpression, objects));
+  }
 
-    // Add the where clause operations
-    for (TableFilter tableFilter : tableFilters) {
-      tOngoingWhereClause = tableFilter.apply(tableSchemaObject, tOngoingWhereClause, objects);
+  /**
+   * This method will recursively resolve the DBLogicalExpression into two kinds of where Relation
+   * that Driver QueryBuilder expects.
+   *
+   * <p>1. TableFilter -> Driver DefaultRelation 2. DBLogicalExpression(AND/OR) -> Driver Logical
+   * Relation
+   *
+   * <p>Positional values are appended as usual in the flow, and the order matters.
+   *
+   * @param currentLogicalExpression currentLogicalExpression
+   * @param objects positionalValues
+   * @return Relation
+   */
+  private Relation applyLogicalRelation(
+      DBLogicalExpression currentLogicalExpression, List<Object> objects) {
+
+    var relationWhere = DefaultSubConditionRelation.subCondition();
+
+    // 1. relations from TableFilters in this level)
+    // 2. relations from logicalExpression in next level)
+    List<Relation> combinedRelations =
+        Stream.concat(
+                currentLogicalExpression.filters().stream()
+                    .map(filter -> ((TableFilter) filter).apply(tableSchemaObject, objects)),
+                currentLogicalExpression.subExpressions().stream()
+                    .map(subExpression -> applyLogicalRelation(subExpression, objects)))
+            .toList();
+
+    // construct and() relation
+    if (currentLogicalExpression.operator() == DBLogicalExpression.DBLogicalOperator.AND
+        && !combinedRelations.isEmpty()) {
+      // and() together
+      relationWhere = relationWhere.where(combinedRelations.getFirst());
+      for (int i = 1; i < combinedRelations.size(); i++) {
+        relationWhere = relationWhere.and().where(combinedRelations.get(i));
+      }
     }
-    return tOngoingWhereClause;
+
+    // construct or() relation
+    if (currentLogicalExpression.operator() == DBLogicalExpression.DBLogicalOperator.OR
+        && !combinedRelations.isEmpty()) {
+      // or() together
+      relationWhere = relationWhere.where(combinedRelations.getFirst());
+      for (int i = 1; i < combinedRelations.size(); i++) {
+        relationWhere = relationWhere.or().where(combinedRelations.get(i));
+      }
+    }
+
+    return relationWhere;
   }
 }

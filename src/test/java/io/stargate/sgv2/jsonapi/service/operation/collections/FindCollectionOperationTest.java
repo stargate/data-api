@@ -1321,7 +1321,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       explicitOr.addFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
       explicitOr.addFilter(new AllCollectionFilter("tags", List.of("tag1", "tag2"), false));
-      implicitAnd.addSubExpression(explicitOr);
+      implicitAnd.addSubExpressionReturnSub(explicitOr);
 
       FindCollectionOperation operation =
           FindCollectionOperation.unsortedSingle(
@@ -1389,7 +1389,7 @@ public class FindCollectionOperationTest extends OperationTestBase {
       explicitOr.addFilter(
           new TextCollectionFilter("username", MapCollectionFilter.Operator.EQ, "user1"));
       explicitOr.addFilter(new AllCollectionFilter("tags", List.of("tag1", "tag2"), true));
-      implicitAnd.addSubExpression(explicitOr);
+      implicitAnd.addSubExpressionReturnSub(explicitOr);
 
       FindCollectionOperation operation =
           FindCollectionOperation.unsortedSingle(

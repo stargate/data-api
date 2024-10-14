@@ -34,25 +34,25 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
   public WhereAnalyzerFixture table2PK3Clustering1Index(String message) {
     var tableMetaData = testData.tableMetadata().table2PK3Clustering1Index();
     return new WhereAnalyzerFixture(
-        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+        message, tableMetaData, testData.logicalExpression().implicitAndExpression(tableMetaData));
   }
 
   public WhereAnalyzerFixture tableKeyAndTwoDuration(String message) {
     var tableMetaData = testData.tableMetadata().keyAndTwoDuration();
     return new WhereAnalyzerFixture(
-        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+        message, tableMetaData, testData.logicalExpression().implicitAndExpression(tableMetaData));
   }
 
   public WhereAnalyzerFixture tableAllColumnDatatypesIndexed(String message) {
     var tableMetaData = testData.tableMetadata().tableAllDatatypesIndexed();
     return new WhereAnalyzerFixture(
-        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+        message, tableMetaData, testData.logicalExpression().implicitAndExpression(tableMetaData));
   }
 
   public WhereAnalyzerFixture tableAllColumnDatatypesNotIndexed(String message) {
     var tableMetaData = testData.tableMetadata().tableAllDatatypesNotIndexed();
     return new WhereAnalyzerFixture(
-        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+        message, tableMetaData, testData.logicalExpression().implicitAndExpression(tableMetaData));
   }
 
   public static class WhereAnalyzerFixture implements PrettyPrintable {
@@ -107,7 +107,8 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       LOGGER.warn("Analyzing: {}\n {}", message, toString(true));
       // store the result in this fixture for later
       analysisResult =
-          analyzer.analyse(TableWhereCQLClause.forSelect(tableSchemaObject, expression.expression));
+          analyzer.analyse(
+              TableWhereCQLClause.forSelect(tableSchemaObject, expression.rootImplicitAnd));
       LOGGER.warn("Analysis result: {}", analysisResult);
     }
 
@@ -244,7 +245,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
 
     public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
       prettyToStringBuilder
-          .append("expression", expression.expression)
+          .append("expression", expression.rootImplicitAnd)
           .append("table", tableMetadata.describe(true));
       return prettyToStringBuilder;
     }

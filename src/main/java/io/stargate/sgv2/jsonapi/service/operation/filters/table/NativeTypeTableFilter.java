@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table;
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 
-import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonOperator;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
@@ -48,9 +47,9 @@ import java.util.List;
  *                 | varint
  * </pre>
  *
- * @param <CqlT> The JSON Type , BigDecimal, String etc
+ * @param <JavaT> The JSON Type , BigDecimal, String etc
  */
-public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements PrettyPrintable {
+public abstract class NativeTypeTableFilter<JavaT> extends TableFilter implements PrettyPrintable {
 
   /**
    * The operations that can be performed to filter a column TIDY: we have operations defined in
@@ -91,9 +90,9 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
   }
 
   public final Operator operator;
-  protected final CqlT columnValue;
+  protected final JavaT columnValue;
 
-  protected NativeTypeTableFilter(String path, Operator operator, CqlT columnValue) {
+  protected NativeTypeTableFilter(String path, Operator operator, JavaT columnValue) {
     super(path);
     this.columnValue = columnValue;
     this.operator = operator;
@@ -106,9 +105,9 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
   }
 
   @Override
-  public <StmtT extends OngoingWhereClause<StmtT>> StmtT apply(
+  public Relation apply(
       TableSchemaObject tableSchemaObject,
-      StmtT ongoingWhereClause,
+      //      StmtT ongoingWhereClause,
       List<Object> positionalValues) {
 
     try {
@@ -140,8 +139,10 @@ public abstract class NativeTypeTableFilter<CqlT> extends TableFilter implements
       throw new RuntimeException(e);
     }
 
-    return ongoingWhereClause.where(
-        Relation.column(getPathAsCqlIdentifier()).build(operator.predicate.cql, bindMarker()));
+    return Relation.column(getPathAsCqlIdentifier()).build(operator.predicate.cql, bindMarker());
+    //    return ongoingWhereClause.where(
+    //        Relation.column(getPathAsCqlIdentifier()).build(operator.predicate.cql,
+    // bindMarker()));
   }
 
   @Override

@@ -6,7 +6,12 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodec;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistries;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
@@ -14,46 +19,55 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LogicalExpressionTestData extends TestDataSuplier {
+
+  private static final Logger log = LoggerFactory.getLogger(LogicalExpressionTestData.class);
 
   public LogicalExpressionTestData(TestData testData) {
     super(testData);
   }
 
-  public DBLogicalExpression andExpression(TableMetadata tableMetadata) {
+  public DBLogicalExpression implicitAndExpression(TableMetadata tableMetadata) {
     return new DBLogicalExpression(DBLogicalExpression.DBLogicalOperator.AND);
   }
 
   public static class ExpressionBuilder<FixtureT> {
-    public final DBLogicalExpression expression;
+    public DBLogicalExpression rootImplicitAnd;
     private final TableMetadata tableMetadata;
     private final FixtureT fixture;
 
     public ExpressionBuilder(
-        FixtureT fixture, DBLogicalExpression expression, TableMetadata tableMetadata) {
+        FixtureT fixture, DBLogicalExpression rootImplicitAnd, TableMetadata tableMetadata) {
       this.fixture = fixture;
-      this.expression = expression;
+      this.rootImplicitAnd = rootImplicitAnd;
       this.tableMetadata = tableMetadata;
     }
 
+    public FixtureT replaceRootDBLogicalExpression(DBLogicalExpression dbLogicalExpression) {
+      this.rootImplicitAnd = dbLogicalExpression;
+      return fixture;
+    }
+
     public FixtureT eqOn(CqlIdentifier column) {
-      expression.addFilter(eq(tableMetadata.getColumn(column).orElseThrow()));
+      rootImplicitAnd.addFilter(eq(tableMetadata.getColumn(column).orElseThrow()));
       return fixture;
     }
 
     public FixtureT notEqOn(CqlIdentifier column) {
-      expression.addFilter(notEq(tableMetadata.getColumn(column).orElseThrow()));
+      rootImplicitAnd.addFilter(notEq(tableMetadata.getColumn(column).orElseThrow()));
       return fixture;
     }
 
     public FixtureT gtOn(CqlIdentifier column) {
-      expression.addFilter(gt(tableMetadata.getColumn(column).orElseThrow()));
+      rootImplicitAnd.addFilter(gt(tableMetadata.getColumn(column).orElseThrow()));
       return fixture;
     }
 
     public FixtureT inOn(CqlIdentifier column) {
-      expression.addFilter(in(tableMetadata.getColumn(column).orElseThrow()));
+      rootImplicitAnd.addFilter(in(tableMetadata.getColumn(column).orElseThrow()));
       return fixture;
     }
 
@@ -67,7 +81,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
           .getPartitionKey()
           .forEach(
               columnMetadata -> {
-                expression.addFilter(eq(columnMetadata));
+                rootImplicitAnd.addFilter(eq(columnMetadata));
               });
       return fixture;
     }
@@ -78,7 +92,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
           .keySet()
           .forEach(
               columnMetadata -> {
-                expression.addFilter(eq(columnMetadata));
+                rootImplicitAnd.addFilter(eq(columnMetadata));
               });
       return fixture;
     }
@@ -95,7 +109,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         if (index == skipIndex) {
           continue;
         }
-        expression.addFilter(eq(columnMetadata));
+        rootImplicitAnd.addFilter(eq(columnMetadata));
       }
       return fixture;
     }
@@ -104,7 +118,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
 
       ColumnMetadata columnMetadata =
           tableMetadata.getClusteringColumns().keySet().stream().toList().get(index);
-      expression.addFilter(eq(columnMetadata));
+      rootImplicitAnd.addFilter(eq(columnMetadata));
       return fixture;
     }
 
@@ -121,7 +135,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
           .filter(columnMetadata -> !allIndexTargets.contains(columnMetadata.getName()))
           .findFirst()
           .ifPresentOrElse(
-              columnMetadata -> expression.addFilter(eq(columnMetadata)),
+              columnMetadata -> rootImplicitAnd.addFilter(eq(columnMetadata)),
               () -> {
                 throw new IllegalArgumentException(
                     "Table don't have a column that is NOT on the SAI table to generate test data");
@@ -135,6 +149,10 @@ public class LogicalExpressionTestData extends TestDataSuplier {
           columnMetadata.getType(),
           NativeTypeTableFilter.Operator.EQ,
           value(columnMetadata.getType()));
+    }
+
+    public TableFilter eq(CqlIdentifier columnCqlIdentifier) {
+      return eq(tableMetadata.getColumn(columnCqlIdentifier).orElseThrow());
     }
 
     public static TableFilter notEq(ColumnMetadata columnMetadata) {
@@ -227,7 +245,7 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return "P1H30M"; // Handle duration as a string
       }
       if (type.equals(DataTypes.INT)) {
-        return 25;
+        return 25L;
       }
       if (type.equals(DataTypes.BIGINT)) {
         return 1000000L;
@@ -270,6 +288,27 @@ public class LogicalExpressionTestData extends TestDataSuplier {
       }
 
       throw new IllegalArgumentException("Unsupported type");
+    }
+
+    // Get CqlValue of type that Driver expects
+    public Object CqlValue(CqlIdentifier column) {
+      var cqlDataType = tableMetadata.getColumn(column).orElseThrow().getType();
+      var javaValue = value(cqlDataType);
+      JSONCodec codec = null;
+      try {
+        codec =
+            JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(
+                tableMetadata,
+                column,
+                ExpressionBuilder.value(tableMetadata.getColumn(column).orElseThrow().getType()));
+      } catch (UnknownColumnException | ToCQLCodecException | MissingJSONCodecException e) {
+        throw new IllegalArgumentException(e);
+      }
+      try {
+        return codec.toCQL(javaValue);
+      } catch (ToCQLCodecException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 }
