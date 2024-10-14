@@ -6,11 +6,13 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
-import io.stargate.sgv2.jsonapi.service.operation.filters.table.TextTableFilter;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class LogicalExpressionTestData extends TestDataSuplier {
@@ -47,6 +49,11 @@ public class LogicalExpressionTestData extends TestDataSuplier {
 
     public FixtureT gtOn(CqlIdentifier column) {
       expression.addFilter(gt(tableMetadata.getColumn(column).orElseThrow()));
+      return fixture;
+    }
+
+    public FixtureT inOn(CqlIdentifier column) {
+      expression.addFilter(in(tableMetadata.getColumn(column).orElseThrow()));
       return fixture;
     }
 
@@ -146,6 +153,13 @@ public class LogicalExpressionTestData extends TestDataSuplier {
           value(columnMetadata.getType()));
     }
 
+    public static TableFilter in(ColumnMetadata columnMetadata) {
+      return new InTableFilter(
+          InTableFilter.Operator.IN,
+          columnMetadata.getName().asInternal(),
+          List.of(value(columnMetadata.getType()), value(columnMetadata.getType())));
+    }
+
     public static TableFilter filter(
         CqlIdentifier column,
         DataType type,
@@ -158,6 +172,50 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         // we pass a string to the codec for a duration
         return new TextTableFilter(column.asInternal(), operator, (String) value);
       }
+      if (type.equals(DataTypes.INT)) {
+        return new NumberTableFilter(column.asInternal(), operator, (Number) value);
+      }
+      if (type.equals(DataTypes.BIGINT)) {
+        return new NumberTableFilter(column.asInternal(), operator, (Number) value);
+      }
+      if (type.equals(DataTypes.DECIMAL)) {
+        return new NumberTableFilter(column.asInternal(), operator, (Number) value);
+      }
+      if (type.equals(DataTypes.DOUBLE)) {
+        return new NumberTableFilter(column.asInternal(), operator, (Number) value);
+      }
+      if (type.equals(DataTypes.FLOAT)) {
+        return new NumberTableFilter(column.asInternal(), operator, (Number) value);
+      }
+      if (type.equals(DataTypes.SMALLINT)) {
+        return new NumberTableFilter(column.asInternal(), operator, (Number) value);
+      }
+      if (type.equals(DataTypes.TINYINT)) {
+        return new NumberTableFilter(column.asInternal(), operator, (Number) value);
+      }
+      if (type.equals(DataTypes.VARINT)) {
+        return new NumberTableFilter(column.asInternal(), operator, (Number) value);
+      }
+      if (type.equals(DataTypes.BOOLEAN)) {
+        return new BooleanTableFilter(column.asInternal(), operator, (Boolean) value);
+      }
+      if (type.equals(DataTypes.ASCII)) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      //      if (type.equals(DataTypes.BLOB)) {
+      //        return new BlobTableFilter(column.asInternal(), operator, (String) value);  //
+      // Assuming blob is passed as base64 encoded string
+      //      }
+      if (type.equals(DataTypes.DATE)) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.TIME)) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.TIMESTAMP)) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+
       throw new IllegalArgumentException("Unsupported type");
     }
 
@@ -166,9 +224,51 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return "text-value";
       }
       if (type.equals(DataTypes.DURATION)) {
-        // we handle duration as a string until it gets to the codec
-        return "P1H30M";
+        return "P1H30M"; // Handle duration as a string
       }
+      if (type.equals(DataTypes.INT)) {
+        return 25;
+      }
+      if (type.equals(DataTypes.BIGINT)) {
+        return 1000000L;
+      }
+      if (type.equals(DataTypes.DECIMAL)) {
+        return BigDecimal.valueOf(19.99);
+      }
+      if (type.equals(DataTypes.DOUBLE)) {
+        return 4.5d;
+      }
+      if (type.equals(DataTypes.FLOAT)) {
+        return 70.5f;
+      }
+      if (type.equals(DataTypes.SMALLINT)) {
+        return (short) 3;
+      }
+      if (type.equals(DataTypes.TINYINT)) {
+        return (byte) 1;
+      }
+      if (type.equals(DataTypes.VARINT)) {
+        return BigInteger.valueOf(123456789);
+      }
+      if (type.equals(DataTypes.BOOLEAN)) {
+        return true;
+      }
+      if (type.equals(DataTypes.ASCII)) {
+        return "Sample ASCII Text";
+      }
+      if (type.equals(DataTypes.BLOB)) {
+        return "aGVsbG8gd29ybGQ="; // Base64 encoded "hello world"
+      }
+      if (type.equals(DataTypes.DATE)) {
+        return "2024-09-24"; // Sample date
+      }
+      if (type.equals(DataTypes.TIME)) {
+        return "12:45:01.005"; // Sample time
+      }
+      if (type.equals(DataTypes.TIMESTAMP)) {
+        return "2024-09-24T14:06:59Z"; // Sample timestamp
+      }
+
       throw new IllegalArgumentException("Unsupported type");
     }
   }
