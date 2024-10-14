@@ -22,7 +22,8 @@ public class ListTablesAttempt<SchemaT extends KeyspaceSchemaObject>
    *
    * @return List of table names.
    */
-  protected List<String> getTableNames() {
+  @Override
+  protected List<String> getNames() {
     return getTables().stream()
         .map(
             schemaObject ->
@@ -31,11 +32,12 @@ public class ListTablesAttempt<SchemaT extends KeyspaceSchemaObject>
   }
 
   /**
-   * Get tables schema for all the tables in the keyspace.
+   * Get tables schema for all the tables schemas in the keyspace.
    *
-   * @return List of table schema.
+   * @return List of table schema as Object.
    */
-  protected List<MetadataAttempt.TableResponse> getTablesSchema() {
+  @Override
+  protected Object getSchema() {
     return getTables().stream().map(schema -> getTableSchema(schema)).toList();
   }
 

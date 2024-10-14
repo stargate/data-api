@@ -37,7 +37,7 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
                         vectorSize,
                         function,
                         null)))
-            : VectorConfig.notEnabledVectorConfig();
+            : VectorConfig.NOT_ENABLED_CONFIG;
     CollectionIndexingConfig indexingConfig = null;
     JsonNode indexing = commentConfigNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
     if (!indexing.isMissingNode()) {

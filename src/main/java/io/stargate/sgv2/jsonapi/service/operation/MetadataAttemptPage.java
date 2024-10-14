@@ -15,13 +15,16 @@ public abstract class MetadataAttemptPage<SchemaT extends SchemaObject>
     extends OperationAttemptPage<SchemaT, MetadataAttempt<SchemaT>> {
 
   private final boolean showSchema;
+  private final CommandStatus statusKey;
 
   private MetadataAttemptPage(
       OperationAttemptContainer<SchemaT, MetadataAttempt<SchemaT>> attempts,
       CommandResultBuilder resultBuilder,
-      boolean showSchema) {
+      boolean showSchema,
+      CommandStatus statusKey) {
     super(attempts, resultBuilder);
     this.showSchema = showSchema;
+    this.statusKey = statusKey;
   }
 
   public static <SchemaT extends KeyspaceSchemaObject>
@@ -35,10 +38,10 @@ public abstract class MetadataAttemptPage<SchemaT extends SchemaObject>
     // nor now its onlt ListTableAttempt we can cast it
     ListTablesAttempt response = (ListTablesAttempt) attempts.get(0);
     if (showSchema) {
-      resultBuilder.addStatus(CommandStatus.EXISTING_TABLES, response.getTablesSchema());
+      resultBuilder.addStatus(statusKey, response.getTablesSchema());
 
     } else {
-      resultBuilder.addStatus(CommandStatus.EXISTING_TABLES, response.getTableNames());
+      resultBuilder.addStatus(statusKey, response.getTableNames());
     }
   }
 
@@ -46,6 +49,7 @@ public abstract class MetadataAttemptPage<SchemaT extends SchemaObject>
       extends OperationAttemptPageBuilder<SchemaT, MetadataAttempt<SchemaT>> {
 
     private boolean showSchema = false;
+    private CommandStatus statusKey;
 
     Builder() {}
 
@@ -54,12 +58,17 @@ public abstract class MetadataAttemptPage<SchemaT extends SchemaObject>
       return this;
     }
 
+    public Builder<SchemaT> usingCommandStatus(CommandStatus statusKey) {
+      this.statusKey = statusKey;
+      return this;
+    }
+
     public Supplier<CommandResult> getOperationPage() {
       var resultBuilder =
           new CommandResultBuilder(
               CommandResultBuilder.ResponseType.STATUS_ONLY, useErrorObjectV2, debugMode);
 
-      return new MetadataAttemptPage<>(attempts, resultBuilder, showSchema) {};
+      return new MetadataAttemptPage<>(attempts, resultBuilder, showSchema, statusKey) {};
     }
   }
 }

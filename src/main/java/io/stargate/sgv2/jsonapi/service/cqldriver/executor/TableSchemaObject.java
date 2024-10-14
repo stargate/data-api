@@ -113,7 +113,7 @@ public class TableSchemaObject extends TableBasedSchemaObject {
       }
     }
     if (columnVectorDefinitions.isEmpty()) {
-      vectorConfig = VectorConfig.notEnabledVectorConfig();
+      vectorConfig = VectorConfig.NOT_ENABLED_CONFIG;
     } else {
       vectorConfig = new VectorConfig(Collections.unmodifiableList(columnVectorDefinitions));
     }

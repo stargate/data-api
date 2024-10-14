@@ -22,6 +22,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexTypes;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveTypes;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -63,9 +64,19 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
     super(position, schemaObject, retryPolicy);
   }
 
+  protected abstract List<String> getNames();
+
+  protected abstract Object getSchema();
+
   @Override
   protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
     this.keyspaceMetadata = queryExecutor.getKeyspaceMetadata(schemaObject.name().keyspace());
+    if (keyspaceMetadata.isEmpty()) {
+      return Uni.createFrom()
+          .failure(
+              SchemaException.Code.INVALID_KEYSPACE.get(
+                  Map.of("keyspace", schemaObject.name().keyspace())));
+    }
     return Uni.createFrom().item(new EmptyAsyncResultSet());
   }
 

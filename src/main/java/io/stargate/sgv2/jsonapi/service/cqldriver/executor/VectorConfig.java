@@ -13,21 +13,19 @@ import java.util.Map;
  * @param columnVectorDefinitions - List of columnVectorDefinitions each with respect to a
  *     column/field
  */
-public record VectorConfig(List<ColumnVectorDefinition> columnVectorDefinitions) {
+public class VectorConfig {
+  private final List<ColumnVectorDefinition> columnVectorDefinitions;
+  private final boolean vectorEnabled;
 
-  // TODO: this is an immutable record, this can be singleton
-  // TODO: Remove the use of NULL for the objects like vectorizeConfig
-  public static VectorConfig notEnabledVectorConfig() {
-    return new VectorConfig(null);
+  public VectorConfig(List<ColumnVectorDefinition> columnVectorDefinitions) {
+    this.columnVectorDefinitions = columnVectorDefinitions;
+    this.vectorEnabled = columnVectorDefinitions != null && !columnVectorDefinitions.isEmpty();
   }
 
-  /**
-   * Return vector enabled if columnVectorDefinitions is not null and not empty
-   *
-   * @return
-   */
+  public static VectorConfig NOT_ENABLED_CONFIG = new VectorConfig(null);
+
   public boolean vectorEnabled() {
-    return columnVectorDefinitions != null && !columnVectorDefinitions.isEmpty();
+    return vectorEnabled;
   }
 
   /**

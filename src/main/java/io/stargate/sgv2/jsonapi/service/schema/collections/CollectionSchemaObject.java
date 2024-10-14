@@ -36,7 +36,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           SchemaObjectName.MISSING,
           null,
           IdConfig.defaultIdConfig(),
-          VectorConfig.notEnabledVectorConfig(),
+          VectorConfig.NOT_ENABLED_CONFIG,
           null);
 
   private final IdConfig idConfig;
@@ -235,7 +235,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             collectionName,
             tableMetadata,
             IdConfig.defaultIdConfig(),
-            VectorConfig.notEnabledVectorConfig(),
+            VectorConfig.NOT_ENABLED_CONFIG,
             null);
       }
     } else {
