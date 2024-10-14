@@ -30,7 +30,8 @@ class JsonApiExceptionTest {
               error -> {
                 assertThat(error.message()).isEqualTo("Provided command unknown");
                 assertThat(error.fields())
-                    .hasSize(2)
+                    // 14-Oct-2024, tatu: ErrorsV2 will increase number of entries
+                    .hasSizeGreaterThanOrEqualTo(2)
                     .containsEntry("errorCode", "COMMAND_UNKNOWN")
                     .containsEntry("exceptionClass", "JsonApiException");
               });
@@ -51,7 +52,8 @@ class JsonApiExceptionTest {
               error -> {
                 assertThat(error.message()).isEqualTo("Custom message is more important.");
                 assertThat(error.fields())
-                    .hasSize(2)
+                    // 14-Oct-2024, tatu: ErrorsV2 will increase number of entries
+                    .hasSizeGreaterThanOrEqualTo(2)
                     .containsEntry("errorCode", "COMMAND_UNKNOWN")
                     .containsEntry("exceptionClass", "JsonApiException");
               });
@@ -67,12 +69,12 @@ class JsonApiExceptionTest {
       assertThat(result.data()).isNull();
       assertThat(result.status()).isNull();
       assertThat(result.errors())
-          .hasSize(2)
+          // 14-Oct-2024, tatu: ErrorsV2 will increase number of entries
+          .hasSizeGreaterThanOrEqualTo(2)
           .anySatisfy(
               error -> {
                 assertThat(error.message()).isEqualTo("Provided command unknown");
                 assertThat(error.fields())
-                    .hasSize(2)
                     .containsEntry("errorCode", "COMMAND_UNKNOWN")
                     .containsEntry("exceptionClass", "JsonApiException");
               })
@@ -82,7 +84,6 @@ class JsonApiExceptionTest {
                     .isEqualTo(
                         "Server failed: root cause: (java.lang.IllegalArgumentException) Cause message is important");
                 assertThat(error.fields())
-                    .hasSize(2)
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
                     .containsEntry("exceptionClass", "JsonApiException");
               });
