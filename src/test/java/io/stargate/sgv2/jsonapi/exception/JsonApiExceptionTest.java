@@ -30,8 +30,6 @@ class JsonApiExceptionTest {
               error -> {
                 assertThat(error.message()).isEqualTo("Provided command unknown");
                 assertThat(error.fields())
-                    // 14-Oct-2024, tatu: ErrorsV2 will increase number of entries
-                    .hasSizeGreaterThanOrEqualTo(2)
                     .containsEntry("errorCode", "COMMAND_UNKNOWN")
                     .containsEntry("exceptionClass", "JsonApiException");
               });
@@ -52,8 +50,6 @@ class JsonApiExceptionTest {
               error -> {
                 assertThat(error.message()).isEqualTo("Custom message is more important.");
                 assertThat(error.fields())
-                    // 14-Oct-2024, tatu: ErrorsV2 will increase number of entries
-                    .hasSizeGreaterThanOrEqualTo(2)
                     .containsEntry("errorCode", "COMMAND_UNKNOWN")
                     .containsEntry("exceptionClass", "JsonApiException");
               });
@@ -69,8 +65,7 @@ class JsonApiExceptionTest {
       assertThat(result.data()).isNull();
       assertThat(result.status()).isNull();
       assertThat(result.errors())
-          // 14-Oct-2024, tatu: ErrorsV2 will increase number of entries
-          .hasSizeGreaterThanOrEqualTo(2)
+          .hasSize(2)
           .anySatisfy(
               error -> {
                 assertThat(error.message()).isEqualTo("Provided command unknown");
