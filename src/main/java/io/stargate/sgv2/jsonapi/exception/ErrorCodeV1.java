@@ -230,9 +230,13 @@ public enum ErrorCodeV1 {
   }
 
   private String getErrorMessage(String format, Object... args) {
+    // 14-Oct-2024, tatu: as per [data-api#1531] we cannot change error message format
+    //    without breaking compatibility.
+    /*
     if (ExtendError.enabled()) {
       return String.format(format, args);
     }
+     */
     return message + ": " + String.format(format, args);
   }
 
