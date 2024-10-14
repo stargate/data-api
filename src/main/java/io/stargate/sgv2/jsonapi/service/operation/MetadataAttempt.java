@@ -205,7 +205,7 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
   }
 
   /**
-   * EmptyAsyncResultSet implementation to be used only for metadata attempt where no cal query is
+   * EmptyAsyncResultSet implementation to be used only for metadata attempt where no cql query is
    * run.
    */
   private static class EmptyAsyncResultSet implements AsyncResultSet {

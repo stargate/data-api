@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.util.function.Supplier;
 
 /**
- * A page of results from a list table command, use {@link #builder()} to get a builder to pass to
+ * A page of results for metadata based command, use {@link #builder()} to get a builder to pass to
  * {@link GenericOperation}.
  */
 public abstract class MetadataAttemptPage<SchemaT extends SchemaObject>

@@ -79,6 +79,12 @@ public class CommandQueryExecutor {
     return executeAndWrap(statement);
   }
 
+  /**
+   * Get the metadata for the given keyspace using session.
+   *
+   * @param keyspace The keyspace name.
+   * @return The keyspace metadata if it exists.
+   */
   public Optional<KeyspaceMetadata> getKeyspaceMetadata(String keyspace) {
     return session().getMetadata().getKeyspace(keyspace);
   }
