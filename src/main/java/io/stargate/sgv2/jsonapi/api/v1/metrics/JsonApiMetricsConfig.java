@@ -90,6 +90,22 @@ public interface JsonApiMetricsConfig {
   @WithDefault("command.processor.latency")
   String commandProcessorLatencyMetrics();
 
+  /**
+   * The minimum value that the meter is expected to observe for the command processor latency. The
+   * unit is milliseconds.
+   */
+  @NotBlank
+  @WithDefault("100")
+  int MinExpectedCommandProcessorLatency();
+
+  /**
+   * The maximum value that the meter is expected to observe for the command processor latency. The
+   * unit is milliseconds.
+   */
+  @NotBlank
+  @WithDefault("15000")
+  int MaxExpectedCommandProcessorLatency();
+
   /** List of values that can be used as value for metrics sort_type. */
   enum SortType {
     // Uses vertor search sorting for document resolution

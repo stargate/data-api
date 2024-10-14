@@ -331,8 +331,12 @@ public class MeteredCommandProcessor {
           return DistributionStatisticConfig.builder()
               .percentiles(0.5, 0.90, 0.95, 0.99)
               .percentilesHistogram(true)
-              .minimumExpectedValue(TimeUnit.MILLISECONDS.toNanos(100)) // 0.1 seconds
-              .maximumExpectedValue(TimeUnit.SECONDS.toNanos(15)) // 15 seconds
+              .minimumExpectedValue(
+                  TimeUnit.MILLISECONDS.toNanos(
+                      jsonApiMetricsConfig.MinExpectedCommandProcessorLatency())) // 0.1 seconds
+              .maximumExpectedValue(
+                  TimeUnit.MILLISECONDS.toNanos(
+                      jsonApiMetricsConfig.MaxExpectedCommandProcessorLatency())) // 15 seconds
               .build()
               .merge(config);
         }
