@@ -21,7 +21,6 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
               null,
               IdConfig.defaultIdConfig(),
               new VectorConfig(
-                  true,
                   List.of(
                       new VectorConfig.ColumnVectorDefinition(
                           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,

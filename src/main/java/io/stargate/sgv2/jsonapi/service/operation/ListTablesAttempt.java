@@ -2,47 +2,53 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
-
 import java.util.List;
 
+/**
+ * Attempt to list tables in a keyspace.
+ *
+ * @param <SchemaT> The keyspace schema object.
+ */
 public class ListTablesAttempt<SchemaT extends KeyspaceSchemaObject>
-    extends MetadataAttempt<KeyspaceSchemaObject> {
+    extends MetadataAttempt<SchemaT> {
 
-  private ListTablesAttempt(
-      int position, KeyspaceSchemaObject schemaObject, RetryPolicy retryPolicy) {
-    super(position, schemaObject, retryPolicy);
+  private ListTablesAttempt(int position, SchemaT schemaObject) {
+    super(position, schemaObject, new MetadataAttempt.NoRetryPolicy());
+    setStatus(OperationStatus.READY);
   }
 
   /**
    * Get table names from the keyspace metadata.
    *
-   * @return
+   * @return List of table names.
    */
   protected List<String> getTableNames() {
     return getTables().stream()
-            .map(
-                    schemaObject ->
-                            CqlIdentifierUtil.externalRepresentation(schemaObject.tableMetadata().getName()))
-            .toList();
+        .map(
+            schemaObject ->
+                CqlIdentifierUtil.externalRepresentation(schemaObject.tableMetadata().getName()))
+        .toList();
   }
 
-  protected List<TableResponse> getTablesSchema() {
-    return getTables().stream().map(this::getTableSchema).toList();
+  /**
+   * Get tables schema for all the tables in the keyspace.
+   *
+   * @return List of table schema.
+   */
+  protected List<MetadataAttempt.TableResponse> getTablesSchema() {
+    return getTables().stream().map(schema -> getTableSchema(schema)).toList();
   }
-
 
   public static class ListTablesAttemptBuilder<SchemaT extends KeyspaceSchemaObject> {
     private final int position = 0;
     private final SchemaT schemaObject;
-    private final RetryPolicy retryPolicy;
 
-    public ListTablesAttemptBuilder(SchemaT schemaObject, RetryPolicy retryPolicy) {
+    public ListTablesAttemptBuilder(SchemaT schemaObject) {
       this.schemaObject = schemaObject;
-      this.retryPolicy = retryPolicy;
     }
 
     public ListTablesAttempt build() {
-      return new ListTablesAttempt(position, schemaObject, retryPolicy);
+      return new ListTablesAttempt(position, schemaObject);
     }
   }
 }

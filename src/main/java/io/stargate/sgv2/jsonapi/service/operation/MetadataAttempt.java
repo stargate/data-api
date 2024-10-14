@@ -23,14 +23,14 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.Colu
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexTypes;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveTypes;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -39,10 +39,12 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-public abstract class MetadataAttempt<SchemaT extends KeyspaceSchemaObject>
-        extends OperationAttempt<MetadataAttempt<SchemaT>, SchemaT>{
+/** An attempt to execute commands that need data from metadata */
+public abstract class MetadataAttempt<SchemaT extends SchemaObject>
+    extends OperationAttempt<MetadataAttempt<SchemaT>, SchemaT> {
   // this will be set on executeStatement
   private Optional<KeyspaceMetadata> keyspaceMetadata;
+
   private static ObjectMapper objectMapper = new ObjectMapper();
   private static final CollectionTableMatcher TABLE_MATCHER = new CollectionTableMatcher();
 
@@ -245,6 +247,18 @@ public abstract class MetadataAttempt<SchemaT extends KeyspaceSchemaObject>
     @Override
     public boolean wasApplied() {
       return true;
+    }
+  }
+
+  public static class NoRetryPolicy extends RetryPolicy {
+
+    public NoRetryPolicy() {
+      super(1, Duration.ofMillis(10));
+    }
+
+    @Override
+    public boolean shouldRetry(Throwable throwable) {
+      return false;
     }
   }
 }
