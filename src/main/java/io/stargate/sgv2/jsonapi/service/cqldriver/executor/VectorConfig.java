@@ -28,6 +28,10 @@ public class VectorConfig {
     return vectorEnabled;
   }
 
+  public List<ColumnVectorDefinition> columnVectorDefinitions() {
+    return columnVectorDefinitions;
+  }
+
   /**
    * Configuration for a column, In case of collection this will be of size one
    *

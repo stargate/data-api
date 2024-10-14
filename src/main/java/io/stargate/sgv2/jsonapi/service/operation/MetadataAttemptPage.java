@@ -35,13 +35,10 @@ public abstract class MetadataAttemptPage<SchemaT extends SchemaObject>
   @Override
   protected void buildCommandResult() {
     addAttemptWarningsToResult();
-    // nor now its onlt ListTableAttempt we can cast it
-    ListTablesAttempt response = (ListTablesAttempt) attempts.get(0);
     if (showSchema) {
-      resultBuilder.addStatus(statusKey, response.getTablesSchema());
-
+      resultBuilder.addStatus(statusKey, attempts.get(0).getSchema());
     } else {
-      resultBuilder.addStatus(statusKey, response.getTableNames());
+      resultBuilder.addStatus(statusKey, attempts.get(0).getNames());
     }
   }
 
