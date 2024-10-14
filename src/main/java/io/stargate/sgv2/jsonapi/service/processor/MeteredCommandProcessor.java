@@ -316,12 +316,23 @@ public class MeteredCommandProcessor {
       public DistributionStatisticConfig configure(
           Meter.Id id, DistributionStatisticConfig config) {
         if (id.getName().startsWith(HISTOGRAM_METRICS_NAME)
-            || id.getName().startsWith(jsonApiMetricsConfig.vectorizeCallDurationMetrics())
-            || id.getName().startsWith(jsonApiMetricsConfig.commandProcessorLatencyMetrics())) {
+            || id.getName().startsWith(jsonApiMetricsConfig.vectorizeCallDurationMetrics())) {
 
           return DistributionStatisticConfig.builder()
               .percentiles(0.5, 0.90, 0.95, 0.99) // median and 95th percentile, not aggregable
               .percentilesHistogram(true) // histogram buckets (e.g. prometheus histogram_quantile)
+              .build()
+              .merge(config);
+        }
+
+        // reduce the number of buckets by setting the min and max expected values to avoid the high
+        // cardinality problem in Grafana
+        if (id.getName().startsWith(jsonApiMetricsConfig.commandProcessorLatencyMetrics())) {
+          return DistributionStatisticConfig.builder()
+              .percentiles(0.5, 0.90, 0.95, 0.99)
+              .percentilesHistogram(true)
+              .minimumExpectedValue(TimeUnit.MILLISECONDS.toNanos(100)) // 0.1 seconds
+              .maximumExpectedValue(TimeUnit.SECONDS.toNanos(15)) // 15 seconds
               .build()
               .merge(config);
         }
