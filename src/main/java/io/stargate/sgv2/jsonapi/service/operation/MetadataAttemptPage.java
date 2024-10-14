@@ -36,10 +36,12 @@ public abstract class MetadataAttemptPage<SchemaT extends SchemaObject>
   protected void buildCommandResult() {
     addAttemptWarningsToResult();
     addAttemptErrorsToResult();
-    if (showSchema) {
-      resultBuilder.addStatus(statusKey, attempts.get(0).getSchema());
-    } else {
-      resultBuilder.addStatus(statusKey, attempts.get(0).getNames());
+    if (attempts.get(0).status() != OperationAttempt.OperationStatus.ERROR) {
+      if (showSchema) {
+        resultBuilder.addStatus(statusKey, attempts.get(0).getSchema());
+      } else {
+        resultBuilder.addStatus(statusKey, attempts.get(0).getNames());
+      }
     }
   }
 
