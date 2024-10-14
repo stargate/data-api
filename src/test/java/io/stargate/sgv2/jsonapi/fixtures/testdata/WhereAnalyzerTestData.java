@@ -181,6 +181,14 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       return assertWarningContains(warning);
     }
 
+    public WhereAnalyzerFixture assertWarnOnComparisonFilterColumns(CqlIdentifier... columns) {
+      var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
+      var warning =
+          "The request applied $lt/$gt/$lte/$gte to the indexed columns: %s."
+              .formatted(errFmtCqlIdentifier(identifiers));
+      return assertWarningContains(warning);
+    }
+
     public WhereAnalyzerFixture assertWarnOnUnindexedColumns(CqlIdentifier... columns) {
 
       var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();

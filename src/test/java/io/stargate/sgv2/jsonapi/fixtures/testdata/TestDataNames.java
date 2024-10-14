@@ -72,10 +72,16 @@ public class TestDataNames {
       CqlIdentifier.fromInternal("date-column-" + System.currentTimeMillis());
   public final CqlIdentifier CQL_TIME_COLUMN =
       CqlIdentifier.fromInternal("time-column-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_INET_COLUMN =
+      CqlIdentifier.fromInternal("inet-column-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_UUID_COLUMN =
+      CqlIdentifier.fromInternal("uuid-column-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_TIMEUUID_COLUMN =
+      CqlIdentifier.fromInternal("timeuuid-column-" + System.currentTimeMillis());
+
   public final List<CqlIdentifier> ALL_CQL_DATATYPE_COLUMNS =
       List.of(
           CQL_TEXT_COLUMN,
-          //          CQL_UUID_COLUMN,
           CQL_ASCII_COLUMN,
           CQL_BLOB_COLUMN,
           CQL_DURATION_COLUMN,
@@ -90,7 +96,10 @@ public class TestDataNames {
           CQL_TINYINT_COLUMN,
           CQL_TIMESTAMP_COLUMN,
           CQL_DATE_COLUMN,
-          CQL_TIME_COLUMN);
+          CQL_TIME_COLUMN,
+          CQL_INET_COLUMN,
+          CQL_UUID_COLUMN,
+          CQL_TIMEUUID_COLUMN);
 
   // All column datatypes index name, (Blob,Duration can NOT be indexed)
   public final CqlIdentifier CQL_TEXT_COLUMN_INDEX =
@@ -123,4 +132,10 @@ public class TestDataNames {
       CqlIdentifier.fromInternal("date-column-index-" + System.currentTimeMillis());
   public final CqlIdentifier CQL_TIME_COLUMN_INDEX =
       CqlIdentifier.fromInternal("time-column-index-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_INET_COLUMN_INDEX =
+      CqlIdentifier.fromInternal("inet-column-index-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_UUID_COLUMN_INDEX =
+      CqlIdentifier.fromInternal("uuid-column-index-" + System.currentTimeMillis());
+  public final CqlIdentifier CQL_TIMEUUID_COLUMN_INDEX =
+      CqlIdentifier.fromInternal("timeuuid-column-index-" + System.currentTimeMillis());
 }
