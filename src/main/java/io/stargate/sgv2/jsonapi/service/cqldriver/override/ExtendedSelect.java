@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.query.extendedDriverQuerybuilder;
+package io.stargate.sgv2.jsonapi.service.cqldriver.override;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;

@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.service.operation.query.extendedDriverQuerybuilder;
+package io.stargate.sgv2.jsonapi.service.cqldriver.override;
 
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;

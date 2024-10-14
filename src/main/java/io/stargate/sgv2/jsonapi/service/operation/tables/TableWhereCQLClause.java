@@ -5,10 +5,11 @@ import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.update.Update;
+import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.DefaultSubConditionRelation;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedSelect;
 import io.stargate.sgv2.jsonapi.service.operation.query.*;
-import io.stargate.sgv2.jsonapi.service.operation.query.extendedDriverQuerybuilder.DefaultSubConditionRelation;
-import io.stargate.sgv2.jsonapi.service.operation.query.extendedDriverQuerybuilder.ExtendedSelect;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -96,6 +97,13 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
    */
   @Override
   public T apply(T tOngoingWhereClause, List<Object> objects) {
+    Log.error("here " + dbLogicalExpression);
+
+    // If API filter is empty, no where clause.
+    if (dbLogicalExpression.isEmpty()) {
+      return tOngoingWhereClause;
+    }
+
     return tOngoingWhereClause.where(applyLogicalRelation(dbLogicalExpression, objects));
   }
 
@@ -114,7 +122,6 @@ public class TableWhereCQLClause<T extends OngoingWhereClause<T>> implements Whe
    */
   private Relation applyLogicalRelation(
       DBLogicalExpression currentLogicalExpression, List<Object> objects) {
-
     var relationWhere = DefaultSubConditionRelation.subCondition();
 
     // 1. relations from TableFilters in this level)

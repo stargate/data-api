@@ -16,6 +16,20 @@ public class TableLogicalRelationTest {
   }
 
   @Test
+  public void emptyFilter() {
+    var fixture = TEST_DATA.tableWhereCQLClause().tableWithAllDataTypes("AND()");
+    var expBuilder = fixture.expressionBuilder;
+    var implicitAnd = expBuilder.rootImplicitAnd;
+
+    fixture
+        .expressionBuilder()
+        .replaceRootDBLogicalExpression(implicitAnd)
+        .applyAndGetOnGoingWhereClause()
+        .assertNoWhereClause()
+        .assertNoPositionalValues();
+  }
+
+  @Test
   public void simpleAnd() {
     var fixture = TEST_DATA.tableWhereCQLClause().tableWithAllDataTypes("AND(eq,eq)");
     var expBuilder = fixture.expressionBuilder;

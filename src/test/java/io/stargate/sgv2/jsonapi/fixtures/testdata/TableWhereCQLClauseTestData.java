@@ -8,8 +8,8 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedSelect;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.operation.query.extendedDriverQuerybuilder.ExtendedSelect;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
 import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
 import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
@@ -83,6 +83,13 @@ public class TableWhereCQLClauseTestData extends TestDataSuplier {
       return this;
     }
 
+    public TableWhereCQLClauseFixture assertNoWhereClause() {
+      LOGGER.warn("Expected NO where clause in CQL statement. \n");
+      LOGGER.warn("Actual whole CQL: {}\n", onGoingWhereClause.asCql());
+      assertThat(onGoingWhereClause.asCql()).doesNotContain("WHERE");
+      return this;
+    }
+
     public TableWhereCQLClauseFixture assertWherePositionalValues(
         List<CqlIdentifier> expectedColumnIdentifiers) {
       List<Object> expectedPositionalValues =
@@ -95,6 +102,13 @@ public class TableWhereCQLClauseTestData extends TestDataSuplier {
       // Expected values [25, "text-value"], Actual values [25, "text-value"]
       assertThat(expectedPositionalValues).containsExactlyElementsOf(positionalValues);
 
+      return this;
+    }
+
+    public TableWhereCQLClauseFixture assertNoPositionalValues() {
+      LOGGER.warn("Expected NO positional values.\n");
+      LOGGER.warn("Actual positional values:: {}\n", positionalValues);
+      assertThat(positionalValues).isEmpty();
       return this;
     }
 
