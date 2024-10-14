@@ -201,9 +201,6 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
   }
 
   protected List<TableSchemaObject> getTables() {
-    if (keyspaceMetadata.isEmpty()) {
-      return Collections.emptyList();
-    }
     return keyspaceMetadata
         .get()
         // get all tables
