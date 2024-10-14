@@ -151,6 +151,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
       }
     }
     builder.addStatus(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results));
+    builder.addCommandResultError(errors);
     maybeAddSchema(builder);
 
     return builder.build();
