@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -86,7 +87,9 @@ public class CommandQueryExecutor {
    * @return The keyspace metadata if it exists.
    */
   public Optional<KeyspaceMetadata> getKeyspaceMetadata(String keyspace) {
-    return session().getMetadata().getKeyspace(keyspace);
+    return session()
+        .getMetadata()
+        .getKeyspace(CqlIdentifierUtil.cqlIdentifierFromUserInput(keyspace));
   }
 
   public Uni<AsyncResultSet> executeCreateSchema(SimpleStatement statement) {
