@@ -35,6 +35,7 @@ public abstract class MetadataAttemptPage<SchemaT extends SchemaObject>
   @Override
   protected void buildCommandResult() {
     addAttemptWarningsToResult();
+    addAttemptErrorsToResult();
     if (showSchema) {
       resultBuilder.addStatus(statusKey, attempts.get(0).getSchema());
     } else {

@@ -242,7 +242,7 @@ request-errors:
     code: INVALID_KEYSPACE
     title: Keyspace used is not valid.
     body: |-
-      Keyspace {$keyspace} used is not valid.
+      Keyspace used is not valid: ${keyspace} 
 
   - scope: SCHEMA
     code: COLUMN_TYPE_INCORRECT
