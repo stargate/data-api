@@ -57,7 +57,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     String sourceModel = definitionOptions != null ? definitionOptions.sourceModel() : null;
     if (!(columnMetadata.getType() instanceof VectorType)) {
       throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-          Map.of("reason", "use createIndex command to create index on non vector type column"));
+          Map.of("reason", "use `createIndex` command to create index on non-vector type column"));
     }
 
     if (definitionOptions != null) {
@@ -84,9 +84,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     }
 
     // Default Similarity Function to COSINE
-    if (columnMetadata.getType() instanceof VectorType
-        && similarityFunction == null
-        && sourceModel == null) {
+    if (similarityFunction == null && sourceModel == null) {
       similarityFunction = SimilarityFunction.COSINE;
     }
 
