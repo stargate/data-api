@@ -42,6 +42,7 @@ public interface Command {
     COUNT_DOCUMENTS("countDocuments"),
     CREATE_COLLECTION("createCollection"),
     CREATE_INDEX("createIndex"),
+    CREATE_VECTOR_INDEX("createVectorIndex"),
     CREATE_KEYSPACE("createKeyspace"),
     CREATE_NAMESPACE("createNamespace"),
     CREATE_TABLE("createTable"),
