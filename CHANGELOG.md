@@ -4,10 +4,6 @@
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.18...HEAD)
 
-**Closed issues:**
-
-- Data API JsonCodec: Vector, add support for `vector\<float\>` [\#1492](https://github.com/stargate/data-api/issues/1492)
-
 ## [v1.0.18](https://github.com/stargate/data-api/tree/v1.0.18) (2024-10-15)
 
 [Full Changelog](https://github.com/stargate/data-api/compare/v1.0.17...v1.0.18)
@@ -18,6 +14,7 @@
 - Issue with `COLLECTION\_NOT\_EXIST` error w/ Errors v2 [\#1531](https://github.com/stargate/data-api/issues/1531)
 - Table Filter, $binary EJSON for Blob column datatype. [\#1513](https://github.com/stargate/data-api/issues/1513)
 - Enable HTTP request log \(access log\) in Production [\#1498](https://github.com/stargate/data-api/issues/1498)
+- Data API JsonCodec: Vector, add support for `vector\<float\>` [\#1492](https://github.com/stargate/data-api/issues/1492)
 - Refactor WhereCQLClauseAnalyzer [\#1485](https://github.com/stargate/data-api/issues/1485)
 - Table Primary Key filtering, multiple corner cases. [\#1481](https://github.com/stargate/data-api/issues/1481)
 - Further detailed consideration of how we enable ALLOW FILTERING  [\#1476](https://github.com/stargate/data-api/issues/1476)
