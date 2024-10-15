@@ -23,12 +23,12 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
 
     JsonNode collectionOptionsNode = collectionNode.get(TableCommentConstants.OPTIONS_KEY);
     // construct collectionSettings VectorConfig
-    VectorConfig vectorConfig = VectorConfig.notEnabledVectorConfig();
+    VectorConfig vectorConfig = VectorConfig.NOT_ENABLED_CONFIG;
     JsonNode vector = collectionOptionsNode.path(TableCommentConstants.COLLECTION_VECTOR_KEY);
     if (!vector.isMissingNode()) {
       VectorConfig.ColumnVectorDefinition columnVectorDefinition =
           VectorConfig.ColumnVectorDefinition.fromJson(vector, objectMapper);
-      vectorConfig = new VectorConfig(true, List.of(columnVectorDefinition));
+      vectorConfig = VectorConfig.fromColumnDefinitions(List.of(columnVectorDefinition));
     }
     // construct collectionSettings IndexingConfig
     CollectionIndexingConfig indexingConfig = null;
