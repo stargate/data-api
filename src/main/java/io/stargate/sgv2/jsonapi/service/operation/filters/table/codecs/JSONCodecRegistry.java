@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.ListType;
 import com.datastax.oss.driver.api.core.type.SetType;
+import com.datastax.oss.driver.api.core.type.VectorType;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
@@ -116,6 +117,17 @@ public class JSONCodecRegistry {
               CollectionCodecs.buildToCQLSetCodec(valueCodecCandidates, st.getElementType());
         }
         // fall through
+      } else if (columnType instanceof VectorType vt) {
+        // Only Float<Vector> supported for now
+        if (!vt.getElementType().equals(DataTypes.FLOAT)) {
+          throw new ToCQLCodecException(value, columnType, "only Vector<Float> supported");
+        }
+        if (value instanceof Collection<?>) {
+          return VectorCodecs.arrayToCQLFloatVectorCodec(vt);
+        }
+        // !!! TODO: different Codec for Base64 encoded (String) Float vectors
+
+        throw new ToCQLCodecException(value, columnType, "no codec matching value type");
       }
 
       throw new MissingJSONCodecException(table, columnMetadata, value.getClass(), value);
@@ -188,6 +200,13 @@ public class JSONCodecRegistry {
       }
       return (JSONCodec<JavaT, CqlT>)
           CollectionCodecs.buildToJsonSetCodec(valueCodecCandidates.get(0));
+    }
+    if (fromCQLType instanceof VectorType vt) {
+      // Only Float<Vector> supported for now
+      if (vt.getElementType().equals(DataTypes.FLOAT)) {
+        return VectorCodecs.toJSONFloatVectorCodec(vt);
+      }
+      // fall through
     }
 
     return null;
