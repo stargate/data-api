@@ -29,7 +29,7 @@ public abstract class VectorCodecs {
             FLOAT_LIST,
             vectorType,
             (cqlType, value) -> toCQLFloatVector(vectorType, value),
-            // This code only for to-cql case, not to-json, so we don't need this
+            // This codec only for to-cql case, not to-json, so we don't need this
             null);
   }
 
@@ -38,7 +38,7 @@ public abstract class VectorCodecs {
         new JSONCodec<>(
             FLOAT_LIST,
             vectorType,
-            // This code only for to-json case, not to-cql, so we don't need this
+            // This codec only for to-json case, not to-cql, so we don't need this
             null,
             (objectMapper, cqlType, value) -> toJsonNode(objectMapper, (CqlVector<Number>) value));
   }
@@ -49,7 +49,9 @@ public abstract class VectorCodecs {
     final int expLen = vectorType.getDimensions();
     if (expLen != vectorIn.size()) {
       throw new ToCQLCodecException(
-          vectorIn, vectorType, "expected vector of length " + expLen + ", got " + vectorIn.size());
+          vectorIn,
+          vectorType,
+          "expected vector of length " + expLen + ", got " + vectorIn.size() + " elements");
     }
     List<Float> floats = new ArrayList<>(expLen);
     for (JsonLiteral<?> literalElement : vectorIn) {
