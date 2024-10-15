@@ -43,6 +43,18 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
         message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
   }
 
+  public WhereAnalyzerFixture tableAllColumnDatatypesIndexed(String message) {
+    var tableMetaData = testData.tableMetadata().tableAllDatatypesIndexed();
+    return new WhereAnalyzerFixture(
+        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+  }
+
+  public WhereAnalyzerFixture tableAllColumnDatatypesNotIndexed(String message) {
+    var tableMetaData = testData.tableMetadata().tableAllDatatypesNotIndexed();
+    return new WhereAnalyzerFixture(
+        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+  }
+
   public static class WhereAnalyzerFixture implements PrettyPrintable {
 
     private final String message;
@@ -166,6 +178,14 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
       var warning =
           "The request applied $ne to the columns: %s.".formatted(errFmtCqlIdentifier(identifiers));
+      return assertWarningContains(warning);
+    }
+
+    public WhereAnalyzerFixture assertWarnOnComparisonFilterColumns(CqlIdentifier... columns) {
+      var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
+      var warning =
+          "The request applied $lt, $gt, $lte, $gte to the indexed columns: %s."
+              .formatted(errFmtCqlIdentifier(identifiers));
       return assertWarningContains(warning);
     }
 

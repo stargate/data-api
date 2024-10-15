@@ -10,7 +10,7 @@ public class DatabaseSchemaObject extends SchemaObject {
 
   @Override
   public VectorConfig vectorConfig() {
-    return VectorConfig.notEnabledVectorConfig();
+    return VectorConfig.NOT_ENABLED_CONFIG;
   }
 
   @Override

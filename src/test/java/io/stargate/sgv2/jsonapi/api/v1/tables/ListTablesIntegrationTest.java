@@ -1,15 +1,20 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
 import io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource;
+import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.MethodOrderer;
@@ -255,6 +260,19 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
           .body("status.tables", hasSize(2))
           .body("status.tables[0].name", equalTo("allTypesTable"))
           .body("status.tables[1].name", equalTo("person"));
+    }
+
+    @Test
+    @Order(4)
+    public void testInvalidKeyspace() {
+      final SchemaException schemaException =
+          SchemaException.Code.INVALID_KEYSPACE.get(Map.of("keyspace", "invalid_keyspace"));
+      DataApiCommandSenders.assertNamespaceCommand("invalid_keyspace")
+          .postListTables("{}")
+          .body("errors", notNullValue())
+          .body("errors", hasSize(1))
+          .body("errors[0].errorCode", is(schemaException.code))
+          .body("errors[0].message", containsString(schemaException.body));
     }
   }
 }

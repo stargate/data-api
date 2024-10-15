@@ -202,6 +202,20 @@ request-errors:
       
       ${SNIPPET.INEFFICIENT_QUERY}
 
+
+  - scope: WARNING
+    code: COMPARISON_FILTER_UNSUPPORTED_BY_INDEXING
+    title: Use of $lt, $gt, $lte, $gte (comparison filter) on indexed columns
+    body: |-
+      The filter uses $lt, $gt, $lte, $gte (comparison filters) on columns that, while indexed, are still inefficient to filter on.  
+      
+      Filtering using $lt, $gt, $lte, $gte on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
+      
+      The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
+      The request applied $lt, $gt, $lte, $gte to the indexed columns: ${inefficientFilterColumns}.
+      
+      ${SNIPPET.INEFFICIENT_QUERY}
+
   - scope: WARNING
     code: ZERO_FILTER_OPERATIONS
     title: Zero operations provided in query filter
@@ -248,6 +262,12 @@ request-errors:
     title: Column definition is missing for the provided primary key column.
     body: |-
       Column definition is missing for the provided primary key column: ${column_name}.
+
+  - scope: SCHEMA
+    code: INVALID_KEYSPACE
+    title: Keyspace used is not valid.
+    body: |-
+      Keyspace used is not valid: ${keyspace} 
 
   - scope: SCHEMA
     code: COLUMN_TYPE_INCORRECT
@@ -393,6 +413,12 @@ request-errors:
     title: Unable to parse vectorize configuration, schema invalid.
     body: |-
       Unable to parse vectorize configuration, schema invalid for field ${field}.
+
+  - scope: SCHEMA
+    code: INVALID_INDEX_DEFINITION
+    title: Provided index configuration is not valid.
+    body: |-
+      Provided index configuration is not valid: ${reason}.
   
 
 # ================================================================================================================

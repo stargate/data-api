@@ -20,8 +20,7 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
               TestConstants.SCHEMA_OBJECT_NAME,
               null,
               IdConfig.defaultIdConfig(),
-              new VectorConfig(
-                  true,
+              VectorConfig.fromColumnDefinitions(
                   List.of(
                       new VectorConfig.ColumnVectorDefinition(
                           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,

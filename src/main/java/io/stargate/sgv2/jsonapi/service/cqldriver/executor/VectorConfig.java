@@ -4,23 +4,60 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-/**
- * incorporates vectorizeConfig into vectorConfig
- *
- * @param vectorEnabled - If vector field is available for the table
- * @param columnVectorDefinitions - List of columnVectorDefinitions each with respect to a
- *     column/field
- */
-public record VectorConfig(
-    boolean vectorEnabled, List<ColumnVectorDefinition> columnVectorDefinitions) {
+/** Definition of vector config for a collection or table */
+public class VectorConfig {
+  private final List<ColumnVectorDefinition> columnVectorDefinitions;
+  private final boolean vectorEnabled;
 
-  // TODO: this is an immutable record, this can be singleton
-  // TODO: Remove the use of NULL for the objects like vectorizeConfig
-  public static VectorConfig notEnabledVectorConfig() {
-    return new VectorConfig(false, null);
+  /*
+   * @param columnVectorDefinitions - List of columnVectorDefinitions each with respect to a
+   *     column/field
+   */
+  private VectorConfig(
+      List<ColumnVectorDefinition> columnVectorDefinitions, boolean vectorEnabled) {
+    this.columnVectorDefinitions = columnVectorDefinitions;
+    this.vectorEnabled = vectorEnabled;
+  }
+
+  public static VectorConfig fromColumnDefinitions(
+      List<ColumnVectorDefinition> columnVectorDefinitions) {
+    if (columnVectorDefinitions == null || columnVectorDefinitions.isEmpty()) {
+      return NOT_ENABLED_CONFIG;
+    }
+    return new VectorConfig(Collections.unmodifiableList(columnVectorDefinitions), true);
+  }
+
+  public static final VectorConfig NOT_ENABLED_CONFIG = new VectorConfig(null, false);
+
+  public boolean vectorEnabled() {
+    return vectorEnabled;
+  }
+
+  public List<ColumnVectorDefinition> columnVectorDefinitions() {
+    return columnVectorDefinitions;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    VectorConfig that = (VectorConfig) o;
+    return vectorEnabled == that.vectorEnabled
+        && Objects.equals(columnVectorDefinitions, that.columnVectorDefinitions);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(columnVectorDefinitions, vectorEnabled);
   }
 
   /**
