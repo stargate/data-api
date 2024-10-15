@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.data.CqlDuration;
+import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -64,7 +65,6 @@ public class JSONCodecRegistryTest {
             String.format(
                 "Get codec for cqlType=%s and fromValue.class=%s",
                 cqlType, fromValue.getClass().getName()));
-
     assertThat(codec)
         .isNotNull()
         .satisfies(
@@ -130,6 +130,12 @@ public class JSONCodecRegistryTest {
   @ParameterizedTest
   @MethodSource("validCodecToCQLTestCasesCollections")
   public void codecToCQLCollections(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
+
+  @ParameterizedTest
+  @MethodSource("validCodecToCQLTestCasesVectors")
+  public void codecToCQLVectors(DataType cqlType, Object fromValue, Object expectedCqlValue) {
     _codecToCQL(cqlType, fromValue, expectedCqlValue);
   }
 
@@ -327,6 +333,21 @@ public class JSONCodecRegistryTest {
             Arrays.asList(
                 numberLiteral(new BigDecimal(-0.75)), numberLiteral(new BigDecimal(42.5))),
             Set.of(-0.75, 42.5)));
+  }
+
+  private static Stream<Arguments> validCodecToCQLTestCasesVectors() {
+    // Arguments: (CQL-type, from-caller-json, bound-by-driver-for-cql)
+    return Stream.of(
+        // // Lists:
+        Arguments.of(
+            DataTypes.vectorOf(DataTypes.FLOAT, 3),
+            // Important: all incoming JSON numbers are represented as Long, BigInteger,
+            // or BigDecimal. All legal as source for Float.
+            Arrays.asList(
+                numberLiteral(0L),
+                numberLiteral(new BigDecimal(-0.5)),
+                numberLiteral(new BigDecimal(0.25))),
+            CqlVector.newInstance(0.0f, -0.5f, 0.25f)));
   }
 
   private static JsonLiteral<Number> numberLiteral(Number value) {
