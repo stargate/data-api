@@ -113,6 +113,7 @@ public class CollectionResource {
                         // TODO, hide table feature detail before it goes public,
                         // https://github.com/stargate/data-api/pull/1360
                         //                        CreateIndexCommand.class,
+                        //                        CreateVectorIndexCommand.class
                         //                        DropIndexCommand.class
                       }),
               examples = {
