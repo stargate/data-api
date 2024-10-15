@@ -830,67 +830,30 @@ public class JSONCodecRegistryTest {
   // difficult to parameterize this test, so just test a few cases
   @Test
   public void invalidBinaryInputs() {
-    EJSONWrapper valueToTest1 =
+    assertToCQLFail(
+        DataTypes.BLOB,
         new EJSONWrapper(
-            EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.textNode("bad-base64!"));
-    final var codec = assertGetCodecToCQL(DataTypes.BLOB, valueToTest1);
-    var error =
-        assertThrowsExactly(
-            ToCQLCodecException.class,
-            () -> codec.toCQL(valueToTest1),
-            "Throw ToCQLCodecException when attempting to convert DataTypes.BLOB from invalid Base64 value");
-    assertThat(error)
-        .satisfies(
-            e -> {
-              assertThat(e.targetCQLType).isEqualTo(DataTypes.BLOB);
-              assertThat(e.value).isEqualTo(valueToTest1);
-              assertThat(e.getMessage())
-                  .contains("Root cause: Invalid content in EJSON $binary wrapper");
-            });
+            EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.textNode("bad-base64!")),
+        "Root cause: Invalid content in EJSON $binary wrapper");
 
-    EJSONWrapper valueToTest2 =
-        new EJSONWrapper(EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.numberNode(42));
+    assertToCQLFail(
+        DataTypes.BLOB,
+        new EJSONWrapper(EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.numberNode(42)),
+        "Root cause: Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed");
 
-    error =
-        assertThrowsExactly(
-            ToCQLCodecException.class,
-            () -> codec.toCQL(valueToTest2),
-            "Throw ToCQLCodecException when attempting to convert DataTypes.BLOB from non-String EJSONWrapper value");
-    assertThat(error)
-        .satisfies(
-            e -> {
-              assertThat(e.targetCQLType).isEqualTo(DataTypes.BLOB);
-              assertThat(e.value).isEqualTo(valueToTest2);
-              assertThat(e.getMessage())
-                  .contains(
-                      "Root cause: Unsupported JSON value type in EJSON $binary wrapper (NUMBER): only STRING allowed");
-            });
-
-    // Test with unpadded base64
-    EJSONWrapper valueToTest3 = binaryWrapper(TEST_DATA.BASE64_UNPADDED_ENCODED_STR);
-    error =
-        assertThrowsExactly(
-            ToCQLCodecException.class,
-            () -> codec.toCQL(valueToTest3),
-            "Throw ToCQLCodecException when attempting to convert DataTypes.BLOB from non-String EJSONWrapper value");
-    assertThat(error)
-        .satisfies(
-            e -> {
-              assertThat(e.targetCQLType).isEqualTo(DataTypes.BLOB);
-              assertThat(e.value).isEqualTo(valueToTest3);
-              assertThat(e.getMessage())
-                  .contains("Unexpected end of base64-encoded String")
-                  .contains("expects padding");
-            });
+    // We require Base64 padding
+    assertToCQLFail(
+        DataTypes.BLOB,
+        binaryWrapper(TEST_DATA.BASE64_UNPADDED_ENCODED_STR),
+        "Unexpected end of base64-encoded String",
+        "expects padding");
   }
 
   @Test
   public void invalidInetAddress() {
-    final String valueToTest = TEST_DATA.INET_ADDRESS_INVALID_STRING;
-    final var codec = assertGetCodecToCQL(DataTypes.INET, valueToTest);
     assertToCQLFail(
         DataTypes.INET,
-        valueToTest,
+        TEST_DATA.INET_ADDRESS_INVALID_STRING,
         "Root cause: Invalid String value for type `INET`",
         "Invalid IP address value");
   }
