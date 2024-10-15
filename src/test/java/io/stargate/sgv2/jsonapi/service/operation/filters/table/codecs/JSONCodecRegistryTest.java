@@ -873,14 +873,16 @@ public class JSONCodecRegistryTest {
   public void invalidVectorValueNonNumberFail() {
     DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 1);
     List<JsonLiteral<?>> valueToTest = List.of(stringLiteral("abc"));
-    assertToCQLFail(cqlTypeToTest, valueToTest, "expected Number value as Vector element #0");
+    assertToCQLFail(
+        cqlTypeToTest, valueToTest, "expected JSON Number value as Vector element at position #0");
   }
 
   @Test
   public void invalidVectorValueWrongDimensionFail() {
     DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 1);
     List<JsonLiteral<?>> valueToTest = List.of(numberLiteral(1.0), numberLiteral(-0.5));
-    assertToCQLFail(cqlTypeToTest, valueToTest, "expected vector of length 1, got 2");
+    assertToCQLFail(
+        cqlTypeToTest, valueToTest, "expected vector of length 1, got one with 2 elements");
   }
 
   private void assertToCQLFail(DataType cqlType, Object valueToTest, String... expectedMessages) {

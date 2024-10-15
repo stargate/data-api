@@ -51,7 +51,11 @@ public abstract class VectorCodecs {
       throw new ToCQLCodecException(
           vectorIn,
           vectorType,
-          "expected vector of length " + expLen + ", got " + vectorIn.size() + " elements");
+          "expected vector of length "
+              + expLen
+              + ", got one with "
+              + vectorIn.size()
+              + " elements");
     }
     List<Float> floats = new ArrayList<>(expLen);
     for (JsonLiteral<?> literalElement : vectorIn) {
@@ -63,7 +67,9 @@ public abstract class VectorCodecs {
       throw new ToCQLCodecException(
           vectorIn,
           vectorType,
-          "expected Number value as Vector element #" + floats.size() + ", got: " + literalElement);
+          String.format(
+              "expected JSON Number value as Vector element at position #%d (of %d), instead have: %s",
+              floats.size(), expLen, literalElement));
     }
     return CqlVector.newInstance(floats);
   }

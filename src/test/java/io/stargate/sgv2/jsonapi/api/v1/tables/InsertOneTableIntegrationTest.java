@@ -849,7 +849,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               DocumentException.class,
               "Only values that are supported by",
               "Error trying to convert to targetCQLType `Vector(FLOAT",
-              "expected Number value as Vector element #0");
+              "expected JSON Number value as Vector element at position #0");
     }
   }
 }
