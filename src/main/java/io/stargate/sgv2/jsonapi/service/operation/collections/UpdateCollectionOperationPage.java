@@ -31,7 +31,7 @@ public record UpdateCollectionOperationPage(
     var builder =
         returnDocs
             ? CommandResult.singleDocumentBuilder(false, false)
-            : CommandResult.multiDocumentBuilder(false, false);
+            : CommandResult.statusOnlyBuilder(false, false);
 
     // aggregate the errors by error code or error class
     Multimap<String, ReadAndUpdateCollectionOperation.UpdatedDocument> groupedErrorUpdates =
