@@ -6,6 +6,10 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.exception.ErrorFamily;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.ClassOrderer;
@@ -196,10 +200,29 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("status.ok", is(1))
+          .body("status.warnings", hasSize(1))
           .body(
-              "status.warnings",
-              hasItem(
-                  "This dropNamespace has been deprecated and will be removed in future releases, use dropKeyspace instead."));
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(
+                  ErrorObjectV2Constants.Fields.CODE,
+                  WarningException.Code.DEPRECATED_COMMAND.name()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(
+                  ErrorObjectV2Constants.Fields.CODE,
+                  WarningException.Code.DEPRECATED_COMMAND.name()))
+          .body(
+              "status.warnings[0].message",
+              containsString("The deprecated command is: dropNamespace."))
+          .body(
+              "status.warnings[0].message",
+              containsString("The new command to use is: dropKeyspace."));
 
       // ensure it's dropped
       json =
@@ -283,11 +306,25 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("status.ok", is(1))
+          .body("status.warnings", hasSize(1))
           .body(
-              "status.warnings",
-              hasItem(
-                  "This dropNamespace has been deprecated and will be removed in future releases, use dropKeyspace instead."));
-
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(
+                  ErrorObjectV2Constants.Fields.CODE,
+                  WarningException.Code.DEPRECATED_COMMAND.name()))
+          .body(
+              "status.warnings[0].message",
+              containsString("The deprecated command is: dropNamespace."))
+          .body(
+              "status.warnings[0].message",
+              containsString("The new command to use is: dropKeyspace."));
+      ;
       // ensure it's dropped
       json =
           """
@@ -328,10 +365,25 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .then()
           .statusCode(200)
           .body("status.ok", is(1))
+          .body("status.warnings", hasSize(1))
           .body(
-              "status.warnings",
-              hasItem(
-                  "This dropNamespace has been deprecated and will be removed in future releases, use dropKeyspace instead."));
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(
+                  ErrorObjectV2Constants.Fields.CODE,
+                  WarningException.Code.DEPRECATED_COMMAND.name()))
+          .body(
+              "status.warnings[0].message",
+              containsString("The deprecated command is: dropNamespace."))
+          .body(
+              "status.warnings[0].message",
+              containsString("The new command to use is: dropKeyspace."));
+      ;
     }
   }
 

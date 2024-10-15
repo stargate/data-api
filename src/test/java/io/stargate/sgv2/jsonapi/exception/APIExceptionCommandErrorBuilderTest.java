@@ -97,12 +97,12 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
         .isNotNull()
         .satisfies(
             e -> {
-              assertThat(e.family()).isEqualTo(exception.family.name());
-              assertThat(e.scope()).isEqualTo(exception.scope);
-              assertThat(e.errorCode()).isEqualTo(exception.code);
-              assertThat(e.title()).isEqualTo(exception.title);
-              assertThat(e.message()).isEqualTo(exception.body);
-              assertThat(e.id()).isEqualTo(exception.errorId);
+              assertThat(e.getFamily()).isEqualTo(exception.family.name());
+              assertThat(e.getScope()).isEqualTo(exception.scope);
+              assertThat(e.getErrorCode()).isEqualTo(exception.code);
+              assertThat(e.getTitle()).isEqualTo(exception.title);
+              assertThat(e.getMessage()).isEqualTo(exception.body);
+              assertThat(e.getId()).isEqualTo(exception.errorId);
               assertThat(e.httpStatus().getStatusCode()).isEqualTo(exception.httpStatus);
 
               assertMetricTags(exception, e.metricsTags());
