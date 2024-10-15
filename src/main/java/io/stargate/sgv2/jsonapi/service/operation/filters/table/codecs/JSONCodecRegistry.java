@@ -201,6 +201,13 @@ public class JSONCodecRegistry {
       return (JSONCodec<JavaT, CqlT>)
           CollectionCodecs.buildToJsonSetCodec(valueCodecCandidates.get(0));
     }
+    if (fromCQLType instanceof VectorType vt) {
+      // Only Float<Vector> supported for now
+      if (!vt.getElementType().equals(DataTypes.FLOAT)) {
+        return null;
+      }
+      return (JSONCodec<JavaT, CqlT>) VectorCodecs.toJSONFloatVectorCodec(vt);
+    }
 
     return null;
   }

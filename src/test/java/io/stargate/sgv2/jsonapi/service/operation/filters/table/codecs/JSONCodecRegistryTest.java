@@ -410,6 +410,12 @@ public class JSONCodecRegistryTest {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
   }
 
+  @ParameterizedTest
+  @MethodSource("validCodecToJSONTestCasesVectors")
+  public void codecToJSONVectors(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
+    _codecToJSON(cqlType, fromValue, expectedJsonValue);
+  }
+
   private void _codecToJSON(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
     var codec = assertGetCodecToJSON(cqlType);
 
@@ -595,6 +601,19 @@ public class JSONCodecRegistryTest {
             DataTypes.setOf(DataTypes.DOUBLE),
             new LinkedHashSet<>(Arrays.asList(0.25, -4.5)),
             OBJECT_MAPPER.readTree("[0.25,-4.5]")));
+  }
+
+  private static Stream<Arguments> validCodecToJSONTestCasesVectors() throws IOException {
+    // Arguments: (CQL-type, from-CQL-result-set, JsonNode-to-serialize)
+    return Stream.of(
+        Arguments.of(
+            DataTypes.vectorOf(DataTypes.FLOAT, 2),
+            CqlVector.newInstance(0.25f, -0.5f),
+            OBJECT_MAPPER.readTree("[0.25,-0.5]")),
+        Arguments.of(
+            DataTypes.vectorOf(DataTypes.FLOAT, 3),
+            CqlVector.newInstance(0.25f, -0.5f, 1.0f),
+            OBJECT_MAPPER.readTree("[0.25,-0.5,1.0]")));
   }
 
   @Test

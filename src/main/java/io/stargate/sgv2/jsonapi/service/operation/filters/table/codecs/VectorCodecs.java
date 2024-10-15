@@ -3,6 +3,9 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 import com.datastax.oss.driver.api.core.data.CqlVector;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import java.util.ArrayList;
@@ -14,6 +17,8 @@ import java.util.List;
  * JSONCodecs} to keep the code somewhat modular.
  */
 public abstract class VectorCodecs {
+  private static final GenericType<List<Float>> FLOAT_LIST = GenericType.listOf(Float.class);
+
   public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> arrayToCQLFloatVectorCodec(
       VectorType vectorType) {
     // Unfortunately we cannot simply construct and return a single Codec instance here
@@ -21,12 +26,21 @@ public abstract class VectorCodecs {
     // (unless we want to rely on DB validating dimension as part of write and catch failure)
     return (JSONCodec<JavaT, CqlT>)
         new JSONCodec<>(
-            // NOTE: although we convert to CqlVector, RowShredder.java binds to Lists
-            GenericType.listOf(Float.class),
+            FLOAT_LIST,
             vectorType,
             (cqlType, value) -> toCQLFloatVector(vectorType, value),
             // This code only for to-cql case, not to-json, so we don't need this
             null);
+  }
+
+  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> toJSONFloatVectorCodec(VectorType vectorType) {
+    return (JSONCodec<JavaT, CqlT>)
+        new JSONCodec<>(
+            FLOAT_LIST,
+            vectorType,
+            // This code only for to-json case, not to-cql, so we don't need this
+            null,
+            (objectMapper, cqlType, value) -> toJsonNode(objectMapper, (CqlVector<Number>) value));
   }
 
   static CqlVector<Float> toCQLFloatVector(VectorType vectorType, Collection<?> listValue)
@@ -50,5 +64,17 @@ public abstract class VectorCodecs {
           "expected Number value as Vector element #" + floats.size() + ", got: " + literalElement);
     }
     return CqlVector.newInstance(floats);
+  }
+
+  static JsonNode toJsonNode(ObjectMapper objectMapper, CqlVector<Number> vectorValue) {
+    final ArrayNode result = objectMapper.createArrayNode();
+    for (Number element : vectorValue) {
+      if (element == null) { // is this even legal?
+        result.addNull();
+      } else {
+        result.add(element.floatValue());
+      }
+    }
+    return result;
   }
 }

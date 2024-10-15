@@ -27,6 +27,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   static final String TABLE_WITH_INET_COLUMN = "insertOneInetColumnTable";
   static final String TABLE_WITH_LIST_COLUMNS = "insertOneListColumnsTable";
   static final String TABLE_WITH_SET_COLUMNS = "insertOneSetColumnsTable";
+  static final String TABLE_WITH_VECTOR_COLUMN = "insertOneVectorColumnTable";
 
   final JSONCodecRegistryTestData codecTestData = new JSONCodecRegistryTestData();
 
@@ -108,6 +109,12 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
             Map.of("type", "set", "valueType", "double"),
             "stringSet",
             Map.of("type", "set", "valueType", "text")),
+        "id");
+
+    createTableWithColumns(
+        TABLE_WITH_VECTOR_COLUMN,
+        Map.of(
+            "id", "text", "vector", Map.of("type", "vector", "valueType", "float", "dimension", 3)),
         "id");
   }
 
@@ -788,6 +795,61 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "Error trying to convert to targetCQLType `DOUBLE`",
               // Double is special since there are NaNs represented by Strings
               "Unsupported String value: only");
+    }
+  }
+
+  @Nested
+  @Order(10)
+  class InsertVectorColumns {
+    @Test
+    void insertValidVectorValue() {
+      String docJSON =
+          """
+                      { "id": "vectorValid",
+                        "vector": [0.0, -0.5, 3.125]
+                      }
+                      """;
+      insertOneInTable(TABLE_WITH_VECTOR_COLUMN, docJSON);
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .postFindOne("{ \"filter\": { \"id\": \"vectorValid\" } }")
+          .hasNoErrors()
+          .hasJSONField("data.document", docJSON);
+    }
+
+    @Test
+    void failOnNonArrayVectorValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .postInsertOne(
+              """
+              {
+                "id": "vectorInvalid",
+                "vector": "abc"
+              }
+              """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `Vector(FLOAT",
+              "no codec matching value type");
+    }
+
+    @Test
+    void failOnWrongVectorElementValue() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .postInsertOne(
+              """
+                      {
+                        "id":" vectorInvalid",
+                        "vector": ["abc", 123, false]
+                      }
+                      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `Vector(FLOAT",
+              "expected Number value as Vector element #0");
     }
   }
 }
