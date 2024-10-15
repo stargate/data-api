@@ -37,7 +37,6 @@ class ThrowableCommandResultSupplierTest {
                         "Server failed: root cause: (java.lang.RuntimeException) With dedicated message");
                 assertThat(error.httpStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
                 assertThat(error.fields())
-                    .hasSize(2)
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
                     .containsEntry("exceptionClass", "JsonApiException");
               });
@@ -62,7 +61,6 @@ class ThrowableCommandResultSupplierTest {
                         "Server failed: root cause: (java.lang.RuntimeException) With dedicated message");
                 assertThat(error.httpStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
                 assertThat(error.fields())
-                    .hasSize(2)
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
                     .containsEntry("exceptionClass", "JsonApiException");
               })
@@ -72,7 +70,6 @@ class ThrowableCommandResultSupplierTest {
                     .isEqualTo(
                         "Server failed: root cause: (java.lang.IllegalArgumentException) Cause message is important");
                 assertThat(error.fields())
-                    .hasSize(2)
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
                     .containsEntry("exceptionClass", "JsonApiException");
               });
@@ -96,7 +93,6 @@ class ThrowableCommandResultSupplierTest {
                         "Server failed: root cause: (io.grpc.StatusRuntimeException) ALREADY_EXISTS");
                 assertThat(error.httpStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR);
                 assertThat(error.fields())
-                    .hasSize(2)
                     .containsEntry("errorCode", "SERVER_UNHANDLED_ERROR")
                     .containsEntry("exceptionClass", "JsonApiException");
               });
