@@ -197,7 +197,14 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
               "status.warnings[0]",
               hasEntry(
                   ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()));
+                  WarningException.Code.DEPRECATED_COMMAND.name()))
+          .body(
+              "status.warnings[0].message",
+              containsString("The deprecated command is: createNamespace."))
+          .body(
+              "status.warnings[0].message",
+              containsString("The new command to use is: createKeyspace."));
+      ;
     }
 
     @Test
@@ -232,7 +239,13 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
               "status.warnings[0]",
               hasEntry(
                   ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()));
+                  WarningException.Code.DEPRECATED_COMMAND.name()))
+          .body(
+              "status.warnings[0].message",
+              containsString("The deprecated command is: createNamespace."))
+          .body(
+              "status.warnings[0].message",
+              containsString("The new command to use is: createKeyspace."));
     }
 
     @Test
@@ -273,7 +286,14 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
               "status.warnings[0]",
               hasEntry(
                   ErrorObjectV2Constants.Fields.CODE,
-                  WarningException.Code.DEPRECATED_COMMAND.name()));
+                  WarningException.Code.DEPRECATED_COMMAND.name()))
+          .body(
+              "status.warnings[0].message",
+              containsString("The deprecated command is: createNamespace."))
+          .body(
+              "status.warnings[0].message",
+              containsString("The new command to use is: createKeyspace."));
+      ;
     }
 
     @Test
