@@ -39,11 +39,12 @@ public interface Command {
 
   /** Enum class for API command name. This is what user uses for command json body. */
   enum CommandName {
-    ADD_INDEX("addIndex"),
     COUNT_DOCUMENTS("countDocuments"),
     CREATE_COLLECTION("createCollection"),
-    CREATE_NAMESPACE("createNamespace"),
+    CREATE_INDEX("createIndex"),
+    CREATE_VECTOR_INDEX("createVectorIndex"),
     CREATE_KEYSPACE("createKeyspace"),
+    CREATE_NAMESPACE("createNamespace"),
     CREATE_TABLE("createTable"),
     DELETE_COLLECTION("deleteCollection"),
     DELETE_MANY("deleteMany"),

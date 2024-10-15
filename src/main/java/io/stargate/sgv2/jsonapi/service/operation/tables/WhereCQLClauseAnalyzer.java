@@ -38,7 +38,12 @@ public class WhereCQLClauseAnalyzer {
   // used.
   private static final Set<DataType> ALLOW_FILTERING_NEEDED_FOR_$NE =
       Set.of(
-          DataTypes.TEXT, DataTypes.ASCII, DataTypes.BOOLEAN, DataTypes.DURATION, DataTypes.BLOB);
+          DataTypes.TEXT,
+          DataTypes.ASCII,
+          DataTypes.BOOLEAN,
+          DataTypes.DURATION,
+          DataTypes.BLOB,
+          DataTypes.UUID);
 
   private final TableSchemaObject tableSchemaObject;
   private final TableMetadata tableMetadata;
@@ -74,6 +79,7 @@ public class WhereCQLClauseAnalyzer {
 
     warnMissingIndexOnScalar(identifierToFilter).ifPresent(warnings::add);
     warnNotEqUnsupportedByIndexing(identifierToFilter).ifPresent(warnings::add);
+    warnComparisonUnsupportedByIndexing(identifierToFilter).ifPresent(warnings::add);
     warnNoFilters(identifierToFilter).ifPresent(warnings::add);
     warnPkNotFullySpecified(identifierToFilter).ifPresent(warnings::add);
 
@@ -196,7 +202,7 @@ public class WhereCQLClauseAnalyzer {
   }
 
   /**
-   * Wrn if a filter is on a column that, while it has an index still needs ALLOW FILTERING because
+   * Warn if a filter is on a column that, while it has an index still needs ALLOW FILTERING because
    * not equals is used.
    *
    * <p>E.G. [perform $ne against a text column 'name' that has SAI index on it] <br>
@@ -245,6 +251,54 @@ public class WhereCQLClauseAnalyzer {
                   map.put("inefficientDataTypes", errFmtJoin(inefficientDataTypes));
                   map.put("inefficientColumns", errFmtColumnMetadata(inefficientColumns));
                   map.put("inefficientFilters", errFmtCqlIdentifier(inefficientFilters));
+                })));
+  }
+
+  /**
+   * Warn if a filter is on a column that, while it has an index still needs ALLOW FILTERING because
+   * comparison API operator $lt, $gt, $lte, $gte is used.
+   *
+   * <p>E.G. [perform $lt against a UUID column 'user_id' that has SAI index on it] <br>
+   * Error from Driver: "Column 'user_id' has an index but does not support the operators specified
+   * in the query. If you want to execute this query despite the performance unpredictability, use
+   * ALLOW FILTERING" <br>
+   * NOTE, TIMEUUID column does not have above constraint.
+   */
+  private Optional<WarningException> warnComparisonUnsupportedByIndexing(
+      Map<CqlIdentifier, TableFilter> identifierToFilter) {
+
+    var inefficientFilters =
+        identifierToFilter.entrySet().stream()
+            .filter(
+                entry -> {
+                  TableFilter tableFilter = entry.getValue();
+                  return (tableFilter instanceof NativeTypeTableFilter<?> nativeTypeTableFilter
+                      && isIndexOnColumn(entry.getKey())
+                      && nativeTypeTableFilter.operator.isComparisonOperator());
+                })
+            .map(Map.Entry::getKey)
+            .filter(column -> DataTypes.UUID == tableMetadata.getColumns().get(column).getType())
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
+
+    if (inefficientFilters.isEmpty()) {
+      return Optional.empty();
+    }
+
+    var inefficientColumns =
+        tableMetadata.getColumns().values().stream()
+            .filter(column -> DataTypes.UUID == column.getType())
+            .sorted(COLUMN_METADATA_COMPARATOR)
+            .toList();
+
+    return Optional.of(
+        WarningException.Code.COMPARISON_FILTER_UNSUPPORTED_BY_INDEXING.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put("inefficientDataTypes", DataTypes.UUID.toString());
+                  map.put("inefficientColumns", errFmtColumnMetadata(inefficientColumns));
+                  map.put("inefficientFilterColumns", errFmtCqlIdentifier(inefficientFilters));
                 })));
   }
 

@@ -29,14 +29,15 @@ public class CollectionSettingsV0Reader implements CollectionSettingsReader {
       SimilarityFunction function) {
 
     VectorConfig vectorConfig =
-        new VectorConfig(
-            vectorEnabled,
-            List.of(
-                new VectorConfig.ColumnVectorDefinition(
-                    DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-                    vectorSize,
-                    function,
-                    null)));
+        vectorEnabled
+            ? VectorConfig.fromColumnDefinitions(
+                List.of(
+                    new VectorConfig.ColumnVectorDefinition(
+                        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                        vectorSize,
+                        function,
+                        null)))
+            : VectorConfig.NOT_ENABLED_CONFIG;
     CollectionIndexingConfig indexingConfig = null;
     JsonNode indexing = commentConfigNode.path(TableCommentConstants.COLLECTION_INDEXING_KEY);
     if (!indexing.isMissingNode()) {
