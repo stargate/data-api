@@ -30,7 +30,7 @@ public class CollectionSchemaObjectTest {
             "collectionName",
             null,
             IdConfig.defaultIdConfig(),
-            VectorConfig.notEnabledVectorConfig(),
+            VectorConfig.NOT_ENABLED_CONFIG,
             indexingConfig);
     IndexingProjector indexingProj = settings.indexingProjector();
     assertThat(indexingProj)

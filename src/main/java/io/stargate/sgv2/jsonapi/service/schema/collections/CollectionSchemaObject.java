@@ -36,7 +36,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           SchemaObjectName.MISSING,
           null,
           IdConfig.defaultIdConfig(),
-          VectorConfig.notEnabledVectorConfig(),
+          VectorConfig.NOT_ENABLED_CONFIG,
           null);
 
   private final IdConfig idConfig;
@@ -221,8 +221,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             collectionName,
             tableMetadata,
             IdConfig.defaultIdConfig(),
-            new VectorConfig(
-                true,
+            VectorConfig.fromColumnDefinitions(
                 List.of(
                     new VectorConfig.ColumnVectorDefinition(
                         DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
@@ -236,7 +235,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             collectionName,
             tableMetadata,
             IdConfig.defaultIdConfig(),
-            VectorConfig.notEnabledVectorConfig(),
+            VectorConfig.NOT_ENABLED_CONFIG,
             null);
       }
     } else {

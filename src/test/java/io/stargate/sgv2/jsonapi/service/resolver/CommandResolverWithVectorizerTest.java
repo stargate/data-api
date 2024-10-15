@@ -85,8 +85,7 @@ public class CommandResolverWithVectorizerTest {
                 new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME),
                 null,
                 IdConfig.defaultIdConfig(),
-                new VectorConfig(
-                    true,
+                VectorConfig.fromColumnDefinitions(
                     List.of(
                         new VectorConfig.ColumnVectorDefinition(
                             DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
