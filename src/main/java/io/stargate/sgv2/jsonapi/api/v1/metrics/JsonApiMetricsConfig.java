@@ -94,7 +94,7 @@ public interface JsonApiMetricsConfig {
    * The minimum value that the meter is expected to observe for the command processor latency. The
    * unit is milliseconds.
    */
-  @WithDefault("100")
+  @WithDefault("50")
   int MinExpectedCommandProcessorLatency();
 
   /**

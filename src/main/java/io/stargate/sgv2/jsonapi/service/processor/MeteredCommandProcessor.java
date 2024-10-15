@@ -333,7 +333,7 @@ public class MeteredCommandProcessor {
               .percentilesHistogram(true)
               .minimumExpectedValue(
                   TimeUnit.MILLISECONDS.toNanos(
-                      jsonApiMetricsConfig.MinExpectedCommandProcessorLatency())) // 0.1 seconds
+                      jsonApiMetricsConfig.MinExpectedCommandProcessorLatency())) // 0.05 seconds
               .maximumExpectedValue(
                   TimeUnit.MILLISECONDS.toNanos(
                       jsonApiMetricsConfig.MaxExpectedCommandProcessorLatency())) // 15 seconds
