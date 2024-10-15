@@ -4,16 +4,11 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 
-/**
- * Attempt to list tables in a keyspace.
- *
- * @param <SchemaT> The keyspace schema object.
- */
-public class ListTablesAttempt<SchemaT extends KeyspaceSchemaObject>
-    extends MetadataAttempt<SchemaT> {
+/** Attempt to list tables in a keyspace. */
+public class ListTablesAttempt extends MetadataAttempt<KeyspaceSchemaObject> {
 
-  private ListTablesAttempt(int position, SchemaT schemaObject) {
-    super(position, schemaObject, new MetadataAttempt.NoRetryPolicy());
+  private ListTablesAttempt(int position, KeyspaceSchemaObject schemaObject) {
+    super(position, schemaObject, RetryPolicy.NO_RETRY);
     setStatus(OperationStatus.READY);
   }
 

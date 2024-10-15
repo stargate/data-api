@@ -221,7 +221,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             collectionName,
             tableMetadata,
             IdConfig.defaultIdConfig(),
-            new VectorConfig(
+            VectorConfig.fromColumnDefinitions(
                 List.of(
                     new VectorConfig.ColumnVectorDefinition(
                         DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,

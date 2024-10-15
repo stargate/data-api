@@ -36,11 +36,15 @@ public abstract class MetadataAttemptPage<SchemaT extends SchemaObject>
   protected void buildCommandResult() {
     addAttemptWarningsToResult();
     addAttemptErrorsToResult();
-    if (attempts.get(0).status() != OperationAttempt.OperationStatus.ERROR) {
+    var metadataAttempts = attempts.completedAttempts();
+    if (metadataAttempts.size() > 1) {
+      throw new IllegalArgumentException("Only one attempt is expected for metadata commands");
+    }
+    if (!metadataAttempts.isEmpty()) {
       if (showSchema) {
-        resultBuilder.addStatus(statusKey, attempts.get(0).getSchema());
+        resultBuilder.addStatus(statusKey, attempts.getFirst().getSchema());
       } else {
-        resultBuilder.addStatus(statusKey, attempts.get(0).getNames());
+        resultBuilder.addStatus(statusKey, attempts.getFirst().getNames());
       }
     }
   }

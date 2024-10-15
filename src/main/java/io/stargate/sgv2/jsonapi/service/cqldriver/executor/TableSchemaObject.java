@@ -115,7 +115,8 @@ public class TableSchemaObject extends TableBasedSchemaObject {
     if (columnVectorDefinitions.isEmpty()) {
       vectorConfig = VectorConfig.NOT_ENABLED_CONFIG;
     } else {
-      vectorConfig = new VectorConfig(Collections.unmodifiableList(columnVectorDefinitions));
+      vectorConfig =
+          VectorConfig.fromColumnDefinitions(Collections.unmodifiableList(columnVectorDefinitions));
     }
     return new TableSchemaObject(tableMetadata, vectorConfig);
   }

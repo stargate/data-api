@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -17,12 +18,21 @@ public class VectorConfig {
    * @param columnVectorDefinitions - List of columnVectorDefinitions each with respect to a
    *     column/field
    */
-  public VectorConfig(List<ColumnVectorDefinition> columnVectorDefinitions) {
+  private VectorConfig(
+      List<ColumnVectorDefinition> columnVectorDefinitions, boolean vectorEnabled) {
     this.columnVectorDefinitions = columnVectorDefinitions;
-    this.vectorEnabled = columnVectorDefinitions != null && !columnVectorDefinitions.isEmpty();
+    this.vectorEnabled = vectorEnabled;
   }
 
-  public static VectorConfig NOT_ENABLED_CONFIG = new VectorConfig(null);
+  public static VectorConfig fromColumnDefinitions(
+      List<ColumnVectorDefinition> columnVectorDefinitions) {
+    if (columnVectorDefinitions == null || columnVectorDefinitions.isEmpty()) {
+      return NOT_ENABLED_CONFIG;
+    }
+    return new VectorConfig(Collections.unmodifiableList(columnVectorDefinitions), true);
+  }
+
+  public static final VectorConfig NOT_ENABLED_CONFIG = new VectorConfig(null, false);
 
   public boolean vectorEnabled() {
     return vectorEnabled;
@@ -34,8 +44,12 @@ public class VectorConfig {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     VectorConfig that = (VectorConfig) o;
     return vectorEnabled == that.vectorEnabled
         && Objects.equals(columnVectorDefinitions, that.columnVectorDefinitions);

@@ -28,7 +28,7 @@ public class CollectionSettingsV1Reader implements CollectionSettingsReader {
     if (!vector.isMissingNode()) {
       VectorConfig.ColumnVectorDefinition columnVectorDefinition =
           VectorConfig.ColumnVectorDefinition.fromJson(vector, objectMapper);
-      vectorConfig = new VectorConfig(List.of(columnVectorDefinition));
+      vectorConfig = VectorConfig.fromColumnDefinitions(List.of(columnVectorDefinition));
     }
     // construct collectionSettings IndexingConfig
     CollectionIndexingConfig indexingConfig = null;

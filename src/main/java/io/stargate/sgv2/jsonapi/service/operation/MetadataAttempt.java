@@ -2,20 +2,15 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
-import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
-import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.api.core.type.VectorType;
-import com.datastax.oss.driver.internal.core.cql.EmptyColumnDefinitions;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
@@ -23,6 +18,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.Colu
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexTypes;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveTypes;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.EmptyAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -31,13 +27,10 @@ import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatche
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
-import java.time.Duration;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
 /** An attempt to execute commands that need data from metadata */
@@ -46,7 +39,7 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
   // this will be set on executeStatement
   private Optional<KeyspaceMetadata> keyspaceMetadata;
 
-  private static ObjectMapper objectMapper = new ObjectMapper();
+  private static final ObjectMapper objectMapper = new ObjectMapper();
   private static final CollectionTableMatcher TABLE_MATCHER = new CollectionTableMatcher();
 
   /**
@@ -213,63 +206,5 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
         .map(table -> TableSchemaObject.from(table, objectMapper))
         // get as list
         .toList();
-  }
-
-  /**
-   * EmptyAsyncResultSet implementation to be used only for metadata attempt where no cql query is
-   * run.
-   */
-  private static class EmptyAsyncResultSet implements AsyncResultSet {
-    @NonNull
-    @Override
-    public ColumnDefinitions getColumnDefinitions() {
-      return EmptyColumnDefinitions.INSTANCE;
-    }
-
-    @NonNull
-    @Override
-    public ExecutionInfo getExecutionInfo() {
-      return null;
-    }
-
-    @NonNull
-    @Override
-    public Iterable<Row> currentPage() {
-      return Collections.emptyList();
-    }
-
-    @Override
-    public int remaining() {
-      return 0;
-    }
-
-    @Override
-    public boolean hasMorePages() {
-      return false;
-    }
-
-    @NonNull
-    @Override
-    public CompletionStage<AsyncResultSet> fetchNextPage() throws IllegalStateException {
-      throw new IllegalStateException(
-          "No next page. Use #hasMorePages before calling this method to avoid this error.");
-    }
-
-    @Override
-    public boolean wasApplied() {
-      return true;
-    }
-  }
-
-  public static class NoRetryPolicy extends RetryPolicy {
-
-    public NoRetryPolicy() {
-      super(1, Duration.ofMillis(10));
-    }
-
-    @Override
-    public boolean shouldRetry(Throwable throwable) {
-      return false;
-    }
   }
 }
