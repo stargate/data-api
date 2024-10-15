@@ -2,7 +2,42 @@
 
 ## [Unreleased](https://github.com/stargate/data-api/tree/HEAD)
 
-[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.17...HEAD)
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.18...HEAD)
+
+**Closed issues:**
+
+- Data API JsonCodec: Vector, add support for `vector\<float\>` [\#1492](https://github.com/stargate/data-api/issues/1492)
+
+## [v1.0.18](https://github.com/stargate/data-api/tree/v1.0.18) (2024-10-15)
+
+[Full Changelog](https://github.com/stargate/data-api/compare/v1.0.17...v1.0.18)
+
+**Closed issues:**
+
+- Can't insert vector field with tables [\#1533](https://github.com/stargate/data-api/issues/1533)
+- Issue with `COLLECTION\_NOT\_EXIST` error w/ Errors v2 [\#1531](https://github.com/stargate/data-api/issues/1531)
+- Table Filter, $binary EJSON for Blob column datatype. [\#1513](https://github.com/stargate/data-api/issues/1513)
+- Enable HTTP request log \(access log\) in Production [\#1498](https://github.com/stargate/data-api/issues/1498)
+- Refactor WhereCQLClauseAnalyzer [\#1485](https://github.com/stargate/data-api/issues/1485)
+- Table Primary Key filtering, multiple corner cases. [\#1481](https://github.com/stargate/data-api/issues/1481)
+- Further detailed consideration of how we enable ALLOW FILTERING  [\#1476](https://github.com/stargate/data-api/issues/1476)
+- code tidy: use  the CommandResultBuilder  everywhere  [\#1463](https://github.com/stargate/data-api/issues/1463)
+- code tidy: tweak CommandResultBuilder to make it more buildery  [\#1461](https://github.com/stargate/data-api/issues/1461)
+- accommodate ALLOW FILTERING to OnGoingWhereClause for table [\#1445](https://github.com/stargate/data-api/issues/1445)
+- Data API JsonCodec impl: misc other type\(s\) \(inet\) [\#1386](https://github.com/stargate/data-api/issues/1386)
+
+**Merged pull requests:**
+
+- Implement \#1492: basic Vector\<Float\> support with Number arrays [\#1542](https://github.com/stargate/data-api/pull/1542) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- `createVectorIndex` command implementation [\#1541](https://github.com/stargate/data-api/pull/1541) ([maheshrajamani](https://github.com/maheshrajamani))
+- Table filter scalar, uuid/timeuuid/inet [\#1538](https://github.com/stargate/data-api/pull/1538) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Fix \#1531: revert change to error messages [\#1536](https://github.com/stargate/data-api/pull/1536) ([tatu-at-datastax](https://github.com/tatu-at-datastax))
+- List tables refactor [\#1535](https://github.com/stargate/data-api/pull/1535) ([maheshrajamani](https://github.com/maheshrajamani))
+- Add unit tests, filter operators against scalar column datatypes [\#1528](https://github.com/stargate/data-api/pull/1528) ([Yuqi-Du](https://github.com/Yuqi-Du))
+- Add one IT for binary vector support [\#1527](https://github.com/stargate/data-api/pull/1527) ([Hazel-Datastax](https://github.com/Hazel-Datastax))
+- Create index command implementation [\#1526](https://github.com/stargate/data-api/pull/1526) ([maheshrajamani](https://github.com/maheshrajamani))
+- Bumping version for next data-api release [\#1523](https://github.com/stargate/data-api/pull/1523) ([github-actions[bot]](https://github.com/apps/github-actions))
+- Do not publish json-api image to dockerhub [\#1522](https://github.com/stargate/data-api/pull/1522) ([Yuqi-Du](https://github.com/Yuqi-Du))
 
 ## [v1.0.17](https://github.com/stargate/data-api/tree/v1.0.17) (2024-10-09)
 
