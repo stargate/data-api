@@ -28,7 +28,7 @@ public final class TestConstants {
           SCHEMA_OBJECT_NAME,
           null,
           IdConfig.defaultIdConfig(),
-          VectorConfig.notEnabledVectorConfig(),
+          VectorConfig.NOT_ENABLED_CONFIG,
           null);
 
   public static final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT =
@@ -36,8 +36,7 @@ public final class TestConstants {
           SCHEMA_OBJECT_NAME,
           null,
           IdConfig.defaultIdConfig(),
-          new VectorConfig(
-              true,
+          VectorConfig.fromColumnDefinitions(
               List.of(
                   new VectorConfig.ColumnVectorDefinition(
                       DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,

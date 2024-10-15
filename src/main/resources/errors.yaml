@@ -253,6 +253,12 @@ request-errors:
       Column definition is missing for the provided primary key column: ${column_name}.
 
   - scope: SCHEMA
+    code: INVALID_KEYSPACE
+    title: Keyspace used is not valid.
+    body: |-
+      Keyspace used is not valid: ${keyspace} 
+
+  - scope: SCHEMA
     code: COLUMN_TYPE_INCORRECT
     title: Column data type not provided or format invalid in the definition
     body: |-

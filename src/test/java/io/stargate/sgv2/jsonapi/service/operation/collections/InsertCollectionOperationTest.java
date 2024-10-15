@@ -99,12 +99,11 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 SCHEMA_OBJECT_NAME,
                 null,
                 IdConfig.defaultIdConfig(),
-                new VectorConfig(
-                    true,
+                VectorConfig.fromColumnDefinitions(
                     List.of(
                         new VectorConfig.ColumnVectorDefinition(
                             DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-                            -1,
+                            4,
                             SimilarityFunction.COSINE,
                             null))),
                 null),
