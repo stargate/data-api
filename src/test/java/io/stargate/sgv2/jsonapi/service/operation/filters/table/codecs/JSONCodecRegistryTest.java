@@ -888,20 +888,11 @@ public class JSONCodecRegistryTest {
   public void invalidInetAddress() {
     final String valueToTest = TEST_DATA.INET_ADDRESS_INVALID_STRING;
     final var codec = assertGetCodecToCQL(DataTypes.INET, valueToTest);
-    var error =
-        assertThrowsExactly(
-            ToCQLCodecException.class,
-            () -> codec.toCQL(valueToTest),
-            "Throw ToCQLCodecException when attempting to convert DataTypes.INET from invalid Base64 value");
-    assertThat(error)
-        .satisfies(
-            e -> {
-              assertThat(e.targetCQLType).isEqualTo(DataTypes.INET);
-              assertThat(e.value).isEqualTo(valueToTest);
-              assertThat(e.getMessage())
-                  .contains("Root cause: Invalid String value for type `INET`")
-                  .contains("Invalid IP address value");
-            });
+    assertToCQLFail(
+        DataTypes.INET,
+        valueToTest,
+        "Root cause: Invalid String value for type `INET`",
+        "Invalid IP address value");
   }
 
   @Test
@@ -927,7 +918,7 @@ public class JSONCodecRegistryTest {
   public void invalidSetValueFail() {
     DataType cqlTypeToTest = DataTypes.setOf(DataTypes.INT);
     List<JsonLiteral<?>> valueToTest = List.of(stringLiteral("xyz"));
-    var codec = assertGetCodecToCQL(cqlTypeToTest, new ArrayList<>());
+    var codec = assertGetCodecToCQL(cqlTypeToTest, valueToTest);
 
     var error =
         assertThrowsExactly(
@@ -939,6 +930,43 @@ public class JSONCodecRegistryTest {
         .satisfies(
             e -> {
               assertThat(e.getMessage()).contains("no codec matching (list/set)");
+            });
+  }
+
+  @Test
+  public void invalidVectorValueNonNumberFail() {
+    DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 1);
+    List<JsonLiteral<?>> valueToTest = List.of(stringLiteral("abc"));
+    assertToCQLFail(cqlTypeToTest, valueToTest, "expected Number value as Vector element #0");
+  }
+
+  @Test
+  public void invalidVectorValueWrongDimensionFail() {
+    DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 1);
+    List<JsonLiteral<?>> valueToTest = List.of(numberLiteral(1.0), numberLiteral(-0.5));
+    assertToCQLFail(cqlTypeToTest, valueToTest, "expected vector of length 1, got 2");
+  }
+
+  private void assertToCQLFail(DataType cqlType, Object valueToTest, String... expectedMessages) {
+    var codec = assertGetCodecToCQL(cqlType, valueToTest);
+
+    ToCQLCodecException error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest),
+            String.format(
+                "Throw ToCQLCodecException when attempting to convert `%s` from value of %s",
+                cqlType, valueToTest));
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(cqlType);
+              assertThat(e.value).isEqualTo(valueToTest);
+
+              for (String expectedMessage : expectedMessages) {
+                assertThat(e.getMessage()).contains(expectedMessage);
+              }
             });
   }
 }

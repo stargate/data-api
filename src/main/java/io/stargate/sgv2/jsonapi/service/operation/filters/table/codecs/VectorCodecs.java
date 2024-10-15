@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 
 import com.datastax.oss.driver.api.core.data.CqlVector;
-import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
@@ -12,14 +11,14 @@ import java.util.List;
 
 /**
  * Container for factories of codecs that handle CQL Vector type. Separated from main {@link
- * JSONCodecs} to keep the code bit more modular.
+ * JSONCodecs} to keep the code somewhat modular.
  */
 public abstract class VectorCodecs {
   public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> arrayToCQLFloatVectorCodec(
       VectorType vectorType) {
-    // Unfortunately we cannot simply construct and return a single Codec instance here,
+    // Unfortunately we cannot simply construct and return a single Codec instance here
     // because VectorType's dimensions vary, and we need to know the expected dimensions
-    // (unless we want to rely on DB validation after attempting to write the value).
+    // (unless we want to rely on DB validating dimension as part of write and catch failure)
     return (JSONCodec<JavaT, CqlT>)
         new JSONCodec<>(
             // NOTE: although we convert to CqlVector, RowShredder.java binds to Lists
@@ -46,9 +45,9 @@ public abstract class VectorCodecs {
         continue;
       }
       throw new ToCQLCodecException(
-          element,
-          DataTypes.FLOAT,
-          "expected Number valie as Vector element " + floats.size() + ", got " + literalElement);
+          vectorIn,
+          vectorType,
+          "expected Number value as Vector element #" + floats.size() + ", got: " + literalElement);
     }
     return CqlVector.newInstance(floats);
   }
