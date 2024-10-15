@@ -139,7 +139,10 @@ public class TableMetadataTestData extends TestDataSuplier {
             Map.entry(names.CQL_VARINT_COLUMN, DataTypes.VARINT),
             Map.entry(names.CQL_DATE_COLUMN, DataTypes.DATE),
             Map.entry(names.CQL_TIMESTAMP_COLUMN, DataTypes.TIMESTAMP),
-            Map.entry(names.CQL_TIME_COLUMN, DataTypes.TIME)),
+            Map.entry(names.CQL_TIME_COLUMN, DataTypes.TIME),
+            Map.entry(names.CQL_INET_COLUMN, DataTypes.INET),
+            Map.entry(names.CQL_UUID_COLUMN, DataTypes.UUID),
+            Map.entry(names.CQL_TIMEUUID_COLUMN, DataTypes.TIMEUUID)),
         ImmutableMap.of(),
         ImmutableMap.ofEntries(
             // index all datatypes column in the table,(Blob,Duration can NOT be indexed)
@@ -184,7 +187,16 @@ public class TableMetadataTestData extends TestDataSuplier {
                 indexMetadata(names.CQL_TIMESTAMP_COLUMN_INDEX, names.CQL_TIMESTAMP_COLUMN)),
             Map.entry(
                 names.CQL_TIME_COLUMN_INDEX,
-                indexMetadata(names.CQL_TIME_COLUMN_INDEX, names.CQL_TIME_COLUMN))));
+                indexMetadata(names.CQL_TIME_COLUMN_INDEX, names.CQL_TIME_COLUMN)),
+            Map.entry(
+                names.CQL_INET_COLUMN_INDEX,
+                indexMetadata(names.CQL_INET_COLUMN_INDEX, names.CQL_INET_COLUMN)),
+            Map.entry(
+                names.CQL_UUID_COLUMN_INDEX,
+                indexMetadata(names.CQL_UUID_COLUMN_INDEX, names.CQL_UUID_COLUMN)),
+            Map.entry(
+                names.CQL_TIMEUUID_COLUMN_INDEX,
+                indexMetadata(names.CQL_TIMEUUID_COLUMN_INDEX, names.CQL_TIMEUUID_COLUMN))));
   }
 
   public TableMetadata tableAllDatatypesNotIndexed() {
@@ -226,7 +238,10 @@ public class TableMetadataTestData extends TestDataSuplier {
             Map.entry(names.CQL_VARINT_COLUMN, DataTypes.VARINT),
             Map.entry(names.CQL_DATE_COLUMN, DataTypes.DATE),
             Map.entry(names.CQL_TIMESTAMP_COLUMN, DataTypes.TIMESTAMP),
-            Map.entry(names.CQL_TIME_COLUMN, DataTypes.TIME)),
+            Map.entry(names.CQL_TIME_COLUMN, DataTypes.TIME),
+            Map.entry(names.CQL_INET_COLUMN, DataTypes.INET),
+            Map.entry(names.CQL_UUID_COLUMN, DataTypes.UUID),
+            Map.entry(names.CQL_TIMEUUID_COLUMN, DataTypes.TIMEUUID)),
         ImmutableMap.of(),
         ImmutableMap.of());
   }

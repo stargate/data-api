@@ -449,7 +449,8 @@ public class WhereAnalyzerTest {
         }
         if (cqlDatatypeColumn.equals(names().CQL_TEXT_COLUMN)
             || cqlDatatypeColumn.equals(names().CQL_BOOLEAN_COLUMN)
-            || cqlDatatypeColumn.equals(names().CQL_ASCII_COLUMN)) {
+            || cqlDatatypeColumn.equals(names().CQL_ASCII_COLUMN)
+            || cqlDatatypeColumn.equals(names().CQL_UUID_COLUMN)) {
           var fixture =
               TEST_DATA
                   .whereAnalyzer()
@@ -551,6 +552,7 @@ public class WhereAnalyzerTest {
     // ==================================================================================================================
     // Api comparison operator on scalar column, take $gt as example.
     // 1.Can not apply $gt/$lte/$gte/$lte to Duration column
+    // 2.Can not apply to indexed UUID column, index does not support operator
     // ==================================================================================================================
 
     @Test
@@ -570,6 +572,21 @@ public class WhereAnalyzerTest {
               .analyzeThrows(FilterException.class)
               .assertFilterExceptionCode(FilterException.Code.COMPARISON_FILTER_AGAINST_DURATION)
               .assertExceptionOnDurationColumns(cqlDatatypeColumn);
+          continue;
+        }
+
+        if (cqlDatatypeColumn.equals(names().CQL_UUID_COLUMN)) {
+          var fixture =
+              TEST_DATA
+                  .whereAnalyzer()
+                  .tableAllColumnDatatypesIndexed("$gt_on_" + cqlDatatypeColumn.asInternal());
+          fixture
+              .expression()
+              .gtOn(cqlDatatypeColumn)
+              .analyze()
+              .assertAllowFilteringEnabled()
+              .assertOneWarning(WarningException.Code.COMPARISON_FILTER_UNSUPPORTED_BY_INDEXING)
+              .assertWarnOnComparisonFilterColumns(cqlDatatypeColumn);
           continue;
         }
         var fixture =

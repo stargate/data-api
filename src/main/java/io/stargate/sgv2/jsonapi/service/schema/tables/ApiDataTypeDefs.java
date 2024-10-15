@@ -57,6 +57,9 @@ public abstract class ApiDataTypeDefs {
   public static final ApiDataTypeDef UUID =
       new ApiDataTypeDef(PrimitiveApiDataType.UUID, DataTypes.UUID);
 
+  public static final ApiDataTypeDef TIMEUUID =
+      new ApiDataTypeDef(PrimitiveApiDataType.TIMEUUID, DataTypes.TIMEUUID);
+
   public static final ApiDataTypeDef INET =
       new ApiDataTypeDef(PrimitiveApiDataType.INET, DataTypes.INET);
 
@@ -64,7 +67,7 @@ public abstract class ApiDataTypeDefs {
   public static final List<ApiDataTypeDef> PRIMITIVE_TYPES =
       List.of(
           ASCII, BIGINT, BOOLEAN, BINARY, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT, SMALLINT,
-          TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID);
+          TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID, TIMEUUID);
 
   public static final Map<DataType, ApiDataTypeDef> PRIMITIVE_TYPES_BY_CQL_TYPE =
       PRIMITIVE_TYPES.stream()
