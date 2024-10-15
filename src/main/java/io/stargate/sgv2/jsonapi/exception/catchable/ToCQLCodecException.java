@@ -9,6 +9,11 @@ import com.datastax.oss.driver.api.core.type.DataType;
  * into the appropriate API error.
  */
 public class ToCQLCodecException extends CheckedApiException {
+  /**
+   * Since String representation of some input values can be huge (like for Vectors), we limit the
+   * length of the description to avoid flooding logs.
+   */
+  private static final int MAX_VALUE_DESC_LENGTH = 1000;
 
   public final Object value;
   public final DataType targetCQLType;
@@ -39,10 +44,11 @@ public class ToCQLCodecException extends CheckedApiException {
     if (value == null) {
       return "null";
     }
+    String desc = maybeTruncate(String.valueOf(value));
     if (value instanceof String) {
-      return "\"" + value + "\"";
+      desc = "\"" + desc + "\"";
     }
-    return String.valueOf(value);
+    return desc;
   }
 
   private static String className(Object value) {
@@ -50,5 +56,12 @@ public class ToCQLCodecException extends CheckedApiException {
       return "null";
     }
     return value.getClass().getName();
+  }
+
+  private static String maybeTruncate(String value) {
+    if (value.length() <= MAX_VALUE_DESC_LENGTH) {
+      return value;
+    }
+    return value.substring(0, MAX_VALUE_DESC_LENGTH) + "[...](TRUNCATED)";
   }
 }
