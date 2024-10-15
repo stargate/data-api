@@ -205,13 +205,13 @@ request-errors:
 
   - scope: WARNING
     code: COMPARISON_FILTER_UNSUPPORTED_BY_INDEXING
-    title: Use of $lt/$gt/$lte/$gte (comparison filter) on indexed columns
+    title: Use of $lt, $gt, $lte, $gte (comparison filter) on indexed columns
     body: |-
-      The filter uses $lt/$gt/$lte/$gte (comparison filters) on columns that, while indexed, are still inefficient to filter on.  
+      The filter uses $lt, $gt, $lte, $gte (comparison filters) on columns that, while indexed, are still inefficient to filter on.  
       
-      Filtering using $lt/$gt/$lte/$gte on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
+      Filtering using $lt, $gt, $lte, $gte on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
       
-      The table ${keyspace}.${table} uses these data types for the columns: ${allUuidColumns}.
+      The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
       The request applied $lt/$gt/$lte/$gte to the indexed columns: ${inefficientFilterColumns}.
       
       ${SNIPPET.INEFFICIENT_QUERY}

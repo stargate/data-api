@@ -184,7 +184,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     public WhereAnalyzerFixture assertWarnOnComparisonFilterColumns(CqlIdentifier... columns) {
       var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
       var warning =
-          "The request applied $lt/$gt/$lte/$gte to the indexed columns: %s."
+          "The request applied $lt, $gt, $lte, $gte to the indexed columns: %s."
               .formatted(errFmtCqlIdentifier(identifiers));
       return assertWarningContains(warning);
     }

@@ -255,8 +255,8 @@ public class WhereCQLClauseAnalyzer {
   }
 
   /**
-   * Wrn if a filter is on a column that, while it has an index still needs ALLOW FILTERING because
-   * comparison API operator $lt/$gt/$lte/$gte is used.
+   * Warn if a filter is on a column that, while it has an index still needs ALLOW FILTERING because
+   * comparison API operator $lt, $gt, $lte, $gte is used.
    *
    * <p>E.G. [perform $lt against a UUID column 'user_id' that has SAI index on it] <br>
    * Error from Driver: "Column 'user_id' has an index but does not support the operators specified
@@ -285,7 +285,7 @@ public class WhereCQLClauseAnalyzer {
       return Optional.empty();
     }
 
-    var allUuidColumns =
+    var inefficientColumns =
         tableMetadata.getColumns().values().stream()
             .filter(column -> DataTypes.UUID == column.getType())
             .sorted(COLUMN_METADATA_COMPARATOR)
@@ -297,7 +297,7 @@ public class WhereCQLClauseAnalyzer {
                 tableSchemaObject,
                 map -> {
                   map.put("inefficientDataTypes", DataTypes.UUID.toString());
-                  map.put("allUuidColumns", errFmtColumnMetadata(allUuidColumns));
+                  map.put("allUuidColumns", errFmtColumnMetadata(inefficientColumns));
                   map.put("inefficientFilterColumns", errFmtCqlIdentifier(inefficientFilters));
                 })));
   }
