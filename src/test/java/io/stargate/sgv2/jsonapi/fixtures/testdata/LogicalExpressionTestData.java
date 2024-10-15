@@ -169,7 +169,6 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return new TextTableFilter(column.asInternal(), operator, (String) value);
       }
       if (type.equals(DataTypes.DURATION)) {
-        // we pass a string to the codec for a duration
         return new TextTableFilter(column.asInternal(), operator, (String) value);
       }
       if (type.equals(DataTypes.INT)) {
@@ -213,6 +212,15 @@ public class LogicalExpressionTestData extends TestDataSuplier {
         return new TextTableFilter(column.asInternal(), operator, (String) value);
       }
       if (type.equals(DataTypes.TIMESTAMP)) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.INET)) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.UUID)) {
+        return new TextTableFilter(column.asInternal(), operator, (String) value);
+      }
+      if (type.equals(DataTypes.TIMEUUID)) {
         return new TextTableFilter(column.asInternal(), operator, (String) value);
       }
 
@@ -267,6 +275,15 @@ public class LogicalExpressionTestData extends TestDataSuplier {
       }
       if (type.equals(DataTypes.TIMESTAMP)) {
         return "2024-09-24T14:06:59Z"; // Sample timestamp
+      }
+      if (type.equals(DataTypes.INET)) {
+        return "127.0.0.1"; // Sample internet address
+      }
+      if (type.equals(DataTypes.UUID)) {
+        return "123e4567-e89b-12d3-a456-426614174000"; // Sample UUID
+      }
+      if (type.equals(DataTypes.TIMEUUID)) {
+        return "123e4567-e89b-12d3-a456-426655440000"; // Sample TIMEUUID
       }
 
       throw new IllegalArgumentException("Unsupported type");
