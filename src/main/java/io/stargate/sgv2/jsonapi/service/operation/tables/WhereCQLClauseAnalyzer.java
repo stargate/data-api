@@ -297,7 +297,7 @@ public class WhereCQLClauseAnalyzer {
                 tableSchemaObject,
                 map -> {
                   map.put("inefficientDataTypes", DataTypes.UUID.toString());
-                  map.put("allUuidColumns", errFmtColumnMetadata(inefficientColumns));
+                  map.put("inefficientColumns", errFmtColumnMetadata(inefficientColumns));
                   map.put("inefficientFilterColumns", errFmtCqlIdentifier(inefficientFilters));
                 })));
   }

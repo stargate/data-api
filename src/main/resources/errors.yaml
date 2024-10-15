@@ -212,7 +212,7 @@ request-errors:
       Filtering using $lt, $gt, $lte, $gte on columns of type ${inefficientDataTypes} is inefficient, even when the columns are indexed.
       
       The table ${keyspace}.${table} uses these data types for the columns: ${inefficientColumns}.
-      The request applied $lt/$gt/$lte/$gte to the indexed columns: ${inefficientFilterColumns}.
+      The request applied $lt, $gt, $lte, $gte to the indexed columns: ${inefficientFilterColumns}.
       
       ${SNIPPET.INEFFICIENT_QUERY}
 
