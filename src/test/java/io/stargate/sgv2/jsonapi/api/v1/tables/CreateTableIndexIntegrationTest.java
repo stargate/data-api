@@ -212,63 +212,6 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void createVectorIndex() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
-          .postCommand(
-              "createIndex",
-              """
-                                  {
-                                    "name": "vector_type_1_idx",
-                                    "definition": {
-                                      "column": "vector_type_1"
-                                    }
-                                  }
-                                  """)
-          .hasNoErrors()
-          .body("status.ok", is(1));
-    }
-
-    @Test
-    public void createVectorIndexWithSourceModel() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
-          .postCommand(
-              "createIndex",
-              """
-                                  {
-                                    "name": "vector_type_2_idx",
-                                    "definition": {
-                                      "column": "vector_type_2",
-                                      "options": {
-                                        "sourceModel": "openai_v3_small"
-                                      }
-                                    }
-                                  }
-                                  """)
-          .hasNoErrors()
-          .body("status.ok", is(1));
-    }
-
-    @Test
-    public void createVectorIndexWithMetric() {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
-          .postCommand(
-              "createIndex",
-              """
-              {
-                "name": "vector_type_3_idx",
-                "definition": {
-                  "column": "vector_type_3",
-                  "options": {
-                    "metric": "euclidean"
-                  }
-                }
-              }
-              """)
-          .hasNoErrors()
-          .body("status.ok", is(1));
-    }
-
-    @Test
     public void createIndexForQuotedColumn() {
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
@@ -322,6 +265,67 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
   @Nested
   @Order(2)
+  class CreateVectorIndexSuccess {
+    @Test
+    public void createVectorIndex() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+          .postCommand(
+              "createVectorIndex",
+              """
+                                          {
+                                            "name": "vector_type_1_idx",
+                                            "definition": {
+                                              "column": "vector_type_1"
+                                            }
+                                          }
+                                          """)
+          .hasNoErrors()
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public void createVectorIndexWithSourceModel() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+          .postCommand(
+              "createVectorIndex",
+              """
+                                          {
+                                            "name": "vector_type_2_idx",
+                                            "definition": {
+                                              "column": "vector_type_2",
+                                              "options": {
+                                                "sourceModel": "openai_v3_small"
+                                              }
+                                            }
+                                          }
+                                          """)
+          .hasNoErrors()
+          .body("status.ok", is(1));
+    }
+
+    @Test
+    public void createVectorIndexWithMetric() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+          .postCommand(
+              "createVectorIndex",
+              """
+                      {
+                        "name": "vector_type_3_idx",
+                        "definition": {
+                          "column": "vector_type_3",
+                          "options": {
+                            "metric": "euclidean"
+                          }
+                        }
+                      }
+                      """)
+          .hasNoErrors()
+          .body("status.ok", is(1));
+    }
+  }
+
+  @Nested
+  @Order(3)
   class CreateIndexFailure {
     @Test
     public void tryCreateIndexMissingColumn() {
@@ -371,26 +375,25 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               SchemaException.class,
               schemaException.body);
     }
+  }
 
+  @Nested
+  @Order(4)
+  class CreateVectorIndexFailure {
     @Test
-    public void nonVectorOptions() {
+    public void tryCreateIndexMissingColumn() {
       final SchemaException schemaException =
           SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-              Map.of(
-                  "reason",
-                  "`metric` and `sourceModel` options are valid only for `vector` type column"));
+              Map.of("reason", "Column not defined in the table"));
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
-              "createIndex",
+              "createVectorIndex",
               """
                               {
-                                      "name": "invalid_text_idx",
-                                      "definition": {
-                                        "column": "invalid_text",
-                                        "options": {
-                                          "metric": "cosine"
-                                        }
-                                      }
+                                "name": "city_index",
+                                "definition": {
+                                  "column": "city"
+                                }
                               }
                               """)
           .hasSingleApiError(
@@ -408,19 +411,19 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   "Only one of `metric` or `sourceModel` options should be used for `vector` type column"));
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
-              "createIndex",
+              "createVectorIndex",
               """
-                              {
-                                      "name": "vector_type_3_idx",
-                                      "definition": {
-                                        "column": "vector_type_3",
-                                        "options": {
-                                          "metric": "cosine",
-                                          "sourceModel": "mistral-embed"
-                                        }
+                                      {
+                                              "name": "vector_type_3_idx",
+                                              "definition": {
+                                                "column": "vector_type_3",
+                                                "options": {
+                                                  "metric": "cosine",
+                                                  "sourceModel": "mistral-embed"
+                                                }
+                                              }
                                       }
-                              }
-                              """)
+                                      """)
           .hasSingleApiError(
               SchemaException.Code.INVALID_INDEX_DEFINITION,
               SchemaException.class,
