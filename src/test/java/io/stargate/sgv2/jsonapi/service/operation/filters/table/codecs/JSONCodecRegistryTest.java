@@ -660,28 +660,13 @@ public class JSONCodecRegistryTest {
   @ParameterizedTest
   @MethodSource("outOfRangeOfCqlNumberTestCases")
   public void outOfRangeOfCqlNumber(DataType typeToTest, Number valueToTest, String rootCause) {
-    var codec = assertGetCodecToCQL(typeToTest, valueToTest);
-
-    var error =
-        assertThrowsExactly(
-            ToCQLCodecException.class,
-            () -> codec.toCQL(valueToTest),
-            String.format(
-                "Throw ToCQLCodecException for out of range `%s` value: %s",
-                typeToTest, valueToTest));
-
-    assertThat(error)
-        .satisfies(
-            e -> {
-              assertThat(e.targetCQLType).isEqualTo(typeToTest);
-              assertThat(e.value).isEqualTo(valueToTest);
-
-              assertThat(e.getMessage())
-                  .contains(typeToTest.toString())
-                  .contains(valueToTest.getClass().getName())
-                  .contains(valueToTest.toString())
-                  .contains("Root cause: " + rootCause);
-            });
+    assertToCQLFail(
+        typeToTest,
+        valueToTest,
+        typeToTest.toString(),
+        valueToTest.getClass().getName(),
+        valueToTest.toString(),
+        "Root cause: " + rootCause);
   }
 
   private static Stream<Arguments> outOfRangeOfCqlNumberTestCases() {
@@ -722,28 +707,13 @@ public class JSONCodecRegistryTest {
   @ParameterizedTest
   @MethodSource("nonExactToCqlIntegerTestCases")
   public void nonExactToCqlInteger(DataType typeToTest, Number valueToTest) {
-    var codec = assertGetCodecToCQL(typeToTest, valueToTest);
-
-    var error =
-        assertThrowsExactly(
-            ToCQLCodecException.class,
-            () -> codec.toCQL(valueToTest),
-            String.format(
-                "Throw ToCQLCodecException when attempting to convert `%s` from non-integer value %s",
-                typeToTest, valueToTest));
-
-    assertThat(error)
-        .satisfies(
-            e -> {
-              assertThat(e.targetCQLType).isEqualTo(typeToTest);
-              assertThat(e.value).isEqualTo(valueToTest);
-
-              assertThat(e.getMessage())
-                  .contains(typeToTest.toString())
-                  .contains(valueToTest.getClass().getName())
-                  .contains(valueToTest.toString())
-                  .contains("Root cause: Rounding necessary");
-            });
+    assertToCQLFail(
+        typeToTest,
+        valueToTest,
+        typeToTest.toString(),
+        valueToTest.getClass().getName(),
+        valueToTest.toString(),
+        "Root cause: Rounding necessary");
   }
 
   private static Stream<Arguments> nonExactToCqlIntegerTestCases() {
@@ -759,28 +729,12 @@ public class JSONCodecRegistryTest {
   @ParameterizedTest
   @MethodSource("nonAsciiValueFailTestCases")
   public void nonAsciiValueFail(String valueToTest) {
-    var codec = assertGetCodecToCQL(DataTypes.ASCII, valueToTest);
-
-    var error =
-        assertThrowsExactly(
-            ToCQLCodecException.class,
-            () -> codec.toCQL(valueToTest),
-            String.format(
-                "Throw ToCQLCodecException when attempting to convert `%s` from non-ASCII value %s",
-                DataTypes.ASCII, valueToTest));
-
-    assertThat(error)
-        .satisfies(
-            e -> {
-              assertThat(e.targetCQLType).isEqualTo(DataTypes.ASCII);
-              assertThat(e.value).isEqualTo(valueToTest);
-
-              assertThat(e.getMessage())
-                  .contains(DataTypes.ASCII.toString())
-                  .contains(valueToTest.getClass().getName())
-                  .contains(valueToTest.toString())
-                  .contains("Root cause: String contains non-ASCII character at index");
-            });
+    assertToCQLFail(
+        DataTypes.ASCII,
+        valueToTest,
+        valueToTest.getClass().getName(),
+        valueToTest.toString(),
+        "Root cause: String contains non-ASCII character at index");
   }
 
   private static Stream<Arguments> nonAsciiValueFailTestCases() {
