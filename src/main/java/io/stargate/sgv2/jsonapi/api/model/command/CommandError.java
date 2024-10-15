@@ -57,11 +57,11 @@ public class CommandError {
   /**
    * @return
    */
-  public String errorCode() {
+  public String getErrorCode() {
     return errorCode;
   }
 
-  public String message() {
+  public String getMessage() {
     return message;
   }
 

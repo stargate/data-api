@@ -7,6 +7,10 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.exception.ErrorFamily;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -182,10 +186,18 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .then()
           .statusCode(200)
           .body("status.ok", is(1))
+          .body("status.warnings", hasSize(1))
           .body(
-              "status.warnings",
-              hasItem(
-                  "This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead."));
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(
+                  ErrorObjectV2Constants.Fields.CODE,
+                  WarningException.Code.DEPRECATED_COMMAND.name()));
     }
 
     @Test
@@ -209,10 +221,18 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .then()
           .statusCode(200)
           .body("status.ok", is(1))
+          .body("status.warnings", hasSize(1))
           .body(
-              "status.warnings",
-              hasItem(
-                  "This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead."));
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(
+                  ErrorObjectV2Constants.Fields.CODE,
+                  WarningException.Code.DEPRECATED_COMMAND.name()));
     }
 
     @Test
@@ -242,10 +262,18 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .then()
           .statusCode(200)
           .body("status.ok", is(1))
+          .body("status.warnings", hasSize(1))
           .body(
-              "status.warnings",
-              hasItem(
-                  "This createNamespace has been deprecated and will be removed in future releases, use createKeyspace instead."));
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(
+                  ErrorObjectV2Constants.Fields.CODE,
+                  WarningException.Code.DEPRECATED_COMMAND.name()));
     }
 
     @Test

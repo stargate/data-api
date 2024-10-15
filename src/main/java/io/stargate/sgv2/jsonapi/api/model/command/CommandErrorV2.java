@@ -10,6 +10,11 @@ import java.util.UUID;
  *
  * <p>Use either {@link #builderV1()} or {@link #builderV2()} to get te builder to create an
  * instance of this class.
+ *
+ * <p><b>Note:</b> This class is expected to be serialised to JSON for the responses message, and we
+ * are not using a Java record because 1) they do not support inheritance 2) we want to (eventually)
+ * lock down the constuctor so all errors are built through the builder. So uses bean naming to keep
+ * Jackson happy.
  */
 public class CommandErrorV2 extends CommandError {
 
@@ -45,19 +50,19 @@ public class CommandErrorV2 extends CommandError {
     return new Builder<>(false);
   }
 
-  public String family() {
+  public String getFamily() {
     return family;
   }
 
-  public String scope() {
+  public String getScope() {
     return scope;
   }
 
-  public String title() {
+  public String getTitle() {
     return title;
   }
 
-  public UUID id() {
+  public UUID getId() {
     return id;
   }
 
