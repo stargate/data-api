@@ -36,7 +36,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
             Map.entry("map_type", Map.of("type", "map", "keyType", "text", "valueType", "text")),
             Map.entry("vector_type_1", Map.of("type", "vector", "dimension", 1024)),
             Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1536)),
-            Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024))),
+            Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024)),
+            Map.entry("vector_type_4", Map.of("type", "vector", "dimension", 1024))),
         "id");
   }
 
@@ -330,9 +331,9 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
               "createVectorIndex",
               """
                               {
-                                "name": "vector_type_3_idx",
+                                "name": "vector_type_4_idx",
                                 "definition": {
-                                  "column": "vector_type_3",
+                                  "column": "vector_type_4",
                                   "options": {
                                     "metric": "cosine",
                                     "sourceModel": "openai_v3_small"
