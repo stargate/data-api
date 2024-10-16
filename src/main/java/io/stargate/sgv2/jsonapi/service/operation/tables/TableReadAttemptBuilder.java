@@ -45,7 +45,8 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
     this.tableSchemaObject = tableSchemaObject;
     this.selectCQLClause = selectCQLClause;
     this.documentSourceSupplier = documentSourceSupplier;
-    this.whereCQLClauseAnalyzer = new WhereCQLClauseAnalyzer(tableSchemaObject);
+    this.whereCQLClauseAnalyzer =
+        new WhereCQLClauseAnalyzer(tableSchemaObject, WhereCQLClauseAnalyzer.StatementType.SELECT);
   }
 
   public TableReadAttemptBuilder addBuilderOption(CQLOption<Select> option) {
