@@ -575,7 +575,7 @@ public class WhereAnalyzerTest {
           continue;
         }
 
-        if (cqlDatatypeColumn.equals(names().CQL_UUID_COLUMN)) {
+        if (names().COMPARISON_WITH_INDEX_WARN_COLUMNS.contains(cqlDatatypeColumn)) {
           var fixture =
               TEST_DATA
                   .whereAnalyzer()

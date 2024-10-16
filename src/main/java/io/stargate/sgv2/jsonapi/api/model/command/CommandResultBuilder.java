@@ -43,12 +43,17 @@ public class CommandResultBuilder {
   // Created in the Ctor
   private final APIExceptionCommandErrorBuilder apiExceptionToError;
 
+  // another builder, because if we add a warning we want to use the V2 error object
+  // but may not be returning V2 errors in the result
+  private final APIExceptionCommandErrorBuilder apiWarningToError;
+
   CommandResultBuilder(ResponseType responseType, boolean useErrorObjectV2, boolean debugMode) {
     this.responseType = responseType;
     this.useErrorObjectV2 = useErrorObjectV2;
     this.debugMode = debugMode;
 
     this.apiExceptionToError = new APIExceptionCommandErrorBuilder(debugMode, useErrorObjectV2);
+    this.apiWarningToError = new APIExceptionCommandErrorBuilder(debugMode, true);
   }
 
   public CommandResultBuilder addStatus(CommandStatus status, Object value) {
@@ -88,7 +93,7 @@ public class CommandResultBuilder {
 
   public CommandResultBuilder addWarning(APIException warning) {
     warnings.add(
-        apiExceptionToError.buildCommandErrorV2(
+        apiWarningToError.buildCommandErrorV2(
             Objects.requireNonNull(warning, "warning cannot be null")));
     return this;
   }
