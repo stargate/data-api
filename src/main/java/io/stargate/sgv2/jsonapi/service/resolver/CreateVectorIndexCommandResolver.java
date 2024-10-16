@@ -61,7 +61,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     }
 
     if (definitionOptions != null) {
-      if (sourceModel != null && VectorConstant.SUPPORTED_SOURCES.get(sourceModel) != null) {
+      if (sourceModel != null && VectorConstant.SUPPORTED_SOURCES.get(sourceModel) == null) {
         throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
             Map.of(
                 "reason",
