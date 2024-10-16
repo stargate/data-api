@@ -335,7 +335,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   "column": "vector_type_3",
                                   "options": {
                                     "metric": "cosine",
-                                    "sourceModel": "mistral-embed"
+                                    "sourceModel": "openai_v3_small"
                                   }
                                 }
                               }

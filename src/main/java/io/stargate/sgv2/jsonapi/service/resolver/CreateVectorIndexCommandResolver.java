@@ -66,7 +66,7 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
             Map.of(
                 "reason",
                 "Invalid `sourceModel`. Supported source models are: "
-                    + VectorConstant.SUPPORTED_SOURCES));
+                    + VectorConstant.SUPPORTED_SOURCES.keySet()));
       }
     }
 
