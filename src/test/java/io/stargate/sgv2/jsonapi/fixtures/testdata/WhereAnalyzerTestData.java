@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -103,6 +102,14 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       return expression;
     }
 
+    public WhereAnalyzerFixture analyzeMaybeFilterError(FilterException.Code expectedCode) {
+
+      if (expectedCode == null) {
+        return analyze().assertNoFilteringNoWarnings();
+      }
+      return analyzeThrows(FilterException.class).assertFilterExceptionCode(expectedCode);
+    }
+
     public <T extends Throwable> WhereAnalyzerFixture analyzeThrows(Class<T> exceptionClass) {
 
       this.exception =
@@ -133,12 +140,14 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     }
 
     public WhereAnalyzerFixture assertFilterExceptionCode(FilterException.Code code) {
-      Log.error("here + " + code);
-      Log.error("ere ex " + exception);
-      assertThat(exception)
-          .as("FilterException with code %s when: %s".formatted(code, message))
-          .isInstanceOf(FilterException.class)
-          .satisfies(e -> assertThat(((FilterException) e).code).isEqualTo(code.name()));
+      if (code == null) {
+        assertThat(exception).as("No FilterException when: %s".formatted(code, message)).isNull();
+      } else {
+        assertThat(exception)
+            .as("FilterException with code %s when: %s".formatted(code, message))
+            .isInstanceOf(FilterException.class)
+            .satisfies(e -> assertThat(((FilterException) e).code).isEqualTo(code.name()));
+      }
       return this;
     }
 

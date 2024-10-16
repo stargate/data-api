@@ -9,7 +9,6 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
-import io.quarkus.logging.Log;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -18,6 +17,7 @@ import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -35,6 +35,49 @@ import org.slf4j.LoggerFactory;
 public class WhereCQLClauseAnalyzer {
   private static final Logger LOGGER = LoggerFactory.getLogger(WhereCQLClauseAnalyzer.class);
 
+  /** Different statementTypes for analyzer to work on, thus different strategies. */
+  public enum StatementType {
+    SELECT,
+    UPDATE,
+    DELETE_ONE,
+    DELETE_MANY;
+
+    AnalysisStrategy getStrategy(WhereCQLClauseAnalyzer analyzer) {
+
+      // NOTE: the order we run the checks in is important, because the throw if there is a problem
+      // stopping
+      // processing the filters, all warnings are run though.
+      return switch (this) {
+        case SELECT ->
+            new AnalysisStrategy(
+                List.of(
+                    analyzer::checkAllColumnsExist, analyzer::checkComparisonFilterAgainstDuration),
+                List.of(
+                    analyzer::warnMissingIndexOnScalar,
+                    analyzer::warnNotEqUnsupportedByIndexing,
+                    analyzer::warnComparisonUnsupportedByIndexing,
+                    analyzer::warnNoFilters,
+                    analyzer::warnPkNotFullySpecified));
+        case DELETE_ONE, UPDATE ->
+            new AnalysisStrategy(
+                List.of(
+                    analyzer::checkNoFilters,
+                    analyzer::checkAllColumnsExist,
+                    analyzer::checkNonPrimaryKeyFilters,
+                    analyzer::checkFullPrimaryKey),
+                List.of());
+        case DELETE_MANY ->
+            new AnalysisStrategy(
+                List.of(
+                    analyzer::checkNoFilters,
+                    analyzer::checkAllColumnsExist,
+                    analyzer::checkNonPrimaryKeyFilters,
+                    analyzer::checkValidPrimaryKey),
+                List.of());
+      };
+    }
+  }
+
   // Datatypes that need ALLOW FILTERING even when there is a SAI on the column when Not Equals is
   // used.
   private static final Set<DataType> ALLOW_FILTERING_NEEDED_FOR_$NE =
@@ -49,65 +92,30 @@ public class WhereCQLClauseAnalyzer {
   private final TableSchemaObject tableSchemaObject;
   private final TableMetadata tableMetadata;
   private final Map<CqlIdentifier, ColumnMetadata> tablePKColumns;
-
   private final StatementType statementType;
 
-  /**
-   * Different statementTypes for analyzer to work on, thus different strategies.
-   *
-   * <p>
-   */
-  public enum StatementType {
-    SELECT,
-    UPDATE,
-    DELETE_ONE,
-    DELETE_MANY;
-
-    AnalyzeStrategy getStrategy(WhereCQLClauseAnalyzer analyzer) {
-
-      return switch (this) {
-        case SELECT ->
-            new AnalyzeStrategy(
-                List.of(
-                    analyzer::checkAllColumnsExist, analyzer::checkComparisonFilterAgainstDuration),
-                List.of(
-                    analyzer::warnMissingIndexOnScalar,
-                    analyzer::warnNotEqUnsupportedByIndexing,
-                    analyzer::warnComparisonUnsupportedByIndexing,
-                    analyzer::warnNoFilters,
-                    analyzer::warnPkNotFullySpecified));
-        case DELETE_ONE, UPDATE ->
-            new AnalyzeStrategy(
-                List.of(
-                    analyzer::checkNoFilters,
-                    analyzer::checkAllColumnsExist,
-                    analyzer::checkOnlyPrimaryKeyColumnsUsed,
-                    analyzer::checkFullPrimaryKey),
-                List.of());
-        case DELETE_MANY ->
-            new AnalyzeStrategy(
-                List.of(
-                    analyzer::checkNoFilters,
-                    analyzer::checkAllColumnsExist,
-                    analyzer::checkOnlyPrimaryKeyColumnsUsed,
-                    analyzer::checkValidPrimaryKey),
-                List.of());
-      };
-    }
-  }
-
-  public WhereCQLClauseAnalyzer(TableSchemaObject tableSchemaObject, StatementType type) {
+  public WhereCQLClauseAnalyzer(TableSchemaObject tableSchemaObject, StatementType statementType) {
     this.tableSchemaObject =
         Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
+    this.statementType = Objects.requireNonNull(statementType, "statementType cannot be null");
 
     tableMetadata = tableSchemaObject.tableMetadata();
     tablePKColumns =
         tableMetadata.getPrimaryKey().stream()
             .collect(Collectors.toMap(ColumnMetadata::getName, Function.identity()));
-    statementType = type;
   }
 
+  /**
+   * Analyse the provided where clause, throwing errors for invalid combinations and generating
+   * warnings where needed.
+   *
+   * @param whereCQLClause the where clause to analyse
+   * @return A {@link WhereClauseAnalysis} object containing the results of the analysis, including
+   *     whether the query requires ALLOW FILTERING and any warnings generated.
+   */
   public WhereClauseAnalysis analyse(WhereCQLClause<?> whereCQLClause) {
+
+    Objects.requireNonNull(whereCQLClause, "whereCQLClause cannot be null");
 
     Map<CqlIdentifier, TableFilter> identifierToFilter = new HashMap<>();
     whereCQLClause
@@ -118,15 +126,14 @@ public class WhereCQLClauseAnalyzer {
               identifierToFilter.put(cqlIdentifierFromUserInput(tableFilter.path), tableFilter);
             });
 
-    // Get the corresponding analyzeStrategy of statementType
-    var analyzeStrategy = statementType.getStrategy(this);
+    var strategy = statementType.getStrategy(this);
     // Apply validation rules from analyzeStrategy (throw if invalid)
-    analyzeStrategy.validationCheckRules.forEach(rule -> rule.check(identifierToFilter));
+    strategy.validationCheckRules.forEach(rule -> rule.accept(identifierToFilter));
 
     // Apply warning rules from analyzeStrategy
     List<WarningException> warnings = new ArrayList<>();
-    analyzeStrategy.warningCheckRules.forEach(
-        warningRule -> warningRule.check(identifierToFilter).ifPresent(warnings::add));
+    strategy.warningCheckRules.forEach(
+        warningRule -> warningRule.apply(identifierToFilter).ifPresent(warnings::add));
 
     return new WhereClauseAnalysis(!warnings.isEmpty(), warnings);
   }
@@ -138,14 +145,13 @@ public class WhereCQLClauseAnalyzer {
    */
   private void checkNoFilters(Map<CqlIdentifier, TableFilter> identifierToFilter) {
     if (identifierToFilter.isEmpty()) {
-      Log.error("should hit");
-      throw FilterException.Code.NO_FILTER_UPDATE_DELETE.get(
+      throw FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE.get(
           errVars(
               tableSchemaObject,
               map -> {
                 map.put(
-                    "allColumns",
-                    errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
+                    "primaryKeyColumns",
+                    errFmtColumnMetadata(tableSchemaObject.tableMetadata().getPrimaryKey()));
               }));
     }
   }
@@ -157,24 +163,21 @@ public class WhereCQLClauseAnalyzer {
    * the where clause other than primary key columns, [Invalid query] message="Non PRIMARY KEY
    * columns found in where clause: xxx"
    */
-  private void checkOnlyPrimaryKeyColumnsUsed(Map<CqlIdentifier, TableFilter> identifierToFilter) {
+  private void checkNonPrimaryKeyFilters(Map<CqlIdentifier, TableFilter> identifierToFilter) {
 
-    // Collect any non-primary key columns in the filter
-    var nonPkColumns =
+    var nonPkFilters =
         identifierToFilter.keySet().stream()
             .filter(identifier -> !tablePKColumns.containsKey(identifier))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
-    // If non-primary key columns are found, invalid filter exception
-    if (!nonPkColumns.isEmpty()) {
-      throw FilterException.Code.NON_PRIMARY_KEY_COLUMNS_USED_UPDATE_DELETE.get(
+    if (!nonPkFilters.isEmpty()) {
+      throw FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE.get(
           errVars(
               tableSchemaObject,
               map -> {
-                map.put(
-                    "usedNonPrimaryKeyColumns",
-                    errFmtColumnMetadata(tableSchemaObject.tableMetadata().getColumns().values()));
                 map.put("primaryKeyColumns", errFmtColumnMetadata(tableMetadata.getPrimaryKey()));
+                map.put("nonPrimaryKeyFilters", errFmtCqlIdentifier(nonPkFilters));
               }));
     }
   }
@@ -184,9 +187,7 @@ public class WhereCQLClauseAnalyzer {
 
     var unknownColumns =
         identifierToFilter.keySet().stream()
-            .filter(
-                identifier ->
-                    !tableSchemaObject.tableMetadata().getColumns().containsKey(identifier))
+            .filter(identifier -> !tableMetadata.getColumns().containsKey(identifier))
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
@@ -211,17 +212,20 @@ public class WhereCQLClauseAnalyzer {
    * For DELETE_ONE (API defined), user must specify the full primary key in the filter.
    */
   private void checkFullPrimaryKey(Map<CqlIdentifier, TableFilter> identifierToFilter) {
-    var pkFullySpecified =
-        tablePKColumns.keySet().stream().allMatch(identifierToFilter::containsKey);
-    Log.error("heeeer " + pkFullySpecified);
-    Log.error("heeeer " + tablePKColumns);
-    Log.error("heeeer " + identifierToFilter);
-    if (!pkFullySpecified) {
-      throw FilterException.Code.PRIMARY_KEY_NOT_FULLY_SPECIFIED.get(
+
+    var missingPKColumns =
+        tableMetadata.getPrimaryKey().stream()
+            .filter(pkColumn -> !identifierToFilter.containsKey(pkColumn.getName()))
+            .sorted(COLUMN_METADATA_COMPARATOR)
+            .toList();
+
+    if (!missingPKColumns.isEmpty()) {
+      throw FilterException.Code.FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE.get(
           errVars(
               tableSchemaObject,
               map -> {
                 map.put("primaryKeyColumns", errFmtColumnMetadata(tableMetadata.getPrimaryKey()));
+                map.put("missingPrimaryKeyFilters", errFmtColumnMetadata(missingPKColumns));
               }));
     }
   }
@@ -499,29 +503,6 @@ public class WhereCQLClauseAnalyzer {
                 })));
   }
 
-  /**
-   * The result of the where clause analysis.
-   *
-   * @param requiresAllowFiltering TRUE if the query requires ALLOW FILTERING, FALSE otherwise.
-   * @param warningExceptions List of warning exceptions that should be outputted with the query,
-   *     NOTE there may be warnings without needing ALLOW FILTERING.
-   */
-  public record WhereClauseAnalysis(
-      boolean requiresAllowFiltering, List<WarningException> warningExceptions) {}
-
-  record AnalyzeStrategy(
-      List<ValidationCheckRule> validationCheckRules, List<WarningCheckRule> warningCheckRules) {}
-
-  @FunctionalInterface
-  public interface ValidationCheckRule {
-    void check(Map<CqlIdentifier, TableFilter> identifierToFilter);
-  }
-
-  @FunctionalInterface
-  public interface WarningCheckRule {
-    Optional<WarningException> check(Map<CqlIdentifier, TableFilter> identifierToFilter);
-  }
-
   // ==================================================================================================================
   // Some helper methods can be commonly used by rules.
   // ==================================================================================================================
@@ -536,6 +517,7 @@ public class WhereCQLClauseAnalyzer {
 
   private List<ColumnMetadata> outOfOrderClusteringKeys(
       Map<CqlIdentifier, TableFilter> identifierToFilter) {
+
     // If we are filtering on any clustering keys, then we need to make sure we are not skipping any
     // i.e. if clustering is (a,b,c) and we are filtering on (a,c) then we are skipping b
     final boolean[] skipped = {false};
@@ -568,9 +550,32 @@ public class WhereCQLClauseAnalyzer {
 
   private List<ColumnMetadata> missingPartitionKeys(
       Map<CqlIdentifier, TableFilter> identifierToFilter) {
+
     return tableMetadata.getPartitionKey().stream()
         .filter(column -> !identifierToFilter.containsKey(column.getName()))
         .sorted(COLUMN_METADATA_COMPARATOR)
         .toList();
   }
+
+  /**
+   * The result of the where clause analysis.
+   *
+   * @param requiresAllowFiltering TRUE if the query requires ALLOW FILTERING, FALSE otherwise.
+   * @param warningExceptions List of warning exceptions that should be outputted with the query,
+   *     NOTE there may be warnings without needing ALLOW FILTERING.
+   */
+  public record WhereClauseAnalysis(
+      boolean requiresAllowFiltering, List<WarningException> warningExceptions) {}
+
+  /** For internal use only. */
+  private record AnalysisStrategy(
+      List<ValidationCheckRule> validationCheckRules, List<WarningCheckRule> warningCheckRules) {}
+
+  /** Implementations will throw if there is an issue with the filters. */
+  @FunctionalInterface
+  private interface ValidationCheckRule extends Consumer<Map<CqlIdentifier, TableFilter>> {}
+
+  @FunctionalInterface
+  private interface WarningCheckRule
+      extends Function<Map<CqlIdentifier, TableFilter>, Optional<WarningException>> {}
 }

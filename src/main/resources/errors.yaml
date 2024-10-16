@@ -176,28 +176,42 @@ request-errors:
       Resend the request using only supported operations on duration columns. 
 
   - scope: FILTER
-    code: NO_FILTER_UPDATE_DELETE
-    title: Cannot perform UPDATE, DELETE without filters
+    code: FILTER_REQUIRED_FOR_UPDATE_DELETE
+    title: A filter is required for Update and Delete commands
     body: |-
-      Zero filters were provided in the filer for this request. Cannot perform UPDATE, DELETE without filters. 
-
-      The table ${keyspace}.${table} defines the columns: ${allColumns}.
-
-  - scope: FILTER
-    code: NON_PRIMARY_KEY_COLUMNS_USED_UPDATE_DELETE
-    title: Cannot use non-primaryKey columns for UPDATE, DELETE
-    body: |-
-      Cannot use non-primaryKey columns for UPDATE, DELETE.
-      Non-primaryKey columns ${usedNonPrimaryKeyColumns} are used in the filter.
-      The table ${keyspace}.${table} defines the primaryKeys: ${primaryKeyColumns}.
-
-  - scope: FILTER
-    code: PRIMARY_KEY_NOT_FULLY_SPECIFIED
-    title: Cannot perform the request without primary key fully specified
-    body: |-
-      Cannot perform UPDATE, DELETE_ONE on a filter that is not fully specified all primary key columns.
+      An Update or Delete command was issued without a filter.
+      
+      These commands require a valid filter that identifies a either a single row (for Update and to Delete one row) or a partition and a sequence or rows (for Delete many). 
 
       The table ${keyspace}.${table} defines the primaryKeys: ${primaryKeyColumns}.
+      
+      Resend the request with an updated filter.
+
+  - scope: FILTER
+    code: NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE
+    title: Only Primary Key columns can be filtered on for Update and Delete commands
+    body: |-
+      An Update or Delete command was issued with a filter that included columns that are not part of the primary key.
+      
+      These commands require a valid filter that can only use the primary key columns of the table. 
+
+      The table ${keyspace}.${table} defines the primaryKeys: ${primaryKeyColumns}.
+      The filter used the non primary key columns: ${nonPrimaryKeyFilters}
+      
+      Resend the request with an updated filter that only uses the primary key fields.
+
+  - scope: FILTER
+    code: FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE
+    title: The Primary Key must be filtered on for Update and Delete one commands
+    body: |-
+      An Update or Delete one command was issued with a filter that did not fully specify the primary key for the table.
+
+      These commands require a valid filter that identifies a single row using the primary key.
+
+      The table ${keyspace}.${table} defines the primaryKeys: ${primaryKeyColumns}.
+      The filter was missing the primary key columns: ${missingPrimaryKeyFilters}.
+      
+      Resend the request with an updated filter that fully specifies the primary key fields.
 
   - scope: FILTER
     code: INCOMPLETE_PRIMARY_KEY_FILTER
