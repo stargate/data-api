@@ -322,6 +322,27 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasNoErrors()
           .body("status.ok", is(1));
     }
+
+    @Test
+    public void createVectorIndexWithMetricAndSourceModel() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+          .postCommand(
+              "createVectorIndex",
+              """
+                              {
+                                "name": "vector_type_3_idx",
+                                "definition": {
+                                  "column": "vector_type_3",
+                                  "options": {
+                                    "metric": "cosine",
+                                    "sourceModel": "mistral-embed"
+                                  }
+                                }
+                              }
+                              """)
+          .hasNoErrors()
+          .body("status.ok", is(1));
+    }
   }
 
   @Nested
@@ -396,34 +417,6 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                               }
                               """)
-          .hasSingleApiError(
-              SchemaException.Code.INVALID_INDEX_DEFINITION,
-              SchemaException.class,
-              schemaException.body);
-    }
-
-    @Test
-    public void vectorTypeAllConfigOptions() {
-      final SchemaException schemaException =
-          SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-              Map.of(
-                  "reason",
-                  "Only one of `metric` or `sourceModel` options should be used for `vector` type column"));
-      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
-          .postCommand(
-              "createVectorIndex",
-              """
-                                      {
-                                              "name": "vector_type_3_idx",
-                                              "definition": {
-                                                "column": "vector_type_3",
-                                                "options": {
-                                                  "metric": "cosine",
-                                                  "sourceModel": "mistral-embed"
-                                                }
-                                              }
-                                      }
-                                      """)
           .hasSingleApiError(
               SchemaException.Code.INVALID_INDEX_DEFINITION,
               SchemaException.class,
