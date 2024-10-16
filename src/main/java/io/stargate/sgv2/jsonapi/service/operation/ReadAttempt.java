@@ -13,6 +13,7 @@ import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedSelect;
 import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
@@ -121,7 +122,7 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
     var metadata = schemaObject.tableMetadata();
     List<Object> positionalValues = new ArrayList<>();
 
-    var selectFrom = selectFrom(metadata.getKeyspace(), metadata.getName());
+    var selectFrom = ExtendedSelect.selectFrom(metadata.getKeyspace(), metadata.getName());
     var select = applySelect(selectFrom, positionalValues);
     // these are options that go on the query builder, such as limit or allow filtering
     var bindableQuery = applyOptions(select);

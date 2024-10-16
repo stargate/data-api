@@ -269,7 +269,7 @@ public class WhereAnalyzerTest {
     var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("oneUnknownColumn()");
     fixture
         .expression()
-        .expression
+        .rootImplicitAnd
         .addFilter(
             LogicalExpressionTestData.ExpressionBuilder.filter(
                 names().COL_UNKNOWN_1, DataTypes.TEXT, NativeTypeTableFilter.Operator.EQ, "value"));
@@ -286,7 +286,7 @@ public class WhereAnalyzerTest {
     var fixture = TEST_DATA.whereAnalyzer().table2PK3Clustering1Index("unknownAndFullPk()");
     fixture
         .expression()
-        .expression
+        .rootImplicitAnd
         .addFilter(
             LogicalExpressionTestData.ExpressionBuilder.filter(
                 names().COL_UNKNOWN_1, DataTypes.TEXT, NativeTypeTableFilter.Operator.EQ, "value"));
