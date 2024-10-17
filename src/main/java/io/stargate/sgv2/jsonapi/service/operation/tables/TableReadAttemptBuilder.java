@@ -81,7 +81,7 @@ public class TableReadAttemptBuilder implements ReadAttemptBuilder<ReadAttempt<T
     if (analyzedResult != null && analyzedResult.requiresAllowFiltering()) {
       // Create a copy of cqlOptions, so we do not impact other attempts
       atttemptCqlOptions = new CqlOptions<>(atttemptCqlOptions);
-      atttemptCqlOptions.addBuilderOption(CQLOption.ForSelect.withAllowFiltering());
+      atttemptCqlOptions.addBuilderOption(CQLOption.ForSelect.allowFiltering());
     }
 
     var tableReadAttempt =
