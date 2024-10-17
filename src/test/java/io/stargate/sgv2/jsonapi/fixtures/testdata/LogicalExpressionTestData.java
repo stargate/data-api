@@ -72,6 +72,22 @@ public class LogicalExpressionTestData extends TestDataSuplier {
       return fixture;
     }
 
+    public FixtureT eqSkipOnePartitionKeys(int skipIndex) {
+      if (skipIndex >= tableMetadata.getPartitionKey().size()) {
+        throw new IllegalArgumentException(
+            "Skip index is greater than the number of partition keys");
+      }
+      int index = -1;
+      for (ColumnMetadata columnMetadata : tableMetadata.getPartitionKey()) {
+        index++;
+        if (index == skipIndex) {
+          continue;
+        }
+        expression.addFilter(eq(columnMetadata));
+      }
+      return fixture;
+    }
+
     public FixtureT eqAllClusteringKeys() {
       tableMetadata
           .getClusteringColumns()
