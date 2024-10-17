@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.core.Response;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jboss.resteasy.reactive.RestResponse;
@@ -35,11 +34,14 @@ public class ConstraintViolationExceptionMapper {
       ConstraintViolationException exception) {
     // map all violations to errors
     Set<ConstraintViolation<?>> violations = exception.getConstraintViolations();
-    List<CommandResult.Error> errors =
-        violations.stream().map(ConstraintViolationExceptionMapper::getError).distinct().toList();
+    var builder = CommandResult.statusOnlyBuilder(false, false);
+    violations.stream()
+        .map(ConstraintViolationExceptionMapper::getError)
+        .distinct()
+        .forEach(builder::addCommandResultError);
 
     // return result
-    return new CommandResult(errors).toRestResponse();
+    return builder.build().toRestResponse();
   }
 
   private static CommandResult.Error getError(ConstraintViolation<?> violation) {

@@ -7,7 +7,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.ws.rs.core.Response;
-import java.util.List;
 import java.util.Map;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.junit.jupiter.api.Nested;
@@ -21,7 +20,8 @@ public class CommandResultToRestResponseTest {
 
     @Test
     public void happyPath() {
-      CommandResult result = new CommandResult(Map.of(CommandStatus.OK, 1));
+      CommandResult result =
+          CommandResult.statusOnlyBuilder(false, false).addStatus(CommandStatus.OK, 1).build();
       final RestResponse mappedResult = result.toRestResponse();
       assertThat(mappedResult.getStatus()).isEqualTo(RestResponse.Status.OK.getStatusCode());
     }
@@ -29,13 +29,15 @@ public class CommandResultToRestResponseTest {
     @Test
     public void errorWithOkStatus() {
       CommandResult result =
-          new CommandResult(
-              List.of(
+          CommandResult.statusOnlyBuilder(false, false)
+              .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",
                       Map.of("field", "value"),
                       Map.of("field", "value"),
-                      Response.Status.OK)));
+                      Response.Status.OK))
+              .build();
+
       final RestResponse mappedResult = result.toRestResponse();
       assertThat(mappedResult.getStatus()).isEqualTo(RestResponse.Status.OK.getStatusCode());
     }
@@ -43,13 +45,15 @@ public class CommandResultToRestResponseTest {
     @Test
     public void unauthorized() {
       CommandResult result =
-          new CommandResult(
-              List.of(
+          CommandResult.statusOnlyBuilder(false, false)
+              .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",
                       Map.of("field", "value"),
                       Map.of("field", "value"),
-                      Response.Status.UNAUTHORIZED)));
+                      Response.Status.UNAUTHORIZED))
+              .build();
+
       final RestResponse mappedResult = result.toRestResponse();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.UNAUTHORIZED.getStatusCode());
@@ -58,13 +62,15 @@ public class CommandResultToRestResponseTest {
     @Test
     public void badGateway() {
       CommandResult result =
-          new CommandResult(
-              List.of(
+          CommandResult.statusOnlyBuilder(false, false)
+              .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",
                       Map.of("field", "value"),
                       Map.of("field", "value"),
-                      Response.Status.BAD_GATEWAY)));
+                      Response.Status.BAD_GATEWAY))
+              .build();
+
       final RestResponse mappedResult = result.toRestResponse();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.BAD_GATEWAY.getStatusCode());
@@ -73,13 +79,15 @@ public class CommandResultToRestResponseTest {
     @Test
     public void internalError() {
       CommandResult result =
-          new CommandResult(
-              List.of(
+          CommandResult.statusOnlyBuilder(false, false)
+              .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",
                       Map.of("field", "value"),
                       Map.of("field", "value"),
-                      Response.Status.INTERNAL_SERVER_ERROR)));
+                      Response.Status.INTERNAL_SERVER_ERROR))
+              .build();
+
       final RestResponse mappedResult = result.toRestResponse();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.INTERNAL_SERVER_ERROR.getStatusCode());
@@ -88,13 +96,15 @@ public class CommandResultToRestResponseTest {
     @Test
     public void gatewayError() {
       CommandResult result =
-          new CommandResult(
-              List.of(
+          CommandResult.statusOnlyBuilder(false, false)
+              .addCommandResultError(
                   new CommandResult.Error(
                       "My message.",
                       Map.of("field", "value"),
                       Map.of("field", "value"),
-                      Response.Status.GATEWAY_TIMEOUT)));
+                      Response.Status.GATEWAY_TIMEOUT))
+              .build();
+
       final RestResponse mappedResult = result.toRestResponse();
       assertThat(mappedResult.getStatus())
           .isEqualTo(RestResponse.Status.GATEWAY_TIMEOUT.getStatusCode());

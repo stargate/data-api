@@ -2,8 +2,10 @@ package io.stargate.sgv2.jsonapi.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.stargate.sgv2.jsonapi.api.model.command.CommandErrorV2;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /** tests for {@link APIExceptionCommandErrorBuilder} */
@@ -19,21 +21,31 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
   @Test
   public void productionModeCommandResult() {
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result = new APIExceptionCommandErrorBuilder(false, true).apply(exception);
+    var result =
+        new APIExceptionCommandErrorBuilder(false, true).buildLegacyCommandResultError(exception);
     assertCommandError(exception, result, 5, true);
+  }
+
+  @Test
+  public void productionModeCommandErrorV2() {
+    var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
+    var result = new APIExceptionCommandErrorBuilder(false, true).buildCommandErrorV2(exception);
+    assertCommandErrorV2(exception, result);
   }
 
   @Test
   public void preErrorV2ModeCommandResult() {
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result = new APIExceptionCommandErrorBuilder(false, true).apply(exception);
+    var result =
+        new APIExceptionCommandErrorBuilder(false, true).buildLegacyCommandResultError(exception);
     assertCommandError(exception, result, 1, false);
   }
 
   @Test
   public void debugModeCommandResult() {
     var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
-    var result = new APIExceptionCommandErrorBuilder(true, true).apply(exception);
+    var result =
+        new APIExceptionCommandErrorBuilder(true, true).buildLegacyCommandResultError(exception);
     assertCommandError(exception, result, 6, true);
 
     assertThat(result)
@@ -44,6 +56,18 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
                     .containsEntry(
                         ErrorObjectV2Constants.Fields.EXCEPTION_CLASS,
                         exception.getClass().getSimpleName()));
+  }
+
+  @Test
+  public void debugModeCommandErrorV2() {
+    var exception = TestRequestException.Code.NO_VARIABLES_TEMPLATE.get();
+    var result = new APIExceptionCommandErrorBuilder(true, true).buildCommandErrorV2(exception);
+    assertCommandErrorV2(exception, result);
+
+    assertThat(result)
+        .isNotNull()
+        .satisfies(
+            e -> assertThat(e.exceptionClass()).isEqualTo(exception.getClass().getSimpleName()));
   }
 
   private void assertCommandError(
@@ -59,16 +83,35 @@ public class APIExceptionCommandErrorBuilderTest extends ConfiguredErrorTest {
             e -> {
               assertThat(e.message()).isEqualTo(exception.body);
               assertThat(e.httpStatus().getStatusCode()).isEqualTo(exception.httpStatus);
-              assertMetricTags(exception, e);
+              assertMetricTags(exception, e.fieldsForMetricsTag());
               if (errorObjectV2) {
                 assertErrorFields(exception, e, fieldSize, errorObjectV2);
               }
             });
   }
 
-  private void assertMetricTags(APIException exception, CommandResult.Error error) {
+  private void assertCommandErrorV2(APIException exception, CommandErrorV2 commandError) {
 
-    assertThat(error.fieldsForMetricsTag())
+    assertThat(commandError)
+        .as("CommandErrorV2 matches ApiException %s", exception)
+        .isNotNull()
+        .satisfies(
+            e -> {
+              assertThat(e.getFamily()).isEqualTo(exception.family.name());
+              assertThat(e.getScope()).isEqualTo(exception.scope);
+              assertThat(e.getErrorCode()).isEqualTo(exception.code);
+              assertThat(e.getTitle()).isEqualTo(exception.title);
+              assertThat(e.getMessage()).isEqualTo(exception.body);
+              assertThat(e.getId()).isEqualTo(exception.errorId);
+              assertThat(e.httpStatus().getStatusCode()).isEqualTo(exception.httpStatus);
+
+              assertMetricTags(exception, e.metricsTags());
+            });
+  }
+
+  private void assertMetricTags(APIException exception, Map<String, Object> metricTags) {
+
+    assertThat(metricTags)
         .containsEntry(ErrorObjectV2Constants.MetricTags.ERROR_CODE, exception.fullyQualifiedCode())
         .containsEntry(
             ErrorObjectV2Constants.MetricTags.EXCEPTION_CLASS,
