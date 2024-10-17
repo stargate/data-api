@@ -8,7 +8,7 @@ import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 
 /** Builder for a {@link CreateIndexAttempt}. */
 public class CreateIndexAttemptBuilder {
-  private final int position;
+  private int position;
   private TableSchemaObject schemaObject;
   private CqlIdentifier columnName;
   private DataType dataType;
@@ -54,7 +54,7 @@ public class CreateIndexAttemptBuilder {
 
     // Create and return the CreateIndexAttempt object
     return new CreateIndexAttempt(
-        position,
+        position++,
         schemaObject,
         columnName,
         dataType,

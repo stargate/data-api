@@ -9,7 +9,7 @@ import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
-import io.stargate.sgv2.jsonapi.service.operation.ListTablesAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.ListTablesAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.MetadataAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.MetadataAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -45,7 +45,7 @@ public class ListTablesCommandResolver implements CommandResolver<ListTablesComm
     boolean explain = command.options() != null ? command.options().explain() : false;
 
     MetadataAttempt<KeyspaceSchemaObject> attempt =
-        new ListTablesAttempt.ListTablesAttemptBuilder<>(ctx.schemaObject()).build();
+        new ListTablesAttemptBuilder(ctx.schemaObject()).build();
     var attempts = new OperationAttemptContainer<>(List.of(attempt));
 
     var pageBuilder =

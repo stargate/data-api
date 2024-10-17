@@ -7,7 +7,7 @@ import java.util.List;
 /** Attempt to list tables in a keyspace. */
 public class ListTablesAttempt extends MetadataAttempt<KeyspaceSchemaObject> {
 
-  private ListTablesAttempt(int position, KeyspaceSchemaObject schemaObject) {
+  protected ListTablesAttempt(int position, KeyspaceSchemaObject schemaObject) {
     super(position, schemaObject, RetryPolicy.NO_RETRY);
     setStatus(OperationStatus.READY);
   }
@@ -34,18 +34,5 @@ public class ListTablesAttempt extends MetadataAttempt<KeyspaceSchemaObject> {
   @Override
   protected Object getSchema() {
     return getTables().stream().map(schema -> getTableSchema(schema)).toList();
-  }
-
-  public static class ListTablesAttemptBuilder<SchemaT extends KeyspaceSchemaObject> {
-    private final int position = 0;
-    private final SchemaT schemaObject;
-
-    public ListTablesAttemptBuilder(SchemaT schemaObject) {
-      this.schemaObject = schemaObject;
-    }
-
-    public ListTablesAttempt build() {
-      return new ListTablesAttempt(position, schemaObject);
-    }
   }
 }

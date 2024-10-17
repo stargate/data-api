@@ -61,18 +61,12 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     }
 
     if (definitionOptions != null) {
-      if (similarityFunction != null && sourceModel != null) {
-        throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-            Map.of(
-                "reason",
-                "Only one of `metric` or `sourceModel` options should be used for `vector` type column"));
-      }
-      if (sourceModel != null && !VectorConstant.SUPPORTED_SOURCES.contains(sourceModel)) {
+      if (sourceModel != null && VectorConstant.SUPPORTED_SOURCES.get(sourceModel) == null) {
         throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
             Map.of(
                 "reason",
                 "Invalid `sourceModel`. Supported source models are: "
-                    + VectorConstant.SUPPORTED_SOURCES));
+                    + VectorConstant.SUPPORTED_SOURCES.keySet()));
       }
     }
 

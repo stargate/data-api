@@ -9,6 +9,7 @@ import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.nio.ByteBuffer;
@@ -97,9 +98,12 @@ public class TableSchemaObject extends TableBasedSchemaObject {
         if (index.isPresent()) {
           final IndexMetadata indexMetadata = index.get();
           final Map<String, String> indexOptions = indexMetadata.getOptions();
+          final String sourceModel = indexOptions.get("source_model");
           final String similarityFunctionValue = indexOptions.get("similarity_function");
           if (similarityFunctionValue != null) {
             similarityFunction = SimilarityFunction.fromString(similarityFunctionValue);
+          } else if (sourceModel != null) {
+            similarityFunction = VectorConstant.SUPPORTED_SOURCES.get(sourceModel);
           }
         }
         int dimension = vectorType.getDimensions();

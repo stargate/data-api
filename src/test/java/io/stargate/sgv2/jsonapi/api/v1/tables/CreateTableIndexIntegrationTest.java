@@ -36,7 +36,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
             Map.entry("map_type", Map.of("type", "map", "keyType", "text", "valueType", "text")),
             Map.entry("vector_type_1", Map.of("type", "vector", "dimension", 1024)),
             Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1536)),
-            Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024))),
+            Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024)),
+            Map.entry("vector_type_4", Map.of("type", "vector", "dimension", 1024))),
         "id");
   }
 
@@ -322,6 +323,27 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
           .hasNoErrors()
           .body("status.ok", is(1));
     }
+
+    @Test
+    public void createVectorIndexWithMetricAndSourceModel() {
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+          .postCommand(
+              "createVectorIndex",
+              """
+                              {
+                                "name": "vector_type_4_idx",
+                                "definition": {
+                                  "column": "vector_type_4",
+                                  "options": {
+                                    "metric": "cosine",
+                                    "sourceModel": "openai_v3_small"
+                                  }
+                                }
+                              }
+                              """)
+          .hasNoErrors()
+          .body("status.ok", is(1));
+    }
   }
 
   @Nested
@@ -396,34 +418,6 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                               }
                               """)
-          .hasSingleApiError(
-              SchemaException.Code.INVALID_INDEX_DEFINITION,
-              SchemaException.class,
-              schemaException.body);
-    }
-
-    @Test
-    public void vectorTypeAllConfigOptions() {
-      final SchemaException schemaException =
-          SchemaException.Code.INVALID_INDEX_DEFINITION.get(
-              Map.of(
-                  "reason",
-                  "Only one of `metric` or `sourceModel` options should be used for `vector` type column"));
-      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
-          .postCommand(
-              "createVectorIndex",
-              """
-                                      {
-                                              "name": "vector_type_3_idx",
-                                              "definition": {
-                                                "column": "vector_type_3",
-                                                "options": {
-                                                  "metric": "cosine",
-                                                  "sourceModel": "mistral-embed"
-                                                }
-                                              }
-                                      }
-                                      """)
           .hasSingleApiError(
               SchemaException.Code.INVALID_INDEX_DEFINITION,
               SchemaException.class,
