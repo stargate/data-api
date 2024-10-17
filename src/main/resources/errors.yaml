@@ -175,6 +175,57 @@ request-errors:
       
       Resend the request using only supported operations on duration columns. 
 
+  - scope: FILTER
+    code: FILTER_REQUIRED_FOR_UPDATE_DELETE
+    title: A filter is required for Update and Delete commands
+    body: |-
+      An Update or Delete command was issued without a filter.
+      
+      These commands require a valid filter that identifies a either a single row (for Update and to Delete one row) or a partition and a sequence or rows (for Delete many). 
+
+      The table ${keyspace}.${table} defines the primaryKeys: ${primaryKeyColumns}.
+      
+      Resend the request with an updated filter.
+
+  - scope: FILTER
+    code: NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE
+    title: Only Primary Key columns can be filtered on for Update and Delete commands
+    body: |-
+      An Update or Delete command was issued with a filter that included columns that are not part of the primary key.
+      
+      These commands require a valid filter that can only use the primary key columns of the table. 
+
+      The table ${keyspace}.${table} defines the primaryKeys: ${primaryKeyColumns}.
+      The filter used the non primary key columns: ${nonPrimaryKeyFilters}
+      
+      Resend the request with an updated filter that only uses the primary key fields.
+
+  - scope: FILTER
+    code: FULL_PRIMARY_KEY_REQUIRED_FOR_UPDATE_DELETE
+    title: The Primary Key must be filtered on for Update and Delete one commands
+    body: |-
+      An Update or Delete one command was issued with a filter that did not fully specify the primary key for the table.
+
+      These commands require a valid filter that identifies a single row using the primary key.
+
+      The table ${keyspace}.${table} defines the primaryKeys: ${primaryKeyColumns}.
+      The filter was missing the primary key columns: ${missingPrimaryKeyFilters}.
+      
+      Resend the request with an updated filter that fully specifies the primary key fields.
+
+  - scope: FILTER
+    code: INCOMPLETE_PRIMARY_KEY_FILTER
+    title: Cannot perform the request with an invalid primary key filtering
+    body: |-
+      Can not perform the request with an invalid primary key. 
+      The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
+      The filter has the following issues: 
+        - Missing Partition Keys: ${missingPartitionKeys}.
+        - Out of order Partition Sort Keys: ${outOfOrderClusteringKeys}.
+      
+  
+  
+
   # Warnings
 
   - scope: WARNING

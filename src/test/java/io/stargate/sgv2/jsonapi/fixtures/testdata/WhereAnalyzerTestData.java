@@ -31,28 +31,44 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     super(testData);
   }
 
-  public WhereAnalyzerFixture table2PK3Clustering1Index(String message) {
+  public WhereAnalyzerFixture table2PK3Clustering1Index(
+      String message, WhereCQLClauseAnalyzer.StatementType statementType) {
     var tableMetaData = testData.tableMetadata().table2PK3Clustering1Index();
     return new WhereAnalyzerFixture(
-        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+        message,
+        tableMetaData,
+        testData.logicalExpression().andExpression(tableMetaData),
+        statementType);
   }
 
-  public WhereAnalyzerFixture tableKeyAndTwoDuration(String message) {
+  public WhereAnalyzerFixture tableKeyAndTwoDuration(
+      String message, WhereCQLClauseAnalyzer.StatementType statementType) {
     var tableMetaData = testData.tableMetadata().keyAndTwoDuration();
     return new WhereAnalyzerFixture(
-        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+        message,
+        tableMetaData,
+        testData.logicalExpression().andExpression(tableMetaData),
+        statementType);
   }
 
-  public WhereAnalyzerFixture tableAllColumnDatatypesIndexed(String message) {
+  public WhereAnalyzerFixture tableAllColumnDatatypesIndexed(
+      String message, WhereCQLClauseAnalyzer.StatementType statementType) {
     var tableMetaData = testData.tableMetadata().tableAllDatatypesIndexed();
     return new WhereAnalyzerFixture(
-        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+        message,
+        tableMetaData,
+        testData.logicalExpression().andExpression(tableMetaData),
+        statementType);
   }
 
-  public WhereAnalyzerFixture tableAllColumnDatatypesNotIndexed(String message) {
+  public WhereAnalyzerFixture tableAllColumnDatatypesNotIndexed(
+      String message, WhereCQLClauseAnalyzer.StatementType statementType) {
     var tableMetaData = testData.tableMetadata().tableAllDatatypesNotIndexed();
     return new WhereAnalyzerFixture(
-        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+        message,
+        tableMetaData,
+        testData.logicalExpression().andExpression(tableMetaData),
+        statementType);
   }
 
   public static class WhereAnalyzerFixture implements PrettyPrintable {
@@ -67,12 +83,16 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     public Throwable exception = null;
 
     public WhereAnalyzerFixture(
-        String message, TableMetadata tableMetadata, DBLogicalExpression expression) {
+        String message,
+        TableMetadata tableMetadata,
+        DBLogicalExpression expression,
+        WhereCQLClauseAnalyzer.StatementType statementType) {
 
       this.message = message;
       this.tableMetadata = tableMetadata;
       this.analyzer =
-          new WhereCQLClauseAnalyzer(TableSchemaObject.from(tableMetadata, new ObjectMapper()));
+          new WhereCQLClauseAnalyzer(
+              TableSchemaObject.from(tableMetadata, new ObjectMapper()), statementType);
       this.tableSchemaObject = TableSchemaObject.from(tableMetadata, new ObjectMapper());
       this.expression =
           new LogicalExpressionTestData.ExpressionBuilder<>(this, expression, tableMetadata);
@@ -80,6 +100,14 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
 
     public LogicalExpressionTestData.ExpressionBuilder<WhereAnalyzerFixture> expression() {
       return expression;
+    }
+
+    public WhereAnalyzerFixture analyzeMaybeFilterError(FilterException.Code expectedCode) {
+
+      if (expectedCode == null) {
+        return analyze().assertNoFilteringNoWarnings();
+      }
+      return analyzeThrows(FilterException.class).assertFilterExceptionCode(expectedCode);
     }
 
     public <T extends Throwable> WhereAnalyzerFixture analyzeThrows(Class<T> exceptionClass) {
@@ -112,10 +140,14 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     }
 
     public WhereAnalyzerFixture assertFilterExceptionCode(FilterException.Code code) {
-      assertThat(exception)
-          .as("FilterException with code %s when: %s".formatted(code, message))
-          .isInstanceOf(FilterException.class)
-          .satisfies(e -> assertThat(((FilterException) e).code).isEqualTo(code.name()));
+      if (code == null) {
+        assertThat(exception).as("No FilterException when: %s".formatted(code, message)).isNull();
+      } else {
+        assertThat(exception)
+            .as("FilterException with code %s when: %s".formatted(code, message))
+            .isInstanceOf(FilterException.class)
+            .satisfies(e -> assertThat(((FilterException) e).code).isEqualTo(code.name()));
+      }
       return this;
     }
 
