@@ -4,6 +4,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ComplexApiDataType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.PrimitiveApiDataType;
+import java.util.Objects;
 
 /** Interface for complex column types like collections */
 public class ComplexTypes {
@@ -32,6 +33,24 @@ public class ComplexTypes {
     public String valueTypeName() {
       return valueType.getApiDataType().getApiName();
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      MapType mapType = (MapType) o;
+      return Objects.equals(keyType, mapType.keyType)
+          && Objects.equals(valueType, mapType.valueType);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(keyType, valueType);
+    }
   }
 
   /** A list type implementation */
@@ -50,6 +69,23 @@ public class ComplexTypes {
     public String valueTypeName() {
       return valueType.getApiDataType().getApiName();
     }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      ListType listType = (ListType) o;
+      return Objects.equals(valueType, listType.valueType);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(valueType);
+    }
   }
 
   /** A set type implementation */
@@ -67,6 +103,23 @@ public class ComplexTypes {
 
     public String valueTypeName() {
       return valueType.getApiDataType().getApiName();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      ListType listType = (ListType) o;
+      return Objects.equals(valueType, listType.valueType);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(valueType);
     }
   }
 
@@ -95,6 +148,25 @@ public class ComplexTypes {
 
     public int getDimension() {
       return vectorSize;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      VectorType that = (VectorType) o;
+      return vectorSize == that.vectorSize
+          && Objects.equals(valueType, that.valueType)
+          && Objects.equals(vectorConfig, that.vectorConfig);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(valueType, vectorSize, vectorConfig);
     }
   }
 

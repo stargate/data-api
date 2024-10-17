@@ -47,4 +47,13 @@ public class SchemaChangeListener extends SchemaChangeListenerBase {
         table.getKeyspace().asInternal(),
         table.getName().asInternal());
   }
+
+  /** When table is updated, drop the corresponding collectionSetting cache entry if existed */
+  @Override
+  public void onTableUpdated(@NonNull TableMetadata newTable, @NonNull TableMetadata oldTable) {
+    schemaCache.evictCollectionSettingCacheEntry(
+        Optional.ofNullable(tenantId),
+        oldTable.getKeyspace().asInternal(),
+        oldTable.getName().asInternal());
+  }
 }
