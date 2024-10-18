@@ -13,6 +13,10 @@ import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Represents an attempt to alter a table schema. The attempt can be for adding columns, dropping
+ * columns, or updating extensions.
+ */
 public class AlterTableAttempt extends SchemaAttempt<TableSchemaObject> {
   private final AlterTableType alterTableType;
   private final Map<String, ApiDataType> addColumns;
