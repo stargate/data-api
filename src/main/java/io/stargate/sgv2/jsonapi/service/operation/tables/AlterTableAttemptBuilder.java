@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+/** Builder for a {@link AlterTableAttempt}. */
 public class AlterTableAttemptBuilder {
   private AlterTableType alterTableType;
   private final TableSchemaObject schemaObject;
