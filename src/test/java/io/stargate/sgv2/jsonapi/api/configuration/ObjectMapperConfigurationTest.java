@@ -865,5 +865,89 @@ class ObjectMapperConfigurationTest {
                         });
               });
     }
+
+    @Test
+    public void addVectorize() throws Exception {
+      String json =
+          """
+                      {
+                        "alterTable": {
+                            "operation": {
+                                "addVectorize": {
+                                    "columns": {
+                                        "vector_column_1" : {
+                                            "provider": "nvidia",
+                                            "modelName": "NV-Embed-QA"
+                                        },
+                                        "vector_column_2" : {
+                                            "provider": "mistral",
+                                            "modelName": "mistral-embed"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                      }
+                      """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              AlterTableCommand.class,
+              alterTableCommand -> {
+                AlterTableOperation operation = alterTableCommand.operation();
+                assertThat(operation).isNotNull();
+                assertThat(operation)
+                    .isInstanceOfSatisfying(
+                        AlterTableOperationImpl.AddVectorize.class,
+                        addVectorizeConfig -> {
+                          Map<String, VectorizeConfig> columns = addVectorizeConfig.columns();
+                          assertThat(columns).isNotNull();
+                          assertThat(columns).hasSize(2);
+                          assertThat(columns)
+                              .containsEntry(
+                                  "vector_column_1",
+                                  new VectorizeConfig("nvidia", "NV-Embed-QA", null, null));
+                          assertThat(columns)
+                              .containsEntry(
+                                  "vector_column_2",
+                                  new VectorizeConfig("mistral", "mistral-embed", null, null));
+                        });
+              });
+    }
+
+    @Test
+    public void dropVectorize() throws Exception {
+      String json =
+          """
+              {
+                "alterTable": {
+                    "operation": {
+                        "dropVectorize": {
+                           "columns": ["vector_column_1"]
+                        }
+                    }
+                }
+              }
+              """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              AlterTableCommand.class,
+              alterTableCommand -> {
+                AlterTableOperation operation = alterTableCommand.operation();
+                assertThat(operation).isNotNull();
+                assertThat(operation)
+                    .isInstanceOfSatisfying(
+                        AlterTableOperationImpl.DropVectorize.class,
+                        dropVectorizeForColumns -> {
+                          List<String> columns = dropVectorizeForColumns.columns();
+                          assertThat(columns).isNotNull();
+                          assertThat(columns).hasSize(1);
+                          assertThat(columns).contains("vector_column_1");
+                        });
+              });
+    }
   }
 }
