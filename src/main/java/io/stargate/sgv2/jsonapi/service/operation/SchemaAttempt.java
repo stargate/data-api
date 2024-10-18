@@ -52,7 +52,8 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
   protected Map<String, String> serializeExtension(Map<String, String> customProperties) {
     return customProperties.entrySet().stream()
         .collect(
-            Collectors.toMap(Map.Entry::getKey, e -> ByteUtils.toHexString(e.getValue().getBytes())));
+            Collectors.toMap(
+                Map.Entry::getKey, e -> ByteUtils.toHexString(e.getValue().getBytes())));
   }
 
   protected DataType getCqlDataType(ApiDataType apiDataType) {
