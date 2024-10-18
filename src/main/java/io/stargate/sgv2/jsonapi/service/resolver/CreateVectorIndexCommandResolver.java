@@ -19,6 +19,8 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHan
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,11 +64,14 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
 
     if (definitionOptions != null) {
       if (sourceModel != null && VectorConstant.SUPPORTED_SOURCES.get(sourceModel) == null) {
+        List<String> supportedSourceModel =
+            new ArrayList<>(VectorConstant.SUPPORTED_SOURCES.keySet());
+        Collections.sort(supportedSourceModel);
         throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
             Map.of(
                 "reason",
-                "sourceModel `%s` used is request is invalid. Supported source models are: %s"
-                    .formatted(sourceModel, VectorConstant.SUPPORTED_SOURCES.keySet())));
+                "sourceModel `%s` used in request is invalid. Supported source models are: %s"
+                    .formatted(sourceModel, supportedSourceModel)));
       }
     }
 

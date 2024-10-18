@@ -8,6 +8,9 @@ import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.*;
 
@@ -428,12 +431,15 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
     @Test
     public void invalidSourceModel() {
+      List<String> supportedSourceModel =
+          new ArrayList<>(VectorConstant.SUPPORTED_SOURCES.keySet());
+      Collections.sort(supportedSourceModel);
       final SchemaException schemaException =
           SchemaException.Code.INVALID_INDEX_DEFINITION.get(
               Map.of(
                   "reason",
-                  "sourceModel `%s` used is request is invalid. Supported source models are: %s"
-                      .formatted("invalidSourceModel", VectorConstant.SUPPORTED_SOURCES.keySet())));
+                  "sourceModel `%s` used in request is invalid. Supported source models are: %s"
+                      .formatted("invalid_source_model", supportedSourceModel)));
       DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCommand(
               "createVectorIndex",
@@ -443,7 +449,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                   "definition": {
                     "column": "vector_type_5",
                     "options": {
-                      "sourceModel": "invalidSourceModel"
+                      "sourceModel": "invalid_source_model"
                     }
                   }
                 }
