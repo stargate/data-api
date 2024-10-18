@@ -68,7 +68,7 @@ public class CreateTableAttemptBuilder {
   // Build method to create an instance of CreateTableAttempt
   public CreateTableAttempt build() {
     return new CreateTableAttempt(
-        position,
+        position++,
         schemaObject,
         retryDelayMillis,
         maxRetries,
