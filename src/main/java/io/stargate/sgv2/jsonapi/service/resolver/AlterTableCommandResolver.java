@@ -114,7 +114,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     final AlterTableAttempt addColumnsAttempt =
         new AlterTableAttemptBuilder(schemaObject).addColumns(addColumns).build();
     if (!vectorizeConfigMap.isEmpty()) {
-      // Reading exising vectorize config from the table metadata
+      // Reading existing vectorize config from the table metadata
       Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
       Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> existingVectorizeConfigMap =
           TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
@@ -170,7 +170,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       }
     }
 
-    // Reading exising vectorize config from the table metadata
+    // Reading existing vectorize config from the table metadata
     Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
     Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> existingVectorizeConfigMap =
         TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
@@ -229,7 +229,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       }
     }
 
-    // Reading exising vectorize config from the table metadata
+    // Reading existing vectorize config from the table metadata
     Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
     Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> existingVectorizeConfigMap =
         TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
@@ -246,7 +246,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       AlterTableOperationImpl.DropVectorize dc, TableSchemaObject schemaObject) {
     TableMetadata tableMetadata = schemaObject.tableMetadata();
     List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
-    // Reading exising vectorize config from the table metadata
+    // Reading existing vectorize config from the table metadata
     Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
     Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> existingVectorizeConfigMap =
         TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);

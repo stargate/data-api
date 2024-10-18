@@ -12,8 +12,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import org.slf4j.Logger;
 
 public class TableMetadataUtils {
+  private static Logger logger = org.slf4j.LoggerFactory.getLogger(TableMetadataUtils.class);
 
   /** Get extension Map from table metadata */
   public static Map<String, String> getExtensions(TableMetadata tableMetadata) {
@@ -52,11 +54,13 @@ public class TableMetadataUtils {
                     entry.getValue(), VectorConfig.ColumnVectorDefinition.VectorizeConfig.class);
             vectorizeConfigMap.put(entry.getKey(), vectorizeConfig);
           } catch (JsonProcessingException | IllegalArgumentException e) {
+            logger.error("Unable to parse the config json", e);
             throw SchemaException.Code.INVALID_VECTORIZE_CONFIGURATION.get(
                 Map.of("field", entry.getKey()));
           }
         }
       } catch (JsonProcessingException e) {
+        logger.error("Unable to parse the config json", e);
         throw SchemaException.Code.INVALID_CONFIGURATION.get();
       }
     }

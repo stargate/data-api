@@ -34,6 +34,7 @@ public class ComplexTypes {
       return valueType.getApiDataType().getApiName();
     }
 
+    // Needed for testing
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -70,6 +71,7 @@ public class ComplexTypes {
       return valueType.getApiDataType().getApiName();
     }
 
+    // Needed for testing
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -105,6 +107,7 @@ public class ComplexTypes {
       return valueType.getApiDataType().getApiName();
     }
 
+    // Needed for testing
     @Override
     public boolean equals(Object o) {
       if (this == o) {
@@ -150,6 +153,7 @@ public class ComplexTypes {
       return vectorSize;
     }
 
+    // Needed for testing
     @Override
     public boolean equals(Object o) {
       if (this == o) {
