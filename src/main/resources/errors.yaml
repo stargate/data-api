@@ -458,7 +458,7 @@ request-errors:
     code: INVALID_INDEX_DEFINITION
     title: Provided index configuration is not valid.
     body: |-
-      Provided index configuration is not valid: ${reason}.
+      Provided index configuration is not valid: ${reason}.V
 
   - scope: SCHEMA
     code: COLUMN_ALREADY_EXISTS

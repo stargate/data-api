@@ -254,6 +254,11 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     // Merge the new config to the existing vectorize config
     boolean updateVectorize = false;
     for (String column : dc.columns()) {
+      CqlIdentifier columnIdentifier = CqlIdentifierUtil.cqlIdentifierFromUserInput(column);
+      if (tableMetadata.getColumn(columnIdentifier).isEmpty()) {
+        throw SchemaException.Code.COLUMN_NOT_FOUND.get(
+            Map.of("column", columnIdentifier.asCql(true)));
+      }
       final VectorConfig.ColumnVectorDefinition.VectorizeConfig remove =
           existingVectorizeConfigMap.remove(column);
       if (remove != null) {

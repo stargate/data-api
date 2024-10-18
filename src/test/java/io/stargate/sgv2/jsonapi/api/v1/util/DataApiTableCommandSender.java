@@ -42,4 +42,8 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
             .formatted(indexName, columnName);
     return postCommand("createIndex", createIndex);
   }
+
+  public DataApiResponseValidator postAlterTable(String tableDefAsJSON) {
+    return postCommand("alterName", tableDefAsJSON);
+  }
 }

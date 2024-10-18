@@ -14,6 +14,7 @@ import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiResponseValidator;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /** Abstract class for all table int tests that needs a collection to execute tests in. */
@@ -33,6 +34,69 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
             }
             """
             .formatted(tableName, asJSON(columns), asJSON(primaryKeyDef)));
+  }
+
+  protected DataApiResponseValidator alterTableAddColumns(
+      String tableName, Map<String, Object> columns) {
+    return alterTable(
+        tableName,
+            """
+            {
+                "operation": {
+                    "add": {
+                        "columns": %s
+                    }
+                }
+            }
+            """
+            .formatted(tableName, asJSON(columns)));
+  }
+
+  protected DataApiResponseValidator alterTableDropColumns(String tableName, List<String> columns) {
+    return alterTable(
+        tableName,
+            """
+            {
+                "operation": {
+                    "drop": {
+                        "columns": %s
+                    }
+                }
+            }
+            """
+            .formatted(tableName, asJSON(columns)));
+  }
+
+  protected DataApiResponseValidator alterTableAddVectorize(
+      String tableName, Map<String, Object> columns) {
+    return alterTable(
+        tableName,
+            """
+            {
+                "operation": {
+                    "addVectorize": {
+                        "columns": %s
+                    }
+                }
+            }
+            """
+            .formatted(tableName, asJSON(columns)));
+  }
+
+  protected DataApiResponseValidator alterTableDropVectorize(
+      String tableName, List<String> columns) {
+    return alterTable(
+        tableName,
+            """
+            {
+                "operation": {
+                    "dropVectorize": {
+                        "columns": %s
+                    }
+                }
+            }
+            """
+            .formatted(tableName, asJSON(columns)));
   }
 
   protected DataApiResponseValidator createTable(String tableDefAsJSON) {
@@ -115,6 +179,11 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
         break;
       }
     }
+  }
+
+  protected DataApiResponseValidator alterTable(String tableName, String tableDefAsJSON) {
+    return DataApiCommandSenders.assertTableCommand(keyspaceName, tableName)
+        .postAlterTable(tableDefAsJSON);
   }
 
   protected static String asJSON(Object ob) {
