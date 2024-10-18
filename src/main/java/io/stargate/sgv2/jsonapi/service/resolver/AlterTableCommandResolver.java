@@ -225,7 +225,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
                 vectorizeConfig.parameters());
         vectorizeConfigMap.put(entry.getKey(), dbVectorConfig);
       } else {
-        throw SchemaException.Code.NOT_VECTOR_TYPE.get(Map.of("column", entry.getKey()));
+        throw SchemaException.Code.NON_VECTOR_TYPE_COLUMN.get(Map.of("column", entry.getKey()));
       }
     }
 

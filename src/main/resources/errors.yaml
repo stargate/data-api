@@ -428,7 +428,7 @@ request-errors:
       Column can't be dropped: ${reason}.
 
   - scope: SCHEMA
-    code: NOT_VECTOR_TYPE
+    code: NON_VECTOR_TYPE_COLUMN
     title: Can not add vectorize service to non vector column.
     body: |-
       Can not add vectorize service to non vector column ${column}.
