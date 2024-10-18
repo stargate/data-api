@@ -1,10 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -73,8 +74,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -112,8 +112,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(10))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -147,8 +146,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -182,8 +180,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -217,8 +214,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -252,8 +248,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -287,8 +282,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -325,8 +319,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(Math.min(20, datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -360,8 +353,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(20))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -397,8 +389,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(Math.min(20, datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -434,8 +425,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(Math.min(20, datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -471,8 +461,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(Math.min(20, datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -516,8 +505,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(Math.min(20, first20Datas.size())))
           .body("data.documents", jsonEquals(arrayNode.toString()));
     }
@@ -670,8 +658,7 @@ public class FindCollectionOperationWithSortIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, biggerCollectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("DATASET_TOO_BIG"))

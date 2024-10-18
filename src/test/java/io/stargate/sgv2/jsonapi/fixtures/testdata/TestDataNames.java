@@ -101,6 +101,9 @@ public class TestDataNames {
           CQL_UUID_COLUMN,
           CQL_TIMEUUID_COLUMN);
 
+  public final List<CqlIdentifier> COMPARISON_WITH_INDEX_WARN_COLUMNS =
+      List.of(CQL_TEXT_COLUMN, CQL_ASCII_COLUMN, CQL_BOOLEAN_COLUMN, CQL_UUID_COLUMN);
+
   // All column datatypes index name, (Blob,Duration can NOT be indexed)
   public final CqlIdentifier CQL_TEXT_COLUMN_INDEX =
       CqlIdentifier.fromInternal("text-column-index-" + System.currentTimeMillis());

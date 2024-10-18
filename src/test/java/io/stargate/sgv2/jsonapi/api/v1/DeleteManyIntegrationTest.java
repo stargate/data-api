@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.anyOf;
@@ -57,9 +58,9 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             }
           }
           """)
+          .body("$", responseIsStatusOnly())
           .body("status.deletedCount", is(1))
-          .body("status.moreData", is(nullValue()))
-          .body("data", is(nullValue()));
+          .body("status.moreData", is(nullValue()));
 
       // ensure find does not find the document
       givenHeadersPostJsonThenOkNoErrors(
@@ -70,8 +71,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             }
           }
           """)
-          .body("data.document", is(nullValue()))
-          .body("status", is(nullValue()));
+          .body("$", responseIsFindSuccess());
 
       // but can find does the non-deleted document
       givenHeadersPostJsonThenOkNoErrors(
@@ -82,8 +82,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             }
           }
           """)
-          .body("data.document._id", is("doc2"))
-          .body("status", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.document._id", is("doc2"));
     }
 
     @Test
@@ -98,9 +98,9 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             }
           }
           """)
+          .body("$", responseIsStatusOnly())
           .body("status.deletedCount", is(1))
-          .body("status.moreData", is(nullValue()))
-          .body("data", is(nullValue()));
+          .body("status.moreData", is(nullValue()));
     }
 
     @Test
@@ -114,9 +114,9 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             }
           }
           """)
+          .body("$", responseIsStatusOnly())
           .body("status.deletedCount", is(5))
-          .body("status.moreData", is(nullValue()))
-          .body("data", is(nullValue()));
+          .body("status.moreData", is(nullValue()));
 
       // ensure find does not find the documents
       givenHeadersPostJsonThenOkNoErrors(
@@ -127,8 +127,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             }
           }
           """)
-          .body("data.documents", jsonEquals("[]"))
-          .body("status", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", jsonEquals("[]"));
     }
 
     /**
@@ -145,9 +145,9 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             }
           }
           """)
+          .body("$", responseIsStatusOnly())
           .body("status.deletedCount", is(-1))
-          .body("status.moreData", is(nullValue()))
-          .body("data", is(nullValue()));
+          .body("status.moreData", is(nullValue()));
 
       // ensure find does not find the documents
       givenHeadersPostJsonThenOkNoErrors(
@@ -156,8 +156,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             "find": { }
           }
           """)
-          .body("data.documents", jsonEquals("[]"))
-          .body("status", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", jsonEquals("[]"));
     }
 
     /**
@@ -175,9 +175,9 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             }
           }
           """)
+          .body("$", responseIsStatusOnly())
           .body("status.deletedCount", is(-1))
-          .body("status.moreData", is(nullValue()))
-          .body("data", is(nullValue()));
+          .body("status.moreData", is(nullValue()));
 
       // ensure find does not find the documents
       givenHeadersPostJsonThenOkNoErrors(
@@ -186,8 +186,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             "find": { }
           }
           """)
-          .body("data.documents", jsonEquals("[]"))
-          .body("status", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", jsonEquals("[]"));
     }
 
     @Test
@@ -203,9 +203,9 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
           """)
           // moreData will only exist when filter exist. If filter doesn't exist, it will delete all
           // data
+          .body("$", responseIsStatusOnly())
           .body("status.deletedCount", is(20))
-          .body("status.moreData", is(true))
-          .body("data", is(nullValue()));
+          .body("status.moreData", is(true));
 
       // ensure only 20 are really deleted
       givenHeadersPostJsonThenOkNoErrors(
@@ -215,8 +215,8 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             }
           }
           """)
-          .body("data.documents", hasSize(5))
-          .body("status", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(5));
     }
   }
 
@@ -259,6 +259,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
                               }
                             }
                             """)
+                            .body("$", responseIsStatusOnly())
                             .body(
                                 "status.deletedCount",
                                 anyOf(greaterThanOrEqualTo(0), lessThanOrEqualTo(totalDocuments)))
@@ -302,6 +303,7 @@ public class DeleteManyIntegrationTest extends AbstractCollectionIntegrationTest
             }
           }
           """)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", is(empty()));
     }
   }

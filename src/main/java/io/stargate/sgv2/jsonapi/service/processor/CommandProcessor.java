@@ -19,7 +19,6 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.resolver.CommandResolverService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.util.List;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +64,10 @@ public class CommandProcessor {
    */
   public <T extends Command, U extends SchemaObject> Uni<CommandResult> processCommand(
       DataApiRequestInfo dataApiRequestInfo, CommandContext<U> commandContext, T command) {
+
+    var debugMode = commandContext.getConfig(DebugModeConfig.class).enabled();
+    var errorObjectV2 = commandContext.getConfig(OperationsConfig.class).extendError();
+
     // vectorize the data
     return dataVectorizerService
         .vectorize(dataApiRequestInfo, commandContext, command)
@@ -102,7 +105,11 @@ public class CommandProcessor {
 
                     // yet more mucking about with suppliers everywhere :(
                     yield (Supplier<CommandResult>)
-                        () -> new CommandResult(List.of(errorBuilder.apply(apiException)));
+                        () ->
+                            CommandResult.statusOnlyBuilder(errorObjectV2, debugMode)
+                                .addCommandResultError(
+                                    errorBuilder.buildLegacyCommandResultError(apiException))
+                                .build();
                   }
                   case JsonApiException jsonApiException ->
                       // old error objects, old comment below
@@ -130,7 +137,11 @@ public class CommandProcessor {
         .map(
             commandResult -> {
               if (command instanceof DeprecatedCommand deprecatedCommand) {
-                return commandResult.withWarning(deprecatedCommand.getDeprecationMessage());
+                // for the warnings we always want V2 errors and do not want / need debug ?
+                var errorV2 =
+                    new APIExceptionCommandErrorBuilder(false, true)
+                        .buildCommandErrorV2(deprecatedCommand.getDeprecationWarning());
+                commandResult.addWarning(errorV2);
               }
               return commandResult;
             });

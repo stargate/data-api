@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
@@ -90,6 +91,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       deleteCollection(collectionName);
     }
@@ -114,6 +116,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       json =
@@ -134,6 +137,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       deleteCollection("testCollection");
     }
@@ -149,6 +153,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // recreate the same non vector collection
@@ -160,6 +165,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // create a vector collection with the same name
@@ -170,8 +176,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
           .body(
@@ -193,6 +198,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       // recreate the same vector collection
       given()
@@ -203,6 +209,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       // create a non vector collection with the same name
       given()
@@ -212,8 +219,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .when()
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
           .body(
@@ -235,6 +241,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       // create another vector collection with the same name but different size setting
       given()
@@ -245,8 +252,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
           .body(
@@ -263,8 +269,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("EXISTING_COLLECTION_DIFFERENT_SETTINGS"))
           .body(
@@ -304,6 +309,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent so try creating again
@@ -315,6 +321,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("simple_collection_allow_indexing");
@@ -349,6 +356,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent so try creating again
@@ -360,6 +368,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("simple_collection_deny_indexing");
@@ -388,6 +397,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       deleteCollection("simple_collection_indexing_allow_star");
 
@@ -412,6 +422,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
       deleteCollection("simple_collection_indexing_deny_star");
 
@@ -437,8 +448,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               is("Invalid indexing definition: `allow` and `deny` cannot be used together"))
@@ -473,8 +483,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               is("Invalid indexing definition: `allow` cannot contain duplicates"))
@@ -506,8 +515,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               is("Invalid indexing definition: `allow` and `deny` cannot be used together"))
@@ -541,8 +549,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               startsWith(
@@ -575,8 +582,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               startsWith("Invalid indexing definition: `deny` contains invalid path: '$in'"))
@@ -604,8 +610,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -637,8 +642,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -670,8 +674,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -703,8 +706,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -752,6 +754,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent so try creating again
@@ -763,6 +766,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
@@ -802,8 +806,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               startsWith(
@@ -844,8 +847,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               startsWith(
@@ -904,6 +906,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent when try creating with correct dimension
@@ -915,6 +918,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
@@ -928,6 +932,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent when try creating with no dimension
@@ -939,6 +944,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
@@ -967,8 +973,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               startsWith(
@@ -1005,8 +1010,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               startsWith(
@@ -1061,6 +1065,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent when try creating with correct dimension
@@ -1072,6 +1077,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
@@ -1085,6 +1091,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // Also: should be idempotent when try creating with no dimension
@@ -1096,6 +1103,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
@@ -1128,6 +1136,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
@@ -1161,8 +1170,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               startsWith(
@@ -1196,8 +1204,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               startsWith(
@@ -1238,6 +1245,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
@@ -1273,8 +1281,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               startsWith(
@@ -1310,8 +1317,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               startsWith(
@@ -1350,8 +1356,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               startsWith(
@@ -1387,6 +1392,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
@@ -1422,6 +1428,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
@@ -1454,6 +1461,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       deleteCollection("collection_with_vector_service");
@@ -1491,8 +1499,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
@@ -1532,8 +1539,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
@@ -1572,8 +1578,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
@@ -1614,8 +1619,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
@@ -1654,8 +1658,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
@@ -1697,8 +1700,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
@@ -1739,8 +1741,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_CREATE_COLLECTION_OPTIONS"))
           .body(
@@ -1767,6 +1768,7 @@ class CreateCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
         .post(KeyspaceResource.BASE_PATH, keyspaceName)
         .then()
         .statusCode(200)
+        .body("$", responseIsDDLSuccess())
         .body("status.ok", is(1));
   }
 

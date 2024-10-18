@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -60,6 +60,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
     }
   }
@@ -89,7 +90,8 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
-          .statusCode(200);
+          .statusCode(200)
+          .body("$", responseIsWriteSuccess());
 
       given()
           .headers(getHeaders())
@@ -115,6 +117,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body(
               "data.document",
               jsonEquals(
@@ -128,8 +131,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
                       }
                       """))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
     }
 
     @Test
@@ -160,7 +162,8 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
-          .statusCode(200);
+          .statusCode(200)
+          .body("$", responseIsWriteSuccess());
 
       given()
           .headers(getHeaders())
@@ -186,10 +189,10 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(DOC))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
     }
   }
 
@@ -223,7 +226,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindAndSuccess())
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1));
     }
@@ -254,8 +257,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
-          .body("status", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
               "errors[0].message",
@@ -294,7 +296,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
             .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
             .then()
             .statusCode(200)
-            .body("errors", is(nullValue()))
+            .body("$", responseIsFindAndSuccess())
             .body("status.matchedCount", is(1))
             .body("status.modifiedCount", is(1));
       }
@@ -326,8 +328,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
             .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
             .then()
             .statusCode(200)
-            .body("data", is(nullValue()))
-            .body("status", is(nullValue()))
+            .body("$", responseIsError())
             .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
             .body(
                 "errors[0].message",
@@ -355,6 +356,7 @@ public class FindOneAndUpdateNoIndexIntegrationTest extends AbstractKeyspaceInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsWriteSuccess())
           .body("status.insertedIds", hasSize(1))
           .body("status.insertedIds[0]", is(docId));
     }

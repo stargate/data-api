@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 
@@ -63,6 +64,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       json =
@@ -100,6 +102,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
     }
   }
@@ -131,9 +134,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is("1"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("1"));
 
       // verify the metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
@@ -206,9 +208,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionNameDenyAll)
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is("1"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("1"));
 
       json =
           """
@@ -228,7 +229,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]._id", is("1"))
           .body("data.documents[0].$vector", is(notNullValue()))
           .body("data.documents[0].$vector", contains(0.1f, 0.15f, 0.3f, 0.12f, 0.05f));
@@ -258,9 +259,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document", is(nullValue()))
-          .body("status", is(nullValue()))
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("INVALID_VECTORIZE_VALUE_TYPE"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -294,9 +293,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document", is(nullValue()))
-          .body("status", is(nullValue()))
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].message", startsWith("$vectorize value needs to be text value"))
           .body("errors[0].errorCode", is("INVALID_VECTORIZE_VALUE_TYPE"))
@@ -342,10 +339,9 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsWriteSuccess())
           .body("status.insertedIds[0]", is("2"))
-          .body("status.insertedIds[1]", is("3"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("status.insertedIds[1]", is("3"));
 
       // verify the metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
@@ -433,7 +429,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]._id", is("2"))
           .body("data.documents[0].$vector", is(notNullValue()));
     }
@@ -456,7 +452,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
         .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
         .then()
         .statusCode(200)
-        .body("errors", is(nullValue()))
+        .body("$", responseIsStatusOnly())
         .extract()
         .path("status.moreData");
 
@@ -495,8 +491,9 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
         .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
         .then()
         // Sanity check: let's look for non-empty inserted id
-        .body("status.insertedIds[0]", not(emptyString()))
-        .statusCode(200);
+        .statusCode(200)
+        .body("$", responseIsWriteSuccess())
+        .body("status.insertedIds[0]", not(emptyString()));
   }
 
   @Nested
@@ -534,6 +531,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]._id", is("1"))
           .body("data.documents[0].$vector", is(notNullValue()))
           .body("data.documents[0].$vectorize", is(notNullValue()))
@@ -545,8 +543,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .body("data.documents[2]._id", is("3"))
           .body("data.documents[2].$vector", is(notNullValue()))
           .body("data.documents[2].$vectorize", is(notNullValue()))
-          .body("data.documents[2].$vector", contains(0.1f, 0.05f, 0.08f, 0.3f, 0.6f))
-          .body("errors", is(nullValue()));
+          .body("data.documents[2].$vector", contains(0.1f, 0.05f, 0.08f, 0.3f, 0.6f));
     }
 
     @Test
@@ -574,9 +571,9 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]._id", is("1"))
-          .body("data.documents[0].$vector", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("data.documents[0].$vector", is(nullValue()));
     }
 
     @Test
@@ -603,6 +600,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -632,6 +630,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionNameDenyAll)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body("data.documents[0]._id", is("1"))
           .body("data.documents[0].$vector", is(notNullValue()))
@@ -671,9 +670,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindAndSuccess())
           .body("data.document._id", is("1"))
-          .body("status", is(notNullValue()))
           .body("status.sortVector", is(notNullValue()));
     }
 
@@ -698,9 +696,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document._id", is("1"))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.document._id", is("1"));
     }
 
     @Test
@@ -724,7 +721,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("SHRED_BAD_VECTORIZE_VALUE"))
@@ -766,12 +763,12 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document._id", is("2"))
           .body("data.document.$vector", is(notNullValue()))
           .body("data.document.description", is("ChatGPT upgraded"))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
     }
 
     @Test
@@ -796,11 +793,11 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document._id", is("1"))
           .body("data.document.$vector", is(nullValue()))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
     }
 
     @Test
@@ -826,12 +823,12 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document._id", is("11"))
           .body("data.document.$vector", is(notNullValue()))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
-          .body("status.upsertedId", is("11"))
-          .body("errors", is(nullValue()));
+          .body("status.upsertedId", is("11"));
     }
   }
 
@@ -862,11 +859,11 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document._id", is("3"))
           .body("data.document.status", is("active"))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
     }
 
     @Test
@@ -892,11 +889,11 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document._id", is("3"))
           .body("data.document.status", is("active"))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
 
       json =
           """
@@ -917,6 +914,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.document._id", is("3"))
           .body("data.document.$vectorize", is("An AI quilt to help you sleep forever"))
           .body("data.document.$vector", contains(0.45f, 0.09f, 0.01f, 0.2f, 0.11f))
@@ -944,10 +942,10 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
-          .body("status.moreData", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("status.moreData", is(nullValue()));
       json =
           """
           {
@@ -964,6 +962,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.document._id", is("1"))
           .body("data.document.new_col", is("new_val"));
     }
@@ -989,10 +988,10 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.matchedCount", is(1))
           .body("status.modifiedCount", is(1))
-          .body("status.moreData", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("status.moreData", is(nullValue()));
       json =
           """
                         {
@@ -1012,6 +1011,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.document._id", is("1"))
           .body("data.document.$vectorize", is("ChatGPT upgraded"))
           .body("data.document.$vector", contains(0.1f, 0.16f, 0.31f, 0.22f, 0.15f))
@@ -1042,13 +1042,13 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document._id", is("1"))
           .body("data.document.$vector", is(notNullValue()))
           .body("data.document.username", is("user1"))
           .body("data.document.description", is("Updating new data"))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
     }
 
     @Test
@@ -1074,12 +1074,12 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document._id", is("1"))
           .body("data.document.$vector", is(nullValue()))
           .body("data.document.username", is("user1"))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
     }
 
     @Test
@@ -1104,7 +1104,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindAndSuccess())
           .body("status.deletedCount", is(1))
           .body("data.document._id", is("1"))
           .body("data.document.name", is("Coded Cleats"))
@@ -1133,9 +1133,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedCount", is(1))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsStatusOnly())
+          .body("status.deletedCount", is(1));
 
       // ensure find does not find the document
       json =
@@ -1155,9 +1154,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.document", is(nullValue()))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.document", is(nullValue()));
     }
 
     @Test
@@ -1195,6 +1193,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // insertOne to trigger the schema cache
@@ -1220,9 +1219,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, "cacheTestTable")
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is("1"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("1"));
 
       // DeleteCollection, should evict the corresponding schema cache
       given()
@@ -1241,6 +1239,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.ok", is(1));
 
       // Create a new collection with same name, but dimension as 6
@@ -1276,6 +1275,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // insertOne, should use the new collectionSetting, since the outdated one has been evicted
@@ -1301,9 +1301,8 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, "cacheTestTable")
           .then()
           .statusCode(200)
-          .body("status.insertedIds[0]", is("1"))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess())
+          .body("status.insertedIds[0]", is("1"));
 
       // find, verify the dimension
       json =
@@ -1324,6 +1323,7 @@ public class VectorizeSearchIntegrationTest extends AbstractKeyspaceIntegrationT
           .post(CollectionResource.BASE_PATH, keyspaceName, "cacheTestTable")
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
           .body("data.documents[0]._id", is("1"))
           .body("data.documents[0].$vector", is(notNullValue()))

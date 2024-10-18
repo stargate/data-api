@@ -1,11 +1,16 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.http.ContentType;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.exception.ErrorFamily;
+import io.stargate.sgv2.jsonapi.exception.RequestException;
+import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.ClassOrderer;
 import org.junit.jupiter.api.Nested;
@@ -40,6 +45,7 @@ class FindKeyspacesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.keyspaces", hasSize(greaterThanOrEqualTo(1)))
           .body("status.keyspaces", hasItem(keyspaceName));
     }
@@ -67,12 +73,32 @@ class FindKeyspacesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.namespaces", hasSize(greaterThanOrEqualTo(1)))
           .body("status.namespaces", hasItem(keyspaceName))
+          .body("status.warnings", hasSize(1))
           .body(
-              "status.warnings",
-              hasItem(
-                  "This findNamespaces has been deprecated and will be removed in future releases, use findKeyspaces instead."));
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(
+                  ErrorObjectV2Constants.Fields.CODE,
+                  WarningException.Code.DEPRECATED_COMMAND.name()))
+          .body(
+              "status.warnings[0]",
+              hasEntry(
+                  ErrorObjectV2Constants.Fields.CODE,
+                  WarningException.Code.DEPRECATED_COMMAND.name()))
+          .body(
+              "status.warnings[0].message",
+              containsString("The deprecated command is: findNamespaces."))
+          .body(
+              "status.warnings[0].message",
+              containsString("The new command to use is: findKeyspaces."));
     }
   }
 

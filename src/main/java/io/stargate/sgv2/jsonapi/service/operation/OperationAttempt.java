@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -68,7 +69,7 @@ public abstract class OperationAttempt<
 
   protected final UUID attemptId = UUID.randomUUID();
 
-  private final List<String> warnings = new ArrayList<>();
+  private final List<APIException> warnings = new ArrayList<>();
   private Throwable failure;
 
   // Keep this private, so sub-classes set through setter incase we need to syncronize later
@@ -447,11 +448,8 @@ public abstract class OperationAttempt<
    *
    * @param warning The warning message to add, cannot be <code>null</code> or blank.
    */
-  public void addWarning(String warning) {
-    if (warning == null || warning.isBlank()) {
-      throw new IllegalArgumentException("warning cannot be null or blank");
-    }
-    warnings.add(warning);
+  public void addWarning(APIException warning) {
+    warnings.add(Objects.requireNonNull(warning, "warning cannot be null"));
   }
 
   /**
@@ -462,7 +460,7 @@ public abstract class OperationAttempt<
    *
    * @return An unmodifiable list of warnings, never <code>null</code>
    */
-  public List<String> warnings() {
+  public List<APIException> warnings() {
     return List.copyOf(warnings);
   }
 

@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.WithTestResource;
@@ -50,8 +50,8 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
             }
           }
           """)
-          .body("status.deletedCount", is(1))
-          .body("data", is(nullValue()));
+          .body("$", responseIsStatusOnly())
+          .body("status.deletedCount", is(1));
 
       // ensure find does not find the document
       givenHeadersPostJsonThenOkNoErrors(
@@ -62,8 +62,8 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
             }
           }
           """)
-          .body("data.document", is(nullValue()))
-          .body("status", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.document", is(nullValue()));
     }
 
     @Test
@@ -77,8 +77,8 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
             }
           }
           """)
-          .body("status.deletedCount", is(0))
-          .body("data", is(nullValue()));
+          .body("$", responseIsStatusOnly())
+          .body("status.deletedCount", is(0));
     }
 
     @Test
@@ -92,9 +92,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
                 }
               }
               """)
-          .body("data.document", is(nullValue()))
-          .body("status", is(nullValue()))
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].errorCode", is("COMMAND_ACCEPTS_NO_OPTIONS"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
@@ -122,8 +120,8 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
             }
           }
           """)
-          .body("status.deletedCount", is(1))
-          .body("data", is(nullValue()));
+          .body("$", responseIsStatusOnly())
+          .body("status.deletedCount", is(1));
 
       // ensure find does not find the document
       givenHeadersPostJsonThenOkNoErrors(
@@ -134,8 +132,8 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
             }
           }
           """)
-          .body("data.document", is(nullValue()))
-          .body("status", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.document", is(nullValue()));
     }
 
     @Test
@@ -160,8 +158,8 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
             }
           }
           """)
-          .body("status.deletedCount", is(1))
-          .body("data", is(nullValue()));
+          .body("$", responseIsStatusOnly())
+          .body("status.deletedCount", is(1));
 
       // ensure find does not find the document
       givenHeadersPostJsonThenOkNoErrors(
@@ -172,8 +170,8 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
             }
           }
           """)
-          .body("data.document", is(nullValue()))
-          .body("status", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.document", is(nullValue()));
     }
 
     @Test
@@ -198,8 +196,8 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
             }
           }
           """)
-          .body("status.deletedCount", is(0))
-          .body("data", is(nullValue()));
+          .body("$", responseIsStatusOnly())
+          .body("status.deletedCount", is(0));
 
       // ensure find does find the document
       givenHeadersPostJsonThenOkNoErrors(
@@ -210,8 +208,8 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
             }
           }
           """)
-          .body("data.document._id", is("doc5"))
-          .body("status", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.document._id", is("doc5"));
     }
 
     @Test
@@ -242,6 +240,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
               }
             }
             """)
+          .body("$", responseIsStatusOnly())
           .body("status.deletedCount", is(1));
 
       // assert state after update
@@ -253,6 +252,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
               }
             }
             """)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
 
       // cleanUp
@@ -293,6 +293,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
                                 }
                               }
                               """)
+                            .body("$", responseIsStatusOnly())
                             .body("status.deletedCount", anyOf(is(0), is(1)))
                             .extract()
                             .path("status.deletedCount");
@@ -335,6 +336,7 @@ public class DeleteOneIntegrationTest extends AbstractCollectionIntegrationTestB
             }
           }
           """)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", is(empty()));
     }
   }

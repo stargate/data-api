@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.exception.APIExceptionCommandErrorBuilder;
@@ -11,7 +12,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObjec
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -45,7 +45,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
   private final boolean useErrorObjectV2;
 
   // Created in the Ctor
-  private final Function<APIException, CommandResult.Error> apiExceptionToError;
+  private final APIExceptionCommandErrorBuilder apiExceptionToError;
 
   /** Create an instance that has debug false and useErrorIbhectV2 false */
   public InsertOperationPage(
@@ -102,11 +102,8 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
     // TODO AARON used to only sort the success list when not returning detailed responses, check OK
     Collections.sort(successfulInsertions);
 
-    if (!returnDocumentResponses) {
-      return nonPerDocumentResult();
-    }
-
-    return perDocumentResult();
+    var builder = CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode);
+    return returnDocumentResponses ? perDocumentResult(builder) : nonPerDocumentResult(builder);
   }
 
   /**
@@ -116,7 +113,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
    *
    * @return Command result
    */
-  private CommandResult perDocumentResult() {
+  private CommandResult perDocumentResult(CommandResultBuilder builder) {
     // New style output: detailed responses.
     InsertionResult[] results = new InsertionResult[allInsertions.size()];
     List<CommandResult.Error> errors = new ArrayList<>();
@@ -126,6 +123,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
       results[okInsertion.position()] =
           new InsertionResult(okInsertion.docRowID().orElseThrow(), InsertionStatus.OK, null);
     }
+
     // Second: failed insertions; output in order of insertion
     for (var failedInsertion : failedInsertions) {
       // TODO AARON - confirm the null handling in the getError
@@ -152,11 +150,11 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
                 allInsertions.get(i).docRowID().orElseThrow(), InsertionStatus.SKIPPED, null);
       }
     }
-    Map<CommandStatus, Object> status = new HashMap<>();
-    status.put(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results));
-    maybeAddSchema(status);
+    builder.addStatus(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results));
+    builder.addCommandResultError(errors);
+    maybeAddSchema(builder);
 
-    return new CommandResult(null, status, errors);
+    return builder.build();
   }
 
   /**
@@ -166,12 +164,9 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
    *
    * @return Command result
    */
-  private CommandResult nonPerDocumentResult() {
+  private CommandResult nonPerDocumentResult(CommandResultBuilder builder) {
 
-    List<CommandResult.Error> errors =
-        failedInsertions.isEmpty()
-            ? null
-            : failedInsertions.stream().map(this::getErrorObject).toList();
+    failedInsertions.stream().map(this::getErrorObject).forEach(builder::addCommandResultError);
 
     // Note: See DocRowIdentifer, it has an attribute that will be called for JSON serialization
     List<DocRowIdentifer> insertedIds =
@@ -180,11 +175,10 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
             .map(Optional::orElseThrow)
             .toList();
 
-    Map<CommandStatus, Object> status = new HashMap<>();
-    status.put(CommandStatus.INSERTED_IDS, insertedIds);
-    maybeAddSchema(status);
+    builder.addStatus(CommandStatus.INSERTED_IDS, insertedIds);
+    maybeAddSchema(builder);
 
-    return new CommandResult(null, status, errors);
+    return builder.build();
   }
 
   /**
@@ -194,16 +188,16 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
    * <p>Uses the first, not the first successful, because we may fail to do an insert but will still
    * have the _id or PK to report.
    *
-   * @param status Map to add the status to
+   * @param builder CommandResult builder to add the status to
    */
-  private void maybeAddSchema(Map<CommandStatus, Object> status) {
+  private void maybeAddSchema(CommandResultBuilder builder) {
     if (allInsertions.isEmpty()) {
       return;
     }
     allInsertions
         .getFirst()
         .schemaDescription()
-        .ifPresent(o -> status.put(CommandStatus.PRIMARY_KEY_SCHEMA, o));
+        .ifPresent(o -> builder.addStatus(CommandStatus.PRIMARY_KEY_SCHEMA, o));
   }
 
   /**
@@ -216,7 +210,7 @@ public class InsertOperationPage<SchemaT extends TableBasedSchemaObject>
       // new v2 error object, with family etc.
       // the builder will handle the debug mode and extended errors settings to return a V1 or V2
       // error
-      return apiExceptionToError.apply(apiException);
+      return apiExceptionToError.buildLegacyCommandResultError(apiException);
     }
     if (useErrorObjectV2) {
       return getErrorObjectV2(throwable);

@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
@@ -33,6 +34,7 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(401)
+          .body("$", responseIsError())
           .body(
               "errors[0].message",
               is(
@@ -49,6 +51,7 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors[0].message", is(not(blankString())))
           .body("errors[0].exceptionClass", is("JsonApiException"));
     }
@@ -71,6 +74,7 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_UNKNOWN"))
           .body(
               "errors[0].message",
@@ -87,6 +91,7 @@ class GeneralResourceIntegrationTest extends AbstractKeyspaceIntegrationTestBase
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(

@@ -1,15 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.hasEntry;
 
 import io.restassured.response.ValidatableResponse;
-import io.stargate.sgv2.jsonapi.exception.APIException;
-import io.stargate.sgv2.jsonapi.exception.ErrorCode;
-import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
+import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
+import io.stargate.sgv2.jsonapi.exception.*;
 import org.hamcrest.Matcher;
 
 public class DataApiResponseValidator {
@@ -102,11 +99,14 @@ public class DataApiResponseValidator {
     return body("warnings", is(nullValue()));
   }
 
-  public DataApiResponseValidator hasSingleApiWarning(String warningKeyword) {
-    return hasSingleApiWarning(containsString(warningKeyword));
-  }
-
-  private DataApiResponseValidator hasSingleApiWarning(Matcher<String> stringMatcher) {
-    return body("status.warnings", hasSize(1)).body("status.warnings[0]", stringMatcher);
+  public DataApiResponseValidator hasSingleWarning(String code) {
+    return body("status.warnings", hasSize(1))
+        .body(
+            "status.warnings[0]",
+            hasEntry(ErrorObjectV2Constants.Fields.FAMILY, ErrorFamily.REQUEST.name()))
+        .body(
+            "status.warnings[0]",
+            hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
+        .body("status.warnings[0]", hasEntry(ErrorObjectV2Constants.Fields.CODE, code));
   }
 }

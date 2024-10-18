@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsWriteSuccess;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -153,10 +155,9 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.deletedCount", is(-1))
-          .body("status.moreData", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("status.moreData", is(nullValue()));
 
       LOG.info(
           "Truncated collection, waiting for estimated count to settle for "
@@ -175,8 +176,8 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.count", is(0))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsStatusOnly())
+          .body("status.count", is(0));
     }
 
     private int getActualCount() {
@@ -188,7 +189,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
+          .body("$", responseIsStatusOnly())
           .extract()
           .response()
           .jsonPath()
@@ -204,7 +205,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
+          .body("$", responseIsStatusOnly())
           .extract()
           .response()
           .jsonPath()
@@ -220,7 +221,7 @@ public class EstimatedDocumentCountIntegrationTest extends AbstractCollectionInt
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()));
+          .body("$", responseIsWriteSuccess());
     }
   }
 

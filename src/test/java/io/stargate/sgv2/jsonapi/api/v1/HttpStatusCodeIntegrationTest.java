@@ -1,11 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static org.hamcrest.Matchers.blankString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -44,7 +44,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(401)
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("UNAUTHENTICATED: Invalid token"));
     }
 
@@ -66,7 +66,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(401)
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("UNAUTHENTICATED: Invalid token"));
     }
 
@@ -96,7 +96,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, "badCollection")
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", is(not(blankString())))
           .body("errors[0].message", anyOf)
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -117,7 +117,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(415)
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", is("Invalid Content-Type header"))
           .body("errors[0].errorCode", is("INVALID_CONTENT_TYPE_HEADER"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -189,7 +189,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(401)
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("UNAUTHENTICATED: Invalid token"));
     }
 
@@ -216,7 +216,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .post(KeyspaceResource.BASE_PATH, "badNamespace")
           .then()
           .statusCode(200)
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", is(not(blankString())))
           .body("errors[0].message", anyOf)
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -284,7 +284,7 @@ public class HttpStatusCodeIntegrationTest extends AbstractCollectionIntegration
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(401)
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("UNAUTHENTICATED: Invalid token"));
     }
 
