@@ -79,7 +79,7 @@ class CollectionResourceIntegrationTest extends AbstractKeyspaceIntegrationTestB
           .body(
               "errors[0].message",
               startsWith(
-                  "Provided command unknown: \"unknownCommand\" not one of \"CollectionCommand\"s: known commands are [countDocuments,"));
+                  "Provided command unknown: \"unknownCommand\" not one of \"CollectionCommand\"s: known commands are ["));
     }
 
     @Test

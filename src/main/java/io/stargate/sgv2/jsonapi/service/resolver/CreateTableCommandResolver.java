@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
@@ -11,6 +10,7 @@ import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableMetadataUtils;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -20,7 +20,6 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -53,13 +52,11 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
                       ComplexTypes.VectorType vectorType = ((ComplexTypes.VectorType) e.getValue());
                       final VectorizeConfig vectorizeConfig = vectorType.getVectorConfig();
                       validateVectorize.validateService(vectorizeConfig, vectorType.getDimension());
-                      VectorConfig.ColumnVectorDefinition.VectorizeConfig dbVectorConfig =
-                          new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
-                              vectorizeConfig.provider(),
-                              vectorizeConfig.modelName(),
-                              vectorizeConfig.authentication(),
-                              vectorizeConfig.parameters());
-                      return dbVectorConfig;
+                      return new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
+                          vectorizeConfig.provider(),
+                          vectorizeConfig.modelName(),
+                          vectorizeConfig.authentication(),
+                          vectorizeConfig.parameters());
                     }));
 
     if (partitionKeys.isEmpty()) {
@@ -89,17 +86,8 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
         });
 
     // set to empty will be used when vectorize is  supported
-    Map<String, String> customProperties = new HashMap<>();
-    try {
-      customProperties.put("com.datastax.data-api.schema-type", "table");
-      // Versioning for schema json. This needs can be adapted in future as needed
-      customProperties.put("com.datastax.data-api.schema-def-version", "1");
-      String vectorizeConfigToStore = objectMapper.writeValueAsString(vectorizeConfigMap);
-      customProperties.put("com.datastax.data-api.vectorize-config", vectorizeConfigToStore);
-    } catch (JsonProcessingException e) {
-      // this should never happen
-      throw new RuntimeException(e);
-    }
+    Map<String, String> customProperties =
+        TableMetadataUtils.createCustomProperties(vectorizeConfigMap, objectMapper);
 
     var attempt =
         new CreateTableAttemptBuilder(0, ctx.schemaObject())
