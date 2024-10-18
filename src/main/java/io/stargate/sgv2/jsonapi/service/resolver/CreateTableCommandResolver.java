@@ -10,7 +10,7 @@ import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableMetadataUtils;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
@@ -52,13 +52,11 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
                       ComplexTypes.VectorType vectorType = ((ComplexTypes.VectorType) e.getValue());
                       final VectorizeConfig vectorizeConfig = vectorType.getVectorConfig();
                       validateVectorize.validateService(vectorizeConfig, vectorType.getDimension());
-                      VectorConfig.ColumnVectorDefinition.VectorizeConfig dbVectorConfig =
-                          new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
-                              vectorizeConfig.provider(),
-                              vectorizeConfig.modelName(),
-                              vectorizeConfig.authentication(),
-                              vectorizeConfig.parameters());
-                      return dbVectorConfig;
+                      return new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
+                          vectorizeConfig.provider(),
+                          vectorizeConfig.modelName(),
+                          vectorizeConfig.authentication(),
+                          vectorizeConfig.parameters());
                     }));
 
     if (partitionKeys.isEmpty()) {
@@ -89,7 +87,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
 
     // set to empty will be used when vectorize is  supported
     Map<String, String> customProperties =
-        TableSchemaObject.createCustomProperties(vectorizeConfigMap, objectMapper);
+        TableMetadataUtils.createCustomProperties(vectorizeConfigMap, objectMapper);
 
     var attempt =
         new CreateTableAttemptBuilder(0, ctx.schemaObject())

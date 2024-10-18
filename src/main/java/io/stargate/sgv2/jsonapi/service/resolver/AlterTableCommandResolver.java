@@ -1,7 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
-import static io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject.*;
-
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
@@ -17,6 +15,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.Comp
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableMetadataUtils;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
@@ -31,7 +30,6 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,9 +47,6 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       CommandContext<TableSchemaObject> ctx, AlterTableCommand command) {
 
     final AlterTableOperation operation = command.operation();
-
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap = null;
-
     List<AlterTableAttempt> attempts =
         switch (operation) {
           case AlterTableOperationImpl.AddColumns ac -> handleAddColumns(ac, ctx.schemaObject());
@@ -110,36 +105,28 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
                       ComplexTypes.VectorType vectorType = ((ComplexTypes.VectorType) e.getValue());
                       final VectorizeConfig vectorizeConfig = vectorType.getVectorConfig();
                       validateVectorize.validateService(vectorizeConfig, vectorType.getDimension());
-                      VectorConfig.ColumnVectorDefinition.VectorizeConfig dbVectorConfig =
-                          new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
-                              vectorizeConfig.provider(),
-                              vectorizeConfig.modelName(),
-                              vectorizeConfig.authentication(),
-                              vectorizeConfig.parameters());
-                      return dbVectorConfig;
+                      return new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
+                          vectorizeConfig.provider(),
+                          vectorizeConfig.modelName(),
+                          vectorizeConfig.authentication(),
+                          vectorizeConfig.parameters());
                     }));
-    final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
-        new SchemaAttempt.SchemaRetryPolicy(2, Duration.ofMillis(10));
     final AlterTableAttempt addColumnsAttempt =
-        new AlterTableAttemptBuilder(0, schemaObject, schemaRetryPolicy)
-            .addColumns(addColumns)
-            .build();
+        new AlterTableAttemptBuilder(schemaObject).addColumns(addColumns).build();
     if (!vectorizeConfigMap.isEmpty()) {
       // Reading exising vectorize config from the table metadata
-      Map<String, String> existingExtensions = getExtensions(tableMetadata);
+      Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
       Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> existingVectorizeConfigMap =
-          getVectorizeMap(existingExtensions, objectMapper);
+          TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
 
       // Merge the new config to the existing vectorize config
       existingVectorizeConfigMap.putAll(vectorizeConfigMap);
 
       // New custom property to be updated
       final Map<String, String> customProperties =
-          createCustomProperties(existingVectorizeConfigMap, objectMapper);
+          TableMetadataUtils.createCustomProperties(existingVectorizeConfigMap, objectMapper);
       final AlterTableAttempt addVectorizeProperties =
-          new AlterTableAttemptBuilder(0, schemaObject, schemaRetryPolicy)
-              .customProperties(customProperties)
-              .build();
+          new AlterTableAttemptBuilder(schemaObject).customProperties(customProperties).build();
       // First execute the extension update for add columns
       alterTableAttempts.add(addVectorizeProperties);
     }
@@ -156,7 +143,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     List<String> dropColumns = dc.columns();
     // Validate the columns to be dropped are present
     List<CqlIdentifier> primaryKeys =
-        tableMetadata.getPrimaryKey().stream().map(pk -> pk.getName()).collect(Collectors.toList());
+        tableMetadata.getPrimaryKey().stream().map(ColumnMetadata::getName).toList();
     for (String columnName : dropColumns) {
       CqlIdentifier column = CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName);
       if (primaryKeys.contains(column)) {
@@ -184,9 +171,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     }
 
     // Reading exising vectorize config from the table metadata
-    Map<String, String> existingExtensions = getExtensions(tableMetadata);
+    Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
     Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> existingVectorizeConfigMap =
-        getVectorizeMap(existingExtensions, objectMapper);
+        TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
 
     // Merge the new config to the existing vectorize config
     boolean updateVectorize = false;
@@ -198,22 +185,17 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       }
     }
 
-    final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
-        new SchemaAttempt.SchemaRetryPolicy(2, Duration.ofMillis(10));
     // First should drop the columns
     AlterTableAttempt dropColumnsAttempt =
-        new AlterTableAttemptBuilder(0, schemaObject, schemaRetryPolicy)
-            .dropColumns(dropColumns)
-            .build();
+        new AlterTableAttemptBuilder(schemaObject).dropColumns(dropColumns).build();
     alterTableAttempts.add(dropColumnsAttempt);
     // New custom property to be updated
-    Map<String, String> customProperties = null;
+    Map<String, String> customProperties;
     if (updateVectorize) {
-      customProperties = createCustomProperties(existingVectorizeConfigMap, objectMapper);
+      customProperties =
+          TableMetadataUtils.createCustomProperties(existingVectorizeConfigMap, objectMapper);
       AlterTableAttempt dropVectorizeProperties =
-          new AlterTableAttemptBuilder(0, schemaObject, schemaRetryPolicy)
-              .customProperties(customProperties)
-              .build();
+          new AlterTableAttemptBuilder(schemaObject).customProperties(customProperties).build();
       // Then drop the vectorize properties
       alterTableAttempts.add(dropVectorizeProperties);
     }
@@ -248,20 +230,15 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     }
 
     // Reading exising vectorize config from the table metadata
-    Map<String, String> existingExtensions = getExtensions(tableMetadata);
+    Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
     Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> existingVectorizeConfigMap =
-        getVectorizeMap(existingExtensions, objectMapper);
+        TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
     existingVectorizeConfigMap.putAll(vectorizeConfigMap);
     Map<String, String> customProperties =
-        createCustomProperties(existingVectorizeConfigMap, objectMapper);
-
-    final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
-        new SchemaAttempt.SchemaRetryPolicy(2, Duration.ofMillis(10));
+        TableMetadataUtils.createCustomProperties(existingVectorizeConfigMap, objectMapper);
 
     alterTableAttempts.add(
-        new AlterTableAttemptBuilder(0, schemaObject, schemaRetryPolicy)
-            .customProperties(customProperties)
-            .build());
+        new AlterTableAttemptBuilder(schemaObject).customProperties(customProperties).build());
     return alterTableAttempts;
   }
 
@@ -270,9 +247,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     TableMetadata tableMetadata = schemaObject.tableMetadata();
     List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
     // Reading exising vectorize config from the table metadata
-    Map<String, String> existingExtensions = getExtensions(tableMetadata);
+    Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
     Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> existingVectorizeConfigMap =
-        getVectorizeMap(existingExtensions, objectMapper);
+        TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
 
     // Merge the new config to the existing vectorize config
     boolean updateVectorize = false;
@@ -283,16 +260,13 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
         updateVectorize = true;
       }
     }
-    final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
-        new SchemaAttempt.SchemaRetryPolicy(2, Duration.ofMillis(10));
+
     // New custom property to be updated
-    Map<String, String> customProperties = null;
     if (updateVectorize) {
-      customProperties = createCustomProperties(existingVectorizeConfigMap, objectMapper);
+      Map<String, String> customProperties =
+          TableMetadataUtils.createCustomProperties(existingVectorizeConfigMap, objectMapper);
       final AlterTableAttempt dropVectorizeProperties =
-          new AlterTableAttemptBuilder(0, schemaObject, schemaRetryPolicy)
-              .customProperties(customProperties)
-              .build();
+          new AlterTableAttemptBuilder(schemaObject).customProperties(customProperties).build();
       alterTableAttempts.add(dropVectorizeProperties);
     }
 

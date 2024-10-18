@@ -1,22 +1,14 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.data.ByteUtils;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,13 +39,11 @@ public class TableSchemaObject extends TableBasedSchemaObject {
    *
    * @param tableMetadata
    * @param objectMapper
-   * @return
    */
   public static TableSchemaObject from(TableMetadata tableMetadata, ObjectMapper objectMapper) {
-
-    Map<String, String> extensions = getExtensions(tableMetadata);
+    Map<String, String> extensions = TableMetadataUtils.getExtensions(tableMetadata);
     Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
-        getVectorizeMap(extensions, objectMapper);
+        TableMetadataUtils.getVectorizeMap(extensions, objectMapper);
     VectorConfig vectorConfig;
     List<VectorConfig.ColumnVectorDefinition> columnVectorDefinitions = new ArrayList<>();
     for (Map.Entry<CqlIdentifier, ColumnMetadata> column : tableMetadata.getColumns().entrySet()) {
@@ -89,83 +79,5 @@ public class TableSchemaObject extends TableBasedSchemaObject {
           VectorConfig.fromColumnDefinitions(Collections.unmodifiableList(columnVectorDefinitions));
     }
     return new TableSchemaObject(tableMetadata, vectorConfig);
-  }
-
-  /**
-   * Get extension Map from table metadata
-   *
-   * @param tableMetadata
-   * @return
-   */
-  public static Map<String, String> getExtensions(TableMetadata tableMetadata) {
-    Map<String, ByteBuffer> extensionsBuffer =
-        (Map<String, ByteBuffer>)
-            tableMetadata.getOptions().get(CqlIdentifier.fromInternal("extensions"));
-
-    Map<String, String> extensions = new HashMap<>();
-
-    if (extensionsBuffer != null) {
-      for (Map.Entry<String, ByteBuffer> entry : extensionsBuffer.entrySet()) {
-        extensions.put(
-            entry.getKey(),
-            new String(ByteUtils.getArray(entry.getValue().duplicate()), StandardCharsets.UTF_8));
-      }
-    }
-    return extensions;
-  }
-
-  /**
-   * Deserialize vectorize config from extensions
-   *
-   * @param extensions
-   * @param objectMapper
-   * @return
-   */
-  public static Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> getVectorizeMap(
-      Map<String, String> extensions, ObjectMapper objectMapper) {
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
-        new HashMap<>();
-    String vectorizeJson = extensions.get("com.datastax.data-api.vectorize-config");
-
-    if (vectorizeJson != null) {
-      try {
-        JsonNode vectorizeByColumns = objectMapper.readTree(vectorizeJson);
-        Iterator<Map.Entry<String, JsonNode>> it = vectorizeByColumns.fields();
-        while (it.hasNext()) {
-          Map.Entry<String, JsonNode> entry = it.next();
-          try {
-            var vectorizeConfig =
-                objectMapper.treeToValue(
-                    entry.getValue(), VectorConfig.ColumnVectorDefinition.VectorizeConfig.class);
-            vectorizeConfigMap.put(entry.getKey(), vectorizeConfig);
-          } catch (JsonProcessingException | IllegalArgumentException e) {
-            throw SchemaException.Code.INVALID_VECTORIZE_CONFIGURATION.get(
-                Map.of("field", entry.getKey()));
-          }
-        }
-      } catch (JsonProcessingException e) {
-        throw SchemaException.Code.INVALID_CONFIGURATION.get();
-      }
-    }
-    return vectorizeConfigMap;
-  }
-
-  public static Map<String, String> createCustomProperties(
-      Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap,
-      ObjectMapper objectMapper) {
-    Map<String, String> customProperties = new HashMap<>();
-    try {
-      customProperties.put("com.datastax.data-api.schema-type", "table");
-      // Versioning for schema json. This needs can be adapted in future as needed
-      customProperties.put("com.datastax.data-api.schema-def-version", "1");
-      if (vectorizeConfigMap != null) {
-        String vectorizeConfigToStore = objectMapper.writeValueAsString(vectorizeConfigMap);
-        customProperties.put("com.datastax.data-api.vectorize-config", vectorizeConfigToStore);
-      }
-    } catch (JsonProcessingException e) {
-      // this should never happen
-      throw new RuntimeException(e);
-    }
-    return customProperties;
   }
 }
