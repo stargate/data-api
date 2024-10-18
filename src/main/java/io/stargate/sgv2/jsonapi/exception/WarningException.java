@@ -19,7 +19,9 @@ public class WarningException extends RequestException {
     COMPARISON_FILTER_UNSUPPORTED_BY_INDEXING,
     ZERO_FILTER_OPERATIONS,
     INCOMPLETE_PRIMARY_KEY_FILTER,
-    DEPRECATED_COMMAND;
+    DEPRECATED_COMMAND,
+    QUERY_RETRIED_DUE_TO_INDEXING,
+    ;
 
     private final ErrorTemplate<WarningException> template;
 

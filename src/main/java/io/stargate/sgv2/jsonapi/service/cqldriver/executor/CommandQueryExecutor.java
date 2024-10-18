@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
+import com.google.common.annotations.VisibleForTesting;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
@@ -112,9 +113,10 @@ public class CommandQueryExecutor {
     return statement.setExecutionProfileName(getExecutionProfile(queryType));
   }
 
-  private Uni<AsyncResultSet> executeAndWrap(SimpleStatement statement) {
+  @VisibleForTesting
+  public Uni<AsyncResultSet> executeAndWrap(SimpleStatement statement) {
     return Uni.createFrom().completionStage(session().executeAsync(statement));
   }
 
-  public static record RequestContext(Optional<String> tenantId, Optional<String> authToken) {}
+  public record RequestContext(Optional<String> tenantId, Optional<String> authToken) {}
 }
