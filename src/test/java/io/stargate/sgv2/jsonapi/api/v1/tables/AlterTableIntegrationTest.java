@@ -68,7 +68,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
                           1024,
                           "service",
                           Map.of("provider", "nvidia", "modelName", "NV-Embed-QA"))),
-                  Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1536))))
+                  Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1024))))
           .hasNoErrors()
           .body("status.ok", is(1));
 
@@ -91,7 +91,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
               "status.tables[0].definition.columns.vector_type_1.service.modelName",
               equalTo("NV-Embed-QA"))
           .body("status.tables[0].definition.columns.vector_type_2.type", equalTo("vector"))
-          .body("status.tables[0].definition.columns.vector_type_2.dimension", equalTo(1536));
+          .body("status.tables[0].definition.columns.vector_type_2.dimension", equalTo(1024));
     }
   }
 
@@ -104,7 +104,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           SchemaException.Code.COLUMN_ALREADY_EXISTS.get(Map.of("column", "age"));
       alterTableAddColumns(testTableName, Map.ofEntries(Map.entry("age", Map.of("type", "int"))))
           .hasSingleApiError(
-              SchemaException.Code.INVALID_INDEX_DEFINITION,
+              SchemaException.Code.COLUMN_ALREADY_EXISTS,
               SchemaException.class,
               schemaException.body);
     }
@@ -131,7 +131,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
     @Test
     public void dropInvalidColumns() {
       final SchemaException schemaException =
-          SchemaException.Code.COLUMN_ALREADY_EXISTS.get(Map.of("column", "invalid_column"));
+          SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", "invalid_column"));
       alterTableDropColumns(testTableName, List.of("invalid_column"))
           .hasSingleApiError(
               SchemaException.Code.COLUMN_NOT_FOUND, SchemaException.class, schemaException.body);
@@ -172,11 +172,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
     public void shouldAddVectorizeToColumns() {
       alterTableAddVectorize(
               testTableName,
-              Map.of(
-                  "columns",
-                  Map.of(
-                      "vector_type_2",
-                      Map.of("provider", "mistral", "modelName", "mistral-embed"))))
+              Map.of("vector_type_2", Map.of("provider", "mistral", "modelName", "mistral-embed")))
           .hasNoErrors()
           .body("status.ok", is(1));
 
@@ -205,15 +201,9 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", "invalid_column"));
       alterTableAddVectorize(
               testTableName,
-              Map.of(
-                  "columns",
-                  Map.of(
-                      "invalid_column",
-                      Map.of("provider", "mistral", "modelName", "mistral-embed"))))
+              Map.of("invalid_column", Map.of("provider", "mistral", "modelName", "mistral-embed")))
           .hasSingleApiError(
-              SchemaException.Code.COLUMN_CANNOT_BE_DROPPED,
-              SchemaException.class,
-              schemaException.body);
+              SchemaException.Code.COLUMN_NOT_FOUND, SchemaException.class, schemaException.body);
     }
 
     @Test
@@ -222,11 +212,9 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           SchemaException.Code.NON_VECTOR_TYPE_COLUMN.get(Map.of("column", "age"));
       alterTableAddVectorize(
               testTableName,
-              Map.of(
-                  "columns",
-                  Map.of("age", Map.of("provider", "mistral", "modelName", "mistral-embed"))))
+              Map.of("age", Map.of("provider", "mistral", "modelName", "mistral-embed")))
           .hasSingleApiError(
-              SchemaException.Code.COLUMN_CANNOT_BE_DROPPED,
+              SchemaException.Code.NON_VECTOR_TYPE_COLUMN,
               SchemaException.class,
               schemaException.body);
     }
@@ -258,7 +246,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
     @Test
     public void dropInvalidColumns() {
       final SchemaException schemaException =
-          SchemaException.Code.COLUMN_ALREADY_EXISTS.get(Map.of("column", "invalid_column"));
+          SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", "invalid_column"));
       alterTableDropColumns(testTableName, List.of("invalid_column"))
           .hasSingleApiError(
               SchemaException.Code.COLUMN_NOT_FOUND, SchemaException.class, schemaException.body);
