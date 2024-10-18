@@ -464,7 +464,7 @@ request-errors:
     code: COLUMN_ALREADY_EXISTS
     title: Column already exist in the table.
     body: |-
-      Column ${column} already exist in the table.
+      Column `${column}` already exist in the table.
 
   - scope: SCHEMA
     code: COLUMN_NOT_FOUND
@@ -482,7 +482,7 @@ request-errors:
     code: NON_VECTOR_TYPE_COLUMN
     title: Can not add vectorize service to non vector column.
     body: |-
-      Can not add vectorize service to non vector column ${column}.
+      Can not add vectorize service to non vector column `${column}`.
 
 
 

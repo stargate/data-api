@@ -44,6 +44,6 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
   }
 
   public DataApiResponseValidator postAlterTable(String tableDefAsJSON) {
-    return postCommand("alterName", tableDefAsJSON);
+    return postCommand("alterTable", tableDefAsJSON);
   }
 }

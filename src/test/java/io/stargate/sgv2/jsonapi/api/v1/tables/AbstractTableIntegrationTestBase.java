@@ -49,7 +49,7 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
                 }
             }
             """
-            .formatted(tableName, asJSON(columns)));
+            .formatted(asJSON(columns)));
   }
 
   protected DataApiResponseValidator alterTableDropColumns(String tableName, List<String> columns) {
@@ -64,7 +64,7 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
                 }
             }
             """
-            .formatted(tableName, asJSON(columns)));
+            .formatted(asJSON(columns)));
   }
 
   protected DataApiResponseValidator alterTableAddVectorize(
@@ -80,7 +80,7 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
                 }
             }
             """
-            .formatted(tableName, asJSON(columns)));
+            .formatted(asJSON(columns)));
   }
 
   protected DataApiResponseValidator alterTableDropVectorize(
@@ -96,7 +96,7 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
                 }
             }
             """
-            .formatted(tableName, asJSON(columns)));
+            .formatted(asJSON(columns)));
   }
 
   protected DataApiResponseValidator createTable(String tableDefAsJSON) {
