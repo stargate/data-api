@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.*;
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
@@ -37,7 +38,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
             Map.entry("vector_type_1", Map.of("type", "vector", "dimension", 1024)),
             Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1536)),
             Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024)),
-            Map.entry("vector_type_4", Map.of("type", "vector", "dimension", 1024))),
+            Map.entry("vector_type_4", Map.of("type", "vector", "dimension", 1024)),
+            Map.entry("vector_type_5", Map.of("type", "vector", "dimension", 1024))),
         "id");
   }
 
@@ -418,6 +420,34 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                               }
                               """)
+          .hasSingleApiError(
+              SchemaException.Code.INVALID_INDEX_DEFINITION,
+              SchemaException.class,
+              schemaException.body);
+    }
+
+    @Test
+    public void invalidSourceModel() {
+      final SchemaException schemaException =
+          SchemaException.Code.INVALID_INDEX_DEFINITION.get(
+              Map.of(
+                  "reason",
+                  "sourceModel `%s` used is request is invalid. Supported source models are: %s"
+                      .formatted("invalidSourceModel", VectorConstant.SUPPORTED_SOURCES.keySet())));
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
+          .postCommand(
+              "createVectorIndex",
+              """
+                {
+                  "name": "vector_type_5_idx",
+                  "definition": {
+                    "column": "vector_type_5",
+                    "options": {
+                      "sourceModel": "invalidSourceModel"
+                    }
+                  }
+                }
+                """)
           .hasSingleApiError(
               SchemaException.Code.INVALID_INDEX_DEFINITION,
               SchemaException.class,

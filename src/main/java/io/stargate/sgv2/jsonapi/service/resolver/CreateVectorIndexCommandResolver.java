@@ -65,8 +65,8 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
         throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
             Map.of(
                 "reason",
-                "Invalid `sourceModel`. Supported source models are: "
-                    + VectorConstant.SUPPORTED_SOURCES.keySet()));
+                "sourceModel `%s` used is request is invalid. Supported source models are: %s"
+                    .formatted(sourceModel, VectorConstant.SUPPORTED_SOURCES.keySet())));
       }
     }
 
