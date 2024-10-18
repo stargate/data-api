@@ -89,11 +89,6 @@ public class WhereCQLClauseAnalyzer {
           DataTypes.BLOB,
           DataTypes.UUID);
 
-  // Datatypes that need ALLOW FILTERING even when there is a SAI on the column when <, >, <=, >= is
-  // used
-  private static final Set<DataType> ALLOW_FILTERING_NEEDED_FOR_COMPARISON =
-      Set.of(DataTypes.TEXT, DataTypes.ASCII, DataTypes.BOOLEAN, DataTypes.UUID);
-
   private final TableSchemaObject tableSchemaObject;
   private final TableMetadata tableMetadata;
   private final Map<CqlIdentifier, ColumnMetadata> tablePKColumns;
@@ -426,10 +421,7 @@ public class WhereCQLClauseAnalyzer {
                       && nativeTypeTableFilter.operator.isComparisonOperator());
                 })
             .map(Map.Entry::getKey)
-            .filter(
-                column ->
-                    ALLOW_FILTERING_NEEDED_FOR_COMPARISON.contains(
-                        tableMetadata.getColumns().get(column).getType()))
+            .filter(column -> DataTypes.UUID == tableMetadata.getColumns().get(column).getType())
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
@@ -437,12 +429,9 @@ public class WhereCQLClauseAnalyzer {
       return Optional.empty();
     }
 
-    var inefficientDataTypes =
-        ALLOW_FILTERING_NEEDED_FOR_COMPARISON.stream().map(DataType::toString).toList();
-
     var inefficientColumns =
         tableMetadata.getColumns().values().stream()
-            .filter(column -> ALLOW_FILTERING_NEEDED_FOR_COMPARISON.contains(column.getType()))
+            .filter(column -> DataTypes.UUID == column.getType())
             .sorted(COLUMN_METADATA_COMPARATOR)
             .toList();
 
@@ -451,7 +440,7 @@ public class WhereCQLClauseAnalyzer {
             errVars(
                 tableSchemaObject,
                 map -> {
-                  map.put("inefficientDataTypes", errFmtJoin(inefficientDataTypes));
+                  map.put("inefficientDataTypes", DataTypes.UUID.toString());
                   map.put("inefficientColumns", errFmtColumnMetadata(inefficientColumns));
                   map.put("inefficientFilterColumns", errFmtCqlIdentifier(inefficientFilters));
                 })));
@@ -493,6 +482,7 @@ public class WhereCQLClauseAnalyzer {
     }
 
     var missingPartitionKeyMetadata = missingPartitionKeys(identifierToFilter);
+
     var outOfOrderClusteringKeys = outOfOrderClusteringKeys(identifierToFilter);
 
     if (missingPartitionKeyMetadata.isEmpty() && outOfOrderClusteringKeys.isEmpty()) {
