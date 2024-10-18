@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
@@ -44,6 +45,7 @@ class FindKeyspacesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.keyspaces", hasSize(greaterThanOrEqualTo(1)))
           .body("status.keyspaces", hasItem(keyspaceName));
     }
@@ -71,6 +73,7 @@ class FindKeyspacesIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.namespaces", hasSize(greaterThanOrEqualTo(1)))
           .body("status.namespaces", hasItem(keyspaceName))
           .body("status.warnings", hasSize(1))

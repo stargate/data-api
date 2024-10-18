@@ -1,9 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.matchesPattern;
-import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -66,6 +67,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractKeyspaceInte
           .post(KeyspaceResource.BASE_PATH, NS)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
     }
     // And then failure
@@ -78,8 +80,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractKeyspaceInte
         .post(KeyspaceResource.BASE_PATH, NS)
         .then()
         .statusCode(200)
-        .body("status", is(nullValue()))
-        .body("data", is(nullValue()))
+        .body("$", responseIsError())
         .body(
             "errors[0].message",
             matchesPattern(
@@ -97,6 +98,7 @@ class CreateCollectionTooManyIndexesIntegrationTest extends AbstractKeyspaceInte
         .post(KeyspaceResource.BASE_PATH, NS)
         .then()
         .statusCode(200)
+        .body("$", responseIsDDLSuccess())
         .body("status.ok", is(1));
   }
 }

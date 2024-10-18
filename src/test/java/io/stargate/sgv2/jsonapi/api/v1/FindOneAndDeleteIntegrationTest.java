@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -48,9 +49,9 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
-          .body("status.deletedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.deletedCount", is(1));
 
       // assert state after update
       json =
@@ -69,6 +70,7 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
 
@@ -100,8 +102,8 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status.deletedCount", is(0))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindAndSuccess())
+          .body("status.deletedCount", is(0));
     }
 
     @Test
@@ -143,9 +145,9 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
-          .body("status.deletedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.deletedCount", is(1));
 
       // assert state after update
       json =
@@ -164,6 +166,7 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
 
@@ -206,9 +209,9 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document1))
-          .body("status.deletedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.deletedCount", is(1));
 
       // assert state after update
       json =
@@ -227,6 +230,7 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(0));
     }
 
@@ -277,9 +281,9 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expected))
-          .body("status.deletedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.deletedCount", is(1));
 
       // assert state after update
       json =
@@ -298,6 +302,7 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.document", is(nullValue()));
     }
   }
@@ -351,8 +356,8 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
                         .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
                         .then()
                         .statusCode(200)
-                        .body("status.deletedCount", anyOf(is(0), is(1)))
-                        .body("errors", is(nullValue()));
+                        .body("$", responseIsFindAndSuccess())
+                        .body("status.deletedCount", anyOf(is(0), is(1)));
                   } catch (AssertionError e) {
                     assertionErrors.set(index, e);
                   } finally {
@@ -402,8 +407,8 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
                         .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
                         .then()
                         .statusCode(200)
-                        .body("status.deletedCount", anyOf(is(0), is(1)))
-                        .body("errors", is(nullValue()));
+                        .body("$", responseIsFindAndSuccess())
+                        .body("status.deletedCount", anyOf(is(0), is(1)));
                   } catch (AssertionError e) {
                     assertionErrors.set(index, e);
                   } finally {
@@ -461,6 +466,7 @@ public class FindOneAndDeleteIntegrationTest extends AbstractCollectionIntegrati
         .when()
         .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
         .then()
+        .body("$", responseIsWriteSuccess())
         .body("status.insertedIds[0]", not(emptyString()))
         .statusCode(200);
   }

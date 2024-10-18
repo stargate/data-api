@@ -1,10 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -78,6 +76,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body(
               "data.document",
               jsonEquals(
@@ -87,10 +86,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                               "username": "user3",
                               "sub_doc" : { "a": 5 }
                             }
-                            """))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
-          .body("data.document", is(not(nullValue())));
+                            """));
     }
 
     @Test
@@ -119,6 +115,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body(
               "data.document",
               jsonEquals(
@@ -134,9 +131,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                                }
                             }
                           }
-                          """))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+                          """));
     }
 
     @Test
@@ -165,6 +160,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body(
               "data.document",
               jsonEquals(
@@ -176,9 +172,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                               "extra": {
                               }
                             }
-                            """))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+                            """));
     }
 
     @AfterEach
@@ -221,8 +215,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.document", jsonEquals(EXT_DOC1));
     }
 
@@ -245,8 +238,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body(
               "data.document",
               jsonEquals(
@@ -279,8 +271,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body(
               "data.document",
               jsonEquals(
@@ -324,6 +315,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body(
               "data.document",
               jsonEquals(
@@ -334,9 +326,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                               "tags" : ["tag1", "tag2"],
                               "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
                             }
-                            """))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+                            """));
     }
 
     @Test
@@ -362,6 +352,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body(
               "data.document",
               jsonEquals(
@@ -372,9 +363,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                               "tags" : ["tag1972", "zzzz"],
                               "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
                             }
-                            """))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+                            """));
     }
   }
 
@@ -406,6 +395,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body(
               "data.document",
               jsonEquals(
@@ -415,9 +405,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                             "username": "user2",
                             "tags" : ["tag1972", "zzzz"]
                           }
-                          """))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+                          """));
     }
 
     @Test
@@ -448,6 +436,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body(
               "data.document",
               jsonEquals(
@@ -457,9 +446,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                             "tags" : ["tag42", "tag1972"],
                             "nestedArray" : [["tag1", "tag2"], ["tag3", null]]
                           }
-                          """))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+                          """));
     }
 
     @Test
@@ -491,6 +478,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body(
               "data.document",
               jsonEquals(
@@ -500,9 +488,7 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                               "tags" : ["tag1", "tag2", "tag42", "tag1972", "zzzz"],
                               "nestedArray" : [["tag3", null]]
                             }
-                            """))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+                            """));
     }
 
     @AfterEach
