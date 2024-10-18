@@ -52,14 +52,16 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
   protected Map<String, String> serializeExtension(Map<String, String> customProperties) {
     return customProperties.entrySet().stream()
         .collect(
-            Collectors.toMap(e -> e.getKey(), e -> ByteUtils.toHexString(e.getValue().getBytes())));
+            Collectors.toMap(Map.Entry::getKey, e -> ByteUtils.toHexString(e.getValue().getBytes())));
   }
 
   protected DataType getCqlDataType(ApiDataType apiDataType) {
     if (apiDataType instanceof ComplexApiDataType) {
       return ((ComplexApiDataType) apiDataType).getCqlType();
     } else {
-      return ApiDataTypeDefs.from(apiDataType).get().getCqlType();
+      return ApiDataTypeDefs.from(apiDataType)
+          .orElseThrow(() -> new IllegalStateException("Unknown data type: " + apiDataType))
+          .getCqlType();
     }
   }
 
