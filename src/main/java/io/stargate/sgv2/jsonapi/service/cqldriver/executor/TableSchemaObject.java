@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,12 +35,7 @@ public class TableSchemaObject extends TableBasedSchemaObject {
     return IndexUsage.NO_OP;
   }
 
-  /**
-   * Get table schema object from table metadata
-   *
-   * @param tableMetadata
-   * @param objectMapper
-   */
+  /** Get table schema object from table metadata */
   public static TableSchemaObject from(TableMetadata tableMetadata, ObjectMapper objectMapper) {
     Map<String, String> extensions = TableMetadataUtils.getExtensions(tableMetadata);
     Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
@@ -57,9 +53,12 @@ public class TableSchemaObject extends TableBasedSchemaObject {
         if (index.isPresent()) {
           final IndexMetadata indexMetadata = index.get();
           final Map<String, String> indexOptions = indexMetadata.getOptions();
+          final String sourceModel = indexOptions.get("source_model");
           final String similarityFunctionValue = indexOptions.get("similarity_function");
           if (similarityFunctionValue != null) {
             similarityFunction = SimilarityFunction.fromString(similarityFunctionValue);
+          } else if (sourceModel != null) {
+            similarityFunction = VectorConstant.SUPPORTED_SOURCES.get(sourceModel);
           }
         }
         int dimension = vectorType.getDimensions();
