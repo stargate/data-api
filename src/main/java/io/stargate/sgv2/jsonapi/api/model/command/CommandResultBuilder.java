@@ -153,9 +153,8 @@ public class CommandResultBuilder {
     var responseData =
         switch (responseType) {
           case SINGLE_DOCUMENT ->
-              documents.isEmpty()
-                  ? null
-                  : new ResponseData.SingleResponseData(documents.getFirst());
+              new ResponseData.SingleResponseData(
+                  documents.isEmpty() ? null : documents.getFirst());
           case MULTI_DOCUMENT -> new ResponseData.MultiResponseData(documents, nextPageState);
           case STATUS_ONLY -> null;
         };
