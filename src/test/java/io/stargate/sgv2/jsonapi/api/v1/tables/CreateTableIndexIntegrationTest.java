@@ -6,8 +6,13 @@ import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.*;
 
@@ -36,11 +41,12 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("physicalAddress", Map.of("type", "text")),
                 Map.entry("list_type", Map.of("type", "list", "valueType", "text")),
                 Map.entry("set_type", Map.of("type", "set", "valueType", "text")),
-                Map.entry(
-                    "map_type", Map.of("type", "map", "keyType", "text", "valueType", "text")),
+                Map.entry("map_type", Map.of("type", "map", "keyType", "text", "valueType", "text")),
                 Map.entry("vector_type_1", Map.of("type", "vector", "dimension", 1024)),
                 Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1536)),
-                Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024))),
+                Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024)),
+                Map.entry("vector_type_4", Map.of("type", "vector", "dimension", 1024)),
+                Map.entry("vector_type_5", Map.of("type", "vector", "dimension", 1024))),
             "id")
         .wasSuccessful();
   }
@@ -297,6 +303,26 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                       """)
           .wasSuccessful();
     }
+
+    @Test
+    public void createVectorIndexWithMetricAndSourceModel() {
+      assertTableCommand(keyspaceName, testTableName)
+          .postCreateVectorIndex(
+              """
+                              {
+                                "name": "vector_type_4_idx",
+                                "definition": {
+                                  "column": "vector_type_4",
+                                  "options": {
+                                    "metric": "cosine",
+                                    "sourceModel": "openai_v3_small"
+                                  }
+                                }
+                              }
+                              """)
+          .hasNoErrors()
+          .body("status.ok", is(1));
+    }
   }
 
   @Nested
@@ -375,26 +401,29 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void vectorTypeAllConfigOptions() {
+    public void invalidSourceModel() {
+      List<String> supportedSourceModel =
+          new ArrayList<>(VectorConstant.SUPPORTED_SOURCES.keySet());
+      Collections.sort(supportedSourceModel);
       final SchemaException schemaException =
           SchemaException.Code.INVALID_INDEX_DEFINITION.get(
               Map.of(
                   "reason",
-                  "Only one of `metric` or `sourceModel` options should be used for `vector` type column"));
-      assertTableCommand(keyspaceName, testTableName)
+                  "sourceModel `%s` used in request is invalid. Supported source models are: %s"
+                      .formatted("invalid_source_model", supportedSourceModel)));
+      DataApiCommandSenders.assertTableCommand(keyspaceName, testTableName)
           .postCreateVectorIndex(
               """
-                                      {
-                                              "name": "vector_type_3_idx",
-                                              "definition": {
-                                                "column": "vector_type_3",
-                                                "options": {
-                                                  "metric": "cosine",
-                                                  "sourceModel": "mistral-embed"
-                                                }
-                                              }
-                                      }
-                                      """)
+                {
+                  "name": "vector_type_5_idx",
+                  "definition": {
+                    "column": "vector_type_5",
+                    "options": {
+                      "sourceModel": "invalid_source_model"
+                    }
+                  }
+                }
+                """)
           .hasSingleApiError(
               SchemaException.Code.INVALID_INDEX_DEFINITION,
               SchemaException.class,
