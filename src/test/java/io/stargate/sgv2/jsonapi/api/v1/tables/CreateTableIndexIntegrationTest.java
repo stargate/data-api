@@ -41,7 +41,8 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("physicalAddress", Map.of("type", "text")),
                 Map.entry("list_type", Map.of("type", "list", "valueType", "text")),
                 Map.entry("set_type", Map.of("type", "set", "valueType", "text")),
-                Map.entry("map_type", Map.of("type", "map", "keyType", "text", "valueType", "text")),
+                Map.entry(
+                    "map_type", Map.of("type", "map", "keyType", "text", "valueType", "text")),
                 Map.entry("vector_type_1", Map.of("type", "vector", "dimension", 1024)),
                 Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1536)),
                 Map.entry("vector_type_3", Map.of("type", "vector", "dimension", 1024)),
