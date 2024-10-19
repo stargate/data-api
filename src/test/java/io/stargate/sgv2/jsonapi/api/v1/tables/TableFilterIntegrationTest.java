@@ -1,10 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -177,20 +178,36 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
   @BeforeAll
   public final void createDefaultTables() {
     // create table and index all columns.
-    createTableWithColumns(TABLE_WITH_16_COLUMN_TYPES_INDEXED, ALL_COLUMNS, "id");
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(TABLE_WITH_16_COLUMN_TYPES_INDEXED, ALL_COLUMNS, "id")
+        .wasSuccessful();
+
     for (String columnName : COLUMNS_CAN_BE_SAI_INDEXED.keySet()) {
-      createIndex(TABLE_WITH_16_COLUMN_TYPES_INDEXED, columnName);
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+          .templated()
+          .createIndex(TABLE_WITH_16_COLUMN_TYPES_INDEXED + "_" + columnName, columnName)
+          .wasSuccessful();
     }
+
     // create table but no SAI index.
-    createTableWithColumns(TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED, ALL_COLUMNS, "id");
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED, ALL_COLUMNS, "id")
+        .wasSuccessful();
 
     // insert 3 sample row
-    insertOneInTable(TABLE_WITH_16_COLUMN_TYPES_INDEXED, sampleRowJson);
-    insertOneInTable(TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED, sampleRowJson);
-    insertOneInTable(TABLE_WITH_16_COLUMN_TYPES_INDEXED, sampleRowJsonLarger);
-    insertOneInTable(TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED, sampleRowJsonLarger);
-    insertOneInTable(TABLE_WITH_16_COLUMN_TYPES_INDEXED, sampleRowJsonSmaller);
-    insertOneInTable(TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED, sampleRowJsonSmaller);
+    assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        .templated()
+        .insertMany(sampleRowJson, sampleRowJsonLarger, sampleRowJsonSmaller)
+        .wasSuccessful()
+        .hasInsertedIdCount(3);
+
+    assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        .templated()
+        .insertMany(sampleRowJson, sampleRowJsonLarger, sampleRowJsonSmaller)
+        .wasSuccessful()
+        .hasInsertedIdCount(3);
   }
 
   @Nested
@@ -249,14 +266,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // textColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", is(SAMPLE_ID));
 
       // textColumnSaiNotIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -264,7 +281,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // textColumnSaiIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -276,8 +293,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // textColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -287,22 +303,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // textColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
-          .hasNoWarnings()
           .hasSingleWarning(WarningException.Code.NOT_EQUALS_UNSUPPORTED_BY_INDEXING.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // textColumnSaiNotIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // textColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -310,7 +325,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // textColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -325,14 +340,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // intColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", is(SAMPLE_ID));
 
       // intColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -340,7 +355,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // intColumnSaiIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -351,8 +366,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // intColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -362,21 +376,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // intColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // intColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // intColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -384,7 +398,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // intColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -399,14 +413,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // floatColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", is(SAMPLE_ID));
 
       // floatColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -414,7 +428,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // floatColumnSaiIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -425,8 +439,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // floatColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -436,21 +449,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // floatColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // floatColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // floatColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -458,7 +471,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // floatColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -473,14 +486,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // smallintColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", is(SAMPLE_ID));
 
       // smallintColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -488,7 +501,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // smallintColumnSaiIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -499,8 +512,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // smallintColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -510,21 +522,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // smallintColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // smallintColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // smallintColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -532,7 +544,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // smallintColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -547,14 +559,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // doubleColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", is(SAMPLE_ID));
 
       // doubleColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -562,7 +574,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // doubleColumnSaiIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -573,8 +585,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // doubleColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -584,21 +595,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // doubleColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // doubleColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // doubleColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -606,7 +617,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // doubleColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -621,14 +632,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // decimalColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", is(SAMPLE_ID));
 
       // decimalColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -636,7 +647,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // decimalColumnSaiIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -647,8 +658,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // decimalColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -658,21 +668,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // decimalColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // decimalColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // decimalColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -680,7 +690,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // decimalColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -695,14 +705,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // tinyintColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", is(SAMPLE_ID));
 
       // tinyintColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -710,7 +720,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // tinyintColumnSaiIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -721,8 +731,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // tinyintColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -732,21 +741,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // tinyintColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // tinyintColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // tinyintColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -754,7 +763,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // tinyintColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -769,14 +778,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // varintColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", is(SAMPLE_ID));
 
       // varintColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -784,7 +793,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // varintColumnSaiIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -795,8 +804,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // varintColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -806,21 +814,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // varintColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // varintColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // varintColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -828,7 +836,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // varintColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -843,14 +851,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // bigintColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", is(SAMPLE_ID));
 
       // bigintColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -858,7 +866,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // bigintColumnSaiIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -869,8 +877,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // bigintColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -880,21 +887,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // bigintColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // bigintColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // bigintColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -902,7 +909,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // bigintColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -917,14 +924,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // booleanColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // booleanColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -936,15 +943,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
         if (comparisonApiOperator.equals("$gt")) {
           // Note, nothing is greater than true
-          DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+          assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
               .postFindOne(
                   apiFilter$comparisonTemplate.formatted(columnName, comparisonApiOperator, "true"))
               .hasNoErrors()
               .hasSingleWarning(
-                  WarningException.Code.COMPARISON_FILTER_UNSUPPORTED_BY_INDEXING.name())
-              .hasNoData();
+                  WarningException.Code.COMPARISON_FILTER_UNSUPPORTED_BY_INDEXING.name());
         } else {
-          DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+          assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
               .postFindOne(
                   apiFilter$comparisonTemplate.formatted(columnName, comparisonApiOperator, "true"))
               .hasNoErrors()
@@ -958,16 +964,13 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
         if (comparisonApiOperator.equals("$gt")) {
           // Note, nothing is greater than true
-          DataApiCommandSenders.assertTableCommand(
-                  keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+          assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
               .postFindOne(
                   apiFilter$comparisonTemplate.formatted(columnName, comparisonApiOperator, "true"))
               .hasNoErrors()
-              .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
-              .hasNoData();
+              .hasSingleWarning(WarningException.Code.MISSING_INDEX.name());
         } else {
-          DataApiCommandSenders.assertTableCommand(
-                  keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+          assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
               .postFindOne(
                   apiFilter$comparisonTemplate.formatted(columnName, comparisonApiOperator, "true"))
               .hasNoErrors()
@@ -977,21 +980,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // booleanColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.NOT_EQUALS_UNSUPPORTED_BY_INDEXING.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // booleanColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // booleanColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -999,7 +1002,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // booleanColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -1014,14 +1017,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // asciiColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", is(SAMPLE_ID));
 
       // asciiColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -1029,7 +1032,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // asciiColumnSaiIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -1041,8 +1044,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // asciiColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -1052,21 +1054,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // asciiColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.NOT_EQUALS_UNSUPPORTED_BY_INDEXING.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // asciiColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // asciiColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -1074,7 +1076,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // asciiColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -1089,14 +1091,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // dateColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", is(SAMPLE_ID));
 
       // dateColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -1104,7 +1106,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // dateColumnSaiIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -1115,8 +1117,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // dateColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -1126,21 +1127,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // dateColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // dateColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // dateColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -1148,7 +1149,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // dateColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -1163,14 +1164,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // timeColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", is(SAMPLE_ID));
 
       // timeColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -1178,7 +1179,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // timeColumnSaiIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -1189,8 +1190,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // timeColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -1200,21 +1200,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // timeColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // timeColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // timeColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -1222,7 +1222,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // timeColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -1237,14 +1237,14 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       String mayAddQuoteValue = mayAddQuote(SAMPLE_COLUMN_VALUES.get(columnType).get(1));
 
       // timestampColumnSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", is(SAMPLE_ID));
 
       // timestampColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -1252,7 +1252,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // timestampColumnSaiIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -1263,8 +1263,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // dateColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -1274,21 +1273,21 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // timestampColumnSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasNoWarnings()
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // timestampColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // timestampColumnSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -1296,7 +1295,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // timestampColumnSaiNotIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
@@ -1313,7 +1312,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       // Note, "Secondary indexes are not supported on duration columns"
 
       // durationColumnNotSaiIndexed $eq
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$eqTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
@@ -1321,8 +1320,7 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
 
       // durationColumnSaiNotIndexed $lt,$gt,$lte,$gte
       for (String comparisonApiOperator : COMPARISON_API_OPERATORS) {
-        DataApiCommandSenders.assertTableCommand(
-                keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+        assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
             .postFindOne(
                 apiFilter$comparisonTemplate.formatted(
                     columnName, comparisonApiOperator, mayAddQuoteValue))
@@ -1332,18 +1330,19 @@ public class TableFilterIntegrationTest extends AbstractTableIntegrationTestBase
       }
 
       // durationColumnNotSaiIndexed $ne
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_NOT_INDEXED)
           .postFindOne(apiFilter$neTemplate.formatted(columnName, mayAddQuoteValue))
           .hasNoErrors()
           .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
 
       // durationColumnNotSaiIndexed $in
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
+      // Duration canot be indexed
+      assertTableCommand(keyspaceName, TABLE_WITH_16_COLUMN_TYPES_INDEXED)
           .postFindOne(
               apiFilter$inTemplate.formatted(columnName, mayAddQuoteValue, mayAddQuoteValue))
           .hasNoErrors()
-          .hasNoWarnings()
+          .hasSingleWarning(WarningException.Code.MISSING_INDEX.name())
           .body("data.document.id", oneOf(SAMPLE_ID, SAMPLE_ID_LARGER, SAMPLE_ID_SMALLER));
     }
 

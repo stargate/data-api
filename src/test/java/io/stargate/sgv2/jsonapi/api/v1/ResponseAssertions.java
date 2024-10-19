@@ -10,35 +10,50 @@ import org.hamcrest.TypeSafeMatcher;
 public class ResponseAssertions {
 
   public static TypeSafeMatcher<Map<String, ?>> responseIsFindSuccess() {
-    return envelopeChecker("responseIsFindSuccess", true, false, false);
+    return envelopeChecker(
+        "responseIsFindSuccess", Presence.REQUIRED, Presence.FORBIDDEN, Presence.FORBIDDEN);
   }
 
   public static TypeSafeMatcher<Map<String, ?>> responseIsFindAndSuccess() {
-    return envelopeChecker("responseIsFindAndSuccess", true, true, false);
+    return envelopeChecker(
+        "responseIsFindAndSuccess", Presence.REQUIRED, Presence.REQUIRED, Presence.FORBIDDEN);
+  }
+
+  public static TypeSafeMatcher<Map<String, ?>> responseIsFindSuccessOptionalStatus() {
+    return envelopeChecker(
+        "responseIsFindSuccessOptionalStatus",
+        Presence.REQUIRED,
+        Presence.OPTIONAL,
+        Presence.FORBIDDEN);
   }
 
   public static TypeSafeMatcher<Map<String, ?>> responseIsStatusOnly() {
-    return envelopeChecker("responseIsStatusOnly", false, true, false);
+    return envelopeChecker(
+        "responseIsStatusOnly", Presence.FORBIDDEN, Presence.REQUIRED, Presence.FORBIDDEN);
   }
 
   public static TypeSafeMatcher<Map<String, ?>> responseIsError() {
-    return envelopeChecker("responseIsError", false, false, true);
+    return envelopeChecker(
+        "responseIsError", Presence.FORBIDDEN, Presence.FORBIDDEN, Presence.REQUIRED);
   }
 
   public static TypeSafeMatcher<Map<String, ?>> responseIsWriteSuccess() {
-    return envelopeChecker("responseIsWriteSuccess", false, true, false);
+    return envelopeChecker(
+        "responseIsWriteSuccess", Presence.FORBIDDEN, Presence.REQUIRED, Presence.FORBIDDEN);
   }
 
   public static TypeSafeMatcher<Map<String, ?>> responseIsWritePartialSuccess() {
-    return envelopeChecker("responseIsWritePartialSuccess", false, true, true);
+    return envelopeChecker(
+        "responseIsWritePartialSuccess", Presence.FORBIDDEN, Presence.REQUIRED, Presence.REQUIRED);
   }
 
   public static TypeSafeMatcher<Map<String, ?>> responseIsDDLSuccess() {
-    return envelopeChecker("responseIsDDLSuccess", false, true, false);
+    return envelopeChecker(
+        "responseIsDDLSuccess", Presence.FORBIDDEN, Presence.REQUIRED, Presence.FORBIDDEN);
   }
 
   private static TypeSafeMatcher<Map<String, ?>> envelopeChecker(
-      String message, boolean hasData, boolean hasStatus, boolean hasErrors) {
+      String message, Presence hasData, Presence hasStatus, Presence hasErrors) {
 
     var fieldMatchers =
         List.of(
@@ -47,11 +62,15 @@ public class ResponseAssertions {
             FieldMatcher.errors(hasErrors));
 
     final String msg =
-        "%s: Response has fields %s, does not have fields %s"
+        "%s: Response fields %s:%s, %s:%s, %s:%s"
             .formatted(
                 message,
-                fieldMatchers.stream().filter(f -> f.required).toList(),
-                fieldMatchers.stream().filter(f -> !f.required).toList());
+                Presence.REQUIRED,
+                fieldMatchers.stream().filter(f -> f.presence == Presence.REQUIRED).toList(),
+                Presence.OPTIONAL,
+                fieldMatchers.stream().filter(f -> f.presence == Presence.OPTIONAL).toList(),
+                Presence.FORBIDDEN,
+                fieldMatchers.stream().filter(f -> f.presence == Presence.FORBIDDEN).toList());
 
     return new TypeSafeMatcher<>() {
       @Override
@@ -69,34 +88,47 @@ public class ResponseAssertions {
     };
   }
 
+  private enum Presence {
+    REQUIRED,
+    OPTIONAL,
+    FORBIDDEN
+  }
+
   private static class FieldMatcher {
     private final String name;
-    private final boolean required;
+    private final Presence presence;
     private final Class<?> valueType;
 
-    private FieldMatcher(String name, boolean required, Class<?> valueType) {
+    private FieldMatcher(String name, Presence presence, Class<?> valueType) {
       this.name = name;
-      this.required = required;
+      this.presence = presence;
       this.valueType = valueType;
     }
 
-    static FieldMatcher data(boolean required) {
-      return new FieldMatcher("data", required, Map.class);
+    static FieldMatcher data(Presence presence) {
+      return new FieldMatcher("data", presence, Map.class);
     }
 
-    static FieldMatcher status(boolean required) {
-      return new FieldMatcher("status", required, Map.class);
+    static FieldMatcher status(Presence presence) {
+      return new FieldMatcher("status", presence, Map.class);
     }
 
-    static FieldMatcher errors(boolean required) {
-      return new FieldMatcher("errors", required, List.class);
+    static FieldMatcher errors(Presence presence) {
+      return new FieldMatcher("errors", presence, List.class);
     }
 
     void match(MapAssert<String, ?> mapAssert) {
-      if (required) {
-        mapAssert.hasEntrySatisfying(name, value -> assertThat(value).isInstanceOf(valueType));
-      } else {
-        mapAssert.doesNotContainKey(name);
+      switch (presence) {
+        case REQUIRED ->
+            mapAssert.hasEntrySatisfying(name, value -> assertThat(value).isInstanceOf(valueType));
+        case FORBIDDEN -> mapAssert.doesNotContainKey(name);
+        case OPTIONAL ->
+            mapAssert.satisfies(
+                m -> {
+                  if (m.containsKey(name)) {
+                    assertThat(m.get(name)).isInstanceOf(valueType);
+                  }
+                });
       }
     }
 
