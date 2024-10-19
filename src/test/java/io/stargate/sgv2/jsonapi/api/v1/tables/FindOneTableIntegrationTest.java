@@ -102,14 +102,13 @@ public class FindOneTableIntegrationTest extends AbstractTableIntegrationTestBas
       // Third one with missing "age" and null "name"
       docJSON =
           """
-                              {
-                                  "id": "c",
-                                  "name": null
-                              }
-                              """;
+              {
+                "id": "c",
+                "name": null
+              }""";
       assertTableCommand(keyspaceName, TABLE_WITH_STRING_ID_AGE_NAME)
           .templated()
-          .insertOne(DOC_B_JSON)
+          .insertOne(docJSON)
           .wasSuccessful();
 
       // First, find the second document:

@@ -36,7 +36,7 @@ public record DeleteOperationPage(
     // use the CommandResultBuilder, I left the structure as it was to reduce the amount of changes.
     // when we move to use OperationAttempt for the collection commands we can refactor
     if (deletedInformation == null) {
-      return CommandResult.singleDocumentBuilder(false, false)
+      return CommandResult.statusOnlyBuilder(false, false)
           .addStatus(CommandStatus.DELETED_COUNT, -1)
           .build();
     }
