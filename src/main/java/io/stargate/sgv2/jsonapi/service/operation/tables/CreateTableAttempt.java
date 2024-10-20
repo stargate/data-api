@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createTable;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromIndexTarget;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
@@ -137,7 +138,8 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
       createTableWithOptions =
           createTableWithOptions.withClusteringOrder(
-              clusteringKey.column(), getCqlClusterOrder(clusteringKey.order()));
+              cqlIdentifierFromIndexTarget(clusteringKey.column()),
+              getCqlClusterOrder(clusteringKey.order()));
     }
     return createTableWithOptions;
   }

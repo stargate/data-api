@@ -99,7 +99,8 @@ public class WhereCQLClauseAnalyzer {
   private final Map<CqlIdentifier, ColumnMetadata> tablePKColumns;
   private final StatementType statementType;
 
-  public WhereCQLClauseAnalyzer(TableBasedSchemaObject tableSchemaObject, StatementType statementType) {
+  public WhereCQLClauseAnalyzer(
+      TableBasedSchemaObject tableSchemaObject, StatementType statementType) {
     this.tableSchemaObject =
         Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     this.statementType = Objects.requireNonNull(statementType, "statementType cannot be null");
