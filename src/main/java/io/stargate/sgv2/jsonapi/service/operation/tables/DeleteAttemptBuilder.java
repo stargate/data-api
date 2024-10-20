@@ -32,7 +32,12 @@ public class DeleteAttemptBuilder<SchemaT extends TableBasedSchemaObject> {
 
     this.tableBasedSchema = tableBasedSchema;
     this.deleteOne = deleteOne;
-    this.whereCQLClauseAnalyzer = new WhereCQLClauseAnalyzer(tableBasedSchema);
+    this.whereCQLClauseAnalyzer =
+        new WhereCQLClauseAnalyzer(
+            tableBasedSchema,
+            deleteOne
+                ? WhereCQLClauseAnalyzer.StatementType.DELETE_ONE
+                : WhereCQLClauseAnalyzer.StatementType.DELETE_MANY);
   }
 
   public DeleteAttempt<SchemaT> build(WhereCQLClause<Delete> whereCQLClause) {

@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1.util;
 
 import io.restassured.specification.RequestSpecification;
 import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
+import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
 
 public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiTableCommandSender> {
   private final String tableName;
@@ -32,6 +33,10 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return postCommand("findOne", findOneClause);
   }
 
+  public DataApiResponseValidator postFind(String findClause) {
+    return postCommand("find", findClause);
+  }
+
   public DataApiResponseValidator postInsertOne(String docAsJSON) {
     return postCommand("insertOne", "{ \"document\": %s }".formatted(docAsJSON));
   }
@@ -41,5 +46,16 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
         "{\"name\": \"%s\", \"definition\": { \"column\": \"%s\"} }"
             .formatted(indexName, columnName);
     return postCommand("createIndex", createIndex);
+  }
+
+  public DataApiResponseValidator postDelete(
+      WhereCQLClauseAnalyzer.StatementType statementType, String filterAsJSON) {
+    if (statementType == WhereCQLClauseAnalyzer.StatementType.DELETE_ONE) {
+      return postCommand("deleteOne", "{ \"filter\": %s }".formatted(filterAsJSON));
+    }
+    if (statementType == WhereCQLClauseAnalyzer.StatementType.DELETE_MANY) {
+      return postCommand("deleteMany", "{ \"filter\": %s }".formatted(filterAsJSON));
+    }
+    throw new IllegalArgumentException("Invalid statementType: " + statementType.name());
   }
 }

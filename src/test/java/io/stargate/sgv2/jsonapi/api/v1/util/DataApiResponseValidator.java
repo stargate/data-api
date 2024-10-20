@@ -58,6 +58,16 @@ public class DataApiResponseValidator {
         .body("errors[0].errorCode", is(errorCode.toString()));
   }
 
+  public <T extends APIException> DataApiResponseValidator mayHasSingleApiError(
+      ErrorCode<T> errorCode, Class<T> errorClass) {
+    if (errorCode == null) {
+      return body("errors", is(nullValue()));
+    }
+    return body("errors", hasSize(1))
+        .body("errors[0].exceptionClass", is(errorClass.getSimpleName()))
+        .body("errors[0].errorCode", is(errorCode.toString()));
+  }
+
   /**
    * @param errorCode Error code to check for
    * @param errorClass Error class to check for
@@ -83,12 +93,13 @@ public class DataApiResponseValidator {
     return body(path, is(nullValue()));
   }
 
-  public DataApiResponseValidator hasData() {
-    return hasNoField("data");
-  }
-
   public DataApiResponseValidator hasNoData() {
     return body("data", is(nullValue()));
+  }
+
+  // can rename later, TODO above method hasNoData seems like a bug.
+  public DataApiResponseValidator hasNoDataForTableFind() {
+    return body("data.documents", is(empty()));
   }
 
   public DataApiResponseValidator hasJSONField(String path, String rawJson) {
@@ -108,5 +119,9 @@ public class DataApiResponseValidator {
             "status.warnings[0]",
             hasEntry(ErrorObjectV2Constants.Fields.SCOPE, RequestException.Scope.WARNING.scope()))
         .body("status.warnings[0]", hasEntry(ErrorObjectV2Constants.Fields.CODE, code));
+  }
+
+  public DataApiResponseValidator hasNoErrorsNoWarnings() {
+    return body("errors", is(nullValue())).body("warnings", is(nullValue()));
   }
 }
