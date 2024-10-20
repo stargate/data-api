@@ -11,7 +11,7 @@ LOGLEVEL=INFO
 
 # Default to latest released version
 DATAAPITAG="v1"
-DATAAPIIMAGE="stargateio/data-api"
+DATAAPIIMAGE="stargateio/jsonapi"
 
 DSETAG="6.9.1"
 DSEIMAGE="cr.dtsx.io/datastax/dse-server"
