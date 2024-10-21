@@ -165,9 +165,9 @@ public class WhereCQLClauseAnalyzer {
   /**
    * Check if there is other columns are filtered against other than primary key columns.
    *
-   * <p>For UPDATE, DELETE (TODO, DELETE MANY?). If there are additional columns are specified in
-   * the where clause other than primary key columns, [Invalid query] message="Non PRIMARY KEY
-   * columns found in where clause: xxx"
+   * <p>For UPDATE, DELETE. If there are additional columns are specified in the where clause other
+   * than primary key columns, [Invalid query] message="Non PRIMARY KEY columns found in where
+   * clause: xxx"
    */
   private void checkNonPrimaryKeyFilters(Map<CqlIdentifier, TableFilter> identifierToFilter) {
 

@@ -33,8 +33,16 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return postCommand("findOne", findOneClause);
   }
 
+  public DataApiResponseValidator postFindOneByFilter(String filterAsJSON) {
+    return postCommand("findOne", "{ \"filter\": %s }".formatted(filterAsJSON));
+  }
+
   public DataApiResponseValidator postFind(String findClause) {
     return postCommand("find", findClause);
+  }
+
+  public DataApiResponseValidator postFindByFilter(String filterAsJSON) {
+    return postCommand("find", "{ \"filter\": %s }".formatted(filterAsJSON));
   }
 
   public DataApiResponseValidator postInsertOne(String docAsJSON) {
@@ -57,5 +65,16 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
       return postCommand("deleteMany", "{ \"filter\": %s }".formatted(filterAsJSON));
     }
     throw new IllegalArgumentException("Invalid statementType: " + statementType.name());
+  }
+
+  public DataApiResponseValidator postUpdateOne(String filterAsJSON, String updateClause) {
+    return postCommand(
+        "updateOne", "{ \"filter\": %s , \"update\": %s}".formatted(filterAsJSON, updateClause));
+  }
+
+  // Table does not support updateMany command
+  public DataApiResponseValidator postUpdateMany(String filterAsJSON, String updateClause) {
+    return postCommand(
+        "updateMany", "{ \"filter\": %s , \"update\": %s}".formatted(filterAsJSON, updateClause));
   }
 }

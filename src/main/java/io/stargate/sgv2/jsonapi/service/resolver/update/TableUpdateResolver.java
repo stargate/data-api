@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver.update;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
@@ -104,7 +106,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
         .map(
             entry ->
                 new ColumnAssignment(
-                    table.tableMetadata(),
+                    table,
                     CqlIdentifier.fromInternal(entry.getKey()),
                     RowShredder.shredValue(entry.getValue())))
         .toList();
@@ -129,10 +131,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
     // we ignore the value, API spec says it should be empty string and we should validate that in
     // the API tier
     return arguments.properties().stream()
-        .map(
-            entry ->
-                new ColumnAssignment(
-                    table.tableMetadata(), CqlIdentifier.fromInternal(entry.getKey()), null))
+        .map(entry -> new ColumnAssignment(table, CqlIdentifier.fromInternal(entry.getKey()), null))
         .toList();
   }
 }
