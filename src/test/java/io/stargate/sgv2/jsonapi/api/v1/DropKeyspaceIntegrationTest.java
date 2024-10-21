@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
@@ -47,6 +48,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.ok", is(1));
 
       // ensure it's dropped
@@ -66,6 +68,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.keyspaces", not(hasItem(keyspaceName)));
     }
 
@@ -101,6 +104,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.ok", is(1));
       given()
           .headers(getHeaders())
@@ -110,6 +114,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.ok", is(1));
 
       String json =
@@ -130,6 +135,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.ok", is(1));
 
       // ensure it's dropped
@@ -149,6 +155,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.keyspaces", not(hasItem(keyspace)));
     }
 
@@ -171,6 +178,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.ok", is(1));
     }
   }
@@ -199,6 +207,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.ok", is(1))
           .body("status.warnings", hasSize(1))
           .body(
@@ -241,6 +250,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.keyspaces", not(hasItem(keyspaceName)));
     }
 
@@ -276,6 +286,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.ok", is(1));
       given()
           .headers(getHeaders())
@@ -285,6 +296,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(KeyspaceResource.BASE_PATH, keyspace)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.ok", is(1));
 
       String json =
@@ -305,6 +317,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.ok", is(1))
           .body("status.warnings", hasSize(1))
           .body(
@@ -342,6 +355,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.keyspaces", not(hasItem(keyspace)));
     }
 
@@ -364,6 +378,7 @@ class DropKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase {
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.ok", is(1))
           .body("status.warnings", hasSize(1))
           .body(

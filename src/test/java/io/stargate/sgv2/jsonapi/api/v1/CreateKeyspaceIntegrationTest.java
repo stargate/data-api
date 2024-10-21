@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
@@ -52,6 +54,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
         .post(GeneralResource.BASE_PATH)
         .then()
         .statusCode(200)
+        .body("$", responseIsDDLSuccess())
         .body("status.ok", is(1));
   }
 
@@ -79,6 +82,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
     }
 
@@ -102,6 +106,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
     }
 
@@ -131,6 +136,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
     }
 
@@ -152,6 +158,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
@@ -185,6 +192,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1))
           .body("status.warnings", hasSize(1))
           .body(
@@ -227,6 +235,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1))
           .body("status.warnings", hasSize(1))
           .body(
@@ -274,6 +283,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1))
           .body("status.warnings", hasSize(1))
           .body(
@@ -314,6 +324,7 @@ class CreateKeyspaceIntegrationTest extends AbstractKeyspaceIntegrationTestBase 
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(

@@ -153,9 +153,12 @@ public class CommandResultBuilder {
     var responseData =
         switch (responseType) {
           case SINGLE_DOCUMENT ->
-              documents.isEmpty()
-                  ? null
-                  : new ResponseData.SingleResponseData(documents.getFirst());
+              // if there are any errors we do not return the response data for single doc
+              // multi doc can have errors and still return the documents
+              finalErrors == null
+                  ? new ResponseData.SingleResponseData(
+                      documents.isEmpty() ? null : documents.getFirst())
+                  : null;
           case MULTI_DOCUMENT -> new ResponseData.MultiResponseData(documents, nextPageState);
           case STATUS_ONLY -> null;
         };

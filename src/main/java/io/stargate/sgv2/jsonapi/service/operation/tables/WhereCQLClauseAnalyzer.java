@@ -494,7 +494,6 @@ public class WhereCQLClauseAnalyzer {
     }
 
     var missingPartitionKeyMetadata = missingPartitionKeys(identifierToFilter);
-
     var outOfOrderClusteringKeys = outOfOrderClusteringKeys(identifierToFilter);
 
     if (missingPartitionKeyMetadata.isEmpty() && outOfOrderClusteringKeys.isEmpty()) {
