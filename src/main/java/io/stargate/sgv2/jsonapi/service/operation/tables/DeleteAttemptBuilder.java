@@ -17,11 +17,10 @@ public class DeleteAttemptBuilder<SchemaT extends TableBasedSchemaObject> {
   private static final Logger LOGGER = LoggerFactory.getLogger(DeleteAttemptBuilder.class);
 
   // first value is zero, but we increment before we use it
-  private int readPosition = -1;
+  private int attemptPosition = -1;
 
   private final SchemaT tableBasedSchema;
   private final WhereCQLClauseAnalyzer whereCQLClauseAnalyzer;
-  private final boolean deleteOne;
 
   /**
    * @param tableBasedSchema Table based schema object
@@ -31,7 +30,6 @@ public class DeleteAttemptBuilder<SchemaT extends TableBasedSchemaObject> {
   public DeleteAttemptBuilder(SchemaT tableBasedSchema, boolean deleteOne) {
 
     this.tableBasedSchema = tableBasedSchema;
-    this.deleteOne = deleteOne;
     this.whereCQLClauseAnalyzer =
         new WhereCQLClauseAnalyzer(
             tableBasedSchema,
@@ -42,7 +40,7 @@ public class DeleteAttemptBuilder<SchemaT extends TableBasedSchemaObject> {
 
   public DeleteAttempt<SchemaT> build(WhereCQLClause<Delete> whereCQLClause) {
 
-    readPosition += 1;
+    attemptPosition += 1;
 
     // TODO: this may be common for creating a read / delete / where attempt will look at how to
     // refactor once all done
@@ -54,7 +52,7 @@ public class DeleteAttemptBuilder<SchemaT extends TableBasedSchemaObject> {
       exception = filterException;
     }
 
-    var attempt = new DeleteAttempt<>(readPosition, tableBasedSchema, whereCQLClause);
+    var attempt = new DeleteAttempt<>(attemptPosition, tableBasedSchema, whereCQLClause);
 
     // ok to pass null exception, will be ignored
     attempt.maybeAddFailure(exception);
