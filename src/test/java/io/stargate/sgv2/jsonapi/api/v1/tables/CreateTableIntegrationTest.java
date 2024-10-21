@@ -450,7 +450,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
       // Map type tests
       SchemaException invalidMapType =
-          SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get(
+          SchemaException.Code.MAP_TYPE_INVALID_DEFINITION.get(
               Map.of("reason", "`keyType` or `valueType` is null"));
       testCases.add(
           Arguments.of(
@@ -501,7 +501,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   invalidMapType.code,
                   invalidMapType.body)));
       invalidMapType =
-          SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get(
+          SchemaException.Code.MAP_TYPE_INVALID_DEFINITION.get(
               Map.of("reason", "Data types used for `keyType` or `valueType` are not supported"));
       testCases.add(
           Arguments.of(
@@ -555,8 +555,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   invalidMapType.code,
                   invalidMapType.body)));
       invalidMapType =
-          SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get(
-              Map.of("reason", "`keyType` must be `text` or `ascii`"));
+          SchemaException.Code.MAP_TYPE_INVALID_DEFINITION.get(
+              Map.of("reason", "`keyType` must be `text` or `ascii`, but was int"));
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
@@ -584,7 +584,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   invalidMapType.body)));
 
       // List type tests
-      SchemaException invalidListType = SchemaException.Code.LIST_TYPE_INCORRECT_DEFINITION.get();
+      SchemaException invalidListType = SchemaException.Code.LIST_TYPE_INVALID_DEFINITION.get();
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
@@ -635,7 +635,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   invalidListType.body)));
 
       // Set type tests
-      SchemaException invalidSetType = SchemaException.Code.SET_TYPE_INCORRECT_DEFINITION.get();
+      SchemaException invalidSetType = SchemaException.Code.SET_TYPE_INVALID_DEFINITION.get();
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
@@ -686,8 +686,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   invalidSetType.body)));
 
       // Vector type tests
-      SchemaException invalidVectorType =
-          SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
+      SchemaException invalidVectorType = SchemaException.Code.VECTOR_TYPE_INVALID_DEFINITION.get();
       testCases.add(
           Arguments.of(
               new CreateTableTestData(

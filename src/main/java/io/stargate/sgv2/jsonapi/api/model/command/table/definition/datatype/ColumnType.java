@@ -59,7 +59,7 @@ public interface ColumnType {
       case "map":
         {
           if (keyType == null || valueType == null) {
-            throw SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get(
+            throw SchemaException.Code.MAP_TYPE_INVALID_DEFINITION.get(
                 Map.of("reason", "`keyType` or `valueType` is null"));
           }
           final ColumnType keyColumnType, valueColumnType;
@@ -67,51 +67,51 @@ public interface ColumnType {
             keyColumnType = fromString(keyType, null, null, dimension, vectorConfig);
             valueColumnType = fromString(valueType, null, null, dimension, vectorConfig);
           } catch (SchemaException se) {
-            throw SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get(
+            throw SchemaException.Code.MAP_TYPE_INVALID_DEFINITION.get(
                 Map.of("reason", "Data types used for `keyType` or `valueType` are not supported"));
           }
           if (!(PrimitiveTypes.TEXT.equals(keyColumnType)
               || PrimitiveTypes.ASCII.equals(keyColumnType))) {
-            throw SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get(
-                Map.of("reason", "`keyType` must be `text` or `ascii`"));
+            throw SchemaException.Code.MAP_TYPE_INVALID_DEFINITION.get(
+                Map.of("reason", "`keyType` must be `text` or `ascii`, but was " + keyType));
           }
           return new ComplexTypes.MapType(keyColumnType, valueColumnType);
         }
       case "list":
         {
           if (valueType == null) {
-            throw SchemaException.Code.LIST_TYPE_INCORRECT_DEFINITION.get();
+            throw SchemaException.Code.LIST_TYPE_INVALID_DEFINITION.get();
           }
           try {
             return new ComplexTypes.ListType(
                 fromString(valueType, null, null, dimension, vectorConfig));
           } catch (SchemaException se) {
-            throw SchemaException.Code.LIST_TYPE_INCORRECT_DEFINITION.get();
+            throw SchemaException.Code.LIST_TYPE_INVALID_DEFINITION.get();
           }
         }
 
       case "set":
         {
           if (valueType == null) {
-            throw SchemaException.Code.SET_TYPE_INCORRECT_DEFINITION.get();
+            throw SchemaException.Code.SET_TYPE_INVALID_DEFINITION.get();
           }
           try {
             return new ComplexTypes.SetType(
                 fromString(valueType, null, null, dimension, vectorConfig));
           } catch (SchemaException se) {
-            throw SchemaException.Code.SET_TYPE_INCORRECT_DEFINITION.get();
+            throw SchemaException.Code.SET_TYPE_INVALID_DEFINITION.get();
           }
         }
 
       case "vector":
         {
           if (dimension <= 0) {
-            throw SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
+            throw SchemaException.Code.VECTOR_TYPE_INVALID_DEFINITION.get();
           }
           try {
             return new ComplexTypes.VectorType(PrimitiveTypes.FLOAT, dimension, vectorConfig);
           } catch (SchemaException se) {
-            throw SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
+            throw SchemaException.Code.VECTOR_TYPE_INVALID_DEFINITION.get();
           }
         }
       default:
