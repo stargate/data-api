@@ -7,15 +7,15 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.api.v1.metrics.JsonApiMetricsConfig;
+import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.Operation;
+import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CollectionReadType;
 import io.stargate.sgv2.jsonapi.service.operation.collections.DeleteCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.FindCollectionOperation;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
-import io.stargate.sgv2.jsonapi.service.operation.tables.DeleteTableOperation;
-import io.stargate.sgv2.jsonapi.service.operation.tables.TableWhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tables.*;
 import io.stargate.sgv2.jsonapi.service.processor.SchemaValidatable;
 import io.stargate.sgv2.jsonapi.service.projection.DocumentProjector;
 import io.stargate.sgv2.jsonapi.service.resolver.matcher.CollectionFilterResolver;
@@ -66,10 +66,20 @@ public class DeleteOneCommandResolver implements CommandResolver<DeleteOneComman
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, DeleteOneCommand command) {
 
-    return new DeleteTableOperation(
-        ctx,
+    var builder = new DeleteAttemptBuilder<>(ctx.schemaObject(), true);
+
+    var where =
         TableWhereCQLClause.forDelete(
-            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command)));
+            ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));
+
+    var attempts = new OperationAttemptContainer<>(builder.build(where));
+
+    var pageBuilder =
+        DeleteAttemptPage.<TableSchemaObject>builder()
+            .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
+            .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
+
+    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }
 
   @Override

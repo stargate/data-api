@@ -27,6 +27,10 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return postCommand(Command.CommandName.DELETE_MANY, jsonClause);
   }
 
+  public DataApiResponseValidator postDeleteOne(String jsonClause) {
+    return postCommand(Command.CommandName.DELETE_ONE, jsonClause);
+  }
+
   /**
    * Partially typed method for sending a POST command to the Data API: caller is responsible for
    * formatting the clause to include as (JSON Object) argument of "finOne" command.
@@ -37,6 +41,10 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
    */
   public DataApiResponseValidator postFindOne(String jsonClause) {
     return postCommand(Command.CommandName.FIND_ONE, jsonClause);
+  }
+
+  public DataApiResponseValidator postFind(String jsonClause) {
+    return postCommand(Command.CommandName.FIND, jsonClause);
   }
 
   public DataApiResponseValidator postInsertOne(String jsonClause) {
