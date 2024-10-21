@@ -27,7 +27,7 @@ class ThrowableCommandResultSupplierTest {
       CommandResult result = supplier.get();
 
       assertThat(result.data()).isNull();
-      assertThat(result.status()).isNull();
+      assertThat(result.status()).isEmpty();
       assertThat(result.errors())
           .singleElement()
           .satisfies(
@@ -51,7 +51,8 @@ class ThrowableCommandResultSupplierTest {
       CommandResult result = supplier.get();
 
       assertThat(result.data()).isNull();
-      assertThat(result.status()).isNull();
+      assertThat(result.status()).isEmpty();
+      ;
       assertThat(result.errors())
           .hasSize(2)
           .anySatisfy(
@@ -83,7 +84,8 @@ class ThrowableCommandResultSupplierTest {
       CommandResult result = supplier.get();
 
       assertThat(result.data()).isNull();
-      assertThat(result.status()).isNull();
+      assertThat(result.status()).isEmpty();
+      ;
       assertThat(result.errors())
           .singleElement()
           .satisfies(

@@ -123,7 +123,7 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
           new InsertionResult(attempt.docRowID().orElseThrow(), InsertionStatus.SKIPPED, null);
     }
 
-    seenErrors.forEach(resultBuilder::addCommandError);
+    seenErrors.forEach(resultBuilder::addCommandResultError);
     resultBuilder.addStatus(CommandStatus.DOCUMENT_RESPONSES, Arrays.asList(results));
     maybeAddSchema();
   }
@@ -192,11 +192,10 @@ public class InsertAttemptPage<SchemaT extends TableBasedSchemaObject>
     @Override
     public InsertAttemptPage<SchemaT> getOperationPage() {
 
-      var resultBuilder =
-          new CommandResultBuilder(
-              CommandResultBuilder.ResponseType.STATUS_ONLY, useErrorObjectV2, debugMode);
-
-      return new InsertAttemptPage<>(attempts, resultBuilder, returnDocumentResponses);
+      return new InsertAttemptPage<>(
+          attempts,
+          CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode),
+          returnDocumentResponses);
     }
   }
 }

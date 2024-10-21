@@ -295,6 +295,17 @@ request-errors:
       
       ${SNIPPET.INEFFICIENT_QUERY}      
 
+  - scope: WARNING
+    code: DEPRECATED_COMMAND
+    title: Deprecated command
+    body: |-
+      A deprecated command was used, it may still be used but will be removed in future releases.
+      
+      The deprecated command is: ${deprecatedCommand}.
+      The new command to use is: ${replacementCommand}.
+      
+      Please check the documentation for the new command and update your code.
+
   # Schema Errors
 
   - scope: SCHEMA

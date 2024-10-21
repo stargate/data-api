@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
 import static org.hamcrest.Matchers.is;
 
 import io.quarkus.test.common.WithTestResource;
@@ -39,6 +41,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
 
       // then delete
@@ -55,6 +58,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
     }
 
@@ -76,6 +80,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsDDLSuccess())
           .body("status.ok", is(1));
     }
 
@@ -92,6 +97,7 @@ class DeleteCollectionIntegrationTest extends AbstractKeyspaceIntegrationTestBas
           .post(KeyspaceResource.BASE_PATH, keyspaceName)
           .then()
           .statusCode(200)
+          .body("$", responseIsError())
           .body("errors[0].errorCode", is("COMMAND_FIELD_INVALID"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
