@@ -154,7 +154,7 @@ public record DeleteCollectionOperation(
                   .reportJsonReadDocsMetrics(
                       commandContext().commandName(), deletedInformation.size());
               return new DeleteOperationPage(
-                  deletedInformation, moreData.get(), returnDocumentInResponse);
+                  deletedInformation, moreData.get(), returnDocumentInResponse, deleteLimit == 1);
             });
   }
 
