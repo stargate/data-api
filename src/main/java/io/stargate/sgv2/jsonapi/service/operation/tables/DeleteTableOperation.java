@@ -14,7 +14,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -67,12 +66,13 @@ public class DeleteTableOperation extends TableMutationOperation {
             resultSet ->
                 Uni.createFrom()
                     .item(
-                        new Supplier<Supplier<CommandResult>>() {
+                        new Supplier<>() {
                           @Override
                           public Supplier<CommandResult> get() {
                             return () ->
-                                new CommandResult(
-                                    null, Map.of(CommandStatus.DELETED_COUNT, -1), List.of());
+                                CommandResult.singleDocumentBuilder(false, false)
+                                    .addStatus(CommandStatus.DELETED_COUNT, -1)
+                                    .build();
                           }
                         }));
   }

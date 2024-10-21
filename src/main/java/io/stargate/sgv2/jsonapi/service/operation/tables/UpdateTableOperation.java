@@ -77,15 +77,15 @@ public class UpdateTableOperation extends TableMutationOperation {
     return Uni.createFrom()
         .item(
             () -> {
-              EnumMap<CommandStatus, Object> updateStatus = new EnumMap<>(CommandStatus.class);
+              var builder = CommandResult.statusOnlyBuilder(false, false);
               // Because CQL UPDATE is a upsert it will always match and always modify a row, even
               // if that means inserting
               // However - we do not know if an upsert happened :(
-              updateStatus.put(CommandStatus.MATCHED_COUNT, 1);
-              updateStatus.put(CommandStatus.MODIFIED_COUNT, 1);
+              builder.addStatus(CommandStatus.MATCHED_COUNT, 1);
+              builder.addStatus(CommandStatus.MODIFIED_COUNT, 1);
 
-              // need to return lambda to stop the Uni from unqrapping the supplier
-              return () -> new CommandResult(null, updateStatus, List.of());
+              // need to return lambda to stop the Uni from unwrapping the supplier
+              return builder::build;
             });
   }
 }
