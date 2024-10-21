@@ -11,7 +11,7 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
@@ -94,12 +94,13 @@ public class WhereCQLClauseAnalyzer {
   private static final Set<DataType> ALLOW_FILTERING_NEEDED_FOR_COMPARISON =
       Set.of(DataTypes.TEXT, DataTypes.ASCII, DataTypes.BOOLEAN, DataTypes.UUID);
 
-  private final TableSchemaObject tableSchemaObject;
+  private final TableBasedSchemaObject tableSchemaObject;
   private final TableMetadata tableMetadata;
   private final Map<CqlIdentifier, ColumnMetadata> tablePKColumns;
   private final StatementType statementType;
 
-  public WhereCQLClauseAnalyzer(TableSchemaObject tableSchemaObject, StatementType statementType) {
+  public WhereCQLClauseAnalyzer(
+      TableBasedSchemaObject tableSchemaObject, StatementType statementType) {
     this.tableSchemaObject =
         Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     this.statementType = Objects.requireNonNull(statementType, "statementType cannot be null");
@@ -575,7 +576,22 @@ public class WhereCQLClauseAnalyzer {
    *     NOTE there may be warnings without needing ALLOW FILTERING.
    */
   public record WhereClauseAnalysis(
-      boolean requiresAllowFiltering, List<WarningException> warningExceptions) {}
+      boolean requiresAllowFiltering, List<WarningException> warningExceptions) {
+
+    public WhereClauseAnalysis {
+      warningExceptions =
+          warningExceptions == null ? List.of() : Collections.unmodifiableList(warningExceptions);
+    }
+
+    /**
+     * Helper to check if the analysis is empty
+     *
+     * @return TRUE if allow filtering is not required and there are no warnings, FALSE otherwise.
+     */
+    public boolean isEmpty() {
+      return !requiresAllowFiltering && warningExceptions.isEmpty();
+    }
+  }
 
   /** For internal use only. */
   private record AnalysisStrategy(
