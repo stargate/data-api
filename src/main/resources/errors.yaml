@@ -222,9 +222,23 @@ request-errors:
       The filter has the following issues: 
         - Missing Partition Keys: ${missingPartitionKeys}.
         - Out of order Partition Sort Keys: ${outOfOrderClusteringKeys}.
-      
-  
-  
+
+  # UPDATE clause errors
+  - scope: UPDATE
+    code: UPDATE_UNKNOWN_TABLE_COLUMN
+    title: Unknown table columns in update
+    body: |-
+      Only columns defined in the table schema can be updated.
+      Invalid update included the following unknown column: ${unknownColumn}.
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+
+  - scope: UPDATE
+    code: UPDATE_PRIMARY_KEY_COLUMN
+    title: Cannot update a primary key column
+    body: |-
+      Cannot update a primary key column: ${updateOnPrimaryKey}.
+      The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
+
 
   # Warnings
 

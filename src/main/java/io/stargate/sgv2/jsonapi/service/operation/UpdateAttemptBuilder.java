@@ -1,11 +1,11 @@
-package io.stargate.sgv2.jsonapi.service.operation.tables;
+package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
-import io.stargate.sgv2.jsonapi.service.operation.UpdateAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,8 @@ public class UpdateAttemptBuilder<SchemaT extends TableBasedSchemaObject> {
   public UpdateAttemptBuilder(SchemaT tableBasedSchema, UpdateValuesCQLClause updateCQLClause) {
 
     this.tableBasedSchema = tableBasedSchema;
-    this.whereCQLClauseAnalyzer = new WhereCQLClauseAnalyzer(tableBasedSchema);
+    this.whereCQLClauseAnalyzer =
+        new WhereCQLClauseAnalyzer(tableBasedSchema, WhereCQLClauseAnalyzer.StatementType.UPDATE);
     this.updateCQLClause = updateCQLClause;
   }
 
