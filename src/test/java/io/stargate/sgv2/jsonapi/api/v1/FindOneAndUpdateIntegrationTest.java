@@ -474,7 +474,7 @@ public class FindOneAndUpdateIntegrationTest extends AbstractCollectionIntegrati
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("$", responseIsFindAndSuccess())
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
 
