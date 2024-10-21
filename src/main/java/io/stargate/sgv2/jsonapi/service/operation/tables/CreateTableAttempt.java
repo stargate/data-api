@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createTable;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.type.DataType;
@@ -15,7 +14,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.time.Duration;
-import java.util.*;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -87,10 +85,10 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     for (String partitionKey : partitionKeys) {
       DataType dataType = getCqlDataType(columnTypes.get(partitionKey));
       if (createTable == null) {
-        createTable = create.withPartitionKey(CqlIdentifier.fromInternal(partitionKey), dataType);
+        createTable = create.withPartitionKey(cqlIdentifierFromUserInput(partitionKey), dataType);
       } else {
         createTable =
-            createTable.withPartitionKey(CqlIdentifier.fromInternal(partitionKey), dataType);
+            createTable.withPartitionKey(cqlIdentifierFromUserInput(partitionKey), dataType);
       }
       addedColumns.add(partitionKey);
     }
@@ -99,7 +97,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
       DataType dataType = getCqlDataType(apiDataType);
       createTable =
           createTable.withClusteringColumn(
-              CqlIdentifier.fromInternal(clusteringKey.column()), dataType);
+              cqlIdentifierFromUserInput(clusteringKey.column()), dataType);
       addedColumns.add(clusteringKey.column());
     }
 
@@ -108,7 +106,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
         continue;
       }
       DataType dataType = getCqlDataType(column.getValue());
-      createTable = createTable.withColumn(CqlIdentifier.fromInternal(column.getKey()), dataType);
+      createTable = createTable.withColumn(cqlIdentifierFromUserInput(column.getKey()), dataType);
     }
     return createTable;
   }
@@ -117,7 +115,8 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
       createTableWithOptions =
           createTableWithOptions.withClusteringOrder(
-              clusteringKey.column(), getCqlClusterOrder(clusteringKey.order()));
+              cqlIdentifierFromUserInput(clusteringKey.column()),
+              getCqlClusterOrder(clusteringKey.order()));
     }
     return createTableWithOptions;
   }
