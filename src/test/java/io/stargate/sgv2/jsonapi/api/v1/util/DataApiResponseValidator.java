@@ -75,6 +75,9 @@ public class DataApiResponseValidator {
       case INSERT_MANY -> {
         return hasNoErrors();
       }
+      case DELETE_ONE, DELETE_MANY -> {
+        return hasNoErrors();
+      }
       case CREATE_TABLE, DROP_TABLE, CREATE_INDEX, DROP_INDEX, CREATE_VECTOR_INDEX -> {
         return hasNoErrors().hasStatusOK();
       }
@@ -193,5 +196,15 @@ public class DataApiResponseValidator {
   // // // Insert Command Validation // // //
   public DataApiResponseValidator hasInsertedIdCount(int count) {
     return body("status.insertedIds", hasSize(count));
+  }
+
+  // // // Read Command Validation // // //
+
+  public DataApiResponseValidator hasEmptyDataDocuments() {
+    return body("data.documents", is(empty()));
+  }
+
+  public DataApiResponseValidator hasDocuments(int size) {
+    return body("data.documents", hasSize(size));
   }
 }

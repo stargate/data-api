@@ -2,7 +2,6 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
-import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -22,7 +21,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase {
+public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   static final String TABLE_WITH_COMPLEX_PRIMARY_KEY = "table_" + System.currentTimeMillis();
 
@@ -509,7 +508,8 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                          }
                         """;
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postCommand(toCommandName(WhereCQLClauseAnalyzer.StatementType.DELETE_MANY), filterJSON)
+        .templated()
+        .deleteMany(filterJSON)
         .wasSuccessful()
         .hasNoErrors();
   }

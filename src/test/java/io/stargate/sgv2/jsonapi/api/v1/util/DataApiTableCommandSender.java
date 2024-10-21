@@ -39,6 +39,10 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return postCommand(Command.CommandName.FIND_ONE, jsonClause);
   }
 
+  public DataApiResponseValidator postFind(String jsonClause) {
+    return postCommand(Command.CommandName.FIND, jsonClause);
+  }
+
   public DataApiResponseValidator postInsertOne(String jsonClause) {
     return postCommand(Command.CommandName.INSERT_ONE, jsonClause);
   }

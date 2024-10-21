@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
+import java.util.List;
+
 public class TableTemplates extends TemplateRunner {
 
   private DataApiTableCommandSender sender;
@@ -11,6 +13,17 @@ public class TableTemplates extends TemplateRunner {
   // ==================================================================================================================
   // DML - INSERT / DELETE / UPDATE
   // ==================================================================================================================
+
+  public DataApiResponseValidator deleteMany(String filter) {
+    var json =
+            """
+         {
+          "filter": %s
+         }
+    """
+            .formatted(filter);
+    return sender.postDeleteMany(json);
+  }
 
   public DataApiResponseValidator insertOne(String document) {
     var json =
@@ -24,11 +37,15 @@ public class TableTemplates extends TemplateRunner {
   }
 
   public DataApiResponseValidator insertMany(String... documents) {
+    return insertMany(List.of(documents));
+  }
+
+  public DataApiResponseValidator insertMany(List<String> documents) {
     var json =
             """
-             {
-              "documents": [%s]
-             }
+         {
+          "documents": [%s]
+         }
         """
             .formatted(String.join(",", documents));
     return sender.postInsertMany(json);
