@@ -65,8 +65,8 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
                               "clustering-key-1": "clustering-key-1-value-default",
                               "clustering-key-2": "clustering-key-2-value-default",
                               "clustering-key-3": "clustering-key-3-value-default",
-                              "indexed_column": "%s",
-                              "not_indexed_column": "%s"
+                              "indexed_column": %s,
+                              "not_indexed_column": %s
                           }
                           """;
 
@@ -91,7 +91,9 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
 
     insertOneInTable(
         TABLE_WITH_COMPLEX_PRIMARY_KEY,
-        DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted("index-column-value", "not-indexed-column-value"));
+        DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted(
+            wrapWithDoubleQuote("index-column-value"),
+            wrapWithDoubleQuote("not-indexed-column-value")));
   }
 
   // ==================================================================================================================
@@ -129,23 +131,21 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
   @Test
   public void filterOnNonPrimaryKeyColumn() {
     var filterJSON =
-                   """
+        """
                         {
                           "indexed_column" : "%s",
                           "not_indexed_column": "%s"
                         }
                     """;
     var updateJSON =
-            SET_UPDATE_CLAUSE_TEMPLATE.formatted(
-                    "indexed_column_updated_value", "not_indexed_column_updated_value");
+        SET_UPDATE_CLAUSE_TEMPLATE.formatted(
+            "indexed_column_updated_value", "not_indexed_column_updated_value");
 
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-            .postUpdateOne(filterJSON, updateJSON)
-            .mayHasSingleApiError(
-                    FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE, FilterException.class);
+        .postUpdateOne(filterJSON, updateJSON)
+        .mayHasSingleApiError(
+            FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE, FilterException.class);
   }
-
-
 
   // ==================================================================================================================
   // FILTER has specified a full, existed PRIMARY KEY
@@ -158,7 +158,9 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
   public void updateOnNonPrimaryKeyColumnAndExisted() {
     var updatedValue = "updated_value" + System.currentTimeMillis();
     var updateClauseJSON = SET_UPDATE_CLAUSE_TEMPLATE.formatted(updatedValue, updatedValue);
-    var expectedUpdatedRow = DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted(updatedValue, updatedValue);
+    var expectedUpdatedRow =
+        DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted(
+            wrapWithDoubleQuote(updatedValue), wrapWithDoubleQuote(updatedValue));
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .postUpdateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
         .hasNoErrorsNoWarnings();
@@ -228,6 +230,48 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
         .postUpdateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
         .mayHasSingleApiError(
             UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMN, UpdateException.class);
+  }
+
+  // ==================================================================================================================
+  // Check other update operators.
+  // ==================================================================================================================
+
+  @Test
+  public void unsetSuccessful() {
+    var expectedUpdatedRow = DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted(null, null);
+    var updateClauseJSON =
+        """
+                      {
+                        "$unset": {
+                              "not_indexed_column": "",
+                              "indexed_column": ""
+                            }
+                      }
+                  """;
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postUpdateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .hasNoErrorsNoWarnings();
+    checkUpdatedData(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, expectedUpdatedRow);
+  }
+
+  @Test
+  public void unsetPrimaryKeyComponent() {
+    var updateClauseJSON =
+        """
+                      {
+                        "$unset": {
+                              "partition-key-1" : ""
+                            }
+                      }
+                  """;
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postUpdateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .mayHasSingleApiError(
+            UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMN, UpdateException.class);
+  }
+
+  private String wrapWithDoubleQuote(String originString) {
+    return "\"" + originString + "\"";
   }
 
   private void checkUpdatedData(String filter, String expectedUpdatedRow) {

@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.Updatable;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateOperator;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -131,7 +133,12 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
     // we ignore the value, API spec says it should be empty string and we should validate that in
     // the API tier
     return arguments.properties().stream()
-        .map(entry -> new ColumnAssignment(table, CqlIdentifier.fromInternal(entry.getKey()), null))
+        .map(
+            entry ->
+                new ColumnAssignment(
+                    table,
+                    CqlIdentifier.fromInternal(entry.getKey()),
+                    new JsonLiteral<>(null, JsonType.NULL)))
         .toList();
   }
 }
