@@ -48,7 +48,7 @@ public class ColumnDefinitionDeserializer extends StdDeserializer<ColumnType> {
         try {
           vectorConfig = deserializationContext.readTreeAsValue(service, VectorizeConfig.class);
         } catch (JacksonException je) {
-          throw SchemaException.Code.VECTOR_TYPE_INCORRECT_DEFINITION.get();
+          throw SchemaException.Code.VECTOR_TYPE_INVALID_DEFINITION.get();
         }
       }
       return ColumnType.fromString(type, keyType, valueType, dimension, vectorConfig);

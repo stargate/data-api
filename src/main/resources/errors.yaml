@@ -401,10 +401,10 @@ request-errors:
           d. partitionSort values should be either `1` for ascending or `-1` for descending.
 
   - scope: SCHEMA
-    code: MAP_TYPE_INCORRECT_DEFINITION
+    code: MAP_TYPE_INVALID_DEFINITION
     title: Map column data type definition provided in the request is incorrect.
     body: |-
-      Map column data type definition provided in the request is incorrect.
+      Map column data type definition provided in the request is incorrect: ${reason}
       Map type should also be provided with `keyType` and `valueType`. `keyType` and `valueType` should be a primitive data type.
       Example map type definition:
         "column_name": {
@@ -414,7 +414,7 @@ request-errors:
         }
 
   - scope: SCHEMA
-    code: SET_TYPE_INCORRECT_DEFINITION
+    code: SET_TYPE_INVALID_DEFINITION
     title: Set column data type definition provided in the request is incorrect.
     body: |-
       Set column data type definition provided in the request is incorrect.
@@ -426,7 +426,7 @@ request-errors:
         }
 
   - scope: SCHEMA
-    code: LIST_TYPE_INCORRECT_DEFINITION
+    code: LIST_TYPE_INVALID_DEFINITION
     title: List column data type definition provided in the request is incorrect.
     body: |-
       List column data type definition provided in the request is incorrect.
@@ -438,7 +438,7 @@ request-errors:
         }
 
   - scope: SCHEMA
-    code: VECTOR_TYPE_INCORRECT_DEFINITION
+    code: VECTOR_TYPE_INVALID_DEFINITION
     title: Vector column data type definition provided in the request is incorrect.
     body: |-
       Vector column data type definition provided in the request is incorrect.
