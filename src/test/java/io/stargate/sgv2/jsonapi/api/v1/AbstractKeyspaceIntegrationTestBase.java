@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsDDLSuccess;
 import static io.stargate.sgv2.jsonapi.api.v1.util.IntegrationTestUtils.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -66,8 +67,8 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
         .post(GeneralResource.BASE_PATH)
         .then()
         .statusCode(200)
-        .body("status.ok", is(1))
-        .body("errors", is(nullValue()));
+        .body("$", responseIsDDLSuccess())
+        .body("status.ok", is(1));
   }
 
   @AfterAll
@@ -91,6 +92,7 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
         .post(GeneralResource.BASE_PATH)
         .then()
         .statusCode(200)
+        .body("$", responseIsDDLSuccess())
         .body("status.ok", is(1))
         .body("errors", is(nullValue()));
   }
@@ -112,7 +114,8 @@ public abstract class AbstractKeyspaceIntegrationTestBase {
         .when()
         .post(KeyspaceResource.BASE_PATH, keyspaceName)
         .then()
-        .statusCode(200);
+        .statusCode(200)
+        .body("$", responseIsDDLSuccess());
   }
 
   protected int getTestPort() {

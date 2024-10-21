@@ -1,10 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
+import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -50,12 +52,29 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                             }
                           """;
 
+  private static Command.CommandName toCommandName(
+      WhereCQLClauseAnalyzer.StatementType statementType) {
+    return switch (statementType) {
+      case DELETE_ONE -> Command.CommandName.DELETE_ONE;
+      case DELETE_MANY -> Command.CommandName.DELETE_MANY;
+      default -> throw new IllegalArgumentException("Unexpected statement type: " + statementType);
+    };
+  }
+
   @BeforeAll
   public final void createTable() {
-    var tableDefinition = TABLE_DEFINITION_TEMPLATE.formatted(TABLE_WITH_COMPLEX_PRIMARY_KEY);
-    createTable(tableDefinition);
+
+    assertNamespaceCommand(keyspaceName)
+        .postCreateTable(TABLE_DEFINITION_TEMPLATE.formatted(TABLE_WITH_COMPLEX_PRIMARY_KEY))
+        .wasSuccessful();
+
     // Index the column "indexed_column"
-    createIndex(TABLE_WITH_COMPLEX_PRIMARY_KEY, "indexed_column");
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .createIndex(
+            "IX_%s_%s".formatted(TABLE_WITH_COMPLEX_PRIMARY_KEY, "indexed_column"),
+            "indexed_column")
+        .wasSuccessful();
   }
 
   // ==================================================================================================================
@@ -88,9 +107,10 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
         """
                     {}
                     """;
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postDelete(statementType, filterJSON)
-        .mayHasSingleApiError(expectedCode, FilterException.class);
+
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postCommand(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class);
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -118,9 +138,10 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                          "clustering-key-3": "clustering-key-3-value-default"
                      }
                     """;
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postDelete(statementType, filterJSON)
-        .hasNoErrorsNoWarnings();
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postCommand(toCommandName(statementType), filterJSON)
+        .wasSuccessful()
+        .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -154,9 +175,9 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                       "indexed_column": "testData"
                   }
             """;
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postDelete(statementType, filterJSON)
-        .mayHasSingleApiError(expectedCode, FilterException.class);
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postCommand(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class);
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -174,9 +195,9 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                       "not_indexed_column": "testData"
                   }
             """;
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postDelete(statementType, filterJSON)
-        .mayHasSingleApiError(expectedCode, FilterException.class);
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postCommand(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class);
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -212,9 +233,9 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                          "clustering-key-3": "clustering-key-3-value-default"
                      }
             """;
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postDelete(statementType, filterJSON)
-        .mayHasSingleApiError(expectedCode, FilterException.class);
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postCommand(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class);
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -253,9 +274,9 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                          "clustering-key-3": "clustering-key-3-value-default"
                      }
                 """;
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postDelete(statementType, filterJSON)
-        .mayHasSingleApiError(expectedCode, FilterException.class);
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postCommand(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class);
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -288,9 +309,9 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                           "clustering-key-3": "clustering-key-3-value-default"
                   }
                 """;
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postDelete(statementType, filterJSON)
-        .mayHasSingleApiError(expectedCode, FilterException.class);
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postCommand(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class);
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -320,9 +341,9 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                           "clustering-key-2": "clustering-key-2-value-default"
                   }
                 """;
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postDelete(statementType, filterJSON)
-        .mayHasSingleApiError(expectedCode, FilterException.class);
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postCommand(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class);
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -354,9 +375,9 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                           "clustering-key-3": "clustering-key-3-value-default"
                   }
                 """;
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postDelete(statementType, filterJSON)
-        .mayHasSingleApiError(expectedCode, FilterException.class);
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postCommand(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class);
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -385,9 +406,9 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                           "clustering-key-1": "clustering-key-1-value-default"
                   }
                 """;
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postDelete(statementType, filterJSON)
-        .mayHasSingleApiError(expectedCode, FilterException.class);
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postCommand(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class);
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -419,9 +440,9 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                           "clustering-key-2": "clustering-key-2-value-default"
                   }
                 """;
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postDelete(statementType, filterJSON)
-        .mayHasSingleApiError(expectedCode, FilterException.class);
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postCommand(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class);
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -470,7 +491,10 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
   static final List<String> DEFAULT_ROWS = List.of(DOC_JSON_DEFAULT_ROW_1, DOC_JSON_DEFAULT_ROW_2);
 
   private void insertDefaultRows() {
-    DEFAULT_ROWS.forEach(row -> insertOneInTable(TABLE_WITH_COMPLEX_PRIMARY_KEY, row));
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .insertMany(DEFAULT_ROWS)
+        .wasSuccessful();
   }
 
   private void deleteAllDefaultRows() {
@@ -484,9 +508,10 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                              "clustering-key-2": "clustering-key-2-value-default"
                          }
                         """;
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postDelete(WhereCQLClauseAnalyzer.StatementType.DELETE_MANY, filterJSON)
-        .hasNoErrorsNoWarnings();
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .postCommand(toCommandName(WhereCQLClauseAnalyzer.StatementType.DELETE_MANY), filterJSON)
+        .wasSuccessful()
+        .hasNoErrors();
   }
 
   // We can't know how many rows are actually got deleted from deleteOne,deleteMany commands
@@ -512,16 +537,18 @@ public class TableDeleteIntegrationTest extends AbstractTableIntegrationTestBase
                               """;
 
     if (shouldDeleteAmount == DEFAULT_ROWS.size()) {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+      assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
           .postFind(findAllByIndexedColumn)
-          .hasNoDataForTableFind()
-          .hasNoErrorsNoWarnings();
+          .wasSuccessful()
+          .hasNoWarnings()
+          .hasEmptyDataDocuments();
     }
     if (shouldDeleteAmount < DEFAULT_ROWS.size()) {
-      DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+      assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
           .postFind(findAllByIndexedColumn)
-          .body("data.documents", hasSize(DEFAULT_ROWS.size() - shouldDeleteAmount))
-          .hasNoErrorsNoWarnings();
+          .wasSuccessful()
+          .hasNoWarnings()
+          .hasDocuments(DEFAULT_ROWS.size() - shouldDeleteAmount);
     }
   }
 }

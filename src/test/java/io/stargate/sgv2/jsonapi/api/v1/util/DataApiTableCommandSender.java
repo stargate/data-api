@@ -1,15 +1,21 @@
 package io.stargate.sgv2.jsonapi.api.v1.util;
 
 import io.restassured.specification.RequestSpecification;
+import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
-import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
 
 public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiTableCommandSender> {
   private final String tableName;
+  private TableTemplates templated;
 
   protected DataApiTableCommandSender(String keyspace, String tableName) {
     super(keyspace);
     this.tableName = tableName;
+    this.templated = new TableTemplates(this);
+  }
+
+  public TableTemplates templated() {
+    return templated;
   }
 
   @Override
@@ -17,8 +23,8 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return request.post(CollectionResource.BASE_PATH, keyspace, tableName);
   }
 
-  public DataApiResponseValidator postDeleteMany(String deleteManyClause) {
-    return postCommand("deleteMany", deleteManyClause);
+  public DataApiResponseValidator postDeleteMany(String jsonClause) {
+    return postCommand(Command.CommandName.DELETE_MANY, jsonClause);
   }
 
   /**
@@ -29,33 +35,27 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
    *     Object ({@code { } })
    * @return Response validator for further assertions
    */
-  public DataApiResponseValidator postFindOne(String findOneClause) {
-    return postCommand("findOne", findOneClause);
+  public DataApiResponseValidator postFindOne(String jsonClause) {
+    return postCommand(Command.CommandName.FIND_ONE, jsonClause);
   }
 
-  public DataApiResponseValidator postFind(String findClause) {
-    return postCommand("find", findClause);
+  public DataApiResponseValidator postInsertOne(String jsonClause) {
+    return postCommand(Command.CommandName.INSERT_ONE, jsonClause);
   }
 
-  public DataApiResponseValidator postInsertOne(String docAsJSON) {
-    return postCommand("insertOne", "{ \"document\": %s }".formatted(docAsJSON));
+  public DataApiResponseValidator postInsertMany(String jsonClause) {
+    return postCommand(Command.CommandName.INSERT_MANY, jsonClause);
   }
 
-  public DataApiResponseValidator postCreateIndex(String columnName, String indexName) {
-    String createIndex =
-        "{\"name\": \"%s\", \"definition\": { \"column\": \"%s\"} }"
-            .formatted(indexName, columnName);
-    return postCommand("createIndex", createIndex);
+  public DataApiResponseValidator postCreateIndex(String jsonClause) {
+    return postCommand(Command.CommandName.CREATE_INDEX, jsonClause);
   }
 
-  public DataApiResponseValidator postDelete(
-      WhereCQLClauseAnalyzer.StatementType statementType, String filterAsJSON) {
-    if (statementType == WhereCQLClauseAnalyzer.StatementType.DELETE_ONE) {
-      return postCommand("deleteOne", "{ \"filter\": %s }".formatted(filterAsJSON));
-    }
-    if (statementType == WhereCQLClauseAnalyzer.StatementType.DELETE_MANY) {
-      return postCommand("deleteMany", "{ \"filter\": %s }".formatted(filterAsJSON));
-    }
-    throw new IllegalArgumentException("Invalid statementType: " + statementType.name());
+  public DataApiResponseValidator postCreateVectorIndex(String jsonClause) {
+    return postCommand(Command.CommandName.CREATE_VECTOR_INDEX, jsonClause);
+  }
+
+  public DataApiResponseValidator postDropIndex(String jsonClause) {
+    return postCommand(Command.CommandName.DROP_INDEX, jsonClause);
   }
 }
