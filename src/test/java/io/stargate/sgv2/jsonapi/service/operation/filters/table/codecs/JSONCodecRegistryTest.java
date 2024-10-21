@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -336,18 +337,28 @@ public class JSONCodecRegistryTest {
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesVectors() {
+    float[] rawFloats = new float[] {0.0f, -0.5f, 0.25f};
+    DataType vector3Type = DataTypes.vectorOf(DataTypes.FLOAT, 3);
     // Arguments: (CQL-type, from-caller-json, bound-by-driver-for-cql)
     return Stream.of(
-        // // Lists:
+        // First: Array of Numbers representation
         Arguments.of(
-            DataTypes.vectorOf(DataTypes.FLOAT, 3),
+            vector3Type,
             // Important: all incoming JSON numbers are represented as Long, BigInteger,
             // or BigDecimal. All legal as source for Float.
             Arrays.asList(
                 numberLiteral(0L),
                 numberLiteral(new BigDecimal(-0.5)),
                 numberLiteral(new BigDecimal(0.25))),
-            CqlVector.newInstance(0.0f, -0.5f, 0.25f)));
+            CqlVectorUtil.floatToCqlVector(rawFloats)));
+    // Second: Base64-encoded representation
+    /*
+    Arguments.of(
+            vector3Type,
+            "AQAAAAAAAP8AAAA=",
+            CqlVectorUtil.floatToCqlVector(rawFloats))
+            );
+         */
   }
 
   private static JsonLiteral<Number> numberLiteral(Number value) {

@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
-import com.fasterxml.jackson.core.Base64Variants;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
@@ -11,6 +10,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowShredder;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -345,10 +345,15 @@ public record JSONCodec<JavaT, CqlT>(
         if (value.isBinary()) {
           binaryPayload = value.binaryValue();
         } else if (value.isTextual()) {
-          // Jackson supports multiple optimized variants: MIME, PEM, MODIFIED_FOR_URL
-          // but MIME_NO_LINEFEEDS is the most common (and default).
-          // Most variation on encoding side; for decoding less difference
-          binaryPayload = Base64Variants.MIME_NO_LINEFEEDS.decode(value.textValue());
+          try {
+            binaryPayload = Base64Util.decodeFromMimeBase64(value.textValue());
+          } catch (IllegalArgumentException e) {
+            throw new ToCQLCodecException(
+                wrapper,
+                targetCQLType,
+                "Unsupported JSON value in EJSON $binary wrapper: String not valid Base64 encoded content, problem: %s"
+                    .formatted(e.getMessage()));
+          }
         } else {
           throw new ToCQLCodecException(
               wrapper,
