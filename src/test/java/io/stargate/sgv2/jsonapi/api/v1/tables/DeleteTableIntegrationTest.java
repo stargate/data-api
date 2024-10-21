@@ -108,8 +108,10 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                     """;
 
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postCommand(toCommandName(statementType), filterJSON)
-        .hasSingleApiError(expectedCode, FilterException.class);
+        .templated()
+        .delete(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class)
+        .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -137,8 +139,10 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                          "clustering-key-3": "clustering-key-3-value-default"
                      }
                     """;
+
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postCommand(toCommandName(statementType), filterJSON)
+        .templated()
+        .delete(toCommandName(statementType), filterJSON)
         .wasSuccessful()
         .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
@@ -175,8 +179,10 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                   }
             """;
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postCommand(toCommandName(statementType), filterJSON)
-        .hasSingleApiError(expectedCode, FilterException.class);
+        .templated()
+        .delete(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class)
+        .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -195,8 +201,10 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                   }
             """;
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postCommand(toCommandName(statementType), filterJSON)
-        .hasSingleApiError(expectedCode, FilterException.class);
+        .templated()
+        .delete(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class)
+        .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -233,8 +241,10 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                      }
             """;
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postCommand(toCommandName(statementType), filterJSON)
-        .hasSingleApiError(expectedCode, FilterException.class);
+        .templated()
+        .delete(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class)
+        .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -274,8 +284,10 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                      }
                 """;
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postCommand(toCommandName(statementType), filterJSON)
-        .hasSingleApiError(expectedCode, FilterException.class);
+        .templated()
+        .delete(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class)
+        .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -309,8 +321,10 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                   }
                 """;
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postCommand(toCommandName(statementType), filterJSON)
-        .hasSingleApiError(expectedCode, FilterException.class);
+        .templated()
+        .delete(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class)
+        .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -341,8 +355,10 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                   }
                 """;
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postCommand(toCommandName(statementType), filterJSON)
-        .hasSingleApiError(expectedCode, FilterException.class);
+        .templated()
+        .delete(toCommandName(statementType), filterJSON)
+        .wasSuccessful()
+        .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -375,8 +391,10 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                   }
                 """;
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postCommand(toCommandName(statementType), filterJSON)
-        .hasSingleApiError(expectedCode, FilterException.class);
+        .templated()
+        .delete(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class)
+        .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -406,8 +424,10 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                   }
                 """;
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postCommand(toCommandName(statementType), filterJSON)
-        .hasSingleApiError(expectedCode, FilterException.class);
+        .templated()
+        .delete(toCommandName(statementType), filterJSON)
+        .wasSuccessful()
+        .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -440,8 +460,10 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
                   }
                 """;
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postCommand(toCommandName(statementType), filterJSON)
-        .hasSingleApiError(expectedCode, FilterException.class);
+        .templated()
+        .delete(toCommandName(statementType), filterJSON)
+        .hasSingleApiError(expectedCode, FilterException.class)
+        .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 

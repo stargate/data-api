@@ -32,7 +32,10 @@ public class DeleteAttemptPage<SchemaT extends TableBasedSchemaObject>
     // even if we specify the full PK it may delete 0 rows.
     // For now, we will return -1 as the deleted count.When we update collections to use this class
     // we can refactor to return the actual count for them.
-    resultBuilder.addStatus(CommandStatus.DELETED_COUNT, -1);
+    // If there is error, we won't add this status.
+    if (attempts.errorAttempts().isEmpty()) {
+      resultBuilder.addStatus(CommandStatus.DELETED_COUNT, -1);
+    }
   }
 
   public static class Builder<SchemaT extends TableBasedSchemaObject>
