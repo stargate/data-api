@@ -57,7 +57,20 @@ public class DataApiResponseValidator {
   // // // High level command aware validation // // //
 
   /**
-   * Checks the structore of the response was as expected whe the command is successful.
+   * If the <code>errorCode</code> is null runs {@link #wasSuccessful()} otherwise uses the params
+   * to call {@link #hasSingleApiError(ErrorCode, Class, String...)}
+   */
+  public <T extends APIException> DataApiResponseValidator wasSuccessfulOrError(
+      ErrorCode<T> errorCode, Class<T> errorClass, String... messageSnippet) {
+    if (errorCode == null) {
+      return wasSuccessful();
+    } else {
+      return hasSingleApiError(errorCode, errorClass, messageSnippet);
+    }
+  }
+
+  /**
+   * Checks the structure of the response was as expected whe the command is successful.
    *
    * <p><b>NOTE:</b> This does not check the data in the response, i.e. does not check the doc ID in
    * an insert result, you need to do that.

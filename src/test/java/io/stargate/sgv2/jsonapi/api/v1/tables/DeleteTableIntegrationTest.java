@@ -357,7 +357,7 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .templated()
         .delete(toCommandName(statementType), filterJSON)
-        .wasSuccessful()
+        .wasSuccessfulOrError(expectedCode, FilterException.class)
         .hasNoWarnings();
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
@@ -426,8 +426,9 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
     assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .templated()
         .delete(toCommandName(statementType), filterJSON)
-        .wasSuccessful()
+        .wasSuccessfulOrError(expectedCode, FilterException.class)
         .hasNoWarnings();
+
     checkDataHasBeenDeleted(statementType, expectedCode, shouldDeleteAmount);
   }
 
@@ -541,13 +542,14 @@ public class DeleteTableIntegrationTest extends AbstractTableIntegrationTestBase
   // DeleteMany should delete bow_1 and row_2
   private void checkDataHasBeenDeleted(
       WhereCQLClauseAnalyzer.StatementType statementType,
-      FilterException.Code expectedCode,
+      FilterException.Code expectedCodeFromDelete,
       int shouldDeleteAmount) {
 
     // If there is an exception expected, won't execute DeleteCommand, thus no need to check.
-    if (expectedCode != null || shouldDeleteAmount == 0) {
+    if (expectedCodeFromDelete != null || shouldDeleteAmount == 0) {
       return;
     }
+
     // Use the SAI indexed column to get all rows
     final String findAllByIndexedColumn =
         """
