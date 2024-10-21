@@ -9,6 +9,7 @@ import com.datastax.oss.driver.api.core.type.ListType;
 import com.datastax.oss.driver.api.core.type.SetType;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
@@ -125,7 +126,9 @@ public class JSONCodecRegistry {
         if (value instanceof Collection<?>) {
           return VectorCodecs.arrayToCQLFloatVectorCodec(vt);
         }
-        // !!! TODO: different Codec for Base64 encoded (String) Float vectors
+        if (value instanceof EJSONWrapper) {
+          return VectorCodecs.binaryToCQLFloatVectorCodec(vt);
+        }
 
         throw new ToCQLCodecException(value, columnType, "no codec matching value type");
       }

@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import java.util.ArrayList;
@@ -17,7 +18,8 @@ import java.util.List;
  * JSONCodecs} to keep the code somewhat modular.
  */
 public abstract class VectorCodecs {
-  private static final GenericType<List<Float>> FLOAT_LIST = GenericType.listOf(Float.class);
+  private static final GenericType<List<Float>> FLOAT_LIST_TYPE = GenericType.listOf(Float.class);
+  private static final GenericType<EJSONWrapper> EJSON_TYPE = GenericType.of(EJSONWrapper.class);
 
   public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> arrayToCQLFloatVectorCodec(
       VectorType vectorType) {
@@ -26,9 +28,21 @@ public abstract class VectorCodecs {
     // (unless we want to rely on DB validating dimension as part of write and catch failure)
     return (JSONCodec<JavaT, CqlT>)
         new JSONCodec<>(
-            FLOAT_LIST,
+            FLOAT_LIST_TYPE,
             vectorType,
             (cqlType, value) -> toCQLFloatVector(vectorType, value),
+            // This codec only for to-cql case, not to-json, so we don't need this
+            null);
+  }
+
+  public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> binaryToCQLFloatVectorCodec(
+      VectorType vectorType) {
+    return (JSONCodec<JavaT, CqlT>)
+        new JSONCodec<>(
+            EJSON_TYPE,
+            vectorType,
+            null,
+            // (cqlType, value) -> toCQLFloatVector(vectorType, value),
             // This codec only for to-cql case, not to-json, so we don't need this
             null);
   }
@@ -36,7 +50,7 @@ public abstract class VectorCodecs {
   public static <JavaT, CqlT> JSONCodec<JavaT, CqlT> toJSONFloatVectorCodec(VectorType vectorType) {
     return (JSONCodec<JavaT, CqlT>)
         new JSONCodec<>(
-            FLOAT_LIST,
+            FLOAT_LIST_TYPE,
             vectorType,
             // This codec only for to-json case, not to-cql, so we don't need this
             null,
