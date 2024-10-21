@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.is;
@@ -64,10 +65,10 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
 
       // assert state after update
       json =
@@ -86,6 +87,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
 
@@ -127,10 +129,10 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
 
       // assert state after update
       json =
@@ -149,6 +151,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
 
@@ -181,10 +184,10 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(0))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(0));
 
       // assert state after update
       json =
@@ -203,6 +206,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(document));
     }
 
@@ -255,10 +259,10 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
 
       // assert state after update
       json =
@@ -277,6 +281,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
 
@@ -309,11 +314,11 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expected))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
-          .body("status.upsertedId", is("doc2"))
-          .body("errors", is(nullValue()));
+          .body("status.upsertedId", is("doc2"));
 
       // assert state after update
       json =
@@ -332,6 +337,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
 
@@ -363,7 +369,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindAndSuccess())
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
           .body("data.document._id", is(newId))
@@ -387,6 +393,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]._id", is(newId));
     }
 
@@ -410,13 +417,13 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document._id", is(notNullValue()))
           .body("data.document._id", any(String.class))
           .body("status.matchedCount", is(0))
           .body("status.modifiedCount", is(0))
           .body("status.upsertedId", is(notNullValue()))
-          .body("status.upsertedId", any(String.class))
-          .body("errors", is(nullValue()));
+          .body("status.upsertedId", any(String.class));
 
       // assert state after update
       json =
@@ -435,6 +442,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]._id", is(notNullValue()))
           .body("data.documents[0]._id", any(String.class));
     }
@@ -468,8 +476,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
-          .body("status", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].errorCode", is("DOCUMENT_REPLACE_DIFFERENT_DOCID"))
           .body(
               "errors[0].message",
@@ -513,10 +520,10 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(document))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
 
       // assert state after update
       json =
@@ -535,6 +542,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expected));
     }
   }
@@ -578,10 +586,10 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expectedAfterProjection))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
 
       // assert state after update
       String expectedAfterReplace =
@@ -607,6 +615,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expectedAfterReplace));
     }
 
@@ -646,10 +655,10 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindAndSuccess())
           .body("data.document", jsonEquals(expectedWithProjectionBefore))
           .body("status.matchedCount", is(1))
-          .body("status.modifiedCount", is(1))
-          .body("errors", is(nullValue()));
+          .body("status.modifiedCount", is(1));
 
       // assert state after update
       String expectedAfterReplace =
@@ -675,6 +684,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expectedAfterReplace));
     }
 
@@ -709,7 +719,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
               .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
               .then()
               .statusCode(200)
-              .body("errors", is(nullValue()))
+              .body("$", responseIsFindAndSuccess())
               .body("status.matchedCount", is(0))
               .body("status.modifiedCount", is(0))
               // Does upsert
@@ -737,6 +747,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents[0]", jsonEquals(expectedAfterReplace));
     }
   }
@@ -783,8 +794,7 @@ public class FindOneAndReplaceIntegrationTest extends AbstractCollectionIntegrat
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data", is(nullValue()))
-          .body("status", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].errorCode", is("SHRED_DOC_LIMIT_VIOLATION"))
           .body(
               "errors[0].message",

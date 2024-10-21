@@ -1,17 +1,12 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.containsString;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.api.v1.KeyspaceResource;
-import io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
@@ -91,7 +86,7 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
                         }
                     }
                     """;
-    createTable(tableData);
+    assertNamespaceCommand(keyspaceName).postCreateTable(tableData).wasSuccessful();
     String table2 =
         """
                     {
@@ -107,7 +102,7 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
                         }
                     }
                 """;
-    createTable(table2);
+    assertNamespaceCommand(keyspaceName).postCreateTable(table2).wasSuccessful();
   }
 
   @Nested
@@ -118,12 +113,10 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
     @Test
     @Order(1)
     public void listTablesOnly() {
-      String listTablesOnly =
-          """
-                    {}
-                    """;
-      listTables(listTablesOnly)
-          .hasNoErrors()
+
+      assertNamespaceCommand(keyspaceName)
+          .postListTables("{}")
+          .wasSuccessful()
           // Validate that status.tables is not null
           .body("status.tables", notNullValue())
 
@@ -138,16 +131,12 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
     @Test
     @Order(2)
     public void listTablesWithSchema() {
-      String listTablesWithSchema =
-          """
-              {
-                "options" : {
-                  "explain" : true
-                }
-              }
-              """;
-      listTables(listTablesWithSchema)
-          .hasNoErrors()
+
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .listTables(true)
+          .wasSuccessful()
+
           // Validate that status.tables is not null and contains one table: allTypesTable
           .body("status.tables", notNullValue())
           .body("status.tables", hasSize(2))
@@ -211,30 +200,16 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
     @Test
     @Order(3)
     public void ignoreCollections() {
-      String simpleCollectionToIgnore =
-          """
-                {
-                  "createCollection": {
-                    "name": "simple_collection_to_ignore"
-                  }
-                }
-                """;
 
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(simpleCollectionToIgnore)
-          .when()
-          .post(KeyspaceResource.BASE_PATH, keyspaceName)
-          .then()
-          .statusCode(200);
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .createCollection("simple_collection_to_ignore")
+          .wasSuccessful();
 
-      String listTablesOnly =
-          """
-                        {}
-                        """;
-      listTables(listTablesOnly)
-          .hasNoErrors()
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .listTables(false)
+          .wasSuccessful()
           // Validate that status.tables is not null
           .body("status.tables", notNullValue())
 
@@ -245,16 +220,10 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
           .body("status.tables[0]", equalTo("allTypesTable"))
           .body("status.tables[1]", equalTo("person"));
 
-      String listTablesWithSchema =
-          """
-                  {
-                    "options" : {
-                      "explain" : true
-                    }
-                  }
-                  """;
-      listTables(listTablesWithSchema)
-          .hasNoErrors()
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .listTables(true)
+          .wasSuccessful()
           // Validate that status.tables is not null and contains one table: allTypesTable
           .body("status.tables", notNullValue())
           .body("status.tables", hasSize(2))
@@ -267,12 +236,10 @@ public class ListTablesIntegrationTest extends AbstractTableIntegrationTestBase 
     public void testInvalidKeyspace() {
       final SchemaException schemaException =
           SchemaException.Code.INVALID_KEYSPACE.get(Map.of("keyspace", "invalid_keyspace"));
-      DataApiCommandSenders.assertNamespaceCommand("invalid_keyspace")
+
+      assertNamespaceCommand("invalid_keyspace")
           .postListTables("{}")
-          .body("errors", notNullValue())
-          .body("errors", hasSize(1))
-          .body("errors[0].errorCode", is(schemaException.code))
-          .body("errors[0].message", containsString(schemaException.body));
+          .hasSingleApiException(schemaException);
     }
   }
 }
