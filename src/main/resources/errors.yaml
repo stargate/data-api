@@ -393,7 +393,7 @@ request-errors:
     code: MAP_TYPE_INCORRECT_DEFINITION
     title: Map column data type definition provided in the request is incorrect.
     body: |-
-      Map column data type definition provided in the request is incorrect.
+      Map column data type definition provided in the request is incorrect: ${reason}
       Map type should also be provided with `keyType` and `valueType`. `keyType` and `valueType` should be a primitive data type.
       Example map type definition:
         "column_name": {

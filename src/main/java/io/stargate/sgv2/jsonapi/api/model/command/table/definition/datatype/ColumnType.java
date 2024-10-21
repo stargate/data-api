@@ -59,15 +59,23 @@ public interface ColumnType {
       case "map":
         {
           if (keyType == null || valueType == null) {
-            throw SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get();
+            throw SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get(
+                Map.of("reason", "`keyType` or `valueType` is null"));
           }
+          final ColumnType keyColumnType, valueColumnType;
           try {
-            return new ComplexTypes.MapType(
-                fromString(keyType, null, null, dimension, vectorConfig),
-                fromString(valueType, null, null, dimension, vectorConfig));
+            keyColumnType = fromString(keyType, null, null, dimension, vectorConfig);
+            valueColumnType = fromString(valueType, null, null, dimension, vectorConfig);
           } catch (SchemaException se) {
-            throw SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get();
+            throw SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get(
+                Map.of("reason", "Data types used for `keyType` or `valueType` are not supported"));
           }
+          if (!(PrimitiveTypes.TEXT.equals(keyColumnType)
+              || PrimitiveTypes.ASCII.equals(keyColumnType))) {
+            throw SchemaException.Code.MAP_TYPE_INCORRECT_DEFINITION.get(
+                Map.of("reason", "`keyType` must be `text` or `ascii`"));
+          }
+          return new ComplexTypes.MapType(keyColumnType, valueColumnType);
         }
       case "list":
         {

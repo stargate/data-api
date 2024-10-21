@@ -137,7 +137,8 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
       createTableWithOptions =
           createTableWithOptions.withClusteringOrder(
-              clusteringKey.column(), getCqlClusterOrder(clusteringKey.order()));
+              CqlIdentifier.fromInternal(clusteringKey.column()),
+              getCqlClusterOrder(clusteringKey.order()));
     }
     return createTableWithOptions;
   }
