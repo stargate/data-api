@@ -365,6 +365,11 @@ public class FindOneWithProjectionIntegrationTest extends AbstractCollectionInte
                             }
                             """));
     }
+
+    @AfterEach
+    public void cleanUpData() {
+      deleteAllDocuments();
+    }
   }
 
   @Nested
