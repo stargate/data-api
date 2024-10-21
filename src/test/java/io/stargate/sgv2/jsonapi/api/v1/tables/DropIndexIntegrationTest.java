@@ -48,7 +48,7 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
       String dropIndexJson =
           """
         {
-            "indexName": "age_idx"
+            "name": "age_idx"
         }
         """;
       dropIndex(dropIndexJson);
@@ -59,7 +59,7 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
       String dropIndexJson =
           """
         {
-            "indexName": "name_idx",
+            "name": "name_idx",
             "options" : {
                 "ifExists": true
             }

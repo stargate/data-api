@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
@@ -20,7 +20,7 @@ public record DropIndexCommand(
         String name,
     @Nullable @Schema(description = "Dropping index command option.", type = SchemaType.OBJECT)
         Options options)
-    implements NoOptionsCommand, CollectionCommand {
+    implements NoOptionsCommand, KeyspaceCommand {
 
   public record Options(
       @Schema(

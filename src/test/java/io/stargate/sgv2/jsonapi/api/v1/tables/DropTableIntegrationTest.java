@@ -51,7 +51,7 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
                         "name" : "%s"
                     }
                     """;
-      dropIndex(dropTableJson.formatted(simpleTableName));
+      dropTable(dropTableJson.formatted(simpleTableName));
     }
 
     @Test
@@ -67,7 +67,7 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
                     """;
 
       for (int i = 0; i < 2; i++) {
-        dropIndex(dropTableJson.formatted(duplicateTableName));
+        dropTable(dropTableJson.formatted(duplicateTableName));
       }
     }
   }
