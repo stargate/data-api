@@ -352,13 +352,7 @@ public class JSONCodecRegistryTest {
                 numberLiteral(new BigDecimal(0.25))),
             CqlVectorUtil.floatToCqlVector(rawFloats)));
     // Second: Base64-encoded representation
-    /*
-    Arguments.of(
-            vector3Type,
-            "AQAAAAAAAP8AAAA=",
-            CqlVectorUtil.floatToCqlVector(rawFloats))
-            );
-         */
+    // Arguments.of(vector3Type, "AQAAAAAAAP8AAAA=", CqlVectorUtil.floatToCqlVector(rawFloats)));
   }
 
   private static JsonLiteral<Number> numberLiteral(Number value) {
@@ -818,7 +812,7 @@ public class JSONCodecRegistryTest {
         DataTypes.BLOB,
         new EJSONWrapper(
             EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.textNode("bad-base64!")),
-        "Root cause: Invalid content in EJSON $binary wrapper");
+        "Root cause: Unsupported JSON value in EJSON $binary wrapper: String not valid Base64-encoded");
 
     assertToCQLFail(
         DataTypes.BLOB,
