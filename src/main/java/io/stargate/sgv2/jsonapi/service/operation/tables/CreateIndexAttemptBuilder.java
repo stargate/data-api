@@ -49,7 +49,7 @@ public class CreateIndexAttemptBuilder {
     // Validate required fields
     if (schemaObject == null || columnName == null || dataType == null || indexName == null) {
       throw new IllegalStateException(
-          "SchemaObject, columnName, dataType, and indexName must not be null");
+          "Not able to resolve to the required table metadata for creating index");
     }
 
     // Create and return the CreateIndexAttempt object

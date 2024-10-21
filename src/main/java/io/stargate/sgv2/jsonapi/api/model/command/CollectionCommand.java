@@ -23,6 +23,5 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
   // We have only collection resource that is used for api tables
   @JsonSubTypes.Type(value = CreateIndexCommand.class),
   @JsonSubTypes.Type(value = CreateVectorIndexCommand.class),
-  @JsonSubTypes.Type(value = DropIndexCommand.class),
 })
 public interface CollectionCommand extends Command {}

@@ -49,6 +49,20 @@ public class AbstractTableIntegrationTestBase extends AbstractKeyspaceIntegratio
         .body("status.tables", notNullValue());
   }
 
+  protected DataApiResponseValidator dropTable(String tableDefAsJSON) {
+    return DataApiCommandSenders.assertNamespaceCommand(keyspaceName)
+        .postDropTable(tableDefAsJSON)
+        .hasNoErrors()
+        .body("status.ok", is(1));
+  }
+
+  protected DataApiResponseValidator dropIndex(String tableDefAsJSON) {
+    return DataApiCommandSenders.assertNamespaceCommand(keyspaceName)
+        .postDropIndex(tableDefAsJSON)
+        .hasNoErrors()
+        .body("status.ok", is(1));
+  }
+
   protected DataApiResponseValidator createTableErrorValidation(
       String tableDefAsJSON, String errorCode, String message) {
     return DataApiCommandSenders.assertNamespaceCommand(keyspaceName)

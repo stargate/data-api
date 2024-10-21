@@ -17,6 +17,14 @@ public class DataApiKeyspaceCommandSender
     return postCommand("createTable", tableDefAsJSON);
   }
 
+  public DataApiResponseValidator postDropTable(String tableDefAsJSON) {
+    return postCommand("dropTable", tableDefAsJSON);
+  }
+
+  public DataApiResponseValidator postDropIndex(String tableDefAsJSON) {
+    return postCommand("dropIndex", tableDefAsJSON);
+  }
+
   public DataApiResponseValidator postListTables(String listDefinition) {
     return postCommand("listTables", listDefinition);
   }

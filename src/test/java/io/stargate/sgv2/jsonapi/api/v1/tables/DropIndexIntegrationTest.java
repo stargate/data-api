@@ -1,21 +1,16 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.is;
-
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-class DropTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
+class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
-  String simpleTableName = "simpleTableForDropIndexTest";
+  String simpleTableName = "simple_table_drop_index_test";
 
   @BeforeAll
   public final void createSimpleTable() {
@@ -41,53 +36,39 @@ class DropTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                         """
             .formatted(simpleTableName);
     createTable(tableJson);
+    createIndex(simpleTableName, "age", "age_idx");
+    createIndex(simpleTableName, "name", "name_idx");
   }
 
   @Nested
   @Order(1)
   class DropIndexSuccess {
-
     @Test
-    @Order(1)
-    public void dropIndex() {
-      String createIndexJson =
-          """
-          {
-              "createIndex": {
-                  "name": "age_idx",
-                  "definition": {
-                     "column": "age"
-                  }
-              }
-          }
-          """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(createIndexJson)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, simpleTableName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
-
+    public void dropIndexWithoutOption() {
       String dropIndexJson =
           """
-                                {
-                                    "dropIndex": {
-                                        "indexName": "age_idx"
-                                    }
-                                }
-                                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(dropIndexJson)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, simpleTableName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
+        {
+            "indexName": "age_idx"
+        }
+        """;
+      dropIndex(dropIndexJson);
+    }
+
+    @Test
+    public void dropIndexWithOption() {
+      String dropIndexJson =
+          """
+        {
+            "indexName": "name_idx",
+            "options" : {
+                "ifExists": true
+            }
+        }
+        """;
+
+      for (int i = 0; i < 2; i++) {
+        dropIndex(dropIndexJson);
+      }
     }
   }
 }
