@@ -331,6 +331,11 @@ public record JSONCodec<JavaT, CqlT>(
 
     static ByteBuffer byteBufferFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
         throws ToCQLCodecException {
+      return ByteBuffer.wrap(byteArrayFromEJSON(targetCQLType, wrapper));
+    }
+
+    static byte[] byteArrayFromEJSON(DataType targetCQLType, EJSONWrapper wrapper)
+        throws ToCQLCodecException {
       if (wrapper.type() != EJSONWrapper.EJSONType.BINARY) {
         throw new ToCQLCodecException(
             wrapper,
@@ -368,7 +373,7 @@ public record JSONCodec<JavaT, CqlT>(
             "Invalid content in EJSON $binary wrapper: not valid Base64-encoded String; problem: %s"
                 .formatted(e.getMessage()));
       }
-      return ByteBuffer.wrap(binaryPayload);
+      return binaryPayload;
     }
 
     static InetAddress inetAddressFromString(String value) throws IllegalArgumentException {

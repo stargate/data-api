@@ -18,6 +18,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
 import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -338,6 +339,7 @@ public class JSONCodecRegistryTest {
 
   private static Stream<Arguments> validCodecToCQLTestCasesVectors() {
     float[] rawFloats = new float[] {0.0f, -0.5f, 0.25f};
+    byte[] packedFlots = CqlVectorUtil.floatsToBytes(rawFloats);
     DataType vector3Type = DataTypes.vectorOf(DataTypes.FLOAT, 3);
     // Arguments: (CQL-type, from-caller-json, bound-by-driver-for-cql)
     return Stream.of(
@@ -350,9 +352,10 @@ public class JSONCodecRegistryTest {
                 numberLiteral(0L),
                 numberLiteral(new BigDecimal(-0.5)),
                 numberLiteral(new BigDecimal(0.25))),
-            CqlVectorUtil.floatToCqlVector(rawFloats)));
-    // Second: Base64-encoded representation
-    // Arguments.of(vector3Type, "AQAAAAAAAP8AAAA=", CqlVectorUtil.floatToCqlVector(rawFloats)));
+            CqlVectorUtil.floatsToCqlVector(rawFloats)),
+        // Second: Base64-encoded representation (Base64 of 4-byte "packed" float values)
+        Arguments.of(
+            vector3Type, binaryWrapper(packedFlots), CqlVectorUtil.floatsToCqlVector(rawFloats)));
   }
 
   private static JsonLiteral<Number> numberLiteral(Number value) {
@@ -365,6 +368,10 @@ public class JSONCodecRegistryTest {
 
   private static JsonLiteral<String> nullLiteral() {
     return new JsonLiteral<>(null, JsonType.NULL);
+  }
+
+  private static EJSONWrapper binaryWrapper(byte[] binary) {
+    return binaryWrapper(Base64Util.encodeAsMimeBase64(binary));
   }
 
   private static EJSONWrapper binaryWrapper(String base64Encoded) {

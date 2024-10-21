@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.EJSONWrapper;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonLiteral;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,7 +31,7 @@ public abstract class VectorCodecs {
         new JSONCodec<>(
             FLOAT_LIST_TYPE,
             vectorType,
-            (cqlType, value) -> toCQLFloatVector(vectorType, value),
+            (cqlType, value) -> listToCQLFloatVector(vectorType, value),
             // This codec only for to-cql case, not to-json, so we don't need this
             null);
   }
@@ -41,9 +42,7 @@ public abstract class VectorCodecs {
         new JSONCodec<>(
             EJSON_TYPE,
             vectorType,
-            null,
-            // (cqlType, value) -> toCQLFloatVector(vectorType, value),
-            // This codec only for to-cql case, not to-json, so we don't need this
+            (cqlType, value) -> binaryToCQLFloatVector(vectorType, value),
             null);
   }
 
@@ -57,21 +56,13 @@ public abstract class VectorCodecs {
             (objectMapper, cqlType, value) -> toJsonNode(objectMapper, (CqlVector<Number>) value));
   }
 
-  static CqlVector<Float> toCQLFloatVector(VectorType vectorType, Collection<?> listValue)
+  /** Method for actual conversion from JSON Number Array into CQL Float Vector. */
+  static CqlVector<Float> listToCQLFloatVector(VectorType vectorType, Collection<?> listValue)
       throws ToCQLCodecException {
     Collection<JsonLiteral<?>> vectorIn = (Collection<JsonLiteral<?>>) listValue;
-    final int expLen = vectorType.getDimensions();
-    if (expLen != vectorIn.size()) {
-      throw new ToCQLCodecException(
-          vectorIn,
-          vectorType,
-          "expected vector of length "
-              + expLen
-              + ", got one with "
-              + vectorIn.size()
-              + " elements");
-    }
-    List<Float> floats = new ArrayList<>(expLen);
+    validateVectorLength(vectorType, vectorIn, vectorIn.size());
+
+    List<Float> floats = new ArrayList<>(vectorIn.size());
     for (JsonLiteral<?> literalElement : vectorIn) {
       Object element = literalElement.value();
       if (element instanceof Number num) {
@@ -83,9 +74,40 @@ public abstract class VectorCodecs {
           vectorType,
           String.format(
               "expected JSON Number value as Vector element at position #%d (of %d), instead have: %s",
-              floats.size(), expLen, literalElement));
+              floats.size(), vectorIn.size(), literalElement));
     }
     return CqlVector.newInstance(floats);
+  }
+
+  /**
+   * Method for actual conversion from EJSON-wrapped Base64-encoded String into CQL Float Vector.
+   */
+  static CqlVector<Float> binaryToCQLFloatVector(VectorType vectorType, EJSONWrapper binaryValue)
+      throws ToCQLCodecException {
+    byte[] binary = JSONCodec.ToCQL.byteArrayFromEJSON(vectorType, binaryValue);
+    CqlVector<Float> vector;
+    try {
+      vector = CqlVectorUtil.bytesToCqlVector(binary);
+    } catch (IllegalArgumentException e) {
+      throw new ToCQLCodecException(
+          binaryValue,
+          vectorType,
+          String.format("failed to decode Base64-encoded packed Vector value: %s", e.getMessage()));
+    }
+    validateVectorLength(vectorType, binaryValue, vector.size());
+    return vector;
+  }
+
+  private static void validateVectorLength(VectorType vectorType, Object value, int actualLen)
+      throws ToCQLCodecException {
+    final int expLen = vectorType.getDimensions();
+    if (actualLen != expLen) {
+      throw new ToCQLCodecException(
+          value,
+          vectorType,
+          String.format(
+              "expected vector of length %d, got one with %d elements", expLen, actualLen));
+    }
   }
 
   static JsonNode toJsonNode(ObjectMapper objectMapper, CqlVector<Number> vectorValue) {

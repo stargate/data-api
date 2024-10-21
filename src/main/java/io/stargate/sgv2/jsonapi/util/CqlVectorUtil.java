@@ -9,9 +9,13 @@ import java.util.*;
  * {@code float}-based vector types.
  */
 public interface CqlVectorUtil {
-  static float[] bytesToFloats(byte[] bytes) throws IllegalArgumentException {
+  static CqlVector<Float> bytesToCqlVector(byte[] packedBytes) {
+    return floatsToCqlVector(bytesToFloats(packedBytes));
+  }
+
+  static float[] bytesToFloats(byte[] packedBytes) throws IllegalArgumentException {
     final int bytesPerFloat = Float.BYTES;
-    final int inputLen = bytes.length;
+    final int inputLen = packedBytes.length;
 
     if ((inputLen & (bytesPerFloat - 1)) != 0) {
       throw new IllegalArgumentException(
@@ -22,16 +26,16 @@ public interface CqlVectorUtil {
     float[] floats = new float[inputLen / bytesPerFloat];
     for (int in = 0, out = 0; in < inputLen; in += bytesPerFloat) {
       int intBits =
-          (bytes[in] & 0xFF) << 24
-              | (bytes[in + 1] & 0xFF) << 16
-              | (bytes[in + 2] & 0xFF) << 8
-              | (bytes[in + 3] & 0xFF);
+          (packedBytes[in] & 0xFF) << 24
+              | (packedBytes[in + 1] & 0xFF) << 16
+              | (packedBytes[in + 2] & 0xFF) << 8
+              | (packedBytes[in + 3] & 0xFF);
       floats[out++] = Float.intBitsToFloat(intBits);
     }
     return floats;
   }
 
-  static CqlVector<Float> floatToCqlVector(float[] elements) {
+  static CqlVector<Float> floatsToCqlVector(float[] elements) {
     List<Float> floats = new ArrayList<>(elements.length);
     for (float element : elements) {
       floats.add(element);
