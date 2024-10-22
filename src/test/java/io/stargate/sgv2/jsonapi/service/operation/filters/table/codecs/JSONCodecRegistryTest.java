@@ -343,7 +343,7 @@ public class JSONCodecRegistryTest {
     byte[] packedFloats3 = CqlVectorUtil.floatsToBytes(rawFloats3);
 
     DataType vector4Type = DataTypes.vectorOf(DataTypes.FLOAT, 4);
-    float[] rawFloats4 = new float[] { 1.0f, 0.0f, 100.75f, -1.0f};
+    float[] rawFloats4 = new float[] {1.0f, 0.0f, 100.75f, -1.0f};
     byte[] packedFloats4 = CqlVectorUtil.floatsToBytes(rawFloats4);
 
     // Arguments: (CQL-type, from-caller-json, bound-by-driver-for-cql)
@@ -362,8 +362,9 @@ public class JSONCodecRegistryTest {
         Arguments.of(
             vector3Type, binaryWrapper(packedFloats3), CqlVectorUtil.floatsToCqlVector(rawFloats3)),
         Arguments.of(
-            vector4Type, binaryWrapper(packedFloats4), CqlVectorUtil.floatsToCqlVector(rawFloats4)));
-
+            vector4Type,
+            binaryWrapper(packedFloats4),
+            CqlVectorUtil.floatsToCqlVector(rawFloats4)));
   }
 
   private static JsonLiteral<Number> numberLiteral(Number value) {
@@ -903,6 +904,25 @@ public class JSONCodecRegistryTest {
     List<JsonLiteral<?>> valueToTest = List.of(numberLiteral(1.0), numberLiteral(-0.5));
     assertToCQLFail(
         cqlTypeToTest, valueToTest, "expected vector of length 1, got one with 2 elements");
+  }
+
+  @Test
+  public void invalidVectorBadBase64Fail() {
+    DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 3);
+    EJSONWrapper valueToTest = binaryWrapper("not-base-64");
+    assertToCQLFail(
+        cqlTypeToTest,
+        valueToTest,
+        "String not valid Base64-encoded content, problem: Illegal character");
+  }
+
+  @Test
+  public void invalidVectorBase64WrongLength() {
+    DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 3);
+    byte[] rawBase64 = CqlVectorUtil.floatsToBytes(new float[] {-0.5f, 0.25f});
+    EJSONWrapper valueToTest = binaryWrapper(rawBase64);
+    assertToCQLFail(
+        cqlTypeToTest, valueToTest, "expected vector of length 3, got one with 2 elements");
   }
 
   private void assertToCQLFail(DataType cqlType, Object valueToTest, String... expectedMessages) {
