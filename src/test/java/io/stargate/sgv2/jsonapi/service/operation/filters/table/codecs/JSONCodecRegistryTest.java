@@ -18,6 +18,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.JsonType;
 import io.stargate.sgv2.jsonapi.exception.catchable.MissingJSONCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.ToCQLCodecException;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnknownColumnException;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -336,18 +338,33 @@ public class JSONCodecRegistryTest {
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesVectors() {
+    DataType vector3Type = DataTypes.vectorOf(DataTypes.FLOAT, 3);
+    float[] rawFloats3 = new float[] {0.0f, -0.5f, 0.25f};
+    byte[] packedFloats3 = CqlVectorUtil.floatsToBytes(rawFloats3);
+
+    DataType vector4Type = DataTypes.vectorOf(DataTypes.FLOAT, 4);
+    float[] rawFloats4 = new float[] {1.0f, 0.0f, 100.75f, -1.0f};
+    byte[] packedFloats4 = CqlVectorUtil.floatsToBytes(rawFloats4);
+
     // Arguments: (CQL-type, from-caller-json, bound-by-driver-for-cql)
     return Stream.of(
-        // // Lists:
+        // First: Array of Numbers representation
         Arguments.of(
-            DataTypes.vectorOf(DataTypes.FLOAT, 3),
+            vector3Type,
             // Important: all incoming JSON numbers are represented as Long, BigInteger,
             // or BigDecimal. All legal as source for Float.
             Arrays.asList(
                 numberLiteral(0L),
                 numberLiteral(new BigDecimal(-0.5)),
                 numberLiteral(new BigDecimal(0.25))),
-            CqlVector.newInstance(0.0f, -0.5f, 0.25f)));
+            CqlVectorUtil.floatsToCqlVector(rawFloats3)),
+        // Second: Base64-encoded representation (Base64 of 4-byte "packed" float values)
+        Arguments.of(
+            vector3Type, binaryWrapper(packedFloats3), CqlVectorUtil.floatsToCqlVector(rawFloats3)),
+        Arguments.of(
+            vector4Type,
+            binaryWrapper(packedFloats4),
+            CqlVectorUtil.floatsToCqlVector(rawFloats4)));
   }
 
   private static JsonLiteral<Number> numberLiteral(Number value) {
@@ -360,6 +377,10 @@ public class JSONCodecRegistryTest {
 
   private static JsonLiteral<String> nullLiteral() {
     return new JsonLiteral<>(null, JsonType.NULL);
+  }
+
+  private static EJSONWrapper binaryWrapper(byte[] binary) {
+    return binaryWrapper(Base64Util.encodeAsMimeBase64(binary));
   }
 
   private static EJSONWrapper binaryWrapper(String base64Encoded) {
@@ -807,7 +828,7 @@ public class JSONCodecRegistryTest {
         DataTypes.BLOB,
         new EJSONWrapper(
             EJSONWrapper.EJSONType.BINARY, JsonNodeFactory.instance.textNode("bad-base64!")),
-        "Root cause: Invalid content in EJSON $binary wrapper");
+        "Root cause: Unsupported JSON value in EJSON $binary wrapper: String not valid Base64-encoded");
 
     assertToCQLFail(
         DataTypes.BLOB,
@@ -883,6 +904,25 @@ public class JSONCodecRegistryTest {
     List<JsonLiteral<?>> valueToTest = List.of(numberLiteral(1.0), numberLiteral(-0.5));
     assertToCQLFail(
         cqlTypeToTest, valueToTest, "expected vector of length 1, got one with 2 elements");
+  }
+
+  @Test
+  public void invalidVectorBadBase64Fail() {
+    DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 3);
+    EJSONWrapper valueToTest = binaryWrapper("not-base-64");
+    assertToCQLFail(
+        cqlTypeToTest,
+        valueToTest,
+        "String not valid Base64-encoded content, problem: Illegal character");
+  }
+
+  @Test
+  public void invalidVectorBase64WrongLength() {
+    DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 3);
+    byte[] rawBase64 = CqlVectorUtil.floatsToBytes(new float[] {-0.5f, 0.25f});
+    EJSONWrapper valueToTest = binaryWrapper(rawBase64);
+    assertToCQLFail(
+        cqlTypeToTest, valueToTest, "expected vector of length 3, got one with 2 elements");
   }
 
   private void assertToCQLFail(DataType cqlType, Object valueToTest, String... expectedMessages) {

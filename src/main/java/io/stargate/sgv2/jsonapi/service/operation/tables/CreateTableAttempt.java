@@ -4,26 +4,21 @@ import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createTable
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.data.ByteUtils;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ComplexApiDataType;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
 
@@ -74,15 +69,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     // Add all primary keys and colunms
     CreateTable createTable = addColumnsAndKeys(create);
 
-    // Add customProperties which has table properties for vectorize
-    // Convert value to hex string using the ByteUtils.toHexString
-    // This needs to use `createTable.withExtensions()` method in driver when PR
-    // (https://github.com/apache/cassandra-java-driver/pull/1964) is released
-    final Map<String, String> extensions =
-        customProperties.entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey, e -> ByteUtils.toHexString(e.getValue().getBytes())));
+    final Map<String, String> extensions = encodeAsHexValue(customProperties);
 
     CreateTableWithOptions createWithOptions = createTable.withOption("extensions", extensions);
 
@@ -122,16 +109,6 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
       createTable = createTable.withColumn(cqlIdentifierFromUserInput(column.getKey()), dataType);
     }
     return createTable;
-  }
-
-  private DataType getCqlDataType(ApiDataType apiDataType) {
-    if (apiDataType instanceof ComplexApiDataType) {
-      return ((ComplexApiDataType) apiDataType).getCqlType();
-    } else {
-      return ApiDataTypeDefs.from(apiDataType)
-          .orElseThrow(SchemaException.Code.COLUMN_TYPE_UNSUPPORTED::get)
-          .getCqlType();
-    }
   }
 
   private CreateTableWithOptions addClusteringOrder(CreateTableWithOptions createTableWithOptions) {
