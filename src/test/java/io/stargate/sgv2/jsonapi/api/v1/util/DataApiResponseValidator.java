@@ -30,7 +30,8 @@ public class DataApiResponseValidator {
           case FIND_ONE, FIND -> responseIsFindSuccessOptionalStatus();
           case INSERT_ONE, INSERT_MANY, UPDATE_ONE, UPDATE_MANY, DELETE_ONE, DELETE_MANY ->
               responseIsWriteSuccess();
-          case CREATE_TABLE,
+          case ALTER_TABLE,
+                  CREATE_TABLE,
                   DROP_TABLE,
                   CREATE_INDEX,
                   DROP_INDEX,
@@ -91,7 +92,7 @@ public class DataApiResponseValidator {
       case DELETE_ONE, DELETE_MANY -> {
         return hasNoErrors();
       }
-      case CREATE_TABLE, DROP_TABLE, CREATE_INDEX, DROP_INDEX, CREATE_VECTOR_INDEX -> {
+      case ALTER_TABLE, CREATE_TABLE, DROP_TABLE, CREATE_INDEX, DROP_INDEX, CREATE_VECTOR_INDEX -> {
         return hasNoErrors().hasStatusOK();
       }
       case LIST_TABLES -> {
