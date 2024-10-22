@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
+import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
@@ -93,12 +94,9 @@ public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
           };
 
       var resultBuilder =
-          new CommandResultBuilder(
-              singleResponse
-                  ? CommandResultBuilder.ResponseType.SINGLE_DOCUMENT
-                  : CommandResultBuilder.ResponseType.MULTI_DOCUMENT,
-              useErrorObjectV2,
-              debugMode);
+          singleResponse
+              ? CommandResult.singleDocumentBuilder(useErrorObjectV2, debugMode)
+              : CommandResult.multiDocumentBuilder(useErrorObjectV2, debugMode);
 
       return new ReadAttemptPage<>(
           attempts, resultBuilder, pagingState, includeSortVector, sortVector);

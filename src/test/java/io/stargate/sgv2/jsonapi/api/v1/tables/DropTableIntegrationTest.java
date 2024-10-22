@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -36,8 +38,12 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                 }
                             """;
 
-    createTable(tableJson.formatted(simpleTableName));
-    createTable(tableJson.formatted(duplicateTableName));
+    assertNamespaceCommand(keyspaceName)
+        .postCreateTable(tableJson.formatted(simpleTableName))
+        .wasSuccessful();
+    assertNamespaceCommand(keyspaceName)
+        .postCreateTable(tableJson.formatted(duplicateTableName))
+        .wasSuccessful();
   }
 
   @Nested
@@ -51,7 +57,7 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
                         "name" : "%s"
                     }
                     """;
-      dropTable(dropTableJson.formatted(simpleTableName));
+      assertNamespaceCommand(keyspaceName).postDropTable(dropTableJson.formatted(simpleTableName));
     }
 
     @Test
@@ -67,7 +73,8 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
                     """;
 
       for (int i = 0; i < 2; i++) {
-        dropTable(dropTableJson.formatted(duplicateTableName));
+        assertNamespaceCommand(keyspaceName)
+            .postDropTable(dropTableJson.formatted(duplicateTableName));
       }
     }
   }

@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.api.v1;
 
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
@@ -173,7 +174,12 @@ public class CollectionResource {
           @Size(min = 1, max = 48)
           String collection) {
     return schemaCache
-        .getSchemaObject(dataApiRequestInfo, dataApiRequestInfo.getTenantId(), keyspace, collection)
+        .getSchemaObject(
+            dataApiRequestInfo,
+            dataApiRequestInfo.getTenantId(),
+            keyspace,
+            collection,
+            Command.CommandType.DDL.equals(command.commandName().getCommandType()))
         .onItemOrFailure()
         .transformToUni(
             (schemaObject, throwable) -> {

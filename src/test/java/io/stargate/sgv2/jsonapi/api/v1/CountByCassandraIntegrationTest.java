@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -467,7 +467,7 @@ public class CountByCassandraIntegrationTest extends AbstractCollectionIntegrati
 
   protected ValidatableResponse verifyCountCommand(int expectedCount, String json) {
     return givenHeadersPostJsonThenOkNoErrors(json)
-        .body("data", is(nullValue()))
+        .body("$", responseIsStatusOnly())
         .body("status.count", is(expectedCount));
   }
 }

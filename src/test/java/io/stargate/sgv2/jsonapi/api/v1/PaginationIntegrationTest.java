@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsWriteSuccess;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
@@ -48,7 +50,8 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
           .when()
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
-          .statusCode(200);
+          .statusCode(200)
+          .body("$", responseIsWriteSuccess());
     }
 
     @Test
@@ -71,9 +74,8 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
               .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
               .then()
               .statusCode(200)
+              .body("$", responseIsFindSuccess())
               .body("data.documents", hasSize(defaultPageSize))
-              .body("status", is(nullValue()))
-              .body("errors", is(nullValue()))
               .extract()
               .path("data.nextPageState");
 
@@ -97,9 +99,8 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(documentAmount - defaultPageSize))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.nextPageState", nullValue());
     }
 
@@ -126,9 +127,8 @@ public class PaginationIntegrationTest extends AbstractCollectionIntegrationTest
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(documentLimit))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.nextPageState", nullValue());
     }
   }

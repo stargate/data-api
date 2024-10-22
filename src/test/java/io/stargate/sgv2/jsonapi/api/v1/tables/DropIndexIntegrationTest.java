@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
+
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
@@ -35,9 +38,10 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                             }
                         """
             .formatted(simpleTableName);
-    createTable(tableJson);
-    createIndex(simpleTableName, "age", "age_idx");
-    createIndex(simpleTableName, "name", "name_idx");
+
+    assertNamespaceCommand(keyspaceName).postCreateTable(tableJson).wasSuccessful();
+    assertTableCommand(keyspaceName, simpleTableName).templated().createIndex("age_idx", "age");
+    assertTableCommand(keyspaceName, simpleTableName).templated().createIndex("name_idx", "name");
   }
 
   @Nested
@@ -51,7 +55,7 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
             "name": "age_idx"
         }
         """;
-      dropIndex(dropIndexJson);
+      assertNamespaceCommand(keyspaceName).postDropTable(dropIndexJson).wasSuccessful();
     }
 
     @Test
@@ -67,7 +71,9 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
         """;
 
       for (int i = 0; i < 2; i++) {
-        dropIndex(dropIndexJson);
+        assertNamespaceCommand(keyspaceName)
+            .postDropTable(dropIndexJson)
+            .wasSuccessful(); // should not fail
       }
     }
   }
