@@ -80,12 +80,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
                           Map.of("provider", "nvidia", "modelName", "NV-Embed-QA"))),
                   Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1024))))
           .wasSuccessful();
-      // Wait for the schema to propagate
-      try {
-        Thread.sleep(2000);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+
       assertNamespaceCommand(keyspaceName)
           .postListTables(listTablesWithSchema)
           .wasSuccessful()
@@ -137,12 +132,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .templated()
           .alterTable("drop", List.of("vehicle_id_4", "list_type"))
           .wasSuccessful();
-      // Wait for the schema to propagate
-      try {
-        Thread.sleep(2000);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+
       assertNamespaceCommand(keyspaceName)
           .postListTables(listTablesWithSchema)
           .wasSuccessful()
@@ -209,12 +199,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
               Map.of("vector_type_2", Map.of("provider", "mistral", "modelName", "mistral-embed")))
           .hasNoErrors()
           .body("status.ok", is(1));
-      // Wait for the schema to propagate
-      try {
-        Thread.sleep(2000);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+
       assertNamespaceCommand(keyspaceName)
           .postListTables(listTablesWithSchema)
           .wasSuccessful()
@@ -275,12 +260,6 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .alterTable("dropVectorize", List.of("vector_type_1"))
           .hasNoErrors()
           .body("status.ok", is(1));
-      // Wait for the schema to propagate
-      try {
-        Thread.sleep(2000);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
       assertNamespaceCommand(keyspaceName)
           .postListTables(listTablesWithSchema)
           .wasSuccessful()
