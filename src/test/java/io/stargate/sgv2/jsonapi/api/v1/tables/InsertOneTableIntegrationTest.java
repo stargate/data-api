@@ -8,6 +8,8 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistryTestData;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
@@ -927,7 +929,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   @Order(10)
   class InsertVectorColumns {
     @Test
-    void insertValidVectorValue() {
+    void insertValidVectorValueUsingList() {
       String docJSON =
           """
                       { "id": "vectorValid",
@@ -943,6 +945,36 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .postFindOne("{ \"filter\": { \"id\": \"vectorValid\" } }")
           .wasSuccessful()
           .hasJSONField("data.document", docJSON);
+    }
+
+    @Test
+    void insertValidVectorValueUsingBase64() {
+      final float[] floats = {1.0f, -0.5f, 2.5f};
+      final byte[] floatsAsBytes = CqlVectorUtil.floatsToBytes(floats);
+
+      String inputJSON =
+              """
+                          { "id": "vectorValidBase64",
+                            "vector": {"$binary": "%s"}
+                          }
+                          """
+              .formatted(Base64Util.encodeAsMimeBase64(floatsAsBytes));
+      // Base64-encoded float array used in input but will be read back as Array:
+      String expJSON =
+          """
+                          { "id": "vectorValidBase64",
+                            "vector": [1.0, -0.5, 2.5]
+                          }
+                          """;
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .templated()
+          .insertOne(inputJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .postFindOne("{ \"filter\": { \"id\": \"vectorValidBase64\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", expJSON);
     }
 
     @Test
@@ -981,6 +1013,27 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "Only values that are supported by",
               "Error trying to convert to targetCQLType `Vector(FLOAT",
               "expected JSON Number value as Vector element at position #0");
+    }
+
+    @Test
+    void failOnVectorSizeMismatch() {
+      // Exp 3, but only gets 2:
+      final byte[] floatsAsBytes = CqlVectorUtil.floatsToBytes(new float[] {1.0f, -0.5f});
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .templated()
+          .insertOne(
+                  """
+                      { "id": "vectorValidBase64",
+                        "vector": {"$binary": "%s"}
+                      }
+                      """
+                  .formatted(Base64Util.encodeAsMimeBase64(floatsAsBytes)))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `Vector(FLOAT",
+              "expected vector of length 3, got one with 2 elements");
     }
   }
 }
