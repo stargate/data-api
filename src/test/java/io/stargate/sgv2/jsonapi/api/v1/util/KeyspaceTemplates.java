@@ -41,7 +41,7 @@ public class KeyspaceTemplates extends TemplateRunner {
             }
         """
             .formatted(indexName, String.valueOf(ifExists));
-    return sender.postDropTable(json);
+    return sender.postDropIndex(json);
   }
 
   public DataApiResponseValidator dropTable(String tableName, boolean ifExists) {
