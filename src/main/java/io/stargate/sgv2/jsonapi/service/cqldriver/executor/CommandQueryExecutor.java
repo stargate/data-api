@@ -87,7 +87,6 @@ public class CommandQueryExecutor {
    * @return The keyspace metadata if it exists.
    */
   public Optional<KeyspaceMetadata> getKeyspaceMetadata(String keyspace) {
-    session().refreshSchema();
     return session()
         .getMetadata()
         .getKeyspace(CqlIdentifierUtil.cqlIdentifierFromUserInput(keyspace));
