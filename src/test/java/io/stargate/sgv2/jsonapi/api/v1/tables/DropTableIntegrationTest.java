@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -47,6 +49,12 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     public void dropTableWithoutIfExist() {
       assertNamespaceCommand(keyspaceName).templated().dropTable(simpleTableName, false);
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .listTables(false)
+          .wasSuccessful()
+          .body("status.tables", hasSize(1))
+          .body("status.tables[0]", equalTo(duplicateTableName));
     }
 
     @Test
@@ -54,6 +62,11 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
       for (int i = 0; i < 2; i++) {
         assertNamespaceCommand(keyspaceName).templated().dropTable(duplicateTableName, true);
       }
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .listTables(false)
+          .wasSuccessful()
+          .body("status.tables", hasSize(0));
     }
   }
 }
