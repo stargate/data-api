@@ -26,6 +26,7 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
+import io.stargate.sgv2.jsonapi.service.schema.tables.PrimitiveApiDataType;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.HashMap;
 import java.util.List;
@@ -135,9 +136,13 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
         final Optional<ApiDataTypeDef> apiDataTypeDefValue =
             ApiDataTypeDefs.from(mt.getValueType());
         if (apiDataTypeDefKey.isPresent() && apiDataTypeDefValue.isPresent()) {
-          return new ComplexTypes.MapType(
-              PrimitiveTypes.fromString(apiDataTypeDefKey.get().getApiType().getApiName()),
-              PrimitiveTypes.fromString(apiDataTypeDefValue.get().getApiType().getApiName()));
+          // Map supports only text or ascii key type
+          if (PrimitiveApiDataType.TEXT.equals(apiDataTypeDefKey.get().getApiType())
+              || PrimitiveApiDataType.ASCII.equals(apiDataTypeDefKey.get().getApiType())) {
+            return new ComplexTypes.MapType(
+                PrimitiveTypes.fromString(apiDataTypeDefKey.get().getApiType().getApiName()),
+                PrimitiveTypes.fromString(apiDataTypeDefValue.get().getApiType().getApiName()));
+          }
         }
       }
       // return unsupported format
