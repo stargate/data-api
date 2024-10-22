@@ -30,14 +30,31 @@ public class KeyspaceTemplates extends TemplateRunner {
     return sender.postCreateTable(json);
   }
 
-  public DataApiResponseValidator dropTable(String tableName) {
+  public DataApiResponseValidator dropIndex(String indexName, boolean ifExists) {
     String json =
             """
             {
-              "name": "%s"
+              "name": "%s",
+                "options": {
+                    "ifExists": %s
+                }
             }
         """
-            .formatted(tableName);
+            .formatted(indexName, String.valueOf(ifExists));
+    return sender.postDropTable(json);
+  }
+
+  public DataApiResponseValidator dropTable(String tableName, boolean ifExists) {
+    String json =
+            """
+            {
+              "name": "%s",
+              "options": {
+                "ifExists": %s
+              }
+            }
+        """
+            .formatted(tableName, String.valueOf(ifExists));
     return sender.postDropTable(json);
   }
 

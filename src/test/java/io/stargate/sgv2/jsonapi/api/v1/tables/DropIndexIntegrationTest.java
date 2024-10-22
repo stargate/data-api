@@ -6,6 +6,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import java.util.Map;
 import org.junit.jupiter.api.*;
 
 @QuarkusIntegrationTest
@@ -17,29 +18,16 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
   @BeforeAll
   public final void createSimpleTable() {
-    String tableJson =
-            """
-                              {
-                                      "name": "%s",
-                                      "definition": {
-                                          "columns": {
-                                              "id": {
-                                                  "type": "text"
-                                              },
-                                              "age": {
-                                                  "type": "int"
-                                              },
-                                              "name": {
-                                                  "type": "text"
-                                              }
-                                          },
-                                          "primaryKey": "id"
-                                      }
-                            }
-                        """
-            .formatted(simpleTableName);
-
-    assertNamespaceCommand(keyspaceName).postCreateTable(tableJson).wasSuccessful();
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            simpleTableName,
+            Map.ofEntries( // create table
+                Map.entry("id", Map.of("type", "text")),
+                Map.entry("age", Map.of("type", "int")),
+                Map.entry("name", Map.of("type", "text"))),
+            "id")
+        .wasSuccessful();
     assertTableCommand(keyspaceName, simpleTableName).templated().createIndex("age_idx", "age");
     assertTableCommand(keyspaceName, simpleTableName).templated().createIndex("name_idx", "name");
   }
@@ -49,31 +37,17 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
   class DropIndexSuccess {
     @Test
     public void dropIndexWithoutOption() {
-      String dropIndexJson =
-          """
-        {
-            "name": "age_idx"
-        }
-        """;
-      assertNamespaceCommand(keyspaceName).postDropIndex(dropIndexJson).wasSuccessful();
+      assertNamespaceCommand(keyspaceName).templated().dropIndex("age_idx", false).wasSuccessful();
     }
 
     @Test
     public void dropIndexWithOption() {
-      String dropIndexJson =
-          """
-        {
-            "name": "name_idx",
-            "options" : {
-                "ifExists": true
-            }
-        }
-        """;
 
       for (int i = 0; i < 2; i++) {
         assertNamespaceCommand(keyspaceName)
-            .postDropIndex(dropIndexJson)
-            .wasSuccessful(); // should not fail
+            .templated()
+            .dropIndex("name_idx", true)
+            .wasSuccessful();
       }
     }
   }

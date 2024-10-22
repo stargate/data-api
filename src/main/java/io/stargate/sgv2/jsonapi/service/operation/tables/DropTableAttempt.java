@@ -8,7 +8,6 @@ import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.Drop;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
-import java.time.Duration;
 
 /*
  An attempt to drop table in a keyspace.
@@ -18,8 +17,12 @@ public class DropTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
   private final boolean ifExists;
 
   public DropTableAttempt(
-      int position, KeyspaceSchemaObject schemaObject, CqlIdentifier name, boolean ifExists) {
-    super(position, schemaObject, new SchemaRetryPolicy(2, Duration.ofMillis(10)));
+      int position,
+      KeyspaceSchemaObject schemaObject,
+      CqlIdentifier name,
+      boolean ifExists,
+      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+    super(position, schemaObject, schemaRetryPolicy);
     this.name = name;
     this.ifExists = ifExists;
     setStatus(OperationStatus.READY);

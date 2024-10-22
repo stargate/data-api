@@ -8,10 +8,12 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DropTableAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.time.Duration;
 import java.util.List;
 
 /** Resolver for the {@link DropTableCommand}. */
@@ -27,9 +29,13 @@ public class DropTableCommandResolver implements CommandResolver<DropTableComman
       CommandContext<KeyspaceSchemaObject> ctx, DropTableCommand command) {
     final DropTableCommand.Options options = command.options();
     final boolean ifExists = (options != null) && options.ifExists();
+    final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
+        new SchemaAttempt.SchemaRetryPolicy(
+            2,
+            Duration.ofMillis(
+                ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
     var attempt =
-        new DropTableAttemptBuilder(ctx.schemaObject())
-            .withName(command.name())
+        new DropTableAttemptBuilder(ctx.schemaObject(), command.name(), schemaRetryPolicy)
             .withIfExists(ifExists)
             .build();
     var attempts = new OperationAttemptContainer<>(List.of(attempt));
