@@ -69,6 +69,7 @@ public class FindOneCommandResolver implements CommandResolver<FindOneCommand> {
     var projection =
         TableRowProjection.fromDefinition(
             objectMapper, command.tableProjectionDefinition(), ctx.schemaObject());
+
     var builder =
         new TableReadAttemptBuilder(ctx.schemaObject(), projection, projection)
             .addBuilderOption(CQLOption.ForSelect.limit(1));

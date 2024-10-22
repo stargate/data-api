@@ -47,9 +47,11 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
     Iterator<Map.Entry<String, JsonNode>> fieldIter = sortNode.fields();
     int totalFields = sortNode.size();
     List<SortExpression> sortExpressions = new ArrayList<>(sortNode.size());
+
     while (fieldIter.hasNext()) {
       Map.Entry<String, JsonNode> inner = fieldIter.next();
       String path = inner.getKey().trim();
+
       if (DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD.equals(path)) {
         // Vector search can't be used with other sort clause
         if (totalFields > 1) {
@@ -57,24 +59,16 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         }
         if (!inner.getValue().isArray()) {
           throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-        } else {
-          ArrayNode arrayNode = (ArrayNode) inner.getValue();
-          float[] arrayVals = new float[arrayNode.size()];
-          if (arrayNode.size() == 0) {
-            throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
-          }
-          for (int i = 0; i < arrayNode.size(); i++) {
-            JsonNode element = arrayNode.get(i);
-            if (!element.isNumber()) {
-              throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
-            }
-            arrayVals[i] = element.floatValue();
-          }
-          SortExpression exp = SortExpression.vsearch(arrayVals);
-          sortExpressions.clear();
-          sortExpressions.add(exp);
-          break;
         }
+
+        SortExpression exp =
+            SortExpression.vsearch(arrayNodeToVector((ArrayNode) inner.getValue()));
+        sortExpressions.clear();
+        sortExpressions.add(exp);
+        // TODO: aaron 17-oct-2024 - this break seems unneeded as above it checks if there is only 1
+        // field, leaving for now
+        break;
+
       } else if (DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD.equals(path)) {
         // Vector search can't be used with other sort clause
         if (totalFields > 1) {
@@ -83,6 +77,7 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         if (!inner.getValue().isTextual()) {
           throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
         }
+
         String vectorizeData = inner.getValue().textValue();
         if (vectorizeData.isBlank()) {
           throw ErrorCodeV1.SHRED_BAD_VECTORIZE_VALUE.toApiException();
@@ -90,7 +85,10 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
         SortExpression exp = SortExpression.vectorizeSearch(vectorizeData);
         sortExpressions.clear();
         sortExpressions.add(exp);
+        // TODO: aaron 17-oct-2024 - this break seems unneeded as above it checks if there is only 1
+        // field, leaving for now
         break;
+
       } else {
         if (path.isBlank()) {
           throw ErrorCodeV1.INVALID_SORT_CLAUSE_PATH.toApiException(
@@ -102,7 +100,15 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
               "sort clause path ('%s') contains character(s) not allowed", path);
         }
 
-        if (!inner.getValue().isInt()
+        // TODO: HACK: quick support for tables, if the value is an array we will assume the column
+        // is a vector then need to check on both the collection and table pathways that the sort is correct.
+        // also needs a refactor, too many break and continue in a loop
+        if (inner.getValue().isArray()) {
+          sortExpressions.add(
+              SortExpression.tableVectorSort(path, arrayNodeToVector((ArrayNode) inner.getValue())));
+          continue;
+
+        } else if (!inner.getValue().isInt()
             || !(inner.getValue().intValue() == 1 || inner.getValue().intValue() == -1)) {
           throw ErrorCodeV1.INVALID_SORT_CLAUSE_VALUE.toApiException(
               "Sort ordering value can only be `1` for ascending or `-1` for descending (not `%s`)",
@@ -115,5 +121,26 @@ public class SortClauseDeserializer extends StdDeserializer<SortClause> {
       }
     }
     return new SortClause(sortExpressions);
+  }
+
+  /**
+   * TODO: this almost duplicates code in WriteableShreddedDocument.shredVector() but that does not
+   * check the array elements, we MUST stop duplicating code like this
+   */
+  private static float[] arrayNodeToVector(ArrayNode arrayNode) {
+
+    float[] arrayVals = new float[arrayNode.size()];
+    if (arrayNode.isEmpty()) {
+      throw ErrorCodeV1.SHRED_BAD_VECTOR_SIZE.toApiException();
+    }
+
+    for (int i = 0; i < arrayNode.size(); i++) {
+      JsonNode element = arrayNode.get(i);
+      if (!element.isNumber()) {
+        throw ErrorCodeV1.SHRED_BAD_VECTOR_VALUE.toApiException();
+      }
+      arrayVals[i] = element.floatValue();
+    }
+    return arrayVals;
   }
 }

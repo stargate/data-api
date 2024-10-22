@@ -28,6 +28,15 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
               """)
 public record SortClause(@Valid List<SortExpression> sortExpressions) implements SchemaValidatable {
 
+  public boolean isEmpty() {
+    return sortExpressions == null || sortExpressions.isEmpty();
+  }
+
+  public List<SortExpression> tableVectorSorts() {
+    return sortExpressions.stream()
+        .filter(SortExpression::isTableVectorSort)
+        .toList();
+  }
   public boolean hasVsearchClause() {
     return sortExpressions != null
         && !sortExpressions.isEmpty()

@@ -192,10 +192,17 @@
       <artifactId>java-driver-metrics-micrometer</artifactId>
       <version>${driver.version}</version>
     </dependency>
+<!--    <dependency>-->
+<!--      <groupId>com.datastax.oss</groupId>-->
+<!--      <artifactId>java-driver-query-builder</artifactId>-->
+<!--      <version>${driver.version}</version>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-query-builder</artifactId>
-      <version>${driver.version}</version>
+      <version>4.19.0-preview1</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/lib/java-driver-query-builder-4.19.0-preview1.jar</systemPath>
     </dependency>
     <!-- Jackson YAML module for config file loading
       -->
