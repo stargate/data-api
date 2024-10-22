@@ -6,9 +6,13 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SchemaChangeListener extends SchemaChangeListenerBase {
 
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(SchemaChangeListener.class.getName());
   private final SchemaCache schemaCache;
 
   private final String tenantId;
@@ -48,12 +52,12 @@ public class SchemaChangeListener extends SchemaChangeListenerBase {
         table.getName().asInternal());
   }
 
-  /** When table is updated, drop the corresponding collectionSetting cache entry if existed */
   @Override
-  public void onTableUpdated(@NonNull TableMetadata newTable, @NonNull TableMetadata oldTable) {
+  public void onTableUpdated(@NonNull TableMetadata current, @NonNull TableMetadata previous) {
+    // Evict from the cache because things like indexes can change for CQL Tables
     schemaCache.evictCollectionSettingCacheEntry(
         Optional.ofNullable(tenantId),
-        oldTable.getKeyspace().asInternal(),
-        oldTable.getName().asInternal());
+        current.getKeyspace().asInternal(),
+        current.getName().asInternal());
   }
 }

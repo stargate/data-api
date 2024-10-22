@@ -40,9 +40,10 @@ public record FindEmbeddingProvidersOperation(EmbeddingProvidersConfig config)
 
     @Override
     public CommandResult get() {
-      Map<CommandStatus, Object> statuses =
-          Map.of(CommandStatus.EXISTING_VECTOR_PROVIDERS, embeddingProviders);
-      return new CommandResult(statuses);
+
+      return CommandResult.statusOnlyBuilder(false, false)
+          .addStatus(CommandStatus.EXISTING_VECTOR_PROVIDERS, embeddingProviders)
+          .build();
     }
   }
 

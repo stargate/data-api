@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
@@ -29,11 +31,16 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
     @MethodSource("allTableData")
     public void testCreateTable(CreateTableTestData testData) {
       if (testData.error()) {
-        createTableErrorValidation(
-            testData.request(), testData.errorCode(), testData.errorMessage());
+        assertNamespaceCommand(keyspaceName)
+            .postCreateTable(testData.request())
+            .hasSingleApiError(testData.errorCode(), testData.errorMessage());
       } else {
-        createTable(testData.request());
-        deleteTable(testData.tableName());
+        assertNamespaceCommand(keyspaceName).postCreateTable(testData.request()).wasSuccessful();
+
+        assertNamespaceCommand(keyspaceName)
+            .templated()
+            .dropTable(testData.tableName())
+            .wasSuccessful();
       }
     }
 

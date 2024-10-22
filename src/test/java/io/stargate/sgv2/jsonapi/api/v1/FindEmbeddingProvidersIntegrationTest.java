@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
@@ -36,6 +37,7 @@ public class FindEmbeddingProvidersIntegrationTest extends AbstractKeyspaceInteg
           .post(GeneralResource.BASE_PATH)
           .then()
           .statusCode(200)
+          .body("$", responseIsStatusOnly())
           .body("status.embeddingProviders", notNullValue())
           .body("status.embeddingProviders.nvidia.url", notNullValue())
           .body("status.embeddingProviders.nvidia.models[0].vectorDimension", equalTo(1024));

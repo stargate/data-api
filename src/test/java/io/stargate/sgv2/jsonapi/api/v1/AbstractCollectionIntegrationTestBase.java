@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static org.hamcrest.Matchers.*;
 
 import io.restassured.http.ContentType;
@@ -47,7 +48,8 @@ public abstract class AbstractCollectionIntegrationTestBase
         .when()
         .post(KeyspaceResource.BASE_PATH, keyspaceName)
         .then()
-        .statusCode(200);
+        .statusCode(200)
+        .body("$", responseIsDDLSuccess());
   }
 
   /** Utility to delete all documents from the test collection. */
@@ -70,7 +72,7 @@ public abstract class AbstractCollectionIntegrationTestBase
               .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
               .then()
               .statusCode(200)
-              .body("errors", is(nullValue()))
+              .body("$", responseIsWriteSuccess())
               .extract()
               .path("status.moreData");
 
@@ -104,6 +106,7 @@ public abstract class AbstractCollectionIntegrationTestBase
         .post(CollectionResource.BASE_PATH, keyspaceName, collection)
         .then()
         // Sanity check: let's look for non-empty inserted id
+        .body("$", responseIsWriteSuccess())
         .body("status.insertedIds[0]", not(emptyString()))
         .statusCode(200);
   }
@@ -127,6 +130,7 @@ public abstract class AbstractCollectionIntegrationTestBase
         .when()
         .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
         .then()
+        .body("$", responseIsWriteSuccess())
         .body("status.insertedIds", hasSize(docsAmount))
         .statusCode(200);
   }

@@ -8,7 +8,6 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -65,11 +64,11 @@ public class FindKeyspacesOperation implements Operation {
 
     @Override
     public CommandResult get() {
-      Map<CommandStatus, Object> statuses =
-          useKeyspaceNaming
-              ? Map.of(CommandStatus.EXISTING_KEYSPACES, keyspaces)
-              : Map.of(CommandStatus.EXISTING_NAMESPACES, keyspaces);
-      return new CommandResult(statuses);
+
+      var statusKey =
+          useKeyspaceNaming ? CommandStatus.EXISTING_KEYSPACES : CommandStatus.EXISTING_NAMESPACES;
+
+      return CommandResult.statusOnlyBuilder(false, false).addStatus(statusKey, keyspaces).build();
     }
   }
 }

@@ -11,7 +11,7 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
@@ -89,12 +89,18 @@ public class WhereCQLClauseAnalyzer {
           DataTypes.BLOB,
           DataTypes.UUID);
 
-  private final TableSchemaObject tableSchemaObject;
+  // Datatypes that need ALLOW FILTERING even when there is a SAI on the column when <, >, <=, >= is
+  // used
+  private static final Set<DataType> ALLOW_FILTERING_NEEDED_FOR_COMPARISON =
+      Set.of(DataTypes.TEXT, DataTypes.ASCII, DataTypes.BOOLEAN, DataTypes.UUID);
+
+  private final TableBasedSchemaObject tableSchemaObject;
   private final TableMetadata tableMetadata;
   private final Map<CqlIdentifier, ColumnMetadata> tablePKColumns;
   private final StatementType statementType;
 
-  public WhereCQLClauseAnalyzer(TableSchemaObject tableSchemaObject, StatementType statementType) {
+  public WhereCQLClauseAnalyzer(
+      TableBasedSchemaObject tableSchemaObject, StatementType statementType) {
     this.tableSchemaObject =
         Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     this.statementType = Objects.requireNonNull(statementType, "statementType cannot be null");
@@ -421,7 +427,10 @@ public class WhereCQLClauseAnalyzer {
                       && nativeTypeTableFilter.operator.isComparisonOperator());
                 })
             .map(Map.Entry::getKey)
-            .filter(column -> DataTypes.UUID == tableMetadata.getColumns().get(column).getType())
+            .filter(
+                column ->
+                    ALLOW_FILTERING_NEEDED_FOR_COMPARISON.contains(
+                        tableMetadata.getColumns().get(column).getType()))
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
@@ -429,9 +438,12 @@ public class WhereCQLClauseAnalyzer {
       return Optional.empty();
     }
 
+    var inefficientDataTypes =
+        ALLOW_FILTERING_NEEDED_FOR_COMPARISON.stream().map(DataType::toString).toList();
+
     var inefficientColumns =
         tableMetadata.getColumns().values().stream()
-            .filter(column -> DataTypes.UUID == column.getType())
+            .filter(column -> ALLOW_FILTERING_NEEDED_FOR_COMPARISON.contains(column.getType()))
             .sorted(COLUMN_METADATA_COMPARATOR)
             .toList();
 
@@ -440,7 +452,7 @@ public class WhereCQLClauseAnalyzer {
             errVars(
                 tableSchemaObject,
                 map -> {
-                  map.put("inefficientDataTypes", DataTypes.UUID.toString());
+                  map.put("inefficientDataTypes", errFmtJoin(inefficientDataTypes));
                   map.put("inefficientColumns", errFmtColumnMetadata(inefficientColumns));
                   map.put("inefficientFilterColumns", errFmtCqlIdentifier(inefficientFilters));
                 })));
@@ -482,7 +494,6 @@ public class WhereCQLClauseAnalyzer {
     }
 
     var missingPartitionKeyMetadata = missingPartitionKeys(identifierToFilter);
-
     var outOfOrderClusteringKeys = outOfOrderClusteringKeys(identifierToFilter);
 
     if (missingPartitionKeyMetadata.isEmpty() && outOfOrderClusteringKeys.isEmpty()) {
@@ -565,7 +576,22 @@ public class WhereCQLClauseAnalyzer {
    *     NOTE there may be warnings without needing ALLOW FILTERING.
    */
   public record WhereClauseAnalysis(
-      boolean requiresAllowFiltering, List<WarningException> warningExceptions) {}
+      boolean requiresAllowFiltering, List<WarningException> warningExceptions) {
+
+    public WhereClauseAnalysis {
+      warningExceptions =
+          warningExceptions == null ? List.of() : Collections.unmodifiableList(warningExceptions);
+    }
+
+    /**
+     * Helper to check if the analysis is empty
+     *
+     * @return TRUE if allow filtering is not required and there are no warnings, FALSE otherwise.
+     */
+    public boolean isEmpty() {
+      return !requiresAllowFiltering && warningExceptions.isEmpty();
+    }
+  }
 
   /** For internal use only. */
   private record AnalysisStrategy(
