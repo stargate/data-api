@@ -55,7 +55,7 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
             "name": "age_idx"
         }
         """;
-      assertNamespaceCommand(keyspaceName).postDropTable(dropIndexJson).wasSuccessful();
+      assertNamespaceCommand(keyspaceName).postDropIndex(dropIndexJson).wasSuccessful();
     }
 
     @Test
@@ -72,7 +72,7 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
       for (int i = 0; i < 2; i++) {
         assertNamespaceCommand(keyspaceName)
-            .postDropTable(dropIndexJson)
+            .postDropIndex(dropIndexJson)
             .wasSuccessful(); // should not fail
       }
     }
