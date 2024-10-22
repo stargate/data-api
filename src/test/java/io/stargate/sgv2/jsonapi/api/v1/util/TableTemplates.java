@@ -98,4 +98,17 @@ public class TableTemplates extends TemplateRunner {
             .formatted(indexName);
     return sender.postDropIndex(json);
   }
+
+  public DataApiResponseValidator alterTable(String alterOperation, Object columns) {
+    var json =
+            """
+            {
+              "%s": {
+                "columns" : "%s"
+              }
+            }
+          """
+            .formatted(alterOperation, asJSON(columns));
+    return sender.postAlterTable(json);
+  }
 }

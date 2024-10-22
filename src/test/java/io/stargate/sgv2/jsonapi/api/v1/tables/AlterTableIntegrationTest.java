@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -33,16 +35,17 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
 
   @BeforeAll
   public final void createSimpleTable() {
-    createTableWithColumns(
-        testTableName,
-        Map.ofEntries(
-            Map.entry("id", Map.of("type", "text")),
-            Map.entry("age", Map.of("type", "int")),
-            Map.entry("comment", Map.of("type", "text")),
-            Map.entry("vehicle_id", Map.of("type", "text"))),
-        "id");
-
-    createIndex(testTableName, "age", "age_idx");
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            testTableName,
+            Map.ofEntries(
+                Map.entry("id", Map.of("type", "text")),
+                Map.entry("age", Map.of("type", "int")),
+                Map.entry("comment", Map.of("type", "text")),
+                Map.entry("vehicle_id", Map.of("type", "text"))),
+            "id")
+        .wasSuccessful();
   }
 
   @Nested
@@ -50,8 +53,10 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
   class AlterTableAddColumnsSuccess {
     @Test
     public void shouldAddColumnsToTable() {
-      alterTableAddColumns(
-              testTableName,
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "add" /* alterType */,
               Map.ofEntries(
                   Map.entry("vehicle_id_4", Map.of("type", "text")),
                   Map.entry("physicalAddress", Map.of("type", "text")),
@@ -69,10 +74,11 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
                           "service",
                           Map.of("provider", "nvidia", "modelName", "NV-Embed-QA"))),
                   Map.entry("vector_type_2", Map.of("type", "vector", "dimension", 1024))))
-          .hasNoErrors()
-          .body("status.ok", is(1));
+          .wasSuccessful();
 
-      listTables(listTablesWithSchema)
+      assertNamespaceCommand(keyspaceName)
+          .postListTables(listTablesWithSchema)
+          .wasSuccessful()
           .body("status.tables[0].definition.columns.vehicle_id_4.type", equalTo("text"))
           .body("status.tables[0].definition.columns.physicalAddress.type", equalTo("text"))
           .body("status.tables[0].definition.columns.list_type.type", equalTo("list"))
@@ -102,7 +108,9 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
     public void shouldAddColumnsToTable() {
       final SchemaException schemaException =
           SchemaException.Code.COLUMN_ALREADY_EXISTS.get(Map.of("column", "age"));
-      alterTableAddColumns(testTableName, Map.ofEntries(Map.entry("age", Map.of("type", "int"))))
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable("add", Map.ofEntries(Map.entry("age", Map.of("type", "int"))))
           .hasSingleApiError(
               SchemaException.Code.COLUMN_ALREADY_EXISTS,
               SchemaException.class,
@@ -115,11 +123,14 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
   class AlterTableDropColumnsSuccess {
     @Test
     public void shouldDropColumnsFromTable() {
-      alterTableDropColumns(testTableName, List.of("vehicle_id_4", "list_type"))
-          .hasNoErrors()
-          .body("status.ok", is(1));
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable("drop", List.of("vehicle_id_4", "list_type"))
+          .wasSuccessful();
 
-      listTables(listTablesWithSchema)
+      assertNamespaceCommand(keyspaceName)
+          .postListTables(listTablesWithSchema)
+          .wasSuccessful()
           .body("status.tables[0].definition.columns.vehicle_id_4", nullValue())
           .body("status.tables[0].definition.columns.list_type", nullValue());
     }
@@ -132,7 +143,9 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
     public void dropInvalidColumns() {
       final SchemaException schemaException =
           SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", "invalid_column"));
-      alterTableDropColumns(testTableName, List.of("invalid_column"))
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable("drop", List.of("invalid_column"))
           .hasSingleApiError(
               SchemaException.Code.COLUMN_NOT_FOUND, SchemaException.class, schemaException.body);
     }
@@ -142,7 +155,9 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
       final SchemaException schemaException =
           SchemaException.Code.COLUMN_CANNOT_BE_DROPPED.get(
               Map.of("reason", "Primary key column `%s` cannot be dropped".formatted("id")));
-      alterTableDropColumns(testTableName, List.of("id"))
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable("drop", List.of("id"))
           .hasSingleApiError(
               SchemaException.Code.COLUMN_CANNOT_BE_DROPPED,
               SchemaException.class,
@@ -157,7 +172,9 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
                   "reason",
                   "Index exists on the column `%s`, drop `%s` index to drop the column"
                       .formatted("age", "age_idx")));
-      alterTableDropColumns(testTableName, List.of("age"))
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable("drop", List.of("age"))
           .hasSingleApiError(
               SchemaException.Code.COLUMN_CANNOT_BE_DROPPED,
               SchemaException.class,
@@ -170,13 +187,17 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
   class AlterTableAddVectorizeSuccess {
     @Test
     public void shouldAddVectorizeToColumns() {
-      alterTableAddVectorize(
-              testTableName,
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "addVectorize",
               Map.of("vector_type_2", Map.of("provider", "mistral", "modelName", "mistral-embed")))
           .hasNoErrors()
           .body("status.ok", is(1));
 
-      listTables(listTablesWithSchema)
+      assertNamespaceCommand(keyspaceName)
+          .postListTables(listTablesWithSchema)
+          .wasSuccessful()
           .body(
               "status.tables[0].definition.columns.vector_type_1.service.provider",
               equalTo("nvidia"))
@@ -199,8 +220,10 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
     public void addingToInvalidColumn() {
       final SchemaException schemaException =
           SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", "invalid_column"));
-      alterTableAddVectorize(
-              testTableName,
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "addVectorize",
               Map.of("invalid_column", Map.of("provider", "mistral", "modelName", "mistral-embed")))
           .hasSingleApiError(
               SchemaException.Code.COLUMN_NOT_FOUND, SchemaException.class, schemaException.body);
@@ -210,8 +233,10 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
     public void addingToNonVectorTypeColumn() {
       final SchemaException schemaException =
           SchemaException.Code.NON_VECTOR_TYPE_COLUMN.get(Map.of("column", "age"));
-      alterTableAddVectorize(
-              testTableName,
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable(
+              "addVectorize",
               Map.of("age", Map.of("provider", "mistral", "modelName", "mistral-embed")))
           .hasSingleApiError(
               SchemaException.Code.NON_VECTOR_TYPE_COLUMN,
@@ -225,11 +250,14 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
   class AlterTableDropVectorizeSuccess {
     @Test
     public void shouldDropVectorizeForColumns() {
-      alterTableDropVectorize(testTableName, List.of("vector_type_1"))
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable("dropVectorize", List.of("vector_type_1"))
           .hasNoErrors()
           .body("status.ok", is(1));
-
-      listTables(listTablesWithSchema)
+      assertNamespaceCommand(keyspaceName)
+          .postListTables(listTablesWithSchema)
+          .wasSuccessful()
           .body("status.tables[0].definition.columns.vector_type_1.service", nullValue())
           .body(
               "status.tables[0].definition.columns.vector_type_2.service.provider",
@@ -247,7 +275,9 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
     public void dropInvalidColumns() {
       final SchemaException schemaException =
           SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", "invalid_column"));
-      alterTableDropColumns(testTableName, List.of("invalid_column"))
+      assertTableCommand(keyspaceName, testTableName)
+          .templated()
+          .alterTable("dropVectorize", List.of("invalid_column"))
           .hasSingleApiError(
               SchemaException.Code.COLUMN_NOT_FOUND, SchemaException.class, schemaException.body);
     }
