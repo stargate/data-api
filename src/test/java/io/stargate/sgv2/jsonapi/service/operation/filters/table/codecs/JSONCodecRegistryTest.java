@@ -338,9 +338,14 @@ public class JSONCodecRegistryTest {
   }
 
   private static Stream<Arguments> validCodecToCQLTestCasesVectors() {
-    float[] rawFloats = new float[] {0.0f, -0.5f, 0.25f};
-    byte[] packedFlots = CqlVectorUtil.floatsToBytes(rawFloats);
     DataType vector3Type = DataTypes.vectorOf(DataTypes.FLOAT, 3);
+    float[] rawFloats3 = new float[] {0.0f, -0.5f, 0.25f};
+    byte[] packedFloats3 = CqlVectorUtil.floatsToBytes(rawFloats3);
+
+    DataType vector4Type = DataTypes.vectorOf(DataTypes.FLOAT, 4);
+    float[] rawFloats4 = new float[] { 1.0f, 0.0f, 100.75f, -1.0f};
+    byte[] packedFloats4 = CqlVectorUtil.floatsToBytes(rawFloats4);
+
     // Arguments: (CQL-type, from-caller-json, bound-by-driver-for-cql)
     return Stream.of(
         // First: Array of Numbers representation
@@ -352,10 +357,13 @@ public class JSONCodecRegistryTest {
                 numberLiteral(0L),
                 numberLiteral(new BigDecimal(-0.5)),
                 numberLiteral(new BigDecimal(0.25))),
-            CqlVectorUtil.floatsToCqlVector(rawFloats)),
+            CqlVectorUtil.floatsToCqlVector(rawFloats3)),
         // Second: Base64-encoded representation (Base64 of 4-byte "packed" float values)
         Arguments.of(
-            vector3Type, binaryWrapper(packedFlots), CqlVectorUtil.floatsToCqlVector(rawFloats)));
+            vector3Type, binaryWrapper(packedFloats3), CqlVectorUtil.floatsToCqlVector(rawFloats3)),
+        Arguments.of(
+            vector4Type, binaryWrapper(packedFloats4), CqlVectorUtil.floatsToCqlVector(rawFloats4)));
+
   }
 
   private static JsonLiteral<Number> numberLiteral(Number value) {
