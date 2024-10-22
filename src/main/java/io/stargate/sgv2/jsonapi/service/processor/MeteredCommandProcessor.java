@@ -9,11 +9,7 @@ import io.micrometer.core.instrument.*;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.Command;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
-import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
-import io.stargate.sgv2.jsonapi.api.model.command.Filterable;
-import io.stargate.sgv2.jsonapi.api.model.command.Sortable;
+import io.stargate.sgv2.jsonapi.api.model.command.*;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
@@ -173,8 +169,8 @@ public class MeteredCommandProcessor {
     if (result == null) {
       return "NA";
     }
-    if (result.data() instanceof CommandResult.MultiResponseData
-        || result.data() instanceof CommandResult.SingleResponseData) {
+    if (result.data() instanceof ResponseData.MultiResponseData
+        || result.data() instanceof ResponseData.SingleResponseData) {
       return String.valueOf(result.data().getResponseDocuments().size());
     }
     return "NA";

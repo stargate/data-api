@@ -295,6 +295,17 @@ request-errors:
       
       ${SNIPPET.INEFFICIENT_QUERY}      
 
+  - scope: WARNING
+    code: DEPRECATED_COMMAND
+    title: Deprecated command
+    body: |-
+      A deprecated command was used, it may still be used but will be removed in future releases.
+      
+      The deprecated command is: ${deprecatedCommand}.
+      The new command to use is: ${replacementCommand}.
+      
+      Please check the documentation for the new command and update your code.
+
   # Schema Errors
 
   - scope: SCHEMA
@@ -390,10 +401,10 @@ request-errors:
           d. partitionSort values should be either `1` for ascending or `-1` for descending.
 
   - scope: SCHEMA
-    code: MAP_TYPE_INCORRECT_DEFINITION
+    code: MAP_TYPE_INVALID_DEFINITION
     title: Map column data type definition provided in the request is incorrect.
     body: |-
-      Map column data type definition provided in the request is incorrect.
+      Map column data type definition provided in the request is incorrect: ${reason}
       Map type should also be provided with `keyType` and `valueType`. `keyType` and `valueType` should be a primitive data type.
       Example map type definition:
         "column_name": {
@@ -403,7 +414,7 @@ request-errors:
         }
 
   - scope: SCHEMA
-    code: SET_TYPE_INCORRECT_DEFINITION
+    code: SET_TYPE_INVALID_DEFINITION
     title: Set column data type definition provided in the request is incorrect.
     body: |-
       Set column data type definition provided in the request is incorrect.
@@ -415,7 +426,7 @@ request-errors:
         }
 
   - scope: SCHEMA
-    code: LIST_TYPE_INCORRECT_DEFINITION
+    code: LIST_TYPE_INVALID_DEFINITION
     title: List column data type definition provided in the request is incorrect.
     body: |-
       List column data type definition provided in the request is incorrect.
@@ -427,7 +438,7 @@ request-errors:
         }
 
   - scope: SCHEMA
-    code: VECTOR_TYPE_INCORRECT_DEFINITION
+    code: VECTOR_TYPE_INVALID_DEFINITION
     title: Vector column data type definition provided in the request is incorrect.
     body: |-
       Vector column data type definition provided in the request is incorrect.
@@ -458,8 +469,35 @@ request-errors:
     code: INVALID_INDEX_DEFINITION
     title: Provided index configuration is not valid.
     body: |-
-      Provided index configuration is not valid: ${reason}.
-  
+      Provided index configuration is not valid: ${reason}.V
+
+  - scope: SCHEMA
+    code: COLUMN_ALREADY_EXISTS
+    title: Column already exist in the table.
+    body: |-
+      Column `${column}` already exist in the table.
+
+  - scope: SCHEMA
+    code: COLUMN_NOT_FOUND
+    title: Column doesn't exist in the table.
+    body: |-
+      Column `${column}` doesn't exist in the table.
+
+  - scope: SCHEMA
+    code: COLUMN_CANNOT_BE_DROPPED
+    title: Column can't be dropped.
+    body: |-
+      Column can't be dropped: ${reason}.
+
+  - scope: SCHEMA
+    code: NON_VECTOR_TYPE_COLUMN
+    title: Can not add vectorize service to non vector column.
+    body: |-
+      Can not add vectorize service to non vector column `${column}`.
+
+
+
+
 
 # ================================================================================================================
 # Server Errors

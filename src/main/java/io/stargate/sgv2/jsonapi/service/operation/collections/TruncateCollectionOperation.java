@@ -35,6 +35,6 @@ public record TruncateCollectionOperation(CommandContext<CollectionSchemaObject>
         .executeTruncateSchemaChange(dataApiRequestInfo, query)
 
         // if we have a result always respond positively
-        .map(any -> new DeleteOperationPage(null, false, false));
+        .map(any -> new DeleteOperationPage(null, false, false, false));
   }
 }

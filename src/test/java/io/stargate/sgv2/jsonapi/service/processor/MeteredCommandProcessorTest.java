@@ -19,7 +19,6 @@ import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.core.Response;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +52,8 @@ public class MeteredCommandProcessorTest {
           objectMapper.readValue(json, CountDocumentsCommand.class);
       CommandContext<CollectionSchemaObject> commandContext = TestConstants.COLLECTION_CONTEXT;
 
-      CommandResult commandResult = new CommandResult(Collections.emptyList());
+      CommandResult commandResult = CommandResult.statusOnlyBuilder(false, false).build();
+
       Mockito.when(
               commandProcessor.processCommand(dataApiRequestInfo, commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
@@ -144,7 +144,9 @@ public class MeteredCommandProcessorTest {
       fields.put("exceptionClass", "TestExceptionClass");
       CommandResult.Error error =
           new CommandResult.Error("message", fields, fields, Response.Status.OK);
-      CommandResult commandResult = new CommandResult(Collections.singletonList(error));
+      CommandResult commandResult =
+          CommandResult.statusOnlyBuilder(false, false).addCommandResultError(error).build();
+
       Mockito.when(
               commandProcessor.processCommand(dataApiRequestInfo, commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));
@@ -202,7 +204,8 @@ public class MeteredCommandProcessorTest {
       fields.put("errorCode", "TestErrorCode");
       CommandResult.Error error =
           new CommandResult.Error("message", fields, fields, Response.Status.OK);
-      CommandResult commandResult = new CommandResult(Collections.singletonList(error));
+      CommandResult commandResult =
+          CommandResult.statusOnlyBuilder(false, false).addCommandResultError(error).build();
       Mockito.when(
               commandProcessor.processCommand(dataApiRequestInfo, commandContext, countCommand))
           .thenReturn(Uni.createFrom().item(commandResult));

@@ -1,10 +1,11 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsStatusOnly;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -67,10 +68,9 @@ public class LwtRetryIntegrationTest extends AbstractCollectionIntegrationTestBa
                   .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
                   .then()
                   .statusCode(200)
+                  .body("$", responseIsStatusOnly())
                   .body("status.matchedCount", anyOf(is(0), is(1)))
-                  .body("status.modifiedCount", anyOf(is(0), is(1)))
-                  .body("data", is(nullValue()))
-                  .body("errors", is(nullValue()));
+                  .body("status.modifiedCount", anyOf(is(0), is(1)));
 
               latch.countDown();
             })
@@ -86,9 +86,8 @@ public class LwtRetryIntegrationTest extends AbstractCollectionIntegrationTestBa
                   .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
                   .then()
                   .statusCode(200)
-                  .body("status.deletedCount", is(1))
-                  .body("data", is(nullValue()))
-                  .body("errors", is(nullValue()));
+                  .body("$", responseIsStatusOnly())
+                  .body("status.deletedCount", is(1));
 
               latch.countDown();
             })
@@ -112,6 +111,7 @@ public class LwtRetryIntegrationTest extends AbstractCollectionIntegrationTestBa
         .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
         .then()
         .statusCode(200)
+        .body("$", responseIsFindSuccess())
         .body("data.documents", is(empty()));
   }
 

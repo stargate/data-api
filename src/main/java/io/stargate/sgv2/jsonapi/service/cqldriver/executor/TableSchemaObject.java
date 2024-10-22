@@ -1,22 +1,15 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.data.ByteUtils;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,48 +35,11 @@ public class TableSchemaObject extends TableBasedSchemaObject {
     return IndexUsage.NO_OP;
   }
 
-  /**
-   * Get table schema object from table metadata
-   *
-   * @param tableMetadata
-   * @param objectMapper
-   * @return
-   */
+  /** Get table schema object from table metadata */
   public static TableSchemaObject from(TableMetadata tableMetadata, ObjectMapper objectMapper) {
-    Map<String, ByteBuffer> extensions =
-        (Map<String, ByteBuffer>)
-            tableMetadata.getOptions().get(CqlIdentifier.fromInternal("extensions"));
-    String vectorizeJson = null;
-    if (extensions != null) {
-      ByteBuffer vectorizeBuffer =
-          (ByteBuffer) extensions.get("com.datastax.data-api.vectorize-config");
-      vectorizeJson =
-          vectorizeBuffer != null
-              ? new String(ByteUtils.getArray(vectorizeBuffer.duplicate()), StandardCharsets.UTF_8)
-              : null;
-    }
+    Map<String, String> extensions = TableMetadataUtils.getExtensions(tableMetadata);
     Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
-        new HashMap<>();
-    if (vectorizeJson != null) {
-      try {
-        JsonNode vectorizeByColumns = objectMapper.readTree(vectorizeJson);
-        Iterator<Map.Entry<String, JsonNode>> it = vectorizeByColumns.fields();
-        while (it.hasNext()) {
-          Map.Entry<String, JsonNode> entry = it.next();
-          try {
-            var vectorizeConfig =
-                objectMapper.treeToValue(
-                    entry.getValue(), VectorConfig.ColumnVectorDefinition.VectorizeConfig.class);
-            vectorizeConfigMap.put(entry.getKey(), vectorizeConfig);
-          } catch (JsonProcessingException | IllegalArgumentException e) {
-            throw SchemaException.Code.INVALID_VECTORIZE_CONFIGURATION.get(
-                Map.of("field", entry.getKey()));
-          }
-        }
-      } catch (JsonProcessingException e) {
-        throw SchemaException.Code.INVALID_CONFIGURATION.get();
-      }
-    }
+        TableMetadataUtils.getVectorizeMap(extensions, objectMapper);
     VectorConfig vectorConfig;
     List<VectorConfig.ColumnVectorDefinition> columnVectorDefinitions = new ArrayList<>();
     for (Map.Entry<CqlIdentifier, ColumnMetadata> column : tableMetadata.getColumns().entrySet()) {
@@ -97,9 +53,12 @@ public class TableSchemaObject extends TableBasedSchemaObject {
         if (index.isPresent()) {
           final IndexMetadata indexMetadata = index.get();
           final Map<String, String> indexOptions = indexMetadata.getOptions();
+          final String sourceModel = indexOptions.get("source_model");
           final String similarityFunctionValue = indexOptions.get("similarity_function");
           if (similarityFunctionValue != null) {
             similarityFunction = SimilarityFunction.fromString(similarityFunctionValue);
+          } else if (sourceModel != null) {
+            similarityFunction = VectorConstant.SUPPORTED_SOURCES.get(sourceModel);
           }
         }
         int dimension = vectorType.getDimensions();
