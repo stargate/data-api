@@ -45,10 +45,15 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   @Nested
   @Order(1)
+  @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
   class DropTableSuccess {
+    @Order(1)
     @Test
     public void dropTableWithoutIfExist() {
-      assertNamespaceCommand(keyspaceName).templated().dropTable(simpleTableName, false);
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .dropTable(simpleTableName, false)
+          .wasSuccessful();
       assertNamespaceCommand(keyspaceName)
           .templated()
           .listTables(false)
@@ -58,9 +63,13 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
+    @Order(2)
     public void dropTableWithIfExists() {
       for (int i = 0; i < 2; i++) {
-        assertNamespaceCommand(keyspaceName).templated().dropTable(duplicateTableName, true);
+        assertNamespaceCommand(keyspaceName)
+            .templated()
+            .dropTable(duplicateTableName, true)
+            .wasSuccessful();
       }
       assertNamespaceCommand(keyspaceName)
           .templated()
