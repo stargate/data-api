@@ -30,6 +30,7 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,14 +48,21 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       CommandContext<TableSchemaObject> ctx, AlterTableCommand command) {
 
     final AlterTableOperation operation = command.operation();
+    final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
+        new SchemaAttempt.SchemaRetryPolicy(
+            2,
+            Duration.ofMillis(
+                ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
     List<AlterTableAttempt> attempts =
         switch (operation) {
-          case AlterTableOperationImpl.AddColumns ac -> handleAddColumns(ac, ctx.schemaObject());
-          case AlterTableOperationImpl.DropColumns dc -> handleDropColumns(dc, ctx.schemaObject());
+          case AlterTableOperationImpl.AddColumns ac ->
+              handleAddColumns(ac, ctx.schemaObject(), schemaRetryPolicy);
+          case AlterTableOperationImpl.DropColumns dc ->
+              handleDropColumns(dc, ctx.schemaObject(), schemaRetryPolicy);
           case AlterTableOperationImpl.AddVectorize av ->
-              handleAddVectorize(av, ctx.schemaObject());
+              handleAddVectorize(av, ctx.schemaObject(), schemaRetryPolicy);
           case AlterTableOperationImpl.DropVectorize dc ->
-              handleDropVectorize(dc, ctx.schemaObject());
+              handleDropVectorize(dc, ctx.schemaObject(), schemaRetryPolicy);
           default -> throw new IllegalStateException("Unexpected value: " + operation);
         };
 
@@ -71,7 +79,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
   }
 
   private List<AlterTableAttempt> handleAddColumns(
-      AlterTableOperationImpl.AddColumns ac, TableSchemaObject schemaObject) {
+      AlterTableOperationImpl.AddColumns ac,
+      TableSchemaObject schemaObject,
+      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
     TableMetadata tableMetadata = schemaObject.tableMetadata();
     List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
     // check the column doesn't exists
@@ -111,8 +121,11 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
                           vectorizeConfig.authentication(),
                           vectorizeConfig.parameters());
                     }));
+
     final AlterTableAttempt addColumnsAttempt =
-        new AlterTableAttemptBuilder(schemaObject).addColumns(addColumns).build();
+        new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
+            .addColumns(addColumns)
+            .build();
     if (!vectorizeConfigMap.isEmpty()) {
       // Reading existing vectorize config from the table metadata
       Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
@@ -126,7 +139,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       final Map<String, String> customProperties =
           TableMetadataUtils.createCustomProperties(existingVectorizeConfigMap, objectMapper);
       final AlterTableAttempt addVectorizeProperties =
-          new AlterTableAttemptBuilder(schemaObject).customProperties(customProperties).build();
+          new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
+              .customProperties(customProperties)
+              .build();
       // First execute the extension update for add columns
       alterTableAttempts.add(addVectorizeProperties);
     }
@@ -137,7 +152,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
   }
 
   private List<AlterTableAttempt> handleDropColumns(
-      AlterTableOperationImpl.DropColumns dc, TableSchemaObject schemaObject) {
+      AlterTableOperationImpl.DropColumns dc,
+      TableSchemaObject schemaObject,
+      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
     List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
     TableMetadata tableMetadata = schemaObject.tableMetadata();
     List<String> dropColumns = dc.columns();
@@ -148,25 +165,25 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       CqlIdentifier column = CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName);
       if (primaryKeys.contains(column)) {
         throw SchemaException.Code.COLUMN_CANNOT_BE_DROPPED.get(
-            Map.of(
-                "reason",
-                "Primary key column `%s` cannot be dropped".formatted(column.asCql(true))));
+            Map.of("reason", "Primary key column `%s` cannot be dropped".formatted(columnName)));
       }
 
       if (tableMetadata.getColumn(column).isEmpty()) {
-        throw SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", column.asCql(true)));
+        throw SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", columnName));
       }
 
       final Optional<IndexMetadata> first =
           tableMetadata.getIndexes().values().stream()
-              .filter(indexMetadata -> indexMetadata.getTarget().equals(column.asCql(true)))
+              .filter(indexMetadata -> indexMetadata.getTarget().equals(columnName))
               .findFirst();
       if (first.isPresent()) {
         throw SchemaException.Code.COLUMN_CANNOT_BE_DROPPED.get(
             Map.of(
                 "reason",
                 "Index exists on the column `%s`, drop `%s` index to drop the column"
-                    .formatted(column.asCql(true), first.get().getName().asCql(true))));
+                    .formatted(
+                        columnName,
+                        CqlIdentifierUtil.cqlIdentifierToStringForUser(first.get().getName()))));
       }
     }
 
@@ -187,7 +204,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
 
     // First should drop the columns
     AlterTableAttempt dropColumnsAttempt =
-        new AlterTableAttemptBuilder(schemaObject).dropColumns(dropColumns).build();
+        new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
+            .dropColumns(dropColumns)
+            .build();
     alterTableAttempts.add(dropColumnsAttempt);
     // New custom property to be updated
     Map<String, String> customProperties;
@@ -195,7 +214,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       customProperties =
           TableMetadataUtils.createCustomProperties(existingVectorizeConfigMap, objectMapper);
       AlterTableAttempt dropVectorizeProperties =
-          new AlterTableAttemptBuilder(schemaObject).customProperties(customProperties).build();
+          new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
+              .customProperties(customProperties)
+              .build();
       // Then drop the vectorize properties
       alterTableAttempts.add(dropVectorizeProperties);
     }
@@ -203,7 +224,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
   }
 
   private List<AlterTableAttempt> handleAddVectorize(
-      AlterTableOperationImpl.AddVectorize av, TableSchemaObject schemaObject) {
+      AlterTableOperationImpl.AddVectorize av,
+      TableSchemaObject schemaObject,
+      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
     List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
     TableMetadata tableMetadata = schemaObject.tableMetadata();
     Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
@@ -238,12 +261,16 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
         TableMetadataUtils.createCustomProperties(existingVectorizeConfigMap, objectMapper);
 
     alterTableAttempts.add(
-        new AlterTableAttemptBuilder(schemaObject).customProperties(customProperties).build());
+        new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
+            .customProperties(customProperties)
+            .build());
     return alterTableAttempts;
   }
 
   private List<AlterTableAttempt> handleDropVectorize(
-      AlterTableOperationImpl.DropVectorize dc, TableSchemaObject schemaObject) {
+      AlterTableOperationImpl.DropVectorize dc,
+      TableSchemaObject schemaObject,
+      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
     TableMetadata tableMetadata = schemaObject.tableMetadata();
     List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
     // Reading existing vectorize config from the table metadata
@@ -256,8 +283,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     for (String column : dc.columns()) {
       CqlIdentifier columnIdentifier = CqlIdentifierUtil.cqlIdentifierFromUserInput(column);
       if (tableMetadata.getColumn(columnIdentifier).isEmpty()) {
-        throw SchemaException.Code.COLUMN_NOT_FOUND.get(
-            Map.of("column", columnIdentifier.asCql(true)));
+        throw SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", column));
       }
       final VectorConfig.ColumnVectorDefinition.VectorizeConfig remove =
           existingVectorizeConfigMap.remove(column);
@@ -271,7 +297,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       Map<String, String> customProperties =
           TableMetadataUtils.createCustomProperties(existingVectorizeConfigMap, objectMapper);
       final AlterTableAttempt dropVectorizeProperties =
-          new AlterTableAttemptBuilder(schemaObject).customProperties(customProperties).build();
+          new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
+              .customProperties(customProperties)
+              .build();
       alterTableAttempts.add(dropVectorizeProperties);
     }
 

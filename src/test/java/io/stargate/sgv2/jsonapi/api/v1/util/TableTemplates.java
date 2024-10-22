@@ -103,8 +103,10 @@ public class TableTemplates extends TemplateRunner {
     var json =
             """
             {
-              "%s": {
-                "columns" : "%s"
+              "operation" : {
+                "%s": {
+                  "columns" : %s
+                }
               }
             }
           """

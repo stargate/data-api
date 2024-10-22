@@ -69,7 +69,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     // Add all primary keys and colunms
     CreateTable createTable = addColumnsAndKeys(create);
 
-    final Map<String, String> extensions = serializeExtension(customProperties);
+    final Map<String, String> extensions = encodeAsHexValue(customProperties);
 
     CreateTableWithOptions createWithOptions = createTable.withOption("extensions", extensions);
 

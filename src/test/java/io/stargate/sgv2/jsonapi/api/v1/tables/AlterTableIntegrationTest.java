@@ -46,6 +46,11 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
                 Map.entry("vehicle_id", Map.of("type", "text"))),
             "id")
         .wasSuccessful();
+
+    assertTableCommand(keyspaceName, testTableName)
+        .templated()
+        .createIndex("age_idx", "age")
+        .wasSuccessful();
   }
 
   @Nested

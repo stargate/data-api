@@ -49,7 +49,7 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
   // Convert value to hex string using the ByteUtils.toHexString
   // This needs to use `createTable.withExtensions()` method in driver when PR
   // (https://github.com/apache/cassandra-java-driver/pull/1964) is released
-  protected Map<String, String> serializeExtension(Map<String, String> customProperties) {
+  protected Map<String, String> encodeAsHexValue(Map<String, String> customProperties) {
     return customProperties.entrySet().stream()
         .collect(
             Collectors.toMap(

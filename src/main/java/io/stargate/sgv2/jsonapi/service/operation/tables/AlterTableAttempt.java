@@ -19,22 +19,22 @@ import java.util.Map;
  */
 public class AlterTableAttempt extends SchemaAttempt<TableSchemaObject> {
   private final AlterTableType alterTableType;
-  private final Map<String, ApiDataType> addColumns;
-  private final List<String> dropColumns;
+  private final Map<String, ApiDataType> columnsToAdd;
+  private final List<String> columnsToDrop;
   private final Map<String, String> customProperties;
 
   protected AlterTableAttempt(
       int position,
       TableSchemaObject schemaObject,
       AlterTableType alterTableType,
-      Map<String, ApiDataType> addColumns,
-      List<String> dropColumns,
+      Map<String, ApiDataType> columnsToAdd,
+      List<String> columnsToDrop,
       Map<String, String> customProperties,
       SchemaRetryPolicy retryPolicy) {
     super(position, schemaObject, retryPolicy);
     this.alterTableType = alterTableType;
-    this.addColumns = addColumns;
-    this.dropColumns = dropColumns;
+    this.columnsToAdd = columnsToAdd;
+    this.columnsToDrop = columnsToDrop;
     this.customProperties = customProperties;
     setStatus(OperationStatus.READY);
   }
@@ -54,29 +54,31 @@ public class AlterTableAttempt extends SchemaAttempt<TableSchemaObject> {
   }
 
   private SimpleStatement buildAddColumnsStatement(AlterTableStart alterTableStart) {
-    assert addColumns != null && !addColumns.isEmpty();
+    assert columnsToAdd != null && !columnsToAdd.isEmpty();
     AlterTableAddColumnEnd addColumnEnd = null;
-    for (Map.Entry<String, ApiDataType> column : addColumns.entrySet()) {
+    for (Map.Entry<String, ApiDataType> column : columnsToAdd.entrySet()) {
       DataType dataType = getCqlDataType(column.getValue());
       if (addColumnEnd == null) {
         addColumnEnd =
-            alterTableStart.addColumn(CqlIdentifier.fromInternal(column.getKey()), dataType);
+            alterTableStart.addColumn(
+                CqlIdentifierUtil.cqlIdentifierFromUserInput(column.getKey()), dataType);
       } else {
         addColumnEnd =
-            addColumnEnd.addColumn(CqlIdentifier.fromInternal(column.getKey()), dataType);
+            addColumnEnd.addColumn(
+                CqlIdentifierUtil.cqlIdentifierFromUserInput(column.getKey()), dataType);
       }
     }
     return addColumnEnd.build();
   }
 
   private SimpleStatement buildDropColumnsStatement(AlterTableStart alterTableStart) {
-    assert dropColumns != null && !dropColumns.isEmpty();
-    return alterTableStart.dropColumns(dropColumns.toArray(new String[0])).build();
+    assert columnsToDrop != null && !columnsToDrop.isEmpty();
+    return alterTableStart.dropColumns(columnsToDrop.toArray(new String[0])).build();
   }
 
   private SimpleStatement buildUpdateExtensionStatement(AlterTableStart alterTableStart) {
     assert customProperties != null && !customProperties.isEmpty();
-    Map<String, String> extensions = serializeExtension(customProperties);
+    Map<String, String> extensions = encodeAsHexValue(customProperties);
     return alterTableStart.withOption("extensions", extensions).build();
   }
 }

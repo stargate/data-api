@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.config.constants.SchemaConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +41,7 @@ public class TableMetadataUtils {
       Map<String, String> extensions, ObjectMapper objectMapper) {
     Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
         new HashMap<>();
-    String vectorizeJson = extensions.get("com.datastax.data-api.vectorize-config");
+    String vectorizeJson = extensions.get(SchemaConstants.MetadataFieldsNames.VECTORIZE_CONFIG);
 
     if (vectorizeJson != null) {
       try {
@@ -76,12 +77,17 @@ public class TableMetadataUtils {
       ObjectMapper objectMapper) {
     Map<String, String> customProperties = new HashMap<>();
     try {
-      customProperties.put("com.datastax.data-api.schema-type", "table");
+      customProperties.put(
+          SchemaConstants.MetadataFieldsNames.SCHEMA_TYPE,
+          SchemaConstants.MetadataFieldsValues.SCHEMA_TYPE_TABLE_VALUE);
       // Versioning for schema json. This needs can be adapted in future as needed
-      customProperties.put("com.datastax.data-api.schema-def-version", "1");
+      customProperties.put(
+          SchemaConstants.MetadataFieldsNames.SCHEMA_VERSION,
+          SchemaConstants.MetadataFieldsValues.SCHEMA_VERSION_VERSION);
       if (vectorizeConfigMap != null) {
         String vectorizeConfigToStore = objectMapper.writeValueAsString(vectorizeConfigMap);
-        customProperties.put("com.datastax.data-api.vectorize-config", vectorizeConfigToStore);
+        customProperties.put(
+            SchemaConstants.MetadataFieldsNames.VECTORIZE_CONFIG, vectorizeConfigToStore);
       }
     } catch (JsonProcessingException e) {
       // this should never happen

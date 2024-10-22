@@ -3,7 +3,6 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -17,9 +16,10 @@ public class AlterTableAttemptBuilder {
   private int position = 0;
   private final SchemaAttempt.SchemaRetryPolicy retryPolicy;
 
-  public AlterTableAttemptBuilder(TableSchemaObject schemaObject) {
+  public AlterTableAttemptBuilder(
+      TableSchemaObject schemaObject, SchemaAttempt.SchemaRetryPolicy retryPolicy) {
     this.schemaObject = schemaObject;
-    this.retryPolicy = new SchemaAttempt.SchemaRetryPolicy(2, Duration.ofMillis(10));
+    this.retryPolicy = retryPolicy;
   }
 
   public AlterTableAttemptBuilder addColumns(Map<String, ApiDataType> addColumns) {
