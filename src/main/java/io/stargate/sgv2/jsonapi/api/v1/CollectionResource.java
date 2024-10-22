@@ -109,10 +109,11 @@ public class CollectionResource {
                         InsertOneCommand.class,
                         InsertManyCommand.class,
                         UpdateManyCommand.class,
-                        UpdateOneCommand.class
+                        UpdateOneCommand.class,
                         // TODO, hide table feature detail before it goes public,
                         // https://github.com/stargate/data-api/pull/1360
-                        //                        AddIndexCommand.class,
+                        //                        CreateIndexCommand.class,
+                        //                        CreateVectorIndexCommand.class
                         //                        DropIndexCommand.class
                       }),
               examples = {
@@ -198,8 +199,16 @@ public class CollectionResource {
                 }
                 // TODO: refactor this code to be cleaner so it assigns on one line
                 EmbeddingProvider embeddingProvider = null;
-                final VectorConfig.VectorizeConfig vectorizeConfig =
-                    schemaObject.vectorConfig().vectorizeConfig();
+                VectorConfig vectorConfig = schemaObject.vectorConfig();
+                final VectorConfig.ColumnVectorDefinition columnVectorDefinition =
+                    vectorConfig.columnVectorDefinitions() == null
+                            || vectorConfig.columnVectorDefinitions().isEmpty()
+                        ? null
+                        : vectorConfig.columnVectorDefinitions().get(0);
+                final VectorConfig.ColumnVectorDefinition.VectorizeConfig vectorizeConfig =
+                    columnVectorDefinition != null
+                        ? columnVectorDefinition.vectorizeConfig()
+                        : null;
                 if (vectorizeConfig != null) {
                   embeddingProvider =
                       embeddingProviderFactory.getConfiguration(
@@ -207,7 +216,7 @@ public class CollectionResource {
                           dataApiRequestInfo.getCassandraToken(),
                           vectorizeConfig.provider(),
                           vectorizeConfig.modelName(),
-                          schemaObject.vectorConfig().vectorSize(),
+                          columnVectorDefinition.vectorSize(),
                           vectorizeConfig.parameters(),
                           vectorizeConfig.authentication(),
                           command.getClass().getSimpleName());

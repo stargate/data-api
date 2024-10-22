@@ -1,6 +1,8 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsError;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.responseIsFindSuccess;
 import static org.hamcrest.Matchers.*;
 
 import io.quarkus.test.common.WithTestResource;
@@ -176,8 +178,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -202,8 +203,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyAllIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path '$vector' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -228,8 +228,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1));
       // deny "address.city", only this as a string, not "address" as an object
       String filterData2 =
@@ -254,8 +253,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1));
       String filterData3 =
           """
@@ -280,8 +278,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -307,8 +304,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyManyIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -333,8 +329,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyAllIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -359,8 +354,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyAllIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1));
 
       String filterId2 =
@@ -386,8 +380,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyAllIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1));
     }
 
@@ -417,8 +410,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyAllIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].errorCode", is("ID_NOT_INDEXED"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
@@ -445,8 +437,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, allowOneIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1));
     }
 
@@ -476,8 +467,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, allowOneIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path 'address' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -504,8 +494,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, allowOneIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].errorCode", is("ID_NOT_INDEXED"))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body(
@@ -527,8 +516,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, allowOneIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1));
     }
 
@@ -574,8 +562,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1));
     }
 
@@ -620,8 +607,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path 'address.street' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -650,8 +636,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path 'address' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -682,8 +667,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -708,8 +692,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1));
       // explicitly deny "address.city", implicitly allow "_id", "name", "address.street" "address"
       // Object (Hashmap) in array - incremental path is "address.city"
@@ -737,8 +720,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -770,8 +752,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyManyIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path 'contact.email' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -805,8 +786,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyOneIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("filter path 'address.city' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_FILTER_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));
@@ -833,8 +813,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, denyManyIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1));
     }
 
@@ -860,8 +839,7 @@ public class IndexingConfigIntegrationTest extends AbstractCollectionIntegration
           .post(CollectionResource.BASE_PATH, keyspaceName, allowManyIndexingCollection)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
+          .body("$", responseIsError())
           .body("errors[0].message", endsWith("sort path 'address.street' is not indexed"))
           .body("errors[0].errorCode", is("UNINDEXED_SORT_PATH"))
           .body("errors[0].exceptionClass", is("JsonApiException"));

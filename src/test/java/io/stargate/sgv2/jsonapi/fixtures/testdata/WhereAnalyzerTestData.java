@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -30,16 +31,44 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     super(testData);
   }
 
-  public WhereAnalyzerFixture table2PK3Clustering1Index(String message) {
+  public WhereAnalyzerFixture table2PK3Clustering1Index(
+      String message, WhereCQLClauseAnalyzer.StatementType statementType) {
     var tableMetaData = testData.tableMetadata().table2PK3Clustering1Index();
     return new WhereAnalyzerFixture(
-        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+        message,
+        tableMetaData,
+        testData.logicalExpression().andExpression(tableMetaData),
+        statementType);
   }
 
-  public WhereAnalyzerFixture tableKeyAndTwoDuration(String message) {
+  public WhereAnalyzerFixture tableKeyAndTwoDuration(
+      String message, WhereCQLClauseAnalyzer.StatementType statementType) {
     var tableMetaData = testData.tableMetadata().keyAndTwoDuration();
     return new WhereAnalyzerFixture(
-        message, tableMetaData, testData.logicalExpression().andExpression(tableMetaData));
+        message,
+        tableMetaData,
+        testData.logicalExpression().andExpression(tableMetaData),
+        statementType);
+  }
+
+  public WhereAnalyzerFixture tableAllColumnDatatypesIndexed(
+      String message, WhereCQLClauseAnalyzer.StatementType statementType) {
+    var tableMetaData = testData.tableMetadata().tableAllDatatypesIndexed();
+    return new WhereAnalyzerFixture(
+        message,
+        tableMetaData,
+        testData.logicalExpression().andExpression(tableMetaData),
+        statementType);
+  }
+
+  public WhereAnalyzerFixture tableAllColumnDatatypesNotIndexed(
+      String message, WhereCQLClauseAnalyzer.StatementType statementType) {
+    var tableMetaData = testData.tableMetadata().tableAllDatatypesNotIndexed();
+    return new WhereAnalyzerFixture(
+        message,
+        tableMetaData,
+        testData.logicalExpression().andExpression(tableMetaData),
+        statementType);
   }
 
   public static class WhereAnalyzerFixture implements PrettyPrintable {
@@ -54,18 +83,31 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     public Throwable exception = null;
 
     public WhereAnalyzerFixture(
-        String message, TableMetadata tableMetadata, DBLogicalExpression expression) {
+        String message,
+        TableMetadata tableMetadata,
+        DBLogicalExpression expression,
+        WhereCQLClauseAnalyzer.StatementType statementType) {
 
       this.message = message;
       this.tableMetadata = tableMetadata;
-      this.analyzer = new WhereCQLClauseAnalyzer(new TableSchemaObject(tableMetadata));
-      this.tableSchemaObject = new TableSchemaObject(tableMetadata);
+      this.analyzer =
+          new WhereCQLClauseAnalyzer(
+              TableSchemaObject.from(tableMetadata, new ObjectMapper()), statementType);
+      this.tableSchemaObject = TableSchemaObject.from(tableMetadata, new ObjectMapper());
       this.expression =
           new LogicalExpressionTestData.ExpressionBuilder<>(this, expression, tableMetadata);
     }
 
     public LogicalExpressionTestData.ExpressionBuilder<WhereAnalyzerFixture> expression() {
       return expression;
+    }
+
+    public WhereAnalyzerFixture analyzeMaybeFilterError(FilterException.Code expectedCode) {
+
+      if (expectedCode == null) {
+        return analyze().assertNoFilteringNoWarnings();
+      }
+      return analyzeThrows(FilterException.class).assertFilterExceptionCode(expectedCode);
     }
 
     public <T extends Throwable> WhereAnalyzerFixture analyzeThrows(Class<T> exceptionClass) {
@@ -98,10 +140,14 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
     }
 
     public WhereAnalyzerFixture assertFilterExceptionCode(FilterException.Code code) {
-      assertThat(exception)
-          .as("FilterException with code %s when: %s".formatted(code, message))
-          .isInstanceOf(FilterException.class)
-          .satisfies(e -> assertThat(((FilterException) e).code).isEqualTo(code.name()));
+      if (code == null) {
+        assertThat(exception).as("No FilterException when: %s".formatted(code, message)).isNull();
+      } else {
+        assertThat(exception)
+            .as("FilterException with code %s when: %s".formatted(code, message))
+            .isInstanceOf(FilterException.class)
+            .satisfies(e -> assertThat(((FilterException) e).code).isEqualTo(code.name()));
+      }
       return this;
     }
 
@@ -164,6 +210,14 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
       var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
       var warning =
           "The request applied $ne to the columns: %s.".formatted(errFmtCqlIdentifier(identifiers));
+      return assertWarningContains(warning);
+    }
+
+    public WhereAnalyzerFixture assertWarnOnComparisonFilterColumns(CqlIdentifier... columns) {
+      var identifiers = Arrays.stream(columns).sorted(CQL_IDENTIFIER_COMPARATOR).toList();
+      var warning =
+          "The request applied $lt, $gt, $lte, $gte to the indexed columns: %s."
+              .formatted(errFmtCqlIdentifier(identifiers));
       return assertWarningContains(warning);
     }
 

@@ -25,6 +25,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableToErrorMapper;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -82,7 +83,13 @@ public class FindCollectionOperationTest extends OperationTestBase {
                 SCHEMA_OBJECT_NAME,
                 null,
                 IdConfig.defaultIdConfig(),
-                new VectorConfig(true, -1, SimilarityFunction.COSINE, null),
+                VectorConfig.fromColumnDefinitions(
+                    List.of(
+                        new VectorConfig.ColumnVectorDefinition(
+                            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                            -1,
+                            SimilarityFunction.COSINE,
+                            null))),
                 null),
             null,
             "testCommand",
@@ -304,9 +311,9 @@ public class FindCollectionOperationTest extends OperationTestBase {
       assertThat(result.data().getResponseDocuments())
           .hasSize(2)
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
-      assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
-      assertThat(result.status()).isNull();
+      assertThat(result.status()).isEmpty();
+      ;
     }
 
     @Test
@@ -2738,7 +2745,8 @@ public class FindCollectionOperationTest extends OperationTestBase {
           .contains(objectMapper.readTree(doc1), objectMapper.readTree(doc2));
       assertThat(result.status()).isNullOrEmpty();
       assertThat(result.errors()).isNullOrEmpty();
-      assertThat(result.status()).isNull();
+      assertThat(result.status()).isEmpty();
+      ;
     }
 
     @Test

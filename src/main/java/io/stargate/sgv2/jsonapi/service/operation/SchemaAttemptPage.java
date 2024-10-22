@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
+import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
@@ -35,12 +36,8 @@ public class SchemaAttemptPage<SchemaT extends SchemaObject>
 
     @Override
     public SchemaAttemptPage<SchemaT> getOperationPage() {
-
-      var resultBuilder =
-          new CommandResultBuilder(
-              CommandResultBuilder.ResponseType.STATUS_ONLY, useErrorObjectV2, debugMode);
-
-      return new SchemaAttemptPage<>(attempts, resultBuilder);
+      return new SchemaAttemptPage<>(
+          attempts, CommandResult.statusOnlyBuilder(useErrorObjectV2, debugMode));
     }
   }
 }

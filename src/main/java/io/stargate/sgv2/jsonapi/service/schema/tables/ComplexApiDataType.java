@@ -2,24 +2,21 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
-import com.datastax.oss.driver.internal.core.type.DefaultVectorType;
+import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
 
 /** Interface defining the api data type for complex types */
 public abstract class ComplexApiDataType implements ApiDataType {
   private final String apiName;
   private final PrimitiveApiDataType keyType;
   private final PrimitiveApiDataType valueType;
-  private final int vectorSize;
+  private final int dimension;
 
   public ComplexApiDataType(
-      String apiName,
-      PrimitiveApiDataType keyType,
-      PrimitiveApiDataType valueType,
-      int vectorSize) {
+      String apiName, PrimitiveApiDataType keyType, PrimitiveApiDataType valueType, int dimension) {
     this.apiName = apiName;
     this.keyType = keyType;
     this.valueType = valueType;
-    this.vectorSize = vectorSize;
+    this.dimension = dimension;
   }
 
   public PrimitiveApiDataType getKeyType() {
@@ -30,8 +27,8 @@ public abstract class ComplexApiDataType implements ApiDataType {
     return valueType;
   }
 
-  public int getVectorSize() {
-    return vectorSize;
+  public int getDimension() {
+    return dimension;
   }
 
   public abstract DataType getCqlType();
@@ -77,33 +74,14 @@ public abstract class ComplexApiDataType implements ApiDataType {
   }
 
   public static class VectorType extends ComplexApiDataType {
-    public VectorType(PrimitiveApiDataType valueType, int vectorSize) {
-      super("vector", null, valueType, vectorSize);
+    public VectorType(PrimitiveApiDataType valueType, int dimension) {
+      super("vector", null, valueType, dimension);
     }
 
     @Override
     public DataType getCqlType() {
       return new ExtendedVectorType(
-          ApiDataTypeDefs.from(getValueType()).get().getCqlType(), getVectorSize());
-    }
-  }
-
-  /**
-   * Extended vector type to support vector size This is needed because java drivers
-   * DataTypes.vectorOf() method has a bug
-   */
-  public static class ExtendedVectorType extends DefaultVectorType {
-    public ExtendedVectorType(DataType subtype, int vectorSize) {
-      super(subtype, vectorSize);
-    }
-
-    @Override
-    public String asCql(boolean includeFrozen, boolean pretty) {
-      return "VECTOR<"
-          + getElementType().asCql(includeFrozen, pretty)
-          + ","
-          + getDimensions()
-          + ">";
+          ApiDataTypeDefs.from(getValueType()).get().getCqlType(), getDimension());
     }
   }
 }

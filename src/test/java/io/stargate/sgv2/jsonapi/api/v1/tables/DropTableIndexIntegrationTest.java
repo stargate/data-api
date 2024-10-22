@@ -1,12 +1,10 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.is;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
-import io.restassured.http.ContentType;
-import io.stargate.sgv2.jsonapi.api.v1.CollectionResource;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import org.junit.jupiter.api.*;
 
@@ -19,28 +17,28 @@ class DropTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
 
   @BeforeAll
   public final void createSimpleTable() {
-    String tableJson =
+    var json =
             """
-                              {
-                                      "name": "%s",
-                                      "definition": {
-                                          "columns": {
-                                              "id": {
-                                                  "type": "text"
-                                              },
-                                              "age": {
-                                                  "type": "int"
-                                              },
-                                              "name": {
-                                                  "type": "text"
-                                              }
-                                          },
-                                          "primaryKey": "id"
-                                      }
-                            }
-                        """
+      {
+        "name": "%s",
+        "definition": {
+            "columns": {
+                "id": {
+                    "type": "text"
+                },
+                "age": {
+                    "type": "int"
+                },
+                "name": {
+                    "type": "text"
+                }
+            },
+            "primaryKey": "id"
+        }
+    }
+      """
             .formatted(simpleTableName);
-    createTable(tableJson);
+    assertNamespaceCommand(keyspaceName).postCreateTable(json).wasSuccessful();
   }
 
   @Nested
@@ -50,42 +48,16 @@ class DropTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     @Order(1)
     public void dropIndex() {
-      String addIndexJson =
-          """
-                                {
-                                    "addIndex": {
-                                        "column": "age",
-                                        "indexName": "age_index"
-                                    }
-                                }
-                                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(addIndexJson)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, simpleTableName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
 
-      String dropIndexJson =
-          """
-                                {
-                                    "dropIndex": {
-                                        "indexName": "age_index"
-                                    }
-                                }
-                                """;
-      given()
-          .headers(getHeaders())
-          .contentType(ContentType.JSON)
-          .body(dropIndexJson)
-          .when()
-          .post(CollectionResource.BASE_PATH, keyspaceName, simpleTableName)
-          .then()
-          .statusCode(200)
-          .body("status.ok", is(1));
+      assertTableCommand(keyspaceName, simpleTableName)
+          .templated()
+          .createIndex("age_idx", "age")
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, simpleTableName)
+          .templated()
+          .dropIndex("age_idx")
+          .wasSuccessful();
     }
   }
 }

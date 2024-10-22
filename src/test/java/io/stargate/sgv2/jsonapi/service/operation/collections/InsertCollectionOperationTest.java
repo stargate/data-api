@@ -20,6 +20,7 @@ import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.QueryExecutor;
@@ -98,7 +99,13 @@ public class InsertCollectionOperationTest extends OperationTestBase {
                 SCHEMA_OBJECT_NAME,
                 null,
                 IdConfig.defaultIdConfig(),
-                new VectorConfig(true, -1, SimilarityFunction.COSINE, null),
+                VectorConfig.fromColumnDefinitions(
+                    List.of(
+                        new VectorConfig.ColumnVectorDefinition(
+                            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                            4,
+                            SimilarityFunction.COSINE,
+                            null))),
                 null),
             null,
             "testCommand",
@@ -156,7 +163,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       assertThat(result.status())
           .hasSize(1)
           .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -294,7 +301,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .containsEntry(
               CommandStatus.INSERTED_IDS,
               List.of(new DocumentId.StringId("doc1"), new DocumentId.StringId("doc2")));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
 
       // verify metrics
       String metrics = given().when().get("/metrics").then().statusCode(200).extract().asString();
@@ -409,7 +416,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       assertThat(result.status())
           .hasSize(1)
           .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -490,7 +497,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
           .asList()
           .containsExactlyInAnyOrder(
               new DocumentId.StringId("doc1"), new DocumentId.StringId("doc2"));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     // failure modes
@@ -900,7 +907,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       assertThat(result.status())
           .hasSize(1)
           .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test
@@ -951,7 +958,7 @@ public class InsertCollectionOperationTest extends OperationTestBase {
       assertThat(result.status())
           .hasSize(1)
           .containsEntry(CommandStatus.INSERTED_IDS, List.of(new DocumentId.StringId("doc1")));
-      assertThat(result.errors()).isNull();
+      assertThat(result.errors()).isEmpty();
     }
 
     @Test

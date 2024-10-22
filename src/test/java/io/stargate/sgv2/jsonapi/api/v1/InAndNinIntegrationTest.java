@@ -1,9 +1,9 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
 import static io.restassured.RestAssured.given;
+import static io.stargate.sgv2.jsonapi.api.v1.ResponseAssertions.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -25,7 +25,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
         .when()
         .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
         .then()
-        .statusCode(200);
+        .statusCode(200)
+        .body("$", responseIsWriteSuccess());
   }
 
   private ConfigurableJsonMatcher[] getJsonEquals(int... docs) {
@@ -199,9 +200,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(2))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents", containsInAnyOrder(jsonEquals(expected1), jsonEquals(expected2)));
     }
 
@@ -233,9 +233,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(expected5));
     }
 
@@ -263,9 +262,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(expected));
     }
 
@@ -291,9 +289,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(expected1));
     }
 
@@ -316,9 +313,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents", hasSize(0))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(0));
     }
 
     @Test
@@ -341,9 +337,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents", hasSize(0))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(0));
     }
 
     @Test
@@ -375,9 +370,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents", hasSize(0))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(0));
     }
 
     @Test
@@ -413,9 +407,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(expected1));
     }
 
@@ -438,9 +431,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents", hasSize(0))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(0));
     }
 
     @Test
@@ -462,9 +454,7 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("status", is(nullValue()))
-          .body("data", is(nullValue()))
-          .body("errors", is(notNullValue()))
+          .body("$", responseIsError())
           .body("errors", hasSize(1))
           .body("errors[0].exceptionClass", is("JsonApiException"))
           .body("errors[0].errorCode", is("INVALID_FILTER_EXPRESSION"))
@@ -495,9 +485,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(expected1));
     }
 
@@ -522,9 +511,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(2))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents", containsInAnyOrder(getJsonEquals(1, 4)));
     }
 
@@ -553,9 +541,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(expected1));
     }
 
@@ -585,9 +572,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(expected1));
     }
 
@@ -616,9 +602,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(expected1));
     }
   }
@@ -652,9 +637,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(1))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents[0]", jsonEquals(expected1));
     }
 
@@ -677,10 +661,9 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           // except doc 5
           .body("data.documents", hasSize(5))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents", notNullValue())
           .body("data.documents", containsInAnyOrder(getJsonEquals(1, 2, 3, 4, 6)));
     }
@@ -704,10 +687,9 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           // except doc 2
           .body("data.documents", hasSize(5))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents", notNullValue())
           .body("data.documents", containsInAnyOrder(getJsonEquals(1, 3, 4, 5, 6)));
     }
@@ -732,9 +714,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(6))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents", containsInAnyOrder(getJsonEquals(1, 2, 3, 4, 5, 6)));
       ;
     }
@@ -759,9 +740,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(6))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents", containsInAnyOrder(getJsonEquals(1, 2, 3, 4, 5, 6)));
     }
   }
@@ -791,9 +771,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents", hasSize(0))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(0));
     }
 
     @Test
@@ -822,9 +801,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
+          .body("$", responseIsFindSuccess())
           .body("data.documents", hasSize(6))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()))
           .body("data.documents", containsInAnyOrder(getJsonEquals(1, 2, 3, 4, 5, 6)));
     }
 
@@ -848,9 +826,8 @@ class InAndNinIntegrationTest extends AbstractCollectionIntegrationTestBase {
           .post(CollectionResource.BASE_PATH, keyspaceName, collectionName)
           .then()
           .statusCode(200)
-          .body("data.documents", hasSize(0))
-          .body("status", is(nullValue()))
-          .body("errors", is(nullValue()));
+          .body("$", responseIsFindSuccess())
+          .body("data.documents", hasSize(0));
     }
   }
 }

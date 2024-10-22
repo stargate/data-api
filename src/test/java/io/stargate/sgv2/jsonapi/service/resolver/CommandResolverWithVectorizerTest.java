@@ -19,6 +19,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.UpdateOneCommand;
 import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -41,6 +42,7 @@ import io.stargate.sgv2.jsonapi.service.testutil.DocumentUpdaterUtils;
 import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
+import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -83,7 +85,13 @@ public class CommandResolverWithVectorizerTest {
                 new SchemaObjectName(KEYSPACE_NAME, COLLECTION_NAME),
                 null,
                 IdConfig.defaultIdConfig(),
-                new VectorConfig(true, -1, SimilarityFunction.COSINE, null),
+                VectorConfig.fromColumnDefinitions(
+                    List.of(
+                        new VectorConfig.ColumnVectorDefinition(
+                            DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                            -1,
+                            SimilarityFunction.COSINE,
+                            null))),
                 null),
             null,
             null,

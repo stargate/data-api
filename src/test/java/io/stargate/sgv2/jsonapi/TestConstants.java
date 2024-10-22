@@ -1,11 +1,13 @@
 package io.stargate.sgv2.jsonapi;
 
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.feature.ApiFeatures;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
+import java.util.List;
 import org.apache.commons.lang3.RandomStringUtils;
 
 /**
@@ -26,7 +28,7 @@ public final class TestConstants {
           SCHEMA_OBJECT_NAME,
           null,
           IdConfig.defaultIdConfig(),
-          VectorConfig.notEnabledVectorConfig(),
+          VectorConfig.NOT_ENABLED_CONFIG,
           null);
 
   public static final CollectionSchemaObject VECTOR_COLLECTION_SCHEMA_OBJECT =
@@ -34,7 +36,13 @@ public final class TestConstants {
           SCHEMA_OBJECT_NAME,
           null,
           IdConfig.defaultIdConfig(),
-          new VectorConfig(true, -1, SimilarityFunction.COSINE, null),
+          VectorConfig.fromColumnDefinitions(
+              List.of(
+                  new VectorConfig.ColumnVectorDefinition(
+                      DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
+                      -1,
+                      SimilarityFunction.COSINE,
+                      null))),
           null);
 
   public static final KeyspaceSchemaObject KEYSPACE_SCHEMA_OBJECT =

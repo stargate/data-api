@@ -24,6 +24,7 @@ public enum PrimitiveApiDataType implements ApiDataType {
   TIMESTAMP("timestamp"),
   TINYINT("tinyint"),
   UUID("uuid"),
+  TIMEUUID("timeuuid"),
   VARINT("varint");
 
   private final String apiName;
