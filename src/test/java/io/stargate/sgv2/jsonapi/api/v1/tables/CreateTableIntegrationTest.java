@@ -744,7 +744,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                        }
                                     }
                                     """,
-                  "primaryKeyAsStringTable",
+                  "vectorizeConfigTest",
                   false,
                   null,
                   null)));
