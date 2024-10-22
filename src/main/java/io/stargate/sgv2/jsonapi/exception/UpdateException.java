@@ -14,8 +14,8 @@ public class UpdateException extends RequestException {
   }
 
   public enum Code implements ErrorCode<UpdateException> {
-    UPDATE_UNKNOWN_TABLE_COLUMN,
-    UPDATE_PRIMARY_KEY_COLUMN;
+    UPDATE_UNKNOWN_TABLE_COLUMNS,
+    UPDATE_PRIMARY_KEY_COLUMNS;
 
     private final ErrorTemplate<UpdateException> template;
 

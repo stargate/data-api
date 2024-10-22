@@ -12,16 +12,41 @@ public class TableTemplates extends TemplateRunner {
   }
 
   // ==================================================================================================================
-  // DML - INSERT / DELETE / UPDATE
+  // DML - INSERT / DELETE / UPDATE / FIND
   // ==================================================================================================================
+
+  public DataApiResponseValidator find(String filter) {
+    var json =
+            """
+             {
+              "filter": %s
+             }
+          """
+            .formatted(filter);
+    return sender.postFind(json);
+  }
+
+  public DataApiResponseValidator updateOne(String filter, String update) {
+    var json =
+            """
+             {
+              "filter": %s
+             },
+             {
+              "update": %s
+             }
+          """
+            .formatted(filter, update);
+    return sender.postUpdateOne(json);
+  }
 
   public DataApiResponseValidator deleteMany(String filter) {
     var json =
             """
-         {
-          "filter": %s
-         }
-    """
+               {
+                "filter": %s
+               }
+            """
             .formatted(filter);
     return sender.postDeleteMany(json);
   }
@@ -29,10 +54,10 @@ public class TableTemplates extends TemplateRunner {
   public DataApiResponseValidator deleteOne(String filter) {
     var json =
             """
-         {
-          "filter": %s
-         }
-    """
+               {
+                "filter": %s
+               }
+            """
             .formatted(filter);
     return sender.postDeleteOne(json);
   }

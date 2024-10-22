@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1.tables;
 
-import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
-import static org.hamcrest.Matchers.hasSize;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
+import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.TestClassOrder;
 @QuarkusIntegrationTest
 @WithTestResource(value = DseTestResource.class, restrictToAnnotatedClass = false)
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
-public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase {
+public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
   static final String TABLE_WITH_COMPLEX_PRIMARY_KEY = "table_" + System.currentTimeMillis();
 
@@ -84,16 +84,27 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
 
   @BeforeAll
   public final void createTable() {
-    var tableDefinition = TABLE_DEFINITION_TEMPLATE.formatted(TABLE_WITH_COMPLEX_PRIMARY_KEY);
-    createTable(tableDefinition);
-    // Index the column "indexed_column"
-    createIndex(TABLE_WITH_COMPLEX_PRIMARY_KEY, "indexed_column");
 
-    insertOneInTable(
-        TABLE_WITH_COMPLEX_PRIMARY_KEY,
-        DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted(
-            wrapWithDoubleQuote("index-column-value"),
-            wrapWithDoubleQuote("not-indexed-column-value")));
+    assertNamespaceCommand(keyspaceName)
+        .postCreateTable(TABLE_DEFINITION_TEMPLATE.formatted(TABLE_WITH_COMPLEX_PRIMARY_KEY))
+        .wasSuccessful();
+
+    // Index the column "indexed_column"
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .createIndex(
+            "IX_%s_%s".formatted(TABLE_WITH_COMPLEX_PRIMARY_KEY, "indexed_column"),
+            "indexed_column")
+        .wasSuccessful();
+
+    // Insert default row
+    assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .insertOne(
+            DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted(
+                wrapWithDoubleQuote("index-column-value"),
+                wrapWithDoubleQuote("not-indexed-column-value")))
+        .wasSuccessful();
   }
 
   // ==================================================================================================================
@@ -102,30 +113,27 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
   // reading)
   // ==================================================================================================================
 
-  @Test
-  public void updateManyNotSupportedForTable() {
-    var updatedValue = "updated_value" + System.currentTimeMillis();
-    var updateClauseJSON = SET_UPDATE_CLAUSE_TEMPLATE.formatted(updatedValue, updatedValue);
-    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postUpdateOne("{}", updateClauseJSON)
-        .mayHasSingleApiError(
-            FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE, FilterException.class);
-  }
+  //  @Test
+  //  public void updateManyNotSupportedForTable() {
+  //    var updatedValue = "updated_value" + System.currentTimeMillis();
+  //    var updateClauseJSON = SET_UPDATE_CLAUSE_TEMPLATE.formatted(updatedValue, updatedValue);
+  //    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+  //            .templated().updateOne("{}",updateClauseJSON)
+  //            .hasSingleApiError(FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE,
+  // FilterException.class)
+  //            .hasNoWarnings();
+  //  }
 
   @Test
   public void emptyFilter() {
-    var filterJSON =
-        """
-                 {}
-                """;
-    var updateJSON =
-        SET_UPDATE_CLAUSE_TEMPLATE.formatted(
-            "indexed_column_updated_value", "not_indexed_column_updated_value");
-
+    var updatedValue = "updated_value" + System.currentTimeMillis();
+    var updateClauseJSON = SET_UPDATE_CLAUSE_TEMPLATE.formatted(updatedValue, updatedValue);
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postUpdateOne(filterJSON, updateJSON)
-        .mayHasSingleApiError(
-            FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE, FilterException.class);
+        .templated()
+        .updateOne("{}", updateClauseJSON)
+        .hasSingleApiError(
+            FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE, FilterException.class)
+        .hasNoWarnings();
   }
 
   @Test
@@ -142,9 +150,11 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
             "indexed_column_updated_value", "not_indexed_column_updated_value");
 
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postUpdateOne(filterJSON, updateJSON)
-        .mayHasSingleApiError(
-            FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE, FilterException.class);
+        .templated()
+        .updateOne(filterJSON, updateJSON)
+        .hasSingleApiError(
+            FilterException.Code.NON_PRIMARY_KEY_FILTER_FOR_UPDATE_DELETE, FilterException.class)
+        .hasNoWarnings();
   }
 
   // ==================================================================================================================
@@ -161,9 +171,13 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
     var expectedUpdatedRow =
         DOC_JSON_DEFAULT_ROW_TEMPLATE.formatted(
             wrapWithDoubleQuote(updatedValue), wrapWithDoubleQuote(updatedValue));
+
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postUpdateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
-        .hasNoErrorsNoWarnings();
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .wasSuccessful()
+        .hasNoWarnings();
+
     checkUpdatedData(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, expectedUpdatedRow);
   }
 
@@ -178,9 +192,10 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
                     }
                 """;
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postUpdateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
-        .mayHasSingleApiError(
-            UpdateException.Code.UPDATE_UNKNOWN_TABLE_COLUMN, UpdateException.class);
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .hasSingleApiError(UpdateException.Code.UPDATE_UNKNOWN_TABLE_COLUMNS, UpdateException.class)
+        .hasNoWarnings();
   }
 
   @Test
@@ -194,9 +209,10 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
                   }
               """;
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postUpdateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
-        .mayHasSingleApiError(
-            UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMN, UpdateException.class);
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .hasSingleApiError(UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMNS, UpdateException.class)
+        .hasNoWarnings();
   }
 
   @Test
@@ -210,9 +226,10 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
                 }
             """;
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postUpdateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
-        .mayHasSingleApiError(
-            UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMN, UpdateException.class);
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .hasSingleApiError(UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMNS, UpdateException.class)
+        .hasNoWarnings();
   }
 
   @Test
@@ -227,9 +244,10 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
                 }
             """;
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postUpdateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
-        .mayHasSingleApiError(
-            UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMN, UpdateException.class);
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .hasSingleApiError(UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMNS, UpdateException.class)
+        .hasNoWarnings();
   }
 
   // ==================================================================================================================
@@ -249,8 +267,10 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
                       }
                   """;
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postUpdateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
-        .hasNoErrorsNoWarnings();
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .wasSuccessful()
+        .hasNoWarnings();
     checkUpdatedData(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, expectedUpdatedRow);
   }
 
@@ -265,9 +285,10 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
                       }
                   """;
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postUpdateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
-        .mayHasSingleApiError(
-            UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMN, UpdateException.class);
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .hasSingleApiError(UpdateException.Code.UPDATE_PRIMARY_KEY_COLUMNS, UpdateException.class)
+        .hasNoWarnings();
   }
 
   private String wrapWithDoubleQuote(String originString) {
@@ -276,9 +297,11 @@ public class TableUpdateIntegrationTest extends AbstractTableIntegrationTestBase
 
   private void checkUpdatedData(String filter, String expectedUpdatedRow) {
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-        .postFindByFilter(filter)
-        .hasNoErrorsNoWarnings()
-        .body("data.documents", hasSize(1))
-        .body("data.documents[0]", jsonEquals(expectedUpdatedRow));
+        .templated()
+        .find(filter)
+        .wasSuccessful()
+        .hasNoWarnings()
+        .hasDocuments(1)
+        .hasDocumentInPosition(0, expectedUpdatedRow);
   }
 }

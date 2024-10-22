@@ -225,18 +225,18 @@ request-errors:
 
   # UPDATE clause errors
   - scope: UPDATE
-    code: UPDATE_UNKNOWN_TABLE_COLUMN
+    code: UPDATE_UNKNOWN_TABLE_COLUMNS
     title: Unknown table columns in update
     body: |-
       Only columns defined in the table schema can be updated.
-      Invalid update included the following unknown column: ${unknownColumn}.
+      Invalid update included the following unknown columns: ${unknownColumns}.
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
 
   - scope: UPDATE
-    code: UPDATE_PRIMARY_KEY_COLUMN
-    title: Cannot update a primary key column
+    code: UPDATE_PRIMARY_KEY_COLUMNS
+    title: Cannot update primary key columns
     body: |-
-      Cannot update a primary key column: ${updateOnPrimaryKey}.
+      Cannot update primary key columns: ${updateOnPrimaryKeyColumns}.
       The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
 
 

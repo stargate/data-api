@@ -86,6 +86,10 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
       // TODO : should we assert the list of operations  is non empty here ?
       assignments.addAll(resolverFunction.apply(commandContext.schemaObject(), arguments));
     }
+
+    // Analyze table update columnAssignments before create CQLClause
+    new TableUpdateAnalyzer(commandContext.schemaObject()).analyze(assignments);
+
     return new DefaultUpdateValuesCQLClause(assignments);
   }
 
@@ -108,7 +112,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
         .map(
             entry ->
                 new ColumnAssignment(
-                    table,
+                    table.tableMetadata(),
                     CqlIdentifier.fromInternal(entry.getKey()),
                     RowShredder.shredValue(entry.getValue())))
         .toList();
@@ -136,7 +140,7 @@ public class TableUpdateResolver<CmdT extends Command & Updatable>
         .map(
             entry ->
                 new ColumnAssignment(
-                    table,
+                    table.tableMetadata(),
                     CqlIdentifier.fromInternal(entry.getKey()),
                     new JsonLiteral<>(null, JsonType.NULL)))
         .toList();
