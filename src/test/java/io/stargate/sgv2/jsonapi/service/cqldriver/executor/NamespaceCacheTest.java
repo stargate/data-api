@@ -154,7 +154,7 @@ public class NamespaceCacheTest {
       NamespaceCache namespaceCache = createNamespaceCache(queryExecutor);
       var schemaObject =
           namespaceCache
-              .getSchemaObject(dataApiRequestInfo, "table")
+              .getSchemaObject(dataApiRequestInfo, "table", false)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -285,7 +285,7 @@ public class NamespaceCacheTest {
       NamespaceCache namespaceCache = createNamespaceCache(queryExecutor);
       var schemaObject =
           namespaceCache
-              .getSchemaObject(dataApiRequestInfo, "table")
+              .getSchemaObject(dataApiRequestInfo, "table", false)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()
@@ -351,7 +351,7 @@ public class NamespaceCacheTest {
       NamespaceCache namespaceCache = createNamespaceCache(queryExecutor);
       var schemaObject =
           namespaceCache
-              .getSchemaObject(dataApiRequestInfo, "table")
+              .getSchemaObject(dataApiRequestInfo, "table", false)
               .subscribe()
               .withSubscriber(UniAssertSubscriber.create())
               .awaitItem()

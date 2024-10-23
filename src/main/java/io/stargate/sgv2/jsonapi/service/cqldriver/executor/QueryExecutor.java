@@ -250,6 +250,7 @@ public class QueryExecutor {
       DataApiRequestInfo dataApiRequestInfo, String namespace, String collectionName) {
     KeyspaceMetadata keyspaceMetadata;
     try {
+      cqlSessionCache.getSession(dataApiRequestInfo).refreshSchema();
       keyspaceMetadata =
           cqlSessionCache
               .getSession(dataApiRequestInfo)
