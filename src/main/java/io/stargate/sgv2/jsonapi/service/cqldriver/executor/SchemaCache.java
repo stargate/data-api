@@ -34,7 +34,8 @@ public class SchemaCache {
       DataApiRequestInfo dataApiRequestInfo,
       Optional<String> tenant,
       String namespace,
-      String collectionName) {
+      String collectionName,
+      boolean forceRefresh) {
 
     // TODO: refactor, this has duplicate code, the only special handling the OSS has is the tenant
     // check
@@ -47,12 +48,12 @@ public class SchemaCache {
           schemaCache.get(
               new CacheKey(Optional.of(tenant.orElse("default_tenant")), namespace),
               this::addNamespaceCache);
-      return namespaceCache.getSchemaObject(dataApiRequestInfo, collectionName);
+      return namespaceCache.getSchemaObject(dataApiRequestInfo, collectionName, forceRefresh);
     }
 
     final NamespaceCache namespaceCache =
         schemaCache.get(new CacheKey(tenant, namespace), this::addNamespaceCache);
-    return namespaceCache.getSchemaObject(dataApiRequestInfo, collectionName);
+    return namespaceCache.getSchemaObject(dataApiRequestInfo, collectionName, forceRefresh);
   }
 
   /** Evict collectionSetting Cache entry when there is a drop table event */

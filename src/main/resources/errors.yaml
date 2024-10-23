@@ -483,8 +483,35 @@ request-errors:
     code: INVALID_INDEX_DEFINITION
     title: Provided index configuration is not valid.
     body: |-
-      Provided index configuration is not valid: ${reason}.
-  
+      Provided index configuration is not valid: ${reason}.V
+
+  - scope: SCHEMA
+    code: COLUMN_ALREADY_EXISTS
+    title: Column already exist in the table.
+    body: |-
+      Column `${column}` already exist in the table.
+
+  - scope: SCHEMA
+    code: COLUMN_NOT_FOUND
+    title: Column doesn't exist in the table.
+    body: |-
+      Column `${column}` doesn't exist in the table.
+
+  - scope: SCHEMA
+    code: COLUMN_CANNOT_BE_DROPPED
+    title: Column can't be dropped.
+    body: |-
+      Column can't be dropped: ${reason}.
+
+  - scope: SCHEMA
+    code: NON_VECTOR_TYPE_COLUMN
+    title: Can not add vectorize service to non vector column.
+    body: |-
+      Can not add vectorize service to non vector column `${column}`.
+
+
+
+
 
 # ================================================================================================================
 # Server Errors
