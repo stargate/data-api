@@ -14,12 +14,13 @@ public class WarningException extends RequestException {
   }
 
   public enum Code implements ErrorCode<WarningException> {
+    COMPARISON_FILTER_UNSUPPORTED_BY_INDEXING,
+    DEPRECATED_COMMAND,
+    INCOMPLETE_PRIMARY_KEY_FILTER,
     MISSING_INDEX,
     NOT_EQUALS_UNSUPPORTED_BY_INDEXING,
-    COMPARISON_FILTER_UNSUPPORTED_BY_INDEXING,
-    ZERO_FILTER_OPERATIONS,
-    INCOMPLETE_PRIMARY_KEY_FILTER,
-    DEPRECATED_COMMAND;
+    QUERY_RETRIED_DUE_TO_INDEXING,
+    ZERO_FILTER_OPERATIONS;
 
     private final ErrorTemplate<WarningException> template;
 
