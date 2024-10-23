@@ -5,7 +5,6 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
-
 import java.util.Objects;
 
 /** Builder for a {@link CreateIndexAttempt}. */
