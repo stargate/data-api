@@ -12,7 +12,7 @@ public interface CQLOption<TargetT> extends Function<TargetT, TargetT>, CQLClaus
       return (select) -> select.limit(limit);
     }
 
-    static CQLOption<Select> withAllowFiltering() {
+    static CQLOption<Select> allowFiltering() {
       return Select::allowFiltering;
     }
   }
