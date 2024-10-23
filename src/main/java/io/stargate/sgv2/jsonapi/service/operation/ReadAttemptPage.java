@@ -43,6 +43,7 @@ public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
       resultBuilder.addStatus(CommandStatus.SORT_VECTOR, sortVector);
     }
     pagingState.getPagingStateString().ifPresent(resultBuilder::nextPageState);
+    maybeAddSchema(CommandStatus.PROJECTION_SCHEMA);
 
     attempts.completedAttempts().stream()
         .flatMap(attempt -> attempt.documents().stream())

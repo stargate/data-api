@@ -2,10 +2,12 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.OrderedApiColumnDefContainer;
 import java.time.Duration;
 import java.util.*;
 import org.slf4j.Logger;
@@ -118,8 +120,9 @@ public abstract class OperationAttempt<
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "execute() - starting subclass={}, {}",
+          "execute() - starting subclass={}, status={}, {}",
           getClass().getSimpleName(),
+          status(),
           positionAndAttemptId());
     }
 
@@ -205,7 +208,7 @@ public abstract class OperationAttempt<
     var shouldRetry = retryPolicy.shouldRetry(throwable);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "decideRetry() shouldRetry={}, {}, for throwable {}",
+          "decideRetry() - shouldRetry={}, {}, for throwable {}",
           shouldRetry,
           positionAndAttemptId(),
           throwable.toString());
@@ -306,7 +309,7 @@ public abstract class OperationAttempt<
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "setStatus() status changing from {} to {} for {}",
+          "setStatus() - status changing from {} to {} for {}",
           status(),
           newStatus,
           positionAndAttemptId());
@@ -436,6 +439,12 @@ public abstract class OperationAttempt<
         }
         setStatus(OperationStatus.ERROR);
       }
+    } else if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "maybeAddFailure() - will not add failure for {}, because has existing failure={}, attempted new failure={}",
+          positionAndAttemptId(),
+          failure.toString(),
+          throwable.toString());
     }
     return downcast();
   }
@@ -462,6 +471,18 @@ public abstract class OperationAttempt<
    */
   public List<APIException> warnings() {
     return List.copyOf(warnings);
+  }
+
+  /**
+   * Called to get the description of the schema to use when building the response.
+   *
+   * @return The optional object that describes the schema, if present the object will be serialised
+   *     to JSON and included in the response status such as {@link
+   *     CommandStatus#PRIMARY_KEY_SCHEMA}. How this is included in the response is up to the {@link
+   *     OperationAttemptPage} that is building the response.
+   */
+  public Optional<OrderedApiColumnDefContainer> schemaDescription() {
+    return Optional.empty();
   }
 
   /** helper method to build a string with the position and attemptId, used in logging. */

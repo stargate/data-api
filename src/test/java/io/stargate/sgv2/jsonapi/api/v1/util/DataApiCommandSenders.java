@@ -9,4 +9,6 @@ public class DataApiCommandSenders {
   public static DataApiTableCommandSender assertTableCommand(String keyspace, String tableName) {
     return new DataApiTableCommandSender(keyspace, tableName);
   }
+
+  public static final TestDataScenarios TEST_DATA_SCENARIOS = new TestDataScenarios();
 }

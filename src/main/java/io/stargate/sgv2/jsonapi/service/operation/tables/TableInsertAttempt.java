@@ -39,13 +39,15 @@ public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
     return Optional.ofNullable(rowId);
   }
 
-  /**
-   * Override to describe the schema of the primary keys in the row we inserted
-   *
-   * @return
-   */
+  /** Override to describe the schema of the primary keys in the row we inserted */
   @Override
-  public Optional<Object> schemaDescription() {
+  public Optional<OrderedApiColumnDefContainer> schemaDescription() {
+
+    /// we could be in an error state, and not have inserted anything , if we got a shredding error
+    // then we do not have the row to describe
+    if (row == null) {
+      return Optional.empty();
+    }
 
     var apiColumns = new OrderedApiColumnDefContainer(row.keyColumns().size());
     for (var cqlNamedValue : row.keyColumns().values()) {

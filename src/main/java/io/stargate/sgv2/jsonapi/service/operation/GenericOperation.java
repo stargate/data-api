@@ -72,13 +72,13 @@ public class GenericOperation<
   public Uni<Supplier<CommandResult>> execute(
       DataApiRequestInfo dataApiRequestInfo, QueryExecutor queryExecutor) {
 
-    LOGGER.debug("execute() starting to process attempts={}", attempts);
+    LOGGER.debug("execute() - starting to process attempts={}", attempts);
 
     return startMulti(dataApiRequestInfo, queryExecutor)
         .collect()
         .in(() -> pageBuilder, OperationAttemptAccumulator::accumulate)
         .onItem()
-        .invoke(() -> LOGGER.debug("execute() finished processing attempts={}", attempts))
+        .invoke(() -> LOGGER.debug("execute() - finished processing attempts={}", attempts))
         .onItem()
         .invoke(attempts::throwIfNotAllTerminal)
         .onItem()
