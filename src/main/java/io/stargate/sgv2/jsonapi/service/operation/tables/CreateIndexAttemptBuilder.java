@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Objects;
@@ -16,15 +17,21 @@ public class CreateIndexAttemptBuilder {
   private CqlIdentifier indexName;
   private CreateIndexAttempt.TextIndexOptions textIndexOptions;
   private CreateIndexAttempt.VectorIndexOptions vectorIndexOptions;
+  private SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy;
   private boolean ifNotExists;
 
   public CreateIndexAttemptBuilder(
-      int position, TableSchemaObject schemaObject, String columnName, String indexName) {
+      int position,
+      TableSchemaObject schemaObject,
+      String columnName,
+      String indexName,
+      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
     this.position = position;
     this.schemaObject = schemaObject;
     this.columnName = CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName);
     this.indexName = CqlIdentifierUtil.cqlIdentifierFromUserInput(indexName);
     this.dataType = schemaObject.tableMetadata().getColumn(this.columnName).get().getType();
+    this.schemaRetryPolicy = schemaRetryPolicy;
   }
 
   public CreateIndexAttemptBuilder ifNotExists(boolean ifNotExists) {
@@ -61,6 +68,7 @@ public class CreateIndexAttemptBuilder {
         indexName,
         textIndexOptions,
         vectorIndexOptions,
-        ifNotExists);
+        ifNotExists,
+        schemaRetryPolicy);
   }
 }

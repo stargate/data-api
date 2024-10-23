@@ -31,7 +31,7 @@ public class DropTableCommandResolver implements CommandResolver<DropTableComman
     final boolean ifExists = (options != null) && options.ifExists();
     final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
         new SchemaAttempt.SchemaRetryPolicy(
-            2,
+            ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
             Duration.ofMillis(
                 ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
     var attempt =

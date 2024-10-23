@@ -29,7 +29,7 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
       CommandContext<KeyspaceSchemaObject> ctx, DropIndexCommand command) {
     final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
         new SchemaAttempt.SchemaRetryPolicy(
-            2,
+            ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
             Duration.ofMillis(
                 ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
     final DropIndexCommand.Options options = command.options();

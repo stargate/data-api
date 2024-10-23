@@ -225,6 +225,10 @@ public interface OperationsConfig {
     /** Create table cool off period before create index . */
     @WithDefault("2000")
     int ddlDelayMillis();
+
+    /** Maximum retry attempt for ddl command. */
+    @WithDefault("2")
+    int ddlRetries();
   }
 
   /** Query consistency related configs. */

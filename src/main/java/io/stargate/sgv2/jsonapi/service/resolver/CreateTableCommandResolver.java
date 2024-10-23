@@ -93,7 +93,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
         new CreateTableAttemptBuilder(0, ctx.schemaObject())
             .retryDelayMillis(
                 ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis())
-            .maxRetries(2)
+            .maxRetries(ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries())
             .tableName(tableName)
             .columnTypes(columnTypes)
             .partitionKeys(partitionKeys)
