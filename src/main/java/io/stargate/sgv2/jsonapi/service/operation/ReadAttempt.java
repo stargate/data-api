@@ -1,21 +1,26 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.querybuilder.BuildableQuery;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -40,6 +45,7 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
   // but this class encapsulates the idea of how to convert a row into a document.
   private final DocumentSourceSupplier documentSourceSupplier;
 
+  private ReadAttemptRetryPolicy<SchemaT> readAttemptRetryPolicy;
   private ReadResult readResult;
 
   public ReadAttempt(
@@ -50,7 +56,7 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
       CqlOptions<Select> cqlOptions,
       CqlPagingState pagingState,
       DocumentSourceSupplier documentSourceSupplier) {
-    super(position, schemaObject, RetryPolicy.NO_RETRY);
+    super(position, schemaObject, new ReadAttemptRetryPolicy<SchemaT>());
 
     // nullable because the subclass may want to implement methods to build the statement itself
     this.selectCQLClause = selectCQLClause;
@@ -59,7 +65,13 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
     this.pagingState = pagingState;
     this.documentSourceSupplier = documentSourceSupplier;
 
+    downcastRetryPolicy();
     setStatus(OperationStatus.READY);
+  }
+
+  @SuppressWarnings("unchecked")
+  private void downcastRetryPolicy() {
+    readAttemptRetryPolicy = (ReadAttemptRetryPolicy<SchemaT>) retryPolicy;
   }
 
   /**
@@ -98,6 +110,8 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
   protected Uni<AsyncResultSet> executeStatement(CommandQueryExecutor queryExecutor) {
 
     var statement = buildReadStatement();
+    readAttemptRetryPolicy.setRetryContext(
+        new ReadAttemptRetryPolicy.RetryContext<>(statement, this));
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
@@ -165,5 +179,61 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
       this.currentPage = resultSet.currentPage();
       this.pagingState = CqlPagingState.from(resultSet);
     }
+  }
+
+  static class ReadAttemptRetryPolicy<T extends TableBasedSchemaObject> extends RetryPolicy {
+
+    private RetryContext<T> retryContext = null;
+
+    ReadAttemptRetryPolicy() {
+      super(1, Duration.ofMillis(1));
+    }
+
+    void setRetryContext(RetryContext<T> retryContext) {
+      this.retryContext = retryContext;
+    }
+
+    @Override
+    public boolean shouldRetry(Throwable throwable) {
+
+      if (retryContext == null) {
+        throw new IllegalStateException("retryContext must not be null");
+      }
+      // clear the retry context so that we don't keep a reference to the last statement
+      var currentRetryContext = retryContext;
+      retryContext = null;
+
+      var allowFilteringMissing =
+          throwable instanceof InvalidQueryException
+              && throwable.getMessage().endsWith("use ALLOW FILTERING");
+
+      if (allowFilteringMissing) {
+        if (LOGGER.isWarnEnabled()) {
+          LOGGER.warn(
+              "Retrying read attempt with added ALLOW FILTERING for {}, original query cql={} , values={}",
+              currentRetryContext.attempt.positionAndAttemptId(),
+              currentRetryContext.lastStatement.getQuery(),
+              currentRetryContext.lastStatement.getPositionalValues());
+        }
+
+        currentRetryContext.attempt.addWarning(
+            WarningException.Code.QUERY_RETRIED_DUE_TO_INDEXING.get(
+                errVars(
+                    currentRetryContext.attempt.schemaObject,
+                    map -> {
+                      map.put("originalCql", currentRetryContext.lastStatement.getQuery());
+                      map.put(
+                          "originalParameters",
+                          currentRetryContext.lastStatement.getPositionalValues().toString());
+                    })));
+        currentRetryContext.attempt.cqlOptions.addBuilderOption(
+            CQLOption.ForSelect.allowFiltering());
+        return true;
+      }
+      return false;
+    }
+
+    record RetryContext<T extends TableBasedSchemaObject>(
+        SimpleStatement lastStatement, ReadAttempt<T> attempt) {}
   }
 }
