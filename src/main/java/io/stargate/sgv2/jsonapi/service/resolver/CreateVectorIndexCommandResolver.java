@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
@@ -34,7 +33,6 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
   public Class<CreateVectorIndexCommand> getCommandClass() {
     return CreateVectorIndexCommand.class;
   }
-  ;
 
   @Override
   public Operation resolveTableCommand(
@@ -45,7 +43,6 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     final CreateVectorIndexCommand.Definition.Options definitionOptions =
         command.definition().options();
 
-    TableMetadata tableMetadata = ctx.schemaObject().tableMetadata();
     // Validate Column present in Table
     final Optional<ColumnMetadata> column =
         ctx.schemaObject()

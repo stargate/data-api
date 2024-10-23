@@ -37,7 +37,7 @@ public class DropIndexAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     Drop drop = SchemaBuilder.dropIndex(keyspaceIdentifier, name);
 
     // Apply any additional options
-    cqlOptions.applyBuilderOptions(drop);
+    drop = cqlOptions.applyBuilderOptions(drop);
 
     return drop.build();
   }

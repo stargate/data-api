@@ -37,7 +37,7 @@ public class DropTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     Drop drop = SchemaBuilder.dropTable(keyspaceIdentifier, name);
 
     // Apply any additional options
-    cqlOptions.applyBuilderOptions(drop);
+    drop = cqlOptions.applyBuilderOptions(drop);
 
     return drop.build();
   }
