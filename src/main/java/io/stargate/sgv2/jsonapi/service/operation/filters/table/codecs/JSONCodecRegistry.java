@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.ListType;
+import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.api.core.type.SetType;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
@@ -118,6 +119,23 @@ public class JSONCodecRegistry {
               CollectionCodecs.buildToCQLSetCodec(valueCodecCandidates, st.getElementType());
         }
         // fall through
+      } else if (columnType instanceof MapType mt) {
+        List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(mt.getValueType());
+        if (valueCodecCandidates != null) {
+          // Must check key type: only text/ascii supported
+          if (!isSupportedMapKeyType(mt.getKeyType())) {
+            throw new ToCQLCodecException(value, columnType, "unsupported map key type");
+          }
+
+          // Almost there! But go avoid ClassCastException if input not a JSON Array need this check
+          if (!(value instanceof Map<?, ?>)) {
+            throw new ToCQLCodecException(value, columnType, "no codec matching value type");
+          }
+          return (JSONCodec<JavaT, CqlT>)
+              CollectionCodecs.buildToCQLMapCodec(
+                  valueCodecCandidates, mt.getKeyType(), mt.getValueType());
+        }
+        // fall through
       } else if (columnType instanceof VectorType vt) {
         // Only Float<Vector> supported for now
         if (!vt.getElementType().equals(DataTypes.FLOAT)) {
@@ -204,6 +222,19 @@ public class JSONCodecRegistry {
       return (JSONCodec<JavaT, CqlT>)
           CollectionCodecs.buildToJsonSetCodec(valueCodecCandidates.get(0));
     }
+    if (fromCQLType instanceof MapType mt) {
+      final DataType keyType = mt.getKeyType();
+      if (!isSupportedMapKeyType(keyType)) {
+        return null; // so caller reports problem
+      }
+      List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(mt.getValueType());
+      if (valueCodecCandidates == null) {
+        return null; // so caller reports problem
+      }
+      return (JSONCodec<JavaT, CqlT>)
+          CollectionCodecs.buildToJsonMapCodec(valueCodecCandidates.get(0));
+    }
+
     if (fromCQLType instanceof VectorType vt) {
       // Only Float<Vector> supported for now
       if (vt.getElementType().equals(DataTypes.FLOAT)) {
@@ -213,5 +244,9 @@ public class JSONCodecRegistry {
     }
 
     return null;
+  }
+
+  private boolean isSupportedMapKeyType(DataType keyType) {
+    return keyType.equals(DataTypes.TEXT) || keyType.equals(DataTypes.ASCII);
   }
 }
