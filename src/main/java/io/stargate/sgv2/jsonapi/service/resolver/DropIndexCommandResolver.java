@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import com.datastax.oss.driver.api.querybuilder.schema.Drop;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DropIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
@@ -10,6 +11,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
+import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DropIndexAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -34,9 +36,13 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
                 ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
     final DropIndexCommand.Options options = command.options();
     final boolean ifExists = (options != null) && options.ifExists();
+    CQLOption<Drop> cqlOption = null;
+    if (ifExists) {
+      cqlOption = CQLOption.ForDrop.ifExists();
+    }
     var attempt =
         new DropIndexAttemptBuilder(ctx.schemaObject(), command.name(), schemaRetryPolicy)
-            .withIfExists(ifExists)
+            .withIfExists(cqlOption)
             .build();
     var attempts = new OperationAttemptContainer<>(List.of(attempt));
 

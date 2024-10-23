@@ -10,6 +10,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
+import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
 import io.stargate.sgv2.jsonapi.service.operation.tables.DropTableAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -34,9 +35,13 @@ public class DropTableCommandResolver implements CommandResolver<DropTableComman
             ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
             Duration.ofMillis(
                 ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
+    CQLOption cqlOption = null;
+    if (ifExists) {
+      cqlOption = CQLOption.ForDrop.ifExists();
+    }
     var attempt =
         new DropTableAttemptBuilder(ctx.schemaObject(), command.name(), schemaRetryPolicy)
-            .withIfExists(ifExists)
+            .withIfExists(cqlOption)
             .build();
     var attempts = new OperationAttemptContainer<>(List.of(attempt));
 

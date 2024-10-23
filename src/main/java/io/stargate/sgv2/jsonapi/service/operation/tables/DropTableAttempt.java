@@ -8,23 +8,24 @@ import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.schema.Drop;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
 
 /*
  An attempt to drop table in a keyspace.
 */
 public class DropTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
   private final CqlIdentifier name;
-  private final boolean ifExists;
+  private final CqlOptions<Drop> cqlOptions;
 
   public DropTableAttempt(
       int position,
       KeyspaceSchemaObject schemaObject,
       CqlIdentifier name,
-      boolean ifExists,
+      CqlOptions<Drop> cqlOptions,
       SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
     super(position, schemaObject, schemaRetryPolicy);
     this.name = name;
-    this.ifExists = ifExists;
+    this.cqlOptions = cqlOptions;
     setStatus(OperationStatus.READY);
   }
 
@@ -35,9 +36,8 @@ public class DropTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     // Set as StorageAttachedIndex as default
     Drop drop = SchemaBuilder.dropTable(keyspaceIdentifier, name);
 
-    if (ifExists) {
-      drop = drop.ifExists();
-    }
+    // Apply any additional options
+    cqlOptions.applyBuilderOptions(drop);
 
     return drop.build();
   }

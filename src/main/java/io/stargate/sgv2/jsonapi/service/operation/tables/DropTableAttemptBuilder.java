@@ -1,8 +1,11 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.querybuilder.schema.Drop;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
+import io.stargate.sgv2.jsonapi.service.operation.query.CQLOption;
+import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 
 /** Builds a {@link DropTableAttempt}. */
@@ -10,8 +13,8 @@ public class DropTableAttemptBuilder {
   private int position;
   private final KeyspaceSchemaObject schemaObject;
   private final CqlIdentifier name;
-  private boolean ifExists;
   private final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy;
+  private final CqlOptions<Drop> cqlOptions = new CqlOptions<>();
 
   public DropTableAttemptBuilder(
       KeyspaceSchemaObject schemaObject,
@@ -22,12 +25,14 @@ public class DropTableAttemptBuilder {
     this.name = CqlIdentifierUtil.cqlIdentifierFromUserInput(tableName);
   }
 
-  public DropTableAttemptBuilder withIfExists(boolean ifExists) {
-    this.ifExists = ifExists;
+  public DropTableAttemptBuilder withIfExists(CQLOption<Drop> cqlOption) {
+    if (cqlOption != null) {
+      this.cqlOptions.addBuilderOption(cqlOption);
+    }
     return this;
   }
 
   public DropTableAttempt build() {
-    return new DropTableAttempt(position++, schemaObject, name, ifExists, schemaRetryPolicy);
+    return new DropTableAttempt(position++, schemaObject, name, cqlOptions, schemaRetryPolicy);
   }
 }
