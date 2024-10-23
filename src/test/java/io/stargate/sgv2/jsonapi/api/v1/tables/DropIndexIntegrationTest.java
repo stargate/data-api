@@ -29,20 +29,26 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                 Map.entry("name", Map.of("type", "text"))),
             "id")
         .wasSuccessful();
-    assertTableCommand(keyspaceName, simpleTableName).templated().createIndex("age_idx", "age");
-    assertTableCommand(keyspaceName, simpleTableName).templated().createIndex("name_idx", "name");
+    assertTableCommand(keyspaceName, simpleTableName)
+        .templated()
+        .createIndex("age_idx", "age")
+        .wasSuccessful();
+    assertTableCommand(keyspaceName, simpleTableName)
+        .templated()
+        .createIndex("name_idx", "name")
+        .wasSuccessful();
   }
 
   @Nested
   @Order(1)
   class DropIndexSuccess {
     @Test
-    public void dropIndexWithoutOption() {
+    public void dropIndex() {
       assertNamespaceCommand(keyspaceName).templated().dropIndex("age_idx", false).wasSuccessful();
     }
 
     @Test
-    public void dropInvalidIndexWithoutOption() {
+    public void dropIndexNotExisting() {
       assertNamespaceCommand(keyspaceName)
           .templated()
           .dropIndex("invalid_idx", false)
@@ -51,7 +57,7 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     }
 
     @Test
-    public void dropIndexWithOption() {
+    public void dropIndexIfExists() {
 
       for (int i = 0; i < 2; i++) {
         assertNamespaceCommand(keyspaceName)
