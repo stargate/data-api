@@ -7,8 +7,10 @@ import static org.hamcrest.Matchers.hasEntry;
 
 import io.restassured.response.ValidatableResponse;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.*;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.Map;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -184,6 +186,10 @@ public class DataApiResponseValidator {
     return body(path, is(nullValue()));
   }
 
+  public DataApiResponseValidator hasField(String path) {
+    return body(path, is(anything()));
+  }
+
   public DataApiResponseValidator hasJSONField(String path, String rawJson) {
     return body(path, jsonEquals(rawJson));
   }
@@ -214,11 +220,30 @@ public class DataApiResponseValidator {
 
   // // // Read Command Validation // // //
 
+  public DataApiResponseValidator hasSingleDocument() {
+    return body("data.document", is(notNullValue()));
+  }
+
   public DataApiResponseValidator hasEmptyDataDocuments() {
     return body("data.documents", is(empty()));
   }
 
   public DataApiResponseValidator hasDocuments(int size) {
     return body("data.documents", hasSize(size));
+  }
+
+  // // // Projection Schema // // //
+  public DataApiResponseValidator hasProjectionSchema() {
+    return hasField("status." + CommandStatus.PROJECTION_SCHEMA);
+  }
+
+  public DataApiResponseValidator hasProjectionSchemaWith(String columnName, ApiDataType type) {
+    // expected format
+    /**
+     * "projectionSchema": { "country": { "type": "text" }, "name": { "type": "text" }, "human": {
+     * "type": "boolean" }, "email": { "type": "text" }, "age": { "type": "tinyint" } }
+     */
+    // NOTE: no way to get the json field name from the enum for now.
+    return body("status.projectionSchema." + columnName + ".type", equalTo(type.getApiName()));
   }
 }

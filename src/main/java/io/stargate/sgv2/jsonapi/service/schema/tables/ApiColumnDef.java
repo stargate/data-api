@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.exception.catchable.UnsupportedCqlTypeForDML;
 import java.util.Objects;
 
@@ -45,12 +46,19 @@ public class ApiColumnDef {
    */
   public static ApiColumnDef from(ColumnMetadata columnMetadata) throws UnsupportedCqlTypeForDML {
     Objects.requireNonNull(columnMetadata, "columnMetadata is must not be null");
+    return from(columnMetadata.getName(), columnMetadata.getType());
+  }
 
-    var optionalType = ApiDataTypeDefs.from(columnMetadata.getType());
+  public static ApiColumnDef from(CqlIdentifier column, DataType dataType)
+      throws UnsupportedCqlTypeForDML {
+    Objects.requireNonNull(column, "column is must not be null");
+    Objects.requireNonNull(dataType, "dataType is must not be null");
+
+    var optionalType = ApiDataTypeDefs.from(dataType);
     if (optionalType.isEmpty()) {
-      throw new UnsupportedCqlTypeForDML(columnMetadata);
+      throw new UnsupportedCqlTypeForDML(column, dataType);
     }
-    return new ApiColumnDef(columnMetadata.getName(), optionalType.get());
+    return new ApiColumnDef(column, optionalType.get());
   }
 
   /**

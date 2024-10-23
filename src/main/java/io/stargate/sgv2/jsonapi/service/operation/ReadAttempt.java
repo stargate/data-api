@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
 import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.selectFrom;
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -10,15 +11,20 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
+import io.stargate.sgv2.jsonapi.exception.catchable.UnsupportedCqlTypeForDML;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.OrderedApiColumnDefContainer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,6 +156,24 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
 
   protected SimpleStatement applyOptions(SimpleStatement statement) {
     return cqlOptions.applyStatementOptions(statement);
+  }
+
+  @Override
+  public Optional<OrderedApiColumnDefContainer> schemaDescription() {
+
+    // need to check because otherwise we do not have the read result
+    checkStatus("schemaDescription()", OperationStatus.COMPLETED);
+
+    var apiColumns =
+        new OrderedApiColumnDefContainer(readResult.resultSet.getColumnDefinitions().size());
+    for (var columnDef : readResult.resultSet.getColumnDefinitions()) {
+      try {
+        apiColumns.put(ApiColumnDef.from(columnDef.getName(), columnDef.getType()));
+      } catch (UnsupportedCqlTypeForDML e) {
+        throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
+      }
+    }
+    return Optional.of(apiColumns);
   }
 
   // This is a simple container for the result set so we can set one variable in the onSuccess
