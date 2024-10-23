@@ -30,9 +30,7 @@ public class TableTemplates extends TemplateRunner {
     var json =
             """
              {
-              "filter": %s
-             },
-             {
+              "filter": %s ,
               "update": %s
              }
           """

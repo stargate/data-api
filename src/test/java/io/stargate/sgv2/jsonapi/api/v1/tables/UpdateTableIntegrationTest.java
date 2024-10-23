@@ -113,17 +113,6 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
   // reading)
   // ==================================================================================================================
 
-  //  @Test
-  //  public void updateManyNotSupportedForTable() {
-  //    var updatedValue = "updated_value" + System.currentTimeMillis();
-  //    var updateClauseJSON = SET_UPDATE_CLAUSE_TEMPLATE.formatted(updatedValue, updatedValue);
-  //    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
-  //            .templated().updateOne("{}",updateClauseJSON)
-  //            .hasSingleApiError(FilterException.Code.FILTER_REQUIRED_FOR_UPDATE_DELETE,
-  // FilterException.class)
-  //            .hasNoWarnings();
-  //  }
-
   @Test
   public void emptyFilter() {
     var updatedValue = "updated_value" + System.currentTimeMillis();

@@ -101,6 +101,9 @@ public class DataApiResponseValidator {
       case CREATE_COLLECTION -> {
         return hasNoErrors().hasStatusOK();
       }
+      case UPDATE_ONE -> {
+        return hasNoErrors();
+      }
       default ->
           throw new IllegalArgumentException(
               "DataApiResponseValidator: Unexpected command name: " + commandName);
