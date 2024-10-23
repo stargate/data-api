@@ -6,6 +6,7 @@ import static org.hamcrest.Matchers.hasSize;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
 import org.junit.jupiter.api.*;
@@ -76,6 +77,16 @@ class DropTableIntegrationTest extends AbstractTableIntegrationTestBase {
           .listTables(false)
           .wasSuccessful()
           .body("status.tables", hasSize(0));
+    }
+
+    @Test
+    @Order(3)
+    public void dropInvalidTableIfExistsFalse() {
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .dropTable("invalid_table", false)
+          .hasSingleApiError(
+              SchemaException.Code.TABLE_NOT_FOUND.name(), "Table name used bot found");
     }
   }
 }

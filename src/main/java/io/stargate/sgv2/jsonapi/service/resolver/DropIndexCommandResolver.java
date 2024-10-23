@@ -45,6 +45,7 @@ public class DropIndexCommandResolver implements CommandResolver<DropIndexComman
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GenericOperation<>(attempts, pageBuilder, new KeyspaceDriverExceptionHandler());
+    return new GenericOperation<>(
+        attempts, pageBuilder, new KeyspaceDriverExceptionHandler(command));
   }
 }

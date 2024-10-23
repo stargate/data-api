@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.Map;
 import org.junit.jupiter.api.*;
@@ -38,6 +39,15 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     public void dropIndexWithoutOption() {
       assertNamespaceCommand(keyspaceName).templated().dropIndex("age_idx", false).wasSuccessful();
+    }
+
+    @Test
+    public void dropInvalidIndexWithoutOption() {
+      assertNamespaceCommand(keyspaceName)
+          .templated()
+          .dropIndex("invalid_idx", false)
+          .hasSingleApiError(
+              SchemaException.Code.INDEX_NOT_FOUND.name(), "Index name used not found");
     }
 
     @Test

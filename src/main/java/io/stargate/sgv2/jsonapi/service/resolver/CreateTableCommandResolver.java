@@ -108,7 +108,8 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GenericOperation<>(attempts, pageBuilder, new KeyspaceDriverExceptionHandler());
+    return new GenericOperation<>(
+        attempts, pageBuilder, new KeyspaceDriverExceptionHandler(command));
   }
 
   @Override
