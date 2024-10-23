@@ -5,8 +5,6 @@ import io.stargate.sgv2.jsonapi.api.model.command.KeyspaceCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.NoOptionsCommand;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -18,11 +16,7 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 @Schema(description = "Command that drops a table if one exists.")
 @JsonTypeName("dropTable")
 public record DropTableCommand(
-    @NotNull
-        @Size(min = 1, max = 48)
-        @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
-        @Schema(description = "Name of the table")
-        String name,
+    @NotNull @Schema(description = "Name of the table") String name,
     @Nullable @Schema(description = "Dropping table command option.", type = SchemaType.OBJECT)
         Options options)
     implements NoOptionsCommand, KeyspaceCommand {

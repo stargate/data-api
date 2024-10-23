@@ -6,6 +6,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 
+import java.util.Objects;
+
 /** Builder for a {@link CreateIndexAttempt}. */
 public class CreateIndexAttemptBuilder {
   private int position;
@@ -47,10 +49,9 @@ public class CreateIndexAttemptBuilder {
 
   public CreateIndexAttempt build() {
     // Validate required fields
-    if (schemaObject == null || columnName == null || dataType == null || indexName == null) {
-      throw new IllegalStateException(
-          "Not able to resolve to the required table metadata for creating index");
-    }
+    Objects.requireNonNull(columnName, "Column name cannot be null");
+    Objects.requireNonNull(dataType, "Data type cannot be null");
+    Objects.requireNonNull(indexName, "Index name cannot be null");
 
     // Create and return the CreateIndexAttempt object
     return new CreateIndexAttempt(
