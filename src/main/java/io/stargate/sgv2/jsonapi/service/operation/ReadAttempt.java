@@ -162,7 +162,9 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
   public Optional<OrderedApiColumnDefContainer> schemaDescription() {
 
     // need to check because otherwise we do not have the read result
-    checkStatus("schemaDescription()", OperationStatus.COMPLETED);
+    if (!checkStatus("schemaDescription()", OperationStatus.COMPLETED)) {
+      return Optional.empty();
+    }
 
     var apiColumns =
         new OrderedApiColumnDefContainer(readResult.resultSet.getColumnDefinitions().size());

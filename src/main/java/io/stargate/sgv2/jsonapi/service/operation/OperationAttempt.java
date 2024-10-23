@@ -120,8 +120,9 @@ public abstract class OperationAttempt<
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "execute() - starting subclass={}, {}",
+          "execute() - starting subclass={}, status={}, {}",
           getClass().getSimpleName(),
+          status(),
           positionAndAttemptId());
     }
 
@@ -207,7 +208,7 @@ public abstract class OperationAttempt<
     var shouldRetry = retryPolicy.shouldRetry(throwable);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "decideRetry() shouldRetry={}, {}, for throwable {}",
+          "decideRetry() - shouldRetry={}, {}, for throwable {}",
           shouldRetry,
           positionAndAttemptId(),
           throwable.toString());
@@ -308,7 +309,7 @@ public abstract class OperationAttempt<
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "setStatus() status changing from {} to {} for {}",
+          "setStatus() - status changing from {} to {} for {}",
           status(),
           newStatus,
           positionAndAttemptId());
@@ -438,6 +439,12 @@ public abstract class OperationAttempt<
         }
         setStatus(OperationStatus.ERROR);
       }
+    } else if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "maybeAddFailure() - will not add failure for {}, because has existing failure={}, attempted new failure={}",
+          positionAndAttemptId(),
+          failure.toString(),
+          throwable.toString());
     }
     return downcast();
   }
