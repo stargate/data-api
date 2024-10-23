@@ -22,17 +22,16 @@ public class UpdateAttemptBuilder<SchemaT extends TableBasedSchemaObject> {
 
   private final SchemaT tableBasedSchema;
   private final WhereCQLClauseAnalyzer whereCQLClauseAnalyzer;
-  private final UpdateValuesCQLClause updateCQLClause;
 
-  public UpdateAttemptBuilder(SchemaT tableBasedSchema, UpdateValuesCQLClause updateCQLClause) {
+  public UpdateAttemptBuilder(SchemaT tableBasedSchema) {
 
     this.tableBasedSchema = tableBasedSchema;
     this.whereCQLClauseAnalyzer =
         new WhereCQLClauseAnalyzer(tableBasedSchema, WhereCQLClauseAnalyzer.StatementType.UPDATE);
-    this.updateCQLClause = updateCQLClause;
   }
 
-  public UpdateAttempt<SchemaT> build(WhereCQLClause<Update> whereCQLClause) {
+  public UpdateAttempt<SchemaT> build(
+      WhereCQLClause<Update> whereCQLClause, UpdateValuesCQLClause updateCQLClause) {
 
     readPosition += 1;
 

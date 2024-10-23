@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.resolver.update;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnMetadata;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COMPARATOR;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
@@ -17,17 +18,17 @@ import java.util.stream.Collectors;
 
 /**
  * Analyzer for table update command.<br>
- * For Table UpdateOne update clause there are several rules to check.
+ * For Table UpdateOne update clause, there are several rules to check as followings:
  *
- * <p>1. checkUnknownColumns(). Can not update on unknown columns. <br>
- * 2. checkUpdateOnPrimaryKey(). Can not update on PK columns. <br>
+ * <p>1. rule checkUnknownColumns(). Can not update on unknown columns. <br>
+ * 2. rule checkUpdateOnPrimaryKey(). Can not update on PK columns. <br>
  */
 public class TableUpdateAnalyzer {
 
   private final TableBasedSchemaObject tableSchemaObject;
   private final TableMetadata tableMetadata;
   private final Map<CqlIdentifier, ColumnMetadata> tablePKColumns;
-  private final Map<CqlIdentifier, ColumnMetadata> allColumns;
+  private final Map<CqlIdentifier, ColumnMetadata> tableAllColumns;
 
   public TableUpdateAnalyzer(TableBasedSchemaObject tableSchemaObject) {
     this.tableSchemaObject =
@@ -36,7 +37,7 @@ public class TableUpdateAnalyzer {
     tablePKColumns =
         tableMetadata.getPrimaryKey().stream()
             .collect(Collectors.toMap(ColumnMetadata::getName, Function.identity()));
-    allColumns = tableMetadata.getColumns();
+    tableAllColumns = tableMetadata.getColumns();
   }
 
   public void analyze(List<ColumnAssignment> columnAssignments) {
@@ -49,17 +50,19 @@ public class TableUpdateAnalyzer {
   private void checkUnknownColumns(List<ColumnAssignment> columnAssignments) {
     List<CqlIdentifier> unknownColumns =
         columnAssignments.stream()
-            .filter(columnAssignment -> !allColumns.containsKey(columnAssignment.column))
+            .filter(columnAssignment -> !tableAllColumns.containsKey(columnAssignment.column))
             .map(columnAssignment -> columnAssignment.column)
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
     if (!unknownColumns.isEmpty()) {
-      throw UpdateException.Code.UPDATE_UNKNOWN_TABLE_COLUMNS.get(
+      throw UpdateException.Code.UNKNOWN_TABLE_COLUMNS.get(
           errVars(
               tableSchemaObject,
               map -> {
                 map.put("unknownColumns", errFmtCqlIdentifier(unknownColumns));
-                map.put("allColumns", errFmtColumnMetadata(tableMetadata.getColumns().values()));
+                // use tableAllColumns from tableMetadata, preserve the order in tableMetadata
+                map.put("allColumns", errFmtColumnMetadata(tableAllColumns.values()));
               }));
     }
   }
@@ -70,6 +73,7 @@ public class TableUpdateAnalyzer {
         columnAssignments.stream()
             .filter(columnAssignment -> tablePKColumns.containsKey(columnAssignment.column))
             .map(columnAssignment -> columnAssignment.column)
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
     if (!invalidUpdatePKColumns.isEmpty()) {

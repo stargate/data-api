@@ -80,14 +80,15 @@ public class UpdateOneCommandResolver implements CommandResolver<UpdateOneComman
   public Operation resolveTableCommand(
       CommandContext<TableSchemaObject> ctx, UpdateOneCommand command) {
 
-    var builder =
-        new UpdateAttemptBuilder<>(ctx.schemaObject(), tableUpdateResolver.resolve(ctx, command));
+    var builder = new UpdateAttemptBuilder<>(ctx.schemaObject());
 
     var where =
         TableWhereCQLClause.forUpdate(
             ctx.schemaObject(), tableFilterResolver.resolve(ctx, command));
 
-    var attempts = new OperationAttemptContainer<>(builder.build(where));
+    var attempts =
+        new OperationAttemptContainer<>(
+            builder.build(where, tableUpdateResolver.resolve(ctx, command)));
 
     var pageBuilder =
         UpdateAttemptPage.<TableSchemaObject>builder()

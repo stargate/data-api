@@ -126,6 +126,35 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
   }
 
   @Test
+  public void emptyUpdate() {
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, "{}")
+        .hasSingleApiError(
+            UpdateException.Code.ZERO_UPDATE_OPERATIONS_FOR_TABLE, UpdateException.class)
+        .hasNoWarnings();
+  }
+
+  @Test
+  public void unsupportedUpdateOperation() {
+    // Take $pop as example, currently not supported
+    var updateClauseJSON =
+        """
+                        {
+                            "$mul": {
+                              "indexed_column" : 1
+                            }
+                        }
+                  """;
+    DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
+        .templated()
+        .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
+        .hasSingleApiError(
+            UpdateException.Code.UNSUPPORTED_UPDATE_OPERATION_FOR_TABLE, UpdateException.class)
+        .hasNoWarnings();
+  }
+
+  @Test
   public void filterOnNonPrimaryKeyColumn() {
     var filterJSON =
         """
@@ -183,7 +212,7 @@ public class UpdateTableIntegrationTest extends AbstractTableIntegrationTestBase
     DataApiCommandSenders.assertTableCommand(keyspaceName, TABLE_WITH_COMPLEX_PRIMARY_KEY)
         .templated()
         .updateOne(FULL_PRIMARY_KEY_FILTER_DEFAULT_ROW, updateClauseJSON)
-        .hasSingleApiError(UpdateException.Code.UPDATE_UNKNOWN_TABLE_COLUMNS, UpdateException.class)
+        .hasSingleApiError(UpdateException.Code.UNKNOWN_TABLE_COLUMNS, UpdateException.class)
         .hasNoWarnings();
   }
 

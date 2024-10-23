@@ -46,6 +46,6 @@ public class TableUpdateAnalyzerTest {
         .columnAssignments()
         .setOnUnknownColumn(unknownColumnIdentifier)
         .analyzeThrows(UpdateException.class)
-        .assertUpdateExceptionCode(UpdateException.Code.UPDATE_UNKNOWN_TABLE_COLUMNS);
+        .assertUpdateExceptionCode(UpdateException.Code.UNKNOWN_TABLE_COLUMNS);
   }
 }
