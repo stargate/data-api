@@ -27,7 +27,7 @@ public class DataApiResponseValidator {
     this.responseIsError =
         switch (commandName) {
           case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE ->
-              responseIsErrorWithStatus();
+              responseIsErrorWithOptionalStatus();
           default -> responseIsError();
         };
     this.responseIsSuccess =

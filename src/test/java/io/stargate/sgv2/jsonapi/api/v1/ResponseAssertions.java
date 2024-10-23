@@ -42,6 +42,11 @@ public class ResponseAssertions {
         "responseIsErrorWithStatus", Presence.FORBIDDEN, Presence.REQUIRED, Presence.REQUIRED);
   }
 
+  public static TypeSafeMatcher<Map<String, ?>> responseIsErrorWithOptionalStatus() {
+    return envelopeChecker(
+        "responseIsErrorWithStatus", Presence.FORBIDDEN, Presence.OPTIONAL, Presence.REQUIRED);
+  }
+
   public static TypeSafeMatcher<Map<String, ?>> responseIsWriteSuccess() {
     return envelopeChecker(
         "responseIsWriteSuccess", Presence.FORBIDDEN, Presence.REQUIRED, Presence.FORBIDDEN);
