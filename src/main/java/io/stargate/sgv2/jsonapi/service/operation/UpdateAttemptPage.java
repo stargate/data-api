@@ -32,8 +32,11 @@ public class UpdateAttemptPage<SchemaT extends TableBasedSchemaObject>
     // if that means inserting
     // However - we do not know if an upsert happened :(
     // NOTE when update collection uses operation attempt this will get more complex
-    resultBuilder.addStatus(CommandStatus.MATCHED_COUNT, 1);
-    resultBuilder.addStatus(CommandStatus.MODIFIED_COUNT, 1);
+    // If there is error, we won't add this status.
+    if (attempts.errorAttempts().isEmpty()) {
+      resultBuilder.addStatus(CommandStatus.MATCHED_COUNT, 1);
+      resultBuilder.addStatus(CommandStatus.MODIFIED_COUNT, 1);
+    }
   }
 
   public static class Builder<SchemaT extends TableBasedSchemaObject>
