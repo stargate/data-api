@@ -136,6 +136,12 @@ public class JSONCodecRegistryTest {
   }
 
   @ParameterizedTest
+  @MethodSource("validCodecToCQLTestCasesMaps")
+  public void codecToCQLMaps(DataType cqlType, Object fromValue, Object expectedCqlValue) {
+    _codecToCQL(cqlType, fromValue, expectedCqlValue);
+  }
+
+  @ParameterizedTest
   @MethodSource("validCodecToCQLTestCasesVectors")
   public void codecToCQLVectors(DataType cqlType, Object fromValue, Object expectedCqlValue) {
     _codecToCQL(cqlType, fromValue, expectedCqlValue);
@@ -336,6 +342,32 @@ public class JSONCodecRegistryTest {
                 numberLiteral(new BigDecimal(-0.75)), numberLiteral(new BigDecimal(42.5))),
             Set.of(-0.75, 42.5)));
   }
+
+  private static Stream<Arguments> validCodecToCQLTestCasesMaps() {
+    // Arguments: (CQL-type, from-caller-json, bound-by-driver-for-cql)
+    return Stream.of(
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT),
+            Map.of("str1", stringLiteral("a"), "str2", stringLiteral("b")),
+            Map.of("str1", "a", "str2", "b")),
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.ASCII, DataTypes.INT),
+            // Important: all incoming JSON numbers are represented as Long, BigInteger,
+            // or BigDecimal. But CQL column here requires ints (not longs)
+            Map.of("numA", numberLiteral(123L), "numB", numberLiteral(-42L)),
+            Map.of("numA", 123, "numB", -42)),
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.TEXT, DataTypes.DOUBLE),
+            // All JSON fps bound as BigDecimal:
+            Map.of(
+                "fp1",
+                numberLiteral(new BigDecimal(0.25)),
+                "fp2",
+                numberLiteral(new BigDecimal(-7.5))),
+            Map.of("fp1", 0.25, "fp2", -7.5)));
+  }
+
+  //
 
   private static Stream<Arguments> validCodecToCQLTestCasesVectors() {
     DataType vector3Type = DataTypes.vectorOf(DataTypes.FLOAT, 3);
