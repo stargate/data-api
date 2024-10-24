@@ -17,6 +17,7 @@ import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.projection.IndexingProjector;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -157,20 +158,32 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           break;
         }
       }
-      // default function
+      // default function and source model
       SimilarityFunction function = SimilarityFunction.COSINE;
+      SourceModel sourceModel = SourceModel.OTHER;
       if (vectorIndex != null) {
         final String functionName =
             vectorIndex.getOptions().get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME);
-        final String sourceModel =
+        final String sourceModelName =
             vectorIndex.getOptions().get(DocumentConstants.Fields.VECTOR_INDEX_SOURCE_MODEL_NAME);
         if (functionName != null) {
           function = SimilarityFunction.fromString(functionName);
         }
+        if (sourceModelName != null) {
+          sourceModel = SourceModel.fromString(sourceModelName);
+        }
       }
       final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
       return createCollectionSettings(
-          keyspaceName, collectionName, table, true, vectorSize, function, comment, objectMapper);
+          keyspaceName,
+          collectionName,
+          table,
+          true,
+          vectorSize,
+          function,
+          sourceModel,
+          comment,
+          objectMapper);
     } else { // if not vector collection
       // handling comment so get the indexing config from comment
       final String comment = (String) table.getOptions().get(CqlIdentifier.fromInternal("comment"));
@@ -181,6 +194,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           false,
           0,
           SimilarityFunction.UNDEFINED,
+          SourceModel.UNDEFINED,
           comment,
           objectMapper);
     }
@@ -193,6 +207,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       boolean vectorEnabled,
       int vectorSize,
       SimilarityFunction similarityFunction,
+      SourceModel sourceModel,
       String comment,
       ObjectMapper objectMapper) {
     return createCollectionSettings(
@@ -202,6 +217,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         vectorEnabled,
         vectorSize,
         similarityFunction,
+        sourceModel,
         comment,
         objectMapper);
   }
@@ -213,6 +229,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       boolean vectorEnabled,
       int vectorSize,
       SimilarityFunction function,
+      SourceModel sourceModel,
       String comment,
       ObjectMapper objectMapper) {
 
@@ -229,6 +246,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
                         DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                         vectorSize,
                         function,
+                        sourceModel,
                         null))),
             null);
       } else {
@@ -276,7 +294,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
                 tableMetadata,
                 vectorEnabled,
                 vectorSize,
-                function);
+                function,
+                sourceModel);
       }
     }
   }
@@ -288,11 +307,13 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     int dimension = jsonNode.get("dimension").asInt();
     SimilarityFunction similarityFunction =
         SimilarityFunction.fromString(jsonNode.get("metric").asText());
+    SourceModel sourceModel = SourceModel.fromString(jsonNode.get("sourceModel").asText());
 
     return VectorConfig.ColumnVectorDefinition.fromJson(
         DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
         dimension,
         similarityFunction,
+        sourceModel,
         jsonNode,
         objectMapper);
   }
@@ -326,6 +347,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
           new CreateCollectionCommand.Options.VectorSearchConfig(
               vectorConfigColumn.vectorSize(),
               vectorConfigColumn.similarityFunction().name().toLowerCase(),
+              vectorConfigColumn.sourceModel().getSourceModel(),
               vectorizeConfig);
     }
     // populate the indexingConfig

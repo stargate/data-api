@@ -106,6 +106,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
           command.name(),
           vector.dimension(),
           vector.metric(),
+          vector.sourceModel(),
           comment,
           operationsConfig.databaseConfig().ddlDelayMillis(),
           operationsConfig.tooManyIndexesRollbackEnabled(),
@@ -198,7 +199,7 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
       vectorDimension = validateVectorize.validateService(service, vectorDimension);
       vector =
           new CreateCollectionCommand.Options.VectorSearchConfig(
-              vectorDimension, vector.metric(), vector.vectorizeConfig());
+              vectorDimension, vector.metric(), vector.sourceModel(), vector.vectorizeConfig());
     } else {
       // Ensure vector dimension is provided when service configuration is absent.
       if (vectorDimension == null) {

@@ -19,6 +19,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.collections.IdConfig;
 import jakarta.inject.Inject;
@@ -237,6 +238,7 @@ public class DataVectorizerTest {
                           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                           4,
                           SimilarityFunction.COSINE,
+                          SourceModel.OTHER,
                           new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
                               "custom", "custom", null, null)))),
               null);

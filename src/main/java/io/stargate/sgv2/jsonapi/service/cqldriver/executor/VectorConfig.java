@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -72,6 +73,7 @@ public class VectorConfig {
       String fieldName,
       int vectorSize,
       SimilarityFunction similarityFunction,
+      SourceModel sourceModel,
       VectorizeConfig vectorizeConfig) {
 
     // convert a vector jsonNode from comment option to vectorConfig, used for collection
@@ -80,11 +82,13 @@ public class VectorConfig {
       int dimension = jsonNode.get("dimension").asInt();
       SimilarityFunction similarityFunction =
           SimilarityFunction.fromString(jsonNode.get("metric").asText());
+      SourceModel sourceModel = SourceModel.fromString(jsonNode.get("sourceModel").asText());
 
       return fromJson(
           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
           dimension,
           similarityFunction,
+          sourceModel,
           jsonNode,
           objectMapper);
     }
@@ -94,6 +98,7 @@ public class VectorConfig {
         String fieldName,
         int dimension,
         SimilarityFunction similarityFunction,
+        SourceModel sourceModel,
         JsonNode jsonNode,
         ObjectMapper objectMapper) {
       VectorizeConfig vectorizeConfig = null;
@@ -102,7 +107,8 @@ public class VectorConfig {
       if (vectorizeServiceNode != null) {
         vectorizeConfig = VectorizeConfig.fromJson(vectorizeServiceNode, objectMapper);
       }
-      return new ColumnVectorDefinition(fieldName, dimension, similarityFunction, vectorizeConfig);
+      return new ColumnVectorDefinition(
+          fieldName, dimension, similarityFunction, sourceModel, vectorizeConfig);
     }
 
     /**
