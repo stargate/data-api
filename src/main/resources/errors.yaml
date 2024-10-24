@@ -369,6 +369,24 @@ request-errors:
       Keyspace used is not valid: ${keyspace} 
 
   - scope: SCHEMA
+    code: INDEX_NOT_FOUND
+    title: Index name used is not valid.
+    body: |-
+      Index name used not found: ${reason} 
+
+  - scope: SCHEMA
+    code: TABLE_NOT_FOUND
+    title: Table name used is not valid.
+    body: |-
+      Table name used bot found: ${reason} 
+
+  - scope: SCHEMA
+    code: TABLE_ALREADY_EXISTS
+    title: Table already exist in the keyspace.
+    body: |-
+      Table already exist in the keyspace: ${reason}
+
+  - scope: SCHEMA
     code: COLUMN_TYPE_INCORRECT
     title: Column data type not provided or format invalid in the definition
     body: |-

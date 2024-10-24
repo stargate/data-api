@@ -67,10 +67,6 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return postCommand(Command.CommandName.CREATE_VECTOR_INDEX, jsonClause);
   }
 
-  public DataApiResponseValidator postDropIndex(String jsonClause) {
-    return postCommand(Command.CommandName.DROP_INDEX, jsonClause);
-  }
-
   public DataApiResponseValidator postAlterTable(String tableDefAsJSON) {
     return postCommand(Command.CommandName.ALTER_TABLE, tableDefAsJSON);
   }

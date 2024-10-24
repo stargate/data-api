@@ -93,7 +93,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
         new CreateTableAttemptBuilder(0, ctx.schemaObject())
             .retryDelayMillis(
                 ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis())
-            .maxRetries(2)
+            .maxRetries(ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries())
             .tableName(tableName)
             .columnTypes(columnTypes)
             .partitionKeys(partitionKeys)
@@ -108,7 +108,8 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GenericOperation<>(attempts, pageBuilder, new KeyspaceDriverExceptionHandler());
+    return new GenericOperation<>(
+        attempts, pageBuilder, new KeyspaceDriverExceptionHandler(command));
   }
 
   @Override
