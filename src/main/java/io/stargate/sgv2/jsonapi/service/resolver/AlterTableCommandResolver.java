@@ -50,7 +50,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     final AlterTableOperation operation = command.operation();
     final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
         new SchemaAttempt.SchemaRetryPolicy(
-            2,
+            ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
             Duration.ofMillis(
                 ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
     List<AlterTableAttempt> attempts =

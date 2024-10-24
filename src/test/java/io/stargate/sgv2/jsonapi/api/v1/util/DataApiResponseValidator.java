@@ -24,7 +24,12 @@ public class DataApiResponseValidator {
     this.commandName = commandName;
     this.response = response;
 
-    this.responseIsError = responseIsError();
+    this.responseIsError =
+        switch (commandName) {
+          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE ->
+              responseIsErrorWithOptionalStatus();
+          default -> responseIsError();
+        };
     this.responseIsSuccess =
         switch (commandName) {
           case FIND_ONE, FIND -> responseIsFindSuccessOptionalStatus();
@@ -100,6 +105,9 @@ public class DataApiResponseValidator {
       }
       case CREATE_COLLECTION -> {
         return hasNoErrors().hasStatusOK();
+      }
+      case UPDATE_ONE -> {
+        return hasNoErrors();
       }
       default ->
           throw new IllegalArgumentException(
@@ -220,5 +228,9 @@ public class DataApiResponseValidator {
 
   public DataApiResponseValidator hasDocuments(int size) {
     return body("data.documents", hasSize(size));
+  }
+
+  public DataApiResponseValidator hasDocumentInPosition(int position, String documentJSON) {
+    return body("data.documents[%s]".formatted(position), jsonEquals(documentJSON));
   }
 }

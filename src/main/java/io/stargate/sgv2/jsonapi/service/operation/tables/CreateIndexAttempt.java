@@ -18,7 +18,6 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,8 +51,9 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
       CqlIdentifier indexName,
       TextIndexOptions textIndexOptions,
       VectorIndexOptions vectorIndexOptions,
-      boolean ifNotExists) {
-    super(position, schemaObject, new SchemaRetryPolicy(2, Duration.ofMillis(10)));
+      boolean ifNotExists,
+      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+    super(position, schemaObject, schemaRetryPolicy);
 
     this.columnName = columnName;
     this.dataType = dataType;

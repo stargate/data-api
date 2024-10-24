@@ -34,6 +34,10 @@ public class DataApiKeyspaceCommandSender
     return postCommand(Command.CommandName.DROP_TABLE, jsonClause);
   }
 
+  public DataApiResponseValidator postDropIndex(String jsonClause) {
+    return postCommand(Command.CommandName.DROP_INDEX, jsonClause);
+  }
+
   public DataApiResponseValidator postListTables(String jsonClause) {
     return postCommand(Command.CommandName.LIST_TABLES, jsonClause);
   }
