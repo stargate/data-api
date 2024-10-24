@@ -464,6 +464,12 @@ public class JSONCodecRegistryTest {
   }
 
   @ParameterizedTest
+  @MethodSource("validCodecToJSONTestCasesMaps")
+  public void codecToJSONMaps(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
+    _codecToJSON(cqlType, fromValue, expectedJsonValue);
+  }
+
+  @ParameterizedTest
   @MethodSource("validCodecToJSONTestCasesVectors")
   public void codecToJSONVectors(DataType cqlType, Object fromValue, JsonNode expectedJsonValue) {
     _codecToJSON(cqlType, fromValue, expectedJsonValue);
@@ -654,6 +660,29 @@ public class JSONCodecRegistryTest {
             DataTypes.setOf(DataTypes.DOUBLE),
             new LinkedHashSet<>(Arrays.asList(0.25, -4.5)),
             OBJECT_MAPPER.readTree("[0.25,-4.5]")));
+  }
+
+  private static Stream<Arguments> validCodecToJSONTestCasesMaps() throws IOException {
+    // Arguments: (CQL-type, from-CQL-result-set, JsonNode-to-serialize)
+    return Stream.of(
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.TEXT, DataTypes.TEXT),
+            Map.of("k1", "a", "k2", "b"),
+            OBJECT_MAPPER.readTree("{\"k1\":\"a\",\"k2\":\"b\"}")),
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.TEXT, DataTypes.INT),
+            Map.of("val1", 42, "val2", -99),
+            OBJECT_MAPPER.readTree("{\"val1\":42,\"val2\":-99}")),
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.ASCII, DataTypes.DOUBLE),
+            Map.of("da", 0.25, "db", -4.5),
+            OBJECT_MAPPER.readTree("{\"da\":0.25,\"db\":-4.5}")),
+        Arguments.of(
+            DataTypes.mapOf(DataTypes.TEXT, DataTypes.BLOB),
+            Map.of("value", ByteBuffer.wrap(TEST_DATA.BASE64_PADDED_DECODED_BYTES)),
+            OBJECT_MAPPER
+                .createObjectNode()
+                .set("value", binaryWrapper(TEST_DATA.BASE64_PADDED_ENCODED_STR).asJsonNode())));
   }
 
   private static Stream<Arguments> validCodecToJSONTestCasesVectors() throws IOException {
@@ -919,6 +948,25 @@ public class JSONCodecRegistryTest {
         .satisfies(
             e -> {
               assertThat(e.getMessage()).contains("no codec matching (list/set)");
+            });
+  }
+
+  @Test
+  public void invalidMapValueFail() {
+    DataType cqlTypeToTest = DataTypes.mapOf(DataTypes.TEXT, DataTypes.BIGINT);
+    Map<String, JsonLiteral<?>> valueToTest = Map.of("value", stringLiteral("xyz"));
+    var codec = assertGetCodecToCQL(cqlTypeToTest, valueToTest);
+
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () -> codec.toCQL(valueToTest),
+            "Throw ToCQLCodecException when attempting to convert MAP<TEXT,INT> from MAP<TEXT,TEXT>");
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.getMessage()).contains("no codec matching map declared value type");
             });
   }
 

@@ -111,7 +111,7 @@ public abstract class CollectionCodecs {
         continue;
       }
       if (elementCodec == null || !elementCodec.handlesJavaValue(element)) {
-        elementCodec = findElementCodec(valueCodecs, elementType, element);
+        elementCodec = findCollectionElementCodec(valueCodecs, elementType, element);
       }
       result.add(elementCodec.toCQL(element));
     }
@@ -132,7 +132,7 @@ public abstract class CollectionCodecs {
         continue;
       }
       if (elementCodec == null || !elementCodec.handlesJavaValue(element)) {
-        elementCodec = findElementCodec(valueCodecs, elementType, element);
+        elementCodec = findCollectionElementCodec(valueCodecs, elementType, element);
       }
       result.add(elementCodec.toCQL(element));
     }
@@ -156,14 +156,14 @@ public abstract class CollectionCodecs {
       // since same CQL value type can have multiple codecs based on JSON value type
       // (like multiple Number representations; or simple Text vs EJSON-wrapper)
       if (elementCodec == null || !elementCodec.handlesJavaValue(element)) {
-        elementCodec = findElementCodec(valueCodecs, elementType, element);
+        elementCodec = findMapValueCodec(valueCodecs, elementType, element);
       }
       result.put(key, elementCodec.toCQL(element));
     }
     return result;
   }
 
-  private static JSONCodec<Object, Object> findElementCodec(
+  private static JSONCodec<Object, Object> findCollectionElementCodec(
       List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Object element)
       throws ToCQLCodecException {
     for (JSONCodec<?, ?> codec : valueCodecs) {
@@ -174,6 +174,21 @@ public abstract class CollectionCodecs {
     String msg =
         String.format(
             "no codec matching (list/set) declared element type `%s`, actual value type `%s`",
+            elementType, element.getClass());
+    throw new ToCQLCodecException(element, elementType, msg);
+  }
+
+  private static JSONCodec<Object, Object> findMapValueCodec(
+      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Object element)
+      throws ToCQLCodecException {
+    for (JSONCodec<?, ?> codec : valueCodecs) {
+      if (codec.handlesJavaValue(element)) {
+        return (JSONCodec<Object, Object>) codec;
+      }
+    }
+    String msg =
+        String.format(
+            "no codec matching map declared value type `%s`, actual value type `%s`",
             elementType, element.getClass());
     throw new ToCQLCodecException(element, elementType, msg);
   }
@@ -209,7 +224,7 @@ public abstract class CollectionCodecs {
       if (value == null) {
         result.putNull(key);
       } else {
-        result.put(key, elementCodec.toJSON(objectMapper, key));
+        result.put(key, elementCodec.toJSON(objectMapper, value));
       }
     }
     return result;
