@@ -106,6 +106,9 @@ public class DataApiResponseValidator {
       case CREATE_COLLECTION -> {
         return hasNoErrors().hasStatusOK();
       }
+      case UPDATE_ONE -> {
+        return hasNoErrors();
+      }
       default ->
           throw new IllegalArgumentException(
               "DataApiResponseValidator: Unexpected command name: " + commandName);
@@ -225,5 +228,9 @@ public class DataApiResponseValidator {
 
   public DataApiResponseValidator hasDocuments(int size) {
     return body("data.documents", hasSize(size));
+  }
+
+  public DataApiResponseValidator hasDocumentInPosition(int position, String documentJSON) {
+    return body("data.documents[%s]".formatted(position), jsonEquals(documentJSON));
   }
 }

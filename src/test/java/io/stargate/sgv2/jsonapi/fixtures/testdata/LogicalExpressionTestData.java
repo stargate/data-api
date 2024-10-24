@@ -6,6 +6,8 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.*;
 import io.stargate.sgv2.jsonapi.service.operation.query.DBLogicalExpression;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
@@ -16,6 +18,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class LogicalExpressionTestData extends TestDataSuplier {
+
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   public LogicalExpressionTestData(TestData testData) {
     super(testData);
@@ -303,6 +307,46 @@ public class LogicalExpressionTestData extends TestDataSuplier {
       }
 
       throw new IllegalArgumentException("Unsupported type");
+    }
+
+    public static JsonNode jsonNodeValue(DataType dataType) {
+      Object value = value(dataType);
+      if (value instanceof String) {
+        return MAPPER.getNodeFactory().textNode((String) value);
+      }
+      if (value instanceof Integer) {
+        return MAPPER.getNodeFactory().numberNode((Integer) value);
+      }
+      if (value instanceof Long) {
+        return MAPPER.getNodeFactory().numberNode((Long) value);
+      }
+      if (value instanceof BigDecimal) {
+        return MAPPER.getNodeFactory().numberNode((BigDecimal) value);
+      }
+      if (value instanceof Double) {
+        return MAPPER.getNodeFactory().numberNode((Double) value);
+      }
+      if (value instanceof Float) {
+        return MAPPER.getNodeFactory().numberNode((Float) value);
+      }
+      if (value instanceof Short) {
+        return MAPPER.getNodeFactory().numberNode((Short) value);
+      }
+      if (value instanceof Byte) {
+        return MAPPER.getNodeFactory().numberNode((Byte) value);
+      }
+      if (value instanceof BigInteger) {
+        return MAPPER.getNodeFactory().numberNode((BigInteger) value);
+      }
+      if (value instanceof Boolean) {
+        return MAPPER.getNodeFactory().booleanNode((Boolean) value);
+      }
+      if (value instanceof byte[]) {
+        return MAPPER.getNodeFactory().binaryNode((byte[]) value);
+      }
+
+      throw new IllegalArgumentException(
+          "Did not understand type %s to convert into JsonNode".formatted(dataType));
     }
   }
 }
