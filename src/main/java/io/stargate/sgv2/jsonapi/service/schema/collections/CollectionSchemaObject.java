@@ -162,6 +162,8 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       if (vectorIndex != null) {
         final String functionName =
             vectorIndex.getOptions().get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME);
+        final String sourceModel =
+            vectorIndex.getOptions().get(DocumentConstants.Fields.VECTOR_INDEX_SOURCE_MODEL_NAME);
         if (functionName != null) {
           function = SimilarityFunction.fromString(functionName);
         }
