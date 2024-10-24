@@ -6,8 +6,10 @@ import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -50,15 +52,19 @@ public class TableSchemaObject extends TableBasedSchemaObject {
                     indexMetadata -> indexMetadata.getTarget().equals(column.getKey().asCql(true)))
                 .findFirst();
         SimilarityFunction similarityFunction = SimilarityFunction.COSINE;
+        SourceModel sourceModel = SourceModel.OTHER;
         if (index.isPresent()) {
           final IndexMetadata indexMetadata = index.get();
           final Map<String, String> indexOptions = indexMetadata.getOptions();
-          final String sourceModel = indexOptions.get("source_model");
-          final String similarityFunctionValue = indexOptions.get("similarity_function");
+          final String sourceModelValue =
+              indexOptions.get(DocumentConstants.Fields.VECTOR_INDEX_SOURCE_MODEL_NAME);
+          final String similarityFunctionValue =
+              indexOptions.get(DocumentConstants.Fields.VECTOR_INDEX_FUNCTION_NAME);
           if (similarityFunctionValue != null) {
             similarityFunction = SimilarityFunction.fromString(similarityFunctionValue);
-          } else if (sourceModel != null) {
-            similarityFunction = VectorConstant.SUPPORTED_SOURCES.get(sourceModel);
+          } else if (sourceModelValue != null) {
+            similarityFunction = VectorConstant.SUPPORTED_SOURCES.get(sourceModelValue);
+            sourceModel = SourceModel.fromString(sourceModelValue);
           }
         }
         int dimension = vectorType.getDimensions();
@@ -67,6 +73,7 @@ public class TableSchemaObject extends TableBasedSchemaObject {
                 column.getKey().asInternal(),
                 dimension,
                 similarityFunction,
+                sourceModel,
                 vectorizeConfigMap.get(column.getKey().asInternal()));
         columnVectorDefinitions.add(columnVectorDefinition);
       }
