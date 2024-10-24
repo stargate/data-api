@@ -192,11 +192,19 @@
       <artifactId>java-driver-metrics-micrometer</artifactId>
       <version>${driver.version}</version>
     </dependency>
+    <!--Note, using Java Driver QueryBuilder from a preview build. See https://github.com/stargate/data-api/issues/1509 -->
     <dependency>
       <groupId>com.datastax.oss</groupId>
       <artifactId>java-driver-query-builder</artifactId>
-      <version>${driver.version}</version>
+      <version>4.19.0-preview1</version>
+      <scope>system</scope>
+      <systemPath>${project.basedir}/lib/java-driver-query-builder-4.19.0-preview1.jar</systemPath>
     </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>com.datastax.oss</groupId>-->
+    <!--      <artifactId>java-driver-query-builder</artifactId>-->
+    <!--      <version>${driver.version}</version>-->
+    <!--    </dependency>-->
     <!-- Jackson YAML module for config file loading
       -->
     <dependency>
