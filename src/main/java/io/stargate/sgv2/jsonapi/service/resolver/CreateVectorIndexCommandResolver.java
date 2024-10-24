@@ -1,7 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
@@ -13,12 +12,14 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,7 +33,6 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
   public Class<CreateVectorIndexCommand> getCommandClass() {
     return CreateVectorIndexCommand.class;
   }
-  ;
 
   @Override
   public Operation resolveTableCommand(
@@ -43,7 +43,6 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     final CreateVectorIndexCommand.Definition.Options definitionOptions =
         command.definition().options();
 
-    TableMetadata tableMetadata = ctx.schemaObject().tableMetadata();
     // Validate Column present in Table
     final Optional<ColumnMetadata> column =
         ctx.schemaObject()
@@ -87,8 +86,15 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
       similarityFunction = SimilarityFunction.COSINE;
     }
 
+    final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
+        new SchemaAttempt.SchemaRetryPolicy(
+            ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
+            Duration.ofMillis(
+                ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
+
     var attempt =
-        new CreateIndexAttemptBuilder(0, ctx.schemaObject(), columnName, indexName)
+        new CreateIndexAttemptBuilder(
+                0, ctx.schemaObject(), columnName, indexName, schemaRetryPolicy)
             .ifNotExists(ifNotExists)
             .vectorIndexOptions(similarityFunction, sourceModel)
             .build();

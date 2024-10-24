@@ -24,14 +24,6 @@ import org.junit.jupiter.api.TestClassOrder;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase {
   String testTableName = "alter_table_test";
-  String listTablesWithSchema =
-      """
-                  {
-                    "options" : {
-                      "explain" : true
-                    }
-                  }
-                  """;
 
   @BeforeAll
   public final void createSimpleTable() {
@@ -82,7 +74,8 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .wasSuccessful();
 
       assertNamespaceCommand(keyspaceName)
-          .postListTables(listTablesWithSchema)
+          .templated()
+          .listTables(true)
           .wasSuccessful()
           .body("status.tables[0].definition.columns.vehicle_id_4.type", equalTo("text"))
           .body("status.tables[0].definition.columns.physicalAddress.type", equalTo("text"))
@@ -134,7 +127,9 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .wasSuccessful();
 
       assertNamespaceCommand(keyspaceName)
-          .postListTables(listTablesWithSchema)
+          .templated()
+          .listTables(true)
+          .wasSuccessful()
           .wasSuccessful()
           .body("status.tables[0].definition.columns.vehicle_id_4", nullValue())
           .body("status.tables[0].definition.columns.list_type", nullValue());
@@ -201,7 +196,8 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .body("status.ok", is(1));
 
       assertNamespaceCommand(keyspaceName)
-          .postListTables(listTablesWithSchema)
+          .templated()
+          .listTables(true)
           .wasSuccessful()
           .body(
               "status.tables[0].definition.columns.vector_type_1.service.provider",
@@ -261,7 +257,8 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .hasNoErrors()
           .body("status.ok", is(1));
       assertNamespaceCommand(keyspaceName)
-          .postListTables(listTablesWithSchema)
+          .templated()
+          .listTables(true)
           .wasSuccessful()
           .body("status.tables[0].definition.columns.vector_type_1.service", nullValue())
           .body(

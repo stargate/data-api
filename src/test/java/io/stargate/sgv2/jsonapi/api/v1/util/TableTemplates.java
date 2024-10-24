@@ -88,17 +88,6 @@ public class TableTemplates extends TemplateRunner {
     return sender.postCreateIndex(json);
   }
 
-  public DataApiResponseValidator dropIndex(String indexName) {
-    var json =
-            """
-            {
-              "indexName": "%s"
-            }
-          """
-            .formatted(indexName);
-    return sender.postDropIndex(json);
-  }
-
   public DataApiResponseValidator alterTable(String alterOperation, Object columns) {
     var json =
             """

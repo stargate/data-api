@@ -29,7 +29,7 @@ public class CqlOptions<QueryT extends BuildableQuery> implements CQLClause {
     return this;
   }
 
-  public BuildableQuery applyBuilderOptions(QueryT builderQuery) {
+  public QueryT applyBuilderOptions(QueryT builderQuery) {
     // re-assign because the query build will return new immutable instances
     for (CQLOption<QueryT> option : builderOptions) {
       builderQuery = option.apply(builderQuery);

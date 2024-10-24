@@ -13,11 +13,13 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
+import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateIndexAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -80,9 +82,14 @@ public class CreateIndexCommandResolver implements CommandResolver<CreateIndexCo
     if (commandOptions != null && commandOptions.ifNotExists() != null) {
       ifNotExists = commandOptions.ifNotExists();
     }
-
+    final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
+        new SchemaAttempt.SchemaRetryPolicy(
+            ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
+            Duration.ofMillis(
+                ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
     var attempt =
-        new CreateIndexAttemptBuilder(0, ctx.schemaObject(), columnName, indexName)
+        new CreateIndexAttemptBuilder(
+                0, ctx.schemaObject(), columnName, indexName, schemaRetryPolicy)
             .ifNotExists(ifNotExists)
             .textIndexOptions(caseSensitive, normalize, ascii)
             .build();
