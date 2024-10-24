@@ -24,6 +24,5 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.*;
   @JsonSubTypes.Type(value = AlterTableCommand.class),
   @JsonSubTypes.Type(value = CreateIndexCommand.class),
   @JsonSubTypes.Type(value = CreateVectorIndexCommand.class),
-  @JsonSubTypes.Type(value = DropIndexCommand.class),
 })
 public interface CollectionCommand extends Command {}

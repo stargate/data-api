@@ -20,6 +20,7 @@ public class SchemaException extends RequestException {
     COLUMN_CANNOT_BE_DROPPED,
     COLUMN_TYPE_INCORRECT,
     COLUMN_TYPE_UNSUPPORTED,
+    INDEX_NOT_FOUND,
     INVALID_CONFIGURATION,
     INVALID_INDEX_DEFINITION,
     INVALID_KEYSPACE,
@@ -30,6 +31,8 @@ public class SchemaException extends RequestException {
     NON_VECTOR_TYPE_COLUMN,
     PRIMARY_KEY_DEFINITION_INCORRECT,
     SET_TYPE_INVALID_DEFINITION,
+    TABLE_ALREADY_EXISTS,
+    TABLE_NOT_FOUND,
     VECTOR_TYPE_INVALID_DEFINITION;
 
     private final ErrorTemplate<SchemaException> template;
