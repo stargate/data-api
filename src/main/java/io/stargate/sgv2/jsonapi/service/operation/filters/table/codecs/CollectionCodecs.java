@@ -174,7 +174,7 @@ public abstract class CollectionCodecs {
     String msg =
         String.format(
             "no codec matching (list/set) declared element type `%s`, actual value type `%s`",
-            elementType, element.getClass());
+            elementType, element.getClass().getName());
     throw new ToCQLCodecException(element, elementType, msg);
   }
 
@@ -189,7 +189,7 @@ public abstract class CollectionCodecs {
     String msg =
         String.format(
             "no codec matching map declared value type `%s`, actual value type `%s`",
-            elementType, element.getClass());
+            elementType, element.getClass().getName());
     throw new ToCQLCodecException(element, elementType, msg);
   }
 
