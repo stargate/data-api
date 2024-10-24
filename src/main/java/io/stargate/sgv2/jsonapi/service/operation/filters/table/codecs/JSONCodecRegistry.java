@@ -99,7 +99,7 @@ public class JSONCodecRegistry {
       if (columnType instanceof ListType lt) {
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(lt.getElementType());
         if (valueCodecCandidates != null) {
-          // Almost there! But go avoid ClassCastException if input not a JSON Array need this check
+          // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
           if (!(value instanceof Collection<?>)) {
             throw new ToCQLCodecException(value, columnType, "no codec matching value type");
           }
@@ -111,7 +111,7 @@ public class JSONCodecRegistry {
       } else if (columnType instanceof SetType st) {
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(st.getElementType());
         if (valueCodecCandidates != null) {
-          // Almost there! But go avoid ClassCastException if input not a JSON Array need this check
+          // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
           if (!(value instanceof Collection<?>)) {
             throw new ToCQLCodecException(value, columnType, "no codec matching value type");
           }
@@ -127,7 +127,7 @@ public class JSONCodecRegistry {
             throw new ToCQLCodecException(value, columnType, "unsupported map key type");
           }
 
-          // Almost there! But go avoid ClassCastException if input not a JSON Array need this check
+          // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
           if (!(value instanceof Map<?, ?>)) {
             throw new ToCQLCodecException(value, columnType, "no codec matching value type");
           }
