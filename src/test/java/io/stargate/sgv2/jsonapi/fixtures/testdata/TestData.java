@@ -74,4 +74,8 @@ public class TestData {
   public WhereCQLClauseTestData whereCQLClause() {
     return getOrCache(WhereCQLClauseTestData.class);
   }
+
+  public TableUpdateAnalyzerTestData tableUpdateAnalyzer() {
+    return getOrCache(TableUpdateAnalyzerTestData.class);
+  }
 }

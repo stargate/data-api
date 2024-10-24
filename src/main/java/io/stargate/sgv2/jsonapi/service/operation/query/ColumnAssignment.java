@@ -28,7 +28,7 @@ import java.util.Objects;
 public class ColumnAssignment implements CQLAssignment {
 
   private final TableMetadata tableMetadata;
-  private final CqlIdentifier column;
+  public final CqlIdentifier column;
   private final JsonLiteral<?> value;
 
   /**
