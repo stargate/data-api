@@ -120,7 +120,7 @@ public class DataVectorizer {
                   if (vectorData.size() != vectorizeTexts.size()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                         "Embedding provider '%s' didn't return the expected number of embeddings. Expect: '%d'. Actual: '%d'",
-                        collectionVectorDefinition.vectorizeConfig().provider(),
+                        collectionVectorDefinition.vectorizeDefinition().provider(),
                         vectorizeTexts.size(),
                         vectorData.size());
                   }
@@ -134,7 +134,7 @@ public class DataVectorizer {
                     if (vector.length != collectionVectorDefinition.vectorSize()) {
                       throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                           "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                          collectionVectorDefinition.vectorizeConfig().provider(),
+                          collectionVectorDefinition.vectorizeDefinition().provider(),
                           collectionVectorDefinition.vectorSize(),
                           vector.length);
                     }
@@ -183,7 +183,7 @@ public class DataVectorizer {
               if (vector.length != collectionVectorDefinition.vectorSize()) {
                 throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                     "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                    collectionVectorDefinition.vectorizeConfig().provider(),
+                    collectionVectorDefinition.vectorizeDefinition().provider(),
                     collectionVectorDefinition.vectorSize(),
                     vector.length);
               }
@@ -229,7 +229,7 @@ public class DataVectorizer {
                   if (vector.length != collectionVectorDefinition.vectorSize()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(
                         "Embedding provider '%s' did not return expected embedding length. Expect: '%d'. Actual: '%d'",
-                        collectionVectorDefinition.vectorizeConfig().provider(),
+                        collectionVectorDefinition.vectorizeDefinition().provider(),
                         collectionVectorDefinition.vectorSize(),
                         vector.length);
                   }

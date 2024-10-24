@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.catchable;
+package io.stargate.sgv2.jsonapi.exception.checked;
 
 /**
  * Base for checked exceptions we have in the code.

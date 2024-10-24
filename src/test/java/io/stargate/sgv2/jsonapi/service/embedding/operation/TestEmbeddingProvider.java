@@ -26,7 +26,7 @@ public class TestEmbeddingProvider extends EmbeddingProvider {
                           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                           3,
                           SimilarityFunction.COSINE,
-                          new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
+                          new VectorConfig.ColumnVectorDefinition.VectorizeDefinition(
                               "custom", "custom", null, null)))),
               null),
           new TestEmbeddingProvider(),

@@ -1,4 +1,4 @@
-package io.stargate.sgv2.jsonapi.exception.catchable;
+package io.stargate.sgv2.jsonapi.exception.checked;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;

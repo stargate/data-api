@@ -37,9 +37,9 @@ public class TableMetadataUtils {
   }
 
   /** Deserialize vectorize config from extensions */
-  public static Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> getVectorizeMap(
-      Map<String, String> extensions, ObjectMapper objectMapper) {
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
+  public static Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition>
+      getVectorizeMap(Map<String, String> extensions, ObjectMapper objectMapper) {
+    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition> vectorizeConfigMap =
         new HashMap<>();
     String vectorizeJson = extensions.get(SchemaConstants.MetadataFieldsNames.VECTORIZE_CONFIG);
 
@@ -52,7 +52,8 @@ public class TableMetadataUtils {
           try {
             var vectorizeConfig =
                 objectMapper.treeToValue(
-                    entry.getValue(), VectorConfig.ColumnVectorDefinition.VectorizeConfig.class);
+                    entry.getValue(),
+                    VectorConfig.ColumnVectorDefinition.VectorizeDefinition.class);
             vectorizeConfigMap.put(entry.getKey(), vectorizeConfig);
           } catch (JsonProcessingException | IllegalArgumentException e) {
             logger.error("Unable to parse the config json", e);
@@ -73,7 +74,7 @@ public class TableMetadataUtils {
    * the command may be altering CQL created tables
    */
   public static Map<String, String> createCustomProperties(
-      Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap,
+      Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition> vectorizeConfigMap,
       ObjectMapper objectMapper) {
     Map<String, String> customProperties = new HashMap<>();
     try {

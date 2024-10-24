@@ -6,8 +6,8 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertT
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.fixtures.data.DefaultData;
 import io.stargate.sgv2.jsonapi.fixtures.types.ApiDataTypesForTesting;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
+import io.stargate.sgv2.jsonapi.service.schema.tables.PrimitiveApiDataTypeDef;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -69,7 +69,7 @@ public class TestDataScenarios {
   }
 
   private void createTableWithTypes(
-      String keyspaceName, String tableName, List<ApiDataTypeDef> types) {
+      String keyspaceName, String tableName, List<PrimitiveApiDataTypeDef> types) {
 
     // linked to keep order
     var columns = new LinkedHashMap<String, Object>();
@@ -84,7 +84,7 @@ public class TestDataScenarios {
   }
 
   private LinkedHashMap<String, Object> buildColumns(
-      LinkedHashMap<String, Object> columns, List<ApiDataTypeDef> types) {
+      LinkedHashMap<String, Object> columns, List<PrimitiveApiDataTypeDef> types) {
 
     types.forEach(
         type -> {
@@ -93,20 +93,20 @@ public class TestDataScenarios {
     return columns;
   }
 
-  private static Map<String, String> columnDef(ApiDataTypeDef type) {
-    return Map.of("type", type.getApiType().getApiName());
+  private static Map<String, String> columnDef(PrimitiveApiDataTypeDef type) {
+    return Map.of("type", type.getName().getApiName());
   }
 
-  public static String columnName(ApiDataTypeDef type) {
-    return COL_NAME_PREFIX + type.getApiType().getApiName();
+  public static String columnName(PrimitiveApiDataTypeDef type) {
+    return COL_NAME_PREFIX + type.getName().getApiName();
   }
 
-  public Object columnValue(ApiDataTypeDef type) {
+  public Object columnValue(PrimitiveApiDataTypeDef type) {
     return dataSource.fromJSON(type.getCqlType()).value();
   }
 
   private LinkedHashMap<String, Object> addRowValues(
-      LinkedHashMap<String, Object> row, List<ApiDataTypeDef> types, int nullIndex) {
+      LinkedHashMap<String, Object> row, List<PrimitiveApiDataTypeDef> types, int nullIndex) {
     for (int i = 0; i < types.size(); i++) {
       var type = types.get(i);
       row.put(columnName(type), i == nullIndex ? null : columnValue(type));

@@ -6,13 +6,9 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.data.ByteUtils;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.TruncateException;
-import com.datastax.oss.driver.api.core.type.DataType;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ComplexApiDataType;
 import java.time.Duration;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -54,16 +50,6 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
         .collect(
             Collectors.toMap(
                 Map.Entry::getKey, e -> ByteUtils.toHexString(e.getValue().getBytes())));
-  }
-
-  protected DataType getCqlDataType(ApiDataType apiDataType) {
-    if (apiDataType instanceof ComplexApiDataType) {
-      return ((ComplexApiDataType) apiDataType).getCqlType();
-    } else {
-      return ApiDataTypeDefs.from(apiDataType)
-          .orElseThrow(() -> new IllegalStateException("Unknown data type: " + apiDataType))
-          .getCqlType();
-    }
   }
 
   public static class SchemaRetryPolicy extends RetryPolicy {

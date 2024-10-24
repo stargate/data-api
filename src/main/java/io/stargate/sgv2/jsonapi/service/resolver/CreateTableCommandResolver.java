@@ -5,10 +5,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexTypes;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnType;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableMetadataUtils;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -17,6 +18,7 @@ import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.KeyspaceDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.util.Arrays;
@@ -32,27 +34,44 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
   @Override
   public Operation resolveKeyspaceCommand(
       CommandContext<KeyspaceSchemaObject> ctx, CreateTableCommand command) {
+
     String tableName = command.name();
     boolean ifNotExists = command.options() != null ? command.options().ifNotExists() : false;
+
+    // TODO: AARON: this is where the bad user column types like list of map will be caught and
+    // thrown
+    // TODO: this code is also is alter table, remove the duplication
     Map<String, ApiDataType> columnTypes =
         command.definition().columns().entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getApiDataType()));
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    e -> {
+                      try {
+                        return ApiDataTypeDefs.from(e.getValue());
+                      } catch (UnsupportedUserType ex) {
+                        throw new RuntimeException(ex);
+                      }
+                    }));
+
     List<String> partitionKeys = Arrays.stream(command.definition().primaryKey().keys()).toList();
 
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
+    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition> vectorizeConfigMap =
         command.definition().columns().entrySet().stream()
             .filter(
                 e ->
-                    e.getValue() instanceof ComplexTypes.VectorType vt
+                    e.getValue() instanceof ComplexColumnType.ColumnVectorType vt
                         && vt.getVectorConfig() != null)
             .collect(
                 Collectors.toMap(
                     Map.Entry::getKey,
                     e -> {
-                      ComplexTypes.VectorType vectorType = ((ComplexTypes.VectorType) e.getValue());
+                      ComplexColumnType.ColumnVectorType vectorType =
+                          ((ComplexColumnType.ColumnVectorType) e.getValue());
                       final VectorizeConfig vectorizeConfig = vectorType.getVectorConfig();
-                      validateVectorize.validateService(vectorizeConfig, vectorType.getDimension());
-                      return new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
+                      validateVectorize.validateService(
+                          vectorizeConfig, vectorType.getDimensions());
+                      return new VectorConfig.ColumnVectorDefinition.VectorizeDefinition(
                           vectorizeConfig.provider(),
                           vectorizeConfig.modelName(),
                           vectorizeConfig.authentication(),

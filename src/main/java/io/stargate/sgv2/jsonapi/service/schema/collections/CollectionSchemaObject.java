@@ -310,13 +310,14 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
       VectorConfig.ColumnVectorDefinition vectorConfigColumn =
           vectorConfig.columnVectorDefinitions().get(0);
       VectorizeConfig vectorizeConfig = null;
-      if (vectorConfigColumn.vectorizeConfig() != null) {
-        Map<String, String> authentication = vectorConfigColumn.vectorizeConfig().authentication();
-        Map<String, Object> parameters = vectorConfigColumn.vectorizeConfig().parameters();
+      if (vectorConfigColumn.vectorizeDefinition() != null) {
+        Map<String, String> authentication =
+            vectorConfigColumn.vectorizeDefinition().authentication();
+        Map<String, Object> parameters = vectorConfigColumn.vectorizeDefinition().parameters();
         vectorizeConfig =
             new VectorizeConfig(
-                vectorConfigColumn.vectorizeConfig().provider(),
-                vectorConfigColumn.vectorizeConfig().modelName(),
+                vectorConfigColumn.vectorizeDefinition().provider(),
+                vectorConfigColumn.vectorizeDefinition().modelName(),
                 authentication == null ? null : Map.copyOf(authentication),
                 parameters == null ? null : Map.copyOf(parameters));
       }

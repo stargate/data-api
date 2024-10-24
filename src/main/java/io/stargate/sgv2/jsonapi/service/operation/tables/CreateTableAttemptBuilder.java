@@ -1,10 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /** Builds a {@link CreateTableAttempt}. */
 public class CreateTableAttemptBuilder {
@@ -13,8 +16,8 @@ public class CreateTableAttemptBuilder {
   private int retryDelayMillis;
   private int maxRetries;
   private String tableName;
-  private Map<String, ApiDataType> columnTypes;
-  private List<String> partitionKeys;
+  private Map<CqlIdentifier, ApiDataType> columnTypes;
+  private List<CqlIdentifier> partitionKeys;
   private List<PrimaryKey.OrderingKey> clusteringKeys;
   private Map<String, String> customProperties;
   private boolean ifNotExists;
@@ -41,12 +44,19 @@ public class CreateTableAttemptBuilder {
   }
 
   public CreateTableAttemptBuilder columnTypes(Map<String, ApiDataType> columnTypes) {
-    this.columnTypes = columnTypes;
+    this.columnTypes =
+        columnTypes.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    e -> CqlIdentifierUtil.cqlIdentifierFromUserInput(e.getKey()),
+                    Map.Entry::getValue));
     return this;
   }
 
   public CreateTableAttemptBuilder partitionKeys(List<String> partitionKeys) {
-    this.partitionKeys = partitionKeys;
+    this.partitionKeys =
+        partitionKeys.stream().map(CqlIdentifierUtil::cqlIdentifierFromUserInput).toList();
+    ;
     return this;
   }
 

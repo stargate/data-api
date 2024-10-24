@@ -8,8 +8,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.Command;
 import io.stargate.sgv2.jsonapi.api.v1.util.DataApiResponseValidator;
 import io.stargate.sgv2.jsonapi.api.v1.util.TestDataScenarios;
 import io.stargate.sgv2.jsonapi.fixtures.types.ApiDataTypesForTesting;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDef;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
+import io.stargate.sgv2.jsonapi.service.schema.tables.PrimitiveApiDataTypeDef;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +43,7 @@ public class ProjectionSchemaIntegrationTest extends AbstractTableIntegrationTes
 
     var commands = List.of(Command.CommandName.FIND, Command.CommandName.FIND_ONE);
     // we ask to project columns of these types
-    List<List<ApiDataTypeDef>> typeCombinations =
+    List<List<PrimitiveApiDataTypeDef>> typeCombinations =
         List.of(
             List.of(), // for the default no projection
             ApiDataTypesForTesting.ALL_SCALAR_TYPES_FOR_CREATE,
@@ -72,7 +72,7 @@ public class ProjectionSchemaIntegrationTest extends AbstractTableIntegrationTes
   @ParameterizedTest
   @MethodSource("findWithProjectionSchemaTests")
   public void findFilterWithProjectionSchema(
-      Command.CommandName commandName, Map<String, ApiDataTypeDef> columns) {
+      Command.CommandName commandName, Map<String, PrimitiveApiDataTypeDef> columns) {
 
     // row-1 is the row with all the values set
     var validator =
@@ -96,7 +96,7 @@ public class ProjectionSchemaIntegrationTest extends AbstractTableIntegrationTes
   @ParameterizedTest
   @MethodSource("findWithProjectionSchemaTests")
   public void findNoFilterWithProjectionSchema(
-      Command.CommandName commandName, Map<String, ApiDataTypeDef> columns) {
+      Command.CommandName commandName, Map<String, PrimitiveApiDataTypeDef> columns) {
 
     var validator =
         assertTableCommand(keyspaceName, TABLE_NAME)
@@ -117,11 +117,8 @@ public class ProjectionSchemaIntegrationTest extends AbstractTableIntegrationTes
   }
 
   private DataApiResponseValidator assertProjectionSchema(
-      DataApiResponseValidator validator, Map<String, ApiDataTypeDef> columns) {
-    columns.forEach(
-        (col, type) -> {
-          validator.hasProjectionSchemaWith(col, type.getApiType());
-        });
+      DataApiResponseValidator validator, Map<String, PrimitiveApiDataTypeDef> columns) {
+    columns.forEach(validator::hasProjectionSchemaWith);
 
     return validator;
   }

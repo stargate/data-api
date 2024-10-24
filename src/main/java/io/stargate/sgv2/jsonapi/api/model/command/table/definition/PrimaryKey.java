@@ -1,16 +1,29 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
+
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.PrimaryKeyDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.serializer.OrderingKeysSerializer;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
+import java.util.List;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
+/**
+ * <b>NOTE:</b> use the `from()` functions to construct when you have the CQL Identifiers so there
+ * is a guarantee that the keys are properly formatted.
+ *
+ * @param keys
+ * @param orderingKeys
+ */
 @JsonDeserialize(using = PrimaryKeyDeserializer.class)
 // TODO, hide table feature detail before it goes public,
 // https://github.com/stargate/data-api/pull/1360
@@ -30,12 +43,29 @@ public record PrimaryKey(
         @JsonSerialize(using = OrderingKeysSerializer.class)
         OrderingKey[] orderingKeys) {
 
+  public static PrimaryKey from(List<CqlIdentifier> partitionKeys, List<OrderingKey> orderingKeys) {
+    return new PrimaryKey(
+        partitionKeys.stream()
+            .map(CqlIdentifierUtil::cqlIdentifierToJsonKey)
+            .toArray(String[]::new),
+        orderingKeys.toArray(new OrderingKey[0]));
+  }
+
   public record OrderingKey(String column, Order order) {
+
     public enum Order {
       @JsonProperty("1")
       ASC,
       @JsonProperty("-1")
       DESC;
+    }
+
+    public static OrderingKey from(CqlIdentifier column, ClusteringOrder clusteringOrder) {
+      return new OrderingKey(
+          cqlIdentifierToJsonKey(column),
+          clusteringOrder == ClusteringOrder.ASC
+              ? PrimaryKey.OrderingKey.Order.ASC
+              : PrimaryKey.OrderingKey.Order.DESC);
     }
   }
 }

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexTypes;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnType;
 import java.io.IOException;
 
 /**
@@ -19,18 +19,23 @@ public class ColumnDefinitionSerializer extends JsonSerializer<ColumnType> {
       throws IOException {
     jsonGenerator.writeStartObject();
     jsonGenerator.writeStringField("type", columnType.getApiName());
-    if (columnType instanceof ComplexTypes.MapType mt) {
-      jsonGenerator.writeStringField("keyType", mt.keyTypeName());
-      jsonGenerator.writeStringField("valueType", mt.valueTypeName());
-    } else if (columnType instanceof ComplexTypes.ListType lt) {
-      jsonGenerator.writeStringField("valueType", lt.valueTypeName());
-    } else if (columnType instanceof ComplexTypes.SetType st) {
-      jsonGenerator.writeStringField("valueType", st.valueTypeName());
-    } else if (columnType instanceof ComplexTypes.VectorType vt) {
-      jsonGenerator.writeNumberField("dimension", vt.getDimension());
+
+    if (columnType instanceof ComplexColumnType.ColumnMapType mt) {
+      jsonGenerator.writeStringField("keyType", mt.keyType().getApiName());
+      jsonGenerator.writeStringField("valueType", mt.valueType().getApiName());
+
+    } else if (columnType instanceof ComplexColumnType.ColumnListType lt) {
+      jsonGenerator.writeStringField("valueType", lt.valueType().getApiName());
+
+    } else if (columnType instanceof ComplexColumnType.ColumnSetType st) {
+      jsonGenerator.writeStringField("valueType", st.valueType().getApiName());
+
+    } else if (columnType instanceof ComplexColumnType.ColumnVectorType vt) {
+      jsonGenerator.writeNumberField("dimension", vt.getDimensions());
       if (vt.getVectorConfig() != null)
         jsonGenerator.writeObjectField("service", vt.getVectorConfig());
-    } else if (columnType instanceof ComplexTypes.UnsupportedType ut) {
+
+    } else if (columnType instanceof ComplexColumnType.UnsupportedType ut) {
       jsonGenerator.writeObjectField(
           "apiSupport", new ApiSupport(false, false, false, ut.cqlFormat()));
     }

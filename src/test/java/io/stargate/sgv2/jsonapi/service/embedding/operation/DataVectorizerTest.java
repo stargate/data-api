@@ -237,7 +237,7 @@ public class DataVectorizerTest {
                           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                           4,
                           SimilarityFunction.COSINE,
-                          new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
+                          new VectorConfig.ColumnVectorDefinition.VectorizeDefinition(
                               "custom", "custom", null, null)))),
               null);
       List<JsonNode> documents = new ArrayList<>();

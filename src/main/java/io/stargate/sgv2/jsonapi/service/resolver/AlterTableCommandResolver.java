@@ -11,10 +11,11 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperationImpl;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexTypes;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnType;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableMetadataUtils;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -27,6 +28,7 @@ import io.stargate.sgv2.jsonapi.service.operation.tables.AlterTableAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.tables.AlterTableAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -82,9 +84,14 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       AlterTableOperationImpl.AddColumns ac,
       TableSchemaObject schemaObject,
       SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+
     TableMetadata tableMetadata = schemaObject.tableMetadata();
     List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
+
     // check the column doesn't exists
+    // TODO: move this to the attempt builder / factory
+    // TODO: the error should say what columns are in the table, and include ALL of the columns that
+    // duplicates
     ac.columns()
         .keySet()
         .forEach(
@@ -97,25 +104,40 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
             });
 
     // New columns to be added
+    // TODO: AARON: this is where the bad user column types like list of map will be caught and
+    // thrown
+    // better error
+
     Map<String, ApiDataType> addColumns =
         ac.columns().entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getApiDataType()));
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    e -> {
+                      try {
+                        return ApiDataTypeDefs.from(e.getValue());
+                      } catch (UnsupportedUserType ex) {
+                        throw new RuntimeException(ex);
+                      }
+                    }));
 
     // Vectorize config for the new columns
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
+    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition> vectorizeConfigMap =
         ac.columns().entrySet().stream()
             .filter(
                 e ->
-                    e.getValue() instanceof ComplexTypes.VectorType vt
+                    e.getValue() instanceof ComplexColumnType.ColumnVectorType vt
                         && vt.getVectorConfig() != null)
             .collect(
                 Collectors.toMap(
                     Map.Entry::getKey,
                     e -> {
-                      ComplexTypes.VectorType vectorType = ((ComplexTypes.VectorType) e.getValue());
+                      ComplexColumnType.ColumnVectorType vectorType =
+                          ((ComplexColumnType.ColumnVectorType) e.getValue());
                       final VectorizeConfig vectorizeConfig = vectorType.getVectorConfig();
-                      validateVectorize.validateService(vectorizeConfig, vectorType.getDimension());
-                      return new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
+                      validateVectorize.validateService(
+                          vectorizeConfig, vectorType.getDimensions());
+                      return new VectorConfig.ColumnVectorDefinition.VectorizeDefinition(
                           vectorizeConfig.provider(),
                           vectorizeConfig.modelName(),
                           vectorizeConfig.authentication(),
@@ -129,8 +151,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     if (!vectorizeConfigMap.isEmpty()) {
       // Reading existing vectorize config from the table metadata
       Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
-      Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> existingVectorizeConfigMap =
-          TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
+      Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition>
+          existingVectorizeConfigMap =
+              TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
 
       // Merge the new config to the existing vectorize config
       existingVectorizeConfigMap.putAll(vectorizeConfigMap);
@@ -183,19 +206,20 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
                 "Index exists on the column `%s`, drop `%s` index to drop the column"
                     .formatted(
                         columnName,
-                        CqlIdentifierUtil.cqlIdentifierToStringForUser(first.get().getName()))));
+                        CqlIdentifierUtil.cqlIdentifierToMessageString(first.get().getName()))));
       }
     }
 
     // Reading existing vectorize config from the table metadata
     Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> existingVectorizeConfigMap =
-        TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
+    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition>
+        existingVectorizeConfigMap =
+            TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
 
     // Merge the new config to the existing vectorize config
     boolean updateVectorize = false;
     for (String column : dropColumns) {
-      final VectorConfig.ColumnVectorDefinition.VectorizeConfig remove =
+      final VectorConfig.ColumnVectorDefinition.VectorizeDefinition remove =
           existingVectorizeConfigMap.remove(column);
       if (remove != null) {
         updateVectorize = true;
@@ -229,7 +253,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
     List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
     TableMetadata tableMetadata = schemaObject.tableMetadata();
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
+    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition> vectorizeConfigMap =
         new HashMap<>();
     // New columns to be added
     for (Map.Entry<String, VectorizeConfig> entry : av.columns().entrySet()) {
@@ -240,8 +264,8 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       if (column.get().getType() instanceof VectorType vt) {
         final VectorizeConfig vectorizeConfig = entry.getValue();
         validateVectorize.validateService(vectorizeConfig, vt.getDimensions());
-        VectorConfig.ColumnVectorDefinition.VectorizeConfig dbVectorConfig =
-            new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
+        VectorConfig.ColumnVectorDefinition.VectorizeDefinition dbVectorConfig =
+            new VectorConfig.ColumnVectorDefinition.VectorizeDefinition(
                 vectorizeConfig.provider(),
                 vectorizeConfig.modelName(),
                 vectorizeConfig.authentication(),
@@ -254,8 +278,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
 
     // Reading existing vectorize config from the table metadata
     Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> existingVectorizeConfigMap =
-        TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
+    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition>
+        existingVectorizeConfigMap =
+            TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
     existingVectorizeConfigMap.putAll(vectorizeConfigMap);
     Map<String, String> customProperties =
         TableMetadataUtils.createCustomProperties(existingVectorizeConfigMap, objectMapper);
@@ -275,8 +300,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
     // Reading existing vectorize config from the table metadata
     Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> existingVectorizeConfigMap =
-        TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
+    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition>
+        existingVectorizeConfigMap =
+            TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
 
     // Merge the new config to the existing vectorize config
     boolean updateVectorize = false;
@@ -285,7 +311,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       if (tableMetadata.getColumn(columnIdentifier).isEmpty()) {
         throw SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", column));
       }
-      final VectorConfig.ColumnVectorDefinition.VectorizeConfig remove =
+      final VectorConfig.ColumnVectorDefinition.VectorizeDefinition remove =
           existingVectorizeConfigMap.remove(column);
       if (remove != null) {
         updateVectorize = true;

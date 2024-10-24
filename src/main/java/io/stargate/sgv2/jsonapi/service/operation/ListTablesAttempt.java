@@ -22,7 +22,7 @@ public class ListTablesAttempt extends MetadataAttempt<KeyspaceSchemaObject> {
     return getTables().stream()
         .map(
             schemaObject ->
-                CqlIdentifierUtil.externalRepresentation(schemaObject.tableMetadata().getName()))
+                CqlIdentifierUtil.cqlIdentifierToJsonKey(schemaObject.tableMetadata().getName()))
         .toList();
   }
 

@@ -6,7 +6,8 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
  * <p>NOTE: Use {@link #apiName} and {@link #fromApiName(String)} to convert to and from the name
  * used in requests and responses.
  */
-public enum PrimitiveApiDataType implements ApiDataType {
+public enum ApiDataTypeName {
+  // Primitive Types
   ASCII("ascii"),
   BIGINT("bigint"),
   BINARY("blob"),
@@ -25,11 +26,17 @@ public enum PrimitiveApiDataType implements ApiDataType {
   TINYINT("tinyint"),
   UUID("uuid"),
   TIMEUUID("timeuuid"),
-  VARINT("varint");
+  VARINT("varint"),
+
+  // Complex Types
+  LIST("list"),
+  MAP("map"),
+  SET("set"),
+  VECTOR("vector");
 
   private final String apiName;
 
-  PrimitiveApiDataType(String apiName) {
+  ApiDataTypeName(String apiName) {
     this.apiName = apiName;
   }
 

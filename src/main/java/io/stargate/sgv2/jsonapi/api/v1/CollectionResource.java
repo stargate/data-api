@@ -210,20 +210,20 @@ public class CollectionResource {
                             || vectorConfig.columnVectorDefinitions().isEmpty()
                         ? null
                         : vectorConfig.columnVectorDefinitions().get(0);
-                final VectorConfig.ColumnVectorDefinition.VectorizeConfig vectorizeConfig =
+                final VectorConfig.ColumnVectorDefinition.VectorizeDefinition vectorizeDefinition =
                     columnVectorDefinition != null
-                        ? columnVectorDefinition.vectorizeConfig()
+                        ? columnVectorDefinition.vectorizeDefinition()
                         : null;
-                if (vectorizeConfig != null) {
+                if (vectorizeDefinition != null) {
                   embeddingProvider =
                       embeddingProviderFactory.getConfiguration(
                           dataApiRequestInfo.getTenantId(),
                           dataApiRequestInfo.getCassandraToken(),
-                          vectorizeConfig.provider(),
-                          vectorizeConfig.modelName(),
+                          vectorizeDefinition.provider(),
+                          vectorizeDefinition.modelName(),
                           columnVectorDefinition.vectorSize(),
-                          vectorizeConfig.parameters(),
-                          vectorizeConfig.authentication(),
+                          vectorizeDefinition.parameters(),
+                          vectorizeDefinition.authentication(),
                           command.getClass().getSimpleName());
                 }
 

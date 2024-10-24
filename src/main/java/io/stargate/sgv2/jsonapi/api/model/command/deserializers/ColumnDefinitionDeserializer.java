@@ -26,7 +26,7 @@ public class ColumnDefinitionDeserializer extends StdDeserializer<ColumnType> {
       throws IOException, JacksonException {
     JsonNode definition = deserializationContext.readTree(jsonParser);
     if (definition.isTextual()) {
-      return ColumnType.fromString(definition.asText(), null, null, -1, null);
+      return ColumnType.fromJsonString(definition.asText(), null, null, -1, null);
     }
     if (definition.isObject() && definition.has("type")) {
       String type = definition.path("type").asText();
@@ -51,7 +51,7 @@ public class ColumnDefinitionDeserializer extends StdDeserializer<ColumnType> {
           throw SchemaException.Code.VECTOR_TYPE_INVALID_DEFINITION.get();
         }
       }
-      return ColumnType.fromString(type, keyType, valueType, dimension, vectorConfig);
+      return ColumnType.fromJsonString(type, keyType, valueType, dimension, vectorConfig);
     }
     throw SchemaException.Code.COLUMN_TYPE_INCORRECT.get();
   }

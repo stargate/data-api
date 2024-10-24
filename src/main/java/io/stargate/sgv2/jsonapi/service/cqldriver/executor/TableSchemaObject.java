@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
@@ -37,12 +39,15 @@ public class TableSchemaObject extends TableBasedSchemaObject {
 
   /** Get table schema object from table metadata */
   public static TableSchemaObject from(TableMetadata tableMetadata, ObjectMapper objectMapper) {
+
     Map<String, String> extensions = TableMetadataUtils.getExtensions(tableMetadata);
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
+    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition> vectorizeConfigMap =
         TableMetadataUtils.getVectorizeMap(extensions, objectMapper);
     VectorConfig vectorConfig;
+
     List<VectorConfig.ColumnVectorDefinition> columnVectorDefinitions = new ArrayList<>();
     for (Map.Entry<CqlIdentifier, ColumnMetadata> column : tableMetadata.getColumns().entrySet()) {
+
       if (column.getValue().getType() instanceof VectorType vectorType) {
         final Optional<IndexMetadata> index =
             tableMetadata.getIndexes().values().stream()
@@ -50,6 +55,7 @@ public class TableSchemaObject extends TableBasedSchemaObject {
                     indexMetadata -> indexMetadata.getTarget().equals(column.getKey().asCql(true)))
                 .findFirst();
         SimilarityFunction similarityFunction = SimilarityFunction.COSINE;
+
         if (index.isPresent()) {
           final IndexMetadata indexMetadata = index.get();
           final Map<String, String> indexOptions = indexMetadata.getOptions();
@@ -62,15 +68,18 @@ public class TableSchemaObject extends TableBasedSchemaObject {
           }
         }
         int dimension = vectorType.getDimensions();
+        // NOTE: need to keep the column name as a string in the ColumnVectorDefinition
+        // because also used by collections
         VectorConfig.ColumnVectorDefinition columnVectorDefinition =
             new VectorConfig.ColumnVectorDefinition(
-                column.getKey().asInternal(),
+                cqlIdentifierToJsonKey(column.getKey()),
                 dimension,
                 similarityFunction,
                 vectorizeConfigMap.get(column.getKey().asInternal()));
         columnVectorDefinitions.add(columnVectorDefinition);
       }
     }
+
     if (columnVectorDefinitions.isEmpty()) {
       vectorConfig = VectorConfig.NOT_ENABLED_CONFIG;
     } else {

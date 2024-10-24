@@ -1,33 +1,29 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
-import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.KeyspaceMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.api.core.type.VectorType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexTypes;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveTypes;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnType;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
+import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.EmptyAsyncResultSet;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionTableMatcher;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDef;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
-import io.stargate.sgv2.jsonapi.service.schema.tables.PrimitiveApiDataType;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
+import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,106 +76,57 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
    * @return
    */
   protected TableResponse getTableSchema(TableSchemaObject tableSchemaObject) {
-    TableMetadata tableMetadata = tableSchemaObject.tableMetadata();
-    String tableName = CqlIdentifierUtil.externalRepresentation(tableMetadata.getName());
-    HashMap<String, ColumnType> columnsDefinition = new HashMap<>();
-    for (Map.Entry<CqlIdentifier, ColumnMetadata> column : tableMetadata.getColumns().entrySet()) {
-      ColumnType type =
-          getColumnType(
-              column.getKey().asInternal(), column.getValue(), tableSchemaObject.vectorConfig());
-      columnsDefinition.put(CqlIdentifierUtil.externalRepresentation(column.getKey()), type);
+
+    var tableMetadata = tableSchemaObject.tableMetadata();
+
+    HashMap<CqlIdentifier, ColumnType> tableColumns =
+        new HashMap<>(tableMetadata.getColumns().size());
+    for (ColumnMetadata columnMetadata : tableMetadata.getColumns().values()) {
+      // convert the ColumnMetadata to ApiColumnDef, then from there into the ColumnType
+      try {
+        tableColumns.put(
+            columnMetadata.getName(),
+            getApiDataType(columnMetadata, tableSchemaObject.vectorConfig()).getColumnType());
+      } catch (UnsupportedCqlType e) {
+        tableColumns.put(
+            columnMetadata.getName(),
+            new ComplexColumnType.UnsupportedType(columnMetadata.getType()));
+      }
     }
 
-    final List<String> partitionBy =
-        tableMetadata.getPartitionKey().stream()
-            .map(column -> CqlIdentifierUtil.externalRepresentation(column.getName()))
-            .collect(Collectors.toList());
-    final List<PrimaryKey.OrderingKey> partitionSort =
+    var partitionSort =
         tableMetadata.getClusteringColumns().entrySet().stream()
-            .map(
-                entry ->
-                    new PrimaryKey.OrderingKey(
-                        CqlIdentifierUtil.externalRepresentation(entry.getKey().getName()),
-                        entry.getValue() == ClusteringOrder.ASC
-                            ? PrimaryKey.OrderingKey.Order.ASC
-                            : PrimaryKey.OrderingKey.Order.DESC))
-            .collect(Collectors.toList());
-    PrimaryKey primaryKey =
-        new PrimaryKey(
-            partitionBy.toArray(new String[0]),
-            partitionSort.toArray(new PrimaryKey.OrderingKey[0]));
+            .map(entry -> PrimaryKey.OrderingKey.from(entry.getKey().getName(), entry.getValue()))
+            .toList();
+    var partitionBy =
+        tableMetadata.getPartitionKey().stream().map(ColumnMetadata::getName).toList();
+    var primaryKey = PrimaryKey.from(partitionBy, partitionSort);
+
     return new TableResponse(
-        tableName, new TableResponse.TableDefinition(columnsDefinition, primaryKey));
+        tableMetadata.getName(), new TableDefinition(tableColumns, primaryKey));
   }
 
-  private ColumnType getColumnType(
-      String columnName, ColumnMetadata columnMetadata, VectorConfig vectorConfig) {
+  private ApiDataType getApiDataType(ColumnMetadata columnMetadata, VectorConfig vectorConfig)
+      throws UnsupportedCqlType {
+
     if (columnMetadata.getType() instanceof VectorType vt) {
-      // Schema will always have VectorConfig for vector type
-      VectorConfig.ColumnVectorDefinition columnVectorDefinition =
+      // Special handling because we need to get the vectorize config from the vector config
+
+      // TODO: WHAT HAPPENS IF THIS IS NOT PRESENT ???
+      // TODO: HACK AARON - remove call is asInternal
+      var columnVectorDefinition =
           vectorConfig.columnVectorDefinitions().stream()
-              .filter(vc -> vc.fieldName().equals(columnName))
+              .filter(vc -> vc.fieldName().equals(columnMetadata.getName().asInternal()))
               .findFirst()
               .get();
-      VectorizeConfig vectorizeConfig =
-          columnVectorDefinition.vectorizeConfig() == null
-              ? null
-              : new VectorizeConfig(
-                  columnVectorDefinition.vectorizeConfig().provider(),
-                  columnVectorDefinition.vectorizeConfig().modelName(),
-                  columnVectorDefinition.vectorizeConfig().authentication(),
-                  columnVectorDefinition.vectorizeConfig().parameters());
-      return new ComplexTypes.VectorType(PrimitiveTypes.FLOAT, vt.getDimensions(), vectorizeConfig);
-    } else if (columnMetadata.getType() instanceof MapType mt) {
-      if (!mt.isFrozen()) {
-        final Optional<ApiDataTypeDef> apiDataTypeDefKey = ApiDataTypeDefs.from(mt.getKeyType());
-        final Optional<ApiDataTypeDef> apiDataTypeDefValue =
-            ApiDataTypeDefs.from(mt.getValueType());
-        if (apiDataTypeDefKey.isPresent() && apiDataTypeDefValue.isPresent()) {
-          // Map supports only text or ascii key type
-          if (PrimitiveApiDataType.TEXT.equals(apiDataTypeDefKey.get().getApiType())
-              || PrimitiveApiDataType.ASCII.equals(apiDataTypeDefKey.get().getApiType())) {
-            return new ComplexTypes.MapType(
-                PrimitiveTypes.fromString(apiDataTypeDefKey.get().getApiType().getApiName()),
-                PrimitiveTypes.fromString(apiDataTypeDefValue.get().getApiType().getApiName()));
-          }
-        }
-      }
-      // return unsupported format
-      return new ComplexTypes.UnsupportedType(mt.asCql(true, false));
 
-    } else if (columnMetadata.getType()
-        instanceof com.datastax.oss.driver.api.core.type.ListType lt) {
-      if (!lt.isFrozen()) {
-        final Optional<ApiDataTypeDef> apiDataTypeDef = ApiDataTypeDefs.from(lt.getElementType());
-        if (apiDataTypeDef.isPresent()) {
-          return new ComplexTypes.ListType(
-              PrimitiveTypes.fromString(apiDataTypeDef.get().getApiType().getApiName()));
-        }
-      }
-      // return unsupported format
-      return new ComplexTypes.UnsupportedType(lt.asCql(true, false));
+      return ComplexApiDataType.ApiVectorType.from(
+          ApiDataTypeDefs.from(vt.getElementType()),
+          vt.getDimensions(),
+          columnVectorDefinition.vectorizeDefinition());
 
-    } else if (columnMetadata.getType()
-        instanceof com.datastax.oss.driver.api.core.type.SetType st) {
-      if (!st.isFrozen()) {
-        final Optional<ApiDataTypeDef> apiDataTypeDef = ApiDataTypeDefs.from(st.getElementType());
-        if (apiDataTypeDef.isPresent()) {
-          return new ComplexTypes.SetType(
-              PrimitiveTypes.fromString(apiDataTypeDef.get().getApiType().getApiName()));
-        }
-      }
-      // return unsupported format
-      return new ComplexTypes.UnsupportedType(st.asCql(true, false));
     } else {
-      final Optional<ApiDataTypeDef> apiDataTypeDef =
-          ApiDataTypeDefs.from(columnMetadata.getType());
-      if (apiDataTypeDef.isPresent())
-        return PrimitiveTypes.fromString(apiDataTypeDef.get().getApiType().getApiName());
-      else {
-        // Need to return unsupported type
-        return new ComplexTypes.UnsupportedType(columnMetadata.getType().asCql(true, false));
-      }
+      return ApiDataTypeDefs.from(columnMetadata.getType());
     }
   }
 
@@ -191,11 +138,24 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
    */
   @JsonPropertyOrder({"name", "definition"})
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  public record TableResponse(String name, TableDefinition definition) {
+  public record TableResponse(@JsonIgnore CqlIdentifier tableName, TableDefinition definition) {
 
-    @JsonPropertyOrder({"columns", "primaryKey"})
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    record TableDefinition(Map<String, ColumnType> columns, PrimaryKey primaryKey) {}
+    public String getName() {
+      return cqlIdentifierToJsonKey(tableName);
+    }
+  }
+
+  @JsonPropertyOrder({"columns", "primaryKey"})
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  record TableDefinition(
+      @JsonIgnore Map<CqlIdentifier, ColumnType> tableColumns, PrimaryKey primaryKey) {
+
+    public Map<String, ColumnType> getColumns() {
+      return tableColumns.entrySet().stream()
+          .collect(
+              Collectors.toMap(
+                  entry -> cqlIdentifierToJsonKey(entry.getKey()), Map.Entry::getValue));
+    }
   }
 
   protected List<TableSchemaObject> getTables() {

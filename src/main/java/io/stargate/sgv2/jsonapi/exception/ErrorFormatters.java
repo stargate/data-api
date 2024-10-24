@@ -1,6 +1,6 @@
 package io.stargate.sgv2.jsonapi.exception;
 
-import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToStringForUser;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMessageString;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
@@ -50,7 +50,7 @@ public abstract class ErrorFormatters {
   }
 
   public static String errFmt(CqlIdentifier identifier) {
-    return cqlIdentifierToStringForUser(identifier);
+    return cqlIdentifierToMessageString(identifier);
   }
 
   public static String errFmt(DataType dataType) {

@@ -1,37 +1,44 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
+import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeName;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ComplexApiDataType;
-import io.stargate.sgv2.jsonapi.service.schema.tables.PrimitiveApiDataType;
 import java.util.Objects;
 
 /** Interface for complex column types like collections */
-public class ComplexTypes {
+public abstract class ComplexColumnType implements ColumnType {
 
-  /** A map type implementation */
-  public static class MapType implements ColumnType {
+  private final ApiDataTypeName apiDataTypeName;
+
+  protected ComplexColumnType(ApiDataTypeName apiDataTypeName) {
+    this.apiDataTypeName =
+        Objects.requireNonNull(apiDataTypeName, "apiDataTypeName must not be null");
+  }
+
+  @Override
+  public ApiDataTypeName getApiDataTypeName() {
+    return apiDataTypeName;
+  }
+
+  /** Column type for {@link ComplexApiDataType.ApiMapType} */
+  public static class ColumnMapType extends ComplexColumnType {
     private final ColumnType keyType;
     private final ColumnType valueType;
 
-    public MapType(ColumnType keyType, ColumnType valueType) {
+    public ColumnMapType(ColumnType keyType, ColumnType valueType) {
+      super(ApiDataTypeName.MAP);
+
       this.keyType = keyType;
       this.valueType = valueType;
     }
 
-    @Override
-    public ApiDataType getApiDataType() {
-      return new ComplexApiDataType.MapType(
-          (PrimitiveApiDataType) keyType.getApiDataType(),
-          (PrimitiveApiDataType) valueType.getApiDataType());
+    public ColumnType keyType() {
+      return keyType;
     }
 
-    public String keyTypeName() {
-      return keyType.getApiDataType().getApiName();
-    }
-
-    public String valueTypeName() {
-      return valueType.getApiDataType().getApiName();
+    public ColumnType valueType() {
+      return valueType;
     }
 
     // Needed for testing
@@ -43,7 +50,7 @@ public class ComplexTypes {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      MapType mapType = (MapType) o;
+      ColumnMapType mapType = (ColumnMapType) o;
       return Objects.equals(keyType, mapType.keyType)
           && Objects.equals(valueType, mapType.valueType);
     }
@@ -54,21 +61,17 @@ public class ComplexTypes {
     }
   }
 
-  /** A list type implementation */
-  public static class ListType implements ColumnType {
+  /** Column type for {@link ComplexApiDataType.ApiListType} */
+  public static class ColumnListType extends ComplexColumnType {
     private final ColumnType valueType;
 
-    public ListType(ColumnType valueType) {
+    public ColumnListType(ColumnType valueType) {
+      super(ApiDataTypeName.LIST);
       this.valueType = valueType;
     }
 
-    @Override
-    public ApiDataType getApiDataType() {
-      return new ComplexApiDataType.ListType((PrimitiveApiDataType) valueType.getApiDataType());
-    }
-
-    public String valueTypeName() {
-      return valueType.getApiDataType().getApiName();
+    public ColumnType valueType() {
+      return valueType;
     }
 
     // Needed for testing
@@ -80,7 +83,7 @@ public class ComplexTypes {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      ListType listType = (ListType) o;
+      ColumnListType listType = (ColumnListType) o;
       return Objects.equals(valueType, listType.valueType);
     }
 
@@ -90,21 +93,17 @@ public class ComplexTypes {
     }
   }
 
-  /** A set type implementation */
-  public static class SetType implements ColumnType {
+  /** Column type for {@link ComplexApiDataType.ApiSetType} */
+  public static class ColumnSetType extends ComplexColumnType {
     private final ColumnType valueType;
 
-    public SetType(ColumnType valueType) {
+    public ColumnSetType(ColumnType valueType) {
+      super(ApiDataTypeName.SET);
       this.valueType = valueType;
     }
 
-    @Override
-    public ApiDataType getApiDataType() {
-      return new ComplexApiDataType.SetType((PrimitiveApiDataType) valueType.getApiDataType());
-    }
-
-    public String valueTypeName() {
-      return valueType.getApiDataType().getApiName();
+    public ColumnType valueType() {
+      return valueType;
     }
 
     // Needed for testing
@@ -116,7 +115,7 @@ public class ComplexTypes {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      ListType listType = (ListType) o;
+      ColumnSetType listType = (ColumnSetType) o;
       return Objects.equals(valueType, listType.valueType);
     }
 
@@ -126,31 +125,31 @@ public class ComplexTypes {
     }
   }
 
-  /* Vector type */
-  public static class VectorType implements ColumnType {
+  /** Column type for {@link ComplexApiDataType.ApiVectorType} */
+  public static class ColumnVectorType extends ComplexColumnType {
     // Float will be default type for vector
     private final ColumnType valueType;
-    private final int vectorSize;
+    private final int dimensions;
     private final VectorizeConfig vectorConfig;
 
-    public VectorType(ColumnType valueType, int vectorSize, VectorizeConfig vectorConfig) {
-      this.valueType = valueType;
-      this.vectorSize = vectorSize;
-      this.vectorConfig = vectorConfig;
-    }
+    public ColumnVectorType(ColumnType valueType, int dimensions, VectorizeConfig vectorConfig) {
+      super(ApiDataTypeName.VECTOR);
 
-    @Override
-    public ApiDataType getApiDataType() {
-      return new ComplexApiDataType.VectorType(
-          (PrimitiveApiDataType) valueType.getApiDataType(), vectorSize);
+      this.valueType = valueType;
+      this.dimensions = dimensions;
+      this.vectorConfig = vectorConfig;
     }
 
     public VectorizeConfig getVectorConfig() {
       return vectorConfig;
     }
 
-    public int getDimension() {
-      return vectorSize;
+    public int getDimensions() {
+      return dimensions;
+    }
+
+    public ColumnType valueType() {
+      return valueType;
     }
 
     // Needed for testing
@@ -162,15 +161,15 @@ public class ComplexTypes {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      VectorType that = (VectorType) o;
-      return vectorSize == that.vectorSize
+      ColumnVectorType that = (ColumnVectorType) o;
+      return dimensions == that.dimensions
           && Objects.equals(valueType, that.valueType)
           && Objects.equals(vectorConfig, that.vectorConfig);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(valueType, vectorSize, vectorConfig);
+      return Objects.hash(valueType, dimensions, vectorConfig);
     }
   }
 
@@ -179,20 +178,22 @@ public class ComplexTypes {
    * column
    */
   public static class UnsupportedType implements ColumnType {
+
+    public static final String UNSUPPORTED_TYPE_NAME = "UNSUPPORTED";
     private final String cqlFormat;
 
-    public UnsupportedType(String cqlFormat) {
-      this.cqlFormat = cqlFormat;
+    public UnsupportedType(DataType cqlType) {
+      this.cqlFormat = cqlType.asCql(true, true);
     }
 
     @Override
-    public ApiDataType getApiDataType() {
+    public ApiDataTypeName getApiDataTypeName() {
       throw new UnsupportedOperationException("Unsupported type");
     }
 
     @Override
     public String getApiName() {
-      return "UNSUPPORTED";
+      return UNSUPPORTED_TYPE_NAME;
     }
 
     public String cqlFormat() {

@@ -10,11 +10,14 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
+import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
+import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
 import java.util.*;
 import java.util.function.Consumer;
@@ -319,9 +322,17 @@ public class WhereCQLClauseAnalyzer {
     var scalarTypeFilters =
         filtersToCheck.stream()
             .filter(
-                identifier ->
-                    ApiDataTypeDefs.PRIMITIVE_TYPES_BY_CQL_TYPE.containsKey(
-                        tableMetadata.getColumns().get(identifier).getType()))
+                identifier -> {
+                  var cqlType = tableMetadata.getColumns().get(identifier).getType();
+                  ApiDataType apiDataType;
+                  try {
+                    apiDataType = ApiDataTypeDefs.from(cqlType);
+                  } catch (UnsupportedCqlType e) {
+                    // TODO: improve in https://github.com/stargate/data-api/issues/1602
+                    throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
+                  }
+                  return apiDataType.isPrimitive();
+                })
             .toList();
 
     var missingSAIColumns =

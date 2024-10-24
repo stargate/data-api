@@ -2,86 +2,369 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
+import com.datastax.oss.driver.api.core.type.MapType;
+import com.datastax.oss.driver.internal.core.type.PrimitiveType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnType;
+import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
+import java.util.Objects;
 
 /** Interface defining the api data type for complex types */
 public abstract class ComplexApiDataType implements ApiDataType {
-  private final String apiName;
-  private final PrimitiveApiDataType keyType;
-  private final PrimitiveApiDataType valueType;
-  private final int dimension;
+  private final ApiDataTypeName typeName;
+  private final PrimitiveApiDataTypeDef valueType;
+  private final DataType cqlType;
+  private final ColumnType columnType;
 
-  public ComplexApiDataType(
-      String apiName, PrimitiveApiDataType keyType, PrimitiveApiDataType valueType, int dimension) {
-    this.apiName = apiName;
-    this.keyType = keyType;
+  protected ComplexApiDataType(
+      ApiDataTypeName typeName,
+      PrimitiveApiDataTypeDef valueType,
+      DataType cqlType,
+      ColumnType columnType) {
+    this.typeName = typeName;
     this.valueType = valueType;
-    this.dimension = dimension;
+    this.cqlType = cqlType;
+    this.columnType = columnType;
   }
 
-  public PrimitiveApiDataType getKeyType() {
-    return keyType;
+  @Override
+  public ApiDataTypeName getName() {
+    return typeName;
   }
 
-  public PrimitiveApiDataType getValueType() {
+  @Override
+  public boolean isPrimitive() {
+    return false;
+  }
+
+  @Override
+  public boolean isContainer() {
+    return true;
+  }
+
+  @Override
+  public DataType getCqlType() {
+    return cqlType;
+  }
+
+  @Override
+  public ColumnType getColumnType() {
+    return columnType;
+  }
+
+  public PrimitiveApiDataTypeDef getValueType() {
     return valueType;
   }
 
-  public int getDimension() {
-    return dimension;
+  // ===================================================================================================================
+  // MapType
+  // ===================================================================================================================
+
+  public static class ApiMapType extends ComplexApiDataType {
+
+    private final PrimitiveApiDataTypeDef keyType;
+
+    public ApiMapType(PrimitiveApiDataTypeDef keyType, PrimitiveApiDataTypeDef valueType) {
+      super(
+          ApiDataTypeName.MAP,
+          valueType,
+          DataTypes.mapOf(keyType.getCqlType(), valueType.getCqlType()),
+          new ComplexColumnType.ColumnMapType(keyType.getColumnType(), valueType.getColumnType()));
+
+      this.keyType = keyType;
+      // sanity checking
+      if (!isKeyTypeSupported(keyType)) {
+        throw new IllegalArgumentException("keyType is not supported");
+      }
+      if (!isValueTypeSupported(valueType)) {
+        throw new IllegalArgumentException("valueType is not supported");
+      }
+    }
+
+    public static ApiMapType from(ApiDataType keyType, ApiDataType valueType) {
+      Objects.requireNonNull(keyType, "keyType must not be null");
+      Objects.requireNonNull(valueType, "valueType must not be null");
+
+      if (isKeyTypeSupported(keyType) && isValueTypeSupported(valueType)) {
+        return new ApiMapType(
+            (PrimitiveApiDataTypeDef) keyType, (PrimitiveApiDataTypeDef) valueType);
+      }
+      throw new IllegalArgumentException(
+          "keyType and valueType must be primitive types, keyType: %s valueType: %s"
+              .formatted(keyType, valueType));
+    }
+
+    public static ApiMapType from(ComplexColumnType.ColumnMapType mapType)
+        throws UnsupportedUserType {
+      Objects.requireNonNull(mapType, "mapType must not be null");
+
+      var keyType = ApiDataTypeDefs.from(mapType.keyType());
+      var valueType = ApiDataTypeDefs.from(mapType.valueType());
+
+      if (isKeyTypeSupported(keyType) && isValueTypeSupported(valueType)) {
+        return ApiMapType.from(keyType, valueType);
+      }
+      throw new UnsupportedUserType(mapType);
+    }
+
+    public static boolean isCqlTypeSupported(MapType cqlMapType) {
+      Objects.requireNonNull(cqlMapType, "cqlMapType must not be null");
+
+      // cannot be frozen
+      if (cqlMapType.isFrozen()) {
+        return false;
+      }
+      // keys must be text or ascii, because keys in JSON are string
+      if (!(cqlMapType.getKeyType() == DataTypes.TEXT
+          || cqlMapType.getKeyType() == DataTypes.ASCII)) {
+        return false;
+      }
+      // must be a primitive type value
+      return cqlMapType.getValueType() instanceof PrimitiveType;
+    }
+
+    public static boolean isKeyTypeSupported(ApiDataType keyType) {
+      Objects.requireNonNull(keyType, "keyType must not be null");
+
+      // keys must be text or ascii, because keys in JSON are string
+      return keyType == ApiDataTypeDefs.ASCII || keyType == ApiDataTypeDefs.TEXT;
+    }
+
+    public static boolean isValueTypeSupported(ApiDataType valueType) {
+      Objects.requireNonNull(valueType, "valueType must not be null");
+
+      return valueType.isPrimitive();
+    }
+
+    public static boolean isColumnTypeSupported(ComplexColumnType.ColumnMapType mapType) {
+      Objects.requireNonNull(mapType, "mapType must not be null");
+
+      try {
+        return isKeyTypeSupported(ApiDataTypeDefs.from(mapType.keyType()))
+            && isValueTypeSupported(ApiDataTypeDefs.from(mapType.valueType()));
+      } catch (UnsupportedUserType e) {
+        return false;
+      }
+    }
+
+    public PrimitiveApiDataTypeDef getKeyType() {
+      return keyType;
+    }
   }
 
-  public abstract DataType getCqlType();
+  // ===================================================================================================================
+  // ListType
+  // ===================================================================================================================
+  public static class ApiListType extends ComplexApiDataType {
 
-  @Override
-  public String getApiName() {
-    return apiName;
+    public ApiListType(PrimitiveApiDataTypeDef valueType) {
+      super(
+          ApiDataTypeName.LIST,
+          valueType,
+          DataTypes.listOf(valueType.getCqlType()),
+          new ComplexColumnType.ColumnListType(valueType.getColumnType()));
+
+      // sanity checking
+      if (!isValueTypeSupported(valueType)) {
+        throw new IllegalArgumentException("valueType is not supported");
+      }
+    }
+
+    public static ApiListType from(ApiDataType valueType) {
+      Objects.requireNonNull(valueType, "valueType must not be null");
+
+      if (isValueTypeSupported(valueType)) {
+        return new ApiListType((PrimitiveApiDataTypeDef) valueType);
+      }
+      throw new IllegalArgumentException(
+          "valueType must be primitive type, valueType%s".formatted(valueType));
+    }
+
+    public static ApiListType from(ComplexColumnType.ColumnListType listType)
+        throws UnsupportedUserType {
+      Objects.requireNonNull(listType, "listType must not be null");
+
+      var valueType = ApiDataTypeDefs.from(listType.valueType());
+      if (isValueTypeSupported(valueType)) {
+        return new ApiListType((PrimitiveApiDataTypeDef) valueType);
+      }
+      throw new UnsupportedUserType(listType);
+    }
+
+    public static boolean isCqlTypeSupported(
+        com.datastax.oss.driver.api.core.type.ListType cqlListType) {
+      Objects.requireNonNull(cqlListType, "cqlListType must not be null");
+
+      // cannot be frozen
+      if (cqlListType.isFrozen()) {
+        return false;
+      }
+      // must be a primitive type value
+      return cqlListType.getElementType() instanceof PrimitiveType;
+    }
+
+    public static boolean isColumnTypeSupported(ComplexColumnType.ColumnListType listType) {
+      Objects.requireNonNull(listType, "listType must not be null");
+
+      try {
+        return isValueTypeSupported(ApiDataTypeDefs.from(listType.valueType()));
+      } catch (UnsupportedUserType e) {
+        return false;
+      }
+    }
+
+    public static boolean isValueTypeSupported(ApiDataType valueType) {
+      Objects.requireNonNull(valueType, "valueType must not be null");
+
+      return valueType.isPrimitive();
+    }
   }
 
-  public static class MapType extends ComplexApiDataType {
-    public MapType(PrimitiveApiDataType keyType, PrimitiveApiDataType valueType) {
-      super("map", keyType, valueType, -1);
+  // ===================================================================================================================
+  // SetType
+  // ===================================================================================================================
+
+  public static class ApiSetType extends ComplexApiDataType {
+
+    public ApiSetType(PrimitiveApiDataTypeDef valueType) {
+      super(
+          ApiDataTypeName.SET,
+          valueType,
+          DataTypes.setOf(valueType.getCqlType()),
+          new ComplexColumnType.ColumnSetType(valueType.getColumnType()));
+
+      // sanity checking
+      if (!isValueTypeSupported(valueType)) {
+        throw new IllegalArgumentException("valueType is not supported");
+      }
     }
 
-    @Override
-    public DataType getCqlType() {
-      return DataTypes.mapOf(
-          ApiDataTypeDefs.from(getKeyType()).get().getCqlType(),
-          ApiDataTypeDefs.from(getValueType()).get().getCqlType());
+    public static ApiSetType from(ApiDataType valueType) {
+      Objects.requireNonNull(valueType, "valueType must not be null");
+
+      if (valueType instanceof PrimitiveApiDataTypeDef vtp) {
+        return new ApiSetType(vtp);
+      }
+      throw new IllegalArgumentException(
+          "valueType must be primitive type, valueType%s".formatted(valueType));
+    }
+
+    public static ApiSetType from(ComplexColumnType.ColumnSetType setType)
+        throws UnsupportedUserType {
+      Objects.requireNonNull(setType, "setType must not be null");
+
+      var valueType = ApiDataTypeDefs.from(setType.valueType());
+      if (isValueTypeSupported(valueType)) {
+        return new ApiSetType((PrimitiveApiDataTypeDef) valueType);
+      }
+      throw new UnsupportedUserType(setType);
+    }
+
+    public static boolean isCqlTypeSupported(
+        com.datastax.oss.driver.api.core.type.SetType cqlSetType) {
+      Objects.requireNonNull(cqlSetType, "cqlSetType must not be null");
+
+      // cannot be frozen
+      if (cqlSetType.isFrozen()) {
+        return false;
+      }
+      // must be a primitive type value
+      return cqlSetType.getElementType() instanceof PrimitiveType;
+    }
+
+    public static boolean isColumnTypeSupported(ComplexColumnType.ColumnSetType setType) {
+      Objects.requireNonNull(setType, "setType must not be null");
+
+      try {
+        return isValueTypeSupported(ApiDataTypeDefs.from(setType.valueType()));
+      } catch (UnsupportedUserType e) {
+        return false;
+      }
+    }
+
+    public static boolean isValueTypeSupported(ApiDataType valueType) {
+      Objects.requireNonNull(valueType, "valueType must not be null");
+
+      return valueType.isPrimitive();
     }
   }
 
-  public static class ListType extends ComplexApiDataType {
-    public ListType(PrimitiveApiDataType valueType) {
-      super("list", null, valueType, -1);
+  // ===================================================================================================================
+  // VectorType
+  // ===================================================================================================================
+
+  public static class ApiVectorType extends ComplexApiDataType {
+
+    private final int dimension;
+
+    public ApiVectorType(
+        PrimitiveApiDataTypeDef valueType,
+        int dimensions,
+        VectorConfig.ColumnVectorDefinition.VectorizeDefinition vectorizeDefinition) {
+      super(
+          ApiDataTypeName.VECTOR,
+          valueType,
+          new ExtendedVectorType(valueType.getCqlType(), dimensions),
+          new ComplexColumnType.ColumnVectorType(
+              valueType.getColumnType(),
+              dimensions,
+              vectorizeDefinition == null ? null : vectorizeDefinition.toVectorizeConfig()));
+
+      this.dimension = dimensions;
+      // sanity checking
+      if (!isValueTypeSupported(valueType)) {
+        throw new IllegalArgumentException("valueType is not supported");
+      }
     }
 
-    @Override
-    public DataType getCqlType() {
-      return DataTypes.listOf(ApiDataTypeDefs.from(getValueType()).get().getCqlType());
-    }
-  }
+    public static ApiVectorType from(
+        ApiDataType valueType,
+        int dimensions,
+        VectorConfig.ColumnVectorDefinition.VectorizeDefinition vectorizeDefinition) {
+      Objects.requireNonNull(valueType, "valueType must not be null");
 
-  public static class SetType extends ComplexApiDataType {
-    public SetType(PrimitiveApiDataType valueType) {
-      super("set", null, valueType, -1);
-    }
-
-    @Override
-    public DataType getCqlType() {
-      return DataTypes.setOf(ApiDataTypeDefs.from(getValueType()).get().getCqlType());
-    }
-  }
-
-  public static class VectorType extends ComplexApiDataType {
-    public VectorType(PrimitiveApiDataType valueType, int dimension) {
-      super("vector", null, valueType, dimension);
+      if (valueType instanceof PrimitiveApiDataTypeDef vtp) {
+        return new ApiVectorType(vtp, dimensions, vectorizeDefinition);
+      }
+      throw new IllegalArgumentException(
+          "valueType must be primitive type, valueType%s".formatted(valueType));
     }
 
-    @Override
-    public DataType getCqlType() {
-      return new ExtendedVectorType(
-          ApiDataTypeDefs.from(getValueType()).get().getCqlType(), getDimension());
+    public static ApiSetType from(ComplexColumnType.ColumnVectorType vectorType)
+        throws UnsupportedUserType {
+      Objects.requireNonNull(vectorType, "vectorType must not be null");
+
+      var valueType = ApiDataTypeDefs.from(vectorType.valueType());
+      if (isValueTypeSupported(valueType)) {
+        return new ApiSetType((PrimitiveApiDataTypeDef) valueType);
+      }
+      throw new UnsupportedUserType(vectorType);
+    }
+
+    public static boolean isCqlTypeSupported(
+        com.datastax.oss.driver.api.core.type.VectorType cqlVectorType) {
+      Objects.requireNonNull(cqlVectorType, "cqlVectorType must not be null");
+
+      // Must be a float
+      return cqlVectorType.getElementType() == DataTypes.FLOAT;
+    }
+
+    public static boolean isColumnTypeSupported(ComplexColumnType.ColumnVectorType vectorType) {
+      Objects.requireNonNull(vectorType, "vectorType must not be null");
+
+      try {
+        return isValueTypeSupported(ApiDataTypeDefs.from(vectorType.valueType()));
+      } catch (UnsupportedUserType e) {
+        return false;
+      }
+    }
+
+    public static boolean isValueTypeSupported(ApiDataType valueType) {
+      Objects.requireNonNull(valueType, "valueType must not be null");
+
+      return valueType == ApiDataTypeDefs.FLOAT;
     }
   }
 }

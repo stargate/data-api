@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createTable;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.datastax.oss.driver.api.core.type.DataType;
@@ -23,20 +24,21 @@ import java.util.Set;
 public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
 
   private final String tableName;
-  private final Map<String, ApiDataType> columnTypes;
-  private final List<String> partitionKeys;
+  private final Map<CqlIdentifier, ApiDataType> columnTypes;
+  private final List<CqlIdentifier> partitionKeys;
   private final List<PrimaryKey.OrderingKey> clusteringKeys;
   private final Map<String, String> customProperties;
   private final boolean ifNotExists;
 
+  // TODO: THIS MUST BE GIVEN STATEMENT BUILDERS LIKE THE OTHER ATTEMPTS!
   protected CreateTableAttempt(
       int position,
       KeyspaceSchemaObject schemaObject,
       int retryDelayMillis,
       int maxRetries,
       String tableName,
-      Map<String, ApiDataType> columnTypes,
-      List<String> partitionKeys,
+      Map<CqlIdentifier, ApiDataType> columnTypes,
+      List<CqlIdentifier> partitionKeys,
       List<PrimaryKey.OrderingKey> clusteringKeys,
       boolean ifNotExists,
       Map<String, String> customProperties) {
@@ -80,38 +82,42 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
   }
 
   private CreateTable addColumnsAndKeys(CreateTableStart create) {
-    Set<String> addedColumns = new HashSet<>();
+
+    Set<CqlIdentifier> addedColumns = new HashSet<>();
     CreateTable createTable = null;
-    for (String partitionKey : partitionKeys) {
-      DataType dataType = getCqlDataType(columnTypes.get(partitionKey));
+
+    for (var partitionKey : partitionKeys) {
+      DataType dataType = columnTypes.get(partitionKey).getCqlType();
+
       if (createTable == null) {
-        createTable = create.withPartitionKey(cqlIdentifierFromUserInput(partitionKey), dataType);
+        createTable = create.withPartitionKey(partitionKey, dataType);
       } else {
-        createTable =
-            createTable.withPartitionKey(cqlIdentifierFromUserInput(partitionKey), dataType);
+        createTable = createTable.withPartitionKey(partitionKey, dataType);
       }
       addedColumns.add(partitionKey);
     }
+
     for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
-      ApiDataType apiDataType = columnTypes.get(clusteringKey.column());
-      DataType dataType = getCqlDataType(apiDataType);
+      var clusteringKeyIdentifier = cqlIdentifierFromUserInput(clusteringKey.column());
+
+      ApiDataType apiDataType = columnTypes.get(clusteringKeyIdentifier);
       createTable =
-          createTable.withClusteringColumn(
-              cqlIdentifierFromUserInput(clusteringKey.column()), dataType);
-      addedColumns.add(clusteringKey.column());
+          createTable.withClusteringColumn(clusteringKeyIdentifier, apiDataType.getCqlType());
+      addedColumns.add(clusteringKeyIdentifier);
     }
 
-    for (Map.Entry<String, ApiDataType> column : columnTypes.entrySet()) {
+    for (Map.Entry<CqlIdentifier, ApiDataType> column : columnTypes.entrySet()) {
       if (addedColumns.contains(column.getKey())) {
         continue;
       }
-      DataType dataType = getCqlDataType(column.getValue());
-      createTable = createTable.withColumn(cqlIdentifierFromUserInput(column.getKey()), dataType);
+
+      createTable = createTable.withColumn(column.getKey(), column.getValue().getCqlType());
     }
     return createTable;
   }
 
   private CreateTableWithOptions addClusteringOrder(CreateTableWithOptions createTableWithOptions) {
+
     for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
       createTableWithOptions =
           createTableWithOptions.withClusteringOrder(

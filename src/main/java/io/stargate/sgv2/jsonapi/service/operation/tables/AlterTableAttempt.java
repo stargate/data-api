@@ -57,7 +57,8 @@ public class AlterTableAttempt extends SchemaAttempt<TableSchemaObject> {
     assert columnsToAdd != null && !columnsToAdd.isEmpty();
     AlterTableAddColumnEnd addColumnEnd = null;
     for (Map.Entry<String, ApiDataType> column : columnsToAdd.entrySet()) {
-      DataType dataType = getCqlDataType(column.getValue());
+      DataType dataType = column.getValue().getCqlType();
+
       if (addColumnEnd == null) {
         addColumnEnd =
             alterTableStart.addColumn(

@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.Collections;
@@ -66,13 +67,13 @@ public class VectorConfig {
    * @param fieldName
    * @param vectorSize
    * @param similarityFunction
-   * @param vectorizeConfig
+   * @param vectorizeDefinition
    */
   public record ColumnVectorDefinition(
       String fieldName,
       int vectorSize,
       SimilarityFunction similarityFunction,
-      VectorizeConfig vectorizeConfig) {
+      VectorizeDefinition vectorizeDefinition) {
 
     // convert a vector jsonNode from comment option to vectorConfig, used for collection
     public static ColumnVectorDefinition fromJson(JsonNode jsonNode, ObjectMapper objectMapper) {
@@ -96,13 +97,14 @@ public class VectorConfig {
         SimilarityFunction similarityFunction,
         JsonNode jsonNode,
         ObjectMapper objectMapper) {
-      VectorizeConfig vectorizeConfig = null;
-      // construct vectorizeConfig
+      VectorizeDefinition vectorizeDefinition = null;
+      // construct vectorizeDefinition
       JsonNode vectorizeServiceNode = jsonNode.get("service");
       if (vectorizeServiceNode != null) {
-        vectorizeConfig = VectorizeConfig.fromJson(vectorizeServiceNode, objectMapper);
+        vectorizeDefinition = VectorizeDefinition.fromJson(vectorizeServiceNode, objectMapper);
       }
-      return new ColumnVectorDefinition(fieldName, dimension, similarityFunction, vectorizeConfig);
+      return new ColumnVectorDefinition(
+          fieldName, dimension, similarityFunction, vectorizeDefinition);
     }
 
     /**
@@ -113,31 +115,35 @@ public class VectorConfig {
      * @param authentication
      * @param parameters
      */
-    public record VectorizeConfig(
+    public record VectorizeDefinition(
         String provider,
         String modelName,
         Map<String, String> authentication,
         Map<String, Object> parameters) {
 
-      protected static VectorizeConfig fromJson(
+      protected static VectorizeDefinition fromJson(
           JsonNode vectorizeServiceNode, ObjectMapper objectMapper) {
         // provider, modelName, must exist
         String provider = vectorizeServiceNode.get("provider").asText();
         String modelName = vectorizeServiceNode.get("modelName").asText();
-        // construct VectorizeConfig.authentication, can be null
+        // construct VectorizeDefinition.authentication, can be null
         JsonNode vectorizeServiceAuthenticationNode = vectorizeServiceNode.get("authentication");
         Map<String, String> vectorizeServiceAuthentication =
             vectorizeServiceAuthenticationNode == null
                 ? null
                 : objectMapper.convertValue(vectorizeServiceAuthenticationNode, Map.class);
-        // construct VectorizeConfig.parameters, can be null
+        // construct VectorizeDefinition.parameters, can be null
         JsonNode vectorizeServiceParameterNode = vectorizeServiceNode.get("parameters");
         Map<String, Object> vectorizeServiceParameter =
             vectorizeServiceParameterNode == null
                 ? null
                 : objectMapper.convertValue(vectorizeServiceParameterNode, Map.class);
-        return new VectorizeConfig(
+        return new VectorizeDefinition(
             provider, modelName, vectorizeServiceAuthentication, vectorizeServiceParameter);
+      }
+
+      public VectorizeConfig toVectorizeConfig() {
+        return new VectorizeConfig(provider, modelName, authentication, parameters);
       }
     }
   }

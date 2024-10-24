@@ -3,7 +3,8 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
-import io.stargate.sgv2.jsonapi.exception.catchable.UnsupportedCqlTypeForDML;
+import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlColumn;
+import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import java.util.Objects;
 
 /**
@@ -24,13 +25,9 @@ import java.util.Objects;
 public class ApiColumnDef {
 
   private final CqlIdentifier name;
-  private final ApiDataTypeDef type;
+  private final ApiDataType type;
 
-  public ApiColumnDef(String name, ApiDataTypeDef type) {
-    this(CqlIdentifier.fromCql(name), type);
-  }
-
-  public ApiColumnDef(CqlIdentifier name, ApiDataTypeDef type) {
+  public ApiColumnDef(CqlIdentifier name, ApiDataType type) {
     this.name = name;
     this.type = type;
   }
@@ -41,43 +38,39 @@ public class ApiColumnDef {
    *
    * @param columnMetadata the column metadata to convert
    * @return a new instance of {@link ApiColumnDef}
-   * @throws UnsupportedCqlTypeForDML if the column metadata uses a type that is not supported by
-   *     the API.
+   * @throws UnsupportedCqlColumn if the column metadata uses a type that is not supported by the
+   *     API.
    */
-  public static ApiColumnDef from(ColumnMetadata columnMetadata) throws UnsupportedCqlTypeForDML {
+  public static ApiColumnDef from(ColumnMetadata columnMetadata) throws UnsupportedCqlColumn {
     Objects.requireNonNull(columnMetadata, "columnMetadata is must not be null");
     return from(columnMetadata.getName(), columnMetadata.getType());
   }
 
   public static ApiColumnDef from(CqlIdentifier column, DataType dataType)
-      throws UnsupportedCqlTypeForDML {
+      throws UnsupportedCqlColumn {
     Objects.requireNonNull(column, "column is must not be null");
     Objects.requireNonNull(dataType, "dataType is must not be null");
 
-    var optionalType = ApiDataTypeDefs.from(dataType);
-    if (optionalType.isEmpty()) {
-      throw new UnsupportedCqlTypeForDML(column, dataType);
+    ApiDataType apiDataType;
+    try {
+      apiDataType = ApiDataTypeDefs.from(dataType);
+    } catch (UnsupportedCqlType e) {
+      throw new UnsupportedCqlColumn(column, dataType);
     }
-    return new ApiColumnDef(column, optionalType.get());
+    return new ApiColumnDef(column, apiDataType);
   }
 
   /**
-   * Gets the {@link CqlIdentifier} for the column, NOTE: if you want the name as a string use
-   * {@link #nameAsString()} for consistent formatting.
+   * Gets the {@link CqlIdentifier} for the column.
+   *
+   * <p>Use {@link io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil} to get the string from the
+   * identifier.
    */
   public CqlIdentifier name() {
     return name;
   }
 
-  /**
-   * The name as a string, uses consistent formatting from {@link CqlIdentifier#asCql(boolean)} with
-   * pretty formatting to only use double quotes when needed.
-   */
-  public String nameAsString() {
-    return name.asCql(true);
-  }
-
-  public ApiDataTypeDef type() {
+  public ApiDataType type() {
     return type;
   }
 }

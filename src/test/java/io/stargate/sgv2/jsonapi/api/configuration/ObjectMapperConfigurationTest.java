@@ -30,8 +30,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexTypes;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveTypes;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnTypes;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -815,17 +815,17 @@ class ObjectMapperConfigurationTest {
                           Map<String, ColumnType> columns = addColumns.columns();
                           assertThat(columns).isNotNull();
                           assertThat(columns).hasSize(3);
-                          assertThat(columns).containsEntry("new_col_1", PrimitiveTypes.TEXT);
+                          assertThat(columns).containsEntry("new_col_1", PrimitiveColumnTypes.TEXT);
                           assertThat(columns)
                               .containsEntry(
                                   "new_col_2",
-                                  new ComplexTypes.MapType(
-                                      PrimitiveTypes.TEXT, PrimitiveTypes.TEXT));
+                                  new ComplexColumnType.ColumnMapType(
+                                      PrimitiveColumnTypes.TEXT, PrimitiveColumnTypes.TEXT));
                           assertThat(columns)
                               .containsEntry(
                                   "content",
-                                  new ComplexTypes.VectorType(
-                                      PrimitiveTypes.FLOAT,
+                                  new ComplexColumnType.ColumnVectorType(
+                                      PrimitiveColumnTypes.FLOAT,
                                       1024,
                                       new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
                         });

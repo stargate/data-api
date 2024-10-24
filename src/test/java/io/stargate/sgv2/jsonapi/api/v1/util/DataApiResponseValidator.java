@@ -244,6 +244,7 @@ public class DataApiResponseValidator {
      * "type": "boolean" }, "email": { "type": "text" }, "age": { "type": "tinyint" } }
      */
     // NOTE: no way to get the json field name from the enum for now.
-    return body("status.projectionSchema." + columnName + ".type", equalTo(type.getApiName()));
+    return body(
+        "status.projectionSchema." + columnName + ".type", equalTo(type.getName().getApiName()));
   }
 }

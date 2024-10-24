@@ -12,7 +12,7 @@ import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
-import io.stargate.sgv2.jsonapi.exception.catchable.UnsupportedCqlTypeForDML;
+import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlColumn;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
@@ -171,7 +171,7 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
     for (var columnDef : readResult.resultSet.getColumnDefinitions()) {
       try {
         apiColumns.put(ApiColumnDef.from(columnDef.getName(), columnDef.getType()));
-      } catch (UnsupportedCqlTypeForDML e) {
+      } catch (UnsupportedCqlColumn e) {
         throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
       }
     }
