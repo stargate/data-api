@@ -20,7 +20,7 @@ public enum SourceModel {
   UNDEFINED("undefined");
 
   private final String sourceModel;
-  private static final java.util.Map<String, SourceModel> FUNCTIONS_MAP =
+  private static final java.util.Map<String, SourceModel> SOURCE_MODELS_MAP =
       Stream.of(SourceModel.values())
           .collect(Collectors.toMap(SourceModel::getSourceModel, sourceModel -> sourceModel));
 
@@ -36,7 +36,7 @@ public enum SourceModel {
     if (sourceModel == null) return UNDEFINED;
     // The string may be empty if the collection was created before supporting source models
     if (sourceModel.isEmpty()) return OTHER;
-    SourceModel model = FUNCTIONS_MAP.get(sourceModel);
+    SourceModel model = SOURCE_MODELS_MAP.get(sourceModel);
     if (model == null) {
       throw ErrorCodeV1.VECTOR_SEARCH_INVALID_SOURCE_MODEL_NAME.toApiException("'%s'", sourceModel);
     }
