@@ -21,7 +21,10 @@ import io.stargate.sgv2.jsonapi.service.updater.DocumentUpdater;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-/** Resolves the {@link UpdateManyCommand } */
+/**
+ * Resolves the {@link UpdateManyCommand } <b>NOTE:</b> cannot run updateMany command on a table!
+ * only on collections
+ */
 @ApplicationScoped
 public class UpdateManyCommandResolver implements CommandResolver<UpdateManyCommand> {
   private final DocumentShredder documentShredder;

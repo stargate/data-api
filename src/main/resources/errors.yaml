@@ -222,9 +222,42 @@ request-errors:
       The filter has the following issues: 
         - Missing Partition Keys: ${missingPartitionKeys}.
         - Out of order Partition Sort Keys: ${outOfOrderClusteringKeys}.
+
+  # UPDATE clause errors
+  - scope: UPDATE
+    code: UNKNOWN_TABLE_COLUMNS
+    title: Cannot update on unknown table columns
+    body: |-
+      Only columns defined in the table schema can be updated.
       
-  
-  
+      The table ${keyspace}.${table} defines the columns: ${allColumns}.
+      The update included the following unknown columns: ${unknownColumns}.
+      
+      ${SNIPPET.RESEND_USING_ONLY_DEFINED_COLUMNS}
+
+  - scope: UPDATE
+    code: UPDATE_PRIMARY_KEY_COLUMNS
+    title: Cannot update on primary key columns
+    body: |-
+      Cannot update primary key columns: ${updateOnPrimaryKeyColumns}.
+      
+      The table ${keyspace}.${table} defines the primary keys: ${primaryKeys}.
+
+  - scope: UPDATE
+    code: ZERO_UPDATE_OPERATIONS_FOR_TABLE
+    title: Cannot update with zero operations
+    body: |-
+      Cannot update with zero operations.
+      
+      Supported update operations are ${supportedUpdateOperations}.
+
+  - scope: UPDATE
+    code: UNSUPPORTED_UPDATE_OPERATION_FOR_TABLE
+    title: Cannot update with unsupported operations
+    body: |-
+      Update has unsupported operations: ${usedUnsupportedUpdateOperations}.
+      
+      Supported update operations are ${supportedUpdateOperations}.
 
   # Warnings
 
@@ -334,6 +367,24 @@ request-errors:
     title: Keyspace used is not valid.
     body: |-
       Keyspace used is not valid: ${keyspace} 
+
+  - scope: SCHEMA
+    code: INDEX_NOT_FOUND
+    title: Index name used is not valid.
+    body: |-
+      Index name used not found: ${reason} 
+
+  - scope: SCHEMA
+    code: TABLE_NOT_FOUND
+    title: Table name used is not valid.
+    body: |-
+      Table name used bot found: ${reason} 
+
+  - scope: SCHEMA
+    code: TABLE_ALREADY_EXISTS
+    title: Table already exist in the keyspace.
+    body: |-
+      Table already exist in the keyspace: ${reason}
 
   - scope: SCHEMA
     code: COLUMN_TYPE_INCORRECT

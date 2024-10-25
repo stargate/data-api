@@ -82,7 +82,6 @@ public interface CommandResolver<C extends Command> {
         "%s Command does not support operating on Collections, target was %s",
         command.getClass().getSimpleName(), ctx.schemaObject().name());
   }
-  ;
 
   /**
    * Implementors should use this method when they can resolve commands for a table.
