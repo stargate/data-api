@@ -115,4 +115,8 @@ public class IndexConfig {
       return new CreateIndexCommand(indexName, definition, null);
     }
   }
+
+  public Map<String, IndexDefinition> indexDefinitions() {
+    return indexDefinitions;
+  }
 }
