@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
@@ -23,7 +24,9 @@ public record CreateVectorIndexCommand(
             description = "Definition for created index for a column.",
             type = SchemaType.OBJECT)
         Definition definition,
-    @Nullable @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+        @Nullable
+        @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
         Options options)
     implements CollectionCommand {
   public record Definition(
@@ -32,7 +35,9 @@ public record CreateVectorIndexCommand(
           @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
           @Schema(description = "Name of the column for which index to be created.")
           String column,
-      @Nullable @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)
+      @JsonInclude(JsonInclude.Include.NON_NULL)
+          @Nullable
+          @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)
           Options options) {
     // This is index definition options for vector column types.
     public record Options(
@@ -46,11 +51,13 @@ public record CreateVectorIndexCommand(
                 defaultValue = "cosine",
                 type = SchemaType.STRING,
                 implementation = String.class)
+            @JsonInclude(JsonInclude.Include.NON_NULL)
             SimilarityFunction metric,
         @Nullable
             @Size(min = 1, max = 48)
             @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
             @Schema(description = "Model name used to generate the embeddings.")
+            @JsonInclude(JsonInclude.Include.NON_NULL)
             String sourceModel) {}
   }
 

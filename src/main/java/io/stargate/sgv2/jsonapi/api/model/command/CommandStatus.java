@@ -26,7 +26,10 @@ public enum CommandStatus {
   /** Status for reporting existing collections. */
   @JsonProperty("collections")
   EXISTING_COLLECTIONS,
-  /** Status for reporting existing collections. */
+  /** Status for reporting existing indexes. */
+  @JsonProperty("indexes")
+  EXISTING_INDEXES,
+  /** Status for reporting existing tables. */
   @JsonProperty("tables")
   EXISTING_TABLES,
 

@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.schema;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +28,7 @@ public enum SimilarityFunction {
     this.metric = metric;
   }
 
+  @JsonValue
   public String getMetric() {
     return metric;
   }

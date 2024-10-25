@@ -2,12 +2,12 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -20,9 +20,13 @@ public class TableSchemaObject extends TableBasedSchemaObject {
 
   private final VectorConfig vectorConfig;
 
-  private TableSchemaObject(TableMetadata tableMetadata, VectorConfig vectorConfig) {
+  private final IndexConfig indexConfigs;
+
+  private TableSchemaObject(
+      TableMetadata tableMetadata, VectorConfig vectorConfig, IndexConfig indexConfig) {
     super(TYPE, tableMetadata);
     this.vectorConfig = vectorConfig;
+    this.indexConfigs = indexConfig;
   }
 
   @Override
@@ -35,26 +39,34 @@ public class TableSchemaObject extends TableBasedSchemaObject {
     return IndexUsage.NO_OP;
   }
 
+  public IndexConfig indexConfig() {
+    return indexConfigs;
+  }
+
   /** Get table schema object from table metadata */
   public static TableSchemaObject from(TableMetadata tableMetadata, ObjectMapper objectMapper) {
     Map<String, String> extensions = TableMetadataUtils.getExtensions(tableMetadata);
     Map<String, VectorConfig.ColumnVectorDefinition.VectorizeConfig> vectorizeConfigMap =
         TableMetadataUtils.getVectorizeMap(extensions, objectMapper);
+    IndexConfig indexConfig = IndexConfig.from(tableMetadata);
     VectorConfig vectorConfig;
     List<VectorConfig.ColumnVectorDefinition> columnVectorDefinitions = new ArrayList<>();
     for (Map.Entry<CqlIdentifier, ColumnMetadata> column : tableMetadata.getColumns().entrySet()) {
+      final Optional<IndexConfig.IndexDefinition> index =
+          indexConfig.getIndexDefinition(
+              CqlIdentifierUtil.cqlIdentifierToStringForUser(column.getKey()));
       if (column.getValue().getType() instanceof VectorType vectorType) {
-        final Optional<IndexMetadata> index =
-            tableMetadata.getIndexes().values().stream()
-                .filter(
-                    indexMetadata -> indexMetadata.getTarget().equals(column.getKey().asCql(true)))
-                .findFirst();
         SimilarityFunction similarityFunction = SimilarityFunction.COSINE;
         if (index.isPresent()) {
-          final IndexMetadata indexMetadata = index.get();
-          final Map<String, String> indexOptions = indexMetadata.getOptions();
-          final String sourceModel = indexOptions.get("source_model");
-          final String similarityFunctionValue = indexOptions.get("similarity_function");
+          final IndexConfig.IndexDefinition indexDefinition = index.get();
+          final String sourceModel =
+              indexDefinition.options() != null
+                  ? indexDefinition.options().get("source_model")
+                  : null;
+          final String similarityFunctionValue =
+              indexDefinition.options() != null
+                  ? indexDefinition.options().get("similarity_function")
+                  : null;
           if (similarityFunctionValue != null) {
             similarityFunction = SimilarityFunction.fromString(similarityFunctionValue);
           } else if (sourceModel != null) {
@@ -77,6 +89,6 @@ public class TableSchemaObject extends TableBasedSchemaObject {
       vectorConfig =
           VectorConfig.fromColumnDefinitions(Collections.unmodifiableList(columnVectorDefinitions));
     }
-    return new TableSchemaObject(tableMetadata, vectorConfig);
+    return new TableSchemaObject(tableMetadata, vectorConfig, indexConfig);
   }
 }

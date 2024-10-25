@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import jakarta.annotation.Nullable;
@@ -22,7 +23,9 @@ public record CreateIndexCommand(
             description = "Definition for created index for a column.",
             type = SchemaType.OBJECT)
         Definition definition,
-    @Nullable @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+        @Nullable
+        @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
         Options options)
     implements CollectionCommand {
   public record Definition(
@@ -31,7 +34,9 @@ public record CreateIndexCommand(
           @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
           @Schema(description = "Name of the column for which index to be created.")
           String column,
-      @Nullable @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)
+      @JsonInclude(JsonInclude.Include.NON_NULL)
+          @Nullable
+          @Schema(description = "Different indexing options.", type = SchemaType.OBJECT)
           Options options) {
     // This is index definition options for text column types.
     public record Options(
@@ -41,6 +46,7 @@ public record CreateIndexCommand(
                 defaultValue = "true",
                 type = SchemaType.BOOLEAN,
                 implementation = Boolean.class)
+            @JsonInclude(JsonInclude.Include.NON_NULL)
             Boolean caseSensitive,
         @Nullable
             @Schema(
@@ -48,6 +54,7 @@ public record CreateIndexCommand(
                 defaultValue = "false",
                 type = SchemaType.BOOLEAN,
                 implementation = Boolean.class)
+            @JsonInclude(JsonInclude.Include.NON_NULL)
             Boolean normalize,
         @Nullable
             @Schema(
@@ -56,6 +63,7 @@ public record CreateIndexCommand(
                 defaultValue = "false",
                 type = SchemaType.BOOLEAN,
                 implementation = Boolean.class)
+            @JsonInclude(JsonInclude.Include.NON_NULL)
             Boolean ascii) {}
   }
 

@@ -66,6 +66,7 @@ public interface Command {
     FIND_ONE("findOne", CommandType.DML),
     INSERT_MANY("insertMany", CommandType.DML),
     INSERT_ONE("insertOne", CommandType.DML),
+    LIST_INDEXES("listIndexes", CommandType.DDL),
     LIST_TABLES("listTables", CommandType.DDL),
     UPDATE_MANY("updateMany", CommandType.DML),
     UPDATE_ONE("updateOne", CommandType.DML),
