@@ -3,16 +3,13 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnType;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableMetadataUtils;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.*;
 import io.stargate.sgv2.jsonapi.service.operation.*;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.tables.CreateTableAttemptBuilder;
@@ -56,7 +53,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
 
     List<String> partitionKeys = Arrays.stream(command.definition().primaryKey().keys()).toList();
 
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition> vectorizeConfigMap =
+    Map<String, VectorizeDefinition> vectorizeConfigMap =
         command.definition().columns().entrySet().stream()
             .filter(
                 e ->
@@ -65,18 +62,10 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
             .collect(
                 Collectors.toMap(
                     Map.Entry::getKey,
-                    e -> {
-                      ComplexColumnType.ColumnVectorType vectorType =
-                          ((ComplexColumnType.ColumnVectorType) e.getValue());
-                      final VectorizeConfig vectorizeConfig = vectorType.getVectorConfig();
-                      validateVectorize.validateService(
-                          vectorizeConfig, vectorType.getDimensions());
-                      return new VectorConfig.ColumnVectorDefinition.VectorizeDefinition(
-                          vectorizeConfig.provider(),
-                          vectorizeConfig.modelName(),
-                          vectorizeConfig.authentication(),
-                          vectorizeConfig.parameters());
-                    }));
+                    e ->
+                        VectorizeDefinition.from(
+                            ((ComplexColumnType.ColumnVectorType) e.getValue()),
+                            validateVectorize)));
 
     if (partitionKeys.isEmpty()) {
       throw SchemaException.Code.MISSING_PRIMARY_KEYS.get();
@@ -104,9 +93,9 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
           }
         });
 
-    // set to empty will be used when vectorize is  supported
+    // set to empty will be used when vectorize is supported
     Map<String, String> customProperties =
-        TableMetadataUtils.createCustomProperties(vectorizeConfigMap, objectMapper);
+        TableExtensions.createCustomProperties(vectorizeConfigMap, objectMapper);
 
     var attempt =
         new CreateTableAttemptBuilder(0, ctx.schemaObject())

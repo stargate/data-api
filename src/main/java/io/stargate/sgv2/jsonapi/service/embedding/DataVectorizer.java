@@ -1,5 +1,6 @@
 package io.stargate.sgv2.jsonapi.service.embedding;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
 import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,6 +15,7 @@ import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import java.util.ArrayList;
@@ -65,15 +67,14 @@ public class DataVectorizer {
       for (int position = 0; position < documents.size(); position++) {
         JsonNode document = documents.get(position);
         if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD)) {
-          if (document.has(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD)) {
+          if (document.has(VECTOR_EMBEDDING_FIELD)) {
             throw ErrorCodeV1.INVALID_USAGE_OF_VECTORIZE.toApiException(
                 "issue in document at position %d", (position + 1));
           }
           final JsonNode jsonNode =
               document.get(DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD);
           if (jsonNode.isNull()) {
-            ((ObjectNode) document)
-                .put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
+            ((ObjectNode) document).put(VECTOR_EMBEDDING_FIELD, (String) null);
             continue;
           }
           if (!jsonNode.isTextual()) {
@@ -83,8 +84,7 @@ public class DataVectorizer {
 
           String vectorizeData = jsonNode.asText();
           if (vectorizeData.isBlank()) {
-            ((ObjectNode) document)
-                .put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, (String) null);
+            ((ObjectNode) document).put(VECTOR_EMBEDDING_FIELD, (String) null);
             continue;
           }
 
@@ -113,8 +113,9 @@ public class DataVectorizer {
                 vectorData -> {
                   final VectorConfig vectorConfig = schemaObject.vectorConfig();
                   // This will be the first element for collection
-                  final VectorConfig.ColumnVectorDefinition collectionVectorDefinition =
-                      vectorConfig.columnVectorDefinitions().get(0);
+                  // TODO: AARON - this code had no null projection, now throws if not present
+                  final VectorColumnDefinition collectionVectorDefinition =
+                      vectorConfig.getColumnVectorDefinition(VECTOR_EMBEDDING_FIELD).orElseThrow();
 
                   // check if we get back the same number of vectors that we asked for
                   if (vectorData.size() != vectorizeTexts.size()) {
@@ -142,8 +143,7 @@ public class DataVectorizer {
                     for (float listValue : vector) {
                       arrayNode.add(nodeFactory.numberNode(listValue));
                     }
-                    ((ObjectNode) document)
-                        .put(DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD, arrayNode);
+                    ((ObjectNode) document).put(VECTOR_EMBEDDING_FIELD, arrayNode);
                   }
                   return true;
                 });
@@ -176,8 +176,9 @@ public class DataVectorizer {
             vectorData -> {
               final VectorConfig vectorConfig = schemaObject.vectorConfig();
               // This will be the first element for collection
-              final VectorConfig.ColumnVectorDefinition collectionVectorDefinition =
-                  vectorConfig.columnVectorDefinitions().get(0);
+              // TODO: AARON - this code had no null projection, now throws if not present
+              final VectorColumnDefinition collectionVectorDefinition =
+                  vectorConfig.getColumnVectorDefinition(VECTOR_EMBEDDING_FIELD).orElseThrow();
               float[] vector = vectorData.get(0);
               // check if vector have the expected size
               if (vector.length != collectionVectorDefinition.vectorSize()) {
@@ -223,8 +224,9 @@ public class DataVectorizer {
                   float[] vector = vectorData.get(0);
                   final VectorConfig vectorConfig = schemaObject.vectorConfig();
                   // This will be the first element for collection
-                  final VectorConfig.ColumnVectorDefinition collectionVectorDefinition =
-                      vectorConfig.columnVectorDefinitions().get(0);
+                  // TODO: AARON - this code had no null projection, now throws if not present
+                  final VectorColumnDefinition collectionVectorDefinition =
+                      vectorConfig.getColumnVectorDefinition(VECTOR_EMBEDDING_FIELD).orElseThrow();
                   // check if vector have the expected size
                   if (vector.length != collectionVectorDefinition.vectorSize()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(

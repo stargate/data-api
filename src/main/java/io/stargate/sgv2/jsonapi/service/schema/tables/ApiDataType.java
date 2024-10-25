@@ -16,5 +16,7 @@ public interface ApiDataType {
 
   boolean isContainer();
 
+  boolean isUnsupported();
+
   ColumnType getColumnType();
 }

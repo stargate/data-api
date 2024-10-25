@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.collections;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
@@ -223,7 +225,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
             IdConfig.defaultIdConfig(),
             VectorConfig.fromColumnDefinitions(
                 List.of(
-                    new VectorConfig.ColumnVectorDefinition(
+                    new VectorColumnDefinition(
                         DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                         vectorSize,
                         function,
@@ -280,14 +282,13 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   }
 
   // convert a vector jsonNode from cql table comment to vectorConfig, used for collection
-  private static VectorConfig.ColumnVectorDefinition fromJson(
-      JsonNode jsonNode, ObjectMapper objectMapper) {
+  private static VectorColumnDefinition fromJson(JsonNode jsonNode, ObjectMapper objectMapper) {
     // dimension, similarityFunction, must exist
     int dimension = jsonNode.get("dimension").asInt();
     SimilarityFunction similarityFunction =
         SimilarityFunction.fromString(jsonNode.get("metric").asText());
 
-    return VectorConfig.ColumnVectorDefinition.fromJson(
+    return VectorColumnDefinition.fromJson(
         DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
         dimension,
         similarityFunction,
@@ -302,14 +303,17 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     CreateCollectionCommand.Options options = null;
     CreateCollectionCommand.Options.VectorSearchConfig vectorSearchConfig = null;
     CreateCollectionCommand.Options.IndexingConfig indexingConfig = null;
+
     // populate the vectorSearchConfig, Default will be the index 0 since there is only one vector
     // column supported for collection
     final VectorConfig vectorConfig = collectionSetting.vectorConfig();
     if (vectorConfig.vectorEnabled()) {
-      // This will be size 1 for collection
-      VectorConfig.ColumnVectorDefinition vectorConfigColumn =
-          vectorConfig.columnVectorDefinitions().get(0);
+
+      // checked above that vector is enabled
+      VectorColumnDefinition vectorConfigColumn =
+          vectorConfig.getColumnVectorDefinition(VECTOR_EMBEDDING_FIELD).orElseThrow();
       VectorizeConfig vectorizeConfig = null;
+
       if (vectorConfigColumn.vectorizeDefinition() != null) {
         Map<String, String> authentication =
             vectorConfigColumn.vectorizeDefinition().authentication();
@@ -321,12 +325,14 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
                 authentication == null ? null : Map.copyOf(authentication),
                 parameters == null ? null : Map.copyOf(parameters));
       }
+
       vectorSearchConfig =
           new CreateCollectionCommand.Options.VectorSearchConfig(
               vectorConfigColumn.vectorSize(),
               vectorConfigColumn.similarityFunction().name().toLowerCase(),
               vectorizeConfig);
     }
+
     // populate the indexingConfig
     if (collectionSetting.indexingConfig() != null) {
       indexingConfig =
@@ -334,6 +340,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
               Lists.newArrayList(collectionSetting.indexingConfig().allowed()),
               Lists.newArrayList(collectionSetting.indexingConfig().denied()));
     }
+
     // construct the CreateCollectionCommand.options.idConfig -- but only if non-default IdType
     final CollectionIdType idType = collectionSetting.idConfig().idType();
     CreateCollectionCommand.Options.IdConfig idConfig =
@@ -358,7 +365,11 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
   // TODO: these helper functions break encapsulation for very little benefit
   public SimilarityFunction similarityFunction() {
-    return vectorConfig().columnVectorDefinitions().get(0).similarityFunction();
+    // TODO: THERE WAS NO CHECK HERE IF VECTORING WAS ENABLED
+    return vectorConfig()
+        .getColumnVectorDefinition(VECTOR_EMBEDDING_FIELD)
+        .get()
+        .similarityFunction();
   }
 
   public boolean isVectorEnabled() {

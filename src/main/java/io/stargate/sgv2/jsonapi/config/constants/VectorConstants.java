@@ -5,7 +5,7 @@ import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import java.util.Map;
 
 @ConfigMapping(prefix = "stargate.jsonapi.vector")
-public interface VectorConstant {
+public interface VectorConstants {
   /*
   Supported Source Models and suggested function for Vector Index in Cassandra
    */
@@ -27,4 +27,22 @@ public interface VectorConstant {
           SimilarityFunction.DOT_PRODUCT,
           "other",
           SimilarityFunction.COSINE);
+
+  interface VectorColumn {
+    String DIMENSION = "dimension";
+    String METRIC = "metric";
+    String SERVICE = "service";
+  }
+
+  interface Vectorize {
+    String PROVIDER = "provider";
+    String MODEL_NAME = "modelName";
+    String AUTHENTICATION = "authentication";
+    String PARAMETERS = "parameters";
+  }
+
+  interface CQLAnnIndex {
+    String SOURCE_MODEL = "source_model";
+    String SIMILARITY_FUNCTION = "similarity_function";
+  }
 }

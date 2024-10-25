@@ -2,12 +2,13 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDef;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlColumn;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.InsertAttempt;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
-import io.stargate.sgv2.jsonapi.service.schema.tables.OrderedApiColumnDefContainer;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import io.stargate.sgv2.jsonapi.service.shredding.DocRowIdentifer;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.RowId;
 import io.stargate.sgv2.jsonapi.service.shredding.tables.WriteableTableRow;
@@ -41,7 +42,7 @@ public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
 
   /** Override to describe the schema of the primary keys in the row we inserted */
   @Override
-  public Optional<OrderedApiColumnDefContainer> schemaDescription() {
+  public Optional<ColumnsDef> schemaDescription() {
 
     /// we could be in an error state, and not have inserted anything , if we got a shredding error
     // then we do not have the row to describe
@@ -49,7 +50,7 @@ public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
       return Optional.empty();
     }
 
-    var apiColumns = new OrderedApiColumnDefContainer(row.keyColumns().size());
+    var apiColumns = new ApiColumnDefContainer(row.keyColumns().size());
     for (var cqlNamedValue : row.keyColumns().values()) {
       try {
         apiColumns.put(ApiColumnDef.from(cqlNamedValue.name()));
@@ -57,6 +58,6 @@ public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
         throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
       }
     }
-    return Optional.of(apiColumns);
+    return Optional.of(apiColumns.toColumnsDef());
   }
 }

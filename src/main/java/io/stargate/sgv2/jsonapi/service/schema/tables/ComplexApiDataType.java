@@ -7,7 +7,7 @@ import com.datastax.oss.driver.internal.core.type.PrimitiveType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
 import java.util.Objects;
 
@@ -41,6 +41,11 @@ public abstract class ComplexApiDataType implements ApiDataType {
 
   @Override
   public boolean isContainer() {
+    return true;
+  }
+
+  @Override
+  public boolean isUnsupported() {
     return true;
   }
 
@@ -302,7 +307,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
     public ApiVectorType(
         PrimitiveApiDataTypeDef valueType,
         int dimensions,
-        VectorConfig.ColumnVectorDefinition.VectorizeDefinition vectorizeDefinition) {
+        VectorizeDefinition vectorizeDefinition) {
       super(
           ApiDataTypeName.VECTOR,
           valueType,
@@ -320,9 +325,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
     }
 
     public static ApiVectorType from(
-        ApiDataType valueType,
-        int dimensions,
-        VectorConfig.ColumnVectorDefinition.VectorizeDefinition vectorizeDefinition) {
+        ApiDataType valueType, int dimensions, VectorizeDefinition vectorizeDefinition) {
       Objects.requireNonNull(valueType, "valueType must not be null");
 
       if (valueType instanceof PrimitiveApiDataTypeDef vtp) {

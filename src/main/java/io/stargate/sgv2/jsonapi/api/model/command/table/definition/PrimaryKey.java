@@ -3,13 +3,13 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.metadata.schema.ClusteringOrder;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.PrimaryKeyDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.serializer.OrderingKeysSerializer;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiClusteringOrder;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
@@ -58,14 +58,17 @@ public record PrimaryKey(
       ASC,
       @JsonProperty("-1")
       DESC;
+
+      public static Order from(ApiClusteringOrder order) {
+        return switch (order) {
+          case ASC -> ASC;
+          case DESC -> DESC;
+        };
+      }
     }
 
-    public static OrderingKey from(CqlIdentifier column, ClusteringOrder clusteringOrder) {
-      return new OrderingKey(
-          cqlIdentifierToJsonKey(column),
-          clusteringOrder == ClusteringOrder.ASC
-              ? PrimaryKey.OrderingKey.Order.ASC
-              : PrimaryKey.OrderingKey.Order.DESC);
+    public static OrderingKey from(CqlIdentifier column, ApiClusteringOrder clusteringOrder) {
+      return new OrderingKey(cqlIdentifierToJsonKey(column), Order.from(clusteringOrder));
     }
   }
 }

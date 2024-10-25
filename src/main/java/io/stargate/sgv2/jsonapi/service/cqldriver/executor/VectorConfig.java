@@ -1,46 +1,108 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
+
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** Definition of vector config for a collection or table */
 public class VectorConfig {
-  private final List<ColumnVectorDefinition> columnVectorDefinitions;
+  public static final VectorConfig NOT_ENABLED_CONFIG = new VectorConfig(List.of());
+
+  private final Map<String, VectorColumnDefinition> columnVectorDefinitions;
   private final boolean vectorEnabled;
 
   /*
-   * @param columnVectorDefinitions - List of columnVectorDefinitions each with respect to a
+   * @param vectorColumnDefinitions - List of vectorColumnDefinitions each with respect to a
    *     column/field
    */
-  private VectorConfig(
-      List<ColumnVectorDefinition> columnVectorDefinitions, boolean vectorEnabled) {
-    this.columnVectorDefinitions = columnVectorDefinitions;
-    this.vectorEnabled = vectorEnabled;
+  private VectorConfig(List<VectorColumnDefinition> vectorColumnDefinitions) {
+    Objects.requireNonNull(vectorColumnDefinitions, "vectorColumnDefinitions must not be null");
+
+    this.columnVectorDefinitions =
+        vectorColumnDefinitions.stream()
+            .collect(Collectors.toMap(VectorColumnDefinition::fieldName, Function.identity()));
+    this.vectorEnabled = this.columnVectorDefinitions.isEmpty();
   }
 
   public static VectorConfig fromColumnDefinitions(
-      List<ColumnVectorDefinition> columnVectorDefinitions) {
-    if (columnVectorDefinitions == null || columnVectorDefinitions.isEmpty()) {
+      List<VectorColumnDefinition> vectorColumnDefinitions) {
+
+    if (vectorColumnDefinitions == null || vectorColumnDefinitions.isEmpty()) {
       return NOT_ENABLED_CONFIG;
     }
-    return new VectorConfig(Collections.unmodifiableList(columnVectorDefinitions), true);
+    return new VectorConfig(vectorColumnDefinitions);
   }
 
-  public static final VectorConfig NOT_ENABLED_CONFIG = new VectorConfig(null, false);
+  public static VectorConfig from(TableMetadata tableMetadata, ObjectMapper objectMapper) {
+
+    Map<String, VectorizeDefinition> vectorizeDefs =
+        VectorizeDefinition.from(tableMetadata, objectMapper);
+    List<VectorColumnDefinition> columnDefs = new ArrayList<>();
+
+    var vectorColumnMetadata =
+        tableMetadata.getColumns().values().stream()
+            .filter(column -> column.getType() instanceof VectorType)
+            .toList();
+
+    for (ColumnMetadata column : vectorColumnMetadata) {
+
+      // Using internal to match the name of the vector column to the target of the index.
+      final Optional<IndexMetadata> columnIndex =
+          tableMetadata.getIndexes().values().stream()
+              .filter(
+                  indexMetadata -> indexMetadata.getTarget().equals(column.getName().asInternal()))
+              .findFirst();
+
+      // If there is an index on the column, use the similarity function from the index
+      var indexFunction =
+          columnIndex.map(
+              index -> {
+                String similarityFunction =
+                    index.getOptions().get(VectorConstants.CQLAnnIndex.SIMILARITY_FUNCTION);
+                if (similarityFunction != null) {
+                  return SimilarityFunction.fromString(similarityFunction);
+                }
+
+                String sourceModel =
+                    index.getOptions().get(VectorConstants.CQLAnnIndex.SOURCE_MODEL);
+                if (sourceModel != null) {
+                  return VectorConstants.SUPPORTED_SOURCES.get(sourceModel);
+                }
+                return null;
+              });
+
+      // if now index, or we could not work out the function, default
+      var similarityFunction = indexFunction.orElse(SimilarityFunction.COSINE);
+      int dimensions = ((VectorType) column.getType()).getDimensions();
+
+      // NOTE: need to keep the column name as a string in the VectorColumnDefinition
+      // because also used by collections
+      // OK to not find the vectorize definition, as it is optional
+      columnDefs.add(
+          new VectorColumnDefinition(
+              cqlIdentifierToJsonKey(column.getName()),
+              dimensions,
+              similarityFunction,
+              vectorizeDefs.get(column.getName().asInternal())));
+    }
+    return VectorConfig.fromColumnDefinitions(columnDefs);
+  }
 
   public boolean vectorEnabled() {
     return vectorEnabled;
   }
 
-  public List<ColumnVectorDefinition> columnVectorDefinitions() {
-    return columnVectorDefinitions;
+  public Optional<VectorColumnDefinition> getColumnVectorDefinition(String fieldName) {
+    return Optional.ofNullable(columnVectorDefinitions.get(fieldName));
   }
 
   @Override
@@ -59,92 +121,5 @@ public class VectorConfig {
   @Override
   public int hashCode() {
     return Objects.hash(columnVectorDefinitions, vectorEnabled);
-  }
-
-  /**
-   * Configuration for a column, In case of collection this will be of size one
-   *
-   * @param fieldName
-   * @param vectorSize
-   * @param similarityFunction
-   * @param vectorizeDefinition
-   */
-  public record ColumnVectorDefinition(
-      String fieldName,
-      int vectorSize,
-      SimilarityFunction similarityFunction,
-      VectorizeDefinition vectorizeDefinition) {
-
-    // convert a vector jsonNode from comment option to vectorConfig, used for collection
-    public static ColumnVectorDefinition fromJson(JsonNode jsonNode, ObjectMapper objectMapper) {
-      // dimension, similarityFunction, must exist
-      int dimension = jsonNode.get("dimension").asInt();
-      SimilarityFunction similarityFunction =
-          SimilarityFunction.fromString(jsonNode.get("metric").asText());
-
-      return fromJson(
-          DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-          dimension,
-          similarityFunction,
-          jsonNode,
-          objectMapper);
-    }
-
-    // convert a vector jsonNode from table extension to vectorConfig, used for tables
-    public static ColumnVectorDefinition fromJson(
-        String fieldName,
-        int dimension,
-        SimilarityFunction similarityFunction,
-        JsonNode jsonNode,
-        ObjectMapper objectMapper) {
-      VectorizeDefinition vectorizeDefinition = null;
-      // construct vectorizeDefinition
-      JsonNode vectorizeServiceNode = jsonNode.get("service");
-      if (vectorizeServiceNode != null) {
-        vectorizeDefinition = VectorizeDefinition.fromJson(vectorizeServiceNode, objectMapper);
-      }
-      return new ColumnVectorDefinition(
-          fieldName, dimension, similarityFunction, vectorizeDefinition);
-    }
-
-    /**
-     * Represent the vectorize configuration defined for a column
-     *
-     * @param provider
-     * @param modelName
-     * @param authentication
-     * @param parameters
-     */
-    public record VectorizeDefinition(
-        String provider,
-        String modelName,
-        Map<String, String> authentication,
-        Map<String, Object> parameters) {
-
-      protected static VectorizeDefinition fromJson(
-          JsonNode vectorizeServiceNode, ObjectMapper objectMapper) {
-        // provider, modelName, must exist
-        String provider = vectorizeServiceNode.get("provider").asText();
-        String modelName = vectorizeServiceNode.get("modelName").asText();
-        // construct VectorizeDefinition.authentication, can be null
-        JsonNode vectorizeServiceAuthenticationNode = vectorizeServiceNode.get("authentication");
-        Map<String, String> vectorizeServiceAuthentication =
-            vectorizeServiceAuthenticationNode == null
-                ? null
-                : objectMapper.convertValue(vectorizeServiceAuthenticationNode, Map.class);
-        // construct VectorizeDefinition.parameters, can be null
-        JsonNode vectorizeServiceParameterNode = vectorizeServiceNode.get("parameters");
-        Map<String, Object> vectorizeServiceParameter =
-            vectorizeServiceParameterNode == null
-                ? null
-                : objectMapper.convertValue(vectorizeServiceParameterNode, Map.class);
-        return new VectorizeDefinition(
-            provider, modelName, vectorizeServiceAuthentication, vectorizeServiceParameter);
-      }
-
-      public VectorizeConfig toVectorizeConfig() {
-        return new VectorizeConfig(provider, modelName, authentication, parameters);
-      }
-    }
   }
 }

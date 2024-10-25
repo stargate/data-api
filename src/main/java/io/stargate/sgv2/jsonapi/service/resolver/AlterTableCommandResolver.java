@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
@@ -16,9 +18,9 @@ import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableMetadataUtils;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableExtensions;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptContainer;
@@ -96,9 +98,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
         .keySet()
         .forEach(
             column -> {
-              if (tableMetadata
-                  .getColumn(CqlIdentifierUtil.cqlIdentifierFromUserInput(column))
-                  .isPresent()) {
+              if (tableMetadata.getColumn(cqlIdentifierFromUserInput(column)).isPresent()) {
                 throw SchemaException.Code.COLUMN_ALREADY_EXISTS.get(Map.of("column", column));
               }
             });
@@ -122,7 +122,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
                     }));
 
     // Vectorize config for the new columns
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition> vectorizeConfigMap =
+    Map<String, VectorizeDefinition> vectorizeConfigMap =
         ac.columns().entrySet().stream()
             .filter(
                 e ->
@@ -131,40 +131,32 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
             .collect(
                 Collectors.toMap(
                     Map.Entry::getKey,
-                    e -> {
-                      ComplexColumnType.ColumnVectorType vectorType =
-                          ((ComplexColumnType.ColumnVectorType) e.getValue());
-                      final VectorizeConfig vectorizeConfig = vectorType.getVectorConfig();
-                      validateVectorize.validateService(
-                          vectorizeConfig, vectorType.getDimensions());
-                      return new VectorConfig.ColumnVectorDefinition.VectorizeDefinition(
-                          vectorizeConfig.provider(),
-                          vectorizeConfig.modelName(),
-                          vectorizeConfig.authentication(),
-                          vectorizeConfig.parameters());
-                    }));
+                    e ->
+                        VectorizeDefinition.from(
+                            ((ComplexColumnType.ColumnVectorType) e.getValue()),
+                            validateVectorize)));
 
-    final AlterTableAttempt addColumnsAttempt =
+    var addColumnsAttempt =
         new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
             .addColumns(addColumns)
             .build();
+
+    // TODO ? BUG ??? Shouldn't this ALWAYS read the exiting config ?
     if (!vectorizeConfigMap.isEmpty()) {
       // Reading existing vectorize config from the table metadata
-      Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
-      Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition>
-          existingVectorizeConfigMap =
-              TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
-
+      Map<String, VectorizeDefinition> existingVectorizeConfigMap =
+          VectorizeDefinition.from(tableMetadata, objectMapper);
       // Merge the new config to the existing vectorize config
       existingVectorizeConfigMap.putAll(vectorizeConfigMap);
 
       // New custom property to be updated
-      final Map<String, String> customProperties =
-          TableMetadataUtils.createCustomProperties(existingVectorizeConfigMap, objectMapper);
-      final AlterTableAttempt addVectorizeProperties =
+      Map<String, String> customProperties =
+          TableExtensions.createCustomProperties(existingVectorizeConfigMap, objectMapper);
+      var addVectorizeProperties =
           new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
               .customProperties(customProperties)
               .build();
+
       // First execute the extension update for add columns
       alterTableAttempts.add(addVectorizeProperties);
     }
@@ -178,14 +170,20 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       AlterTableOperationImpl.DropColumns dc,
       TableSchemaObject schemaObject,
       SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+
     List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
     TableMetadata tableMetadata = schemaObject.tableMetadata();
     List<String> dropColumns = dc.columns();
+
     // Validate the columns to be dropped are present
     List<CqlIdentifier> primaryKeys =
         tableMetadata.getPrimaryKey().stream().map(ColumnMetadata::getName).toList();
+
     for (String columnName : dropColumns) {
-      CqlIdentifier column = CqlIdentifierUtil.cqlIdentifierFromUserInput(columnName);
+      CqlIdentifier column = cqlIdentifierFromUserInput(columnName);
+
+      // TODO: MUST CHANGE TO GENERATE ERRORS IN THE BUILDER AND LIST ALL THE KEYS THAT TRIED TO
+      // DROP
       if (primaryKeys.contains(column)) {
         throw SchemaException.Code.COLUMN_CANNOT_BE_DROPPED.get(
             Map.of("reason", "Primary key column `%s` cannot be dropped".formatted(columnName)));
@@ -199,7 +197,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
           tableMetadata.getIndexes().values().stream()
               .filter(indexMetadata -> indexMetadata.getTarget().equals(columnName))
               .findFirst();
+
       if (first.isPresent()) {
+        // TODO: THIS MESSAGE SHOULD BE IN THE TEMPLATE
         throw SchemaException.Code.COLUMN_CANNOT_BE_DROPPED.get(
             Map.of(
                 "reason",
@@ -211,16 +211,12 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     }
 
     // Reading existing vectorize config from the table metadata
-    Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition>
-        existingVectorizeConfigMap =
-            TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
+    var existingVectorizeConfigMap = VectorizeDefinition.from(tableMetadata, objectMapper);
 
     // Merge the new config to the existing vectorize config
     boolean updateVectorize = false;
     for (String column : dropColumns) {
-      final VectorConfig.ColumnVectorDefinition.VectorizeDefinition remove =
-          existingVectorizeConfigMap.remove(column);
+      final VectorizeDefinition remove = existingVectorizeConfigMap.remove(column);
       if (remove != null) {
         updateVectorize = true;
       }
@@ -236,7 +232,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     Map<String, String> customProperties;
     if (updateVectorize) {
       customProperties =
-          TableMetadataUtils.createCustomProperties(existingVectorizeConfigMap, objectMapper);
+          TableExtensions.createCustomProperties(existingVectorizeConfigMap, objectMapper);
       AlterTableAttempt dropVectorizeProperties =
           new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
               .customProperties(customProperties)
@@ -248,42 +244,46 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
   }
 
   private List<AlterTableAttempt> handleAddVectorize(
-      AlterTableOperationImpl.AddVectorize av,
+      AlterTableOperationImpl.AddVectorize addVectorize,
       TableSchemaObject schemaObject,
       SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+
     List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
     TableMetadata tableMetadata = schemaObject.tableMetadata();
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition> vectorizeConfigMap =
-        new HashMap<>();
+
+    Map<String, VectorizeDefinition> vectorizeConfigMap = new HashMap<>();
+
     // New columns to be added
-    for (Map.Entry<String, VectorizeConfig> entry : av.columns().entrySet()) {
-      CqlIdentifier columnName = CqlIdentifierUtil.cqlIdentifierFromUserInput(entry.getKey());
-      final Optional<ColumnMetadata> column = tableMetadata.getColumn(columnName);
-      column.orElseThrow(
-          () -> SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", entry.getKey())));
-      if (column.get().getType() instanceof VectorType vt) {
-        final VectorizeConfig vectorizeConfig = entry.getValue();
-        validateVectorize.validateService(vectorizeConfig, vt.getDimensions());
-        VectorConfig.ColumnVectorDefinition.VectorizeDefinition dbVectorConfig =
-            new VectorConfig.ColumnVectorDefinition.VectorizeDefinition(
-                vectorizeConfig.provider(),
-                vectorizeConfig.modelName(),
-                vectorizeConfig.authentication(),
-                vectorizeConfig.parameters());
-        vectorizeConfigMap.put(entry.getKey(), dbVectorConfig);
+    for (Map.Entry<String, VectorizeConfig> entry : addVectorize.columns().entrySet()) {
+      var identifier = cqlIdentifierFromUserInput(entry.getKey());
+      var vectorizeConfig = entry.getValue();
+
+      // TODO: MUCH MUCH BETTER ERROR MESSAGE !
+      var columnMetadata =
+          tableMetadata
+              .getColumn(identifier)
+              .orElseThrow(
+                  () ->
+                      SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", entry.getKey())));
+
+      if (columnMetadata.getType() instanceof VectorType vt) {
+
+        vectorizeConfigMap.put(
+            entry.getKey(),
+            VectorizeDefinition.from(vectorizeConfig, vt.getDimensions(), validateVectorize));
       } else {
+        // TODO: MUCH MUCH MUCH BETTER ERROR MESSAGE !
         throw SchemaException.Code.NON_VECTOR_TYPE_COLUMN.get(Map.of("column", entry.getKey()));
       }
     }
 
     // Reading existing vectorize config from the table metadata
-    Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition>
-        existingVectorizeConfigMap =
-            TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
+    Map<String, VectorizeDefinition> existingVectorizeConfigMap =
+        VectorizeDefinition.from(tableMetadata, objectMapper);
     existingVectorizeConfigMap.putAll(vectorizeConfigMap);
+
     Map<String, String> customProperties =
-        TableMetadataUtils.createCustomProperties(existingVectorizeConfigMap, objectMapper);
+        TableExtensions.createCustomProperties(existingVectorizeConfigMap, objectMapper);
 
     alterTableAttempts.add(
         new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
@@ -296,24 +296,25 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       AlterTableOperationImpl.DropVectorize dc,
       TableSchemaObject schemaObject,
       SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+
     TableMetadata tableMetadata = schemaObject.tableMetadata();
     List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
+
     // Reading existing vectorize config from the table metadata
-    Map<String, String> existingExtensions = TableMetadataUtils.getExtensions(tableMetadata);
-    Map<String, VectorConfig.ColumnVectorDefinition.VectorizeDefinition>
-        existingVectorizeConfigMap =
-            TableMetadataUtils.getVectorizeMap(existingExtensions, objectMapper);
+    Map<String, VectorizeDefinition> existingVectorizeConfigMap =
+        VectorizeDefinition.from(tableMetadata, objectMapper);
 
     // Merge the new config to the existing vectorize config
     boolean updateVectorize = false;
     for (String column : dc.columns()) {
-      CqlIdentifier columnIdentifier = CqlIdentifierUtil.cqlIdentifierFromUserInput(column);
+
+      CqlIdentifier columnIdentifier = cqlIdentifierFromUserInput(column);
+      // TODO: MUCH MUCH BETTER ERROR MESSAGE !!!!!!!!!!!
       if (tableMetadata.getColumn(columnIdentifier).isEmpty()) {
         throw SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", column));
       }
-      final VectorConfig.ColumnVectorDefinition.VectorizeDefinition remove =
-          existingVectorizeConfigMap.remove(column);
-      if (remove != null) {
+
+      if (existingVectorizeConfigMap.remove(column) != null) {
         updateVectorize = true;
       }
     }
@@ -321,8 +322,9 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     // New custom property to be updated
     if (updateVectorize) {
       Map<String, String> customProperties =
-          TableMetadataUtils.createCustomProperties(existingVectorizeConfigMap, objectMapper);
-      final AlterTableAttempt dropVectorizeProperties =
+          TableExtensions.createCustomProperties(existingVectorizeConfigMap, objectMapper);
+
+      AlterTableAttempt dropVectorizeProperties =
           new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
               .customProperties(customProperties)
               .build();

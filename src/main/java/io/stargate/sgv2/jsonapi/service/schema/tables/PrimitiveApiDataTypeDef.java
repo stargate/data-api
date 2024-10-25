@@ -46,6 +46,11 @@ public class PrimitiveApiDataTypeDef implements ApiDataType {
   }
 
   @Override
+  public boolean isUnsupported() {
+    return true;
+  }
+
+  @Override
   public ColumnType getColumnType() {
     // Not easy to cache in the ctor because of the circular dependency
     // is only a cache lookup so not a big deal

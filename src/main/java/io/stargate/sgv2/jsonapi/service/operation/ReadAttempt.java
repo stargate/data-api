@@ -11,6 +11,7 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDef;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlColumn;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
@@ -20,7 +21,7 @@ import io.stargate.sgv2.jsonapi.service.operation.query.CqlOptions;
 import io.stargate.sgv2.jsonapi.service.operation.query.SelectCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
-import io.stargate.sgv2.jsonapi.service.schema.tables.OrderedApiColumnDefContainer;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -159,15 +160,14 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  public Optional<OrderedApiColumnDefContainer> schemaDescription() {
+  public Optional<ColumnsDef> schemaDescription() {
 
     // need to check because otherwise we do not have the read result
     if (!checkStatus("schemaDescription()", OperationStatus.COMPLETED)) {
       return Optional.empty();
     }
 
-    var apiColumns =
-        new OrderedApiColumnDefContainer(readResult.resultSet.getColumnDefinitions().size());
+    var apiColumns = new ApiColumnDefContainer(readResult.resultSet.getColumnDefinitions().size());
     for (var columnDef : readResult.resultSet.getColumnDefinitions()) {
       try {
         apiColumns.put(ApiColumnDef.from(columnDef.getName(), columnDef.getType()));
@@ -175,7 +175,7 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
         throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
       }
     }
-    return Optional.of(apiColumns);
+    return Optional.of(apiColumns.toColumnsDef());
   }
 
   // This is a simple container for the result set so we can set one variable in the onSuccess

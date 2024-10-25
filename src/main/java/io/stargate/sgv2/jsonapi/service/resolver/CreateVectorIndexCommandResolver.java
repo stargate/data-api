@@ -7,7 +7,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
-import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
+import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.GenericOperation;
@@ -63,9 +63,9 @@ public class CreateVectorIndexCommandResolver implements CommandResolver<CreateV
     }
 
     if (definitionOptions != null) {
-      if (sourceModel != null && VectorConstant.SUPPORTED_SOURCES.get(sourceModel) == null) {
+      if (sourceModel != null && VectorConstants.SUPPORTED_SOURCES.get(sourceModel) == null) {
         List<String> supportedSourceModel =
-            new ArrayList<>(VectorConstant.SUPPORTED_SOURCES.keySet());
+            new ArrayList<>(VectorConstants.SUPPORTED_SOURCES.keySet());
         Collections.sort(supportedSourceModel);
         throw SchemaException.Code.INVALID_INDEX_DEFINITION.get(
             Map.of(
