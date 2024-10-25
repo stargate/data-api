@@ -104,7 +104,7 @@ public class JSONCodecRegistry {
             throw new ToCQLCodecException(value, columnType, "no codec matching value type");
           }
           return (JSONCodec<JavaT, CqlT>)
-              CollectionCodecs.buildToCQLListCodec(valueCodecCandidates, lt.getElementType());
+              CollectionCodecs.buildToCqlListCodec(valueCodecCandidates, lt.getElementType());
         }
 
         // fall through
@@ -116,7 +116,7 @@ public class JSONCodecRegistry {
             throw new ToCQLCodecException(value, columnType, "no codec matching value type");
           }
           return (JSONCodec<JavaT, CqlT>)
-              CollectionCodecs.buildToCQLSetCodec(valueCodecCandidates, st.getElementType());
+              CollectionCodecs.buildToCqlSetCodec(valueCodecCandidates, st.getElementType());
         }
         // fall through
       } else if (columnType instanceof MapType mt) {
@@ -132,7 +132,7 @@ public class JSONCodecRegistry {
             throw new ToCQLCodecException(value, columnType, "no codec matching value type");
           }
           return (JSONCodec<JavaT, CqlT>)
-              CollectionCodecs.buildToCQLMapCodec(
+              MapCodecs.buildToCqlMapCodec(
                   valueCodecCandidates, mt.getKeyType(), mt.getValueType());
         }
         // fall through
@@ -231,8 +231,7 @@ public class JSONCodecRegistry {
       if (valueCodecCandidates == null) {
         return null; // so caller reports problem
       }
-      return (JSONCodec<JavaT, CqlT>)
-          CollectionCodecs.buildToJsonMapCodec(valueCodecCandidates.get(0));
+      return (JSONCodec<JavaT, CqlT>) MapCodecs.buildToJsonMapCodec(valueCodecCandidates.get(0));
     }
 
     if (fromCQLType instanceof VectorType vt) {
