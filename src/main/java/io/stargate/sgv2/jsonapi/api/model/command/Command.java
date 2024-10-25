@@ -95,6 +95,6 @@ public interface Command {
   /** Enum class for command types. This is used to categorize commands into DDL and DML. */
   enum CommandType {
     DDL,
-    DML;
+    DML
   }
 }

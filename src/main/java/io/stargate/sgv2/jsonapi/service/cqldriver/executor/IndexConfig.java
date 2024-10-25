@@ -33,10 +33,12 @@ public record IndexConfig(Map<String, IndexDefinition> indexDefinitions) {
     return new IndexConfig(indexDefinitions);
   }
 
+  /** Get index definition by column name */
   public Optional<IndexDefinition> getIndexDefinition(String columnName) {
     return Optional.ofNullable(indexDefinitions.get(columnName));
   }
 
+  /** Definition for an index */
   public record IndexDefinition(
       IndexType indexType, String columnName, String indexName, Map<String, String> options) {
     public static IndexDefinition from(ColumnMetadata columnMetadata, IndexMetadata indexMetadata) {

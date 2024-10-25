@@ -105,5 +105,5 @@ public enum CommandStatus {
    * definitions as the is used in createTable command.
    */
   @JsonProperty("primaryKeySchema")
-  PRIMARY_KEY_SCHEMA;
+  PRIMARY_KEY_SCHEMA
 }
