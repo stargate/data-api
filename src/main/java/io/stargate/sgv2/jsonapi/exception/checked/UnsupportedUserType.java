@@ -1,13 +1,13 @@
 package io.stargate.sgv2.jsonapi.exception.checked;
 
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import java.util.Objects;
 
 public class UnsupportedUserType extends CheckedApiException {
 
-  private final ColumnType type;
+  private final ColumnDesc type;
 
-  public UnsupportedUserType(ColumnType type) {
+  public UnsupportedUserType(ColumnDesc type) {
     super(
         String.format(
             "Unsupported user datatype definition : %s",
@@ -15,7 +15,7 @@ public class UnsupportedUserType extends CheckedApiException {
     this.type = type;
   }
 
-  public ColumnType getType() {
+  public ColumnDesc getType() {
     return type;
   }
 }

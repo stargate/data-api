@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.impl;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -11,7 +11,7 @@ public class AlterTableOperationImpl {
 
   @Schema(description = "Operation to add columns to a table.")
   @JsonTypeName("add")
-  public record AddColumns(Map<String, ColumnType> columns) implements AlterTableOperation {}
+  public record AddColumns(Map<String, ColumnDesc> columns) implements AlterTableOperation {}
 
   @Schema(description = "Operation to drop columns of a table.")
   @JsonTypeName("drop")

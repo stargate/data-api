@@ -11,7 +11,7 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.SelectFrom;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.smallrye.mutiny.Uni;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDef;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlColumn;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
@@ -160,7 +160,7 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
   }
 
   @Override
-  public Optional<ColumnsDef> schemaDescription() {
+  public Optional<ColumnsDescContainer> schemaDescription() {
 
     // need to check because otherwise we do not have the read result
     if (!checkStatus("schemaDescription()", OperationStatus.COMPLETED)) {

@@ -2,10 +2,9 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDef;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefinition;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDesc;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -83,24 +82,25 @@ public class ApiTableDef {
         nonPKColumns);
   }
 
-  public TableDesc toTableDesc() {
+  public io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc toTableDesc() {
 
     var partitionKeys = partitionkeys.values().stream().map(ApiColumnDef::name).toList();
     var orderingKeys =
         clusteringkeys.stream()
             .map(
                 clusteringDef ->
-                    PrimaryKey.OrderingKey.from(
+                    PrimaryKeyDesc.OrderingKeyDesc.from(
                         clusteringDef.columnDef().name(), clusteringDef.order()))
             .toList();
-    var primaryKey = PrimaryKey.from(partitionKeys, orderingKeys);
+    var primaryKey = PrimaryKeyDesc.from(partitionKeys, orderingKeys);
 
-    var columnsDesc = new ColumnsDef();
+    var columnsDesc = new ColumnsDescContainer();
     allColumns
         .values()
         .forEach(columnDef -> columnsDesc.put(columnDef.name(), columnDef.type().getColumnType()));
 
-    return TableDesc.from(name, new TableDefinition(columnsDesc, primaryKey));
+    return io.stargate.sgv2.jsonapi.api.model.command.table.TableDesc.from(
+        name, new TableDesc(columnsDesc, primaryKey));
   }
 
   public CqlIdentifier name() {

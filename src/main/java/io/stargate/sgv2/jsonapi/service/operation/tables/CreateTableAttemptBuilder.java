@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDesc;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
@@ -18,7 +18,7 @@ public class CreateTableAttemptBuilder {
   private String tableName;
   private Map<CqlIdentifier, ApiDataType> columnTypes;
   private List<CqlIdentifier> partitionKeys;
-  private List<PrimaryKey.OrderingKey> clusteringKeys;
+  private List<PrimaryKeyDesc.OrderingKeyDesc> clusteringKeys;
   private Map<String, String> customProperties;
   private boolean ifNotExists;
 
@@ -60,7 +60,8 @@ public class CreateTableAttemptBuilder {
     return this;
   }
 
-  public CreateTableAttemptBuilder clusteringKeys(List<PrimaryKey.OrderingKey> clusteringKeys) {
+  public CreateTableAttemptBuilder clusteringKeys(
+      List<PrimaryKeyDesc.OrderingKeyDesc> clusteringKeys) {
     this.clusteringKeys = clusteringKeys;
     return this;
   }

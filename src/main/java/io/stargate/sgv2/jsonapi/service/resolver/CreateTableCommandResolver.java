@@ -3,8 +3,8 @@ package io.stargate.sgv2.jsonapi.service.resolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateTableCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -57,14 +57,14 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
         command.definition().columns().entrySet().stream()
             .filter(
                 e ->
-                    e.getValue() instanceof ComplexColumnType.ColumnVectorType vt
+                    e.getValue() instanceof ComplexColumnDesc.VectorColumnDesc vt
                         && vt.getVectorConfig() != null)
             .collect(
                 Collectors.toMap(
                     Map.Entry::getKey,
                     e ->
                         VectorizeDefinition.from(
-                            ((ComplexColumnType.ColumnVectorType) e.getValue()),
+                            ((ComplexColumnDesc.VectorColumnDesc) e.getValue()),
                             validateVectorize)));
 
     if (partitionKeys.isEmpty()) {
@@ -77,7 +77,7 @@ public class CreateTableCommandResolver implements CommandResolver<CreateTableCo
           }
         });
 
-    List<PrimaryKey.OrderingKey> clusteringKeys =
+    List<PrimaryKeyDesc.OrderingKeyDesc> clusteringKeys =
         command.definition().primaryKey().orderingKeys() == null
             ? List.of()
             : Arrays.stream(command.definition().primaryKey().orderingKeys()).toList();

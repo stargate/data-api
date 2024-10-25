@@ -7,8 +7,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.stargate.sgv2.jsonapi.api.model.command.deserializers.PrimaryKeyDeserializer;
-import io.stargate.sgv2.jsonapi.api.model.command.serializer.OrderingKeysSerializer;
+import io.stargate.sgv2.jsonapi.api.model.command.deserializers.PrimaryKeyDescDeserializer;
+import io.stargate.sgv2.jsonapi.api.model.command.serializer.OrderingKeyDescSerializer;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiClusteringOrder;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.annotation.Nullable;
@@ -22,16 +22,16 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  * is a guarantee that the keys are properly formatted.
  *
  * @param keys
- * @param orderingKeys
+ * @param orderingKeyDescs
  */
-@JsonDeserialize(using = PrimaryKeyDeserializer.class)
+@JsonDeserialize(using = PrimaryKeyDescDeserializer.class)
 // TODO, hide table feature detail before it goes public,
 // https://github.com/stargate/data-api/pull/1360
 // @Schema(
 //    type = SchemaType.OBJECT,
 //    implementation = Object.class,
 //    description = "Represents the table primary key")
-public record PrimaryKey(
+public record PrimaryKeyDesc(
     @NotNull
         @Schema(description = "Columns that make the partition keys", type = SchemaType.ARRAY)
         @JsonProperty("partitionBy")
@@ -40,18 +40,19 @@ public record PrimaryKey(
     @Nullable
         @Schema(description = "Columns that make the ordering keys", type = SchemaType.ARRAY)
         @JsonProperty("partitionSort")
-        @JsonSerialize(using = OrderingKeysSerializer.class)
-        OrderingKey[] orderingKeys) {
+        @JsonSerialize(using = OrderingKeyDescSerializer.class)
+        OrderingKeyDesc[] orderingKeys) {
 
-  public static PrimaryKey from(List<CqlIdentifier> partitionKeys, List<OrderingKey> orderingKeys) {
-    return new PrimaryKey(
+  public static PrimaryKeyDesc from(
+      List<CqlIdentifier> partitionKeys, List<OrderingKeyDesc> orderingKeyDescs) {
+    return new PrimaryKeyDesc(
         partitionKeys.stream()
             .map(CqlIdentifierUtil::cqlIdentifierToJsonKey)
             .toArray(String[]::new),
-        orderingKeys.toArray(new OrderingKey[0]));
+        orderingKeyDescs.toArray(new OrderingKeyDesc[0]));
   }
 
-  public record OrderingKey(String column, Order order) {
+  public record OrderingKeyDesc(String column, Order order) {
 
     public enum Order {
       @JsonProperty("1")
@@ -67,8 +68,8 @@ public record PrimaryKey(
       }
     }
 
-    public static OrderingKey from(CqlIdentifier column, ApiClusteringOrder clusteringOrder) {
-      return new OrderingKey(cqlIdentifierToJsonKey(column), Order.from(clusteringOrder));
+    public static OrderingKeyDesc from(CqlIdentifier column, ApiClusteringOrder clusteringOrder) {
+      return new OrderingKeyDesc(cqlIdentifierToJsonKey(column), Order.from(clusteringOrder));
     }
   }
 }

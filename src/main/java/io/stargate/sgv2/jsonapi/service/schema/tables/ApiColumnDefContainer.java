@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDef;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
@@ -78,10 +78,10 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     return containsKey(columnDef.name());
   }
 
-  public ColumnsDef toColumnsDef() {
-    ColumnsDef columnsDef = new ColumnsDef(size());
-    forEach((name, columnDef) -> columnsDef.put(name, columnDef.type().getColumnType()));
-    return columnsDef;
+  public ColumnsDescContainer toColumnsDef() {
+    ColumnsDescContainer columnsDesc = new ColumnsDescContainer(size());
+    forEach((name, columnDef) -> columnsDesc.put(name, columnDef.type().getColumnType()));
+    return columnsDesc;
   }
 
   public static class UnmodifiableApiColumnDefContainer extends ApiColumnDefContainer {

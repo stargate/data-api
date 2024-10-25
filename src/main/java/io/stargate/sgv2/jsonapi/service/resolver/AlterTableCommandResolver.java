@@ -13,7 +13,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperationImpl;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -126,14 +126,14 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
         ac.columns().entrySet().stream()
             .filter(
                 e ->
-                    e.getValue() instanceof ComplexColumnType.ColumnVectorType vt
+                    e.getValue() instanceof ComplexColumnDesc.VectorColumnDesc vt
                         && vt.getVectorConfig() != null)
             .collect(
                 Collectors.toMap(
                     Map.Entry::getKey,
                     e ->
                         VectorizeDefinition.from(
-                            ((ComplexColumnType.ColumnVectorType) e.getValue()),
+                            ((ComplexColumnDesc.VectorColumnDesc) e.getValue()),
                             validateVectorize)));
 
     var addColumnsAttempt =

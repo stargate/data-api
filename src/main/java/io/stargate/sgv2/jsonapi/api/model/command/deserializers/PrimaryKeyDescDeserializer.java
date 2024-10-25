@@ -5,29 +5,29 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDesc;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 
-public class PrimaryKeyDeserializer extends StdDeserializer<PrimaryKey> {
-  protected PrimaryKeyDeserializer() {
-    super(PrimaryKeyDeserializer.class);
+public class PrimaryKeyDescDeserializer extends StdDeserializer<PrimaryKeyDesc> {
+  protected PrimaryKeyDescDeserializer() {
+    super(PrimaryKeyDescDeserializer.class);
   }
 
   @Override
-  public PrimaryKey deserialize(
+  public PrimaryKeyDesc deserialize(
       JsonParser jsonParser, DeserializationContext deserializationContext)
       throws IOException, JacksonException {
     JsonNode primaryKey = deserializationContext.readTree(jsonParser);
     // This is primary key definition
     if (primaryKey.isTextual()) {
-      return new PrimaryKey(new String[] {primaryKey.asText()}, null);
+      return new PrimaryKeyDesc(new String[] {primaryKey.asText()}, null);
     }
     if (primaryKey.isObject()) {
       String[] keys = null;
-      PrimaryKey.OrderingKey[] orderingKeys = null;
+      PrimaryKeyDesc.OrderingKeyDesc[] orderingKeyDescs = null;
       if (primaryKey.has("partitionBy")) {
         JsonNode partitionBy = primaryKey.path("partitionBy");
 
@@ -44,7 +44,7 @@ public class PrimaryKeyDeserializer extends StdDeserializer<PrimaryKey> {
         if (primaryKey.has("partitionSort")) {
           JsonNode partitionSort = primaryKey.path("partitionSort");
           if (partitionSort.isObject()) {
-            orderingKeys = new PrimaryKey.OrderingKey[partitionSort.size()];
+            orderingKeyDescs = new PrimaryKeyDesc.OrderingKeyDesc[partitionSort.size()];
             int i = 0;
             final Iterator<Map.Entry<String, JsonNode>> orderingKeysData = partitionSort.fields();
             while (orderingKeysData.hasNext()) {
@@ -53,11 +53,13 @@ public class PrimaryKeyDeserializer extends StdDeserializer<PrimaryKey> {
               if (entry.getValue().isInt()) {
                 int order = entry.getValue().asInt();
                 if (order == 1) {
-                  orderingKeys[i] =
-                      new PrimaryKey.OrderingKey(columnName, PrimaryKey.OrderingKey.Order.ASC);
+                  orderingKeyDescs[i] =
+                      new PrimaryKeyDesc.OrderingKeyDesc(
+                          columnName, PrimaryKeyDesc.OrderingKeyDesc.Order.ASC);
                 } else if (order == -1) {
-                  orderingKeys[i] =
-                      new PrimaryKey.OrderingKey(columnName, PrimaryKey.OrderingKey.Order.DESC);
+                  orderingKeyDescs[i] =
+                      new PrimaryKeyDesc.OrderingKeyDesc(
+                          columnName, PrimaryKeyDesc.OrderingKeyDesc.Order.DESC);
                 } else {
                   throw SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
                 }
@@ -68,7 +70,7 @@ public class PrimaryKeyDeserializer extends StdDeserializer<PrimaryKey> {
             }
           }
         }
-        return new PrimaryKey(keys, orderingKeys);
+        return new PrimaryKeyDesc(keys, orderingKeyDescs);
       } else {
         throw SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
       }

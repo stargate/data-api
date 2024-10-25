@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.operation;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDef;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
@@ -481,7 +481,7 @@ public abstract class OperationAttempt<
    *     CommandStatus#PRIMARY_KEY_SCHEMA}. How this is included in the response is up to the {@link
    *     OperationAttemptPage} that is building the response.
    */
-  public Optional<ColumnsDef> schemaDescription() {
+  public Optional<ColumnsDescContainer> schemaDescription() {
     return Optional.empty();
   }
 

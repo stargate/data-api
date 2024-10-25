@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import java.io.IOException;
 
@@ -14,19 +14,19 @@ import java.io.IOException;
  * Custom deserializer to decode the column type from the JSON payload This is required because
  * composite and custom column types may need additional properties to be deserialized
  */
-public class ColumnDefinitionDeserializer extends StdDeserializer<ColumnType> {
+public class ColumnDescDeserializer extends StdDeserializer<ColumnDesc> {
 
-  public ColumnDefinitionDeserializer() {
-    super(ColumnType.class);
+  public ColumnDescDeserializer() {
+    super(ColumnDesc.class);
   }
 
   @Override
-  public ColumnType deserialize(
+  public ColumnDesc deserialize(
       JsonParser jsonParser, DeserializationContext deserializationContext)
       throws IOException, JacksonException {
     JsonNode definition = deserializationContext.readTree(jsonParser);
     if (definition.isTextual()) {
-      return ColumnType.fromJsonString(definition.asText(), null, null, -1, null);
+      return ColumnDesc.fromJsonString(definition.asText(), null, null, -1, null);
     }
     if (definition.isObject() && definition.has("type")) {
       String type = definition.path("type").asText();
@@ -51,13 +51,13 @@ public class ColumnDefinitionDeserializer extends StdDeserializer<ColumnType> {
           throw SchemaException.Code.VECTOR_TYPE_INVALID_DEFINITION.get();
         }
       }
-      return ColumnType.fromJsonString(type, keyType, valueType, dimension, vectorConfig);
+      return ColumnDesc.fromJsonString(type, keyType, valueType, dimension, vectorConfig);
     }
     throw SchemaException.Code.COLUMN_TYPE_INCORRECT.get();
   }
 
   @Override
-  public ColumnType getNullValue(DeserializationContext ctxt) {
+  public ColumnDesc getNullValue(DeserializationContext ctxt) {
     throw SchemaException.Code.COLUMN_TYPE_INCORRECT.get();
   }
 }

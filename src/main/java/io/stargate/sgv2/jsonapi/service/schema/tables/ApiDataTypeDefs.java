@@ -3,8 +3,8 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
 import com.datastax.oss.driver.api.core.type.*;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
@@ -99,12 +99,12 @@ public abstract class ApiDataTypeDefs {
   private static final ConcurrentMap<SetType, ComplexApiDataType.ApiSetType> CQL_SET_TYPE_CACHE =
       new ConcurrentHashMap<>();
 
-  private static final ConcurrentMap<ComplexColumnType.ColumnMapType, ComplexApiDataType.ApiMapType>
+  private static final ConcurrentMap<ComplexColumnDesc.MapColumnDesc, ComplexApiDataType.ApiMapType>
       COL_MAP_TYPE_CACHE = new ConcurrentHashMap<>();
   private static final ConcurrentMap<
-          ComplexColumnType.ColumnListType, ComplexApiDataType.ApiListType>
+          ComplexColumnDesc.ListColumnDesc, ComplexApiDataType.ApiListType>
       COL_LIST_TYPE_CACHE = new ConcurrentHashMap<>();
-  private static final ConcurrentMap<ComplexColumnType.ColumnSetType, ComplexApiDataType.ApiSetType>
+  private static final ConcurrentMap<ComplexColumnDesc.SetColumnDesc, ComplexApiDataType.ApiSetType>
       COL_SET_TYPE_CACHE = new ConcurrentHashMap<>();
 
   /**
@@ -134,20 +134,20 @@ public abstract class ApiDataTypeDefs {
     };
   }
 
-  public static ApiDataType from(ColumnType columnType) throws UnsupportedUserType {
-    Objects.requireNonNull(columnType, "columnType must not be null");
+  public static ApiDataType from(ColumnDesc columnDesc) throws UnsupportedUserType {
+    Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
-    var primitiveType = PRIMITIVE_TYPES_BY_API_NAME.get(columnType.getApiDataTypeName());
+    var primitiveType = PRIMITIVE_TYPES_BY_API_NAME.get(columnDesc.getApiDataTypeName());
     if (primitiveType != null) {
       return primitiveType;
     }
 
-    return switch (columnType) {
-      case ComplexColumnType.ColumnListType lt -> from(lt);
-      case ComplexColumnType.ColumnMapType mt -> from(mt);
-      case ComplexColumnType.ColumnSetType st -> from(st);
-      case ComplexColumnType.ColumnVectorType vt -> from(vt);
-      default -> throw new UnsupportedUserType(columnType);
+    return switch (columnDesc) {
+      case ComplexColumnDesc.ListColumnDesc lt -> from(lt);
+      case ComplexColumnDesc.MapColumnDesc mt -> from(mt);
+      case ComplexColumnDesc.SetColumnDesc st -> from(st);
+      case ComplexColumnDesc.VectorColumnDesc vt -> from(vt);
+      default -> throw new UnsupportedUserType(columnDesc);
     };
   }
 
@@ -176,7 +176,7 @@ public abstract class ApiDataTypeDefs {
         });
   }
 
-  public static ComplexApiDataType from(ComplexColumnType.ColumnMapType mapType)
+  public static ComplexApiDataType from(ComplexColumnDesc.MapColumnDesc mapType)
       throws UnsupportedUserType {
     Objects.requireNonNull(mapType, "mapType must not be null");
 
@@ -219,7 +219,7 @@ public abstract class ApiDataTypeDefs {
         });
   }
 
-  public static ComplexApiDataType from(ComplexColumnType.ColumnListType listType)
+  public static ComplexApiDataType from(ComplexColumnDesc.ListColumnDesc listType)
       throws UnsupportedUserType {
     Objects.requireNonNull(listType, "listType must not be null");
 
@@ -262,7 +262,7 @@ public abstract class ApiDataTypeDefs {
         });
   }
 
-  public static ComplexApiDataType from(ComplexColumnType.ColumnSetType setType)
+  public static ComplexApiDataType from(ComplexColumnDesc.SetColumnDesc setType)
       throws UnsupportedUserType {
     Objects.requireNonNull(setType, "setType must not be null");
 
@@ -312,7 +312,7 @@ public abstract class ApiDataTypeDefs {
    * Note: cannot cache this as the {@link ComplexApiDataType.ApiVectorType} includes the vectorize
    * config so is not re-usable cross tenants etc.
    */
-  public static ComplexApiDataType from(ComplexColumnType.ColumnVectorType vectorType)
+  public static ComplexApiDataType from(ComplexColumnDesc.VectorColumnDesc vectorType)
       throws UnsupportedUserType {
     Objects.requireNonNull(vectorType, "vectorType must not be null");
 

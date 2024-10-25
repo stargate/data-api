@@ -1,18 +1,18 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
 import java.util.Objects;
 
 public class UnsupportedApiDataType implements ApiDataType {
 
   private final DataType cqlType;
-  private final ColumnType columnType;
+  private final ColumnDesc columnDesc;
 
   public UnsupportedApiDataType(DataType cqlType) {
     this.cqlType = Objects.requireNonNull(cqlType, "cqlType must not be null");
-    this.columnType = new ComplexColumnType.UnsupportedType(cqlType);
+    this.columnDesc = new ComplexColumnDesc.UnsupportedType(cqlType);
   }
 
   @Override
@@ -41,7 +41,7 @@ public class UnsupportedApiDataType implements ApiDataType {
   }
 
   @Override
-  public ColumnType getColumnType() {
-    return columnType;
+  public ColumnDesc getColumnType() {
+    return columnDesc;
   }
 }

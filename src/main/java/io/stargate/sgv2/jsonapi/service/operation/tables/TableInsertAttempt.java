@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation.tables;
 
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDef;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlColumn;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
@@ -42,7 +42,7 @@ public class TableInsertAttempt extends InsertAttempt<TableSchemaObject> {
 
   /** Override to describe the schema of the primary keys in the row we inserted */
   @Override
-  public Optional<ColumnsDef> schemaDescription() {
+  public Optional<ColumnsDescContainer> schemaDescription() {
 
     /// we could be in an error state, and not have inserted anything , if we got a shredding error
     // then we do not have the row to describe

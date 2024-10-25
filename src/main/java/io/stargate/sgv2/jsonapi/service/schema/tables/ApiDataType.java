@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 
 /** TODO WORDS */
 @JsonSerialize(using = ApiDataTypeDefSerializer.class)
@@ -18,5 +18,5 @@ public interface ApiDataType {
 
   boolean isUnsupported();
 
-  ColumnType getColumnType();
+  ColumnDesc getColumnType();
 }

@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /** Interface for primitive column types similar to what is defined in cassandra java driver. */
-public enum PrimitiveColumnTypes implements ColumnType {
+public enum PrimitiveColumnDesc implements ColumnDesc {
   ASCII(ApiDataTypeDefs.ASCII),
   BIGINT(ApiDataTypeDefs.BIGINT),
   BINARY(ApiDataTypeDefs.BINARY),
@@ -25,11 +25,11 @@ public enum PrimitiveColumnTypes implements ColumnType {
   UUID(ApiDataTypeDefs.UUID),
   VARINT(ApiDataTypeDefs.VARINT);
 
-  private static Map<ApiDataType, PrimitiveColumnTypes> BY_API_TYPE = new HashMap<>();
-  private static Map<String, PrimitiveColumnTypes> BY_API_TYPE_NAME = new HashMap<>();
+  private static Map<ApiDataType, PrimitiveColumnDesc> BY_API_TYPE = new HashMap<>();
+  private static Map<String, PrimitiveColumnDesc> BY_API_TYPE_NAME = new HashMap<>();
 
   static {
-    for (PrimitiveColumnTypes type : PrimitiveColumnTypes.values()) {
+    for (PrimitiveColumnDesc type : PrimitiveColumnDesc.values()) {
       BY_API_TYPE.put(type.apiDataType, type);
       BY_API_TYPE_NAME.put(type.apiDataType.getName().getApiName(), type);
     }
@@ -37,7 +37,7 @@ public enum PrimitiveColumnTypes implements ColumnType {
 
   private final ApiDataType apiDataType;
 
-  PrimitiveColumnTypes(ApiDataType apiDataType) {
+  PrimitiveColumnDesc(ApiDataType apiDataType) {
     this.apiDataType = apiDataType;
   }
 
@@ -46,18 +46,18 @@ public enum PrimitiveColumnTypes implements ColumnType {
     return apiDataType.getName();
   }
 
-  public static ColumnType fromApiDataType(ApiDataType apiDataType) {
+  public static ColumnDesc fromApiDataType(ApiDataType apiDataType) {
     if (!apiDataType.isPrimitive()) {
       throw new IllegalArgumentException("Not a primitive type: " + apiDataType);
     }
     // sanity check that we have all the API types
     if (!BY_API_TYPE.containsKey(apiDataType)) {
-      throw new IllegalArgumentException("No PrimitiveColumnTypes for apiDataType: " + apiDataType);
+      throw new IllegalArgumentException("No PrimitiveColumnDesc for apiDataType: " + apiDataType);
     }
     return BY_API_TYPE.get(apiDataType);
   }
 
-  public static ColumnType fromApiTypeName(String apiTypeName) {
+  public static ColumnDesc fromApiTypeName(String apiTypeName) {
     return BY_API_TYPE_NAME.get(apiTypeName);
   }
 }

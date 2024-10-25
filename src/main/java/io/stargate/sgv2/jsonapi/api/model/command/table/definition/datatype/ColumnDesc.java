@@ -2,18 +2,18 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDefinitionDeserializer;
+import io.stargate.sgv2.jsonapi.api.model.command.deserializers.ColumnDescDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.api.model.command.serializer.ColumnDefinitionSerializer;
+import io.stargate.sgv2.jsonapi.api.model.command.serializer.ColumnDescSerializer;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeName;
 import java.util.List;
 import java.util.Map;
 
 /** Interface for column types. This is used to define the type of a column in a table. */
-@JsonDeserialize(using = ColumnDefinitionDeserializer.class)
-@JsonSerialize(using = ColumnDefinitionSerializer.class)
-public interface ColumnType {
+@JsonDeserialize(using = ColumnDescDeserializer.class)
+@JsonSerialize(using = ColumnDescSerializer.class)
+public interface ColumnDesc {
 
   ApiDataTypeName getApiDataTypeName();
 
@@ -57,11 +57,11 @@ public interface ColumnType {
   /**
    * This is used as part of the deserialization from JSON
    *
-   * <p>TODO: it should be in the ColumnDefinitionDeserializer
+   * <p>TODO: it should be in the ColumnDescDeserializer
    */
-  static ColumnType fromJsonString(
+  static ColumnDesc fromJsonString(
       String type, String keyType, String valueType, int dimension, VectorizeConfig vectorConfig) {
-    // TODO: the name of the type should be a part of the ColumnType interface, and use a map for
+    // TODO: the name of the type should be a part of the ColumnDesc interface, and use a map for
     // the lookup
     switch (type) {
       case "map":
@@ -70,20 +70,20 @@ public interface ColumnType {
             throw SchemaException.Code.MAP_TYPE_INVALID_DEFINITION.get(
                 Map.of("reason", "`keyType` or `valueType` is null"));
           }
-          final ColumnType keyColumnType, valueColumnType;
+          final ColumnDesc keyColumnDesc, valueColumnDesc;
           try {
-            keyColumnType = fromJsonString(keyType, null, null, dimension, vectorConfig);
-            valueColumnType = fromJsonString(valueType, null, null, dimension, vectorConfig);
+            keyColumnDesc = fromJsonString(keyType, null, null, dimension, vectorConfig);
+            valueColumnDesc = fromJsonString(valueType, null, null, dimension, vectorConfig);
           } catch (SchemaException se) {
             throw SchemaException.Code.MAP_TYPE_INVALID_DEFINITION.get(
                 Map.of("reason", "Data types used for `keyType` or `valueType` are not supported"));
           }
-          if (!(PrimitiveColumnTypes.TEXT.equals(keyColumnType)
-              || PrimitiveColumnTypes.ASCII.equals(keyColumnType))) {
+          if (!(PrimitiveColumnDesc.TEXT.equals(keyColumnDesc)
+              || PrimitiveColumnDesc.ASCII.equals(keyColumnDesc))) {
             throw SchemaException.Code.MAP_TYPE_INVALID_DEFINITION.get(
                 Map.of("reason", "`keyType` must be `text` or `ascii`, but was " + keyType));
           }
-          return new ComplexColumnType.ColumnMapType(keyColumnType, valueColumnType);
+          return new ComplexColumnDesc.MapColumnDesc(keyColumnDesc, valueColumnDesc);
         }
       case "list":
         {
@@ -91,7 +91,7 @@ public interface ColumnType {
             throw SchemaException.Code.LIST_TYPE_INVALID_DEFINITION.get();
           }
           try {
-            return new ComplexColumnType.ColumnListType(
+            return new ComplexColumnDesc.ListColumnDesc(
                 fromJsonString(valueType, null, null, dimension, vectorConfig));
           } catch (SchemaException se) {
             throw SchemaException.Code.LIST_TYPE_INVALID_DEFINITION.get();
@@ -104,7 +104,7 @@ public interface ColumnType {
             throw SchemaException.Code.SET_TYPE_INVALID_DEFINITION.get();
           }
           try {
-            return new ComplexColumnType.ColumnSetType(
+            return new ComplexColumnDesc.SetColumnDesc(
                 fromJsonString(valueType, null, null, dimension, vectorConfig));
           } catch (SchemaException se) {
             throw SchemaException.Code.SET_TYPE_INVALID_DEFINITION.get();
@@ -117,24 +117,24 @@ public interface ColumnType {
             throw SchemaException.Code.VECTOR_TYPE_INVALID_DEFINITION.get();
           }
           try {
-            return new ComplexColumnType.ColumnVectorType(
-                PrimitiveColumnTypes.FLOAT, dimension, vectorConfig);
+            return new ComplexColumnDesc.VectorColumnDesc(
+                PrimitiveColumnDesc.FLOAT, dimension, vectorConfig);
           } catch (SchemaException se) {
             throw SchemaException.Code.VECTOR_TYPE_INVALID_DEFINITION.get();
           }
         }
       default:
         {
-          ColumnType columnType = PrimitiveColumnTypes.fromApiTypeName(type);
-          if (columnType != null) {
-            return columnType;
+          ColumnDesc columnDesc = PrimitiveColumnDesc.fromApiTypeName(type);
+          if (columnDesc != null) {
+            return columnDesc;
           }
           Map<String, String> errorMessageFormattingValues =
               Map.of(
                   "type",
                   type,
                   "supported_types",
-                  "[" + String.join(", ", ColumnType.getSupportedTypes()) + "]");
+                  "[" + String.join(", ", ColumnDesc.getSupportedTypes()) + "]");
           throw SchemaException.Code.COLUMN_TYPE_UNSUPPORTED.get(errorMessageFormattingValues);
         }
     }

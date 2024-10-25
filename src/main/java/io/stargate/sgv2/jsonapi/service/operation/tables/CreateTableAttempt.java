@@ -10,7 +10,7 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableStart;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKey;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDesc;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
@@ -26,11 +26,11 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
   private final String tableName;
   private final Map<CqlIdentifier, ApiDataType> columnTypes;
   private final List<CqlIdentifier> partitionKeys;
-  private final List<PrimaryKey.OrderingKey> clusteringKeys;
+  private final List<PrimaryKeyDesc.OrderingKeyDesc> clusteringKeys;
   private final Map<String, String> customProperties;
   private final boolean ifNotExists;
 
-  // TODO: THIS MUST BE GIVEN STATEMENT BUILDERS LIKE THE OTHER ATTEMPTS!
+  // TODO: THIS MUST BE GIVEN STATEMENT BUILDERS LIKE THE OTHER ATTEMPTS NOT PASSED IN API OBJECTS
   protected CreateTableAttempt(
       int position,
       KeyspaceSchemaObject schemaObject,
@@ -39,7 +39,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
       String tableName,
       Map<CqlIdentifier, ApiDataType> columnTypes,
       List<CqlIdentifier> partitionKeys,
-      List<PrimaryKey.OrderingKey> clusteringKeys,
+      List<PrimaryKeyDesc.OrderingKeyDesc> clusteringKeys,
       boolean ifNotExists,
       Map<String, String> customProperties) {
     super(
@@ -97,7 +97,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
       addedColumns.add(partitionKey);
     }
 
-    for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
+    for (PrimaryKeyDesc.OrderingKeyDesc clusteringKey : clusteringKeys) {
       var clusteringKeyIdentifier = cqlIdentifierFromUserInput(clusteringKey.column());
 
       ApiDataType apiDataType = columnTypes.get(clusteringKeyIdentifier);
@@ -118,7 +118,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
 
   private CreateTableWithOptions addClusteringOrder(CreateTableWithOptions createTableWithOptions) {
 
-    for (PrimaryKey.OrderingKey clusteringKey : clusteringKeys) {
+    for (PrimaryKeyDesc.OrderingKeyDesc clusteringKey : clusteringKeys) {
       createTableWithOptions =
           createTableWithOptions.withClusteringOrder(
               cqlIdentifierFromUserInput(clusteringKey.column()),
@@ -127,7 +127,7 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
     return createTableWithOptions;
   }
 
-  public ClusteringOrder getCqlClusterOrder(PrimaryKey.OrderingKey.Order ordering) {
+  public ClusteringOrder getCqlClusterOrder(PrimaryKeyDesc.OrderingKeyDesc.Order ordering) {
     return switch (ordering) {
       case ASC -> ClusteringOrder.ASC;
       case DESC -> ClusteringOrder.DESC;

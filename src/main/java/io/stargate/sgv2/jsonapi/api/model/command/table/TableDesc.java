@@ -5,7 +5,6 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJso
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefinition;
 
 /**
  * Object used to build the response for listTables command
@@ -15,9 +14,12 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefiniti
  */
 @JsonPropertyOrder({"name", "definition"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record TableDesc(String name, TableDefinition definition) {
+public record TableDesc(
+    String name, io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDesc definition) {
 
-  public static TableDesc from(CqlIdentifier name, TableDefinition definition) {
+  public static TableDesc from(
+      CqlIdentifier name,
+      io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDesc definition) {
     return new TableDesc(cqlIdentifierToJsonKey(name), definition);
   }
 }

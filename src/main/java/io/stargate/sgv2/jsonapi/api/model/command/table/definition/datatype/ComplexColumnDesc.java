@@ -7,11 +7,11 @@ import io.stargate.sgv2.jsonapi.service.schema.tables.ComplexApiDataType;
 import java.util.Objects;
 
 /** Interface for complex column types like collections */
-public abstract class ComplexColumnType implements ColumnType {
+public abstract class ComplexColumnDesc implements ColumnDesc {
 
   private final ApiDataTypeName apiDataTypeName;
 
-  protected ComplexColumnType(ApiDataTypeName apiDataTypeName) {
+  protected ComplexColumnDesc(ApiDataTypeName apiDataTypeName) {
     this.apiDataTypeName =
         Objects.requireNonNull(apiDataTypeName, "apiDataTypeName must not be null");
   }
@@ -22,22 +22,22 @@ public abstract class ComplexColumnType implements ColumnType {
   }
 
   /** Column type for {@link ComplexApiDataType.ApiMapType} */
-  public static class ColumnMapType extends ComplexColumnType {
-    private final ColumnType keyType;
-    private final ColumnType valueType;
+  public static class MapColumnDesc extends ComplexColumnDesc {
+    private final ColumnDesc keyType;
+    private final ColumnDesc valueType;
 
-    public ColumnMapType(ColumnType keyType, ColumnType valueType) {
+    public MapColumnDesc(ColumnDesc keyType, ColumnDesc valueType) {
       super(ApiDataTypeName.MAP);
 
       this.keyType = keyType;
       this.valueType = valueType;
     }
 
-    public ColumnType keyType() {
+    public ColumnDesc keyType() {
       return keyType;
     }
 
-    public ColumnType valueType() {
+    public ColumnDesc valueType() {
       return valueType;
     }
 
@@ -50,7 +50,7 @@ public abstract class ComplexColumnType implements ColumnType {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      ColumnMapType mapType = (ColumnMapType) o;
+      MapColumnDesc mapType = (MapColumnDesc) o;
       return Objects.equals(keyType, mapType.keyType)
           && Objects.equals(valueType, mapType.valueType);
     }
@@ -62,15 +62,15 @@ public abstract class ComplexColumnType implements ColumnType {
   }
 
   /** Column type for {@link ComplexApiDataType.ApiListType} */
-  public static class ColumnListType extends ComplexColumnType {
-    private final ColumnType valueType;
+  public static class ListColumnDesc extends ComplexColumnDesc {
+    private final ColumnDesc valueType;
 
-    public ColumnListType(ColumnType valueType) {
+    public ListColumnDesc(ColumnDesc valueType) {
       super(ApiDataTypeName.LIST);
       this.valueType = valueType;
     }
 
-    public ColumnType valueType() {
+    public ColumnDesc valueType() {
       return valueType;
     }
 
@@ -83,7 +83,7 @@ public abstract class ComplexColumnType implements ColumnType {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      ColumnListType listType = (ColumnListType) o;
+      ListColumnDesc listType = (ListColumnDesc) o;
       return Objects.equals(valueType, listType.valueType);
     }
 
@@ -94,15 +94,15 @@ public abstract class ComplexColumnType implements ColumnType {
   }
 
   /** Column type for {@link ComplexApiDataType.ApiSetType} */
-  public static class ColumnSetType extends ComplexColumnType {
-    private final ColumnType valueType;
+  public static class SetColumnDesc extends ComplexColumnDesc {
+    private final ColumnDesc valueType;
 
-    public ColumnSetType(ColumnType valueType) {
+    public SetColumnDesc(ColumnDesc valueType) {
       super(ApiDataTypeName.SET);
       this.valueType = valueType;
     }
 
-    public ColumnType valueType() {
+    public ColumnDesc valueType() {
       return valueType;
     }
 
@@ -115,7 +115,7 @@ public abstract class ComplexColumnType implements ColumnType {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      ColumnSetType listType = (ColumnSetType) o;
+      SetColumnDesc listType = (SetColumnDesc) o;
       return Objects.equals(valueType, listType.valueType);
     }
 
@@ -126,13 +126,13 @@ public abstract class ComplexColumnType implements ColumnType {
   }
 
   /** Column type for {@link ComplexApiDataType.ApiVectorType} */
-  public static class ColumnVectorType extends ComplexColumnType {
+  public static class VectorColumnDesc extends ComplexColumnDesc {
     // Float will be default type for vector
-    private final ColumnType valueType;
+    private final ColumnDesc valueType;
     private final int dimensions;
     private final VectorizeConfig vectorConfig;
 
-    public ColumnVectorType(ColumnType valueType, int dimensions, VectorizeConfig vectorConfig) {
+    public VectorColumnDesc(ColumnDesc valueType, int dimensions, VectorizeConfig vectorConfig) {
       super(ApiDataTypeName.VECTOR);
 
       this.valueType = valueType;
@@ -148,7 +148,7 @@ public abstract class ComplexColumnType implements ColumnType {
       return dimensions;
     }
 
-    public ColumnType valueType() {
+    public ColumnDesc valueType() {
       return valueType;
     }
 
@@ -161,7 +161,7 @@ public abstract class ComplexColumnType implements ColumnType {
       if (o == null || getClass() != o.getClass()) {
         return false;
       }
-      ColumnVectorType that = (ColumnVectorType) o;
+      VectorColumnDesc that = (VectorColumnDesc) o;
       return dimensions == that.dimensions
           && Objects.equals(valueType, that.valueType)
           && Objects.equals(vectorConfig, that.vectorConfig);
@@ -177,7 +177,7 @@ public abstract class ComplexColumnType implements ColumnType {
    * Unsupported type implementation, returned in response when cql table has unsupported format
    * column
    */
-  public static class UnsupportedType implements ColumnType {
+  public static class UnsupportedType implements ColumnDesc {
 
     public static final String UNSUPPORTED_TYPE_NAME = "UNSUPPORTED";
     private final String cqlFormat;

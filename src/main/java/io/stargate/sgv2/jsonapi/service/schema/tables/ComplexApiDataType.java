@@ -4,8 +4,8 @@ import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedVectorType;
@@ -16,17 +16,17 @@ public abstract class ComplexApiDataType implements ApiDataType {
   private final ApiDataTypeName typeName;
   private final PrimitiveApiDataTypeDef valueType;
   private final DataType cqlType;
-  private final ColumnType columnType;
+  private final ColumnDesc columnDesc;
 
   protected ComplexApiDataType(
       ApiDataTypeName typeName,
       PrimitiveApiDataTypeDef valueType,
       DataType cqlType,
-      ColumnType columnType) {
+      ColumnDesc columnDesc) {
     this.typeName = typeName;
     this.valueType = valueType;
     this.cqlType = cqlType;
-    this.columnType = columnType;
+    this.columnDesc = columnDesc;
   }
 
   @Override
@@ -55,8 +55,8 @@ public abstract class ComplexApiDataType implements ApiDataType {
   }
 
   @Override
-  public ColumnType getColumnType() {
-    return columnType;
+  public ColumnDesc getColumnType() {
+    return columnDesc;
   }
 
   public PrimitiveApiDataTypeDef getValueType() {
@@ -76,7 +76,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
           ApiDataTypeName.MAP,
           valueType,
           DataTypes.mapOf(keyType.getCqlType(), valueType.getCqlType()),
-          new ComplexColumnType.ColumnMapType(keyType.getColumnType(), valueType.getColumnType()));
+          new ComplexColumnDesc.MapColumnDesc(keyType.getColumnType(), valueType.getColumnType()));
 
       this.keyType = keyType;
       // sanity checking
@@ -101,7 +101,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
               .formatted(keyType, valueType));
     }
 
-    public static ApiMapType from(ComplexColumnType.ColumnMapType mapType)
+    public static ApiMapType from(ComplexColumnDesc.MapColumnDesc mapType)
         throws UnsupportedUserType {
       Objects.requireNonNull(mapType, "mapType must not be null");
 
@@ -143,7 +143,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
       return valueType.isPrimitive();
     }
 
-    public static boolean isColumnTypeSupported(ComplexColumnType.ColumnMapType mapType) {
+    public static boolean isColumnTypeSupported(ComplexColumnDesc.MapColumnDesc mapType) {
       Objects.requireNonNull(mapType, "mapType must not be null");
 
       try {
@@ -169,7 +169,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
           ApiDataTypeName.LIST,
           valueType,
           DataTypes.listOf(valueType.getCqlType()),
-          new ComplexColumnType.ColumnListType(valueType.getColumnType()));
+          new ComplexColumnDesc.ListColumnDesc(valueType.getColumnType()));
 
       // sanity checking
       if (!isValueTypeSupported(valueType)) {
@@ -187,7 +187,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
           "valueType must be primitive type, valueType%s".formatted(valueType));
     }
 
-    public static ApiListType from(ComplexColumnType.ColumnListType listType)
+    public static ApiListType from(ComplexColumnDesc.ListColumnDesc listType)
         throws UnsupportedUserType {
       Objects.requireNonNull(listType, "listType must not be null");
 
@@ -210,7 +210,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
       return cqlListType.getElementType() instanceof PrimitiveType;
     }
 
-    public static boolean isColumnTypeSupported(ComplexColumnType.ColumnListType listType) {
+    public static boolean isColumnTypeSupported(ComplexColumnDesc.ListColumnDesc listType) {
       Objects.requireNonNull(listType, "listType must not be null");
 
       try {
@@ -238,7 +238,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
           ApiDataTypeName.SET,
           valueType,
           DataTypes.setOf(valueType.getCqlType()),
-          new ComplexColumnType.ColumnSetType(valueType.getColumnType()));
+          new ComplexColumnDesc.SetColumnDesc(valueType.getColumnType()));
 
       // sanity checking
       if (!isValueTypeSupported(valueType)) {
@@ -256,7 +256,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
           "valueType must be primitive type, valueType%s".formatted(valueType));
     }
 
-    public static ApiSetType from(ComplexColumnType.ColumnSetType setType)
+    public static ApiSetType from(ComplexColumnDesc.SetColumnDesc setType)
         throws UnsupportedUserType {
       Objects.requireNonNull(setType, "setType must not be null");
 
@@ -279,7 +279,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
       return cqlSetType.getElementType() instanceof PrimitiveType;
     }
 
-    public static boolean isColumnTypeSupported(ComplexColumnType.ColumnSetType setType) {
+    public static boolean isColumnTypeSupported(ComplexColumnDesc.SetColumnDesc setType) {
       Objects.requireNonNull(setType, "setType must not be null");
 
       try {
@@ -312,7 +312,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
           ApiDataTypeName.VECTOR,
           valueType,
           new ExtendedVectorType(valueType.getCqlType(), dimensions),
-          new ComplexColumnType.ColumnVectorType(
+          new ComplexColumnDesc.VectorColumnDesc(
               valueType.getColumnType(),
               dimensions,
               vectorizeDefinition == null ? null : vectorizeDefinition.toVectorizeConfig()));
@@ -335,7 +335,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
           "valueType must be primitive type, valueType%s".formatted(valueType));
     }
 
-    public static ApiSetType from(ComplexColumnType.ColumnVectorType vectorType)
+    public static ApiSetType from(ComplexColumnDesc.VectorColumnDesc vectorType)
         throws UnsupportedUserType {
       Objects.requireNonNull(vectorType, "vectorType must not be null");
 
@@ -354,7 +354,7 @@ public abstract class ComplexApiDataType implements ApiDataType {
       return cqlVectorType.getElementType() == DataTypes.FLOAT;
     }
 
-    public static boolean isColumnTypeSupported(ComplexColumnType.ColumnVectorType vectorType) {
+    public static boolean isColumnTypeSupported(ComplexColumnDesc.VectorColumnDesc vectorType) {
       Objects.requireNonNull(vectorType, "vectorType must not be null");
 
       try {

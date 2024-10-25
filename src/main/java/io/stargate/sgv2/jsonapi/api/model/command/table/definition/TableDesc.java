@@ -14,14 +14,14 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
  */
 @JsonPropertyOrder({"name", "definition"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record TableDefinition(
+public record TableDesc(
     @Valid
         @Schema(description = "API table columns definitions", type = SchemaType.OBJECT)
         @JsonInclude(JsonInclude.Include.NON_NULL)
-        ColumnsDef columns,
+        ColumnsDescContainer columns,
     @Valid
         @Schema(
             description = "Primary key definition for the table",
-            anyOf = {String.class, PrimaryKey.class})
+            anyOf = {String.class, PrimaryKeyDesc.class})
         @JsonInclude(JsonInclude.Include.NON_NULL)
-        PrimaryKey primaryKey) {}
+        PrimaryKeyDesc primaryKey) {}

@@ -46,6 +46,7 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
 
     this.keyspaceMetadata = queryExecutor.getKeyspaceMetadata(schemaObject.name().keyspace());
 
+    // TODO: BETTER ERROR
     if (keyspaceMetadata.isEmpty()) {
       return Uni.createFrom()
           .failure(
@@ -54,79 +55,4 @@ public abstract class MetadataAttempt<SchemaT extends SchemaObject>
     }
     return Uni.createFrom().item(new EmptyAsyncResultSet());
   }
-
-  /**
-   * Convert table schema object to table response which is returned as response for `listTables`
-   *
-   * @return
-   */
-  //  protected TableDesc getTableSchema(TableSchemaObject tableSchemaObject) {
-  //
-  //    var tableMetadata = tableSchemaObject.tableMetadata();
-  //
-  //    var apiColumnDefs = new ListTablesAttempt(tableMetadata.getColumns())
-  //
-  //    for (ColumnMetadata columnMetadata : tableMetadata.getColumns().values()) {
-  //      // convert the ColumnMetadata to ApiColumnDef, then from there into the ColumnType
-  //      try {
-  //        tableColumns.put(
-  //            columnMetadata.getName(),
-  //            getApiDataType(columnMetadata, tableSchemaObject.vectorConfig()).getColumnType());
-  //      } catch (UnsupportedCqlType e) {
-  //        tableColumns.put(
-  //            columnMetadata.getName(),
-  //            new ComplexColumnType.UnsupportedType(columnMetadata.getType()));
-  //      }
-  //    }
-  //
-  //    var partitionSort =
-  //        tableMetadata.getClusteringColumns().entrySet().stream()
-  //            .map(entry -> PrimaryKey.OrderingKey.from(entry.getKey().getName(),
-  // entry.getValue()))
-  //            .toList();
-  //    var partitionBy =
-  //        tableMetadata.getPartitionKey().stream().map(ColumnMetadata::getName).toList();
-  //    var primaryKey = PrimaryKey.from(partitionBy, partitionSort);
-  //
-  //    return new TableDesc(
-  //        tableMetadata.getName(), new TableDefinition(tableColumns, primaryKey));
-  //  }
-
-  //  private ApiDataType getApiDataType(ColumnMetadata columnMetadata, VectorConfig vectorConfig)
-  //      throws UnsupportedCqlType {
-  //
-  //    if (columnMetadata.getType() instanceof VectorType vt) {
-  //      // Special handling because we need to get the vectorize config from the vector config
-  //
-  //      // TODO: WHAT HAPPENS IF THIS IS NOT PRESENT ???
-  //      // TODO: HACK AARON - remove call is asInternal
-  //      var columnVectorDefinition =
-  //          vectorConfig.columnVectorDefinitions().stream()
-  //              .filter(vc -> vc.fieldName().equals(columnMetadata.getName().asInternal()))
-  //              .findFirst()
-  //              .get();
-  //
-  //      return ComplexApiDataType.ApiVectorType.from(
-  //          ApiDataTypeDefs.from(vt.getElementType()),
-  //          vt.getDimensions(),
-  //          columnVectorDefinition.vectorizeDefinition());
-  //
-  //    } else {
-  //      return ApiDataTypeDefs.from(columnMetadata.getType());
-  //    }
-  //  }
-
-  //  @JsonPropertyOrder({"columns", "primaryKey"})
-  //  @JsonInclude(JsonInclude.Include.NON_NULL)
-  //  record TableDefinition(
-  //      @JsonIgnore Map<CqlIdentifier, ColumnType> tableColumns, PrimaryKey primaryKey) {
-  //
-  //    public Map<String, ColumnType> getColumns() {
-  //      return tableColumns.entrySet().stream()
-  //          .collect(
-  //              Collectors.toMap(
-  //                  entry -> cqlIdentifierToJsonKey(entry.getKey()), Map.Entry::getValue));
-  //    }
-  //  }
-
 }
