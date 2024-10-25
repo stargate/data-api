@@ -21,9 +21,7 @@ import io.stargate.sgv2.jsonapi.api.request.DataApiRequestInfo;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
 import io.stargate.sgv2.jsonapi.testresource.NoGlobalResourcesTestProfile;
 import jakarta.inject.Inject;
-
 import java.util.*;
-
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -314,7 +312,8 @@ public class NamespaceCacheTest {
                             CqlIdentifier.fromInternal("key"),
                             DataTypes.tupleOf(DataTypes.TINYINT, DataTypes.TEXT),
                             false));
-                // aaron - 25 oct 2024, use linked to preserve order and must have all columns in the col map
+                // aaron - 25 oct 2024, use linked to preserve order and must have all columns in
+                // the col map
                 Map<CqlIdentifier, ColumnMetadata> columns = new LinkedHashMap<>();
                 columns.put(partitionColumn.getFirst().getName(), partitionColumn.getFirst());
                 columns.put(
