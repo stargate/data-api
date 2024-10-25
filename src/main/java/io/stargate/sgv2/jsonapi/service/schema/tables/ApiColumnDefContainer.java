@@ -71,10 +71,12 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
   }
 
   public ApiColumnDef put(ApiColumnDef columnDef) {
+    Objects.requireNonNull(columnDef, "columnDef cannot be null");
     return put(columnDef.name(), columnDef);
   }
 
   public boolean contains(ApiColumnDef columnDef) {
+    Objects.requireNonNull(columnDef, "columnDef cannot be null");
     return containsKey(columnDef.name());
   }
 
