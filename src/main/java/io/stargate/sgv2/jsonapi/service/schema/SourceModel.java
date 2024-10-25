@@ -11,11 +11,11 @@ import java.util.stream.Stream;
 public enum SourceModel {
   ADA002("ada002"),
   BERT("bert"),
-  COHERE_V3("cohere_v3"),
+  COHERE_V3("cohere-v3"),
   GECKO("gecko"),
-  NV_QA_4("nv_qa_4"),
-  OPENAI_V3_LARGE("openai_v3_large"),
-  OPENAI_V3_SMALL("openai_v3_small"),
+  NV_QA_4("nv-qa-4"),
+  OPENAI_V3_LARGE("openai-v3-large"),
+  OPENAI_V3_SMALL("openai-v3-small"),
   OTHER("other"),
   UNDEFINED("undefined");
 
