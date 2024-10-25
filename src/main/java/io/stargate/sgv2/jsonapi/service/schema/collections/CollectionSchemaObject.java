@@ -372,10 +372,6 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
         .similarityFunction();
   }
 
-  public boolean isVectorEnabled() {
-    return vectorConfig().vectorEnabled();
-  }
-
   // TODO: the overrides below were auto added when migrating from a record to a class, not sure
   // they are needed or wanted
   @Override

@@ -30,7 +30,7 @@ public class VectorConfig {
     this.columnVectorDefinitions =
         vectorColumnDefinitions.stream()
             .collect(Collectors.toMap(VectorColumnDefinition::fieldName, Function.identity()));
-    this.vectorEnabled = this.columnVectorDefinitions.isEmpty();
+    this.vectorEnabled = !this.columnVectorDefinitions.isEmpty();
   }
 
   public static VectorConfig fromColumnDefinitions(
