@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.embedding;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 import static io.stargate.sgv2.jsonapi.exception.ErrorCodeV1.EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -115,7 +116,7 @@ public class DataVectorizer {
                   // This will be the first element for collection
                   // TODO: AARON - this code had no null projection, now throws if not present
                   final VectorColumnDefinition collectionVectorDefinition =
-                      vectorConfig.getColumnVectorDefinition(VECTOR_EMBEDDING_FIELD).orElseThrow();
+                      vectorConfig.getColumnVectorDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
 
                   // check if we get back the same number of vectors that we asked for
                   if (vectorData.size() != vectorizeTexts.size()) {
@@ -178,7 +179,7 @@ public class DataVectorizer {
               // This will be the first element for collection
               // TODO: AARON - this code had no null projection, now throws if not present
               final VectorColumnDefinition collectionVectorDefinition =
-                  vectorConfig.getColumnVectorDefinition(VECTOR_EMBEDDING_FIELD).orElseThrow();
+                  vectorConfig.getColumnVectorDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
               float[] vector = vectorData.get(0);
               // check if vector have the expected size
               if (vector.length != collectionVectorDefinition.vectorSize()) {
@@ -226,7 +227,7 @@ public class DataVectorizer {
                   // This will be the first element for collection
                   // TODO: AARON - this code had no null projection, now throws if not present
                   final VectorColumnDefinition collectionVectorDefinition =
-                      vectorConfig.getColumnVectorDefinition(VECTOR_EMBEDDING_FIELD).orElseThrow();
+                      vectorConfig.getColumnVectorDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
                   // check if vector have the expected size
                   if (vector.length != collectionVectorDefinition.vectorSize()) {
                     throw EMBEDDING_PROVIDER_UNEXPECTED_RESPONSE.toApiException(

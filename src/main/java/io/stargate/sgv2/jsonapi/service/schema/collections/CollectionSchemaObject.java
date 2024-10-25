@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.schema.collections;
 
 import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_FIELD;
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
@@ -311,7 +312,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
 
       // checked above that vector is enabled
       VectorColumnDefinition vectorConfigColumn =
-          vectorConfig.getColumnVectorDefinition(VECTOR_EMBEDDING_FIELD).orElseThrow();
+          vectorConfig.getColumnVectorDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
       VectorizeConfig vectorizeConfig = null;
 
       if (vectorConfigColumn.vectorizeDefinition() != null) {
@@ -367,7 +368,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   public SimilarityFunction similarityFunction() {
     // TODO: THERE WAS NO CHECK HERE IF VECTORING WAS ENABLED
     return vectorConfig()
-        .getColumnVectorDefinition(VECTOR_EMBEDDING_FIELD)
+        .getColumnVectorDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
         .get()
         .similarityFunction();
   }
