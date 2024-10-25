@@ -300,24 +300,6 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     }
   }
 
-  // convert a vector jsonNode from cql table comment to vectorConfig, used for collection
-  private static VectorConfig.ColumnVectorDefinition fromJson(
-      JsonNode jsonNode, ObjectMapper objectMapper) {
-    // dimension, similarityFunction, must exist
-    int dimension = jsonNode.get("dimension").asInt();
-    SimilarityFunction similarityFunction =
-        SimilarityFunction.fromString(jsonNode.get("metric").asText());
-    SourceModel sourceModel = SourceModel.fromString(jsonNode.get("sourceModel").asText());
-
-    return VectorConfig.ColumnVectorDefinition.fromJson(
-        DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
-        dimension,
-        similarityFunction,
-        sourceModel,
-        jsonNode,
-        objectMapper);
-  }
-
   public static CreateCollectionCommand collectionSettingToCreateCollectionCommand(
       CollectionSchemaObject collectionSetting) {
 
