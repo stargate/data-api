@@ -10,6 +10,8 @@ import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /** Definition of index config */
@@ -29,16 +31,27 @@ public class IndexConfig {
                       tableMetadata
                           .getColumn(
                               CqlIdentifierUtil.cqlIdentifierFromUserInput(
-                                  indexMetadata.getTarget()))
+                                  getColumnName(indexMetadata.getTarget())))
                           .orElseThrow(
                               () ->
                                   new IllegalArgumentException(
-                                      "Column not found for index: " + indexMetadata.getTarget()));
+                                      "Column not found for index: "
+                                          + getColumnName(indexMetadata.getTarget())));
                   return IndexDefinition.from(columnMetadata, indexMetadata);
                 })
             .collect(
                 Collectors.toMap(IndexDefinition::columnName, indexDefinition -> indexDefinition));
     return new IndexConfig(indexDefinitions);
+  }
+
+  private static String getColumnName(String target) {
+    Pattern pattern = Pattern.compile("\\(([^)]+)\\)");
+    Matcher matcher = pattern.matcher(target);
+    if (matcher.find()) {
+      return matcher.group(1); // Get the content inside the parentheses
+    } else {
+      return target;
+    }
   }
 
   /** Get index definition by column name */
