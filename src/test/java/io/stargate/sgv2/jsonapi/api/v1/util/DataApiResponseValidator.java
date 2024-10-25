@@ -26,7 +26,7 @@ public class DataApiResponseValidator {
 
     this.responseIsError =
         switch (commandName) {
-          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE ->
+          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE, LIST_INDEXES ->
               responseIsErrorWithOptionalStatus();
           default -> responseIsError();
         };
@@ -41,7 +41,8 @@ public class DataApiResponseValidator {
                   CREATE_INDEX,
                   DROP_INDEX,
                   CREATE_VECTOR_INDEX,
-                  LIST_TABLES ->
+                  LIST_TABLES,
+                  LIST_INDEXES ->
               responseIsDDLSuccess();
           case CREATE_COLLECTION -> responseIsDDLSuccess();
           default ->
@@ -101,6 +102,9 @@ public class DataApiResponseValidator {
         return hasNoErrors().hasStatusOK();
       }
       case LIST_TABLES -> {
+        return hasNoErrors();
+      }
+      case LIST_INDEXES -> {
         return hasNoErrors();
       }
       case CREATE_COLLECTION -> {
@@ -232,5 +236,14 @@ public class DataApiResponseValidator {
 
   public DataApiResponseValidator hasDocumentInPosition(int position, String documentJSON) {
     return body("data.documents[%s]".formatted(position), jsonEquals(documentJSON));
+  }
+
+  public DataApiResponseValidator hasIndexes(String... indexes) {
+    return body("status.indexes", hasSize(indexes.length))
+        .body("status.indexes", containsInAnyOrder(indexes));
+  }
+
+  public DataApiResponseValidator shouldNotHaveIndexes(String... indexes) {
+    return body("status.indexes", not(containsInAnyOrder(indexes)));
   }
 }

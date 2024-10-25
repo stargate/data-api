@@ -37,6 +37,11 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
         .templated()
         .createIndex("name_idx", "name")
         .wasSuccessful();
+    assertTableCommand(keyspaceName, simpleTableName)
+        .templated()
+        .listIndexes(false)
+        .wasSuccessful()
+        .hasIndexes("age_idx", "name_idx");
   }
 
   @Nested
@@ -45,6 +50,10 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
     @Test
     public void dropIndex() {
       assertNamespaceCommand(keyspaceName).templated().dropIndex("age_idx", false).wasSuccessful();
+      assertTableCommand(keyspaceName, simpleTableName)
+          .templated()
+          .listIndexes(false)
+          .shouldNotHaveIndexes("age_idx");
     }
 
     @Test
@@ -65,6 +74,10 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
             .dropIndex("name_idx", true)
             .wasSuccessful();
       }
+      assertTableCommand(keyspaceName, simpleTableName)
+          .templated()
+          .listIndexes(false)
+          .shouldNotHaveIndexes("name_idx");
     }
   }
 }

@@ -63,6 +63,10 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return postCommand(Command.CommandName.CREATE_INDEX, jsonClause);
   }
 
+  public DataApiResponseValidator postListIndexes(String jsonClause) {
+    return postCommand(Command.CommandName.LIST_INDEXES, jsonClause);
+  }
+
   public DataApiResponseValidator postCreateVectorIndex(String jsonClause) {
     return postCommand(Command.CommandName.CREATE_VECTOR_INDEX, jsonClause);
   }
