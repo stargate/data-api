@@ -82,7 +82,9 @@ public class VectorConfig {
       int dimension = jsonNode.get("dimension").asInt();
       SimilarityFunction similarityFunction =
           SimilarityFunction.fromString(jsonNode.get("metric").asText());
-      SourceModel sourceModel = SourceModel.fromString(jsonNode.get("sourceModel").asText());
+      // sourceModel doesn't exist if the collection was created before supporting sourceModel; if
+      // missing, it will be an empty string and sourceModel becomes OTHER.
+      SourceModel sourceModel = SourceModel.fromString(jsonNode.path("sourceModel").asText());
 
       return fromJson(
           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,

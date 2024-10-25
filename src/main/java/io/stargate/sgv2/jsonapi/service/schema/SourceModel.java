@@ -34,6 +34,8 @@ public enum SourceModel {
 
   public static SourceModel fromString(String sourceModel) {
     if (sourceModel == null) return UNDEFINED;
+    // The string may be empty if the collection was created before supporting source models
+    if (sourceModel.isEmpty()) return OTHER;
     SourceModel model = FUNCTIONS_MAP.get(sourceModel);
     if (model == null) {
       throw ErrorCodeV1.VECTOR_SEARCH_INVALID_SOURCE_MODEL_NAME.toApiException("'%s'", sourceModel);

@@ -498,6 +498,8 @@ public record CreateCollectionOperation(
           appender
               + " \"%s_query_vector_value\" ON \"%s\".\"%s\" (query_vector_value) USING 'StorageAttachedIndex' WITH OPTIONS = { 'similarity_function': '"
               + vectorFunction()
+              + "', 'source_model': '"
+              + sourceModel()
               + "'}";
       statements.add(
           SimpleStatement.newInstance(String.format(vectorSearch, table, keyspace, table)));
