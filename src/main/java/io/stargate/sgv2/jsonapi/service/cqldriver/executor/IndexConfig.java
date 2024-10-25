@@ -13,7 +13,13 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /** Definition of index config */
-public record IndexConfig(Map<String, IndexDefinition> indexDefinitions) {
+public class IndexConfig {
+  private Map<String, IndexDefinition> indexDefinitions;
+
+  private IndexConfig(Map<String, IndexDefinition> indexDefinitions) {
+    this.indexDefinitions = indexDefinitions;
+  }
+
   public static IndexConfig from(TableMetadata tableMetadata) {
     Map<String, IndexDefinition> indexDefinitions =
         tableMetadata.getIndexes().values().stream()
@@ -21,7 +27,9 @@ public record IndexConfig(Map<String, IndexDefinition> indexDefinitions) {
                 indexMetadata -> {
                   final ColumnMetadata columnMetadata =
                       tableMetadata
-                          .getColumn(indexMetadata.getTarget())
+                          .getColumn(
+                              CqlIdentifierUtil.cqlIdentifierFromUserInput(
+                                  indexMetadata.getTarget()))
                           .orElseThrow(
                               () ->
                                   new IllegalArgumentException(
