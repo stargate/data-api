@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
