@@ -3,12 +3,11 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.config.constants.TableIndexConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
-import io.stargate.sgv2.jsonapi.service.schema.tables.IndexDefinition;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -52,18 +51,18 @@ public class TableSchemaObject extends TableBasedSchemaObject {
     VectorConfig vectorConfig;
     List<VectorConfig.ColumnVectorDefinition> columnVectorDefinitions = new ArrayList<>();
     for (Map.Entry<CqlIdentifier, ColumnMetadata> column : tableMetadata.getColumns().entrySet()) {
-      var indexDefinition =
-          indexConfig.get(CqlIdentifierUtil.cqlIdentifierToStringForUser(column.getKey()));
-      if (indexDefinition.indexType() == IndexDefinition.IndexType.VECTOR) {
+      var indexDefinition = indexConfig.get(column.getKey());
+      // indexDefinition can be null if the column is not indexed
+      if (column.getValue().getType() instanceof VectorType vectorType) {
         SimilarityFunction similarityFunction = SimilarityFunction.COSINE;
         if (indexDefinition != null) {
           var sourceModel =
               indexDefinition
-                  .options()
+                  .getOptions()
                   .get(TableIndexConstants.IndexOptionKeys.SOURCE_MODEL_OPTION);
           var similarityFunctionValue =
               indexDefinition
-                  .options()
+                  .getOptions()
                   .get(TableIndexConstants.IndexOptionKeys.SIMILARITY_FUNCTION_OPTION);
           if (similarityFunctionValue != null) {
             similarityFunction = SimilarityFunction.fromString(similarityFunctionValue);

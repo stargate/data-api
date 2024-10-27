@@ -41,7 +41,7 @@ public class IndexDefinition {
   }
 
   /** Defines what type of index configuration (vector or regular) */
-  enum IndexType {
+  public enum IndexType {
     VECTOR,
     REGULAR;
 

@@ -23,7 +23,7 @@ public class ListIndexesAttempt extends MetadataAttempt<TableSchemaObject> {
     return schemaObject.indexConfig().values().stream()
         .map(
             indexDefinition ->
-                CqlIdentifierUtil.externalRepresentation(indexDefinition.indexName()))
+                CqlIdentifierUtil.externalRepresentation(indexDefinition.getIndexName()))
         .toList();
   }
 
