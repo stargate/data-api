@@ -14,6 +14,13 @@ import java.util.Optional;
 /** Definition for an index */
 public record IndexDefinition(
     IndexType indexType, String columnName, String indexName, Map<String, String> options) {
+
+  /** Defines what type of index configuration (vector or regular) */
+  enum IndexType {
+    VECTOR,
+    REGULAR
+  }
+
   public static IndexDefinition from(ColumnMetadata columnMetadata, IndexMetadata indexMetadata) {
     final String indexName = CqlIdentifierUtil.externalRepresentation(indexMetadata.getName());
     final String columnName = CqlIdentifierUtil.externalRepresentation(columnMetadata.getName());
@@ -23,11 +30,6 @@ public record IndexDefinition(
         columnName,
         indexName,
         options);
-  }
-
-  enum IndexType {
-    VECTOR,
-    REGULAR
   }
 
   public Object getIndexDefinition() {
