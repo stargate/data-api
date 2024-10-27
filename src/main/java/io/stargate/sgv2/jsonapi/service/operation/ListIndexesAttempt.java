@@ -1,7 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation;
 
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.IndexDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.IndexDefinition;
+import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.List;
 
 /** Attempt to list indexes for a table. */
@@ -19,8 +20,10 @@ public class ListIndexesAttempt extends MetadataAttempt<TableSchemaObject> {
    */
   @Override
   protected List<String> getNames() {
-    return schemaObject.indexConfig().indexDefinitions().values().stream()
-        .map(IndexDefinition::indexName)
+    return schemaObject.indexConfig().values().stream()
+        .map(
+            indexDefinition ->
+                CqlIdentifierUtil.externalRepresentation(indexDefinition.indexName()))
         .toList();
   }
 
@@ -31,7 +34,7 @@ public class ListIndexesAttempt extends MetadataAttempt<TableSchemaObject> {
    */
   @Override
   protected Object getSchema() {
-    return schemaObject.indexConfig().indexDefinitions().values().stream()
+    return schemaObject.indexConfig().values().stream()
         .map(IndexDefinition::getIndexDefinition)
         .toList();
   }

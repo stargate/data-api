@@ -3,6 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.IndexCreationCommand;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -27,7 +28,7 @@ public record CreateIndexCommand(
         @Nullable
         @Schema(description = "Creating index command option.", type = SchemaType.OBJECT)
         Options options)
-    implements CollectionCommand {
+    implements CollectionCommand, IndexCreationCommand {
   public record Definition(
       @NotNull
           @Size(min = 1, max = 48)

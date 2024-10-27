@@ -9,4 +9,10 @@ public interface TableIndexConstants {
     String SOURCE_MODEL_OPTION = "source_model";
     String SIMILARITY_FUNCTION_OPTION = "similarity_function";
   }
+
+  interface IndexOptionDefault {
+    boolean ASCII_OPTION_DEFAULT = false;
+    boolean CASE_SENSITIVE_OPTION_DEFAULT = true;
+    boolean NORMALIZE_OPTION_DEFAULT = false;
+  }
 }
