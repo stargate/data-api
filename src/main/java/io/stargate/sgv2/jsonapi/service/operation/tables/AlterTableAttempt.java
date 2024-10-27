@@ -65,8 +65,8 @@ public class AlterTableAttempt extends SchemaAttempt<TableSchemaObject> {
 
       addColumnEnd =
           (addColumnEnd == null)
-              ? alterTableStart.addColumn(apiColumnDef.name(), apiColumnDef.type().getCqlType())
-              : addColumnEnd.addColumn(apiColumnDef.name(), apiColumnDef.type().getCqlType());
+              ? alterTableStart.addColumn(apiColumnDef.name(), apiColumnDef.type().cqlType())
+              : addColumnEnd.addColumn(apiColumnDef.name(), apiColumnDef.type().cqlType());
     }
     return addColumnEnd.build();
   }

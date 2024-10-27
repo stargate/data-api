@@ -11,10 +11,14 @@ public abstract class UnsupportedColumnDesc implements ColumnDesc {
 
   public static final String UNSUPPORTED_TYPE_NAME = "UNSUPPORTED";
 
-  protected UnsupportedColumnDesc() {}
+  private final ApiSupportDesc apiSupportDesc;
+
+  protected UnsupportedColumnDesc(ApiSupportDesc apiSupportDesc) {
+    this.apiSupportDesc = apiSupportDesc;
+  }
 
   @Override
-  public ApiDataTypeName getApiDataTypeName() {
+  public ApiDataTypeName typeName() {
     throw new UnsupportedOperationException("Unsupported type");
   }
 
@@ -23,26 +27,22 @@ public abstract class UnsupportedColumnDesc implements ColumnDesc {
     return UNSUPPORTED_TYPE_NAME;
   }
 
-  public abstract String cqlFormat();
+  @Override
+  public ApiSupportDesc apiSupport() {
+    return apiSupportDesc;
+  }
 
   public static class UnsupportedCqlColumnDesc extends UnsupportedColumnDesc {
-    private final String cqlFormat;
 
     public UnsupportedCqlColumnDesc(DataType cqlType) {
-      this.cqlFormat = cqlType.asCql(true, true);
-    }
-
-    public String cqlFormat() {
-      return cqlFormat;
+      super(ApiSupportDesc.noSupport(cqlType.asCql(true, true)));
     }
   }
 
   public static class UnsupportedUserColumnDesc extends UnsupportedColumnDesc {
-    public UnsupportedUserColumnDesc() {}
-
-    @Override
-    public String cqlFormat() {
-      throw new UnsupportedOperationException();
+    public UnsupportedUserColumnDesc() {
+      super(ApiSupportDesc.noSupport("User defined type"));
     }
+
   }
 }

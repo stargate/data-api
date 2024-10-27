@@ -22,7 +22,7 @@ public abstract class CollectionApiDataType implements ApiDataType {
   }
 
   @Override
-  public ApiDataTypeName getName() {
+  public ApiDataTypeName typeName() {
     return typeName;
   }
 
@@ -42,12 +42,12 @@ public abstract class CollectionApiDataType implements ApiDataType {
   }
 
   @Override
-  public DataType getCqlType() {
+  public DataType cqlType() {
     return cqlType;
   }
 
   @Override
-  public ColumnDesc getColumnDesc() {
+  public ColumnDesc columnDesc() {
     return columnDesc;
   }
 

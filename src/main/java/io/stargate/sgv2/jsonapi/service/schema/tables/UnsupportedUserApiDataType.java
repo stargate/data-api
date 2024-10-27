@@ -13,12 +13,12 @@ public class UnsupportedUserApiDataType extends UnsupportedApiDataType {
   }
 
   @Override
-  public DataType getCqlType() {
+  public DataType cqlType() {
     throw new UnsupportedOperationException("UnsupportedUserApiDataType does not have getCqlType");
   }
 
   @Override
-  public ColumnDesc getColumnDesc() {
+  public ColumnDesc columnDesc() {
     return columnDesc;
   }
 }

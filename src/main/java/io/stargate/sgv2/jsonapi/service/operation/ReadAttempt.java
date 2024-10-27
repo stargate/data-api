@@ -174,7 +174,8 @@ public class ReadAttempt<SchemaT extends TableSchemaObject>
     var readApiColumns = schemaObject.apiTableDef().allColumns().filterBy(readIdentifiers);
     if (!readApiColumns.filterByUnsupported().isEmpty()) {
       throw new IllegalStateException(
-          "Unsupported columns in the result set: %s".formatted(errFmtApiColumnDef(readApiColumns.filterByUnsupported())));
+          "Unsupported columns in the result set: %s"
+              .formatted(errFmtApiColumnDef(readApiColumns.filterByUnsupported())));
     }
     return Optional.of(readApiColumns.toColumnsDef());
   }

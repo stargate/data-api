@@ -8,15 +8,22 @@ import java.util.Objects;
 public abstract class ComplexColumnDesc implements ColumnDesc {
 
   private final ApiDataTypeName apiDataTypeName;
+  private final ApiSupportDesc apiSupportDesc;
 
-  protected ComplexColumnDesc(ApiDataTypeName apiDataTypeName) {
+  protected ComplexColumnDesc(ApiDataTypeName apiDataTypeName, ApiSupportDesc apiSupportDesc) {
     this.apiDataTypeName =
         Objects.requireNonNull(apiDataTypeName, "apiDataTypeName must not be null");
+    this.apiSupportDesc = Objects.requireNonNull(apiSupportDesc, "apiSupportDesc must not be null");;
   }
 
   @Override
-  public ApiDataTypeName getApiDataTypeName() {
+  public ApiDataTypeName typeName() {
     return apiDataTypeName;
+  }
+
+  @Override
+  public ApiSupportDesc apiSupport() {
+    return apiSupportDesc;
   }
 
   /** Column type for {@link ApiMapType} */
@@ -25,7 +32,7 @@ public abstract class ComplexColumnDesc implements ColumnDesc {
     private final ColumnDesc valueType;
 
     public MapColumnDesc(ColumnDesc keyType, ColumnDesc valueType) {
-      super(ApiDataTypeName.MAP);
+      super(ApiDataTypeName.MAP, ApiSupportDesc.fullSupport(""));
 
       this.keyType = keyType;
       this.valueType = valueType;
@@ -64,7 +71,7 @@ public abstract class ComplexColumnDesc implements ColumnDesc {
     private final ColumnDesc valueType;
 
     public ListColumnDesc(ColumnDesc valueType) {
-      super(ApiDataTypeName.LIST);
+      super(ApiDataTypeName.LIST, ApiSupportDesc.fullSupport(""));
       this.valueType = valueType;
     }
 
@@ -96,7 +103,7 @@ public abstract class ComplexColumnDesc implements ColumnDesc {
     private final ColumnDesc valueType;
 
     public SetColumnDesc(ColumnDesc valueType) {
-      super(ApiDataTypeName.SET);
+      super(ApiDataTypeName.SET, ApiSupportDesc.fullSupport(""));
       this.valueType = valueType;
     }
 
@@ -131,7 +138,7 @@ public abstract class ComplexColumnDesc implements ColumnDesc {
     private final VectorizeConfig vectorConfig;
 
     public VectorColumnDesc(ColumnDesc valueType, int dimensions, VectorizeConfig vectorConfig) {
-      super(ApiDataTypeName.VECTOR);
+      super(ApiDataTypeName.VECTOR, ApiSupportDesc.fullSupport(""));
 
       this.valueType = valueType;
       this.dimensions = dimensions;

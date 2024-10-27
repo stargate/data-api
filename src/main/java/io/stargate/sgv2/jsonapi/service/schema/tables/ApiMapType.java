@@ -9,8 +9,11 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ApiMapType extends CollectionApiDataType {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ApiMapType.class);
 
   public static final TypeFactoryFromColumnDesc<ApiMapType, ComplexColumnDesc.MapColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
@@ -23,8 +26,8 @@ public class ApiMapType extends CollectionApiDataType {
     super(
         ApiDataTypeName.MAP,
         valueType,
-        DataTypes.mapOf(keyType.getCqlType(), valueType.getCqlType()),
-        new ComplexColumnDesc.MapColumnDesc(keyType.getColumnDesc(), valueType.getColumnDesc()));
+        DataTypes.mapOf(keyType.cqlType(), valueType.cqlType()),
+        new ComplexColumnDesc.MapColumnDesc(keyType.columnDesc(), valueType.columnDesc()));
 
     this.keyType = keyType;
     // sanity checking
@@ -116,6 +119,7 @@ public class ApiMapType extends CollectionApiDataType {
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
+      LOGGER.warn("map create() got cqlType: {}", cqlType.asCql(true, true));
       if (!isSupported(cqlType)) {
         throw new UnsupportedCqlType(cqlType);
       }
@@ -133,7 +137,7 @@ public class ApiMapType extends CollectionApiDataType {
     @Override
     public boolean isSupported(MapType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
-
+      LOGGER.warn("map isSupported() isFrozen: {}", cqlType.isFrozen());
       // cannot be frozen
       if (cqlType.isFrozen()) {
         return false;

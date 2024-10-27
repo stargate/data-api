@@ -15,18 +15,17 @@ import java.util.Map;
 @JsonSerialize(using = ColumnDescSerializer.class)
 public interface ColumnDesc {
 
-  ApiDataTypeName getApiDataTypeName();
-
-  //  // Returns api data type.
-  //  ApiDataType getApiDataType();
+  ApiDataTypeName typeName();
 
   /**
    * Gets the string name of the apiType, this is here so that the implementation for unsupported
    * types can return a string and not need to have an unsupported {@link ApiDataTypeName}
    */
   default String getApiName() {
-    return getApiDataTypeName().getApiName();
+    return typeName().getApiName();
   }
+
+  ApiSupportDesc apiSupport();
 
   static List<String> getSupportedTypes() {
     return List.of(

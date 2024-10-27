@@ -13,9 +13,12 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** A {@link ApiColumnDefContainer} that maintains the order of the columns as they were added. */
 public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColumnDef> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ApiColumnDefContainer.class);
 
   public static final CqlColumnFactory FROM_CQL_FACTORY = new CqlColumnFactory();
   public static final ColumnDescFactory FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
@@ -58,7 +61,7 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
   }
 
   public List<ApiColumnDef> filterByTypeToList(ApiDataTypeName type) {
-    return values().stream().filter(columnDef -> columnDef.type().getName() == type).toList();
+    return values().stream().filter(columnDef -> columnDef.type().typeName() == type).toList();
   }
 
   public ApiColumnDefContainer filterBy(ApiDataTypeName type) {
@@ -90,7 +93,7 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
 
   public ColumnsDescContainer toColumnsDef() {
     ColumnsDescContainer columnsDesc = new ColumnsDescContainer(size());
-    forEach((name, columnDef) -> columnsDesc.put(name, columnDef.type().getColumnDesc()));
+    forEach((name, columnDef) -> columnsDesc.put(name, columnDef.type().columnDesc()));
     return columnsDesc;
   }
 

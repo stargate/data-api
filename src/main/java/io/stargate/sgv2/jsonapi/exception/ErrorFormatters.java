@@ -69,7 +69,7 @@ public abstract class ErrorFormatters {
   }
 
   public static String errFmt(ApiDataType apiDataType) {
-    return apiDataType.getName().getApiName();
+    return apiDataType.apiName();
   }
 
   public static String errFmt(DataType dataType) {

@@ -8,9 +8,22 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.Colu
 @JsonSerialize(using = ApiDataTypeDefSerializer.class)
 public interface ApiDataType {
 
-  ApiDataTypeName getName();
+  ApiDataTypeName typeName();
 
-  DataType getCqlType();
+  /**
+   * Gets the API name of the type.
+   *
+   * <p>This is here because {@link UnsupportedApiDataType} will not have a {@link ApiDataTypeName}
+   * so call this if you need the name of the type as a string so the UnsupportedApiDataType can
+   * return a string.
+   *
+   * @return
+   */
+  default String apiName() {
+    return typeName().getApiName();
+  }
+
+  DataType cqlType();
 
   boolean isPrimitive();
 
@@ -18,5 +31,5 @@ public interface ApiDataType {
 
   boolean isUnsupported();
 
-  ColumnDesc getColumnDesc();
+  ColumnDesc columnDesc();
 }

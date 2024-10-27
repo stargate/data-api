@@ -31,20 +31,28 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
   static {
     for (PrimitiveColumnDesc type : PrimitiveColumnDesc.values()) {
       BY_API_TYPE.put(type.apiDataType, type);
-      BY_API_TYPE_NAME.put(type.apiDataType.getName().getApiName(), type);
+      BY_API_TYPE_NAME.put(type.apiDataType.typeName().getApiName(), type);
     }
   }
 
   private final ApiDataType apiDataType;
+  private final ApiSupportDesc apiSupportDesc;
 
   PrimitiveColumnDesc(ApiDataType apiDataType) {
     this.apiDataType = apiDataType;
+    this.apiSupportDesc = ApiSupportDesc.fullSupport(apiDataType.cqlType().asCql(true, true));
   }
 
   @Override
-  public ApiDataTypeName getApiDataTypeName() {
-    return apiDataType.getName();
+  public ApiDataTypeName typeName() {
+    return apiDataType.typeName();
   }
+
+  @Override
+  public ApiSupportDesc apiSupport() {
+    return apiSupportDesc;
+  }
+
 
   public static ColumnDesc fromApiDataType(ApiDataType apiDataType) {
     if (!apiDataType.isPrimitive()) {

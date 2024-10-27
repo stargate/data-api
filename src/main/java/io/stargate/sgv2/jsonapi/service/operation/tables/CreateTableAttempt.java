@@ -74,18 +74,18 @@ public class CreateTableAttempt extends SchemaAttempt<KeyspaceSchemaObject> {
       createTable =
           (createTable == null)
               ? createTableStart.withPartitionKey(
-                  partitionDef.name(), partitionDef.type().getCqlType())
-              : createTable.withPartitionKey(partitionDef.name(), partitionDef.type().getCqlType());
+                  partitionDef.name(), partitionDef.type().cqlType())
+              : createTable.withPartitionKey(partitionDef.name(), partitionDef.type().cqlType());
     }
 
     for (var clusteringDef : tableDef.clusteringKeys()) {
       createTable =
           createTable.withClusteringColumn(
-              clusteringDef.columnDef().name(), clusteringDef.columnDef().type().getCqlType());
+              clusteringDef.columnDef().name(), clusteringDef.columnDef().type().cqlType());
     }
 
     for (var columnDef : tableDef.nonPKColumns().values()) {
-      createTable = createTable.withColumn(columnDef.name(), columnDef.type().getCqlType());
+      createTable = createTable.withColumn(columnDef.name(), columnDef.type().cqlType());
     }
     return createTable;
   }

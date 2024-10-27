@@ -30,7 +30,7 @@ public class ApiDataTypeDefSerializer extends JsonSerializer<PrimitiveApiDataTyp
       throws IOException {
 
     gen.writeStartObject();
-    gen.writeStringField(SchemaConstants.DataTypeFields.TYPE, dataTypeDef.getName().getApiName());
+    gen.writeStringField(SchemaConstants.DataTypeFields.TYPE, dataTypeDef.typeName().getApiName());
     gen.writeEndObject();
   }
 }

@@ -53,16 +53,17 @@ public class PrimaryKeyDescDeserializer extends StdDeserializer<PrimaryKeyDesc> 
 
     var partitionByNode = primaryKey.path(TableDescConstants.PrimaryKey.PARTITION_BY);
     if (partitionByNode.isMissingNode()) {
-      throw new JsonMappingException(jsonParser, ERR_PARTITION_BY_ARRAY  + " (node is missing)");
+      throw new JsonMappingException(jsonParser, ERR_PARTITION_BY_ARRAY + " (node is missing)");
     }
     if (!partitionByNode.isArray()) {
-      throw new JsonMappingException(jsonParser, ERR_PARTITION_BY_ARRAY  + " (node is not Array)");
+      throw new JsonMappingException(jsonParser, ERR_PARTITION_BY_ARRAY + " (node is not Array)");
     }
 
     String[] keys = new String[partitionByNode.size()];
     for (int i = 0; i < partitionByNode.size(); i++) {
       if (!partitionByNode.get(i).isTextual()) {
-        throw new JsonMappingException(jsonParser, ERR_PARTITION_BY_ARRAY + " (array element is not String)");
+        throw new JsonMappingException(
+            jsonParser, ERR_PARTITION_BY_ARRAY + " (array element is not String)");
       }
       keys[i] = partitionByNode.get(i).asText();
     }
@@ -71,7 +72,8 @@ public class PrimaryKeyDescDeserializer extends StdDeserializer<PrimaryKeyDesc> 
     var partitionSortNode = primaryKey.path(TableDescConstants.PrimaryKey.PARTITION_SORT);
     if (!partitionSortNode.isMissingNode()) {
       if (!partitionSortNode.isObject()) {
-        throw new JsonMappingException(jsonParser, ERR_PARTITION_SORT_OBJECT + " (node is not Object)");
+        throw new JsonMappingException(
+            jsonParser, ERR_PARTITION_SORT_OBJECT + " (node is not Object)");
       }
 
       // each field in the partitionSortNode is a column name and the value is the order
@@ -80,12 +82,16 @@ public class PrimaryKeyDescDeserializer extends StdDeserializer<PrimaryKeyDesc> 
       for (var sortFieldEntry : partitionSortNode.properties()) {
         String columnName = sortFieldEntry.getKey();
         if (!sortFieldEntry.getValue().isInt()) {
-          throw new JsonMappingException(jsonParser, ERR_PARTITION_SORT_OBJECT  + " (field is not Integer)");
+          throw new JsonMappingException(
+              jsonParser, ERR_PARTITION_SORT_OBJECT + " (field is not Integer)");
         }
 
         var order =
             PrimaryKeyDesc.OrderingKeyDesc.Order.fromUserDesc(sortFieldEntry.getValue().asInt())
-                .orElseThrow(() -> new JsonMappingException(jsonParser, ERR_PARTITION_SORT_OBJECT  + " (order is not recognized)"));
+                .orElseThrow(
+                    () ->
+                        new JsonMappingException(
+                            jsonParser, ERR_PARTITION_SORT_OBJECT + " (order is not recognized)"));
 
         orderingKeyDescs[i++] = new PrimaryKeyDesc.OrderingKeyDesc(columnName, order);
       }

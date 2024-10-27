@@ -32,15 +32,17 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
 
     private static final Map<DataType, PrimitiveApiDataTypeDef> PRIMITIVE_TYPES_BY_CQL_TYPE =
         PRIMITIVE_TYPES.stream()
-            .collect(Collectors.toMap(PrimitiveApiDataTypeDef::getCqlType, Function.identity()));
+            .collect(Collectors.toMap(PrimitiveApiDataTypeDef::cqlType, Function.identity()));
 
-    private static final ConcurrentMap<DataType, CollectionApiDataType> COLLECTION_TYPE_CACHE =
-        new ConcurrentHashMap<>();
+    private static final ConcurrentMap<CollectionCacheKey, CollectionApiDataType>
+        COLLECTION_TYPE_CACHE = new ConcurrentHashMap<>();
 
     @Override
     public ApiDataType create(DataType cqlType, VectorizeDefinition vectorizeDefn)
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
+
+      LOGGER.warn("create() got cqlType: {}", cqlType.asCql(true, true));
 
       var primitiveType = PRIMITIVE_TYPES_BY_CQL_TYPE.get(cqlType);
       if (primitiveType != null) {
@@ -53,12 +55,10 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
         return ApiVectorType.FROM_CQL_FACTORY.create(vt, vectorizeDefn);
       }
 
-      // Note the equals for a Driver MapType does not take the frozen flag into account that abould
-      // be OK because
-      // we will throw an error and not support frozen maps
+      // See CollectionCacheKey for why we need it
       try {
         return COLLECTION_TYPE_CACHE.computeIfAbsent(
-            cqlType,
+            CollectionCacheKey.from(cqlType),
             entry -> {
               try {
                 return switch (cqlType) {
@@ -82,6 +82,39 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
     @Override
     public boolean isSupported(DataType cqlType) {
       return false;
+    }
+  }
+
+  /**
+   * The equals for collection data types in the driver does not take frozen into account. This is a problem
+   * for the API because we do not support frozen types. So if we only used the DataType from the driver the
+   * cache key ofr a frozen <code>map<string, sting></code> would be the same for a non-frozen version.
+   * <p>
+   * Using the protocol codes because that is the simpliest way to detect types, there are no values
+   * below 0 see {@link com.datastax.oss.protocol.internal.ProtocolConstants.DataType}
+   */
+  private record CollectionCacheKey(
+      int collectionProtoCode, int keyProtoCode, int valueProtoCode, boolean isFrozen) {
+
+    static CollectionCacheKey from(DataType cqlType) {
+      return switch (cqlType) {
+        case MapType mt ->
+            new CollectionCacheKey(
+                mt.getProtocolCode(),
+                mt.getKeyType().getProtocolCode(),
+                mt.getValueType().getProtocolCode(),
+                mt.isFrozen());
+        case ListType lt ->
+            new CollectionCacheKey(
+                lt.getProtocolCode(), -1, lt.getElementType().getProtocolCode(), lt.isFrozen());
+        case SetType st ->
+            new CollectionCacheKey(
+                st.getProtocolCode(), -1, st.getElementType().getProtocolCode(),  st.isFrozen());
+        default ->
+            throw new IllegalArgumentException(
+                "CollectionCacheKey does not support supplied CQL type: "
+                    + cqlType.asCql(true, true));
+      };
     }
   }
 }

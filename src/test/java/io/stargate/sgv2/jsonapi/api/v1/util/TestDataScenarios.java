@@ -94,15 +94,15 @@ public class TestDataScenarios {
   }
 
   private static Map<String, String> columnDef(PrimitiveApiDataTypeDef type) {
-    return Map.of("type", type.getName().getApiName());
+    return Map.of("type", type.typeName().getApiName());
   }
 
   public static String columnName(PrimitiveApiDataTypeDef type) {
-    return COL_NAME_PREFIX + type.getName().getApiName();
+    return COL_NAME_PREFIX + type.typeName().getApiName();
   }
 
   public Object columnValue(PrimitiveApiDataTypeDef type) {
-    return dataSource.fromJSON(type.getCqlType()).value();
+    return dataSource.fromJSON(type.cqlType()).value();
   }
 
   private LinkedHashMap<String, Object> addRowValues(

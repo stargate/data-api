@@ -21,8 +21,8 @@ public class ApiListType extends CollectionApiDataType {
     super(
         ApiDataTypeName.LIST,
         valueType,
-        DataTypes.listOf(valueType.getCqlType()),
-        new ComplexColumnDesc.ListColumnDesc(valueType.getColumnDesc()));
+        DataTypes.listOf(valueType.cqlType()),
+        new ComplexColumnDesc.ListColumnDesc(valueType.columnDesc()));
   }
 
   public static ApiListType from(ApiDataType valueType) {

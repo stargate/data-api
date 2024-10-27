@@ -35,7 +35,7 @@ public abstract class TypeFactoryFromColumnDesc<
 
     private static final Map<ApiDataTypeName, PrimitiveApiDataTypeDef> PRIMITIVE_TYPES_BY_API_NAME =
         PRIMITIVE_TYPES.stream()
-            .collect(Collectors.toMap(PrimitiveApiDataTypeDef::getName, Function.identity()));
+            .collect(Collectors.toMap(PrimitiveApiDataTypeDef::typeName, Function.identity()));
 
     private static final ConcurrentMap<ColumnDesc, CollectionApiDataType> COLLECTION_TYPE_CACHE =
         new ConcurrentHashMap<>();
@@ -45,7 +45,7 @@ public abstract class TypeFactoryFromColumnDesc<
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
-      var primitiveType = PRIMITIVE_TYPES_BY_API_NAME.get(columnDesc.getApiDataTypeName());
+      var primitiveType = PRIMITIVE_TYPES_BY_API_NAME.get(columnDesc.typeName());
       if (primitiveType != null) {
         return primitiveType;
       }

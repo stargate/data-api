@@ -26,12 +26,12 @@ public class PrimitiveApiDataTypeDef implements ApiDataType {
   }
 
   @Override
-  public ApiDataTypeName getName() {
+  public ApiDataTypeName typeName() {
     return typeName;
   }
 
   @Override
-  public DataType getCqlType() {
+  public DataType cqlType() {
     return cqlType;
   }
 
@@ -51,7 +51,7 @@ public class PrimitiveApiDataTypeDef implements ApiDataType {
   }
 
   @Override
-  public ColumnDesc getColumnDesc() {
+  public ColumnDesc columnDesc() {
     // Not easy to cache in the ctor because of the circular dependency
     // is only a cache lookup so not a big deal
     return PrimitiveColumnDesc.fromApiDataType(this);

@@ -28,9 +28,9 @@ public class ApiVectorType extends CollectionApiDataType {
     super(
         ApiDataTypeName.VECTOR,
         valueType,
-        new ExtendedVectorType(valueType.getCqlType(), dimensions),
+        new ExtendedVectorType(valueType.cqlType(), dimensions),
         new ComplexColumnDesc.VectorColumnDesc(
-            valueType.getColumnDesc(),
+            valueType.columnDesc(),
             dimensions,
             vectorizeDefinition == null ? null : vectorizeDefinition.toVectorizeConfig()));
 

@@ -21,8 +21,8 @@ public class ApiSetType extends CollectionApiDataType {
     super(
         ApiDataTypeName.SET,
         valueType,
-        DataTypes.setOf(valueType.getCqlType()),
-        new ComplexColumnDesc.SetColumnDesc(valueType.getColumnDesc()));
+        DataTypes.setOf(valueType.cqlType()),
+        new ComplexColumnDesc.SetColumnDesc(valueType.columnDesc()));
   }
 
   public static ApiSetType from(ApiDataType valueType) {

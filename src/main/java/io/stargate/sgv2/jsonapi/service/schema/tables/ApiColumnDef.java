@@ -106,7 +106,6 @@ public class ApiColumnDef {
     return Objects.equals(name, other.name);
   }
 
-
   private static class CqlColumnFactory implements ColumnFactoryFromCql {
     /**
      * Call when converting from {@link ColumnMetadata} to {@link ApiColumnDef} where we know we can
