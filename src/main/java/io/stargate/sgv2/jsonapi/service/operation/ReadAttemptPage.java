@@ -4,14 +4,14 @@ import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResultBuilder;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CqlPagingState;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import java.util.*;
 
 /**
  * A page of results from a read command, use {@link #builder()} to get a builder to pass to {@link
  * GenericOperation}.
  */
-public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
+public class ReadAttemptPage<SchemaT extends TableSchemaObject>
     extends OperationAttemptPage<SchemaT, ReadAttempt<SchemaT>> {
 
   private final CqlPagingState pagingState;
@@ -30,7 +30,7 @@ public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
     this.sortVector = sortVector;
   }
 
-  public static <SchemaT extends TableBasedSchemaObject> Builder<SchemaT> builder() {
+  public static <SchemaT extends TableSchemaObject> Builder<SchemaT> builder() {
     return new Builder<>();
   }
 
@@ -50,7 +50,7 @@ public class ReadAttemptPage<SchemaT extends TableBasedSchemaObject>
         .forEach(resultBuilder::addDocument);
   }
 
-  public static class Builder<SchemaT extends TableBasedSchemaObject>
+  public static class Builder<SchemaT extends TableSchemaObject>
       extends OperationAttemptPageBuilder<SchemaT, ReadAttempt<SchemaT>> {
 
     private boolean singleResponse = false;

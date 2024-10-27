@@ -9,6 +9,7 @@ public abstract class CqlIdentifierUtil {
 
   public static final Comparator<CqlIdentifier> CQL_IDENTIFIER_COMPARATOR =
       Comparator.comparing(CqlIdentifier::asInternal);
+
   public static final Comparator<ColumnMetadata> COLUMN_METADATA_COMPARATOR =
       Comparator.comparing(m -> m.getName().asInternal());
 

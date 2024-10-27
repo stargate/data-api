@@ -7,6 +7,9 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,12 +48,28 @@ public abstract class ErrorFormatters {
     return errFmtJoin(identifiers, ErrorFormatters::errFmt);
   }
 
+  public static String errFmtApiColumnDef(ApiColumnDefContainer apiColumnDefs) {
+    return errFmtApiColumnDef(apiColumnDefs.values());
+  }
+
+  public static String errFmtApiColumnDef(Collection<ApiColumnDef> apiColumnDefs) {
+    return errFmtJoin(apiColumnDefs, ErrorFormatters::errFmt);
+  }
+
   public static String errFmt(ColumnMetadata column) {
     return String.format("%s(%s)", errFmt(column.getName()), errFmt(column.getType()));
   }
 
   public static String errFmt(CqlIdentifier identifier) {
     return cqlIdentifierToMessageString(identifier);
+  }
+
+  public static String errFmt(ApiColumnDef apiColumnDef) {
+    return String.format("%s(%s)", errFmt(apiColumnDef.name()), errFmt(apiColumnDef.type()));
+  }
+
+  public static String errFmt(ApiDataType apiDataType) {
+    return apiDataType.getName().getApiName();
   }
 
   public static String errFmt(DataType dataType) {

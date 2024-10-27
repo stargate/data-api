@@ -24,10 +24,12 @@ public class ColumnDescDeserializer extends StdDeserializer<ColumnDesc> {
   public ColumnDesc deserialize(
       JsonParser jsonParser, DeserializationContext deserializationContext)
       throws IOException, JacksonException {
+
     JsonNode definition = deserializationContext.readTree(jsonParser);
     if (definition.isTextual()) {
       return ColumnDesc.fromJsonString(definition.asText(), null, null, -1, null);
     }
+
     if (definition.isObject() && definition.has("type")) {
       String type = definition.path("type").asText();
       String keyType = null;

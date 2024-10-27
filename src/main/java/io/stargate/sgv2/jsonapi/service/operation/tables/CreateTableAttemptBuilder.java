@@ -1,13 +1,8 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
-import com.datastax.oss.driver.api.core.CqlIdentifier;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.PrimaryKeyDesc;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
-import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
-import java.util.List;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /** Builds a {@link CreateTableAttempt}. */
 public class CreateTableAttemptBuilder {
@@ -15,12 +10,9 @@ public class CreateTableAttemptBuilder {
   private KeyspaceSchemaObject schemaObject;
   private int retryDelayMillis;
   private int maxRetries;
-  private String tableName;
-  private Map<CqlIdentifier, ApiDataType> columnTypes;
-  private List<CqlIdentifier> partitionKeys;
-  private List<PrimaryKeyDesc.OrderingKeyDesc> clusteringKeys;
   private Map<String, String> customProperties;
   private boolean ifNotExists;
+  private ApiTableDef tableDef;
 
   public CreateTableAttemptBuilder(int position, KeyspaceSchemaObject schemaObject) {
     this.position = position;
@@ -38,31 +30,8 @@ public class CreateTableAttemptBuilder {
     return this;
   }
 
-  public CreateTableAttemptBuilder tableName(String tableName) {
-    this.tableName = tableName;
-    return this;
-  }
-
-  public CreateTableAttemptBuilder columnTypes(Map<String, ApiDataType> columnTypes) {
-    this.columnTypes =
-        columnTypes.entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    e -> CqlIdentifierUtil.cqlIdentifierFromUserInput(e.getKey()),
-                    Map.Entry::getValue));
-    return this;
-  }
-
-  public CreateTableAttemptBuilder partitionKeys(List<String> partitionKeys) {
-    this.partitionKeys =
-        partitionKeys.stream().map(CqlIdentifierUtil::cqlIdentifierFromUserInput).toList();
-    ;
-    return this;
-  }
-
-  public CreateTableAttemptBuilder clusteringKeys(
-      List<PrimaryKeyDesc.OrderingKeyDesc> clusteringKeys) {
-    this.clusteringKeys = clusteringKeys;
+  public CreateTableAttemptBuilder tableDef(ApiTableDef tableDef) {
+    this.tableDef = tableDef;
     return this;
   }
 
@@ -83,10 +52,7 @@ public class CreateTableAttemptBuilder {
         schemaObject,
         retryDelayMillis,
         maxRetries,
-        tableName,
-        columnTypes,
-        partitionKeys,
-        clusteringKeys,
+        tableDef,
         ifNotExists,
         customProperties);
   }

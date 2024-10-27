@@ -10,19 +10,16 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
-import io.stargate.sgv2.jsonapi.exception.ServerException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
-import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTableDef;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,19 +96,16 @@ public class WhereCQLClauseAnalyzer {
 
   private final TableBasedSchemaObject tableSchemaObject;
   private final TableMetadata tableMetadata;
-  private final Map<CqlIdentifier, ColumnMetadata> tablePKColumns;
+  private final ApiTableDef apiTableDef;
   private final StatementType statementType;
 
-  public WhereCQLClauseAnalyzer(
-      TableBasedSchemaObject tableSchemaObject, StatementType statementType) {
+  public WhereCQLClauseAnalyzer(TableSchemaObject tableSchemaObject, StatementType statementType) {
     this.tableSchemaObject =
         Objects.requireNonNull(tableSchemaObject, "tableSchemaObject cannot be null");
     this.statementType = Objects.requireNonNull(statementType, "statementType cannot be null");
 
-    tableMetadata = tableSchemaObject.tableMetadata();
-    tablePKColumns =
-        tableMetadata.getPrimaryKey().stream()
-            .collect(Collectors.toMap(ColumnMetadata::getName, Function.identity()));
+    this.tableMetadata = tableSchemaObject.tableMetadata();
+    this.apiTableDef = tableSchemaObject.apiTableDef();
   }
 
   /**
@@ -176,7 +170,7 @@ public class WhereCQLClauseAnalyzer {
 
     var nonPkFilters =
         identifierToFilter.keySet().stream()
-            .filter(identifier -> !tablePKColumns.containsKey(identifier))
+            .filter(identifier -> !apiTableDef.primaryKeys().containsKey(identifier))
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
 
@@ -308,31 +302,22 @@ public class WhereCQLClauseAnalyzer {
       Map<CqlIdentifier, TableFilter> identifierToFilter) {
 
     var pkFullySpecified =
-        identifierToFilter.keySet().stream().allMatch(tablePKColumns::containsKey);
+        identifierToFilter.keySet().stream()
+            .allMatch(identifier -> apiTableDef.primaryKeys().containsKey(identifier));
 
     // if the Pk is fully specified, then we only check the filters on non-pk columns
     // otherwise we check all filters because the PK will not be used.
     var filtersToCheck =
         pkFullySpecified
             ? identifierToFilter.keySet().stream()
-                .filter(tableFilter -> !tablePKColumns.containsKey(tableFilter))
+                .filter(tableFilter -> !apiTableDef.primaryKeys().containsKey(tableFilter))
                 .toList()
             : identifierToFilter.keySet().stream().toList();
 
+    // TODO: better check if identifier is not found in all columns
     var scalarTypeFilters =
         filtersToCheck.stream()
-            .filter(
-                identifier -> {
-                  var cqlType = tableMetadata.getColumns().get(identifier).getType();
-                  ApiDataType apiDataType;
-                  try {
-                    apiDataType = ApiDataTypeDefs.from(cqlType);
-                  } catch (UnsupportedCqlType e) {
-                    // TODO: improve in https://github.com/stargate/data-api/issues/1602
-                    throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
-                  }
-                  return apiDataType.isPrimitive();
-                })
+            .filter(identifier -> apiTableDef.allColumns().get(identifier).type().isPrimitive())
             .toList();
 
     var missingSAIColumns =
@@ -498,7 +483,8 @@ public class WhereCQLClauseAnalyzer {
       return Optional.empty();
     }
     var allFiltersOnPkColumns =
-        identifierToFilter.keySet().stream().allMatch(tablePKColumns::containsKey);
+        identifierToFilter.keySet().stream()
+            .allMatch(identifier -> apiTableDef.primaryKeys().containsKey(identifier));
     // this rule only applies if all the filters are on PK columns
     if (!allFiltersOnPkColumns) {
       return Optional.empty();

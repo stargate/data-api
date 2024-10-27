@@ -36,7 +36,7 @@ public class TableSchemaObject extends TableBasedSchemaObject {
   public static TableSchemaObject from(TableMetadata tableMetadata, ObjectMapper objectMapper) {
 
     var vectorConfig = VectorConfig.from(tableMetadata, objectMapper);
-    var apiTableDef = ApiTableDef.from(tableMetadata, vectorConfig);
+    var apiTableDef = ApiTableDef.FROM_CQL_FACTORY.create(tableMetadata, vectorConfig);
     return new TableSchemaObject(tableMetadata, vectorConfig, apiTableDef);
   }
 }

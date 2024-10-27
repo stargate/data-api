@@ -1,21 +1,13 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
-
 import com.datastax.oss.driver.api.core.type.*;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
-import io.stargate.sgv2.jsonapi.exception.ServerException;
-import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
-import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Defines the API data types that are supported by the API. */
 public abstract class ApiDataTypeDefs {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ApiDataTypeDefs.class);
 
   // text types
   public static final PrimitiveApiDataTypeDef ASCII =
@@ -73,18 +65,10 @@ public abstract class ApiDataTypeDefs {
 
   // Collections use to help lookups, all external access should be through the from() functions
   // below.
-  private static final List<PrimitiveApiDataTypeDef> PRIMITIVE_TYPES =
+  static final List<PrimitiveApiDataTypeDef> PRIMITIVE_TYPES =
       List.of(
           ASCII, BIGINT, BOOLEAN, BINARY, DATE, DECIMAL, DOUBLE, DURATION, FLOAT, INT, SMALLINT,
           TEXT, TIME, TIMESTAMP, TINYINT, VARINT, INET, UUID, TIMEUUID);
-
-  private static final Map<DataType, PrimitiveApiDataTypeDef> PRIMITIVE_TYPES_BY_CQL_TYPE =
-      PRIMITIVE_TYPES.stream()
-          .collect(Collectors.toMap(PrimitiveApiDataTypeDef::getCqlType, Function.identity()));
-
-  private static final Map<ApiDataTypeName, PrimitiveApiDataTypeDef> PRIMITIVE_TYPES_BY_API_NAME =
-      PRIMITIVE_TYPES.stream()
-          .collect(Collectors.toMap(PrimitiveApiDataTypeDef::getName, Function.identity()));
 
   //  private static final Map<ApiDataType, PrimitiveApiDataTypeDef> CQL_TYPES_BY_PRIMITIVE_TYPE =
   //      PRIMITIVE_TYPES.stream()
@@ -92,250 +76,228 @@ public abstract class ApiDataTypeDefs {
 
   // Caching the API complex type by the CQL type so we do not need to create instances for the same
   // CQL type.
-  private static final ConcurrentMap<MapTypeCacheKey, ComplexApiDataType.ApiMapType>
-      CQL_MAP_TYPE_CACHE = new ConcurrentHashMap<>();
-  private static final ConcurrentMap<ListType, ComplexApiDataType.ApiListType> CQL_LIST_TYPE_CACHE =
-      new ConcurrentHashMap<>();
-  private static final ConcurrentMap<SetType, ComplexApiDataType.ApiSetType> CQL_SET_TYPE_CACHE =
-      new ConcurrentHashMap<>();
 
-  private static final ConcurrentMap<ComplexColumnDesc.MapColumnDesc, ComplexApiDataType.ApiMapType>
-      COL_MAP_TYPE_CACHE = new ConcurrentHashMap<>();
-  private static final ConcurrentMap<
-          ComplexColumnDesc.ListColumnDesc, ComplexApiDataType.ApiListType>
-      COL_LIST_TYPE_CACHE = new ConcurrentHashMap<>();
-  private static final ConcurrentMap<ComplexColumnDesc.SetColumnDesc, ComplexApiDataType.ApiSetType>
-      COL_SET_TYPE_CACHE = new ConcurrentHashMap<>();
+  //  private static final ConcurrentMap<ComplexColumnDesc.MapColumnDesc, ApiMapType>
+  //      COL_MAP_TYPE_CACHE = new ConcurrentHashMap<>();
+  //  private static final ConcurrentMap<
+  //          ComplexColumnDesc.ListColumnDesc, ApiListType>
+  //      COL_LIST_TYPE_CACHE = new ConcurrentHashMap<>();
+  //  private static final ConcurrentMap<ComplexColumnDesc.SetColumnDesc, ApiSetType>
+  //      COL_SET_TYPE_CACHE = new ConcurrentHashMap<>();
 
-  /**
-   * Gets an {@link PrimitiveApiDataTypeDef} for the given CQL {@link DataType}.
-   *
-   * <p>Handles Primitive and Collection types.
-   *
-   * @param dataType the CQL data type to get the API data type for.
-   * @return The optional of {@link PrimitiveApiDataTypeDef}, if the optional it empty it means the
-   *     data type is not supported by the API for any options. If it is present, should still check
-   *     the {@link PrimitiveApiDataTypeDef} for the level of support.
-   */
-  public static ApiDataType from(DataType dataType) throws UnsupportedCqlType {
-    Objects.requireNonNull(dataType, "dataType must not be null");
+  //  /**
+  //   * Gets an {@link PrimitiveApiDataTypeDef} for the given CQL {@link DataType}.
+  //   *
+  //   * <p>Handles Primitive and Collection types.
+  //   *
+  //   * @param dataType the CQL data type to get the API data type for.
+  //   * @return The optional of {@link PrimitiveApiDataTypeDef}, if the optional it empty it means
+  // the
+  //   *     data type is not supported by the API for any options. If it is present, should still
+  // check
+  //   *     the {@link PrimitiveApiDataTypeDef} for the level of support.
+  //   */
+  //  public static ApiDataType from(DataType dataType) throws UnsupportedCqlType {
+  //    Objects.requireNonNull(dataType, "dataType must not be null");
+  //
+  //    var primitiveType = PRIMITIVE_TYPES_BY_CQL_TYPE.get(dataType);
+  //    if (primitiveType != null) {
+  //      return primitiveType;
+  //    }
+  //
+  //    return switch (dataType) {
+  //      case MapType mt -> from(mt);
+  //      case ListType lt -> from(lt);
+  //      case SetType st -> from(st);
+  //      case VectorType vt -> from(vt);
+  //      default -> throw new UnsupportedCqlType(dataType);
+  //    };
+  //  }
 
-    var primitiveType = PRIMITIVE_TYPES_BY_CQL_TYPE.get(dataType);
-    if (primitiveType != null) {
-      return primitiveType;
-    }
+  // HERE
+  //  public static ApiDataType from(ColumnDesc columnDesc, VectorizeConfigValidator
+  // vectorizeValidator) throws UnsupportedUserType {
+  //    Objects.requireNonNull(columnDesc, "columnDesc must not be null");
+  //
+  //    LOGGER.warn("processing columnDesc: {}", columnDesc);
+  //    var primitiveType = PRIMITIVE_TYPES_BY_API_NAME.get(columnDesc.getApiDataTypeName());
+  //    if (primitiveType != null) {
+  //      return primitiveType;
+  //    }
+  //
+  //    LOGGER.warn(
+  //        "processing instance of ListColumnDesc: {}",
+  //        columnDesc instanceof ComplexColumnDesc.ListColumnDesc);
+  //    LOGGER.warn(
+  //        "processing instance of MapColumnDesc: {}",
+  //        columnDesc instanceof ComplexColumnDesc.MapColumnDesc);
+  //    LOGGER.warn(
+  //        "processing instance of SetColumnDesc: {}",
+  //        columnDesc instanceof ComplexColumnDesc.SetColumnDesc);
+  //    LOGGER.warn(
+  //        "processing instance of VectorColumnDesc: {}",
+  //        columnDesc instanceof ComplexColumnDesc.VectorColumnDesc);
+  //
+  //    return switch (columnDesc) {
+  //      case ComplexColumnDesc.ListColumnDesc lt -> from(lt);
+  //      case ComplexColumnDesc.MapColumnDesc mt -> from(mt);
+  //      case ComplexColumnDesc.SetColumnDesc st -> from(st);
+  //      case ComplexColumnDesc.VectorColumnDesc vt -> from(vt, vectorizeValidator);
+  //      default -> throw new UnsupportedUserType(columnDesc);
+  //    };
+  //  }
 
-    return switch (dataType) {
-      case MapType mt -> from(mt);
-      case ListType lt -> from(lt);
-      case SetType st -> from(st);
-      case VectorType vt -> from(vt);
-      default -> throw new UnsupportedCqlType(dataType);
-    };
-  }
+  //  public static CollectionApiDataType from(MapType mapType) throws UnsupportedCqlType {
+  //    Objects.requireNonNull(mapType, "mapType must not be null");
+  //
+  //    if (!ApiMapType.isCqlTypeSupported(mapType)) {
+  //      throw new UnsupportedCqlType(mapType);
+  //    }
+  //
+  //    var cacheKey =
+  //        new MapTypeCacheKey(mapType.getKeyType(), mapType.getValueType(), mapType.isFrozen());
+  //    return CQL_MAP_TYPE_CACHE.computeIfAbsent(
+  //        cacheKey,
+  //        entry -> {
+  //
+  //          // supported check above should also make sure the key and map types are supported
+  //          // from() will throw if that is not the case.
+  //          try {
+  //            return ApiMapType.from(
+  //                from(mapType.getKeyType()), from(mapType.getValueType()));
+  //          } catch (UnsupportedCqlType e) {
+  //            // should not happen if the isCqlTypeSupported returns true
+  //            throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
+  //          }
+  //        });
+  //  }
 
-  public static ApiDataType from(ColumnDesc columnDesc) throws UnsupportedUserType {
-    Objects.requireNonNull(columnDesc, "columnDesc must not be null");
+  //  public static CollectionApiDataType from(ComplexColumnDesc.MapColumnDesc mapType)
+  //      throws UnsupportedUserType {
+  //    Objects.requireNonNull(mapType, "mapType must not be null");
+  //
+  //    if (!ApiMapType.isColumnTypeSupported(mapType)) {
+  //      throw new UnsupportedUserType(mapType);
+  //    }
+  //
+  //    return COL_MAP_TYPE_CACHE.computeIfAbsent(
+  //        mapType,
+  //        entry -> {
+  //          // supported check above should also make sure the value type are supported
+  //          // from() will throw if that is not the case.
+  //          try {
+  //            return ApiMapType.from(mapType);
+  //          } catch (UnsupportedUserType e) {
+  //            // should not happen if the isColumnTypeSupported returns true
+  //            throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
+  //          }
+  //        });
+  //  }
 
-    var primitiveType = PRIMITIVE_TYPES_BY_API_NAME.get(columnDesc.getApiDataTypeName());
-    if (primitiveType != null) {
-      return primitiveType;
-    }
+  //  public static CollectionApiDataType from(ListType listType) throws UnsupportedCqlType {
+  //    Objects.requireNonNull(listType, "listType must not be null");
+  //
+  //    if (!ApiListType.isCqlTypeSupported(listType)) {
+  //      throw new UnsupportedCqlType(listType);
+  //    }
+  //
+  //    return CQL_LIST_TYPE_CACHE.computeIfAbsent(
+  //        listType,
+  //        entry -> {
+  //          // supported check above should also make sure the value type are supported
+  //          // from() will throw if that is not the case.
+  //          try {
+  //            return ApiListType.from(from(listType.getElementType()));
+  //          } catch (UnsupportedCqlType e) {
+  //            // should not happen if the isCqlTypeSupported returns true
+  //            throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
+  //          }
+  //        });
+  //  }
 
-    return switch (columnDesc) {
-      case ComplexColumnDesc.ListColumnDesc lt -> from(lt);
-      case ComplexColumnDesc.MapColumnDesc mt -> from(mt);
-      case ComplexColumnDesc.SetColumnDesc st -> from(st);
-      case ComplexColumnDesc.VectorColumnDesc vt -> from(vt);
-      default -> throw new UnsupportedUserType(columnDesc);
-    };
-  }
+  //  public static CollectionApiDataType from(ComplexColumnDesc.ListColumnDesc listType)
+  //      throws UnsupportedUserType {
+  //    Objects.requireNonNull(listType, "listType must not be null");
+  //
+  //    if (!ApiListType.isColumnTypeSupported(listType)) {
+  //      throw new UnsupportedUserType(listType);
+  //    }
+  //
+  //    return COL_LIST_TYPE_CACHE.computeIfAbsent(
+  //        listType,
+  //        entry -> {
+  //          // supported check above should also make sure the value type are supported
+  //          // from() will throw if that is not the case.
+  //          try {
+  //            return ApiListType.from(listType);
+  //          } catch (UnsupportedUserType e) {
+  //            // should not happen if the isColumnTypeSupported returns true
+  //            throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
+  //          }
+  //        });
+  //  }
 
-  public static ComplexApiDataType from(MapType mapType) throws UnsupportedCqlType {
-    Objects.requireNonNull(mapType, "mapType must not be null");
+  //  public static CollectionApiDataType from(SetType setType) throws UnsupportedCqlType {
+  //    Objects.requireNonNull(setType, "setType must not be null");
+  //
+  //    if (!ApiSetType.isCqlTypeSupported(setType)) {
+  //      throw new UnsupportedCqlType(setType);
+  //    }
+  //
+  //    // supported check above should also make sure the value type are supported
+  //    // from() will throw if that is not the case.
+  //    return CQL_SET_TYPE_CACHE.computeIfAbsent(
+  //        setType,
+  //        entry -> {
+  //          try {
+  //            return ApiSetType.from(from(setType.getElementType()));
+  //          } catch (UnsupportedCqlType e) {
+  //            // should not happen if the isCqlTypeSupported returns true
+  //            throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
+  //          }
+  //        });
+  //  }
 
-    if (!ComplexApiDataType.ApiMapType.isCqlTypeSupported(mapType)) {
-      throw new UnsupportedCqlType(mapType);
-    }
+  //  public static CollectionApiDataType from(ComplexColumnDesc.SetColumnDesc setType)
+  //      throws UnsupportedUserType {
+  //    Objects.requireNonNull(setType, "setType must not be null");
+  //
+  //    if (!ApiSetType.isColumnTypeSupported(setType)) {
+  //      throw new UnsupportedUserType(setType);
+  //    }
+  //
+  //    return COL_SET_TYPE_CACHE.computeIfAbsent(
+  //        setType,
+  //        entry -> {
+  //          // supported check above should also make sure the value type are supported
+  //          // from() will throw if that is not the case.
+  //          try {
+  //            return ApiSetType.from(setType);
+  //          } catch (UnsupportedUserType e) {
+  //            // should not happen if the isColumnTypeSupported returns true
+  //            throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
+  //          }
+  //        });
+  //  }
 
-    var cacheKey =
-        new MapTypeCacheKey(mapType.getKeyType(), mapType.getValueType(), mapType.isFrozen());
-    return CQL_MAP_TYPE_CACHE.computeIfAbsent(
-        cacheKey,
-        entry -> {
+  //  /**
+  //   * Note: cannot cache this as the {@link ApiVectorType} includes the vectorize
+  //   * config so is not re-usable cross tenants etc.
+  //   */
+  //  public static CollectionApiDataType from(ComplexColumnDesc.VectorColumnDesc vectorType)
+  //      throws UnsupportedUserType {
+  //    Objects.requireNonNull(vectorType, "vectorType must not be null");
+  //
+  //    if (!ApiVectorType.isColumnTypeSupported(vectorType)) {
+  //      throw new UnsupportedUserType(vectorType);
+  //    }
+  //
+  //    try {
+  //      return ApiVectorType.from(vectorType);
+  //    } catch (UnsupportedUserType e) {
+  //      // should not happen if the isColumnTypeSupported returns true
+  //      throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
+  //    }
+  //  }
 
-          // supported check above should also make sure the key and map types are supported
-          // from() will throw if that is not the case.
-          try {
-            return ComplexApiDataType.ApiMapType.from(
-                from(mapType.getKeyType()), from(mapType.getValueType()));
-          } catch (UnsupportedCqlType e) {
-            // should not happen if the isCqlTypeSupported returns true
-            throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
-          }
-        });
-  }
-
-  public static ComplexApiDataType from(ComplexColumnDesc.MapColumnDesc mapType)
-      throws UnsupportedUserType {
-    Objects.requireNonNull(mapType, "mapType must not be null");
-
-    if (!ComplexApiDataType.ApiMapType.isColumnTypeSupported(mapType)) {
-      throw new UnsupportedUserType(mapType);
-    }
-
-    return COL_MAP_TYPE_CACHE.computeIfAbsent(
-        mapType,
-        entry -> {
-          // supported check above should also make sure the value type are supported
-          // from() will throw if that is not the case.
-          try {
-            return ComplexApiDataType.ApiMapType.from(mapType);
-          } catch (UnsupportedUserType e) {
-            // should not happen if the isColumnTypeSupported returns true
-            throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
-          }
-        });
-  }
-
-  public static ComplexApiDataType from(ListType listType) throws UnsupportedCqlType {
-    Objects.requireNonNull(listType, "listType must not be null");
-
-    if (!ComplexApiDataType.ApiListType.isCqlTypeSupported(listType)) {
-      throw new UnsupportedCqlType(listType);
-    }
-
-    return CQL_LIST_TYPE_CACHE.computeIfAbsent(
-        listType,
-        entry -> {
-          // supported check above should also make sure the value type are supported
-          // from() will throw if that is not the case.
-          try {
-            return ComplexApiDataType.ApiListType.from(from(listType.getElementType()));
-          } catch (UnsupportedCqlType e) {
-            // should not happen if the isCqlTypeSupported returns true
-            throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
-          }
-        });
-  }
-
-  public static ComplexApiDataType from(ComplexColumnDesc.ListColumnDesc listType)
-      throws UnsupportedUserType {
-    Objects.requireNonNull(listType, "listType must not be null");
-
-    if (!ComplexApiDataType.ApiListType.isColumnTypeSupported(listType)) {
-      throw new UnsupportedUserType(listType);
-    }
-
-    return COL_LIST_TYPE_CACHE.computeIfAbsent(
-        listType,
-        entry -> {
-          // supported check above should also make sure the value type are supported
-          // from() will throw if that is not the case.
-          try {
-            return ComplexApiDataType.ApiListType.from(listType);
-          } catch (UnsupportedUserType e) {
-            // should not happen if the isColumnTypeSupported returns true
-            throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
-          }
-        });
-  }
-
-  public static ComplexApiDataType from(SetType setType) throws UnsupportedCqlType {
-    Objects.requireNonNull(setType, "setType must not be null");
-
-    if (!ComplexApiDataType.ApiSetType.isCqlTypeSupported(setType)) {
-      throw new UnsupportedCqlType(setType);
-    }
-
-    // supported check above should also make sure the value type are supported
-    // from() will throw if that is not the case.
-    return CQL_SET_TYPE_CACHE.computeIfAbsent(
-        setType,
-        entry -> {
-          try {
-            return ComplexApiDataType.ApiSetType.from(from(setType.getElementType()));
-          } catch (UnsupportedCqlType e) {
-            // should not happen if the isCqlTypeSupported returns true
-            throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
-          }
-        });
-  }
-
-  public static ComplexApiDataType from(ComplexColumnDesc.SetColumnDesc setType)
-      throws UnsupportedUserType {
-    Objects.requireNonNull(setType, "setType must not be null");
-
-    if (!ComplexApiDataType.ApiSetType.isColumnTypeSupported(setType)) {
-      throw new UnsupportedUserType(setType);
-    }
-
-    return COL_SET_TYPE_CACHE.computeIfAbsent(
-        setType,
-        entry -> {
-          // supported check above should also make sure the value type are supported
-          // from() will throw if that is not the case.
-          try {
-            return ComplexApiDataType.ApiSetType.from(setType);
-          } catch (UnsupportedUserType e) {
-            // should not happen if the isColumnTypeSupported returns true
-            throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
-          }
-        });
-  }
-
-  /**
-   * Note: cannot cache this as the {@link ComplexApiDataType.ApiVectorType} includes the vectorize
-   * config so is not re-usable cross tenants etc.
-   *
-   * @param vectorType
-   * @return
-   * @throws UnsupportedCqlType
-   */
-  public static ApiDataType from(VectorType vectorType) throws UnsupportedCqlType {
-    Objects.requireNonNull(vectorType, "vectorType must not be null");
-
-    if (!ComplexApiDataType.ApiVectorType.isCqlTypeSupported(vectorType)) {
-      throw new UnsupportedCqlType(vectorType);
-    }
-
-    try {
-      return ComplexApiDataType.ApiVectorType.from(
-          from(vectorType.getElementType()), vectorType.getDimensions(), null);
-    } catch (UnsupportedCqlType e) {
-      // should not happen if the isCqlTypeSupported returns true
-      throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
-    }
-  }
-
-  /**
-   * Note: cannot cache this as the {@link ComplexApiDataType.ApiVectorType} includes the vectorize
-   * config so is not re-usable cross tenants etc.
-   */
-  public static ComplexApiDataType from(ComplexColumnDesc.VectorColumnDesc vectorType)
-      throws UnsupportedUserType {
-    Objects.requireNonNull(vectorType, "vectorType must not be null");
-
-    if (!ComplexApiDataType.ApiVectorType.isColumnTypeSupported(vectorType)) {
-      throw new UnsupportedUserType(vectorType);
-    }
-
-    try {
-      return ComplexApiDataType.ApiVectorType.from(vectorType);
-    } catch (UnsupportedUserType e) {
-      // should not happen if the isColumnTypeSupported returns true
-      throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
-    }
-  }
-
-  /**
-   * Custom cache key for the map type cache, because the equals on the {@link
-   * com.datastax.oss.driver.internal.core.type.DefaultMapType#equals(Object)} does not take the
-   * frozen flag into account.
-   *
-   * <p>Even though we do not support frozen (See {@link
-   * ComplexApiDataType.ApiMapType#isCqlTypeSupported(MapType)} felt saver to include it in the
-   * cache key.
-   */
-  private record MapTypeCacheKey(DataType keyType, DataType valueType, boolean frozen) {}
 }

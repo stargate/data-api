@@ -310,26 +310,26 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
     if (vectorConfig.vectorEnabled()) {
 
       // checked above that vector is enabled
-      VectorColumnDefinition vectorConfigColumn =
-          vectorConfig.getColumnVectorDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
+      var vectorColumnDefinition =
+          vectorConfig.getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD).orElseThrow();
       VectorizeConfig vectorizeConfig = null;
 
-      if (vectorConfigColumn.vectorizeDefinition() != null) {
+      if (vectorColumnDefinition.vectorizeDefinition() != null) {
         Map<String, String> authentication =
-            vectorConfigColumn.vectorizeDefinition().authentication();
-        Map<String, Object> parameters = vectorConfigColumn.vectorizeDefinition().parameters();
+            vectorColumnDefinition.vectorizeDefinition().authentication();
+        Map<String, Object> parameters = vectorColumnDefinition.vectorizeDefinition().parameters();
         vectorizeConfig =
             new VectorizeConfig(
-                vectorConfigColumn.vectorizeDefinition().provider(),
-                vectorConfigColumn.vectorizeDefinition().modelName(),
+                vectorColumnDefinition.vectorizeDefinition().provider(),
+                vectorColumnDefinition.vectorizeDefinition().modelName(),
                 authentication == null ? null : Map.copyOf(authentication),
                 parameters == null ? null : Map.copyOf(parameters));
       }
 
       vectorSearchConfig =
           new CreateCollectionCommand.Options.VectorSearchConfig(
-              vectorConfigColumn.vectorSize(),
-              vectorConfigColumn.similarityFunction().name().toLowerCase(),
+              vectorColumnDefinition.vectorSize(),
+              vectorColumnDefinition.similarityFunction().name().toLowerCase(),
               vectorizeConfig);
     }
 
@@ -367,7 +367,7 @@ public final class CollectionSchemaObject extends TableBasedSchemaObject {
   public SimilarityFunction similarityFunction() {
     // TODO: THERE WAS NO CHECK HERE IF VECTORING WAS ENABLED
     return vectorConfig()
-        .getColumnVectorDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
+        .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
         .get()
         .similarityFunction();
   }

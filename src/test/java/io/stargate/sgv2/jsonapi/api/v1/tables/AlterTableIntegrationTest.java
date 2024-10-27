@@ -157,33 +157,25 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
 
     @Test
     public void dropPrimaryKeyColumns() {
-      final SchemaException schemaException =
-          SchemaException.Code.COLUMN_CANNOT_BE_DROPPED.get(
-              Map.of("reason", "Primary key column `%s` cannot be dropped".formatted("id")));
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable("drop", List.of("id"))
           .hasSingleApiError(
-              SchemaException.Code.COLUMN_CANNOT_BE_DROPPED,
+              SchemaException.Code.CANNOT_DROP_PRIMARY_KEY_COLUMNS,
               SchemaException.class,
-              schemaException.body);
+              "The command attempted to drop the primary key columns: id.");
     }
 
     @Test
     public void dropColumnWithIndex() {
-      final SchemaException schemaException =
-          SchemaException.Code.COLUMN_CANNOT_BE_DROPPED.get(
-              Map.of(
-                  "reason",
-                  "Index exists on the column `%s`, drop `%s` index to drop the column"
-                      .formatted("age", "age_idx")));
+
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable("drop", List.of("age"))
           .hasSingleApiError(
-              SchemaException.Code.COLUMN_CANNOT_BE_DROPPED,
+              SchemaException.Code.CANNOT_DROP_INDEXED_COLUMNS,
               SchemaException.class,
-              schemaException.body);
+              "The command attempted to drop the indexed columns: age.");
     }
   }
 
@@ -236,17 +228,16 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
 
     @Test
     public void addingToNonVectorTypeColumn() {
-      final SchemaException schemaException =
-          SchemaException.Code.NON_VECTOR_TYPE_COLUMN.get(Map.of("column", "age"));
+
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable(
               "addVectorize",
               Map.of("age", Map.of("provider", "mistral", "modelName", "mistral-embed")))
           .hasSingleApiError(
-              SchemaException.Code.NON_VECTOR_TYPE_COLUMN,
+              SchemaException.Code.CANNOT_VECTORIZE_NON_VECTOR_COLUMNS,
               SchemaException.class,
-              schemaException.body);
+              "The command attempted to vectorize the non-vector columns: age.");
     }
   }
 

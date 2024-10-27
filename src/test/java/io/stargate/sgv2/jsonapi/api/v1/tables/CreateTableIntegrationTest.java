@@ -240,8 +240,6 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   null)));
 
       // invalidPrimaryKeyTable
-      SchemaException missingDefinition =
-          SchemaException.Code.COLUMN_DEFINITION_MISSING.get(Map.of("column_name", "error_column"));
       testCases.add(
           Arguments.of(
               new CreateTableTestData(
@@ -266,8 +264,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidPrimaryKeyTable",
                   true,
-                  missingDefinition.code,
-                  missingDefinition.body)));
+                  SchemaException.Code.UNKNOWN_PARTITION_COLUMNS.name(),
+                  "The partition includes the unknown columns: error_column.")));
 
       // invalidPartitionByTable
       testCases.add(
@@ -295,8 +293,8 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidPartitionByTable",
                   true,
-                  missingDefinition.code,
-                  missingDefinition.body)));
+                  SchemaException.Code.UNKNOWN_PARTITION_COLUMNS.name(),
+                  "The partition includes the unknown columns: error_column.")));
 
       // invalidPartitionSortTable
       testCases.add(
@@ -324,10 +322,10 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                       """,
                   "invalidPartitionSortTable",
                   true,
-                  missingDefinition.code,
-                  missingDefinition.body)));
+                  SchemaException.Code.UNKNOWN_PARTITION_SORT_COLUMNS.name(),
+                  "The partition sort includes the unknown columns: error_column.")));
 
-      SchemaException se = SchemaException.Code.PRIMARY_KEY_DEFINITION_INCORRECT.get();
+      SchemaException se = SchemaException.Code.UNKNOWN_PARTITION_COLUMNS.get();
       // invalidPartitionSortOrderingValueTable
       testCases.add(
           Arguments.of(

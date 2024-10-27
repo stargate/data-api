@@ -9,11 +9,13 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.stargate.sgv2.jsonapi.api.model.command.deserializers.PrimaryKeyDescDeserializer;
 import io.stargate.sgv2.jsonapi.api.model.command.serializer.OrderingKeyDescSerializer;
+import io.stargate.sgv2.jsonapi.config.constants.TableDescConstants;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiClusteringOrder;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Optional;
 import org.eclipse.microprofile.openapi.annotations.enums.SchemaType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
@@ -34,12 +36,12 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 public record PrimaryKeyDesc(
     @NotNull
         @Schema(description = "Columns that make the partition keys", type = SchemaType.ARRAY)
-        @JsonProperty("partitionBy")
+        @JsonProperty(TableDescConstants.PrimaryKey.PARTITION_BY)
         @JsonInclude(JsonInclude.Include.NON_NULL)
         String[] keys,
     @Nullable
         @Schema(description = "Columns that make the ordering keys", type = SchemaType.ARRAY)
-        @JsonProperty("partitionSort")
+        @JsonProperty(TableDescConstants.PrimaryKey.PARTITION_SORT)
         @JsonSerialize(using = OrderingKeyDescSerializer.class)
         OrderingKeyDesc[] orderingKeys) {
 
@@ -56,14 +58,28 @@ public record PrimaryKeyDesc(
 
     public enum Order {
       @JsonProperty("1")
-      ASC,
+      ASC(1),
       @JsonProperty("-1")
-      DESC;
+      DESC(-1);
+
+      public final int ordinal;
+
+      Order(int ordinal) {
+        this.ordinal = ordinal;
+      }
 
       public static Order from(ApiClusteringOrder order) {
         return switch (order) {
           case ASC -> ASC;
           case DESC -> DESC;
+        };
+      }
+
+      public static Optional<Order> fromUserDesc(int order) {
+        return switch (order) {
+          case 1 -> Optional.of(ASC);
+          case -1 -> Optional.of(DESC);
+          default -> Optional.empty();
         };
       }
     }

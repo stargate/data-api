@@ -3,15 +3,12 @@ package io.stargate.sgv2.jsonapi.service.operation;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.data.ByteUtils;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
 import com.datastax.oss.driver.api.core.servererrors.TruncateException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import java.time.Duration;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,17 +37,6 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
   }
 
   protected abstract SimpleStatement buildStatement();
-
-  // Add customProperties which has table properties for vectorize
-  // Convert value to hex string using the ByteUtils.toHexString
-  // This needs to use `createTable.withExtensions()` method in driver when PR
-  // (https://github.com/apache/cassandra-java-driver/pull/1964) is released
-  protected Map<String, String> encodeAsHexValue(Map<String, String> customProperties) {
-    return customProperties.entrySet().stream()
-        .collect(
-            Collectors.toMap(
-                Map.Entry::getKey, e -> ByteUtils.toHexString(e.getValue().getBytes())));
-  }
 
   public static class SchemaRetryPolicy extends RetryPolicy {
 

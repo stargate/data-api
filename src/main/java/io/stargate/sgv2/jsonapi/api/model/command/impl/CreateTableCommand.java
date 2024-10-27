@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.api.model.command.impl;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import io.stargate.sgv2.jsonapi.api.model.command.TableOnlyCommand;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.TableDefinitionDesc;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -22,7 +22,7 @@ public record CreateTableCommand(
         @Pattern(regexp = "[a-zA-Z][a-zA-Z0-9_]*")
         @Schema(description = "Name of the table")
         String name,
-    @Valid @NotNull @Schema(description = "Table definition") TableDesc definition,
+    @Valid @NotNull @Schema(description = "Table definition") TableDefinitionDesc definition,
     @Valid
         @JsonInclude(JsonInclude.Include.NON_NULL)
         @Nullable

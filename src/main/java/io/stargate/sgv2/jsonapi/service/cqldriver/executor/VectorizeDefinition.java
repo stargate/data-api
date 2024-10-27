@@ -45,6 +45,7 @@ public record VectorizeDefinition(
 
   public static VectorizeDefinition from(
       VectorizeConfig vectorizeDesc, int dimensions, VectorizeConfigValidator validateVectorize) {
+
     validateVectorize.validateService(vectorizeDesc, dimensions);
 
     return new VectorizeDefinition(

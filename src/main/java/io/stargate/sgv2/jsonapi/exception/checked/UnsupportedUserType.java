@@ -8,10 +8,15 @@ public class UnsupportedUserType extends CheckedApiException {
   private final ColumnDesc type;
 
   public UnsupportedUserType(ColumnDesc type) {
+    this(type, null);
+  }
+
+  public UnsupportedUserType(ColumnDesc type, Throwable cause) {
     super(
         String.format(
             "Unsupported user datatype definition : %s",
-            Objects.requireNonNull(type, "type must not be null")));
+            Objects.requireNonNull(type, "type must not be null")),
+        cause);
     this.type = type;
   }
 

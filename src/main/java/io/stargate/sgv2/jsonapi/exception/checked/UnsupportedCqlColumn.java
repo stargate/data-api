@@ -19,13 +19,14 @@ public class UnsupportedCqlColumn extends CheckedApiException {
   private final CqlIdentifier column;
   private final DataType type;
 
-  public UnsupportedCqlColumn(ColumnMetadata columnMetadata) {
+  public UnsupportedCqlColumn(ColumnMetadata columnMetadata, UnsupportedCqlType cause) {
     this(
         Objects.requireNonNull(columnMetadata, "columnMetadata must not be null").getName(),
-        Objects.requireNonNull(columnMetadata, "columnMetadata must not be null").getType());
+        Objects.requireNonNull(columnMetadata, "columnMetadata must not be null").getType(),
+        cause);
   }
 
-  public UnsupportedCqlColumn(CqlIdentifier column, DataType type) {
+  public UnsupportedCqlColumn(CqlIdentifier column, DataType type, UnsupportedCqlType cause) {
     super(
         String.format(
             "Unsupported column type: %s for column: %s",

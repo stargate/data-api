@@ -2,17 +2,23 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.type.VectorType;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
-import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
+import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlColumn;
+import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserColumn;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
+import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /** A {@link ApiColumnDefContainer} that maintains the order of the columns as they were added. */
 public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColumnDef> {
+
+  public static final CqlColumnFactory FROM_CQL_FACTORY = new CqlColumnFactory();
+  public static final ColumnDescFactory FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
 
   public ApiColumnDefContainer() {
     super();
@@ -26,48 +32,19 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     super(container);
   }
 
+  public ApiColumnDefContainer(Map<CqlIdentifier, ApiColumnDef> entries) {
+    super(entries);
+  }
+
+  public ApiColumnDefContainer(List<ApiColumnDef> columnDefs) {
+    super(columnDefs.size());
+    columnDefs.forEach(this::put);
+  }
+
   public ApiColumnDefContainer toUnmodifiable() {
-    return new UnmodifiableApiColumnDefContainer(this);
-  }
-
-  public static ApiColumnDefContainer from(
-      Collection<ColumnMetadata> columns, VectorConfig vectorConfig) {
-    Objects.requireNonNull(columns, "columns cannot be null");
-
-    var container = new ApiColumnDefContainer(columns.size());
-    for (ColumnMetadata columnMetadata : columns) {
-      try {
-        container.put(
-            new ApiColumnDef(
-                columnMetadata.getName(), getApiDataType(columnMetadata, vectorConfig)));
-      } catch (UnsupportedCqlType e) {
-        container.put(
-            new ApiColumnDef(
-                columnMetadata.getName(), new UnsupportedApiDataType(columnMetadata.getType())));
-      }
-    }
-    return container;
-  }
-
-  private static ApiDataType getApiDataType(
-      ColumnMetadata columnMetadata, VectorConfig vectorConfig) throws UnsupportedCqlType {
-
-    if (columnMetadata.getType() instanceof VectorType vt) {
-      // Special handling because we need to get the vectorize config from the vector config
-
-      // We may not have a vectorize definition for this column, that is OK
-      var vectorizeDef =
-          vectorConfig
-              .getColumnVectorDefinition(columnMetadata.getName().asInternal())
-              .map(VectorColumnDefinition::vectorizeDefinition)
-              .orElse(null);
-
-      return ComplexApiDataType.ApiVectorType.from(
-          ApiDataTypeDefs.from(vt.getElementType()), vt.getDimensions(), vectorizeDef);
-
-    } else {
-      return ApiDataTypeDefs.from(columnMetadata.getType());
-    }
+    return this instanceof UnmodifiableApiColumnDefContainer
+        ? this
+        : new UnmodifiableApiColumnDefContainer(this);
   }
 
   public ApiColumnDef put(ApiColumnDef columnDef) {
@@ -80,10 +57,85 @@ public class ApiColumnDefContainer extends LinkedHashMap<CqlIdentifier, ApiColum
     return containsKey(columnDef.name());
   }
 
+  public List<ApiColumnDef> filterByTypeToList(ApiDataTypeName type) {
+    return values().stream().filter(columnDef -> columnDef.type().getName() == type).toList();
+  }
+
+  public ApiColumnDefContainer filterBy(ApiDataTypeName type) {
+    return new ApiColumnDefContainer(filterByTypeToList(type));
+  }
+
+  public ApiColumnDefContainer filterBy(Collection<CqlIdentifier> identifiers) {
+    return new ApiColumnDefContainer(
+        identifiers.stream().map(this::get).filter(Objects::nonNull).toList());
+  }
+
+  public ApiColumnDefContainer filterByUnsupported() {
+    return new ApiColumnDefContainer(
+        entrySet().stream()
+            .filter(entry -> entry.getValue().type().isUnsupported())
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+  }
+
+  public Map<CqlIdentifier, VectorizeDefinition> getVectorizeDefs() {
+    return filterByTypeToList(ApiDataTypeName.VECTOR).stream()
+        .filter(
+            columnDef ->
+                columnDef.type() instanceof ApiVectorType vt && vt.getVectorizeDefinition() != null)
+        .collect(
+            Collectors.toMap(
+                ApiColumnDef::name,
+                columnDef -> ((ApiVectorType) columnDef.type()).getVectorizeDefinition()));
+  }
+
   public ColumnsDescContainer toColumnsDef() {
     ColumnsDescContainer columnsDesc = new ColumnsDescContainer(size());
-    forEach((name, columnDef) -> columnsDesc.put(name, columnDef.type().getColumnType()));
+    forEach((name, columnDef) -> columnsDesc.put(name, columnDef.type().getColumnDesc()));
     return columnsDesc;
+  }
+
+  public static class CqlColumnFactory {
+
+    CqlColumnFactory() {}
+
+    public ApiColumnDefContainer create(
+        Collection<ColumnMetadata> columns, VectorConfig vectorConfig) {
+      Objects.requireNonNull(columns, "columns cannot be null");
+
+      var container = new ApiColumnDefContainer(columns.size());
+      for (ColumnMetadata columnMetadata : columns) {
+        try {
+          container.put(ApiColumnDef.FROM_CQL_FACTORY.create(columnMetadata, vectorConfig));
+        } catch (UnsupportedCqlColumn e) {
+          container.put(ApiColumnDef.FROM_CQL_FACTORY.createUnsupported(columnMetadata));
+        }
+      }
+      return container.toUnmodifiable();
+    }
+  }
+
+  public static class ColumnDescFactory {
+
+    ColumnDescFactory() {}
+
+    public ApiColumnDefContainer create(
+        ColumnsDescContainer columnDescContainer, VectorizeConfigValidator validateVectorize) {
+      Objects.requireNonNull(columnDescContainer, "columnDescContainer cannot be null");
+
+      var container = new ApiColumnDefContainer(columnDescContainer.size());
+      for (Map.Entry<String, ColumnDesc> entry : columnDescContainer.entrySet()) {
+        try {
+          container.put(
+              ApiColumnDef.FROM_COLUMN_DESC_FACTORY.create(
+                  entry.getKey(), entry.getValue(), validateVectorize));
+        } catch (UnsupportedUserColumn e) {
+          container.put(
+              ApiColumnDef.FROM_COLUMN_DESC_FACTORY.createUnsupported(
+                  entry.getKey(), entry.getValue()));
+        }
+      }
+      return container.toUnmodifiable();
+    }
   }
 
   public static class UnmodifiableApiColumnDefContainer extends ApiColumnDefContainer {

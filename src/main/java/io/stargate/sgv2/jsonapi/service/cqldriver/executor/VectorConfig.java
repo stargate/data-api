@@ -2,6 +2,7 @@ package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
@@ -101,8 +102,16 @@ public class VectorConfig {
     return vectorEnabled;
   }
 
-  public Optional<VectorColumnDefinition> getColumnVectorDefinition(String fieldName) {
-    return Optional.ofNullable(columnVectorDefinitions.get(fieldName));
+  public Optional<VectorColumnDefinition> getColumnDefinition(String columnName) {
+    return Optional.ofNullable(columnVectorDefinitions.get(columnName));
+  }
+
+  public Optional<VectorColumnDefinition> getColumnDefinition(CqlIdentifier identifier) {
+    return Optional.ofNullable(columnVectorDefinitions.get(identifier.asInternal()));
+  }
+
+  public Optional<VectorizeDefinition> getVectorizeDefinition(CqlIdentifier identifier) {
+    return getColumnDefinition(identifier).map(VectorColumnDefinition::vectorizeDefinition);
   }
 
   @Override

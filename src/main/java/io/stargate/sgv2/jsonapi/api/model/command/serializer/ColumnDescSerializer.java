@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.UnsupportedColumnDesc;
 import java.io.IOException;
 
 /**
@@ -35,7 +36,7 @@ public class ColumnDescSerializer extends JsonSerializer<ColumnDesc> {
       if (vt.getVectorConfig() != null)
         jsonGenerator.writeObjectField("service", vt.getVectorConfig());
 
-    } else if (columnDesc instanceof ComplexColumnDesc.UnsupportedType ut) {
+    } else if (columnDesc instanceof UnsupportedColumnDesc ut) {
       jsonGenerator.writeObjectField(
           "apiSupport", new ApiSupport(false, false, false, ut.cqlFormat()));
     }

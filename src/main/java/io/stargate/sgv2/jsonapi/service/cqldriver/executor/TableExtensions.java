@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToJsonKey;
+
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.data.ByteUtils;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
@@ -11,11 +13,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public abstract class TableExtensions {
 
   private static Logger LOGGER = org.slf4j.LoggerFactory.getLogger(TableExtensions.class);
+
+  /** The key in the table metadata options map where extensions are stored. */
+  public static final CqlIdentifier TABLE_OPTIONS_EXTENSION_KEY =
+      CqlIdentifier.fromInternal("extensions");
 
   /**
    * Reads the extensions from the {@link TableMetadata} and returns all the keys as a map .
@@ -40,10 +47,20 @@ public abstract class TableExtensions {
     return extensions;
   }
 
+  // Add customProperties which has table properties for vectorize
+  // Convert value to hex string using the ByteUtils.toHexString
+  // This needs to use `createTable.withExtensions()` method in driver when PR
+  // (https://github.com/apache/cassandra-java-driver/pull/1964) is released
+  public static Map<String, String> toExtensions(Map<String, String> customProperties) {
+    return customProperties.entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey, e -> ByteUtils.toHexString(e.getValue().getBytes())));
+  }
+
   @SuppressWarnings("unchecked")
   private static Map<String, ByteBuffer> uncheckedExtensions(TableMetadata tableMetadata) {
-    return (Map<String, ByteBuffer>)
-        tableMetadata.getOptions().get(CqlIdentifier.fromInternal("extensions"));
+    return (Map<String, ByteBuffer>) tableMetadata.getOptions().get(TABLE_OPTIONS_EXTENSION_KEY);
   }
 
   /**
@@ -51,7 +68,7 @@ public abstract class TableExtensions {
    * the command may be altering CQL created tables
    */
   public static Map<String, String> createCustomProperties(
-      Map<String, VectorizeDefinition> vectorDefs, ObjectMapper objectMapper) {
+      Map<CqlIdentifier, VectorizeDefinition> vectorDefs, ObjectMapper objectMapper) {
     Objects.requireNonNull(vectorDefs, "vectorDefs must not be null");
     Objects.requireNonNull(objectMapper, "objectMapper must not be null");
 
@@ -67,11 +84,18 @@ public abstract class TableExtensions {
     // because the extensions are always fully replaced, we do not need to write the key if there
     // are none
     // the full map will be replaced, replacing any existing extensions
-    if (vectorDefs.isEmpty()) {
+    if (!vectorDefs.isEmpty()) {
+      // convert to strings for serialisation
+      Map<String, VectorizeDefinition> stringKeysDefs =
+          vectorDefs.entrySet().stream()
+              .collect(
+                  Collectors.toMap(
+                      entry -> cqlIdentifierToJsonKey(entry.getKey()), Map.Entry::getValue));
+
       try {
         customProperties.put(
             SchemaConstants.MetadataFieldsNames.VECTORIZE_CONFIG,
-            objectMapper.writeValueAsString(vectorDefs));
+            objectMapper.writeValueAsString(stringKeysDefs));
       } catch (JsonProcessingException e) {
         // this should never happen
         throw new RuntimeException(e);

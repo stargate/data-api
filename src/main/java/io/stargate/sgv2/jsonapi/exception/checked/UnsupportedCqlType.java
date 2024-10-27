@@ -16,10 +16,15 @@ public class UnsupportedCqlType extends CheckedApiException {
   private final DataType type;
 
   public UnsupportedCqlType(DataType type) {
+    this(type, null);
+  }
+
+  public UnsupportedCqlType(DataType type, Throwable cause) {
     super(
         String.format(
             "Unsupported CQL datatype: %s",
-            Objects.requireNonNull(type, "type must not be null").asCql(true, true)));
+            Objects.requireNonNull(type, "type must not be null").asCql(true, true)),
+        cause);
     this.type = type;
   }
 

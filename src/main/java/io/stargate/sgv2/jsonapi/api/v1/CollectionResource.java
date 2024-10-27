@@ -31,6 +31,7 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
 import jakarta.inject.Inject;
@@ -214,10 +215,10 @@ public class CollectionResource {
                 var vectorColDef =
                     schemaObject
                         .vectorConfig()
-                        .getColumnVectorDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
+                        .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
                         .orElse(null);
 
-                var embeddingProvider =
+                EmbeddingProvider embeddingProvider =
                     (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
                         ? null
                         : embeddingProviderFactory.getConfiguration(

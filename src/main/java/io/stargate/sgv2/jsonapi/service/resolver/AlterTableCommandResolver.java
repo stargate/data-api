@@ -1,23 +1,19 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.*;
+import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.CQL_IDENTIFIER_COMPARATOR;
 import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierFromUserInput;
 
 import com.datastax.oss.driver.api.core.CqlIdentifier;
-import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.IndexMetadata;
-import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
-import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperation;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperationImpl;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
 import io.stargate.sgv2.jsonapi.config.DebugModeConfig;
 import io.stargate.sgv2.jsonapi.config.OperationsConfig;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
-import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableExtensions;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -29,17 +25,13 @@ import io.stargate.sgv2.jsonapi.service.operation.SchemaAttemptPage;
 import io.stargate.sgv2.jsonapi.service.operation.tables.AlterTableAttempt;
 import io.stargate.sgv2.jsonapi.service.operation.tables.AlterTableAttemptBuilder;
 import io.stargate.sgv2.jsonapi.service.operation.tables.TableDriverExceptionHandler;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs;
+import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -52,286 +44,324 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
       CommandContext<TableSchemaObject> ctx, AlterTableCommand command) {
 
     final AlterTableOperation operation = command.operation();
-    final SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy =
+
+    // TODO: centralized way of getting the retry policy
+    var schemaRetryPolicy =
         new SchemaAttempt.SchemaRetryPolicy(
             2,
             Duration.ofMillis(
                 ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
-    List<AlterTableAttempt> attempts =
+
+    var builder = new AlterTableAttemptBuilder(ctx.schemaObject(), schemaRetryPolicy);
+
+    // use sequential processing for the attempts, because we sometimes need to do multiple
+    // statements
+    OperationAttemptContainer<TableSchemaObject, SchemaAttempt<TableSchemaObject>> attempts =
+        new OperationAttemptContainer<>(true);
+
+    attempts.addAll(
         switch (operation) {
           case AlterTableOperationImpl.AddColumns ac ->
-              handleAddColumns(ac, ctx.schemaObject(), schemaRetryPolicy);
+              handleAddColumns(builder, ctx.schemaObject(), ac);
           case AlterTableOperationImpl.DropColumns dc ->
-              handleDropColumns(dc, ctx.schemaObject(), schemaRetryPolicy);
+              handleDropColumns(builder, ctx.schemaObject(), dc);
           case AlterTableOperationImpl.AddVectorize av ->
-              handleAddVectorize(av, ctx.schemaObject(), schemaRetryPolicy);
+              handleAddVectorize(builder, ctx.schemaObject(), av);
           case AlterTableOperationImpl.DropVectorize dc ->
-              handleDropVectorize(dc, ctx.schemaObject(), schemaRetryPolicy);
-          default -> throw new IllegalStateException("Unexpected value: " + operation);
-        };
-
-    OperationAttemptContainer<TableSchemaObject, SchemaAttempt<TableSchemaObject>> container =
-        new OperationAttemptContainer<>(true);
-    container.addAll(attempts);
+              handleDropVectorize(builder, ctx.schemaObject(), dc);
+          default ->
+              throw new IllegalStateException(
+                  "Unexpected AlterTable Operation class: " + operation.getClass().getSimpleName());
+        });
 
     var pageBuilder =
         SchemaAttemptPage.<TableSchemaObject>builder()
             .debugMode(ctx.getConfig(DebugModeConfig.class).enabled())
             .useErrorObjectV2(ctx.getConfig(OperationsConfig.class).extendError());
 
-    return new GenericOperation<>(container, pageBuilder, new TableDriverExceptionHandler());
+    return new GenericOperation<>(attempts, pageBuilder, new TableDriverExceptionHandler());
   }
 
   private List<AlterTableAttempt> handleAddColumns(
-      AlterTableOperationImpl.AddColumns ac,
-      TableSchemaObject schemaObject,
-      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+      AlterTableAttemptBuilder builder,
+      TableSchemaObject tableSchemaObject,
+      AlterTableOperationImpl.AddColumns addColumnsOperation) {
 
-    TableMetadata tableMetadata = schemaObject.tableMetadata();
-    List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
+    var apiTableDef = tableSchemaObject.apiTableDef();
+    // we can have multiple attempts to run if we need to also update the custom properties on the
+    // table
+    List<AlterTableAttempt> attempts = new ArrayList<>();
+    var addedColumns =
+        ApiColumnDefContainer.FROM_COLUMN_DESC_FACTORY.create(
+            addColumnsOperation.columns(), validateVectorize);
 
-    // check the column doesn't exists
     // TODO: move this to the attempt builder / factory
-    // TODO: the error should say what columns are in the table, and include ALL of the columns that
-    // duplicates
-    ac.columns()
-        .keySet()
-        .forEach(
-            column -> {
-              if (tableMetadata.getColumn(cqlIdentifierFromUserInput(column)).isPresent()) {
-                throw SchemaException.Code.COLUMN_ALREADY_EXISTS.get(Map.of("column", column));
-              }
-            });
+    var duplicateColumns =
+        addedColumns.values().stream()
+            .filter(apiTableDef.allColumns()::contains)
+            .sorted(ApiColumnDef.NAME_COMPARATOR)
+            .collect(Collectors.toList());
 
-    // New columns to be added
-    // TODO: AARON: this is where the bad user column types like list of map will be caught and
-    // thrown
-    // better error
+    if (!duplicateColumns.isEmpty()) {
+      throw SchemaException.Code.COLUMN_ALREADY_EXISTS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("allColumns", errFmtApiColumnDef(apiTableDef.allColumns().values()));
+                map.put("duplicateColumns", errFmtApiColumnDef(duplicateColumns));
+              }));
+    }
 
-    Map<String, ApiDataType> addColumns =
-        ac.columns().entrySet().stream()
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey,
-                    e -> {
-                      try {
-                        return ApiDataTypeDefs.from(e.getValue());
-                      } catch (UnsupportedUserType ex) {
-                        throw new RuntimeException(ex);
-                      }
-                    }));
+    // TODO: WHERE are unsupported columns checked ?
 
-    // Vectorize config for the new columns
-    Map<String, VectorizeDefinition> vectorizeConfigMap =
-        ac.columns().entrySet().stream()
-            .filter(
-                e ->
-                    e.getValue() instanceof ComplexColumnDesc.VectorColumnDesc vt
-                        && vt.getVectorConfig() != null)
-            .collect(
-                Collectors.toMap(
-                    Map.Entry::getKey,
-                    e ->
-                        VectorizeDefinition.from(
-                            ((ComplexColumnDesc.VectorColumnDesc) e.getValue()),
-                            validateVectorize)));
+    var addedVectorizeDef = addedColumns.getVectorizeDefs();
+    // if there is some vectorize config we need to write it, to write it we need to get the
+    // existing
+    // because the map is frozen in CQL and is always fully overridden.
+    if (!addedVectorizeDef.isEmpty()) {
 
-    var addColumnsAttempt =
-        new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
-            .addColumns(addColumns)
-            .build();
-
-    // TODO ? BUG ??? Shouldn't this ALWAYS read the exiting config ?
-    if (!vectorizeConfigMap.isEmpty()) {
-      // Reading existing vectorize config from the table metadata
-      Map<String, VectorizeDefinition> existingVectorizeConfigMap =
-          VectorizeDefinition.from(tableMetadata, objectMapper);
-      // Merge the new config to the existing vectorize config
-      existingVectorizeConfigMap.putAll(vectorizeConfigMap);
+      var existingVectorizeDef = apiTableDef.allColumns().getVectorizeDefs();
+      existingVectorizeDef.putAll(addedVectorizeDef);
 
       // New custom property to be updated
-      Map<String, String> customProperties =
-          TableExtensions.createCustomProperties(existingVectorizeConfigMap, objectMapper);
-      var addVectorizeProperties =
-          new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
-              .customProperties(customProperties)
-              .build();
-
+      var customProperties =
+          TableExtensions.createCustomProperties(existingVectorizeDef, objectMapper);
       // First execute the extension update for add columns
-      alterTableAttempts.add(addVectorizeProperties);
+      // so if we fail to add this we do not end up with a column that has missing vectorize
+      // definition
+      attempts.add(builder.buildUpdateExtensions(customProperties));
     }
-    alterTableAttempts.add(addColumnsAttempt);
 
-    // Create the AlterData object
-    return alterTableAttempts;
+    attempts.add(builder.buildAddColumns(addedColumns));
+    return attempts;
   }
 
   private List<AlterTableAttempt> handleDropColumns(
-      AlterTableOperationImpl.DropColumns dc,
-      TableSchemaObject schemaObject,
-      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+      AlterTableAttemptBuilder builder,
+      TableSchemaObject tableSchemaObject,
+      AlterTableOperationImpl.DropColumns dropColumnsOperation) {
 
-    List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
-    TableMetadata tableMetadata = schemaObject.tableMetadata();
-    List<String> dropColumns = dc.columns();
+    var apiTableDef = tableSchemaObject.apiTableDef();
+    // have to run multiple attempts if a vectorized column is dropped
+    List<AlterTableAttempt> attempts = new ArrayList<>();
 
-    // Validate the columns to be dropped are present
-    List<CqlIdentifier> primaryKeys =
-        tableMetadata.getPrimaryKey().stream().map(ColumnMetadata::getName).toList();
+    var droppedColumns =
+        dropColumnsOperation.columns().stream()
+            .map(CqlIdentifierUtil::cqlIdentifierFromUserInput)
+            .toList();
 
-    for (String columnName : dropColumns) {
-      CqlIdentifier column = cqlIdentifierFromUserInput(columnName);
+    // Validation
+    // TODO: move this validation into the builder like the other attempts do
 
-      // TODO: MUST CHANGE TO GENERATE ERRORS IN THE BUILDER AND LIST ALL THE KEYS THAT TRIED TO
-      // DROP
-      if (primaryKeys.contains(column)) {
-        throw SchemaException.Code.COLUMN_CANNOT_BE_DROPPED.get(
-            Map.of("reason", "Primary key column `%s` cannot be dropped".formatted(columnName)));
-      }
-
-      if (tableMetadata.getColumn(column).isEmpty()) {
-        throw SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", columnName));
-      }
-
-      final Optional<IndexMetadata> first =
-          tableMetadata.getIndexes().values().stream()
-              .filter(indexMetadata -> indexMetadata.getTarget().equals(columnName))
-              .findFirst();
-
-      if (first.isPresent()) {
-        // TODO: THIS MESSAGE SHOULD BE IN THE TEMPLATE
-        throw SchemaException.Code.COLUMN_CANNOT_BE_DROPPED.get(
-            Map.of(
-                "reason",
-                "Index exists on the column `%s`, drop `%s` index to drop the column"
-                    .formatted(
-                        columnName,
-                        CqlIdentifierUtil.cqlIdentifierToMessageString(first.get().getName()))));
-      }
+    var droppedPrimaryKeys =
+        droppedColumns.stream()
+            .filter(apiTableDef.primaryKeys()::containsKey)
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
+    if (!droppedPrimaryKeys.isEmpty()) {
+      throw SchemaException.Code.CANNOT_DROP_PRIMARY_KEY_COLUMNS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("allColumns", errFmtApiColumnDef(apiTableDef.allColumns().values()));
+                map.put("primaryKeys", errFmtApiColumnDef(apiTableDef.primaryKeys().values()));
+                map.put("droppedColumns", errFmtCqlIdentifier(droppedPrimaryKeys));
+              }));
     }
 
-    // Reading existing vectorize config from the table metadata
-    var existingVectorizeConfigMap = VectorizeDefinition.from(tableMetadata, objectMapper);
+    var unknownColumns =
+        droppedColumns.stream()
+            .filter(c -> !apiTableDef.allColumns().containsKey(c))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
+    if (!unknownColumns.isEmpty()) {
+      throw SchemaException.Code.CANNOT_DROP_UNKNOWN_COLUMNS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("allColumns", errFmtApiColumnDef(apiTableDef.allColumns().values()));
+                map.put("unknownColumns", errFmtCqlIdentifier(unknownColumns));
+              }));
+    }
 
-    // Merge the new config to the existing vectorize config
+    // TODO: Update when index def is on the table def
+    var indexMetadataByTarget =
+        tableSchemaObject.tableMetadata().getIndexes().values().stream()
+            .collect(
+                Collectors.toMap(
+                    indexMetadata -> CqlIdentifier.fromInternal(indexMetadata.getTarget()),
+                    Function.identity()));
+
+    var droppedIndexes =
+        droppedColumns.stream()
+            .filter(indexMetadataByTarget::containsKey)
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
+    if (!droppedIndexes.isEmpty()) {
+      throw SchemaException.Code.CANNOT_DROP_INDEXED_COLUMNS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("allColumns", errFmtApiColumnDef(apiTableDef.allColumns().values()));
+                map.put("indexedColumns", errFmtCqlIdentifier(indexMetadataByTarget.keySet()));
+                map.put("droppedIndexedColumns", errFmtCqlIdentifier(droppedIndexes));
+              }));
+    }
+
+    var existingVectorizeDefs = apiTableDef.allColumns().getVectorizeDefs();
+    // Work out if we dropped anything that has a vectorize config
     boolean updateVectorize = false;
-    for (String column : dropColumns) {
-      final VectorizeDefinition remove = existingVectorizeConfigMap.remove(column);
+    for (var column : droppedColumns) {
+      final VectorizeDefinition remove = existingVectorizeDefs.remove(column);
       if (remove != null) {
         updateVectorize = true;
       }
     }
 
-    // First should drop the columns
-    AlterTableAttempt dropColumnsAttempt =
-        new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
-            .dropColumns(dropColumns)
-            .build();
-    alterTableAttempts.add(dropColumnsAttempt);
-    // New custom property to be updated
-    Map<String, String> customProperties;
+    // First should drop the columns, ok to have a vectorize config without the column but not the
+    // other way around
+    attempts.add(builder.buildDropColumns(droppedColumns));
+
+    // and then update the custom properties on the table if we changed the vectorize config
     if (updateVectorize) {
-      customProperties =
-          TableExtensions.createCustomProperties(existingVectorizeConfigMap, objectMapper);
-      AlterTableAttempt dropVectorizeProperties =
-          new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
-              .customProperties(customProperties)
-              .build();
-      // Then drop the vectorize properties
-      alterTableAttempts.add(dropVectorizeProperties);
+      attempts.add(
+          builder.buildUpdateExtensions(
+              TableExtensions.createCustomProperties(existingVectorizeDefs, objectMapper)));
     }
-    return alterTableAttempts;
+    return attempts;
   }
 
   private List<AlterTableAttempt> handleAddVectorize(
-      AlterTableOperationImpl.AddVectorize addVectorize,
-      TableSchemaObject schemaObject,
-      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+      AlterTableAttemptBuilder builder,
+      TableSchemaObject tableSchemaObject,
+      AlterTableOperationImpl.AddVectorize addVectorizeOperation) {
 
-    List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
-    TableMetadata tableMetadata = schemaObject.tableMetadata();
+    var apiTableDef = tableSchemaObject.apiTableDef();
 
-    Map<String, VectorizeDefinition> vectorizeConfigMap = new HashMap<>();
+    // First need to get the definition of the column, because we need to get the dimensions of the
+    // vector
+    Map<CqlIdentifier, VectorizeConfig> addedVectorizeDesc =
+        addVectorizeOperation.columns().entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    entry -> cqlIdentifierFromUserInput(entry.getKey()), Map.Entry::getValue));
 
-    // New columns to be added
-    for (Map.Entry<String, VectorizeConfig> entry : addVectorize.columns().entrySet()) {
-      var identifier = cqlIdentifierFromUserInput(entry.getKey());
-      var vectorizeConfig = entry.getValue();
-
-      // TODO: MUCH MUCH BETTER ERROR MESSAGE !
-      var columnMetadata =
-          tableMetadata
-              .getColumn(identifier)
-              .orElseThrow(
-                  () ->
-                      SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", entry.getKey())));
-
-      if (columnMetadata.getType() instanceof VectorType vt) {
-
-        vectorizeConfigMap.put(
-            entry.getKey(),
-            VectorizeDefinition.from(vectorizeConfig, vt.getDimensions(), validateVectorize));
-      } else {
-        // TODO: MUCH MUCH MUCH BETTER ERROR MESSAGE !
-        throw SchemaException.Code.NON_VECTOR_TYPE_COLUMN.get(Map.of("column", entry.getKey()));
-      }
+    var unknownColumns =
+        addedVectorizeDesc.keySet().stream()
+            .filter(c -> !apiTableDef.allColumns().containsKey(c))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
+    if (!unknownColumns.isEmpty()) {
+      throw SchemaException.Code.CANNOT_VECTORIZE_UNKNOWN_COLUMNS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("allColumns", errFmtApiColumnDef(apiTableDef.allColumns().values()));
+                map.put("unknownColumns", errFmtCqlIdentifier(unknownColumns));
+              }));
     }
 
-    // Reading existing vectorize config from the table metadata
-    Map<String, VectorizeDefinition> existingVectorizeConfigMap =
-        VectorizeDefinition.from(tableMetadata, objectMapper);
-    existingVectorizeConfigMap.putAll(vectorizeConfigMap);
+    var vectorColumns = apiTableDef.allColumns().filterBy(ApiDataTypeName.VECTOR);
+    var nonVectorColumns =
+        addedVectorizeDesc.keySet().stream()
+            .filter(identifier -> !vectorColumns.containsKey(identifier))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
+    if (!nonVectorColumns.isEmpty()) {
+      throw SchemaException.Code.CANNOT_VECTORIZE_NON_VECTOR_COLUMNS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("allColumns", errFmtApiColumnDef(apiTableDef.allColumns().values()));
+                map.put("vectorColumns", errFmtApiColumnDef(vectorColumns.values()));
+                map.put("nonVectorColumns", errFmtCqlIdentifier(nonVectorColumns));
+              }));
+    }
 
-    Map<String, String> customProperties =
-        TableExtensions.createCustomProperties(existingVectorizeConfigMap, objectMapper);
+    // now should only be trying to vectorize columns that exist and are vectors
+    Map<CqlIdentifier, VectorizeDefinition> addedVectorizeDefs =
+        addedVectorizeDesc.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry -> {
+                      var apiType = (ApiVectorType) vectorColumns.get(entry.getKey()).type();
+                      return VectorizeDefinition.from(
+                          entry.getValue(), apiType.getDimension(), validateVectorize);
+                    }));
 
-    alterTableAttempts.add(
-        new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
-            .customProperties(customProperties)
-            .build());
-    return alterTableAttempts;
+    // Merge the new vectorize defs into the existing vectorize defs
+    // because all defs are always overrwritten
+    var existingVectorizeDefs = apiTableDef.allColumns().getVectorizeDefs();
+    existingVectorizeDefs.putAll(addedVectorizeDefs);
+
+    return List.of(
+        builder.buildUpdateExtensions(
+            TableExtensions.createCustomProperties(existingVectorizeDefs, objectMapper)));
   }
 
   private List<AlterTableAttempt> handleDropVectorize(
-      AlterTableOperationImpl.DropVectorize dc,
-      TableSchemaObject schemaObject,
-      SchemaAttempt.SchemaRetryPolicy schemaRetryPolicy) {
+      AlterTableAttemptBuilder builder,
+      TableSchemaObject tableSchemaObject,
+      AlterTableOperationImpl.DropVectorize dropVectorizeOperation) {
 
-    TableMetadata tableMetadata = schemaObject.tableMetadata();
-    List<AlterTableAttempt> alterTableAttempts = new ArrayList<>();
+    var apiTableDef = tableSchemaObject.apiTableDef();
+    var existingVectorizeDefs = apiTableDef.allColumns().getVectorizeDefs();
 
-    // Reading existing vectorize config from the table metadata
-    Map<String, VectorizeDefinition> existingVectorizeConfigMap =
-        VectorizeDefinition.from(tableMetadata, objectMapper);
+    var droppedColumns =
+        dropVectorizeOperation.columns().stream()
+            .map(CqlIdentifierUtil::cqlIdentifierFromUserInput)
+            .toList();
 
-    // Merge the new config to the existing vectorize config
+    var unknownColumns =
+        droppedColumns.stream()
+            .filter(c -> !apiTableDef.allColumns().containsKey(c))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
+    if (!unknownColumns.isEmpty()) {
+      throw SchemaException.Code.CANNOT_VECTORIZE_UNKNOWN_COLUMNS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("allColumns", errFmtApiColumnDef(apiTableDef.allColumns().values()));
+                map.put("unknownColumns", errFmtCqlIdentifier(unknownColumns));
+              }));
+    }
+
+    var vectorColumns = apiTableDef.allColumns().filterBy(ApiDataTypeName.VECTOR);
+    var nonVectorColumns =
+        droppedColumns.stream()
+            .filter(identifier -> !vectorColumns.containsKey(identifier))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
+    if (!nonVectorColumns.isEmpty()) {
+      throw SchemaException.Code.CANNOT_DROP_VECTORIZE_FROM_NON_VECTOR_COLUMNS.get(
+          errVars(
+              tableSchemaObject,
+              map -> {
+                map.put("allColumns", errFmtApiColumnDef(apiTableDef.allColumns().values()));
+                map.put("vectorColumns", errFmtApiColumnDef(vectorColumns.values()));
+                map.put("nonVectorColumns", errFmtCqlIdentifier(nonVectorColumns));
+              }));
+    }
+
+    // Should only be dropping config from existing vector columns
+
     boolean updateVectorize = false;
-    for (String column : dc.columns()) {
-
-      CqlIdentifier columnIdentifier = cqlIdentifierFromUserInput(column);
-      // TODO: MUCH MUCH BETTER ERROR MESSAGE !!!!!!!!!!!
-      if (tableMetadata.getColumn(columnIdentifier).isEmpty()) {
-        throw SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", column));
-      }
-
-      if (existingVectorizeConfigMap.remove(column) != null) {
+    for (var identifier : droppedColumns) {
+      if (existingVectorizeDefs.remove(identifier) != null) {
         updateVectorize = true;
       }
     }
 
-    // New custom property to be updated
-    if (updateVectorize) {
-      Map<String, String> customProperties =
-          TableExtensions.createCustomProperties(existingVectorizeConfigMap, objectMapper);
-
-      AlterTableAttempt dropVectorizeProperties =
-          new AlterTableAttemptBuilder(schemaObject, schemaRetryPolicy)
-              .customProperties(customProperties)
-              .build();
-      alterTableAttempts.add(dropVectorizeProperties);
+    if (!updateVectorize) {
+      // Nothing to do, there was no vecorize def for the column :)
+      return List.of();
     }
 
-    return alterTableAttempts;
+    return List.of(
+        builder.buildUpdateExtensions(
+            TableExtensions.createCustomProperties(existingVectorizeDefs, objectMapper)));
   }
 
   @Override

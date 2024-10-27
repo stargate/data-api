@@ -18,5 +18,5 @@ public interface ApiDataType {
 
   boolean isUnsupported();
 
-  ColumnDesc getColumnType();
+  ColumnDesc getColumnDesc();
 }

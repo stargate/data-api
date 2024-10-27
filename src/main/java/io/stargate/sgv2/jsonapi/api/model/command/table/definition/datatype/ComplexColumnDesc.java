@@ -1,9 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
-import com.datastax.oss.driver.api.core.type.DataType;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeName;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ComplexApiDataType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.*;
 import java.util.Objects;
 
 /** Interface for complex column types like collections */
@@ -21,7 +19,7 @@ public abstract class ComplexColumnDesc implements ColumnDesc {
     return apiDataTypeName;
   }
 
-  /** Column type for {@link ComplexApiDataType.ApiMapType} */
+  /** Column type for {@link ApiMapType} */
   public static class MapColumnDesc extends ComplexColumnDesc {
     private final ColumnDesc keyType;
     private final ColumnDesc valueType;
@@ -61,7 +59,7 @@ public abstract class ComplexColumnDesc implements ColumnDesc {
     }
   }
 
-  /** Column type for {@link ComplexApiDataType.ApiListType} */
+  /** Column type for {@link ApiListType} */
   public static class ListColumnDesc extends ComplexColumnDesc {
     private final ColumnDesc valueType;
 
@@ -93,7 +91,7 @@ public abstract class ComplexColumnDesc implements ColumnDesc {
     }
   }
 
-  /** Column type for {@link ComplexApiDataType.ApiSetType} */
+  /** Column type for {@link ApiSetType} */
   public static class SetColumnDesc extends ComplexColumnDesc {
     private final ColumnDesc valueType;
 
@@ -125,7 +123,7 @@ public abstract class ComplexColumnDesc implements ColumnDesc {
     }
   }
 
-  /** Column type for {@link ComplexApiDataType.ApiVectorType} */
+  /** Column type for {@link ApiVectorType} */
   public static class VectorColumnDesc extends ComplexColumnDesc {
     // Float will be default type for vector
     private final ColumnDesc valueType;
@@ -170,34 +168,6 @@ public abstract class ComplexColumnDesc implements ColumnDesc {
     @Override
     public int hashCode() {
       return Objects.hash(valueType, dimensions, vectorConfig);
-    }
-  }
-
-  /**
-   * Unsupported type implementation, returned in response when cql table has unsupported format
-   * column
-   */
-  public static class UnsupportedType implements ColumnDesc {
-
-    public static final String UNSUPPORTED_TYPE_NAME = "UNSUPPORTED";
-    private final String cqlFormat;
-
-    public UnsupportedType(DataType cqlType) {
-      this.cqlFormat = cqlType.asCql(true, true);
-    }
-
-    @Override
-    public ApiDataTypeName getApiDataTypeName() {
-      throw new UnsupportedOperationException("Unsupported type");
-    }
-
-    @Override
-    public String getApiName() {
-      return UNSUPPORTED_TYPE_NAME;
-    }
-
-    public String cqlFormat() {
-      return cqlFormat;
     }
   }
 }
