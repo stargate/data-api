@@ -20,7 +20,7 @@ public class IndexDefinition {
   private final IndexType indexType;
   private final CqlIdentifier columnName;
   private final CqlIdentifier indexName;
-  private final Map<String, String> options;
+  private final Map<String, String> optionsFromDriver;
 
   /*
    * @param indexType The type of the index (vector or regular).
@@ -33,11 +33,11 @@ public class IndexDefinition {
       IndexType indexType,
       CqlIdentifier columnName,
       CqlIdentifier indexName,
-      Map<String, String> options) {
+      Map<String, String> optionsFromDriver) {
     this.indexType = indexType;
     this.columnName = columnName;
     this.indexName = indexName;
-    this.options = options;
+    this.optionsFromDriver = optionsFromDriver;
   }
 
   /** Defines what type of index configuration (vector or regular) */
@@ -53,12 +53,12 @@ public class IndexDefinition {
   public static IndexDefinition from(ColumnMetadata columnMetadata, IndexMetadata indexMetadata) {
     Objects.requireNonNull(columnMetadata, "Column metadata cannot be null");
     Objects.requireNonNull(indexMetadata, "Index metadata cannot be null");
-    final Map<String, String> options = indexMetadata.getOptions();
+    final Map<String, String> optionsFromDriver = indexMetadata.getOptions();
     return new IndexDefinition(
         IndexType.fromCqlDataType(columnMetadata.getType()),
         columnMetadata.getName(),
         indexMetadata.getName(),
-        options);
+        optionsFromDriver);
   }
 
   public IndexCreationCommand getIndexDefinition() {
@@ -71,13 +71,15 @@ public class IndexDefinition {
 
   private CreateVectorIndexCommand createVectorIndexDefinition() {
     final String sourceModel =
-        Optional.ofNullable(options.get(TableIndexConstants.IndexOptionKeys.SOURCE_MODEL_OPTION))
+        Optional.ofNullable(
+                optionsFromDriver.get(TableIndexConstants.IndexOptionKeys.SOURCE_MODEL_OPTION))
             .map(String::toLowerCase)
             .orElse(null);
 
     final SimilarityFunction similarityFunction =
         Optional.ofNullable(
-                options.get(TableIndexConstants.IndexOptionKeys.SIMILARITY_FUNCTION_OPTION))
+                optionsFromDriver.get(
+                    TableIndexConstants.IndexOptionKeys.SIMILARITY_FUNCTION_OPTION))
             .map((func) -> SimilarityFunction.fromString(func.toLowerCase()))
             .orElse(null);
 
@@ -96,16 +98,18 @@ public class IndexDefinition {
 
   private CreateIndexCommand createRegularIndexDefinition() {
     final Boolean caseSensitive =
-        Optional.ofNullable(options.get(TableIndexConstants.IndexOptionKeys.CASE_SENSITIVE_OPTION))
+        Optional.ofNullable(
+                optionsFromDriver.get(TableIndexConstants.IndexOptionKeys.CASE_SENSITIVE_OPTION))
             .map(Boolean::valueOf)
             .orElse(TableIndexConstants.IndexOptionDefault.CASE_SENSITIVE_OPTION_DEFAULT);
     final Boolean normalize =
-        Optional.ofNullable(options.get(TableIndexConstants.IndexOptionKeys.NORMALIZE_OPTION))
+        Optional.ofNullable(
+                optionsFromDriver.get(TableIndexConstants.IndexOptionKeys.NORMALIZE_OPTION))
             .map(Boolean::valueOf)
             .orElse(TableIndexConstants.IndexOptionDefault.NORMALIZE_OPTION_DEFAULT);
 
     final Boolean ascii =
-        Optional.ofNullable(options.get(TableIndexConstants.IndexOptionKeys.ASCII_OPTION))
+        Optional.ofNullable(optionsFromDriver.get(TableIndexConstants.IndexOptionKeys.ASCII_OPTION))
             .map(Boolean::valueOf)
             .orElse(TableIndexConstants.IndexOptionDefault.ASCII_OPTION_DEFAULT);
 
@@ -118,10 +122,6 @@ public class IndexDefinition {
         CqlIdentifierUtil.externalRepresentation(indexName), definition, null);
   }
 
-  public IndexType getIndexType() {
-    return indexType;
-  }
-
   public CqlIdentifier getColumnName() {
     return columnName;
   }
@@ -130,7 +130,7 @@ public class IndexDefinition {
     return indexName;
   }
 
-  public Map<String, String> getOptions() {
-    return options;
+  public String getOption(String optionName) {
+    return optionsFromDriver.get(optionName);
   }
 }

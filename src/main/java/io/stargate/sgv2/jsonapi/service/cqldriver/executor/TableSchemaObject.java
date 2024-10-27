@@ -57,13 +57,10 @@ public class TableSchemaObject extends TableBasedSchemaObject {
         SimilarityFunction similarityFunction = SimilarityFunction.COSINE;
         if (indexDefinition != null) {
           var sourceModel =
-              indexDefinition
-                  .getOptions()
-                  .get(TableIndexConstants.IndexOptionKeys.SOURCE_MODEL_OPTION);
+              indexDefinition.getOption(TableIndexConstants.IndexOptionKeys.SOURCE_MODEL_OPTION);
           var similarityFunctionValue =
-              indexDefinition
-                  .getOptions()
-                  .get(TableIndexConstants.IndexOptionKeys.SIMILARITY_FUNCTION_OPTION);
+              indexDefinition.getOption(
+                  TableIndexConstants.IndexOptionKeys.SIMILARITY_FUNCTION_OPTION);
           if (similarityFunctionValue != null) {
             similarityFunction = SimilarityFunction.fromString(similarityFunctionValue);
           } else if (sourceModel != null) {
