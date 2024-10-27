@@ -1,6 +1,5 @@
 package io.stargate.sgv2.jsonapi.service.cqldriver.executor;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtApiColumnDef;
 
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.fasterxml.jackson.databind.ObjectMapper;

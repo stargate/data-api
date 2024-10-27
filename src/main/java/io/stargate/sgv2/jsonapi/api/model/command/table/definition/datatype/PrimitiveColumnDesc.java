@@ -53,7 +53,6 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
     return apiSupportDesc;
   }
 
-
   public static ColumnDesc fromApiDataType(ApiDataType apiDataType) {
     if (!apiDataType.isPrimitive()) {
       throw new IllegalArgumentException("Not a primitive type: " + apiDataType);

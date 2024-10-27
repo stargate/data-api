@@ -86,12 +86,13 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
   }
 
   /**
-   * The equals for collection data types in the driver does not take frozen into account. This is a problem
-   * for the API because we do not support frozen types. So if we only used the DataType from the driver the
-   * cache key ofr a frozen <code>map<string, sting></code> would be the same for a non-frozen version.
-   * <p>
-   * Using the protocol codes because that is the simpliest way to detect types, there are no values
-   * below 0 see {@link com.datastax.oss.protocol.internal.ProtocolConstants.DataType}
+   * The equals for collection data types in the driver does not take frozen into account. This is a
+   * problem for the API because we do not support frozen types. So if we only used the DataType
+   * from the driver the cache key ofr a frozen <code>map<string, sting></code> would be the same
+   * for a non-frozen version.
+   *
+   * <p>Using the protocol codes because that is the simpliest way to detect types, there are no
+   * values below 0 see {@link com.datastax.oss.protocol.internal.ProtocolConstants.DataType}
    */
   private record CollectionCacheKey(
       int collectionProtoCode, int keyProtoCode, int valueProtoCode, boolean isFrozen) {
@@ -109,7 +110,7 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
                 lt.getProtocolCode(), -1, lt.getElementType().getProtocolCode(), lt.isFrozen());
         case SetType st ->
             new CollectionCacheKey(
-                st.getProtocolCode(), -1, st.getElementType().getProtocolCode(),  st.isFrozen());
+                st.getProtocolCode(), -1, st.getElementType().getProtocolCode(), st.isFrozen());
         default ->
             throw new IllegalArgumentException(
                 "CollectionCacheKey does not support supplied CQL type: "

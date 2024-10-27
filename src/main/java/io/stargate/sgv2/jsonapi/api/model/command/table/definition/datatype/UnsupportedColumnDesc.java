@@ -43,6 +43,5 @@ public abstract class UnsupportedColumnDesc implements ColumnDesc {
     public UnsupportedUserColumnDesc() {
       super(ApiSupportDesc.noSupport("User defined type"));
     }
-
   }
 }

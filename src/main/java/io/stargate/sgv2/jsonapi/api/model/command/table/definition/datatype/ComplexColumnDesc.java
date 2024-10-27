@@ -13,7 +13,8 @@ public abstract class ComplexColumnDesc implements ColumnDesc {
   protected ComplexColumnDesc(ApiDataTypeName apiDataTypeName, ApiSupportDesc apiSupportDesc) {
     this.apiDataTypeName =
         Objects.requireNonNull(apiDataTypeName, "apiDataTypeName must not be null");
-    this.apiSupportDesc = Objects.requireNonNull(apiSupportDesc, "apiSupportDesc must not be null");;
+    this.apiSupportDesc = Objects.requireNonNull(apiSupportDesc, "apiSupportDesc must not be null");
+    ;
   }
 
   @Override
