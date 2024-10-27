@@ -53,7 +53,7 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
       assertTableCommand(keyspaceName, simpleTableName)
           .templated()
           .listIndexes(false)
-          .shouldNotHaveIndexes("age_idx");
+          .constainsNoneOf("age_idx");
     }
 
     @Test
@@ -77,7 +77,7 @@ class DropIndexIntegrationTest extends AbstractTableIntegrationTestBase {
       assertTableCommand(keyspaceName, simpleTableName)
           .templated()
           .listIndexes(false)
-          .shouldNotHaveIndexes("name_idx");
+          .constainsNoneOf("name_idx");
     }
   }
 }

@@ -4,7 +4,6 @@ import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertN
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.WithTestResource;
@@ -115,10 +114,7 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
           .templated()
           .listIndexes(true)
           .wasSuccessful()
-          // Validate that status.indexes is not null and has all indexes for the table
-          .body("status.indexes", notNullValue())
-          .body("status.indexes", hasSize(3))
-          .body("status.indexes", notNullValue())
+          // Validate that status.indexes has all indexes for the table
           .body("status.indexes", hasSize(3))
           // Validate index without options
           .body("status.indexes[0].name", equalTo("city_idx"))

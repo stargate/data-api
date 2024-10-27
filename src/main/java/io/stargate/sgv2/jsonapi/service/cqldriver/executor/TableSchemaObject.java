@@ -5,6 +5,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.stargate.sgv2.jsonapi.config.constants.TableIndexConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstant;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
@@ -60,13 +61,13 @@ public class TableSchemaObject extends TableBasedSchemaObject {
         if (index.isPresent()) {
           final IndexConfig.IndexDefinition indexDefinition = index.get();
           final String sourceModel =
-              indexDefinition.options() != null
-                  ? indexDefinition.options().get("source_model")
-                  : null;
+              indexDefinition
+                  .options()
+                  .get(TableIndexConstants.IndexOptionKeys.SOURCE_MODEL_OPTION);
           final String similarityFunctionValue =
-              indexDefinition.options() != null
-                  ? indexDefinition.options().get("similarity_function")
-                  : null;
+              indexDefinition
+                  .options()
+                  .get(TableIndexConstants.IndexOptionKeys.SIMILARITY_FUNCTION_OPTION);
           if (similarityFunctionValue != null) {
             similarityFunction = SimilarityFunction.fromString(similarityFunctionValue);
           } else if (sourceModel != null) {

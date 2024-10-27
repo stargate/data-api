@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.VectorType;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateIndexCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateVectorIndexCommand;
+import io.stargate.sgv2.jsonapi.config.constants.TableIndexConstants;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil;
 import java.util.Map;
@@ -16,7 +17,11 @@ import java.util.stream.Collectors;
 
 /** Definition of index config */
 public class IndexConfig {
-  private Map<String, IndexDefinition> indexDefinitions;
+  /**
+   * Map of index definitions where the key is the column name and the value is the index
+   * definition.
+   */
+  private final Map<String, IndexDefinition> indexDefinitions;
 
   private IndexConfig(Map<String, IndexDefinition> indexDefinitions) {
     this.indexDefinitions = indexDefinitions;
@@ -63,10 +68,8 @@ public class IndexConfig {
   public record IndexDefinition(
       IndexType indexType, String columnName, String indexName, Map<String, String> options) {
     public static IndexDefinition from(ColumnMetadata columnMetadata, IndexMetadata indexMetadata) {
-      final String indexName =
-          CqlIdentifierUtil.cqlIdentifierToStringForUser(indexMetadata.getName());
-      final String columnName =
-          CqlIdentifierUtil.cqlIdentifierToStringForUser(columnMetadata.getName());
+      final String indexName = CqlIdentifierUtil.externalRepresentation(indexMetadata.getName());
+      final String columnName = CqlIdentifierUtil.externalRepresentation(columnMetadata.getName());
       final Map<String, String> options = indexMetadata.getOptions();
       return new IndexDefinition(
           columnMetadata.getType() instanceof VectorType ? IndexType.VECTOR : IndexType.REGULAR,
@@ -92,12 +95,16 @@ public class IndexConfig {
       CreateVectorIndexCommand.Definition.Options vectorOptions = null;
 
       final String sourceModel =
-          options.get("source_model") != null ? options.get("source_model").toLowerCase() : null;
-      final String similarityFunctionValue = options.get("similarity_function");
-      SimilarityFunction similarityFunction =
-          similarityFunctionValue != null
-              ? SimilarityFunction.fromString(similarityFunctionValue.toLowerCase())
-              : null;
+          Optional.ofNullable(options.get(TableIndexConstants.IndexOptionKeys.SOURCE_MODEL_OPTION))
+              .map((model) -> model.toLowerCase())
+              .orElse(null);
+
+      final SimilarityFunction similarityFunction =
+          Optional.ofNullable(
+                  options.get(TableIndexConstants.IndexOptionKeys.SIMILARITY_FUNCTION_OPTION))
+              .map((func) -> SimilarityFunction.fromString(func.toLowerCase()))
+              .orElse(null);
+
       if (similarityFunction != null || sourceModel != null) {
         vectorOptions =
             new CreateVectorIndexCommand.Definition.Options(similarityFunction, sourceModel);
@@ -112,13 +119,20 @@ public class IndexConfig {
       CreateIndexCommand.Definition.Options indexOptions = null;
 
       final Boolean caseSensitive =
-          options.get("case_sensitive") != null
-              ? Boolean.valueOf(options.get("case_sensitive"))
-              : null;
+          Optional.ofNullable(
+                  options.get(TableIndexConstants.IndexOptionKeys.CASE_SENSITIVE_OPTION))
+              .map(Boolean::valueOf)
+              .orElse(null);
       final Boolean normalize =
-          options.get("normalize") != null ? Boolean.valueOf(options.get("normalize")) : null;
+          Optional.ofNullable(options.get(TableIndexConstants.IndexOptionKeys.NORMALIZE_OPTION))
+              .map(Boolean::valueOf)
+              .orElse(null);
+
       final Boolean ascii =
-          options.get("ascii") != null ? Boolean.valueOf(options.get("ascii")) : null;
+          Optional.ofNullable(options.get(TableIndexConstants.IndexOptionKeys.ASCII_OPTION))
+              .map(Boolean::valueOf)
+              .orElse(null);
+
       if (caseSensitive != null || normalize != null || ascii != null) {
         indexOptions = new CreateIndexCommand.Definition.Options(caseSensitive, normalize, ascii);
       }

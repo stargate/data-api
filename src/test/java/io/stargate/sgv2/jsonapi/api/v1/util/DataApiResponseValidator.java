@@ -243,7 +243,11 @@ public class DataApiResponseValidator {
         .body("status.indexes", containsInAnyOrder(indexes));
   }
 
-  public DataApiResponseValidator shouldNotHaveIndexes(String... indexes) {
-    return body("status.indexes", not(containsInAnyOrder(indexes)));
+  public DataApiResponseValidator constainsNoneOf(String... indexes) {
+    DataApiResponseValidator toReturn = this;
+    for (String index : indexes) {
+      toReturn = body("status.indexes", not(contains(index)));
+    }
+    return toReturn;
   }
 }

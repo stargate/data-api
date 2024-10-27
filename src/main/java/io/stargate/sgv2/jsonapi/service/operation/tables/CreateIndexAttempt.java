@@ -13,6 +13,7 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateIndex;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexOnTable;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateIndexStart;
 import com.datastax.oss.driver.internal.querybuilder.schema.DefaultCreateIndex;
+import io.stargate.sgv2.jsonapi.config.constants.TableIndexConstants;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.cqldriver.override.ExtendedCreateIndex;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
@@ -71,13 +72,13 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
     public Map<String, Object> getOptions() {
       Map<String, Object> options = new HashMap<>();
       if (caseSensitive != null) {
-        options.put("case_sensitive", caseSensitive);
+        options.put(TableIndexConstants.IndexOptionKeys.CASE_SENSITIVE_OPTION, caseSensitive);
       }
       if (normalize != null) {
-        options.put("normalize", normalize);
+        options.put(TableIndexConstants.IndexOptionKeys.NORMALIZE_OPTION, normalize);
       }
       if (ascii != null) {
-        options.put("ascii", ascii);
+        options.put(TableIndexConstants.IndexOptionKeys.ASCII_OPTION, ascii);
       }
       return options;
     }
@@ -90,10 +91,12 @@ public class CreateIndexAttempt extends SchemaAttempt<TableSchemaObject> {
     public Map<String, Object> getOptions() {
       Map<String, Object> options = new HashMap<>();
       if (similarityFunction != null) {
-        options.put("similarity_function", similarityFunction.getMetric());
+        options.put(
+            TableIndexConstants.IndexOptionKeys.SIMILARITY_FUNCTION_OPTION,
+            similarityFunction.getMetric());
       }
       if (sourceModel != null) {
-        options.put("source_model", sourceModel);
+        options.put(TableIndexConstants.IndexOptionKeys.SOURCE_MODEL_OPTION, sourceModel);
       }
       return options;
     }
