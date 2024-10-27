@@ -53,13 +53,13 @@ public class TableSchemaObject extends TableBasedSchemaObject {
     VectorConfig vectorConfig;
     List<VectorConfig.ColumnVectorDefinition> columnVectorDefinitions = new ArrayList<>();
     for (Map.Entry<CqlIdentifier, ColumnMetadata> column : tableMetadata.getColumns().entrySet()) {
-      final Optional<IndexConfig.IndexDefinition> index =
+      final Optional<IndexDefinition> index =
           indexConfig.getIndexDefinition(
               CqlIdentifierUtil.cqlIdentifierToStringForUser(column.getKey()));
       if (column.getValue().getType() instanceof VectorType vectorType) {
         SimilarityFunction similarityFunction = SimilarityFunction.COSINE;
         if (index.isPresent()) {
-          final IndexConfig.IndexDefinition indexDefinition = index.get();
+          final IndexDefinition indexDefinition = index.get();
           final String sourceModel =
               indexDefinition
                   .options()
