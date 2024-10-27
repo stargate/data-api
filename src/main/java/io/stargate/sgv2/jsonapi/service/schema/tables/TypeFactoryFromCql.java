@@ -7,6 +7,7 @@ import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -56,18 +57,29 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
       }
 
       // See CollectionCacheKey for why we need it
+      // if we cannot get a cache key we do not support the type
+      // if we can, it should be something covered in computeIfAbsent()
+      var cacheKey =
+          CollectionCacheKey.maybeCreate(cqlType)
+              .orElseThrow(() -> new UnsupportedCqlType(cqlType));
+
       try {
         return COLLECTION_TYPE_CACHE.computeIfAbsent(
-            CollectionCacheKey.from(cqlType),
+            cacheKey,
             entry -> {
               try {
-                return switch (cqlType) {
+                return switch (entry.cqlType) {
                   case MapType mt -> ApiMapType.FROM_CQL_FACTORY.create(mt, vectorizeDefn);
                   case ListType lt -> ApiListType.FROM_CQL_FACTORY.create(lt, vectorizeDefn);
                   case SetType st -> ApiSetType.FROM_CQL_FACTORY.create(st, vectorizeDefn);
-                  default -> throw new UnsupportedCqlType(cqlType);
+                  default ->
+                      throw new IllegalStateException(
+                          "No factory for the supplied CQL type: " + cqlType.asCql(true, true));
                 };
               } catch (UnsupportedCqlType e) {
+                // This can happen if it is a collection config we do not support, wrap the checked
+                // exception to get
+                // out of the cache loader.
                 throw new RuntimeException(e);
               }
             });
@@ -94,28 +106,92 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
    * <p>Using the protocol codes because that is the simpliest way to detect types, there are no
    * values below 0 see {@link com.datastax.oss.protocol.internal.ProtocolConstants.DataType}
    */
-  private record CollectionCacheKey(
-      int collectionProtoCode, int keyProtoCode, int valueProtoCode, boolean isFrozen) {
+  private static class CollectionCacheKey {
 
-    static CollectionCacheKey from(DataType cqlType) {
+    private int collectionProtoCode;
+    private int keyProtoCode;
+    private int valueProtoCode;
+    private boolean isFrozen;
+
+    // visible for the computeIfAbsent function to get
+    final DataType cqlType;
+
+    private CollectionCacheKey(
+        int collectionProtoCode,
+        int keyProtoCode,
+        int valueProtoCode,
+        boolean isFrozen,
+        DataType cqlType) {
+      this.collectionProtoCode = collectionProtoCode;
+      this.keyProtoCode = keyProtoCode;
+      this.valueProtoCode = valueProtoCode;
+      this.isFrozen = isFrozen;
+      this.cqlType = cqlType;
+    }
+
+    static Optional<CollectionCacheKey> maybeCreate(DataType cqlType) {
       return switch (cqlType) {
         case MapType mt ->
-            new CollectionCacheKey(
-                mt.getProtocolCode(),
-                mt.getKeyType().getProtocolCode(),
-                mt.getValueType().getProtocolCode(),
-                mt.isFrozen());
+            Optional.of(
+                new CollectionCacheKey(
+                    mt.getProtocolCode(),
+                    mt.getKeyType().getProtocolCode(),
+                    mt.getValueType().getProtocolCode(),
+                    mt.isFrozen(),
+                    cqlType));
         case ListType lt ->
-            new CollectionCacheKey(
-                lt.getProtocolCode(), -1, lt.getElementType().getProtocolCode(), lt.isFrozen());
+            Optional.of(
+                new CollectionCacheKey(
+                    lt.getProtocolCode(),
+                    -1,
+                    lt.getElementType().getProtocolCode(),
+                    lt.isFrozen(),
+                    cqlType));
         case SetType st ->
-            new CollectionCacheKey(
-                st.getProtocolCode(), -1, st.getElementType().getProtocolCode(), st.isFrozen());
-        default ->
-            throw new IllegalArgumentException(
-                "CollectionCacheKey does not support supplied CQL type: "
-                    + cqlType.asCql(true, true));
+            Optional.of(
+                new CollectionCacheKey(
+                    st.getProtocolCode(),
+                    -1,
+                    st.getElementType().getProtocolCode(),
+                    st.isFrozen(),
+                    cqlType));
+        default -> {
+          if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace(
+                "CollectionCacheKey does not support supplied CQL type: {}",
+                cqlType.asCql(true, true));
+          }
+          yield Optional.empty();
+        }
       };
+    }
+
+    /**
+     * We only need to check the protocol codes and frozen status, cqltype is only there for the
+     * computeIfAbsent()
+     */
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null || getClass() != obj.getClass()) {
+        return false;
+      }
+      CollectionCacheKey that = (CollectionCacheKey) obj;
+      return collectionProtoCode == that.collectionProtoCode
+          && keyProtoCode == that.keyProtoCode
+          && valueProtoCode == that.valueProtoCode
+          && isFrozen == that.isFrozen;
+    }
+
+    /**
+     * We only need to check the protocol codes and frozen status, cqltype is only there for the
+     * computeIfAbsent()
+     */
+    @Override
+    public int hashCode() {
+      return Objects.hash(collectionProtoCode, keyProtoCode, valueProtoCode, isFrozen);
     }
   }
 }
