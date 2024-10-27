@@ -40,6 +40,14 @@ public class IndexConfig extends HashMap<CqlIdentifier, IndexDefinition> {
                     IndexDefinition::getColumnName, indexDefinition -> indexDefinition)));
   }
 
+  /**
+   * This is to extract the column name from the index target, which may contain column names for
+   * primitive indexes and indexType(column name) for collection types. Eg: values(column),
+   * keys(column), full(column) and entries(column)
+   *
+   * @param target
+   * @return
+   */
   private static String getColumnName(String target) {
     Pattern pattern = Pattern.compile("\\(([^)]+)\\)");
     Matcher matcher = pattern.matcher(target);
