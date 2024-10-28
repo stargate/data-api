@@ -2,9 +2,9 @@ package io.stargate.sgv2.jsonapi.api.v1.tables;
 
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertNamespaceCommand;
 import static io.stargate.sgv2.jsonapi.api.v1.util.DataApiCommandSenders.assertTableCommand;
-import static org.hamcrest.Matchers.equalTo;
+import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.nullValue;
 
 import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -23,6 +23,59 @@ import org.junit.jupiter.api.TestMethodOrder;
 @TestClassOrder(ClassOrderer.OrderAnnotation.class)
 public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase {
   private static final String TABLE = "person";
+  private static final String createIndex =
+      """
+              {
+                "name": "name_idx",
+                "definition": {
+                  "column": "name",
+                  "options": {
+                   "caseSensitive": false,
+                    "normalize": true,
+                    "ascii": true
+                  }
+                }
+              }
+              """;
+
+  String createWithoutOptions =
+      """
+                  {
+                    "name": "city_idx",
+                    "definition": {
+                      "column": "city"
+                    }
+                  }
+                  """;
+
+  String createWithoutOptionsExpected =
+      """
+                  {
+                    "name": "city_idx",
+                    "definition": {
+                      "column": "city",
+                      "options": {
+                       "caseSensitive": true,
+                        "normalize": false,
+                        "ascii": false
+                      }
+                    }
+                  }
+                  """;
+
+  String createVectorIndex =
+      """
+                {
+                 "name": "content_idx",
+                 "definition": {
+                   "column": "content",
+                   "options": {
+                     "metric": "cosine",
+                     "sourceModel": "openai_v3_small"
+                   }
+                 }
+               }
+              """;
 
   @BeforeAll
   public final void createDefaultTablesAndIndexes() {
@@ -48,43 +101,11 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
     assertNamespaceCommand(keyspaceName)
         .postCreateTable(tableData.formatted(TABLE))
         .wasSuccessful();
-    String createIndex =
-        """
-            {
-              "name": "name_idx",
-              "definition": {
-                "column": "name",
-                "options": {
-                  "normalize": true,
-                  "ascii": true
-                }
-              }
-            }
-            """;
+
     assertTableCommand(keyspaceName, TABLE).postCreateIndex(createIndex).wasSuccessful();
-    String createWithoutOptions =
-        """
-                {
-                  "name": "city_idx",
-                  "definition": {
-                    "column": "city"
-                  }
-                }
-                """;
+
     assertTableCommand(keyspaceName, TABLE).postCreateIndex(createWithoutOptions).wasSuccessful();
-    String createVectorIndex =
-        """
-              {
-               "name": "content_idx",
-               "definition": {
-                 "column": "content",
-                 "options": {
-                   "metric": "cosine",
-                   "sourceModel": "openai_v3_small"
-                 }
-               }
-             }
-            """;
+
     assertTableCommand(keyspaceName, TABLE)
         .postCreateVectorIndex(createVectorIndex)
         .wasSuccessful();
@@ -117,22 +138,12 @@ public class ListIndexesIntegrationTest extends AbstractTableIntegrationTestBase
           // Validate that status.indexes has all indexes for the table
           .body("status.indexes", hasSize(3))
           // Validate index without options
-          .body("status.indexes[0].name", equalTo("city_idx"))
-          .body("status.indexes[0].definition.column", equalTo("city"))
-          .body("status.indexes[0].definition.options", nullValue())
-
-          // validate index with options
-          .body("status.indexes[1].name", equalTo("name_idx"))
-          .body("status.indexes[1].definition.column", equalTo("name"))
-          .body("status.indexes[1].definition.options.normalize", equalTo(true))
-          .body("status.indexes[1].definition.options.ascii", equalTo(true))
-          .body("status.indexes[1].definition.options.caseSensitive", nullValue())
-
-          // Validate vector index
-          .body("status.indexes[2].name", equalTo("content_idx"))
-          .body("status.indexes[2].definition.column", equalTo("content"))
-          .body("status.indexes[2].definition.options.metric", equalTo("cosine"))
-          .body("status.indexes[2].definition.options.sourceModel", equalTo("openai_v3_small"));
+          .body(
+              "status.indexes",
+              containsInAnyOrder( // Validate that the indexes are in any order
+                  jsonEquals(createIndex),
+                  jsonEquals(createWithoutOptionsExpected),
+                  jsonEquals(createVectorIndex)));
     }
   }
 }
