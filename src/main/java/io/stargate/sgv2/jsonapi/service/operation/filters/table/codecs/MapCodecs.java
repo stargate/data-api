@@ -42,7 +42,7 @@ public class MapCodecs {
   }
 
   private static Map<String, Object> toCqlMap(
-      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Map<?, ?> rawMapValue)
+      List<JSONCodec<?, ?>> valueCodecs, DataType elementType, Map<String, ?> rawMapValue)
       throws ToCQLCodecException {
     Map<String, JsonLiteral<?>> mapValue = (Map<String, JsonLiteral<?>>) rawMapValue;
     Map<String, Object> result = new LinkedHashMap<>(mapValue.size());

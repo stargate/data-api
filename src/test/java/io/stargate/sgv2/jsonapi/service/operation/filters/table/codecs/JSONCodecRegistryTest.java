@@ -952,6 +952,31 @@ public class JSONCodecRegistryTest {
   }
 
   @Test
+  public void invalidMapKeyFail() {
+    DataType cqlTypeToTest = DataTypes.mapOf(DataTypes.INT, DataTypes.TEXT);
+    Map<Integer, JsonLiteral<?>> valueToTest = Map.of(123, stringLiteral("xyz"));
+
+    // Unsupported key type exception caught at lookup, not use; but since we do have some Map
+    // codecs, exception will be "toCQLCodecException" and not "MissingJSONCodecException"
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () ->
+                JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(
+                    TEST_DATA.mockTableMetadata(cqlTypeToTest), TEST_DATA.COLUMN_NAME, valueToTest),
+            String.format("Get codec for unsupported CQL map type %s", cqlTypeToTest));
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(cqlTypeToTest);
+              assertThat(e.value).isEqualTo(valueToTest);
+
+              assertThat(e.getMessage()).contains("unsupported map key type");
+            });
+  }
+
+  @Test
   public void invalidMapValueFail() {
     DataType cqlTypeToTest = DataTypes.mapOf(DataTypes.TEXT, DataTypes.BIGINT);
     Map<String, JsonLiteral<?>> valueToTest = Map.of("value", stringLiteral("xyz"));
