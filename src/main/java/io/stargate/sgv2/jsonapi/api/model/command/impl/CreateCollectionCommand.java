@@ -122,8 +122,8 @@ public record CreateCollectionCommand(
       public VectorSearchConfig(
           Integer dimension, String metric, String sourceModel, VectorizeConfig vectorizeConfig) {
         this.dimension = dimension;
-        this.metric = metric == null ? "cosine" : metric;
-        this.sourceModel = sourceModel == null ? "other" : sourceModel;
+        this.metric = metric;
+        this.sourceModel = sourceModel;
         this.vectorizeConfig = vectorizeConfig;
       }
     }

@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.resolver;
 
+import static io.stargate.sgv2.jsonapi.config.constants.VectorConstant.SUPPORTED_SOURCES;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandContext;
@@ -15,6 +17,8 @@ import io.stargate.sgv2.jsonapi.service.cqldriver.CQLSessionCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.KeyspaceSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.Operation;
 import io.stargate.sgv2.jsonapi.service.operation.collections.CreateCollectionOperation;
+import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
+import io.stargate.sgv2.jsonapi.service.schema.SourceModel;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -193,13 +197,35 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
 
     Integer vectorDimension = vector.dimension();
     VectorizeConfig service = vector.vectorizeConfig();
+    String sourceModel = vector.sourceModel();
+    String metric = vector.metric();
+
+    // decide sourceModel and metric value
+    if (sourceModel != null) {
+      if (metric == null) {
+        // (1) sourceModel is provided but metric is not - set metric to cosine or dot_product based
+        // on the map
+        metric = SUPPORTED_SOURCES.get(sourceModel).getMetric();
+      }
+      // (2) both sourceModel and metric are provided - do nothing
+    } else {
+      if (metric != null) {
+        // (3) sourceModel is not provided but metric is - set sourceModel to 'other'
+        sourceModel = SourceModel.OTHER.getSourceModel();
+      } else {
+        // (4) both sourceModel and metric are not provided - set sourceModel to 'other' and metric
+        // to 'cosine'
+        sourceModel = SourceModel.OTHER.getSourceModel();
+        metric = SimilarityFunction.COSINE.getMetric();
+      }
+    }
 
     if (service != null) {
       // Validate service configuration and auto populate vector dimension.
       vectorDimension = validateVectorize.validateService(service, vectorDimension);
       vector =
           new CreateCollectionCommand.Options.VectorSearchConfig(
-              vectorDimension, vector.metric(), vector.sourceModel(), vector.vectorizeConfig());
+              vectorDimension, metric, sourceModel, vector.vectorizeConfig());
     } else {
       // Ensure vector dimension is provided when service configuration is absent.
       if (vectorDimension == null) {
@@ -210,6 +236,9 @@ public class CreateCollectionCommandResolver implements CommandResolver<CreateCo
         throw ErrorCodeV1.VECTOR_SEARCH_TOO_BIG_VALUE.toApiException(
             "%d (max %d)", vectorDimension, documentLimitsConfig.maxVectorEmbeddingLength());
       }
+      vector =
+          new CreateCollectionCommand.Options.VectorSearchConfig(
+              vectorDimension, metric, sourceModel, null);
     }
     return vector;
   }
