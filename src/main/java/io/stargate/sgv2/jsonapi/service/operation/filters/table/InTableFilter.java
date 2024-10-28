@@ -4,6 +4,7 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.bindMarker;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errFmtColumnMetadata;
 import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
 
+import com.datastax.oss.driver.api.querybuilder.relation.ColumnRelationBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.OngoingWhereClause;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.term.Term;
@@ -30,8 +31,8 @@ public class InTableFilter extends TableFilter {
   public final Operator operator;
 
   public enum Operator {
-    IN(BuiltConditionPredicate.IN);
-    // TODO NIN
+    IN(BuiltConditionPredicate.IN),
+    NIN(BuiltConditionPredicate.NIN);
 
     public final BuiltConditionPredicate predicate;
 
@@ -42,6 +43,7 @@ public class InTableFilter extends TableFilter {
     public static InTableFilter.Operator from(ValueComparisonOperator operator) {
       return switch (operator) {
         case IN -> IN;
+        case NIN -> NIN;
         default -> throw new IllegalArgumentException("Unsupported operator: " + operator);
       };
     }
@@ -96,7 +98,8 @@ public class InTableFilter extends TableFilter {
       }
     }
 
-    return ongoingWhereClause.where(Relation.column(getPathAsCqlIdentifier()).in(bindMarkers));
+    return ongoingWhereClause.where(
+        applyInOperator(Relation.column(getPathAsCqlIdentifier()), bindMarkers));
   }
 
   /**
@@ -109,5 +112,13 @@ public class InTableFilter extends TableFilter {
   public BuiltCondition get() {
     throw new UnsupportedOperationException(
         "Not supported - will be modified when we migrate collections filters java driver");
+  }
+
+  private Relation applyInOperator(
+      ColumnRelationBuilder<Relation> columnRelationBuilder, List<Term> bindMarkers) {
+    return switch (operator) {
+      case IN -> columnRelationBuilder.in(bindMarkers);
+      case NIN -> columnRelationBuilder.notIn(bindMarkers);
+    };
   }
 }

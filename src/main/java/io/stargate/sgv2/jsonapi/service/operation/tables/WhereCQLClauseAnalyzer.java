@@ -12,6 +12,7 @@ import com.datastax.oss.driver.api.core.type.DataTypes;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
 import io.stargate.sgv2.jsonapi.exception.WarningException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.operation.filters.table.InTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.NativeTypeTableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.TableFilter;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
@@ -56,6 +57,7 @@ public class WhereCQLClauseAnalyzer {
                     analyzer::warnMissingIndexOnScalar,
                     analyzer::warnNotEqUnsupportedByIndexing,
                     analyzer::warnComparisonUnsupportedByIndexing,
+                    analyzer::warnNotInUnsupportedByIndexing,
                     analyzer::warnNoFilters,
                     analyzer::warnPkNotFullySpecified));
         case DELETE_ONE, UPDATE ->
@@ -92,6 +94,11 @@ public class WhereCQLClauseAnalyzer {
   // Datatypes that need ALLOW FILTERING even when there is a SAI on the column when <, >, <=, >= is
   // used
   private static final Set<DataType> ALLOW_FILTERING_NEEDED_FOR_COMPARISON =
+      Set.of(DataTypes.TEXT, DataTypes.ASCII, DataTypes.BOOLEAN, DataTypes.UUID);
+
+  // Datatypes that need ALLOW FILTERING even when there is a SAI on the column when NOT IN is
+  // used
+  private static final Set<DataType> ALLOW_FILTERING_NEEDED_FOR_NOT_IN =
       Set.of(DataTypes.TEXT, DataTypes.ASCII, DataTypes.BOOLEAN, DataTypes.UUID);
 
   private final TableBasedSchemaObject tableSchemaObject;
@@ -449,6 +456,60 @@ public class WhereCQLClauseAnalyzer {
 
     return Optional.of(
         WarningException.Code.COMPARISON_FILTER_UNSUPPORTED_BY_INDEXING.get(
+            errVars(
+                tableSchemaObject,
+                map -> {
+                  map.put("inefficientDataTypes", errFmtJoin(inefficientDataTypes));
+                  map.put("inefficientColumns", errFmtColumnMetadata(inefficientColumns));
+                  map.put("inefficientFilterColumns", errFmtCqlIdentifier(inefficientFilters));
+                })));
+  }
+
+  /**
+   * Warn if a filter is on a column that, while it has an index still needs ALLOW FILTERING because
+   * NOT IN operator is used.
+   *
+   * <p>E.G. [perform $nin against a TEXT column 'name' that has SAI index on it] <br>
+   * Error from Driver: "Column 'name' has an index but does not support the operators specified in
+   * the query. If you want to execute this query despite the performance unpredictability, use
+   * ALLOW FILTERING" <br>
+   * NOTE, TIMEUUID column does not have above constraint.
+   */
+  private Optional<WarningException> warnNotInUnsupportedByIndexing(
+      Map<CqlIdentifier, TableFilter> identifierToFilter) {
+
+    var inefficientFilters =
+        identifierToFilter.entrySet().stream()
+            .filter(
+                entry -> {
+                  TableFilter tableFilter = entry.getValue();
+                  return (tableFilter instanceof InTableFilter inTableFilter
+                      && inTableFilter.operator == InTableFilter.Operator.NIN
+                      && isIndexOnColumn(entry.getKey()));
+                })
+            .map(Map.Entry::getKey)
+            .filter(
+                column ->
+                    ALLOW_FILTERING_NEEDED_FOR_NOT_IN.contains(
+                        tableMetadata.getColumns().get(column).getType()))
+            .sorted(CQL_IDENTIFIER_COMPARATOR)
+            .toList();
+
+    if (inefficientFilters.isEmpty()) {
+      return Optional.empty();
+    }
+
+    var inefficientDataTypes =
+        ALLOW_FILTERING_NEEDED_FOR_NOT_IN.stream().map(DataType::toString).toList();
+
+    var inefficientColumns =
+        tableMetadata.getColumns().values().stream()
+            .filter(column -> ALLOW_FILTERING_NEEDED_FOR_NOT_IN.contains(column.getType()))
+            .sorted(COLUMN_METADATA_COMPARATOR)
+            .toList();
+
+    return Optional.of(
+        WarningException.Code.NOT_IN_FILTER_UNSUPPORTED_BY_INDEXING.get(
             errVars(
                 tableSchemaObject,
                 map -> {

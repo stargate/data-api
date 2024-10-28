@@ -113,6 +113,12 @@ public class ReadAttempt<SchemaT extends TableBasedSchemaObject>
     readAttemptRetryPolicy.setRetryContext(
         new ReadAttemptRetryPolicy.RetryContext<>(statement, this));
 
+    LOGGER.error(
+        "execute() - {}, cql={}, values={}",
+        positionAndAttemptId(),
+        statement.getQuery(),
+        statement.getPositionalValues());
+
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
           "execute() - {}, cql={}, values={}",
