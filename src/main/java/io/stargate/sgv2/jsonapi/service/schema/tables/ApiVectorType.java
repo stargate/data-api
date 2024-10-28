@@ -1,11 +1,9 @@
 package io.stargate.sgv2.jsonapi.service.schema.tables;
 
-import static io.stargate.sgv2.jsonapi.exception.ErrorFormatters.errVars;
-
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.VectorType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
-import io.stargate.sgv2.jsonapi.exception.ServerException;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.VectorColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -15,7 +13,7 @@ import java.util.Objects;
 
 public class ApiVectorType extends CollectionApiDataType {
 
-  public static final TypeFactoryFromColumnDesc<ApiVectorType, ComplexColumnDesc.VectorColumnDesc>
+  public static final TypeFactoryFromColumnDesc<ApiVectorType, VectorColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
   public static final TypeFactoryFromCql<ApiVectorType, VectorType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
@@ -23,27 +21,24 @@ public class ApiVectorType extends CollectionApiDataType {
   private final int dimension;
   private VectorizeDefinition vectorizeDefinition;
 
-  private ApiVectorType(
-      PrimitiveApiDataTypeDef valueType, int dimensions, VectorizeDefinition vectorizeDefinition) {
+  private ApiVectorType(int dimensions, VectorizeDefinition vectorizeDefinition) {
     super(
-        ApiDataTypeName.VECTOR,
-        valueType,
-        new ExtendedVectorType(valueType.cqlType(), dimensions),
-        new ComplexColumnDesc.VectorColumnDesc(
-            valueType.columnDesc(),
+        ApiTypeName.VECTOR,
+        ApiDataTypeDefs.FLOAT,
+        new ExtendedVectorType(ApiDataTypeDefs.FLOAT.cqlType(), dimensions),
+        new VectorColumnDesc(
             dimensions,
             vectorizeDefinition == null ? null : vectorizeDefinition.toVectorizeConfig()));
 
     this.dimension = dimensions;
-
-    // sanity checking
-    if (!isValueTypeSupported(valueType)) {
-      throw new IllegalArgumentException("valueType is not supported");
-    }
   }
 
   public int getDimension() {
     return dimension;
+  }
+
+  public static boolean isDimensionSupported(int dimensions) {
+    return dimensions > 0;
   }
 
   /**
@@ -53,15 +48,14 @@ public class ApiVectorType extends CollectionApiDataType {
     return vectorizeDefinition;
   }
 
-  public static ApiVectorType from(
-      ApiDataType valueType, int dimensions, VectorizeDefinition vectorizeDefinition) {
-    Objects.requireNonNull(valueType, "valueType must not be null");
+  public static ApiVectorType from(int dimension, VectorizeDefinition vectorizeDefinition) {
 
-    if (valueType instanceof PrimitiveApiDataTypeDef vtp) {
-      return new ApiVectorType(vtp, dimensions, vectorizeDefinition);
+    // Sanity check
+    if (!isDimensionSupported(dimension)) {
+      throw new IllegalArgumentException(
+          "dimensions is not supported, dimensions=%s".formatted(dimension));
     }
-    throw new IllegalArgumentException(
-        "valueType must be primitive type, valueType%s".formatted(valueType));
+    return new ApiVectorType(dimension, vectorizeDefinition);
   }
 
   private static boolean isValueTypeSupported(ApiDataType valueType) {
@@ -70,45 +64,37 @@ public class ApiVectorType extends CollectionApiDataType {
   }
 
   private static class ColumnDescFactory
-      extends TypeFactoryFromColumnDesc<ApiVectorType, ComplexColumnDesc.VectorColumnDesc> {
+      extends TypeFactoryFromColumnDesc<ApiVectorType, VectorColumnDesc> {
 
     @Override
     public ApiVectorType create(
-        ComplexColumnDesc.VectorColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+        VectorColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
-      ApiDataType valueType;
-      try {
-        valueType =
-            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.valueType(), validateVectorize);
-      } catch (UnsupportedUserType e) {
-        throw new UnsupportedUserType(columnDesc, e);
+      // this will catch the dimensions aetc
+      if (!isSupported(columnDesc, validateVectorize)) {
+        throw new UnsupportedUserType(columnDesc);
       }
 
-      // Not calling isSupported to avoid double decoding of the valueType
-      if (isValueTypeSupported(valueType)) {
-        var vectorDefn = VectorizeDefinition.from(columnDesc, validateVectorize);
-        // TODO:  aaron - NOT SURE WHAT IS HAPPENING with VectorizeConfigValidator
-        // It validates AND gets a new dimension
-        var dimensions =
-            validateVectorize.validateService(
-                columnDesc.getVectorConfig(), columnDesc.getDimensions());
-        return new io.stargate.sgv2.jsonapi.service.schema.tables.ApiVectorType(
-            (PrimitiveApiDataTypeDef) valueType, dimensions, vectorDefn);
-      }
-      throw new UnsupportedUserType(columnDesc);
+      var vectorDefn = VectorizeDefinition.from(columnDesc, validateVectorize);
+      // TODO:  aaron mahesh - NOT SURE WHAT IS HAPPENING with VectorizeConfigValidator
+      // It validates AND gets a new dimension
+      var dimensions =
+          columnDesc.getVectorizeConfig() == null
+              ? columnDesc.getDimensions()
+              : validateVectorize.validateService(
+                  columnDesc.getVectorizeConfig(), columnDesc.getDimensions());
+      return ApiVectorType.from(dimensions, vectorDefn);
     }
 
     @Override
     public boolean isSupported(
-        ComplexColumnDesc.VectorColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {
-      try {
-        return isValueTypeSupported(
-            TypeFactoryFromColumnDesc.DEFAULT.create(columnDesc.valueType(), validateVectorize));
-      } catch (UnsupportedUserType e) {
-        return false;
-      }
+        VectorColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {
+      Objects.requireNonNull(columnDesc, "columnDesc must not be null");
+
+      return columnDesc.valueType().equals(PrimitiveColumnDesc.FLOAT)
+          && columnDesc.getDimensions() >= 0;
     }
   }
 
@@ -122,15 +108,8 @@ public class ApiVectorType extends CollectionApiDataType {
       if (!isSupported(cqlType)) {
         throw new UnsupportedCqlType(cqlType);
       }
-
-      try {
-        var valueType = TypeFactoryFromCql.DEFAULT.create(cqlType.getElementType(), vectorizeDefn);
-        return ApiVectorType.from(valueType, cqlType.getDimensions(), vectorizeDefn);
-
-      } catch (UnsupportedCqlType e) {
-        // should not happen if the isCqlTypeSupported returns true
-        throw ServerException.Code.UNEXPECTED_SERVER_ERROR.get(errVars(e));
-      }
+      // we can ignore the element type, it is always float, checked in isSupported
+      return ApiVectorType.from(cqlType.getDimensions(), vectorizeDefn);
     }
 
     @Override

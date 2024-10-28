@@ -11,57 +11,57 @@ public abstract class ApiDataTypeDefs {
 
   // text types
   public static final PrimitiveApiDataTypeDef ASCII =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.ASCII, DataTypes.ASCII);
+      new PrimitiveApiDataTypeDef(ApiTypeName.ASCII, DataTypes.ASCII);
 
   public static final PrimitiveApiDataTypeDef TEXT =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.TEXT, DataTypes.TEXT);
+      new PrimitiveApiDataTypeDef(ApiTypeName.TEXT, DataTypes.TEXT);
 
   // Numeric types
   public static final PrimitiveApiDataTypeDef BIGINT =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.BIGINT, DataTypes.BIGINT);
+      new PrimitiveApiDataTypeDef(ApiTypeName.BIGINT, DataTypes.BIGINT);
   public static final PrimitiveApiDataTypeDef DECIMAL =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.DECIMAL, DataTypes.DECIMAL);
+      new PrimitiveApiDataTypeDef(ApiTypeName.DECIMAL, DataTypes.DECIMAL);
   public static final PrimitiveApiDataTypeDef DOUBLE =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.DOUBLE, DataTypes.DOUBLE);
+      new PrimitiveApiDataTypeDef(ApiTypeName.DOUBLE, DataTypes.DOUBLE);
   public static final PrimitiveApiDataTypeDef FLOAT =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.FLOAT, DataTypes.FLOAT);
+      new PrimitiveApiDataTypeDef(ApiTypeName.FLOAT, DataTypes.FLOAT);
   public static final PrimitiveApiDataTypeDef INT =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.INT, DataTypes.INT);
+      new PrimitiveApiDataTypeDef(ApiTypeName.INT, DataTypes.INT);
   public static final PrimitiveApiDataTypeDef SMALLINT =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.SMALLINT, DataTypes.SMALLINT);
+      new PrimitiveApiDataTypeDef(ApiTypeName.SMALLINT, DataTypes.SMALLINT);
   public static final PrimitiveApiDataTypeDef TINYINT =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.TINYINT, DataTypes.TINYINT);
+      new PrimitiveApiDataTypeDef(ApiTypeName.TINYINT, DataTypes.TINYINT);
   public static final PrimitiveApiDataTypeDef VARINT =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.VARINT, DataTypes.VARINT);
+      new PrimitiveApiDataTypeDef(ApiTypeName.VARINT, DataTypes.VARINT);
 
   // Date and Time types
   public static final PrimitiveApiDataTypeDef DATE =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.DATE, DataTypes.DATE);
+      new PrimitiveApiDataTypeDef(ApiTypeName.DATE, DataTypes.DATE);
 
   public static final PrimitiveApiDataTypeDef DURATION =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.DURATION, DataTypes.DURATION);
+      new PrimitiveApiDataTypeDef(ApiTypeName.DURATION, DataTypes.DURATION);
 
   public static final PrimitiveApiDataTypeDef TIME =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.TIME, DataTypes.TIME);
+      new PrimitiveApiDataTypeDef(ApiTypeName.TIME, DataTypes.TIME);
 
   public static final PrimitiveApiDataTypeDef TIMESTAMP =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.TIMESTAMP, DataTypes.TIMESTAMP);
+      new PrimitiveApiDataTypeDef(ApiTypeName.TIMESTAMP, DataTypes.TIMESTAMP);
 
   // Remaining types
   public static final PrimitiveApiDataTypeDef BINARY =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.BINARY, DataTypes.BLOB);
+      new PrimitiveApiDataTypeDef(ApiTypeName.BINARY, DataTypes.BLOB);
 
   public static final PrimitiveApiDataTypeDef BOOLEAN =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.BOOLEAN, DataTypes.BOOLEAN);
+      new PrimitiveApiDataTypeDef(ApiTypeName.BOOLEAN, DataTypes.BOOLEAN);
 
   public static final PrimitiveApiDataTypeDef INET =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.INET, DataTypes.INET);
+      new PrimitiveApiDataTypeDef(ApiTypeName.INET, DataTypes.INET);
 
   public static final PrimitiveApiDataTypeDef TIMEUUID =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.TIMEUUID, DataTypes.TIMEUUID);
+      new PrimitiveApiDataTypeDef(ApiTypeName.TIMEUUID, DataTypes.TIMEUUID);
 
   public static final PrimitiveApiDataTypeDef UUID =
-      new PrimitiveApiDataTypeDef(ApiDataTypeName.UUID, DataTypes.UUID);
+      new PrimitiveApiDataTypeDef(ApiTypeName.UUID, DataTypes.UUID);
 
   // Collections use to help lookups, all external access should be through the from() functions
   // below.

@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.SetType;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.SetColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -12,17 +12,17 @@ import java.util.Objects;
 
 public class ApiSetType extends CollectionApiDataType {
 
-  public static final TypeFactoryFromColumnDesc<ApiSetType, ComplexColumnDesc.SetColumnDesc>
+  public static final TypeFactoryFromColumnDesc<ApiSetType, SetColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
   public static final TypeFactoryFromCql<ApiSetType, SetType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
 
   private ApiSetType(PrimitiveApiDataTypeDef valueType) {
     super(
-        ApiDataTypeName.SET,
+        ApiTypeName.SET,
         valueType,
         DataTypes.setOf(valueType.cqlType()),
-        new ComplexColumnDesc.SetColumnDesc(valueType.columnDesc()));
+        new SetColumnDesc(valueType.columnDesc()));
   }
 
   public static ApiSetType from(ApiDataType valueType) {
@@ -41,11 +41,10 @@ public class ApiSetType extends CollectionApiDataType {
   }
 
   private static final class ColumnDescFactory
-      extends TypeFactoryFromColumnDesc<ApiSetType, ComplexColumnDesc.SetColumnDesc> {
+      extends TypeFactoryFromColumnDesc<ApiSetType, SetColumnDesc> {
 
     @Override
-    public ApiSetType create(
-        ComplexColumnDesc.SetColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+    public ApiSetType create(SetColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
@@ -65,7 +64,7 @@ public class ApiSetType extends CollectionApiDataType {
 
     @Override
     public boolean isSupported(
-        ComplexColumnDesc.SetColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {
+        SetColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
       try {

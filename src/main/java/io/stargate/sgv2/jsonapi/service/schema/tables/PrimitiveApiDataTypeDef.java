@@ -10,23 +10,23 @@ import java.util.Objects;
  *
  * <p>Singleton instances are created in {@link ApiDataTypeDefs} for the supported types.
  *
- * <p>The {@link ApiDataTypeName} is the names of the types, this class is used to define how the
- * type works and defines the de/serialisation of the type.
+ * <p>The {@link ApiTypeName} is the names of the types, this class is used to define how the type
+ * works and defines the de/serialisation of the type.
  *
  * <p>aaron - 9 sept 2024 - avoiding a record for now as assume will use subclasses for collections
  */
 public class PrimitiveApiDataTypeDef implements ApiDataType {
 
-  private final ApiDataTypeName typeName;
+  private final ApiTypeName typeName;
   private final DataType cqlType;
 
-  public PrimitiveApiDataTypeDef(ApiDataTypeName typeName, DataType cqlType) {
+  public PrimitiveApiDataTypeDef(ApiTypeName typeName, DataType cqlType) {
     this.typeName = typeName;
     this.cqlType = cqlType;
   }
 
   @Override
-  public ApiDataTypeName typeName() {
+  public ApiTypeName typeName() {
     return typeName;
   }
 

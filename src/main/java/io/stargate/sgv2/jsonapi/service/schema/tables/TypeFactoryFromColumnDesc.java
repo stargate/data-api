@@ -2,8 +2,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 
 import static io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeDefs.PRIMITIVE_TYPES;
 
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.resolver.VectorizeConfigValidator;
 import java.util.Map;
@@ -33,7 +32,7 @@ public abstract class TypeFactoryFromColumnDesc<
 
   private static class DefaultFactory extends TypeFactoryFromColumnDesc<ApiDataType, ColumnDesc> {
 
-    private static final Map<ApiDataTypeName, PrimitiveApiDataTypeDef> PRIMITIVE_TYPES_BY_API_NAME =
+    private static final Map<ApiTypeName, PrimitiveApiDataTypeDef> PRIMITIVE_TYPES_BY_API_NAME =
         PRIMITIVE_TYPES.stream()
             .collect(Collectors.toMap(PrimitiveApiDataTypeDef::typeName, Function.identity()));
 
@@ -52,7 +51,7 @@ public abstract class TypeFactoryFromColumnDesc<
 
       // Do not cache the Vector type because the ApiVectorType has the user defined vectorizarion
       // on it
-      if (columnDesc instanceof ComplexColumnDesc.VectorColumnDesc vt) {
+      if (columnDesc instanceof VectorColumnDesc vt) {
         return ApiVectorType.FROM_COLUMN_DESC_FACTORY.create(vt, validateVectorize);
       }
 
@@ -62,11 +61,11 @@ public abstract class TypeFactoryFromColumnDesc<
             entry -> {
               try {
                 return switch (columnDesc) {
-                  case ComplexColumnDesc.ListColumnDesc lt ->
+                  case ListColumnDesc lt ->
                       ApiListType.FROM_COLUMN_DESC_FACTORY.create(lt, validateVectorize);
-                  case ComplexColumnDesc.MapColumnDesc mt ->
+                  case MapColumnDesc mt ->
                       ApiMapType.FROM_COLUMN_DESC_FACTORY.create(mt, validateVectorize);
-                  case ComplexColumnDesc.SetColumnDesc st ->
+                  case SetColumnDesc st ->
                       ApiSetType.FROM_COLUMN_DESC_FACTORY.create(st, validateVectorize);
                   default -> throw new UnsupportedUserType(columnDesc);
                 };

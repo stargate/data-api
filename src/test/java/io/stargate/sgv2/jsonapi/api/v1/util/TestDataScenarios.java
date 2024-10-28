@@ -94,11 +94,11 @@ public class TestDataScenarios {
   }
 
   private static Map<String, String> columnDef(PrimitiveApiDataTypeDef type) {
-    return Map.of("type", type.typeName().getApiName());
+    return Map.of("type", type.typeName().apiName());
   }
 
   public static String columnName(PrimitiveApiDataTypeDef type) {
-    return COL_NAME_PREFIX + type.typeName().getApiName();
+    return COL_NAME_PREFIX + type.typeName().apiName();
   }
 
   public Object columnValue(PrimitiveApiDataTypeDef type) {

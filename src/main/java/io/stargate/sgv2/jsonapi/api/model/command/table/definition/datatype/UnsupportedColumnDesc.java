@@ -1,7 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
 import com.datastax.oss.driver.api.core.type.DataType;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataTypeName;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiTypeName;
 
 /**
  * Unsupported type implementation, returned in response when cql table has unsupported format
@@ -18,7 +18,7 @@ public abstract class UnsupportedColumnDesc implements ColumnDesc {
   }
 
   @Override
-  public ApiDataTypeName typeName() {
+  public ApiTypeName typeName() {
     throw new UnsupportedOperationException("Unsupported type");
   }
 

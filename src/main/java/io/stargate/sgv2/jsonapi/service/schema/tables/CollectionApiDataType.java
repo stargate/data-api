@@ -5,13 +5,13 @@ import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.Colu
 
 /** Interface defining the api data type for complex types */
 public abstract class CollectionApiDataType implements ApiDataType {
-  private final ApiDataTypeName typeName;
+  private final ApiTypeName typeName;
   private final PrimitiveApiDataTypeDef valueType;
   private final DataType cqlType;
   private final ColumnDesc columnDesc;
 
   protected CollectionApiDataType(
-      ApiDataTypeName typeName,
+      ApiTypeName typeName,
       PrimitiveApiDataTypeDef valueType,
       DataType cqlType,
       ColumnDesc columnDesc) {
@@ -22,7 +22,7 @@ public abstract class CollectionApiDataType implements ApiDataType {
   }
 
   @Override
-  public ApiDataTypeName typeName() {
+  public ApiTypeName typeName() {
     return typeName;
   }
 

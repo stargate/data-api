@@ -3,6 +3,10 @@ package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 public record ApiSupportDesc(
     boolean createTable, boolean insert, boolean read, String cqlDefinition) {
 
+  public boolean anyUnsupported() {
+    return !createTable || !insert || !read;
+  }
+
   public static ApiSupportDesc fullSupport(String cqlDefinition) {
     return new ApiSupportDesc(true, true, true, cqlDefinition);
   }

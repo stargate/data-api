@@ -1,8 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype;
 
 import io.stargate.sgv2.jsonapi.service.schema.tables.*;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /** Interface for primitive column types similar to what is defined in cassandra java driver. */
 public enum PrimitiveColumnDesc implements ColumnDesc {
@@ -25,13 +24,20 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
   UUID(ApiDataTypeDefs.UUID),
   VARINT(ApiDataTypeDefs.VARINT);
 
-  private static Map<ApiDataType, PrimitiveColumnDesc> BY_API_TYPE = new HashMap<>();
-  private static Map<String, PrimitiveColumnDesc> BY_API_TYPE_NAME = new HashMap<>();
+  public static final FromJsonFactory FROM_JSON_FACTORY = new FromJsonFactory();
+
+  private static final Map<ApiDataType, PrimitiveColumnDesc> BY_API_TYPE = new HashMap<>();
+  private static final Map<String, PrimitiveColumnDesc> BY_API_TYPE_NAME = new HashMap<>();
+
+  private static final List<PrimitiveColumnDesc> allPrimitives;
+  private static final List<ColumnDesc> allColumnDescs;
 
   static {
+    allPrimitives = List.of(values());
+    allColumnDescs = new ArrayList<>(allPrimitives);
     for (PrimitiveColumnDesc type : PrimitiveColumnDesc.values()) {
       BY_API_TYPE.put(type.apiDataType, type);
-      BY_API_TYPE_NAME.put(type.apiDataType.typeName().getApiName(), type);
+      BY_API_TYPE_NAME.put(type.apiDataType.typeName().apiName(), type);
     }
   }
 
@@ -44,13 +50,21 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
   }
 
   @Override
-  public ApiDataTypeName typeName() {
+  public ApiTypeName typeName() {
     return apiDataType.typeName();
   }
 
   @Override
   public ApiSupportDesc apiSupport() {
     return apiSupportDesc;
+  }
+
+  public static List<PrimitiveColumnDesc> allPrimitives() {
+    return allPrimitives;
+  }
+
+  public static List<ColumnDesc> allColumnDescs() {
+    return allColumnDescs;
   }
 
   public static ColumnDesc fromApiDataType(ApiDataType apiDataType) {
@@ -64,7 +78,9 @@ public enum PrimitiveColumnDesc implements ColumnDesc {
     return BY_API_TYPE.get(apiDataType);
   }
 
-  public static ColumnDesc fromApiTypeName(String apiTypeName) {
-    return BY_API_TYPE_NAME.get(apiTypeName);
+  public static class FromJsonFactory {
+    public Optional<ColumnDesc> create(String apiTypeName) {
+      return Optional.ofNullable(BY_API_TYPE_NAME.get(apiTypeName));
+    }
   }
 }

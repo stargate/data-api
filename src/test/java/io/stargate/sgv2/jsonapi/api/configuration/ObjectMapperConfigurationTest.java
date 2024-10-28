@@ -29,9 +29,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -819,13 +817,12 @@ class ObjectMapperConfigurationTest {
                           assertThat(columns)
                               .containsEntry(
                                   "new_col_2",
-                                  new ComplexColumnDesc.MapColumnDesc(
+                                  new MapColumnDesc(
                                       PrimitiveColumnDesc.TEXT, PrimitiveColumnDesc.TEXT));
                           assertThat(columns)
                               .containsEntry(
                                   "content",
-                                  new ComplexColumnDesc.VectorColumnDesc(
-                                      PrimitiveColumnDesc.FLOAT,
+                                  new VectorColumnDesc(
                                       1024,
                                       new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
                         });

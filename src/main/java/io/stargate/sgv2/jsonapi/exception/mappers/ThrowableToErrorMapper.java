@@ -10,6 +10,7 @@ import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.*;
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
 import io.quarkus.security.UnauthorizedException;
 import io.stargate.sgv2.jsonapi.api.model.command.CommandResult;
@@ -241,9 +242,10 @@ public final class ThrowableToErrorMapper {
               Response.Status.BAD_REQUEST,
               "underlying problem: (%s) %s",
               e.getClass().getName(),
-              message)
+              e.getMessage())
           .getCommandResultError();
     }
+
     // Unrecognized property? (note: CommandObjectMapperHandler handles some cases)
     if (e instanceof UnrecognizedPropertyException upe) {
       final Collection<Object> knownIds =
@@ -260,6 +262,19 @@ public final class ThrowableToErrorMapper {
           .getCommandResultError();
     }
 
+    // aaron 28-oct-2024, HACK just need something to handle our deserialization errors
+    // should not be using V1 errors but would be too much to fix this now
+    // NOTE: must be after the UnrecognizedPropertyException check
+    if (e instanceof JsonMappingException jme) {
+      return ErrorCodeV1.INVALID_REQUEST_NOT_JSON
+          .toApiException(
+              Response.Status.BAD_REQUEST,
+              "underlying problem: (%s) %s",
+              e.getClass().getSimpleName(),
+              e.getMessage())
+          .getCommandResultError();
+    }
+
     // Will need to add more handling but start with above
     return handleUnrecognizedException(e, message);
   }
@@ -271,6 +286,7 @@ public final class ThrowableToErrorMapper {
             "Unrecognized Exception (%s) caught, mapped to SERVER_UNHANDLED_ERROR: %s",
             throwable.getClass().getName(), message),
         throwable);
+
     return ErrorCodeV1.SERVER_UNHANDLED_ERROR
         .toApiException("root cause: (%s) %s", throwable.getClass().getName(), message)
         .getCommandResultError(Response.Status.INTERNAL_SERVER_ERROR);

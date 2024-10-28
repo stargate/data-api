@@ -7,7 +7,7 @@ public abstract class UnsupportedApiDataType implements ApiDataType {
   protected UnsupportedApiDataType() {}
 
   @Override
-  public ApiDataTypeName typeName() {
+  public ApiTypeName typeName() {
     throw new UnsupportedOperationException("UnsupportedCqlApiDataType does not have a name");
   }
 

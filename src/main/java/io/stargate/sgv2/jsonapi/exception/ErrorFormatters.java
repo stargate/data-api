@@ -5,6 +5,7 @@ import static io.stargate.sgv2.jsonapi.util.CqlIdentifierUtil.cqlIdentifierToMes
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnDesc;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants.TemplateVars;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
 import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDef;
@@ -56,6 +57,10 @@ public abstract class ErrorFormatters {
     return errFmtJoin(apiColumnDefs, ErrorFormatters::errFmt);
   }
 
+  public static String errFmtColumnDesc(Collection<ColumnDesc> columnDescs) {
+    return errFmtJoin(columnDescs, ErrorFormatters::errFmt);
+  }
+
   public static String errFmt(ColumnMetadata column) {
     return String.format("%s(%s)", errFmt(column.getName()), errFmt(column.getType()));
   }
@@ -68,6 +73,18 @@ public abstract class ErrorFormatters {
     return String.format("%s(%s)", errFmt(apiColumnDef.name()), errFmt(apiColumnDef.type()));
   }
 
+  public static String errFmt(ColumnDesc columnDesc) {
+    // NOTE: call apiName on the ColumnDesc so unsupported types can return a string
+    return columnDesc.getApiName();
+  }
+
+  /**
+   * NOTE: no formatter for a ApiTypeName because unsupported types, so we want to call apiName on
+   * the ApDataType
+   *
+   * @param apiDataType
+   * @return
+   */
   public static String errFmt(ApiDataType apiDataType) {
     return apiDataType.apiName();
   }

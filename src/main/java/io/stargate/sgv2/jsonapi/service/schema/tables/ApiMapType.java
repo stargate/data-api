@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.MapType;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.MapColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 public class ApiMapType extends CollectionApiDataType {
   private static final Logger LOGGER = LoggerFactory.getLogger(ApiMapType.class);
 
-  public static final TypeFactoryFromColumnDesc<ApiMapType, ComplexColumnDesc.MapColumnDesc>
+  public static final TypeFactoryFromColumnDesc<ApiMapType, MapColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
   public static final TypeFactoryFromCql<ApiMapType, MapType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
@@ -24,10 +24,10 @@ public class ApiMapType extends CollectionApiDataType {
 
   public ApiMapType(PrimitiveApiDataTypeDef keyType, PrimitiveApiDataTypeDef valueType) {
     super(
-        ApiDataTypeName.MAP,
+        ApiTypeName.MAP,
         valueType,
         DataTypes.mapOf(keyType.cqlType(), valueType.cqlType()),
-        new ComplexColumnDesc.MapColumnDesc(keyType.columnDesc(), valueType.columnDesc()));
+        new MapColumnDesc(keyType.columnDesc(), valueType.columnDesc()));
 
     this.keyType = keyType;
     // sanity checking
@@ -71,11 +71,10 @@ public class ApiMapType extends CollectionApiDataType {
   }
 
   private static class ColumnDescFactory
-      extends TypeFactoryFromColumnDesc<ApiMapType, ComplexColumnDesc.MapColumnDesc> {
+      extends TypeFactoryFromColumnDesc<ApiMapType, MapColumnDesc> {
 
     @Override
-    public ApiMapType create(
-        ComplexColumnDesc.MapColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+    public ApiMapType create(MapColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
@@ -97,7 +96,7 @@ public class ApiMapType extends CollectionApiDataType {
 
     @Override
     public boolean isSupported(
-        ComplexColumnDesc.MapColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {
+        MapColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
       try {

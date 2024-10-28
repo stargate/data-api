@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.VectorColumnDesc;
 import io.stargate.sgv2.jsonapi.config.constants.SchemaConstants;
 import io.stargate.sgv2.jsonapi.config.constants.VectorConstants;
 import io.stargate.sgv2.jsonapi.exception.SchemaException;
@@ -37,14 +37,19 @@ public record VectorizeDefinition(
    * Integer)} throws.
    */
   public static VectorizeDefinition from(
-      ComplexColumnDesc.VectorColumnDesc vectorColumnDesc,
-      VectorizeConfigValidator validateVectorize) {
+      VectorColumnDesc vectorColumnDesc, VectorizeConfigValidator validateVectorize) {
+
     return from(
-        vectorColumnDesc.getVectorConfig(), vectorColumnDesc.getDimensions(), validateVectorize);
+        vectorColumnDesc.getVectorizeConfig(), vectorColumnDesc.getDimensions(), validateVectorize);
   }
 
   public static VectorizeDefinition from(
       VectorizeConfig vectorizeDesc, int dimensions, VectorizeConfigValidator validateVectorize) {
+
+    // aaron - I think this is correct, it's a vector column but the vectorize config is null
+    if (vectorizeDesc == null) {
+      return null;
+    }
 
     validateVectorize.validateService(vectorizeDesc, dimensions);
 

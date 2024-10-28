@@ -261,7 +261,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
               }));
     }
 
-    var vectorColumns = apiTableDef.allColumns().filterBy(ApiDataTypeName.VECTOR);
+    var vectorColumns = apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR);
     var nonVectorColumns =
         addedVectorizeDesc.keySet().stream()
             .filter(identifier -> !vectorColumns.containsKey(identifier))
@@ -313,22 +313,23 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
             .map(CqlIdentifierUtil::cqlIdentifierFromUserInput)
             .toList();
 
+    var vectorColumns = apiTableDef.allColumns().filterBy(ApiTypeName.VECTOR);
     var unknownColumns =
         droppedColumns.stream()
             .filter(c -> !apiTableDef.allColumns().containsKey(c))
             .sorted(CQL_IDENTIFIER_COMPARATOR)
             .toList();
     if (!unknownColumns.isEmpty()) {
-      throw SchemaException.Code.CANNOT_VECTORIZE_UNKNOWN_COLUMNS.get(
+      throw SchemaException.Code.CANNOT_DROP_VECTORIZE_FROM_UNKNOWN_COLUMNS.get(
           errVars(
               tableSchemaObject,
               map -> {
                 map.put("allColumns", errFmtApiColumnDef(apiTableDef.allColumns().values()));
+                map.put("vectorColumns", errFmtApiColumnDef(vectorColumns.values()));
                 map.put("unknownColumns", errFmtCqlIdentifier(unknownColumns));
               }));
     }
 
-    var vectorColumns = apiTableDef.allColumns().filterBy(ApiDataTypeName.VECTOR);
     var nonVectorColumns =
         droppedColumns.stream()
             .filter(identifier -> !vectorColumns.containsKey(identifier))

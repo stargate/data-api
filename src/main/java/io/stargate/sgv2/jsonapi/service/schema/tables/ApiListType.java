@@ -3,7 +3,7 @@ package io.stargate.sgv2.jsonapi.service.schema.tables;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.datastax.oss.driver.api.core.type.ListType;
 import com.datastax.oss.driver.internal.core.type.PrimitiveType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexColumnDesc;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ListColumnDesc;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedCqlType;
 import io.stargate.sgv2.jsonapi.exception.checked.UnsupportedUserType;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
@@ -12,17 +12,17 @@ import java.util.Objects;
 
 public class ApiListType extends CollectionApiDataType {
 
-  public static final TypeFactoryFromColumnDesc<ApiListType, ComplexColumnDesc.ListColumnDesc>
+  public static final TypeFactoryFromColumnDesc<ApiListType, ListColumnDesc>
       FROM_COLUMN_DESC_FACTORY = new ColumnDescFactory();
   public static final TypeFactoryFromCql<ApiListType, ListType> FROM_CQL_FACTORY =
       new CqlTypeFactory();
 
   private ApiListType(PrimitiveApiDataTypeDef valueType) {
     super(
-        ApiDataTypeName.LIST,
+        ApiTypeName.LIST,
         valueType,
         DataTypes.listOf(valueType.cqlType()),
-        new ComplexColumnDesc.ListColumnDesc(valueType.columnDesc()));
+        new ListColumnDesc(valueType.columnDesc()));
   }
 
   public static ApiListType from(ApiDataType valueType) {
@@ -42,11 +42,10 @@ public class ApiListType extends CollectionApiDataType {
   }
 
   private static class ColumnDescFactory
-      extends TypeFactoryFromColumnDesc<ApiListType, ComplexColumnDesc.ListColumnDesc> {
+      extends TypeFactoryFromColumnDesc<ApiListType, ListColumnDesc> {
 
     @Override
-    public ApiListType create(
-        ComplexColumnDesc.ListColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
+    public ApiListType create(ListColumnDesc columnDesc, VectorizeConfigValidator validateVectorize)
         throws UnsupportedUserType {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
@@ -66,7 +65,7 @@ public class ApiListType extends CollectionApiDataType {
 
     @Override
     public boolean isSupported(
-        ComplexColumnDesc.ListColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {
+        ListColumnDesc columnDesc, VectorizeConfigValidator validateVectorize) {
       Objects.requireNonNull(columnDesc, "columnDesc must not be null");
 
       try {
