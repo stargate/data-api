@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.data.CqlDuration;
 import com.datastax.oss.driver.api.core.data.CqlVector;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
 import com.datastax.oss.driver.api.core.type.DataType;
 import com.datastax.oss.driver.api.core.type.DataTypes;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -847,7 +848,7 @@ public class JSONCodecRegistryTest {
 
   @ParameterizedTest
   @MethodSource("invalidCodecToCQLTestCasesDatetime")
-  public void invalidDatetimeValueFail(DataType cqlDatetimeType, String valueToTest) {
+  public void invalidDatetimeValueToCQL(DataType cqlDatetimeType, String valueToTest) {
     var codec = assertGetCodecToCQL(cqlDatetimeType, valueToTest);
 
     var error =
@@ -933,7 +934,7 @@ public class JSONCodecRegistryTest {
   }
 
   @Test
-  public void invalidSetValueFail() {
+  public void invalidSetValueToCQL() {
     DataType cqlTypeToTest = DataTypes.setOf(DataTypes.INT);
     List<JsonLiteral<?>> valueToTest = List.of(stringLiteral("xyz"));
     var codec = assertGetCodecToCQL(cqlTypeToTest, valueToTest);
@@ -952,7 +953,7 @@ public class JSONCodecRegistryTest {
   }
 
   @Test
-  public void invalidMapKeyFail() {
+  public void invalidMapKeyToCQL() {
     DataType cqlTypeToTest = DataTypes.mapOf(DataTypes.INT, DataTypes.TEXT);
     Map<Integer, JsonLiteral<?>> valueToTest = Map.of(123, stringLiteral("xyz"));
 
@@ -977,7 +978,7 @@ public class JSONCodecRegistryTest {
   }
 
   @Test
-  public void invalidMapValueFail() {
+  public void invalidMapValueToCQL() {
     DataType cqlTypeToTest = DataTypes.mapOf(DataTypes.TEXT, DataTypes.BIGINT);
     Map<String, JsonLiteral<?>> valueToTest = Map.of("value", stringLiteral("xyz"));
     var codec = assertGetCodecToCQL(cqlTypeToTest, valueToTest);
@@ -996,7 +997,30 @@ public class JSONCodecRegistryTest {
   }
 
   @Test
-  public void invalidVectorValueNonNumberFail() {
+  public void invalidMapFrozenToCQL() {
+    DataType cqlTypeToTest = DataTypes.frozenMapOf(DataTypes.TEXT, DataTypes.TEXT);
+    Map<String, JsonLiteral<?>> valueToTest = Map.of("value", stringLiteral("xyz"));
+    // Frozen map exception caught at lookup, not use; but since we do have some Map
+    // codecs, exception will be "toCQLCodecException" and not "MissingJSONCodecException"
+    var error =
+        assertThrowsExactly(
+            ToCQLCodecException.class,
+            () ->
+                JSONCodecRegistries.DEFAULT_REGISTRY.codecToCQL(
+                    TEST_DATA.mockTableMetadata(cqlTypeToTest), TEST_DATA.COLUMN_NAME, valueToTest),
+            String.format("Get codec for unsupported CQL map type %s", cqlTypeToTest));
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.targetCQLType).isEqualTo(cqlTypeToTest);
+              assertThat(e.value).isEqualTo(valueToTest);
+              assertThat(e.getMessage()).contains("frozen maps not supported");
+            });
+  }
+
+  @Test
+  public void invalidVectorValueNonNumberToCQL() {
     DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 1);
     List<JsonLiteral<?>> valueToTest = List.of(stringLiteral("abc"));
     assertToCQLFail(
@@ -1004,7 +1028,7 @@ public class JSONCodecRegistryTest {
   }
 
   @Test
-  public void invalidVectorValueWrongDimensionFail() {
+  public void invalidVectorValueWrongDimensionToCQL() {
     DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 1);
     List<JsonLiteral<?>> valueToTest = List.of(numberLiteral(1.0), numberLiteral(-0.5));
     assertToCQLFail(
@@ -1012,7 +1036,7 @@ public class JSONCodecRegistryTest {
   }
 
   @Test
-  public void invalidVectorBadBase64Fail() {
+  public void invalidVectorBadBase64ToCQL() {
     DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 3);
     EJSONWrapper valueToTest = binaryWrapper("not-base-64");
     assertToCQLFail(
@@ -1022,7 +1046,7 @@ public class JSONCodecRegistryTest {
   }
 
   @Test
-  public void invalidVectorBase64WrongLength() {
+  public void invalidVectorBase64WrongLengthToCQL() {
     DataType cqlTypeToTest = DataTypes.vectorOf(DataTypes.FLOAT, 3);
     byte[] rawBase64 = CqlVectorUtil.floatsToBytes(new float[] {-0.5f, 0.25f});
     EJSONWrapper valueToTest = binaryWrapper(rawBase64);
@@ -1050,6 +1074,46 @@ public class JSONCodecRegistryTest {
               for (String expectedMessage : expectedMessages) {
                 assertThat(e.getMessage()).contains(expectedMessage);
               }
+            });
+  }
+
+  @Test
+  public void invalidMapFrozenToJSON() {
+    DataType cqlTypeToTest = DataTypes.frozenMapOf(DataTypes.TEXT, DataTypes.TEXT);
+    TableMetadata testTable = TEST_DATA.mockTableMetadata(cqlTypeToTest);
+
+    // Unsupported key type exception caught at lookup, not use; will be
+    // "MissingJSONCodecException" for toJSON codec
+    var error =
+        assertThrowsExactly(
+            MissingJSONCodecException.class,
+            () ->
+                JSONCodecRegistries.DEFAULT_REGISTRY.codecToJSON(testTable, TEST_DATA.COLUMN_NAME),
+            String.format("Get toJSON codec for unsupported CQL map type %s", cqlTypeToTest));
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.getMessage()).contains("column type Map(TEXT => TEXT, frozen)");
+            });
+  }
+
+  @Test
+  void invalidMapKeyToJSON() {
+    DataType cqlTypeToTest = DataTypes.mapOf(DataTypes.INT, DataTypes.TEXT);
+    TableMetadata testTable = TEST_DATA.mockTableMetadata(cqlTypeToTest);
+
+    var error =
+        assertThrowsExactly(
+            MissingJSONCodecException.class,
+            () ->
+                JSONCodecRegistries.DEFAULT_REGISTRY.codecToJSON(testTable, TEST_DATA.COLUMN_NAME),
+            String.format("Get toJSON codec for unsupported CQL map type %s", cqlTypeToTest));
+
+    assertThat(error)
+        .satisfies(
+            e -> {
+              assertThat(e.getMessage()).contains("column type Map(INT => TEXT, not frozen");
             });
   }
 }

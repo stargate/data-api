@@ -97,6 +97,9 @@ public class JSONCodecRegistry {
     if (candidates == null) { // No scalar codec for this CQL type
       // But maybe structured type?
       if (columnType instanceof ListType lt) {
+        if (lt.isFrozen()) {
+          throw new ToCQLCodecException(value, columnType, "frozen lists not supported");
+        }
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(lt.getElementType());
         if (valueCodecCandidates != null) {
           // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
@@ -109,6 +112,9 @@ public class JSONCodecRegistry {
 
         // fall through
       } else if (columnType instanceof SetType st) {
+        if (st.isFrozen()) {
+          throw new ToCQLCodecException(value, columnType, "frozen sets not supported");
+        }
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(st.getElementType());
         if (valueCodecCandidates != null) {
           // Almost there! But to avoid ClassCastException if input not a JSON Array need this check
@@ -120,6 +126,9 @@ public class JSONCodecRegistry {
         }
         // fall through
       } else if (columnType instanceof MapType mt) {
+        if (mt.isFrozen()) {
+          throw new ToCQLCodecException(value, columnType, "frozen maps not supported");
+        }
         List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(mt.getValueType());
         if (valueCodecCandidates != null) {
           // Must check key type: only text/ascii supported
@@ -207,7 +216,7 @@ public class JSONCodecRegistry {
     if (fromCQLType instanceof ListType lt) {
       List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(lt.getElementType());
       // Can choose any one of codecs (since to-JSON is same for all); but must get one
-      if (valueCodecCandidates == null) {
+      if (valueCodecCandidates == null || lt.isFrozen()) {
         return null; // so caller reports problem
       }
       return (JSONCodec<JavaT, CqlT>)
@@ -216,7 +225,7 @@ public class JSONCodecRegistry {
     if (fromCQLType instanceof SetType st) {
       List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(st.getElementType());
       // Can choose any one of codecs (since to-JSON is same for all); but must get one
-      if (valueCodecCandidates == null) {
+      if ((valueCodecCandidates == null) || st.isFrozen()) {
         return null; // so caller reports problem
       }
       return (JSONCodec<JavaT, CqlT>)
@@ -224,7 +233,7 @@ public class JSONCodecRegistry {
     }
     if (fromCQLType instanceof MapType mt) {
       final DataType keyType = mt.getKeyType();
-      if (!isSupportedMapKeyType(keyType)) {
+      if (!isSupportedMapKeyType(keyType) || mt.isFrozen()) {
         return null; // so caller reports problem
       }
       List<JSONCodec<?, ?>> valueCodecCandidates = codecsByCQLType.get(mt.getValueType());
