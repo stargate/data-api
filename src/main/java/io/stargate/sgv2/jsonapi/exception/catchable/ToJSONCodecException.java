@@ -28,6 +28,6 @@ public class ToJSONCodecException extends CheckedApiException {
   private static String formatMessage(Object value, DataType fromCqlType, String rootCauseMessage) {
     return String.format(
         "Error trying to convert fromCqlType `%s` from value.class `%s` and value: %s. Root cause: %s",
-        fromCqlType, value.getClass().getName(), value);
+        fromCqlType, className(value), value);
   }
 }

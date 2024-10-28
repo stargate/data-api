@@ -74,10 +74,12 @@ public class MapCodecs {
         return (JSONCodec<Object, Object>) codec;
       }
     }
+    List<String> codecDescs =
+        valueCodecs.stream().map(codec -> codec.javaType().toString()).toList();
     String msg =
         String.format(
-            "no codec matching map declared value type `%s`, actual value type `%s`",
-            elementType, element.getClass().getName());
+            "no codec matching map declared value type `%s`, actual value type `%s` (checked %d codecs: %s)",
+            elementType, element.getClass().getName(), codecDescs.size(), codecDescs);
     throw new ToCQLCodecException(element, elementType, msg);
   }
 
