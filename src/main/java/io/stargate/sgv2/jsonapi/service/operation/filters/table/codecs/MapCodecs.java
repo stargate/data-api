@@ -12,6 +12,7 @@ import io.stargate.sgv2.jsonapi.exception.catchable.ToJSONCodecException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class MapCodecs {
   private static final GenericType<Map<String, Object>> GENERIC_MAP =
@@ -82,17 +83,27 @@ public class MapCodecs {
 
   /** Method that will convert from driver-provided CQL Map type into JSON output. */
   private static JsonNode cqlMapToJsonNode(
-      JSONCodec<?, ?> elementCodec0, ObjectMapper objectMapper, Object mapValue)
+      JSONCodec<?, ?> valueCodec0, ObjectMapper objectMapper, Object mapValue)
       throws ToJSONCodecException {
-    JSONCodec<?, Object> elementCodec = (JSONCodec<?, Object>) elementCodec0;
+    JSONCodec<?, Object> valueCodec = (JSONCodec<?, Object>) valueCodec0;
     final ObjectNode result = objectMapper.createObjectNode();
     for (Map.Entry<Object, Object> entry : ((Map<Object, Object>) mapValue).entrySet()) {
-      final String key = String.valueOf(entry.getKey());
-      Object value = entry.getValue();
-      if (value == null) {
-        result.putNull(key);
+      Object key = entry.getKey();
+      if (key instanceof String strKey) {
+        Object value = entry.getValue();
+        if (value == null) {
+          result.putNull(strKey);
+        } else {
+          result.put(strKey, valueCodec.toJSON(objectMapper, value));
+        }
       } else {
-        result.put(key, elementCodec.toJSON(objectMapper, value));
+        throw new ToJSONCodecException(
+            mapValue,
+            valueCodec.targetCQLType(),
+            String.format(
+                "expected String key, got: (%s) %s",
+                Optional.ofNullable(key).map(Object::getClass).map(Class::getName).orElse("null"),
+                String.valueOf(key)));
       }
     }
     return result;
