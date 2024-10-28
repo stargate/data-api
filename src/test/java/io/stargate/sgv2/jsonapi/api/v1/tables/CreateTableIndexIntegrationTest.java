@@ -279,7 +279,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                             "definition": {
                                               "column": "vector_type_2",
                                               "options": {
-                                                "sourceModel": "openai_v3_small"
+                                                "sourceModel": "openai-v3-small"
                                               }
                                             }
                                           }
@@ -316,7 +316,7 @@ class CreateTableIndexIntegrationTest extends AbstractTableIntegrationTestBase {
                                   "column": "vector_type_4",
                                   "options": {
                                     "metric": "cosine",
-                                    "sourceModel": "openai_v3_small"
+                                    "sourceModel": "openai-v3-small"
                                   }
                                 }
                               }
