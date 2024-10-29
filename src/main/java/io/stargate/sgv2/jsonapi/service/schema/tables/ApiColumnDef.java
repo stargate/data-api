@@ -106,6 +106,18 @@ public class ApiColumnDef {
     return Objects.equals(name, other.name);
   }
 
+  @Override
+  public String toString() {
+    return new StringBuilder()
+        .append("ApiColumnDef{")
+        .append("name=")
+        .append(name.asCql(true))
+        .append(", type.apiName=")
+        .append(type.apiName())
+        .append("}")
+        .toString();
+  }
+
   private static class CqlColumnFactory implements ColumnFactoryFromCql {
     /**
      * Call when converting from {@link ColumnMetadata} to {@link ApiColumnDef} where we know we can

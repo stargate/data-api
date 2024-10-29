@@ -349,10 +349,10 @@ request-errors:
     code: COLUMN_ALREADY_EXISTS
     title: Added columns already exists in the table
     body: |-
-      The command attempted to add columns to the table that already exists.
+      The command attempted to add columns to the table that already exist in the table schema.
       
       The table ${keyspace}.${table} defines the columns: ${allColumns}.
-      The request included the following unknown columns: ${duplicateColumns}.
+      The request included the following duplicate columns: ${duplicateColumns}.
       
       TODO WORDS
 

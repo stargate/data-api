@@ -43,8 +43,6 @@ public abstract class TypeFactoryFromCql<ApiT extends ApiDataType, CqlT extends 
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
-      LOGGER.warn("create() got cqlType: {}", cqlType.asCql(true, true));
-
       var primitiveType = PRIMITIVE_TYPES_BY_CQL_TYPE.get(cqlType);
       if (primitiveType != null) {
         return primitiveType;

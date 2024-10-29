@@ -118,7 +118,6 @@ public class ApiMapType extends CollectionApiDataType {
         throws UnsupportedCqlType {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
 
-      LOGGER.warn("map create() got cqlType: {}", cqlType.asCql(true, true));
       if (!isSupported(cqlType)) {
         throw new UnsupportedCqlType(cqlType);
       }
@@ -136,7 +135,6 @@ public class ApiMapType extends CollectionApiDataType {
     @Override
     public boolean isSupported(MapType cqlType) {
       Objects.requireNonNull(cqlType, "cqlType must not be null");
-      LOGGER.warn("map isSupported() isFrozen: {}", cqlType.isFrozen());
       // cannot be frozen
       if (cqlType.isFrozen()) {
         return false;

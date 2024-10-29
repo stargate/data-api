@@ -19,7 +19,7 @@ public class ApiVectorType extends CollectionApiDataType {
       new CqlTypeFactory();
 
   private final int dimension;
-  private VectorizeDefinition vectorizeDefinition;
+  private final VectorizeDefinition vectorizeDefinition;
 
   private ApiVectorType(int dimensions, VectorizeDefinition vectorizeDefinition) {
     super(
@@ -31,6 +31,7 @@ public class ApiVectorType extends CollectionApiDataType {
             vectorizeDefinition == null ? null : vectorizeDefinition.toVectorizeConfig()));
 
     this.dimension = dimensions;
+    this.vectorizeDefinition = vectorizeDefinition;
   }
 
   public int getDimension() {

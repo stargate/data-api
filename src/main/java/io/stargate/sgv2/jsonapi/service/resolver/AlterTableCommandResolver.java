@@ -33,9 +33,13 @@ import java.time.Duration;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class AlterTableCommandResolver implements CommandResolver<AlterTableCommand> {
+  private static final Logger LOGGER = LoggerFactory.getLogger(AlterTableCommandResolver.class);
+
   @Inject ObjectMapper objectMapper;
   @Inject VectorizeConfigValidator validateVectorize;
 

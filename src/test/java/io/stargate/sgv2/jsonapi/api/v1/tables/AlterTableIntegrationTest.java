@@ -111,8 +111,6 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
   class AlterTableAddColumnsFailure {
     @Test
     public void shouldAddColumnsToTable() {
-      final SchemaException schemaException =
-          SchemaException.Code.COLUMN_ALREADY_EXISTS.get(Map.of("column", "age"));
 
       assertTableCommand(keyspaceName, testTableName)
           .templated()
@@ -120,7 +118,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .hasSingleApiError(
               SchemaException.Code.COLUMN_ALREADY_EXISTS,
               SchemaException.class,
-              schemaException.body);
+              "The request included the following duplicate columns: age(int).");
     }
   }
 
@@ -278,7 +276,7 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
           .hasSingleApiError(
               SchemaException.Code.CANNOT_DROP_VECTORIZE_FROM_UNKNOWN_COLUMNS,
               SchemaException.class,
-              "The command attempted to drop the unknown columns: invalid_column.");
+              "The command attempted to drop vectorize configuration from the unknown columns: invalid_column.");
     }
   }
 }
