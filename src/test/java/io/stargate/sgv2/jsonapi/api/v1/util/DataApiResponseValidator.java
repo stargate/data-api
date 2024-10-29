@@ -243,8 +243,12 @@ public class DataApiResponseValidator {
      * "projectionSchema": { "country": { "type": "text" }, "name": { "type": "text" }, "human": {
      * "type": "boolean" }, "email": { "type": "text" }, "age": { "type": "tinyint" } }
      */
-    // NOTE: no way to get the json field name from the enum for now.
+    // NOTE: no way to get the json field name from the data type enum
     return body(
         "status.projectionSchema." + columnName + ".type", equalTo(type.typeName().apiName()));
+  }
+
+  public DataApiResponseValidator doesNotHaveProjectionSchemaWith(String columnName) {
+    return body("$", not(hasKey("status.projectionSchema." + columnName)));
   }
 }

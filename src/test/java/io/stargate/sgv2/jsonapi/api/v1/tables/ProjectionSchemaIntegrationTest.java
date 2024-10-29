@@ -96,12 +96,12 @@ public class ProjectionSchemaIntegrationTest extends AbstractTableIntegrationTes
   @ParameterizedTest
   @MethodSource("findWithProjectionSchemaTests")
   public void findNoFilterWithProjectionSchema(
-      Command.CommandName commandName, Map<String, PrimitiveApiDataTypeDef> columns) {
+      Command.CommandName commandName, Map<String, PrimitiveApiDataTypeDef> projectionColumns) {
 
     var validator =
         assertTableCommand(keyspaceName, TABLE_NAME)
             .templated()
-            .find(commandName, Map.of(), columns.keySet().stream().toList())
+            .find(commandName, Map.of(), projectionColumns.keySet().stream().toList())
             .wasSuccessful()
             .hasProjectionSchema();
 
@@ -113,7 +113,21 @@ public class ProjectionSchemaIntegrationTest extends AbstractTableIntegrationTes
       throw new IllegalArgumentException("Unexpected command name: " + commandName);
     }
 
-    assertProjectionSchema(validator, columns);
+    assertProjectionSchema(validator, projectionColumns);
+  }
+
+  @Test
+  public void findManyProjectionMissingColumns() {
+
+    // Select a column that does not exist, should not be in the projection schema
+    assertTableCommand(keyspaceName, TABLE_NAME)
+        .templated()
+        .find(Map.of("id", "row-1"), List.of("id", "MISSING_COLUMN"))
+        .wasSuccessful()
+        .hasProjectionSchema()
+        .hasDocuments(1)
+        .hasProjectionSchemaWith("id", ApiDataTypeDefs.TEXT)
+        .doesNotHaveProjectionSchemaWith("MISSING_COLUMN");
   }
 
   private DataApiResponseValidator assertProjectionSchema(
