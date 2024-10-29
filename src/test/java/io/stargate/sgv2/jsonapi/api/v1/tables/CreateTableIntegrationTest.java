@@ -438,7 +438,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                   "nullColumnTypeTable",
                   true,
                   ErrorCodeV1.INVALID_REQUEST_NOT_JSON.name(),
-                  "The Long Form type definition must be a JSON Object with at least a type field that is a String (value is null)")));
+                  "The Long Form type definition must be a JSON Object with at least a `type` field that is a String (value is null)")));
 
       // Map type tests
       testCases.add(

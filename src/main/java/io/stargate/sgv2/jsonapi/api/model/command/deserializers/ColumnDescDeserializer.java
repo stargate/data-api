@@ -26,7 +26,7 @@ public class ColumnDescDeserializer extends StdDeserializer<ColumnDesc> {
   private static final String ERR_PREFIX = "The Long Form type definition";
   private static final String ERR_OBJECT_WITH_TYPE =
       ERR_PREFIX
-          + " must be a JSON Object with at least a %s field that is a String"
+          + " must be a JSON Object with at least a `%s` field that is a String"
               .formatted(TableDescConstants.ColumnDesc.TYPE);
 
   public ColumnDescDeserializer() {
@@ -60,13 +60,13 @@ public class ColumnDescDeserializer extends StdDeserializer<ColumnDesc> {
       throw new JsonMappingException(
           jsonParser,
           ERR_OBJECT_WITH_TYPE
-              + " (%s field is missing)".formatted(TableDescConstants.ColumnDesc.TYPE));
+              + " (`%s` field is missing)".formatted(TableDescConstants.ColumnDesc.TYPE));
     }
     if (!typeNode.isTextual()) {
       throw new JsonMappingException(
           jsonParser,
           ERR_OBJECT_WITH_TYPE
-              + " (%s field is not String)".formatted(TableDescConstants.ColumnDesc.TYPE));
+              + " (`%s` field is not String)".formatted(TableDescConstants.ColumnDesc.TYPE));
     }
 
     // Using long form, things are different. The type could be any type, not just a primitive

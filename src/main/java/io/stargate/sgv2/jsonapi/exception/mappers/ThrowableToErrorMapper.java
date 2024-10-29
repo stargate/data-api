@@ -267,11 +267,7 @@ public final class ThrowableToErrorMapper {
     // NOTE: must be after the UnrecognizedPropertyException check
     if (e instanceof JsonMappingException jme) {
       return ErrorCodeV1.INVALID_REQUEST_NOT_JSON
-          .toApiException(
-              Response.Status.BAD_REQUEST,
-              "underlying problem: (%s) %s",
-              e.getClass().getSimpleName(),
-              e.getMessage())
+          .toApiException(Response.Status.BAD_REQUEST, "%s", e.getMessage())
           .getCommandResultError();
     }
 
