@@ -7,8 +7,10 @@ import static org.hamcrest.Matchers.hasEntry;
 
 import io.restassured.response.ValidatableResponse;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
 import io.stargate.sgv2.jsonapi.config.constants.ErrorObjectV2Constants;
 import io.stargate.sgv2.jsonapi.exception.*;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
 import java.util.Map;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -24,13 +26,19 @@ public class DataApiResponseValidator {
     this.commandName = commandName;
     this.response = response;
 
-    this.responseIsError = responseIsError();
+    this.responseIsError =
+        switch (commandName) {
+          case DROP_TABLE, DROP_INDEX, CREATE_INDEX, CREATE_TABLE, ALTER_TABLE ->
+              responseIsErrorWithOptionalStatus();
+          default -> responseIsError();
+        };
     this.responseIsSuccess =
         switch (commandName) {
           case FIND_ONE, FIND -> responseIsFindSuccessOptionalStatus();
           case INSERT_ONE, INSERT_MANY, UPDATE_ONE, UPDATE_MANY, DELETE_ONE, DELETE_MANY ->
               responseIsWriteSuccess();
-          case CREATE_TABLE,
+          case ALTER_TABLE,
+                  CREATE_TABLE,
                   DROP_TABLE,
                   CREATE_INDEX,
                   DROP_INDEX,
@@ -91,7 +99,7 @@ public class DataApiResponseValidator {
       case DELETE_ONE, DELETE_MANY -> {
         return hasNoErrors();
       }
-      case CREATE_TABLE, DROP_TABLE, CREATE_INDEX, DROP_INDEX, CREATE_VECTOR_INDEX -> {
+      case ALTER_TABLE, CREATE_TABLE, DROP_TABLE, CREATE_INDEX, DROP_INDEX, CREATE_VECTOR_INDEX -> {
         return hasNoErrors().hasStatusOK();
       }
       case LIST_TABLES -> {
@@ -99,6 +107,9 @@ public class DataApiResponseValidator {
       }
       case CREATE_COLLECTION -> {
         return hasNoErrors().hasStatusOK();
+      }
+      case UPDATE_ONE -> {
+        return hasNoErrors();
       }
       default ->
           throw new IllegalArgumentException(
@@ -183,6 +194,10 @@ public class DataApiResponseValidator {
     return body(path, is(nullValue()));
   }
 
+  public DataApiResponseValidator hasField(String path) {
+    return body(path, is(anything()));
+  }
+
   public DataApiResponseValidator hasJSONField(String path, String rawJson) {
     return body(path, jsonEquals(rawJson));
   }
@@ -213,11 +228,39 @@ public class DataApiResponseValidator {
 
   // // // Read Command Validation // // //
 
+  public DataApiResponseValidator hasSingleDocument() {
+    return body("data.document", is(notNullValue()));
+  }
+
   public DataApiResponseValidator hasEmptyDataDocuments() {
     return body("data.documents", is(empty()));
   }
 
   public DataApiResponseValidator hasDocuments(int size) {
     return body("data.documents", hasSize(size));
+  }
+
+  // // // Projection Schema // // //
+  public DataApiResponseValidator hasProjectionSchema() {
+    return hasField("status." + CommandStatus.PROJECTION_SCHEMA);
+  }
+
+  public DataApiResponseValidator hasProjectionSchemaWith(String columnName, ApiDataType type) {
+    // expected format
+    /**
+     * "projectionSchema": { "country": { "type": "text" }, "name": { "type": "text" }, "human": {
+     * "type": "boolean" }, "email": { "type": "text" }, "age": { "type": "tinyint" } }
+     */
+    // NOTE: no way to get the json field name from the data type enum
+    return body(
+        "status.projectionSchema." + columnName + ".type", equalTo(type.typeName().apiName()));
+  }
+
+  public DataApiResponseValidator doesNotHaveProjectionSchemaWith(String columnName) {
+    return body("$", not(hasKey("status.projectionSchema." + columnName)));
+  }
+
+  public DataApiResponseValidator hasDocumentInPosition(int position, String documentJSON) {
+    return body("data.documents[%s]".formatted(position), jsonEquals(documentJSON));
   }
 }

@@ -8,6 +8,8 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.stargate.sgv2.jsonapi.exception.DocumentException;
 import io.stargate.sgv2.jsonapi.service.operation.filters.table.codecs.JSONCodecRegistryTestData;
 import io.stargate.sgv2.jsonapi.testresource.DseTestResource;
+import io.stargate.sgv2.jsonapi.util.Base64Util;
+import io.stargate.sgv2.jsonapi.util.CqlVectorUtil;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.ClassOrderer;
@@ -29,6 +31,7 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
   static final String TABLE_WITH_INET_COLUMN = "insertOneInetColumnTable";
   static final String TABLE_WITH_LIST_COLUMNS = "insertOneListColumnsTable";
   static final String TABLE_WITH_SET_COLUMNS = "insertOneSetColumnsTable";
+  static final String TABLE_WITH_MAP_COLUMNS = "insertOneMapColumnsTable";
   static final String TABLE_WITH_VECTOR_COLUMN = "insertOneVectorColumnTable";
 
   final JSONCodecRegistryTestData codecTestData = new JSONCodecRegistryTestData();
@@ -139,6 +142,22 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
                 Map.of("type", "set", "valueType", "double"),
                 "stringSet",
                 Map.of("type", "set", "valueType", "text")),
+            "id")
+        .wasSuccessful();
+
+    assertNamespaceCommand(keyspaceName)
+        .templated()
+        .createTable(
+            TABLE_WITH_MAP_COLUMNS,
+            Map.of(
+                "id",
+                "text",
+                "intMap",
+                Map.of("type", "map", "keyType", "text", "valueType", "int"),
+                "doubleMap",
+                Map.of("type", "map", "keyType", "ascii", "valueType", "double"),
+                "stringMap",
+                Map.of("type", "map", "keyType", "text", "valueType", "text")),
             "id")
         .wasSuccessful();
 
@@ -925,9 +944,117 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
 
   @Nested
   @Order(10)
+  class InsertMapColumns {
+    @Test
+    void insertValidMapValues() {
+      // First with values for all fields (note: harder to use helper methods)
+      String docJSON =
+          """
+                          { "id": "mapValidFull",
+                            "doubleMap": {"a": 0.0,  "b":-0.5},
+                            "intMap": {"i1": 1, "i2": 2, "i3": -42},
+                            "stringMap": {"abc": "xyz"}
+                          }
+                          """;
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(docJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"mapValidFull\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", docJSON);
+
+      // And then just for int-Map; null for string, missing double
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                              { "id": "mapValidPartial",
+                                "stringMap": null,
+                                "intMap": {"a": 3, "b": -999, "c": 42}
+                              }
+                              """)
+          .wasSuccessful();
+
+      // If we ask for all (select * basically), get explicit empty Maps:
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .postFindOne("{ \"filter\": { \"id\": \"mapValidPartial\" } }")
+          .wasSuccessful()
+          .hasJSONField(
+              "data.document",
+              """
+                                      { "id": "mapValidPartial",
+                                        "doubleMap": { },
+                                        "intMap": {"a": 3, "b": -999, "c": 42},
+                                        "stringMap": { }
+                                      }
+                                      """);
+
+      // But if specifically just for intMap, get just that
+      // NOTE: id column(s) not auto-included unlike with Collections and "_id"
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .postFindOne(
+              """
+                                          { "filter": { "id": "mapValidPartial" },
+                                            "projection": { "intMap": 1 }
+                                          }
+                                      """)
+          .wasSuccessful()
+          .hasJSONField(
+              "data.document",
+              """
+                                      {
+                                        "intMap": {"a": 3, "b": -999, "c": 42}
+                                      }
+                                      """);
+    }
+
+    @Test
+    void failOnNonObjectForMap() {
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                      {
+                        "id":"mapInvalid",
+                        "intMap":"abc"
+                      }
+                      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `Map(TEXT => INT",
+              "no codec matching value type");
+    }
+
+    @Test
+    void failOnWrongMapValueType() {
+      assertTableCommand(keyspaceName, TABLE_WITH_MAP_COLUMNS)
+          .templated()
+          .insertOne(
+              """
+                      {
+                        "id":"mapInvalid",
+                        "intMap":{"i1": "abc"}
+                      }
+                      """)
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `INT`",
+              "actual value type `java.lang.String`");
+    }
+  }
+
+  @Nested
+  @Order(11)
   class InsertVectorColumns {
     @Test
-    void insertValidVectorValue() {
+    void insertValidVectorValueUsingList() {
       String docJSON =
           """
                       { "id": "vectorValid",
@@ -943,6 +1070,36 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
           .postFindOne("{ \"filter\": { \"id\": \"vectorValid\" } }")
           .wasSuccessful()
           .hasJSONField("data.document", docJSON);
+    }
+
+    @Test
+    void insertValidVectorValueUsingBase64() {
+      final float[] floats = {1.0f, -0.5f, 2.5f};
+      final byte[] floatsAsBytes = CqlVectorUtil.floatsToBytes(floats);
+
+      String inputJSON =
+              """
+                          { "id": "vectorValidBase64",
+                            "vector": {"$binary": "%s"}
+                          }
+                          """
+              .formatted(Base64Util.encodeAsMimeBase64(floatsAsBytes));
+      // Base64-encoded float array used in input but will be read back as Array:
+      String expJSON =
+          """
+                          { "id": "vectorValidBase64",
+                            "vector": [1.0, -0.5, 2.5]
+                          }
+                          """;
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .templated()
+          .insertOne(inputJSON)
+          .wasSuccessful();
+
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .postFindOne("{ \"filter\": { \"id\": \"vectorValidBase64\" } }")
+          .wasSuccessful()
+          .hasJSONField("data.document", expJSON);
     }
 
     @Test
@@ -981,6 +1138,27 @@ public class InsertOneTableIntegrationTest extends AbstractTableIntegrationTestB
               "Only values that are supported by",
               "Error trying to convert to targetCQLType `Vector(FLOAT",
               "expected JSON Number value as Vector element at position #0");
+    }
+
+    @Test
+    void failOnVectorSizeMismatch() {
+      // Exp 3, but only gets 2:
+      final byte[] floatsAsBytes = CqlVectorUtil.floatsToBytes(new float[] {1.0f, -0.5f});
+      assertTableCommand(keyspaceName, TABLE_WITH_VECTOR_COLUMN)
+          .templated()
+          .insertOne(
+                  """
+                      { "id": "vectorValidBase64",
+                        "vector": {"$binary": "%s"}
+                      }
+                      """
+                  .formatted(Base64Util.encodeAsMimeBase64(floatsAsBytes)))
+          .hasSingleApiError(
+              DocumentException.Code.INVALID_COLUMN_VALUES,
+              DocumentException.class,
+              "Only values that are supported by",
+              "Error trying to convert to targetCQLType `Vector(FLOAT",
+              "expected vector of length 3, got one with 2 elements");
     }
   }
 }

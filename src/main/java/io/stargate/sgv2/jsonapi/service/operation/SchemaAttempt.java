@@ -4,6 +4,7 @@ import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.servererrors.InvalidQueryException;
+import com.datastax.oss.driver.api.core.servererrors.QueryExecutionException;
 import com.datastax.oss.driver.api.core.servererrors.TruncateException;
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
@@ -48,7 +49,8 @@ public abstract class SchemaAttempt<SchemaT extends SchemaObject>
     public boolean shouldRetry(Throwable throwable) {
       // AARON - this is copied from QueryExecutor.executeSchemaChange()
       return throwable instanceof DriverTimeoutException
-          || throwable instanceof InvalidQueryException
+          || (throwable instanceof QueryExecutionException
+              && !(throwable instanceof InvalidQueryException))
           || (throwable instanceof TruncateException
               && "Failed to interrupt compactions".equals(throwable.getMessage()));
     }

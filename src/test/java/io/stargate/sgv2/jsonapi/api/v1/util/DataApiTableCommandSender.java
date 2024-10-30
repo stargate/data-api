@@ -23,6 +23,10 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return request.post(CollectionResource.BASE_PATH, keyspace, tableName);
   }
 
+  public DataApiResponseValidator postUpdateOne(String jsonClause) {
+    return postCommand(Command.CommandName.UPDATE_ONE, jsonClause);
+  }
+
   public DataApiResponseValidator postDeleteMany(String jsonClause) {
     return postCommand(Command.CommandName.DELETE_MANY, jsonClause);
   }
@@ -35,7 +39,7 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
    * Partially typed method for sending a POST command to the Data API: caller is responsible for
    * formatting the clause to include as (JSON Object) argument of "finOne" command.
    *
-   * @param findOneClause JSON clause to include in the "findOne" command: minimally empty JSON
+   * @param `findOneClause` JSON clause to include in the "findOne" command: minimally empty JSON
    *     Object ({@code { } })
    * @return Response validator for further assertions
    */
@@ -63,7 +67,7 @@ public class DataApiTableCommandSender extends DataApiCommandSenderBase<DataApiT
     return postCommand(Command.CommandName.CREATE_VECTOR_INDEX, jsonClause);
   }
 
-  public DataApiResponseValidator postDropIndex(String jsonClause) {
-    return postCommand(Command.CommandName.DROP_INDEX, jsonClause);
+  public DataApiResponseValidator postAlterTable(String tableDefAsJSON) {
+    return postCommand(Command.CommandName.ALTER_TABLE, tableDefAsJSON);
   }
 }

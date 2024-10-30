@@ -151,7 +151,7 @@ public enum ErrorCodeV1 {
   VECTORIZE_INVALID_AUTHENTICATION_TYPE("Invalid vectorize authentication type"),
 
   VECTORIZE_CREDENTIAL_INVALID("Invalid credential name for vectorize"),
-  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeConfig check fail"),
+  VECTORIZECONFIG_CHECK_FAIL("Internal server error: VectorizeDefinition check fail"),
 
   UNAUTHENTICATED_REQUEST("UNAUTHENTICATED: Invalid token"),
   COLLECTION_CREATION_ERROR(

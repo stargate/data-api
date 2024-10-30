@@ -2,10 +2,14 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
 import io.smallrye.mutiny.Uni;
+import io.stargate.sgv2.jsonapi.api.model.command.CommandStatus;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.ColumnsDescContainer;
 import io.stargate.sgv2.jsonapi.exception.APIException;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.CommandQueryExecutor;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.DriverExceptionHandler;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
+import io.stargate.sgv2.jsonapi.util.PrettyPrintable;
+import io.stargate.sgv2.jsonapi.util.PrettyToStringBuilder;
 import java.time.Duration;
 import java.util.*;
 import org.slf4j.Logger;
@@ -33,7 +37,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class OperationAttempt<
         SubT extends OperationAttempt<SubT, SchemaT>, SchemaT extends SchemaObject>
-    implements Comparable<SubT> {
+    implements Comparable<SubT>, PrettyPrintable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OperationAttempt.class);
 
@@ -74,6 +78,10 @@ public abstract class OperationAttempt<
 
   // Keep this private, so sub-classes set through setter incase we need to syncronize later
   private OperationStatus status = OperationStatus.UNINITIALIZED;
+
+  // Number of times the operation has been retried, we started with 0 and only increase when we
+  // decide to retry.
+  private int retryCount = 0;
 
   /**
    * Create a new {@link OperationAttempt} with the provided position, schema object and retry
@@ -118,8 +126,9 @@ public abstract class OperationAttempt<
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "execute() - starting subclass={}, {}",
+          "execute() - starting subclass={}, status={}, {}",
           getClass().getSimpleName(),
+          status(),
           positionAndAttemptId());
     }
 
@@ -205,12 +214,14 @@ public abstract class OperationAttempt<
     var shouldRetry = retryPolicy.shouldRetry(throwable);
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "decideRetry() shouldRetry={}, {}, for throwable {}",
+          "decideRetry() retryCount={}, retryPolicy.maxRetries={}, shouldRetry={}, {}, for throwable {}",
+          retryCount,
+          retryPolicy.maxRetries(),
           shouldRetry,
           positionAndAttemptId(),
           throwable.toString());
     }
-
+    retryCount++;
     return shouldRetry;
   }
 
@@ -253,6 +264,14 @@ public abstract class OperationAttempt<
         throwable instanceof RuntimeException
             ? exceptionHandler.maybeHandle(schemaObject, (RuntimeException) throwable)
             : throwable;
+
+    if ((handledException == null && throwable != null) && LOGGER.isWarnEnabled()) {
+      // this means we are swallowing an error, may be correct but make sure we warn
+      LOGGER.warn(
+          "onCompletion() - exception handler returned null so error is swallowed, throwable={}, {}",
+          throwable,
+          positionAndAttemptId());
+    }
 
     if (LOGGER.isDebugEnabled()) {
       if (handledException != throwable) {
@@ -306,7 +325,7 @@ public abstract class OperationAttempt<
 
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug(
-          "setStatus() status changing from {} to {} for {}",
+          "setStatus() - status changing from {} to {} for {}",
           status(),
           newStatus,
           positionAndAttemptId());
@@ -436,6 +455,12 @@ public abstract class OperationAttempt<
         }
         setStatus(OperationStatus.ERROR);
       }
+    } else if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug(
+          "maybeAddFailure() - will not add failure for {}, because has existing failure={}, attempted new failure={}",
+          positionAndAttemptId(),
+          failure.toString(),
+          throwable.toString());
     }
     return downcast();
   }
@@ -464,30 +489,21 @@ public abstract class OperationAttempt<
     return List.copyOf(warnings);
   }
 
+  /**
+   * Called to get the description of the schema to use when building the response.
+   *
+   * @return The optional object that describes the schema, if present the object will be serialised
+   *     to JSON and included in the response status such as {@link
+   *     CommandStatus#PRIMARY_KEY_SCHEMA}. How this is included in the response is up to the {@link
+   *     OperationAttemptPage} that is building the response.
+   */
+  public Optional<ColumnsDescContainer> schemaDescription() {
+    return Optional.empty();
+  }
+
   /** helper method to build a string with the position and attemptId, used in logging. */
   public String positionAndAttemptId() {
     return String.format("position=%d, attemptId=%s", position, attemptId);
-  }
-
-  @Override
-  public String toString() {
-    return new StringBuilder("OperationAttempt{")
-        .append("subtype={")
-        .append(getClass().getSimpleName())
-        .append("}, ")
-        .append("position=")
-        .append(position)
-        .append(", ")
-        .append("status=")
-        .append(status)
-        .append(", ")
-        .append("attemptId=")
-        .append(attemptId)
-        .append(", ")
-        .append("failure=")
-        .append(failure)
-        .append("}")
-        .toString();
   }
 
   /**
@@ -501,6 +517,23 @@ public abstract class OperationAttempt<
     return Integer.compare(position(), other.position());
   }
 
+  @Override
+  public String toString() {
+    return toString(false);
+  }
+
+  @Override
+  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+    return prettyToStringBuilder
+        .append("position", position)
+        .append("status", status)
+        .append("attemptId", attemptId)
+        .append("schemaObject", schemaObject)
+        .append("retryPolicy", retryPolicy)
+        .append("warnings", warnings)
+        .append("failure", failure);
+  }
+
   /**
    * A policy for retrying an attempt, if the attempt does not want to retry then it should use
    * {@link RetryPolicy#NO_RETRY}.
@@ -508,7 +541,7 @@ public abstract class OperationAttempt<
    * <p>To implement a custom retry policy, subclass this class and override {@link
    * #shouldRetry(Throwable)}.
    */
-  public static class RetryPolicy {
+  public static class RetryPolicy implements PrettyPrintable {
 
     public static final RetryPolicy NO_RETRY = new RetryPolicy();
 
@@ -543,8 +576,27 @@ public abstract class OperationAttempt<
       return delay;
     }
 
+    /**
+     * Called by the OperationAttempt to decide if the attempt should be retried.
+     *
+     * @param throwable The exception raised from called {@link
+     *     #executeStatement(CommandQueryExecutor)} <b>before</b> it has been passed through a
+     *     {@link DriverExceptionHandler}.
+     * @return <code>True</code> if the attempt should be retried, the policy does not need to keep
+     *     track of the retry counts, it only needs to decide if the attempt should be retried.
+     */
     public boolean shouldRetry(Throwable throwable) {
       return false;
+    }
+
+    @Override
+    public String toString() {
+      return toString(false);
+    }
+
+    @Override
+    public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+      return prettyToStringBuilder.append("maxRetries", maxRetries).append("delay", delay);
     }
   }
 }

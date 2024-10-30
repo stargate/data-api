@@ -1,6 +1,7 @@
 package io.stargate.sgv2.jsonapi.service.operation.query;
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.querybuilder.schema.Drop;
 import com.datastax.oss.driver.api.querybuilder.select.Select;
 import java.util.function.Function;
 
@@ -12,7 +13,7 @@ public interface CQLOption<TargetT> extends Function<TargetT, TargetT>, CQLClaus
       return (select) -> select.limit(limit);
     }
 
-    static CQLOption<Select> withAllowFiltering() {
+    static CQLOption<Select> allowFiltering() {
       return Select::allowFiltering;
     }
   }
@@ -20,6 +21,12 @@ public interface CQLOption<TargetT> extends Function<TargetT, TargetT>, CQLClaus
   interface ForStatement {
     static CQLOption<SimpleStatement> pageSize(int pageSize) {
       return (statement) -> statement.setPageSize(pageSize);
+    }
+  }
+
+  interface ForDrop {
+    static CQLOption<Drop> ifExists() {
+      return Drop::ifExists;
     }
   }
 }

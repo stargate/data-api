@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.fixtures.testdata;
 
+import io.stargate.sgv2.jsonapi.service.operation.OperationAttemptTestData;
+import io.stargate.sgv2.jsonapi.service.operation.ReadAttemptTestData;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
@@ -49,6 +51,10 @@ public class TestData {
     return getOrCache(OperationAttemptTestData.class);
   }
 
+  public ReadAttemptTestData readAttempt() {
+    return getOrCache(ReadAttemptTestData.class);
+  }
+
   public ResultSetTestData resultSet() {
     return getOrCache(ResultSetTestData.class);
   }
@@ -59,5 +65,17 @@ public class TestData {
 
   public WhereAnalyzerTestData whereAnalyzer() {
     return getOrCache(WhereAnalyzerTestData.class);
+  }
+
+  public SelectCQLClauseTestData selectCQLClause() {
+    return getOrCache(SelectCQLClauseTestData.class);
+  }
+
+  public WhereCQLClauseTestData whereCQLClause() {
+    return getOrCache(WhereCQLClauseTestData.class);
+  }
+
+  public TableUpdateAnalyzerTestData tableUpdateAnalyzer() {
+    return getOrCache(TableUpdateAnalyzerTestData.class);
   }
 }

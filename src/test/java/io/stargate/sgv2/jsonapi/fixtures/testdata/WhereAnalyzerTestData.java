@@ -141,7 +141,7 @@ public class WhereAnalyzerTestData extends TestDataSuplier {
 
     public WhereAnalyzerFixture assertFilterExceptionCode(FilterException.Code code) {
       if (code == null) {
-        assertThat(exception).as("No FilterException when: %s".formatted(code, message)).isNull();
+        assertThat(exception).as("No FilterException when: %s".formatted(message)).isNull();
       } else {
         assertThat(exception)
             .as("FilterException with code %s when: %s".formatted(code, message))

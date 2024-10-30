@@ -18,6 +18,9 @@ import io.stargate.sgv2.jsonapi.api.model.command.clause.filter.ValueComparisonO
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortClause;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.sort.SortExpression;
 import io.stargate.sgv2.jsonapi.api.model.command.clause.update.UpdateClause;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperation;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.AlterTableOperationImpl;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CountDocumentsCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.CreateCollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.DeleteOneCommand;
@@ -25,6 +28,8 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneAndUpdateCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
+import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -758,6 +763,187 @@ class ObjectMapperConfigurationTest {
               countCommand -> {
                 FilterClause filterClause = countCommand.filterClause();
                 assertThat(filterClause).isNotNull();
+              });
+    }
+  }
+
+  @Nested
+  class AlterTable {
+    @Test
+    public void addColumns() throws Exception {
+      String json =
+          """
+                              {
+                                "alterTable": {
+                                    "operation": {
+                                        "add": {
+                                            "columns": {
+                                                "new_col_1" :"text",
+                                                "new_col_2" : {
+                                                    "type": "map",
+                                                    "keyType": "text",
+                                                    "valueType": "text"
+                                                },
+                                                "content": {
+                                                 "type": "vector",
+                                                 "dimension": 1024,
+                                                 "service": {
+                                                   "provider": "nvidia",
+                                                   "modelName": "NV-Embed-QA"
+                                                 }
+                                               }
+                                            }
+                                        }
+                                    }
+                                }
+                              }
+                              """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              AlterTableCommand.class,
+              alterTableCommand -> {
+                AlterTableOperation operation = alterTableCommand.operation();
+                assertThat(operation).isNotNull();
+                assertThat(operation)
+                    .isInstanceOfSatisfying(
+                        AlterTableOperationImpl.AddColumns.class,
+                        addColumns -> {
+                          Map<String, ColumnDesc> columns = addColumns.columns();
+                          assertThat(columns).isNotNull();
+                          assertThat(columns).hasSize(3);
+                          assertThat(columns).containsEntry("new_col_1", PrimitiveColumnDesc.TEXT);
+                          assertThat(columns)
+                              .containsEntry(
+                                  "new_col_2",
+                                  new MapColumnDesc(
+                                      PrimitiveColumnDesc.TEXT, PrimitiveColumnDesc.TEXT));
+                          assertThat(columns)
+                              .containsEntry(
+                                  "content",
+                                  new VectorColumnDesc(
+                                      1024,
+                                      new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
+                        });
+              });
+    }
+
+    @Test
+    public void dropColumns() throws Exception {
+      String json =
+          """
+                                      {
+                                        "alterTable": {
+                                            "operation": {
+                                                "drop": {
+                                                   "columns": ["new_col_1", "new_col_2"]
+                                                }
+                                            }
+                                        }
+                                      }
+                                      """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              AlterTableCommand.class,
+              alterTableCommand -> {
+                AlterTableOperation operation = alterTableCommand.operation();
+                assertThat(operation).isNotNull();
+                assertThat(operation)
+                    .isInstanceOfSatisfying(
+                        AlterTableOperationImpl.DropColumns.class,
+                        dropColumns -> {
+                          List<String> columns = dropColumns.columns();
+                          assertThat(columns).isNotNull();
+                          assertThat(columns).hasSize(2);
+                          assertThat(columns).contains("new_col_1", "new_col_2");
+                        });
+              });
+    }
+
+    @Test
+    public void addVectorize() throws Exception {
+      String json =
+          """
+                      {
+                        "alterTable": {
+                            "operation": {
+                                "addVectorize": {
+                                    "columns": {
+                                        "vector_column_1" : {
+                                            "provider": "nvidia",
+                                            "modelName": "NV-Embed-QA"
+                                        },
+                                        "vector_column_2" : {
+                                            "provider": "mistral",
+                                            "modelName": "mistral-embed"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                      }
+                      """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              AlterTableCommand.class,
+              alterTableCommand -> {
+                AlterTableOperation operation = alterTableCommand.operation();
+                assertThat(operation).isNotNull();
+                assertThat(operation)
+                    .isInstanceOfSatisfying(
+                        AlterTableOperationImpl.AddVectorize.class,
+                        addVectorizeConfig -> {
+                          Map<String, VectorizeConfig> columns = addVectorizeConfig.columns();
+                          assertThat(columns).isNotNull();
+                          assertThat(columns).hasSize(2);
+                          assertThat(columns)
+                              .containsEntry(
+                                  "vector_column_1",
+                                  new VectorizeConfig("nvidia", "NV-Embed-QA", null, null));
+                          assertThat(columns)
+                              .containsEntry(
+                                  "vector_column_2",
+                                  new VectorizeConfig("mistral", "mistral-embed", null, null));
+                        });
+              });
+    }
+
+    @Test
+    public void dropVectorize() throws Exception {
+      String json =
+          """
+              {
+                "alterTable": {
+                    "operation": {
+                        "dropVectorize": {
+                           "columns": ["vector_column_1"]
+                        }
+                    }
+                }
+              }
+              """;
+
+      Command result = objectMapper.readValue(json, Command.class);
+      assertThat(result)
+          .isInstanceOfSatisfying(
+              AlterTableCommand.class,
+              alterTableCommand -> {
+                AlterTableOperation operation = alterTableCommand.operation();
+                assertThat(operation).isNotNull();
+                assertThat(operation)
+                    .isInstanceOfSatisfying(
+                        AlterTableOperationImpl.DropVectorize.class,
+                        dropVectorizeForColumns -> {
+                          List<String> columns = dropVectorizeForColumns.columns();
+                          assertThat(columns).isNotNull();
+                          assertThat(columns).hasSize(1);
+                          assertThat(columns).contains("vector_column_1");
+                        });
               });
     }
   }

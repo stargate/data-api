@@ -16,7 +16,9 @@ import io.stargate.sgv2.jsonapi.api.request.EmbeddingCredentials;
 import io.stargate.sgv2.jsonapi.config.constants.DocumentConstants;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorColumnDefinition;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorizeDefinition;
 import io.stargate.sgv2.jsonapi.service.embedding.DataVectorizer;
 import io.stargate.sgv2.jsonapi.service.schema.SimilarityFunction;
 import io.stargate.sgv2.jsonapi.service.schema.collections.CollectionSchemaObject;
@@ -233,12 +235,11 @@ public class DataVectorizerTest {
               IdConfig.defaultIdConfig(),
               VectorConfig.fromColumnDefinitions(
                   List.of(
-                      new VectorConfig.ColumnVectorDefinition(
+                      new VectorColumnDefinition(
                           DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD,
                           4,
                           SimilarityFunction.COSINE,
-                          new VectorConfig.ColumnVectorDefinition.VectorizeConfig(
-                              "custom", "custom", null, null)))),
+                          new VectorizeDefinition("custom", "custom", null, null)))),
               null);
       List<JsonNode> documents = new ArrayList<>();
       for (int i = 0; i < 2; i++) {
