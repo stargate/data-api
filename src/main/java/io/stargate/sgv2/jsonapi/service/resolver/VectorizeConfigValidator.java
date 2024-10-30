@@ -319,6 +319,7 @@ public class VectorizeConfigValidator {
       VectorizeConfig userConfig,
       EmbeddingProvidersConfig.EmbeddingProviderConfig providerConfig,
       Integer userVectorDimension) {
+
     // Find the model configuration by matching the model name
     // 1. huggingfaceDedicated does not require model, but requires dimension
     if (userConfig.provider().equals(ProviderConstants.HUGGINGFACE_DEDICATED)) {
@@ -327,6 +328,7 @@ public class VectorizeConfigValidator {
             "'dimension' is needed for provider %s", ProviderConstants.HUGGINGFACE_DEDICATED);
       }
     }
+
     // 2. other providers do require model
     if (userConfig.modelName() == null) {
       throw ErrorCodeV1.INVALID_CREATE_COLLECTION_OPTIONS.toApiException(

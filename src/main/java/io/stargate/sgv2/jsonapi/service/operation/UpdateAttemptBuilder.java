@@ -2,7 +2,7 @@ package io.stargate.sgv2.jsonapi.service.operation;
 
 import com.datastax.oss.driver.api.querybuilder.update.Update;
 import io.stargate.sgv2.jsonapi.exception.FilterException;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableBasedSchemaObject;
+import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.query.UpdateValuesCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.query.WhereCQLClause;
 import io.stargate.sgv2.jsonapi.service.operation.tables.WhereCQLClauseAnalyzer;
@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  * Builds an attempt to delete a row from an API Table, create a single instance and then call
  * {@link #build(WhereCQLClause)} for each different where clause the command creates.
  */
-public class UpdateAttemptBuilder<SchemaT extends TableBasedSchemaObject> {
+public class UpdateAttemptBuilder<SchemaT extends TableSchemaObject> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UpdateAttemptBuilder.class);
 

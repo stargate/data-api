@@ -1,5 +1,7 @@
 package io.stargate.sgv2.jsonapi.api.v1;
 
+import static io.stargate.sgv2.jsonapi.config.constants.DocumentConstants.Fields.VECTOR_EMBEDDING_TEXT_FIELD;
+
 import io.smallrye.mutiny.Uni;
 import io.stargate.sgv2.jsonapi.api.model.command.CollectionCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.Command;
@@ -29,7 +31,6 @@ import io.stargate.sgv2.jsonapi.exception.JsonApiException;
 import io.stargate.sgv2.jsonapi.exception.mappers.ThrowableCommandResultSupplier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaCache;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.SchemaObject;
-import io.stargate.sgv2.jsonapi.service.cqldriver.executor.VectorConfig;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProvider;
 import io.stargate.sgv2.jsonapi.service.embedding.operation.EmbeddingProviderFactory;
 import io.stargate.sgv2.jsonapi.service.processor.MeteredCommandProcessor;
@@ -184,6 +185,8 @@ public class CollectionResource {
         .transformToUni(
             (schemaObject, throwable) -> {
               if (throwable != null) {
+
+                // We failed to get the schema object, or failed to build it.
                 Throwable error = throwable;
                 if (throwable instanceof RuntimeException && throwable.getCause() != null) {
                   error = throwable.getCause();
@@ -192,9 +195,11 @@ public class CollectionResource {
                 }
                 // otherwise use generic for now
                 return Uni.createFrom().item(new ThrowableCommandResultSupplier(error));
+
               } else {
+
                 // TODO No need for the else clause here, simplify
-                final ApiFeatures apiFeatures =
+                var apiFeatures =
                     ApiFeatures.fromConfigAndRequest(
                         apiFeatureConfig, dataApiRequestInfo.getHttpHeaders());
                 if ((schemaObject.type() == SchemaObject.SchemaObjectType.TABLE)
@@ -202,30 +207,29 @@ public class CollectionResource {
                   return Uni.createFrom()
                       .failure(ErrorCodeV1.TABLE_FEATURE_NOT_ENABLED.toApiException());
                 }
-                // TODO: refactor this code to be cleaner so it assigns on one line
-                EmbeddingProvider embeddingProvider = null;
-                VectorConfig vectorConfig = schemaObject.vectorConfig();
-                final VectorConfig.ColumnVectorDefinition columnVectorDefinition =
-                    vectorConfig.columnVectorDefinitions() == null
-                            || vectorConfig.columnVectorDefinitions().isEmpty()
+
+                // TODO: This needs to change, currenty it is only checking if there is vecotrize
+                // for
+                // the $vector column in a collection
+
+                var vectorColDef =
+                    schemaObject
+                        .vectorConfig()
+                        .getColumnDefinition(VECTOR_EMBEDDING_TEXT_FIELD)
+                        .orElse(null);
+
+                EmbeddingProvider embeddingProvider =
+                    (vectorColDef == null || vectorColDef.vectorizeDefinition() == null)
                         ? null
-                        : vectorConfig.columnVectorDefinitions().get(0);
-                final VectorConfig.ColumnVectorDefinition.VectorizeConfig vectorizeConfig =
-                    columnVectorDefinition != null
-                        ? columnVectorDefinition.vectorizeConfig()
-                        : null;
-                if (vectorizeConfig != null) {
-                  embeddingProvider =
-                      embeddingProviderFactory.getConfiguration(
-                          dataApiRequestInfo.getTenantId(),
-                          dataApiRequestInfo.getCassandraToken(),
-                          vectorizeConfig.provider(),
-                          vectorizeConfig.modelName(),
-                          columnVectorDefinition.vectorSize(),
-                          vectorizeConfig.parameters(),
-                          vectorizeConfig.authentication(),
-                          command.getClass().getSimpleName());
-                }
+                        : embeddingProviderFactory.getConfiguration(
+                            dataApiRequestInfo.getTenantId(),
+                            dataApiRequestInfo.getCassandraToken(),
+                            vectorColDef.vectorizeDefinition().provider(),
+                            vectorColDef.vectorizeDefinition().modelName(),
+                            vectorColDef.vectorSize(),
+                            vectorColDef.vectorizeDefinition().parameters(),
+                            vectorColDef.vectorizeDefinition().authentication(),
+                            command.getClass().getSimpleName());
 
                 var commandContext =
                     CommandContext.forSchemaObject(

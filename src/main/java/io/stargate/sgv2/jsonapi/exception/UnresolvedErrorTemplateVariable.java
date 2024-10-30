@@ -1,5 +1,8 @@
 package io.stargate.sgv2.jsonapi.exception;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * Raised by the Exception code when a template used to build an error message has a variable in it
  * that is not resolved by the values passed when the exception is created.
@@ -14,6 +17,7 @@ package io.stargate.sgv2.jsonapi.exception;
 public class UnresolvedErrorTemplateVariable extends RuntimeException {
 
   public final ErrorTemplate<?> errorTemplate;
+  public final Map<String, String> variables;
 
   /**
    * Create a new instance.
@@ -28,8 +32,21 @@ public class UnresolvedErrorTemplateVariable extends RuntimeException {
    *     IllegalArgumentException} with the message above, pass this as the message to this
    *     exception.
    */
-  public UnresolvedErrorTemplateVariable(ErrorTemplate<?> errorTemplate, String message) {
-    super(message);
+  public UnresolvedErrorTemplateVariable(
+      ErrorTemplate<?> errorTemplate, Map<String, String> variables, String message) {
+    super(formatMessage(errorTemplate, variables, message));
     this.errorTemplate = errorTemplate;
+    this.variables = Collections.unmodifiableMap(variables);
+  }
+
+  private static String formatMessage(
+      ErrorTemplate<?> errorTemplate, Map<String, String> variables, String message) {
+    return String.format(
+        "Unresolved variable in error template for family: %s, scope: %s, code: %s, keys: %s error: %s",
+        errorTemplate.family(),
+        errorTemplate.scope(),
+        errorTemplate.code(),
+        variables.keySet(),
+        message);
   }
 }

@@ -1,20 +1,19 @@
 package io.stargate.sgv2.jsonapi.service.operation.tables;
 
+import com.datastax.oss.driver.api.core.CqlIdentifier;
 import io.stargate.sgv2.jsonapi.service.cqldriver.executor.TableSchemaObject;
 import io.stargate.sgv2.jsonapi.service.operation.SchemaAttempt;
-import io.stargate.sgv2.jsonapi.service.schema.tables.ApiDataType;
+import io.stargate.sgv2.jsonapi.service.schema.tables.ApiColumnDefContainer;
 import java.util.List;
 import java.util.Map;
 
 /** Builder for a {@link AlterTableAttempt}. */
 public class AlterTableAttemptBuilder {
-  private AlterTableType alterTableType;
+
   private final TableSchemaObject schemaObject;
-  private Map<String, ApiDataType> addColumns;
-  private List<String> dropColumns;
-  private Map<String, String> customProperties;
-  private int position = 0;
   private final SchemaAttempt.SchemaRetryPolicy retryPolicy;
+  // zero based counting
+  private int position = 0;
 
   public AlterTableAttemptBuilder(
       TableSchemaObject schemaObject, SchemaAttempt.SchemaRetryPolicy retryPolicy) {
@@ -22,45 +21,37 @@ public class AlterTableAttemptBuilder {
     this.retryPolicy = retryPolicy;
   }
 
-  public AlterTableAttemptBuilder addColumns(Map<String, ApiDataType> addColumns) {
-    assert this.alterTableType == null
-        : "Cannot set addColumns when alterTableType is already set as " + this.alterTableType;
-    this.addColumns = addColumns;
-    if (addColumns != null && !addColumns.isEmpty()) {
-      this.alterTableType = AlterTableType.ADD_COLUMNS;
-    }
-    return this;
-  }
+  public AlterTableAttempt buildAddColumns(ApiColumnDefContainer addColumns) {
 
-  public AlterTableAttemptBuilder dropColumns(List<String> dropColumns) {
-    assert this.alterTableType == null
-        : "Cannot set dropColumns when alterTableType is already set as " + this.alterTableType;
-    this.dropColumns = dropColumns;
-    if (dropColumns != null && !dropColumns.isEmpty()) {
-      this.alterTableType = AlterTableType.DROP_COLUMNS;
-    }
-    return this;
-  }
-
-  public AlterTableAttemptBuilder customProperties(Map<String, String> customProperties) {
-    assert this.alterTableType == null
-        : "Cannot set customProperties when alterTableType is already set as "
-            + this.alterTableType;
-    this.customProperties = customProperties;
-    if (customProperties != null && !customProperties.isEmpty()) {
-      this.alterTableType = AlterTableType.UPDATE_EXTENSIONS;
-    }
-    return this;
-  }
-
-  // Build method to create an instance of AlterTableAttempt
-  public AlterTableAttempt build() {
     return new AlterTableAttempt(
         position++,
         schemaObject,
-        alterTableType,
+        AlterTableAttempt.AlterTableType.ADD_COLUMNS,
         addColumns,
+        null,
+        null,
+        retryPolicy);
+  }
+
+  public AlterTableAttempt buildDropColumns(List<CqlIdentifier> dropColumns) {
+
+    return new AlterTableAttempt(
+        position++,
+        schemaObject,
+        AlterTableAttempt.AlterTableType.DROP_COLUMNS,
+        null,
         dropColumns,
+        null,
+        retryPolicy);
+  }
+
+  public AlterTableAttempt buildUpdateExtensions(Map<String, String> customProperties) {
+    return new AlterTableAttempt(
+        position++,
+        schemaObject,
+        AlterTableAttempt.AlterTableType.UPDATE_EXTENSIONS,
+        null,
+        null,
         customProperties,
         retryPolicy);
   }

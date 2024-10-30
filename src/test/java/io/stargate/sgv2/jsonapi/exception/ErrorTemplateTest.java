@@ -140,7 +140,8 @@ public class ErrorTemplateTest extends ConfiguredErrorTest {
     assertThat(error)
         .as("Error message is for the missing var")
         .message()
-        .startsWith("Cannot resolve variable 'value'");
+        .isEqualTo(
+            "Unresolved variable in error template for family: REQUEST, scope: TEST_REQUEST_SCOPE, code: SCOPED_REQUEST_ERROR, keys: [name, SNIPPET.CONTACT_SUPPORT] error: Cannot resolve variable 'value' (enableSubstitutionInVariables=false).");
 
     assertThat(error.errorTemplate)
         .as("Error template is the one we triggered")
