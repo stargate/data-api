@@ -80,6 +80,7 @@
     </dependencies>
   </dependencyManagement>
   <!-- Add local repository for private java driver queryBuilder build to avoid using systemPath in dependency-->
+  <!-- Tracker issue: https://github.com/stargate/data-api/issues/1509 -->
   <repositories>
     <repository>
       <id>local-lib</id>
