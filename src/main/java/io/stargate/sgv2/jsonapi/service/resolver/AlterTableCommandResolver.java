@@ -52,7 +52,7 @@ public class AlterTableCommandResolver implements CommandResolver<AlterTableComm
     // TODO: centralized way of getting the retry policy
     var schemaRetryPolicy =
         new SchemaAttempt.SchemaRetryPolicy(
-            2,
+            ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetries(),
             Duration.ofMillis(
                 ctx.getConfig(OperationsConfig.class).databaseConfig().ddlRetryDelayMillis()));
 

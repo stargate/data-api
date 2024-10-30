@@ -37,7 +37,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
 
         assertNamespaceCommand(keyspaceName)
             .templated()
-            .dropTable(testData.tableName())
+            .dropTable(testData.tableName(), false)
             .wasSuccessful();
       }
     }
@@ -123,33 +123,6 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                                                      }
                                                                   }
                                                                   """,
-                  "primaryKeyAsStringTable",
-                  false,
-                  null,
-                  null)));
-      // primaryKeyAsString
-      testCases.add(
-          Arguments.of(
-              new CreateTableTestData(
-                  """
-                                                      {
-                                                         "name": "primaryKeyAsStringTable",
-                                                         "definition": {
-                                                             "columns": {
-                                                                 "id": {
-                                                                     "type": "text"
-                                                                 },
-                                                                 "age": {
-                                                                     "type": "int"
-                                                                 },
-                                                                 "name": {
-                                                                     "type": "text"
-                                                                 }
-                                                             },
-                                                             "primaryKey": "id"
-                                                         }
-                                                      }
-                                                      """,
                   "primaryKeyAsStringTable",
                   false,
                   null,
@@ -741,7 +714,7 @@ class CreateTableIntegrationTest extends AbstractTableIntegrationTestBase {
                                        }
                                     }
                                     """,
-                  "primaryKeyAsStringTable",
+                  "vectorizeConfigTest",
                   false,
                   null,
                   null)));

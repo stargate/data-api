@@ -37,11 +37,13 @@ public abstract class NamedValue<NameT, ValueT> implements PrettyPrintable {
   }
 
   @Override
-  public PrettyToStringBuilder appendTo(PrettyToStringBuilder prettyToStringBuilder) {
-    return prettyToStringBuilder
-        .beginSubBuilder(getClass())
-        .append("name", name)
-        .append("value", value)
-        .endSubBuilder();
+  public String toString() {
+    return toString(false);
+  }
+
+  @Override
+  public PrettyToStringBuilder toString(PrettyToStringBuilder prettyToStringBuilder) {
+    prettyToStringBuilder.append("name", name).append("value", value);
+    return prettyToStringBuilder;
   }
 }

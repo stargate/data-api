@@ -18,7 +18,7 @@ public class TableTemplates extends TemplateRunner {
   }
 
   // ==================================================================================================================
-  // DML - INSERT / DELETE / UPDATE
+  // DML - FIND
   // ==================================================================================================================
 
   private String findClause(Map<String, Object> filter, List<String> columns) {
@@ -53,17 +53,40 @@ public class TableTemplates extends TemplateRunner {
     return sender.postFind(findClause(filter, columns));
   }
 
-  // ==================================================================================================================
-  // DML - INSERT / DELETE / UPDATE
-  // ==================================================================================================================
-
-  public DataApiResponseValidator deleteMany(String filter) {
+  public DataApiResponseValidator find(String filter) {
     var json =
             """
          {
           "filter": %s
          }
-    """
+      """
+            .formatted(filter);
+    return sender.postFind(json);
+  }
+
+  // ==================================================================================================================
+  // DML - INSERT / DELETE / UPDATE
+  // ==================================================================================================================
+
+  public DataApiResponseValidator updateOne(String filter, String update) {
+    var json =
+            """
+             {
+              "filter": %s ,
+              "update": %s
+             }
+          """
+            .formatted(filter, update);
+    return sender.postUpdateOne(json);
+  }
+
+  public DataApiResponseValidator deleteMany(String filter) {
+    var json =
+            """
+               {
+                "filter": %s
+               }
+            """
             .formatted(filter);
     return sender.postDeleteMany(json);
   }
@@ -71,10 +94,10 @@ public class TableTemplates extends TemplateRunner {
   public DataApiResponseValidator deleteOne(String filter) {
     var json =
             """
-         {
-          "filter": %s
-         }
-    """
+               {
+                "filter": %s
+               }
+            """
             .formatted(filter);
     return sender.postDeleteOne(json);
   }
@@ -128,17 +151,6 @@ public class TableTemplates extends TemplateRunner {
         """
             .formatted(indexName, column);
     return sender.postCreateIndex(json);
-  }
-
-  public DataApiResponseValidator dropIndex(String indexName) {
-    var json =
-            """
-            {
-              "indexName": "%s"
-            }
-          """
-            .formatted(indexName);
-    return sender.postDropIndex(json);
   }
 
   public DataApiResponseValidator alterTable(String alterOperation, Object columns) {
