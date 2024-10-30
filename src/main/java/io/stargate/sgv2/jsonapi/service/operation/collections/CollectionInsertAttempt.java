@@ -78,16 +78,6 @@ public class CollectionInsertAttempt extends InsertAttempt<CollectionSchemaObjec
     return Optional.ofNullable(documentId);
   }
 
-  /**
-   * No schema to report for a collection (for now)
-   *
-   * @return
-   */
-  @Override
-  public Optional<Object> schemaDescription() {
-    return Optional.empty();
-  }
-
   public boolean hasVectorValues() {
     // TODO: AARON work out if we need hasVectors in the base
     return (document != null) && (document.queryVectorValues() != null);

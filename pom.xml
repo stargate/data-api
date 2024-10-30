@@ -79,6 +79,15 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+  <!-- Add local repository for private java driver queryBuilder build to avoid using systemPath in dependency-->
+  <!-- Tracker issue: https://github.com/stargate/data-api/issues/1509 -->
+  <repositories>
+    <repository>
+      <id>local-lib</id>
+      <name>local-lib</name>
+      <url>file://${project.basedir}/lib</url>
+    </repository>
+  </repositories>
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -195,11 +204,9 @@
     <!--Note, using Java Driver QueryBuilder from a preview build. See https://github.com/stargate/data-api/issues/1509 -->
     <!--This jar is built by driver team from https://github.com/absurdfarce/cassandra-java-driver/tree/4190-preview1 branch -->
     <dependency>
-      <groupId>com.datastax.oss</groupId>
+      <groupId>org.apache.cassandra</groupId>
       <artifactId>java-driver-query-builder</artifactId>
-      <version>4.19.0.data-api-2024-10-24</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/lib/java-driver-query-builder-4.19.0-preview1.jar</systemPath>
+      <version>4.19.0-preview1</version>
     </dependency>
     <!--    <dependency>-->
     <!--      <groupId>com.datastax.oss</groupId>-->
@@ -407,7 +414,7 @@
       </activation>
       <properties>
         <stargate.int-test.cassandra.image>datastax/dse-server</stargate.int-test.cassandra.image>
-        <stargate.int-test.cassandra.image-tag>6.9.1</stargate.int-test.cassandra.image-tag>
+        <stargate.int-test.cassandra.image-tag>6.9.3</stargate.int-test.cassandra.image-tag>
         <stargate.int-test.cluster.name>dse-${stargate.int-test.cassandra.image-tag}-cluster</stargate.int-test.cluster.name>
         <stargate.int-test.use-coordinator>false</stargate.int-test.use-coordinator>
         <stargate.int-test.cluster.dse>true</stargate.int-test.cluster.dse>

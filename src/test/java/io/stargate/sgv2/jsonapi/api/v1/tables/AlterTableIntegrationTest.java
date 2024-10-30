@@ -104,15 +104,14 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
   class AlterTableAddColumnsFailure {
     @Test
     public void shouldAddColumnsToTable() {
-      final SchemaException schemaException =
-          SchemaException.Code.COLUMN_ALREADY_EXISTS.get(Map.of("column", "age"));
+
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable("add", Map.ofEntries(Map.entry("age", Map.of("type", "int"))))
           .hasSingleApiError(
               SchemaException.Code.COLUMN_ALREADY_EXISTS,
               SchemaException.class,
-              schemaException.body);
+              "The request included the following duplicate columns: age(int).");
     }
   }
 
@@ -141,44 +140,36 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
   class AlterTableDropColumnsFailure {
     @Test
     public void dropInvalidColumns() {
-      final SchemaException schemaException =
-          SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", "invalid_column"));
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable("drop", List.of("invalid_column"))
           .hasSingleApiError(
-              SchemaException.Code.COLUMN_NOT_FOUND, SchemaException.class, schemaException.body);
+              SchemaException.Code.CANNOT_DROP_UNKNOWN_COLUMNS,
+              SchemaException.class,
+              "The command attempted to drop the unknown columns: invalid_column.");
     }
 
     @Test
     public void dropPrimaryKeyColumns() {
-      final SchemaException schemaException =
-          SchemaException.Code.COLUMN_CANNOT_BE_DROPPED.get(
-              Map.of("reason", "Primary key column `%s` cannot be dropped".formatted("id")));
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable("drop", List.of("id"))
           .hasSingleApiError(
-              SchemaException.Code.COLUMN_CANNOT_BE_DROPPED,
+              SchemaException.Code.CANNOT_DROP_PRIMARY_KEY_COLUMNS,
               SchemaException.class,
-              schemaException.body);
+              "The command attempted to drop the primary key columns: id.");
     }
 
     @Test
     public void dropColumnWithIndex() {
-      final SchemaException schemaException =
-          SchemaException.Code.COLUMN_CANNOT_BE_DROPPED.get(
-              Map.of(
-                  "reason",
-                  "Index exists on the column `%s`, drop `%s` index to drop the column"
-                      .formatted("age", "age_idx")));
+
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable("drop", List.of("age"))
           .hasSingleApiError(
-              SchemaException.Code.COLUMN_CANNOT_BE_DROPPED,
+              SchemaException.Code.CANNOT_DROP_INDEXED_COLUMNS,
               SchemaException.class,
-              schemaException.body);
+              "The command attempted to drop the indexed columns: age.");
     }
   }
 
@@ -219,30 +210,30 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
   class AlterTableAddVectorizeFailure {
     @Test
     public void addingToInvalidColumn() {
-      final SchemaException schemaException =
-          SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", "invalid_column"));
+
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable(
               "addVectorize",
               Map.of("invalid_column", Map.of("provider", "mistral", "modelName", "mistral-embed")))
           .hasSingleApiError(
-              SchemaException.Code.COLUMN_NOT_FOUND, SchemaException.class, schemaException.body);
+              SchemaException.Code.CANNOT_VECTORIZE_UNKNOWN_COLUMNS,
+              SchemaException.class,
+              "The command attempted to drop the unknown columns: invalid_column.");
     }
 
     @Test
     public void addingToNonVectorTypeColumn() {
-      final SchemaException schemaException =
-          SchemaException.Code.NON_VECTOR_TYPE_COLUMN.get(Map.of("column", "age"));
+
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable(
               "addVectorize",
               Map.of("age", Map.of("provider", "mistral", "modelName", "mistral-embed")))
           .hasSingleApiError(
-              SchemaException.Code.NON_VECTOR_TYPE_COLUMN,
+              SchemaException.Code.CANNOT_VECTORIZE_NON_VECTOR_COLUMNS,
               SchemaException.class,
-              schemaException.body);
+              "The command attempted to vectorize the non-vector columns: age.");
     }
   }
 
@@ -275,13 +266,14 @@ public class AlterTableIntegrationTest extends AbstractTableIntegrationTestBase 
   class AlterTableDropVectorizeFailure {
     @Test
     public void dropInvalidColumns() {
-      final SchemaException schemaException =
-          SchemaException.Code.COLUMN_NOT_FOUND.get(Map.of("column", "invalid_column"));
+
       assertTableCommand(keyspaceName, testTableName)
           .templated()
           .alterTable("dropVectorize", List.of("invalid_column"))
           .hasSingleApiError(
-              SchemaException.Code.COLUMN_NOT_FOUND, SchemaException.class, schemaException.body);
+              SchemaException.Code.CANNOT_DROP_VECTORIZE_FROM_UNKNOWN_COLUMNS,
+              SchemaException.class,
+              "The command attempted to drop vectorize configuration from the unknown columns: invalid_column.");
     }
   }
 }

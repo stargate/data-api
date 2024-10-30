@@ -29,9 +29,7 @@ import io.stargate.sgv2.jsonapi.api.model.command.impl.FindOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertManyCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.InsertOneCommand;
 import io.stargate.sgv2.jsonapi.api.model.command.impl.VectorizeConfig;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ColumnType;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.ComplexTypes;
-import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.PrimitiveTypes;
+import io.stargate.sgv2.jsonapi.api.model.command.table.definition.datatype.*;
 import io.stargate.sgv2.jsonapi.config.DocumentLimitsConfig;
 import io.stargate.sgv2.jsonapi.exception.ErrorCodeV1;
 import io.stargate.sgv2.jsonapi.exception.JsonApiException;
@@ -813,20 +811,19 @@ class ObjectMapperConfigurationTest {
                     .isInstanceOfSatisfying(
                         AlterTableOperationImpl.AddColumns.class,
                         addColumns -> {
-                          Map<String, ColumnType> columns = addColumns.columns();
+                          Map<String, ColumnDesc> columns = addColumns.columns();
                           assertThat(columns).isNotNull();
                           assertThat(columns).hasSize(3);
-                          assertThat(columns).containsEntry("new_col_1", PrimitiveTypes.TEXT);
+                          assertThat(columns).containsEntry("new_col_1", PrimitiveColumnDesc.TEXT);
                           assertThat(columns)
                               .containsEntry(
                                   "new_col_2",
-                                  new ComplexTypes.MapType(
-                                      PrimitiveTypes.TEXT, PrimitiveTypes.TEXT));
+                                  new MapColumnDesc(
+                                      PrimitiveColumnDesc.TEXT, PrimitiveColumnDesc.TEXT));
                           assertThat(columns)
                               .containsEntry(
                                   "content",
-                                  new ComplexTypes.VectorType(
-                                      PrimitiveTypes.FLOAT,
+                                  new VectorColumnDesc(
                                       1024,
                                       new VectorizeConfig("nvidia", "NV-Embed-QA", null, null)));
                         });
